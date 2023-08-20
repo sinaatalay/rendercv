@@ -1,79 +1,80 @@
 from pydantic import BaseModel, HttpUrl
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from typing import Literal
-from datetime import date
+from datetime import date as Date
 
-class Organization(BaseModel):
-    # 1) Mandotory user inputs:
-    name: str
-    # 2) Optional user inputs:
-    url: HttpUrl
 
 class Location(BaseModel):
     # 1) Mandotory user inputs:
     city: str
     country: str
     # 2) Optional user inputs:
-    state: str
+    state: str = None
+
 
 class Skill(BaseModel):
     # 1) Mandotory user inputs:
     name: str
     # 2) Optional user inputs:
-    details: str
+    details: str = None
+
 
 class Activity(BaseModel):
     # 1) Mandotory user inputs:
-    organization: Organization
+    organization: str
     position: str
-    start_date: date
-    end_date: date
     location: Location
     # 2) Optional user inputs:
-    company_url: HttpUrl
-    highlights: list[str]
+    start_date: Date = None
+    end_date: Date = None
+    company_url: HttpUrl = None
+    highlights: list[str] = None
+
 
 class TestScore(BaseModel):
     # 1) Mandotory user inputs:
     name: str
     score: str
     # 2) Optional user inputs:
-    url: HttpUrl
-    details: str
-    date: date
+    url: HttpUrl = None
+    date: Date = None
+
 
 class Project(BaseModel):
     # 1) Mandotory user inputs:
     name: str
-    start_date: date
-    end_date: date
     location: Location
     # 2) Optional user inputs:
-    url: HttpUrl
-    highlights: list[str]
+    start_date: Date= None
+    end_date: Date = None
+    url: HttpUrl = None
+    highlights: list[str] = None
+
 
 class WorkExperience(BaseModel):
     # 1) Mandotory user inputs:
-    company: Organization
+    company: str
     position: str
-    start_date: date
-    end_date: date
+    start_date: Date
     location: Location
     # 2) Optional user inputs:
-    highlights: list[str]
+    end_date: Date = None
+    highlights: list[str] = None
+
 
 class Education(BaseModel):
     # 1) Mandotory user inputs:
-    institution: Organization
-    study_type: str
+    institution: str
     area: str
     location: Location
-    start_date: date
-    end_date: date
+    start_date: Date
     # 2) Optional user inputs:
-    gpa: str
-    transcript_url: HttpUrl
-    highlights: list[str]
+    end_date: Date = None
+    study_type: str = None
+    gpa: str = None
+    transcript_url: HttpUrl = None
+    highlights: list[str] = None
+
 
 class SocialNetwork(BaseModel):
     # 1) Mandotory user inputs:
@@ -81,20 +82,19 @@ class SocialNetwork(BaseModel):
     username: str
     url: HttpUrl
 
+
 class CurriculumVitae(BaseModel):
     # 1) Mandotory user inputs:
     name: str
     # 2) Optional user inputs:
-    email: str
-    phone: PhoneNumber
-    website: HttpUrl
-    summary: str
-    location: Location
-    social_networks: list[SocialNetwork]
-    education: list[Education]
-    work_experience: list[WorkExperience]
-    academic_projects: list[Project]
-    extracurricular_activities: list[Activity]
-    test_scores: list[TestScore]
-    skills: list[Skill]
-    
+    email: str = None
+    phone: PhoneNumber = None
+    website: HttpUrl = None
+    location: Location = None
+    social_networks: list[SocialNetwork] = None
+    education: list[Education] = None
+    work_experience: list[WorkExperience] = None
+    academic_projects: list[Project] = None
+    extracurricular_activities: list[Activity] = None
+    test_scores: list[TestScore] = None
+    skills: list[Skill] = None
