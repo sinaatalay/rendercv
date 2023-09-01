@@ -21,3 +21,10 @@ with open(input_file_path) as file:
 data = CurriculumVitae(**raw_json)
 
 output_latex_file = template.render(data=data)
+
+# Create an output file and write the rendered LaTeX code to it:
+output_file_path = os.path.join(workspace, "tests", "outputs", "test.tex")
+with open(output_file_path, "w") as file:
+    file.write(output_latex_file)
+
+    
