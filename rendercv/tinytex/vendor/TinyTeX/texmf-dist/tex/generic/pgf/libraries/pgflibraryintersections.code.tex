@@ -1,0 +1,1172 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Free Documentation License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+% Note: at the time of this writing, the library has quadratic runtime.
+%   Experimentally, it performed well while computing ~12 intersections of two
+%   plots, each with 600 samples. It failed when the number of samples exceeded 700.
+
+\usepgflibrary{fpu}%
+
+\newcount\pgf@intersect@solutions
+
+\newif\ifpgf@intersect@sort
+\newif\ifpgf@intersect@sort@by@second@path
+
+\def\pgfintersectionsortbyfirstpath{%
+    \pgf@intersect@sorttrue%
+    \pgf@intersect@sort@by@second@pathfalse%
+}%
+
+\def\pgfintersectionsortbysecondpath{%
+    \pgf@intersect@sorttrue%
+    \pgf@intersect@sort@by@second@pathtrue%
+}%
+
+% #1: the index. It starts at 1 and ends with \pgfintersectionsolutions (inclusive).
+% Invalid values will implicitly result in the origin.
+\def\pgfpointintersectionsolution#1{%
+    \ifnum#1<1\relax%
+        \pgfpoint@intersect@solution@orgin%
+    \else%
+        \ifnum#1>\pgfintersectionsolutions\relax%
+            \pgfpoint@intersect@solution@orgin%
+        \else%
+            \csname pgfpoint@intersect@solution@#1\endcsname%
+        \fi%
+    \fi%
+}%
+
+% Gets the segment indices of solution #1.
+%
+% #1: the solution index (i.e. the same argument as in \pgfpointintersectionsolution)
+% #2: [output] a macro name which will contain the segment index of the first path which contains the solution
+% #3: [output] a macro name which will contain the segment index of the second path which contains the solution
+%
+% Example: \pgfintersectiongetsolutionsegmentindices{0}{\first}{\second}%
+%
+% -> \first may be 0 if point #0 is in the 0'th segment
+% -> \second may be 42 if point #0 is in the 42'th segment 
+%
+% The "segment index" is actually close to the "time" of the solution.
+% If a solution is at "time" 42.2, it will have segment index 42.
+\def\pgfintersectiongetsolutionsegmentindices#1#2#3{%
+    \ifnum#1<1\relax%
+        \let#2=\pgfutil@empty
+        \let#3=\pgfutil@empty
+    \else%
+        \ifnum#1>\pgfintersectionsolutions\relax%
+            \let#2=\pgfutil@empty
+            \let#3=\pgfutil@empty
+        \else%
+            \def\pgf@temp##1##2##3##4{%
+                \edef#2{##1}%
+                \edef#3{##2}%
+            }%
+            \expandafter\let\expandafter\pgf@tempb\csname pgf@intersect@solution@props@#1\endcsname
+            \expandafter\pgf@temp\pgf@tempb
+        \fi%
+    \fi%
+}%
+
+% Gets the time indices of solution #1.
+%
+% #1: the solution index (i.e. the same argument as in \pgfpointintersectionsolution)
+% #2: [output] a macro name which will contain the time of the first path which contains the solution
+%   It will never be empty.
+% #3: [output] a macro name which will contain the time of the second path which contains the solution
+%   It will never be empty.
+%
+% Example: \pgfintersectiongetsolutiontimes{0}{\first}{\second}%
+%
+% -> \first may be 0.5 if point #0 is in just in the middle of the path
+% -> \second may be 42.8 if point #0 is in the 42'th segment (compare
+%  \pgfintersectiongetsolutionsegmentindices) and is at 80% of the
+%  42'th segment
+%
+% Note that the precise time inside of a segment may be unavailable
+% (currently, it is only computed for curveto paths and not
+% necessarily for lineto). If the precise time is unavailable, this
+% call will return the value of
+% \pgfintersectiongetsolutionsegmentindices (which is a
+% "coarse-grained" time).
+\def\pgfintersectiongetsolutiontimes#1#2#3{%
+    \ifnum#1<1\relax%
+        \let#2=\pgfutil@empty
+        \let#3=\pgfutil@empty
+    \else%
+        \ifnum#1>\pgfintersectionsolutions\relax%
+            \let#2=\pgfutil@empty
+            \let#3=\pgfutil@empty
+        \else%
+            \def\pgf@temp##1##2##3##4{%
+                \edef#2{##3}%
+                \edef#3{##4}%
+                %
+                % check for fallback to segment indices:
+                \ifx#2\pgfutil@empty \edef#2{##1}\fi
+                \ifx#3\pgfutil@empty \edef#3{##2}\fi
+            }%
+            \expandafter\let\expandafter\pgf@tempb\csname pgf@intersect@solution@props@#1\endcsname
+            \expandafter\pgf@temp\pgf@tempb
+        \fi%
+    \fi%
+}%
+
+\def\pgfpoint@intersect@solution@orgin{%
+    \begingroup%
+        \pgftransforminvert%
+        \pgfpointorigin%
+        \pgf@pos@transform@glob
+        \global\pgf@x=\pgf@x%
+        \global\pgf@y=\pgf@y%
+    \endgroup%
+}%
+
+% #1 code which assigns the first path using \pgfsetpath.
+% #2 code which assigns the second path using \pgfsetpath.
+%
+% On output, the points, their properties, and the number of points are set.
+% Use \pgfintersectionsolutions which expands to the number of intersections
+\long\def\pgfintersectionofpaths#1#2{%
+    \begingroup%
+        \pgfinterruptpath%
+        #1%
+        \pgfgetpath\pgf@intersect@path@a%
+        \global\let\pgf@intersect@path@temp=\pgf@intersect@path@a%
+        \endpgfinterruptpath%
+    \endgroup%
+    \let\pgf@intersect@path@a=\pgf@intersect@path@temp%
+    %
+    \begingroup%
+        \pgfinterruptpath%
+        #2%
+        \pgfgetpath\pgf@intersect@path@b%
+        \global\let\pgf@intersect@path@temp=\pgf@intersect@path@b%
+        \endpgfinterruptpath%
+    \endgroup%
+    \let\pgf@intersect@path@b=\pgf@intersect@path@temp%
+    %
+    \pgf@intersect@solutions=0\relax%
+    \pgf@intersect@path@reset@a
+    %
+    \ifpgf@intersect@sort@by@second@path%
+        \let\pgf@intersect@temp=\pgf@intersect@path@a%
+        \let\pgf@intersect@path@a=\pgf@intersect@path@b%
+        \let\pgf@intersect@path@b=\pgf@intersect@temp%
+    \fi%
+    %
+    \pgfprocessround\pgf@intersect@path@a\pgf@intersect@path@a%
+    \pgfprocessround\pgf@intersect@path@b\pgf@intersect@path@b%
+    %
+    \let\pgf@intersect@token@after=\pgf@intersect@path@process@a%
+    \expandafter\pgf@intersectionofpaths\pgf@intersect@path@a\pgf@stop%
+    \edef\pgfintersectionsolutions{\the\pgf@intersect@solutions}%
+    \pgfmathloop%
+        \ifnum\pgfmathcounter>\pgfintersectionsolutions\relax%
+        \else%
+            \pgfutil@namelet{pgfpoint@intersect@solution@\pgfmathcounter}%
+                {pgfpoint@g@intersect@solution@\pgfmathcounter}%
+            \edef\pgf@marshal{\noexpand\pgf@intersection@set@properties{\csname pgfpoint@g@intersect@solution@\pgfmathcounter @props\endcsname}}%
+            \pgf@marshal
+            \ifpgf@intersect@sort%
+                \pgfutil@namelet{pgf@intersect@solution@\pgfmathcounter @time@a}%
+                    {pgf@g@intersect@solution@\pgfmathcounter @time@a}%
+            \fi%
+    \repeatpgfmathloop%
+    \ifpgf@intersect@sort%
+        \pgfintersectionsolutionsortbytime%
+    \fi%
+}%
+
+\def\pgf@intersection@set@properties#1{%
+    \pgfutil@namedef{pgf@intersect@solution@props@\pgfmathcounter}{#1}%
+}%
+
+% #1 a global name prefix to store properties.
+\def\pgf@intersection@store@properties#1{%
+    % we store the time offsets as well and make them available programmatically:
+    % note that \pgf@intersect@time@a and \pgf@intersect@time@b may be empty.
+    %
+    % However, \pgf@intersect@time@offset and
+    % \pgf@intersect@time@offset@b are *always* valid. In fact,they
+    % resemble a part of the time: it holds 
+    %   0 <= \pgf@intersect@time@a < 1
+    % and \pgf@intersect@time@offset > 0. 
+    %
+    % If we have an intersection in segment 42 of path A,
+    % \pgf@intersect@time@offset will be 42. The time inside of that
+    % segment is given as number in the interval [0,1]. If it is 0.3,
+    % the total time will be 42.3 and that number will be stored as
+    % \pgf@intersect@time@a.
+    %
+    \expandafter\xdef\csname #1@props\endcsname{{\pgf@intersect@time@offset}{\pgf@intersect@time@offset@b}{\pgf@intersect@time@a}{\pgf@intersect@time@b}}%
+}%
+
+\def\pgf@intersectionofpaths#1{%
+    \ifx#1\pgf@stop%
+        \let\pgf@intersect@next=\relax%
+    \else%
+        \ifx#1\pgfsyssoftpath@movetotoken%
+            \let\pgf@intersect@next=\pgf@intersect@token@moveto%
+        \else%
+            \ifx#1\pgfsyssoftpath@linetotoken%
+                \let\pgf@intersect@next=\pgf@intersect@token@lineto%
+            \else%
+                \ifx#1\pgfsyssoftpath@closepathtoken%
+                    \let\pgf@intersect@next=\pgf@intersect@token@lineto%
+                \else%
+                    \ifx#1\pgfsyssoftpath@curvetosupportatoken%
+                        \let\pgf@intersect@next=\pgf@intersect@token@curveto%
+                    \else%
+                        \ifx#1\pgfsyssoftpath@rectcornertoken%
+                            \let\pgf@intersect@next=\pgf@intersect@token@rect%
+                        \fi%
+                    \fi%
+                \fi%
+            \fi%
+        \fi%
+    \fi%
+    \pgf@intersect@next}%
+
+\def\pgf@intersect@token@moveto#1#2{%
+    \def\pgfpoint@intersect@start{\pgfqpoint{#1}{#2}}%
+    \pgf@intersectionofpaths%
+}%
+
+\def\pgf@intersect@token@lineto#1#2{%
+    \def\pgfpoint@intersect@end{\pgfqpoint{#1}{#2}}%
+    \def\pgf@intersect@type{line}%
+    \pgf@intersect@token@after%
+}%
+\def\pgf@intersect@token@curveto#1#2\pgfsyssoftpath@curvetosupportbtoken#3#4\pgfsyssoftpath@curvetotoken#5#6{%
+    \def\pgfpoint@intersect@firstsupport{\pgfqpoint{#1}{#2}}%
+    \def\pgfpoint@intersect@secondsupport{\pgfqpoint{#3}{#4}}%
+    \def\pgfpoint@intersect@end{\pgfqpoint{#5}{#6}}%
+    \def\pgf@intersect@type{curve}%
+    \pgf@intersect@token@after%
+}%
+
+\def\pgf@intersect@token@rect#1#2\pgfsyssoftpath@rectsizetoken#3#4{%
+    \pgf@xa=#1\relax%
+    \advance\pgf@xa by#3\relax%
+    \pgf@ya=#2\relax%
+    \advance\pgf@ya by#4\relax%
+    \edef\pgf@marshal{%
+        \noexpand\pgfsyssoftpath@movetotoken{#1}{#2}%
+        \noexpand\pgfsyssoftpath@linetotoken{#1}{\the\pgf@ya}%
+        \noexpand\pgfsyssoftpath@linetotoken{\the\pgf@xa}{\the\pgf@ya}%
+        \noexpand\pgfsyssoftpath@linetotoken{\the\pgf@xa}{#2}%
+        \noexpand\pgfsyssoftpath@closepathtoken{#1}{#2}%
+    }%
+    \expandafter\pgf@intersectionofpaths\pgf@marshal%
+}%
+
+\def\pgf@intersect@path@process@a{%
+    \pgf@intersect@path@getpoints@a%
+    \let\pgf@intersect@token@after=\pgf@intersect@path@process@b%
+    \pgf@intersect@path@reset@b
+    \expandafter\pgf@intersectionofpaths\pgf@intersect@path@b\pgf@stop%
+    \let\pgfpoint@intersect@start=\pgfpoint@intersect@end@a%
+    \let\pgf@intersect@token@after=\pgf@intersect@path@process@a%
+    \c@pgf@counta=\pgf@intersect@time@offset\relax%
+    \advance\c@pgf@counta by1\relax%
+    \edef\pgf@intersect@time@offset{\the\c@pgf@counta}%
+    \pgf@intersectionofpaths%
+}%
+
+\def\pgf@intersect@path@reset@a{%
+    \def\pgf@intersect@time@offset{0}%
+    \def\pgf@intersect@time@a{}%
+}%
+
+\def\pgf@intersect@path@reset@b{%
+    \def\pgf@intersect@time@offset@b{0}%
+    \def\pgf@intersect@time@b{}%
+}%
+
+\def\pgf@intersect@path@getpoints@a{%
+    \let\pgfpoint@intersect@start@a=\pgfpoint@intersect@start%
+    \let\pgfpoint@intersect@end@a=\pgfpoint@intersect@end%
+    \let\pgfpoint@intersect@firstsupport@a=\pgfpoint@intersect@firstsupport%
+    \let\pgfpoint@intersect@secondsupport@a=\pgfpoint@intersect@secondsupport%
+    \let\pgf@intersect@type@a=\pgf@intersect@type%
+}%
+
+\def\pgf@intersect@path@process@b{%
+    \pgf@intersect@path@getpoints@b%
+    \csname pgf@intersect@\pgf@intersect@type@a @and@\pgf@intersect@type@b\endcsname%
+    \let\pgfpoint@intersect@start=\pgfpoint@intersect@end@b%
+    \c@pgf@counta=\pgf@intersect@time@offset@b\relax%
+    \advance\c@pgf@counta by1\relax%
+    \edef\pgf@intersect@time@offset@b{\the\c@pgf@counta}%
+    \pgf@intersectionofpaths}%
+
+\def\pgf@intersect@path@getpoints@b{%
+    \let\pgfpoint@intersect@start@b=\pgfpoint@intersect@start%
+    \let\pgfpoint@intersect@end@b=\pgfpoint@intersect@end%
+    \let\pgfpoint@intersect@firstsupport@b=\pgfpoint@intersect@firstsupport%
+    \let\pgfpoint@intersect@secondsupport@b=\pgfpoint@intersect@secondsupport%
+    \let\pgf@intersect@type@b=\pgf@intersect@type%
+}%
+
+\def\pgf@intersect@line@and@line{%
+    \pgf@intersectionoflines{\pgfpoint@intersect@start@a}{\pgfpoint@intersect@end@a}%
+        {\pgfpoint@intersect@start@b}{\pgfpoint@intersect@end@b}%
+}%
+
+\def\pgf@intersect@line@and@curve{%
+    \pgf@intersectionoflineandcurve%
+        {\pgf@process{\pgfpoint@intersect@start@a}}{\pgf@process{\pgfpoint@intersect@end@a}}%
+        {\pgf@process{\pgfpoint@intersect@start@b}}{\pgf@process{\pgfpoint@intersect@firstsupport@b}}%
+        {\pgf@process{\pgfpoint@intersect@secondsupport@b}}{\pgf@process{\pgfpoint@intersect@end@b}}%
+}%
+
+\def\pgf@intersect@curve@and@line{%
+    \pgf@intersectionofcurveandline%
+        {\pgf@process{\pgfpoint@intersect@start@a}}{\pgf@process{\pgfpoint@intersect@firstsupport@a}}%
+        {\pgf@process{\pgfpoint@intersect@secondsupport@a}}{\pgf@process{\pgfpoint@intersect@end@a}}%
+        {\pgf@process{\pgfpoint@intersect@start@b}}{\pgf@process{\pgfpoint@intersect@end@b}}%
+}%
+
+\def\pgf@intersect@curve@and@curve{%
+    \pgf@intersectionofcurves%
+        {\pgf@process{\pgfpoint@intersect@start@a}}{\pgf@process{\pgfpoint@intersect@firstsupport@a}}%
+        {\pgf@process{\pgfpoint@intersect@secondsupport@a}}{\pgf@process{\pgfpoint@intersect@end@a}}%
+        {\pgf@process{\pgfpoint@intersect@start@b}}{\pgf@process{\pgfpoint@intersect@firstsupport@b}}%
+        {\pgf@process{\pgfpoint@intersect@secondsupport@b}}{\pgf@process{\pgfpoint@intersect@end@b}}%
+}%
+
+
+\def\pgfintersectionoflines#1#2#3#4{%
+    \pgf@intersect@solutions=0\relax%
+    \pgf@intersectionoflines{#1}{#2}{#3}{#4}%
+}%
+
+\def\pgf@intersectionoflines#1#2#3#4{%
+    \pgf@iflinesintersect{#1}{#2}{#3}{#4}%
+    {%
+        \pgfextract@process\pgf@intersect@solution@candidate{%
+            % pgf@x and pgf@y are already assigned by \pgf@iflinesintersect
+        }%
+        \pgf@ifsolution@duplicate{\pgf@intersect@solution@candidate}{%
+            % ah - we a duplicate. Apparently, we have a hit on an
+            % endpoint.
+        }{%
+            \global\advance\pgf@intersect@solutions by1\relax%
+            \expandafter\global\expandafter\let\csname pgfpoint@g@intersect@solution@\the\pgf@intersect@solutions\endcsname=\pgf@intersect@solution@candidate
+            \ifpgf@intersect@sort%
+                % save coordinates of the intersection
+                \pgf@process{\pgf@intersect@solution@candidate}%
+                \pgf@xc=\pgf@x%
+                \pgf@yc=\pgf@y%
+                % determine length of path
+                \pgf@process{\pgfpointdiff{\pgfpoint@intersect@start@a}{\pgfpoint@intersect@end@a}}%
+                \edef\pgf@marshal{%
+                    \noexpand\pgfmathveclen@{\pgfmath@tonumber{\pgf@x}}{\pgfmath@tonumber{\pgf@y}}%
+                }%
+                \pgf@marshal%
+                \let\pgf@intersect@length@a=\pgfmathresult%
+                % determine distance of intersection from start
+                \pgf@process{\pgfpointdiff{\pgfpoint@intersect@start@a}{\pgfqpoint{\pgf@xc}{\pgf@yc}}}%
+                \edef\pgf@marshal{%
+                    \noexpand\pgfmathveclen@{\pgfmath@tonumber{\pgf@x}}{\pgfmath@tonumber{\pgf@y}}%
+                }%
+                \pgf@marshal%
+                % scale the distance to the path length (path time)
+                \pgfmathdivide@{\pgfmathresult}{\pgf@intersect@length@a}%
+                \pgf@x=\pgfmathresult pt\relax%
+                % advance by the path segment (see definition of \pgf@intersection@store@properties)
+                \advance\pgf@x by\pgf@intersect@time@offset pt\relax%
+                \edef\pgf@intersect@time@a{\pgfmath@tonumber{\pgf@x}}%
+                % save numbered
+                \expandafter\global\expandafter\let\csname pgf@g@intersect@solution@\the\pgf@intersect@solutions @time@a\endcsname=
+                    \pgf@intersect@time@a
+            \else
+                \let\pgf@intersect@time@a=\pgfutil@empty
+            \fi%
+            \let\pgf@intersect@time@b=\pgfutil@empty
+            \pgf@intersection@store@properties{pgfpoint@g@intersect@solution@\the\pgf@intersect@solutions}%
+        }%
+        %
+    }{%
+    }%
+}%
+
+% Test if two lines L1 and L2 intersect.
+%
+% #1 - first point P1 on L1.
+% #2 - second point P2 on L1.
+% #3 - first point P3 on L2.
+% #2 - second point P4 on L2.
+% #5 - code executed if intersection occurs.
+% #6 - code executed if intersection does no occur.
+%
+% Let L1 be represented by P1+(P2-P1)s where 0<=s<=1
+% Let L2 be represented by P3+(P4-P3)t where 0<=t<=1
+%
+% Then L1 and L2 intersect at
+%
+% s = |x2-x1  x3-x1| / |x4-x3  x2-x1|
+%     |y2-y1  y3-y1|   |y4-y3  y2-y1|
+%
+% t = |x4-x3  x3-x1| / |x4-x3  x2-x1|
+%     |y4-y3  y3-y1|   |y4-y3  y2-y1|
+%
+% with 0<=s,t<=1
+%
+% s and t do not need to be calculated:
+%
+% Let s = A / C and t = B / C
+%
+% Then 0<=s<=1 if !(C=0) && ((A=0) || ((A>0) && !(C<A)) || ((A<0) && !(C>A)))
+%      0<=t<=1 if !(C=0) && ((B=0) || ((B>0) && !(C<B)) || ((B<0) && !(C>B)))
+%
+\newif\ifpgf@s
+\newif\ifpgf@t
+\def\pgfiflinesintersect#1#2#3#4{%
+    \begingroup%
+        \pgf@iflinesintersect{\pgf@process{#1}}{\pgf@process{#2}}{\pgf@process{#3}}{\pgf@process{#4}}%
+            {\aftergroup\pgfutil@firstoftwo}{\aftergroup\pgfutil@secondoftwo}%
+    \endgroup%
+}%
+
+% queried by pgfplots. Do not delete, only increase.
+\def\pgf@intersections@version{2}%
+
+% #1,#2: line 1
+% #3,#4: line 2
+\def\pgf@iflinesintersect#1#2#3#4{%
+    % first: check bounding boxes -- but somewhat increased such that we do not
+    % exclude "visible" hits due to rounding issues (i.e. use an upper bound):
+    \pgf@intersect@boundingbox@reset%
+    \pgf@intersect@boundingbox@update{#1}%
+    \pgf@intersect@boundingbox@update{#2}%
+    \pgf@intersect@boundingbox@assign@b%
+    %
+    \pgf@intersect@boundingbox@reset%
+    \pgf@intersect@boundingbox@update{#3}%
+    \pgf@intersect@boundingbox@update{#4}%
+    \pgf@intersect@boundingbox@assign@a%
+    %
+    \pgf@intersect@boundingbox@a%
+    \pgf@intersect@boundingbox@b%
+    %
+    \pgf@intersect@boundingbox@ifoverlap@upperbound{%
+        \pgf@iflinesintersect@{#1}{#2}{#3}{#4}%
+    }{%
+        \let\pgf@intersect@next=\pgfutil@secondoftwo%
+    }%
+    \pgf@intersect@next%
+}%
+
+% a helper routine which simply defines \pgf@intersect@next.
+%
+% In principle, this routine is capable of computing the entire intersection... but we only invoke it after checking for bounding box overlaps. This has two reasons:
+%   1. robustness. almost-parallel lines could cause "dimension too large" when solving the linear equation system
+%       XXX : I still needed to replace the linear solver by one using the FPU. Perhaps I do not need the BB check anymore?
+%   2. performance. I hope it is faster to first check for BB (but this is not sure in TeX)
+%
+% #1,#2: line 1
+% #3,#4: line 2
+\def\pgf@iflinesintersect@#1#2#3#4{%
+    % we have two lines of sorts
+    % l_1(s) := #1 + s * (#2 - #1),  0<= s <= 1
+    % and
+    % l_2(t) := #3 + t * (#4 - #3),  0<= t <= 1
+    % ->
+    % set up LGS
+    % ( #2 - #1 ) *s + (#3-#4) * t = #3-#1
+    % we have a hit if 0<= s,t <= 1 .
+    #1\relax%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    #2\relax%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    #3\relax%
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    #4\relax%
+    %
+    % will be overwritten, remember it:
+    \edef\pgf@intersect@A{%
+        \pgf@xa=\the\pgf@xa\space
+        \pgf@ya=\the\pgf@ya\space
+    }%
+    %
+    % B := (2-1)
+    \advance\pgf@xb by-\pgf@xa
+    \advance\pgf@yb by-\pgf@ya
+    %
+    % A := (3-1)
+    \advance\pgf@xa by-\pgf@xc
+    \advance\pgf@ya by-\pgf@yc
+    \pgf@xa=-\pgf@xa
+    \pgf@ya=-\pgf@ya
+    %
+    % C := (3-4)
+    \advance\pgf@xc by-\pgf@x
+    \advance\pgf@yc by-\pgf@y
+    %
+    \begingroup
+    % compute the |.|_1 norm of each of lines. We need to compute
+    % tolerance factors in order to decide if we have an intersection.
+    % line 1: compute |#2 - #1|_1 :
+    \ifdim\pgf@xb<0sp \pgf@xb=-\pgf@xb\fi
+    \ifdim\pgf@yb<0sp \pgf@yb=-\pgf@yb\fi
+    \advance\pgf@xb by\pgf@yb
+    \xdef\pgf@intersect@len@a{\pgf@sys@tonumber\pgf@xb}%
+    %
+    % line 2: compute |#3 - #4|_1 :
+    \ifdim\pgf@xc<0sp \pgf@xc=-\pgf@xc\fi
+    \ifdim\pgf@yc<0sp \pgf@yc=-\pgf@yc\fi
+    \advance\pgf@xc by\pgf@yc
+    \xdef\pgf@intersect@len@b{\pgf@sys@tonumber\pgf@xc}%
+    \endgroup
+    %
+    \edef\pgf@marshal{%
+        \noexpand\pgfutilsolvetwotwoleqfloat{%
+            {\pgf@sys@tonumber\pgf@xb}{\pgf@sys@tonumber\pgf@xc}%
+            {\pgf@sys@tonumber\pgf@yb}{\pgf@sys@tonumber\pgf@yc}%
+        }{%
+            {\pgf@sys@tonumber\pgf@xa}%
+            {\pgf@sys@tonumber\pgf@ya}%
+        }%
+    }%
+    \pgf@marshal
+    %
+    \let\pgf@intersect@next=\pgfutil@secondoftwo%
+    \ifx\pgfmathresult\pgfutil@empty
+        % matrix was singular.
+    \else
+        \def\pgf@marshal##1##2{%
+            \global\pgf@x=##1pt %
+            \global\pgf@y=##2pt %
+        }%
+        \expandafter\pgf@marshal\pgfmathresult
+        %
+        \def\pgf@marshal{XXXX}% this should never be read
+        % FIRST: check line 1:
+        \ifdim\pgf@x<0sp
+            % let it count as hit if
+            %  || l_1(s) - l_1(0) || < eps
+            % <=>  |s| * ||#2 - #1|| < eps
+            % and, since s< 0  here:
+            % <=>  -s * ||#2 - #1|| < eps
+            \pgf@xa=-\pgf@intersect@len@a\pgf@x
+            \ifdim\pgf@xa<\pgfintersectiontolerance\relax
+                % close enough to first endpoint of line 1:
+                \def\pgf@marshal{1}%
+            \else
+                \def\pgf@marshal{0}%
+            \fi
+        \else
+            \ifdim\pgf@x>1pt
+                % let it count as hit if
+                %  || l_1(s) - l_1(1) || < eps
+                % <=>  |s-1| * ||#2 - #1|| < eps
+                % and, since s > 1  here:
+                % <=>  s * ||#2 - #1|| - ||#2 - #1|| < eps
+                \pgf@xa=\pgf@intersect@len@a\pgf@x
+                \advance\pgf@xa by-\pgf@intersect@len@a pt %
+                \ifdim\pgf@xa<\pgfintersectiontolerance\relax
+                    % close enough to second endpoint of line 1:
+                    \def\pgf@marshal{1}%
+                \else
+                    \def\pgf@marshal{0}%
+                \fi
+            \else
+                % 0<= s <= 1: we have an intersection within line 1.
+                \def\pgf@marshal{1}%
+            \fi
+        \fi
+        %
+        % SECOND: check line 2:
+        \if1\pgf@marshal
+            \ifdim\pgf@y<0sp
+                % see remarks for line 1. same applies here.
+                \pgf@xa=-\pgf@intersect@len@b\pgf@y
+                \ifdim\pgf@xa<\pgfintersectiontolerance\relax
+                    % close enough to first endpoint of line 2:
+                    \def\pgf@marshal{1}%
+                \else
+                    \def\pgf@marshal{0}%
+                \fi
+            \else
+                \ifdim\pgf@y>1pt
+                    % see remarks for line 1. same applies here.
+                    \pgf@xa=\pgf@intersect@len@b\pgf@y
+                    \advance\pgf@xa by-\pgf@intersect@len@b pt %
+                    \ifdim\pgf@xa<\pgfintersectiontolerance\relax
+                        % close enough to second endpoint of line 2:
+                        \def\pgf@marshal{1}%
+                    \else
+                        \def\pgf@marshal{0}%
+                    \fi
+                \else
+                    % 0<= t <= 1: we have an intersection within line 2.
+                    \def\pgf@marshal{1}%
+                \fi
+            \fi
+        \fi
+        %
+        \if1\pgf@marshal
+            % Ok, compute the intersection point and return it:
+            % we use (x,y) = A + s * (B-A)
+            % keep in mind that (s,t) == (\pgf@x,\pgf@y)
+            \pgf@intersect@A
+            \pgf@yc=\pgf@x
+            \global\pgf@x=\pgf@sys@tonumber\pgf@xb\pgf@yc
+            \global\pgf@y=\pgf@sys@tonumber\pgf@yb\pgf@yc
+            \global\advance\pgf@x by \pgf@xa
+            \global\advance\pgf@y by \pgf@ya
+            \let\pgf@intersect@next=\pgfutil@firstoftwo%
+        \fi
+    \fi
+}%
+
+
+
+
+\def\pgfintersectionoflineandcurve#1#2#3#4#5#6{%
+    \pgf@intersect@solutions=0\relax%
+    \pgf@intersectionoflineandcurve{#1}{#2}{#3}{#4}{#5}{#6}%
+}%
+
+\def\pgf@intersectionoflineandcurve#1#2#3#4#5#6{%
+    \pgf@intersectionofcurves%
+        {\pgf@process{#1}}%
+        {%
+            \pgf@process{%
+                \pgfpointadd{#1\relax\pgf@x=0.666666\pgf@x\pgf@y=0.666666\pgf@y}%
+                    {#2\relax\pgf@x=0.333333\pgf@x\pgf@y=0.333333\pgf@y}%
+            }%
+        }%
+        {%
+            \pgf@process{%
+                \pgfpointadd{#1\relax\pgf@x=0.333333\pgf@x\pgf@y=0.333333\pgf@y}%
+                    {#2\relax\pgf@x=0.666666\pgf@x\pgf@y=0.666666\pgf@y}%
+            }%
+        }%
+        {\pgf@process{#2}}%
+        {\pgf@process{#3}}%
+        {\pgf@process{#4}}%
+        {\pgf@process{#5}}%
+        {\pgf@process{#6}}%
+}%
+
+\def\pgf@intersectionofcurveandline#1#2#3#4#5#6{%
+    \pgf@intersectionofcurves%
+        {\pgf@process{#1}}%
+        {\pgf@process{#2}}%
+        {\pgf@process{#3}}%
+        {\pgf@process{#4}}%
+        {\pgf@process{#5}}%
+        {%
+            \pgf@process{%
+                \pgfpointadd{#5\relax\pgf@x=0.666666\pgf@x\pgf@y=0.666666\pgf@y}%
+                    {#6\relax\pgf@x=0.333333\pgf@x\pgf@y=0.333333\pgf@y}%
+            }%
+        }%
+        {%
+            \pgf@process{%
+                \pgfpointadd{#5\relax\pgf@x=0.333333\pgf@x\pgf@y=0.333333\pgf@y}%
+                    {#6\relax\pgf@x=0.666666\pgf@x\pgf@y=0.666666\pgf@y}%
+            }%
+        }%
+        {\pgf@process{#6}}%
+}%
+
+
+
+
+\def\pgfintersectiontolerance{0.1pt}%
+\def\pgfintersectiontoleranceupperbound{1pt}%
+\def\pgfintersectiontolerancefactor{0.1}%
+
+
+
+% Find the intersections of two bezier curves.
+%
+% #1 - #4 = curve 1.
+% #5 - #8 = curve 2.
+% #9      = the solution number.
+%
+% There is no guarantee of ordering of solutions. If there are 
+% no solutions, the origin is returned.
+%
+\def\pgfpointintersectionofcurves#1#2#3#4#5#6#7#8#9{%
+    \pgf@intersect@solutions=0\relax%
+    \pgf@intersectionofcurves%
+        {\pgf@process{#1}}{\pgf@process{#2}}{\pgf@process{#3}}{\pgf@process{#4}}%
+        {\pgf@process{#5}}{\pgf@process{#6}}{\pgf@process{#7}}{\pgf@process{#8}}%
+    \pgfpointintersectionsolution{#9}%
+}%
+
+% Return any intersection points of two curves C1 and C2.
+% No order can be guaranteed for the solutions.
+%
+% #1, #2, #3, #4 - the points on C1 
+% #5, #6, #7, #8 - the points on C2
+%
+% Returns:
+%
+% \pgf@intersect@solutions          - the number of solutions.
+%   \pgfpointintersectionsolution{<S>} - the point for solution S.
+%
+% (Sort of) use:
+%
+%   intersection(C1,C2)
+%       S = {};
+%     intersection'(C1,C2);
+%       return S;
+%
+%   intersection'(C1,C2)
+%       B1 = boundingbox(C1);
+%       B2 = boundingbox(C2);
+%       if intersect(B1,B2)
+%           if (B1.width < q) and (B1.height < q) and
+%        (B2.width < q) and (B2.height < q)
+%               S = S + {average_of_all_points(B1,B2)}; \\ is there a better choice?
+%           else
+%               Q = subdivideLeft(C1);
+%               R = subdivideRight(C1);
+%               intersection'(C2,Q);
+%               intersection'(C2,R);
+%
+% where q is a small value (tolerance).
+%
+\def\pgfintersectionofcurves#1#2#3#4#5#6#7#8{%
+    \pgf@intersect@solutions=0\relax%
+    \pgf@intersectionofcurves%
+        {\pgf@process{#1}}{\pgf@process{#2}}{\pgf@process{#3}}{\pgf@process{#4}}%
+        {\pgf@process{#5}}{\pgf@process{#6}}{\pgf@process{#7}}{\pgf@process{#8}}%
+}%
+\def\pgf@intersectionofcurves#1#2#3#4#5#6#7#8{%
+    \begingroup%
+        \dimendef\pgf@time@a=2\relax%
+        \dimendef\pgf@time@aa=4\relax%
+        \dimendef\pgf@time@b=6\relax%
+        \dimendef\pgf@time@bb=8\relax%
+        \pgf@time@a=0pt\relax%
+        \pgf@time@aa=1pt\relax%
+        \pgf@time@b=0pt\relax%
+        \pgf@time@bb=1pt\relax%
+        \let\pgf@intersect@subdivide@curve=\pgf@intersect@subdivide@curve@b%
+        \let\pgf@curve@subdivde@after=\pgf@@intersectionofcurves%
+        \pgf@@intersectionofcurves{#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}%
+    \endgroup%
+}%
+
+\def\pgf@intersect@boundingbox@assign@a{%
+    \edef\pgf@intersect@boundingbox@a{%
+        % lower left:
+        \noexpand\pgf@xb=\the\pgf@xa\space%
+        \noexpand\pgf@yb=\the\pgf@ya\space%
+        % upper right:
+        \noexpand\pgf@xc=\the\pgf@xb\space%
+        \noexpand\pgf@yc=\the\pgf@yb\space%
+    }%
+}%
+\def\pgf@intersect@boundingbox@assign@b{%
+    \edef\pgf@intersect@boundingbox@b{%
+        % lower left:
+        \noexpand\global\noexpand\pgf@x=\the\pgf@xa\space%
+        \noexpand\global\noexpand\pgf@y=\the\pgf@ya\space%
+        % upper right:
+        \noexpand\pgf@xa=\the\pgf@xb\space%
+        \noexpand\pgf@ya=\the\pgf@yb\space%
+    }%
+}%
+
+% see \pgf@intersect@boundingbox@assign@a and \pgf@intersect@boundingbox@assign@b for the naming conventions
+\def\pgf@intersect@boundingbox@ifoverlap{%
+    \def\pgf@intersect@next{\pgfutil@secondoftwo}%
+    %
+    \ifdim\pgf@xa<\pgf@xb%
+    \else%
+        \ifdim\pgf@x>\pgf@xc%
+        \else%
+            \ifdim\pgf@ya<\pgf@yb%
+            \else%
+                \ifdim\pgf@y>\pgf@yc%
+                \else%
+                    \def\pgf@intersect@next{\pgfutil@firstoftwo}%
+                \fi
+            \fi
+        \fi
+    \fi
+    \pgf@intersect@next
+}%
+\def\pgf@intersect@boundingbox@ifoverlap@upperbound{%
+    \begingroup
+    \def\pgf@intersect@next{\pgfutil@secondoftwo}%
+    %
+    \advance\pgf@xa by+\pgfintersectiontolerance\relax
+    \ifdim\pgf@xa<\pgf@xb%
+    \else%
+        \global\advance\pgf@x by-\pgfintersectiontolerance\relax
+        \ifdim\pgf@x>\pgf@xc%
+        \else%
+            \advance\pgf@ya by\pgfintersectiontolerance\relax
+            \ifdim\pgf@ya<\pgf@yb%
+            \else%
+                \global\advance\pgf@y by-\pgfintersectiontolerance\relax
+                \ifdim\pgf@y>\pgf@yc%
+                \else%
+                    \def\pgf@intersect@next{\pgfutil@firstoftwo}%
+                \fi
+            \fi
+        \fi
+    \fi
+    \expandafter
+    \endgroup
+    \pgf@intersect@next
+}%
+\def\pgf@intersect@boundingbox@ifoverlap@UNUSED{%
+    \let\pgf@intersect@next=\pgfutil@secondoftwo%
+    \ifdim\pgf@xa<\pgf@xb%
+    \else%
+        \ifdim\pgf@x>\pgf@xc%
+        \else%
+            \ifdim\pgf@ya<\pgf@yb%
+            \else%
+                \ifdim\pgf@y>\pgf@yc%
+                \else%
+                    \let\pgf@intersect@next=\pgfutil@firstoftwo%
+                \fi
+            \fi
+        \fi
+    \fi
+    \pgf@intersect@next
+}%
+\def\pgf@@intersectionofcurves#1#2#3#4#5#6#7#8{%
+    \pgf@intersect@boundingbox@reset%
+    \pgf@intersect@boundingbox@update{#1}%
+    \pgf@intersect@boundingbox@update{#2}%
+    \pgf@intersect@boundingbox@update{#3}%
+    \pgf@intersect@boundingbox@update{#4}%
+    \pgf@intersect@boundingbox@assign@b%
+    %
+    \pgf@intersect@boundingbox@reset%
+    \pgf@intersect@boundingbox@update{#5}%
+    \pgf@intersect@boundingbox@update{#6}%
+    \pgf@intersect@boundingbox@update{#7}%
+    \pgf@intersect@boundingbox@update{#8}%
+    \pgf@intersect@boundingbox@assign@a%
+    %
+    \pgf@intersect@boundingbox@a%
+    \pgf@intersect@boundingbox@b%
+    %
+    \pgf@intersect@boundingbox@ifoverlap{%
+        \pgf@@@intersectionofcurves{#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}%
+    }{%
+        % no overlap -- no intersection.
+    }%
+}%
+
+\def\pgf@@@intersectionofcurves#1#2#3#4#5#6#7#8{%
+                    % compute DIFFERENCE vectors:
+                    \advance\pgf@xc by-\pgf@xb%
+                    \advance\pgf@yc by-\pgf@yb%
+                    \advance\pgf@xa by-\pgf@x%
+                    \advance\pgf@ya by-\pgf@y%
+                    \let\pgf@intersect@subdivde=\relax%
+                    % check if both difference vectors are point wise
+                    % less than tolerance (i.e. |v|_infty < eps ).
+                    % That means that both bounding boxes are "small enough"
+                    \ifdim\pgf@xc<\pgfintersectiontolerance\relax%
+                        \ifdim\pgf@xa<\pgfintersectiontolerance\relax%
+                            \ifdim\pgf@yc<\pgfintersectiontolerance\relax%
+                                \ifdim\pgf@ya<\pgfintersectiontolerance\relax%
+                                    \pgfextract@process\pgf@intersect@solution@candidate{%
+                                        % set (x,y) = mean(the 4 points of the two bounding boxes):
+                                        \pgf@intersect@boundingbox@a%
+                                        \pgf@intersect@boundingbox@b%
+                                        \pgf@x=0.25\pgf@x%
+                                        \advance\pgf@x by0.25\pgf@xa%
+                                        \advance\pgf@x by0.25\pgf@xb%
+                                        \advance\pgf@x by0.25\pgf@xc%
+                                        \pgf@y=0.25\pgf@y%
+                                        \advance\pgf@y by0.25\pgf@ya%
+                                        \advance\pgf@y by0.25\pgf@yb%
+                                        \advance\pgf@y by0.25\pgf@yc%
+                                    }%
+                                    % We must avoid duplicate solutions.
+                                    \let\pgf@intersect@subdivde=\pgf@stop%
+                                    \pgf@ifsolution@duplicate\pgf@intersect@solution@candidate{}%
+                                    {%
+                                        \global\advance\pgf@intersect@solutions by1\relax%
+                                        \begingroup
+                                        \advance\pgf@time@a by\pgf@time@aa%
+                                        \divide\pgf@time@a by2\relax%
+                                        \advance\pgf@time@a by\pgf@intersect@time@offset pt\relax%
+                                        \edef\pgf@intersect@time@a{\pgfmath@tonumber{\pgf@time@a}}%
+                                        %
+                                        \advance\pgf@time@b by\pgf@time@bb%
+                                        \divide\pgf@time@b by2\relax%
+                                        \advance\pgf@time@b by\pgf@intersect@time@offset@b pt\relax%
+                                        \edef\pgf@intersect@time@b{\pgfmath@tonumber{\pgf@time@b}}%
+                                        %
+                                        \pgf@intersection@store@properties{pgfpoint@g@intersect@solution@\the\pgf@intersect@solutions}%
+                                        \expandafter\global\expandafter\let%
+                                            \csname pgfpoint@g@intersect@solution@\the\pgf@intersect@solutions\endcsname=%
+                                                \pgf@intersect@solution@candidate%
+                                        \ifpgf@intersect@sort%
+                                            \expandafter\xdef%
+                                            \csname pgf@g@intersect@solution@\the\pgf@intersect@solutions @time@a\endcsname%
+                                                {\pgf@intersect@time@a}%
+                                        \fi%
+                                        \endgroup
+                                    }%
+                                \fi%
+                            \fi%
+                        \fi%
+                    \fi%
+                    \ifx\pgf@intersect@subdivde\pgf@stop%
+                    \else%
+                        \pgf@intersect@subdivide@curve{#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}%
+                    \fi%
+}%
+
+\def\pgf@intersect@subdivide@curve@b#1#2#3#4#5#6#7#8{%
+    \begingroup%
+        \advance\pgf@time@bb by\pgf@time@b\relax%
+        \divide\pgf@time@bb by2\relax%
+        \let\pgf@intersect@subdivide@curve=\pgf@intersect@subdivide@curve@a%
+        \pgf@curve@subdivide@left{#5}{#6}{#7}{#8}{#1}{#2}{#3}{#4}%
+    \endgroup%
+    \begingroup%
+        \advance\pgf@time@b by\pgf@time@bb\relax%
+        \divide\pgf@time@b by2\relax%
+        \let\pgf@intersect@subdivide@curve=\pgf@intersect@subdivide@curve@a%
+        \pgf@curve@subdivide@right{#5}{#6}{#7}{#8}{#1}{#2}{#3}{#4}%
+    \endgroup%
+}%
+
+\def\pgf@intersect@subdivide@curve@a#1#2#3#4#5#6#7#8{%
+    \begingroup%
+        \advance\pgf@time@aa by\pgf@time@a\relax%
+        \divide\pgf@time@aa by2\relax%
+        \let\pgf@intersect@subdivide@curve=\pgf@intersect@subdivide@curve@b%
+        \pgf@curve@subdivide@left{#5}{#6}{#7}{#8}{#1}{#2}{#3}{#4}%
+    \endgroup%
+    \begingroup%
+        \advance\pgf@time@a by\pgf@time@aa\relax%
+        \divide\pgf@time@a by2\relax%
+        \let\pgf@intersect@subdivide@curve=\pgf@intersect@subdivide@curve@b%
+        \pgf@curve@subdivide@right{#5}{#6}{#7}{#8}{#1}{#2}{#3}{#4}%
+    \endgroup%
+}%
+
+\def\pgf@intersect@boundingbox@reset{%
+    \pgf@xa=16000pt\relax%
+    \pgf@ya=16000pt\relax%
+    \pgf@xb=-16000pt\relax%
+    \pgf@yb=-16000pt\relax%
+}%
+
+\def\pgf@intersect@boundingbox@update#1{%
+    #1\relax%
+    \ifdim\pgf@x<\pgf@xa\pgf@xa=\pgf@x\fi%
+    \ifdim\pgf@y<\pgf@ya\pgf@ya=\pgf@y\fi%
+    \ifdim\pgf@x>\pgf@xb\pgf@xb=\pgf@x\fi%
+    \ifdim\pgf@y>\pgf@yb\pgf@yb=\pgf@y\fi%
+}%
+
+% The following subroutines are part of a conversion from pgfbasic
+% math to FPU. This transition is necessary due to the restricted
+% accuracy of pgfbasic. In order to limit the error rate of the
+% transition pgfbasic -> FPU, I chose to
+% keep the old "pattern" of sorts \advance\pgf@xa by0.5\pgf@y etc and
+% simply adapt to some FPU call.
+%
+% The following routines constitute the "adapter":
+
+\def\pgf@float@adapter@setxy{%
+    \pgfmathfloatparsenumber{\pgf@sys@tonumber\pgf@x}\let\pgf@fpu@x=\pgfmathresult
+    \pgfmathfloatparsenumber{\pgf@sys@tonumber\pgf@y}\let\pgf@fpu@y=\pgfmathresult
+}%
+\def\pgf@float@adapter@mult#1=#2*#3{%
+    \pgfmathfloatmultiplyfixed@{#3}{#2}%
+    \let#1=\pgfmathresult
+}%
+\def\pgf@float@adapter@advance#1by#2*#3{%
+    \pgfmathfloatmultiplyfixed@{#3}{#2}%
+    \let\pgfutil@temp=\pgfmathresult
+    \pgfmathfloatadd@{#1}{\pgfutil@temp}%
+    \let#1=\pgfmathresult
+}%
+
+\def\pgf@float@adapter@tostring#1{%
+    \pgfmathfloattofixed{#1}\edef#1{\pgfmathresult pt }%
+}%
+
+\def\pgf@curve@subdivide@left#1#2#3#4{%
+    %
+    % The left curve (from t=0 to t=.5) 
+    %
+    \begingroup
+    #1\relax%
+    \pgfutil@tempdima=\pgf@x%
+    \pgfutil@tempdimb=\pgf@y%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@mult\pgf@fpu@xa=.5*\pgf@fpu@x  \pgf@float@adapter@mult\pgf@fpu@ya=.5*\pgf@fpu@y%
+    \pgf@float@adapter@mult\pgf@fpu@xb=.25*\pgf@fpu@x \pgf@float@adapter@mult\pgf@fpu@yb=.25*\pgf@fpu@y%
+    \pgf@float@adapter@mult\pgf@fpu@xc=.125*\pgf@fpu@x\pgf@float@adapter@mult\pgf@fpu@yc=.125*\pgf@fpu@y%
+    #2\relax%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@advance\pgf@fpu@xa by.5*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@ya by.5*\pgf@fpu@y%
+    \pgf@float@adapter@advance\pgf@fpu@xb by.5*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@yb by.5*\pgf@fpu@y%
+    \pgf@float@adapter@advance\pgf@fpu@xc by.375*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@yc by.375*\pgf@fpu@y%
+    #3\relax%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@advance\pgf@fpu@xb by.25*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@yb by.25*\pgf@fpu@y%
+    \pgf@float@adapter@advance\pgf@fpu@xc by.375*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@yc by.375*\pgf@fpu@y%
+    #4\relax%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@advance\pgf@fpu@xc by.125*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@yc by.125*\pgf@fpu@y%
+    %
+    \pgf@float@adapter@tostring\pgf@fpu@xa
+    \pgf@float@adapter@tostring\pgf@fpu@ya
+    \pgf@float@adapter@tostring\pgf@fpu@xb
+    \pgf@float@adapter@tostring\pgf@fpu@yb
+    \pgf@float@adapter@tostring\pgf@fpu@xc
+    \pgf@float@adapter@tostring\pgf@fpu@yc
+    \edef\pgf@marshal{%
+        \noexpand\pgf@curve@subdivde@after%
+            {\noexpand\pgf@x=\the\pgfutil@tempdima\noexpand\pgf@y=\the\pgfutil@tempdimb}%
+            {\noexpand\pgf@x=\pgf@fpu@xa\noexpand\pgf@y=\pgf@fpu@ya}%
+            {\noexpand\pgf@x=\pgf@fpu@xb\noexpand\pgf@y=\pgf@fpu@yb}%
+            {\noexpand\pgf@x=\pgf@fpu@xc\noexpand\pgf@y=\pgf@fpu@yc}%
+    }%
+    \expandafter
+    \endgroup
+    \pgf@marshal%
+}%
+
+\def\pgf@curve@subdivide@right#1#2#3#4{%
+    %
+    % The right curve (from t=0.5 to t=1) 
+    %
+    \begingroup
+    #1\relax%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@mult\pgf@float@tmpa=.125*\pgf@fpu@x\pgf@float@adapter@mult\pgf@float@tmpb=.125*\pgf@fpu@y%
+    #2\relax%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@advance\pgf@float@tmpa by.375*\pgf@fpu@x\pgf@float@adapter@advance\pgf@float@tmpb by.375*\pgf@fpu@y%
+    \pgf@float@adapter@mult\pgf@fpu@xa=.25*\pgf@fpu@x\pgf@float@adapter@mult\pgf@fpu@ya=.25*\pgf@fpu@y%
+    #3\relax%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@advance\pgf@float@tmpa by.375*\pgf@fpu@x\pgf@float@adapter@advance\pgf@float@tmpb by.375*\pgf@fpu@y%
+    \pgf@float@adapter@advance\pgf@fpu@xa by.5*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@ya by.5*\pgf@fpu@y%
+    \pgf@float@adapter@mult\pgf@fpu@xb=.5*\pgf@fpu@x\pgf@float@adapter@mult\pgf@fpu@yb=.5*\pgf@fpu@y%
+    #4\relax%
+    \pgf@float@adapter@setxy
+    \pgf@float@adapter@advance\pgf@float@tmpa by.125*\pgf@fpu@x\pgf@float@adapter@advance\pgf@float@tmpb by.125*\pgf@fpu@y%
+    \pgf@float@adapter@advance\pgf@fpu@xa by.25*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@ya by.25*\pgf@fpu@y%
+    \pgf@float@adapter@advance\pgf@fpu@xb by.5*\pgf@fpu@x\pgf@float@adapter@advance\pgf@fpu@yb by.5*\pgf@fpu@y%
+    \let\pgf@fpu@xc=\pgf@fpu@x\let\pgf@fpu@yc=\pgf@fpu@y%
+    %
+    \pgf@float@adapter@tostring\pgf@float@tmpa
+    \pgf@float@adapter@tostring\pgf@float@tmpb
+    \pgf@float@adapter@tostring\pgf@fpu@xa
+    \pgf@float@adapter@tostring\pgf@fpu@ya
+    \pgf@float@adapter@tostring\pgf@fpu@xb
+    \pgf@float@adapter@tostring\pgf@fpu@yb
+    \pgf@float@adapter@tostring\pgf@fpu@xc
+    \pgf@float@adapter@tostring\pgf@fpu@yc
+    \edef\pgf@marshal{%
+        \noexpand\pgf@curve@subdivde@after%
+            {\noexpand\pgf@x=\pgf@float@tmpa\noexpand\pgf@y=\pgf@float@tmpb}%
+            {\noexpand\pgf@x=\pgf@fpu@xa\noexpand\pgf@y=\pgf@fpu@ya}%
+            {\noexpand\pgf@x=\pgf@fpu@xb\noexpand\pgf@y=\pgf@fpu@yb}%
+            {\noexpand\pgf@x=\pgf@fpu@xc\noexpand\pgf@y=\pgf@fpu@yc}%
+    }%
+    \expandafter
+    \endgroup
+    \pgf@marshal%
+}%
+
+
+% A solution S1 is considered a duplicate of S2, if
+%
+% |x1 - x2|f < q and |y1 - y2|f < q
+%
+% where q is a small value (tolerance).
+%
+% #1 - the solution.
+%
+\def\pgf@ifsolution@duplicate#1{%
+    #1%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \let\pgf@intersect@next=\pgfutil@secondoftwo%
+    \pgfmathloop%
+        \ifnum\pgfmathcounter>\pgf@intersect@solutions\relax%
+        \else%
+            \pgf@ifsolution@duplicate@{\pgfmathcounter}%
+    \repeatpgfmathloop%
+    \pgf@intersect@next%
+}%
+
+\def\pgf@ifsolution@duplicate@#1{%
+    \pgf@process{\csname pgfpoint@g@intersect@solution@#1\endcsname}%
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    \ifdim\pgf@x<0pt\relax\pgf@x=-\pgf@x\fi%
+    \ifdim\pgf@y<0pt\relax\pgf@y=-\pgf@y\fi%
+    %
+    \pgf@x=\pgfintersectiontolerancefactor\pgf@x%
+    \pgf@y=\pgfintersectiontolerancefactor\pgf@y%
+    \ifdim\pgf@x<\pgfintersectiontolerance\relax%
+        \ifdim\pgf@y<\pgfintersectiontolerance\relax%
+            \let\pgf@intersect@next=\pgfutil@firstoftwo%
+        \fi%
+    \fi%
+}%
+
+\newif\ifpgf@intersect@solutions@sortfinish
+
+% Sort solutions according to their time index.
+%
+\def\pgfintersectionsolutionsortbytime{%
+    \pgf@intersect@solutions@sortfinishtrue%
+    \pgfmathloop%
+        \ifnum\pgfmathcounter<\pgfintersectionsolutions\relax%
+            \pgfutil@tempcnta=\pgfmathcounter%
+            \advance\pgfutil@tempcnta by1\relax%
+            \ifdim\csname pgf@intersect@solution@\pgfmathcounter @time@a\endcsname pt>%
+                \csname pgf@intersect@solution@\the\pgfutil@tempcnta @time@a\endcsname pt\relax%
+                \pgf@intersect@solutions@sortfinishfalse%
+                %
+                \pgfintersectionsolutionsortbytime@swap{pgfpoint@intersect@solution@\pgfmathcounter}%
+                    {pgfpoint@intersect@solution@\the\pgfutil@tempcnta}%
+                %
+                \pgfintersectionsolutionsortbytime@swap{pgf@intersect@solution@\pgfmathcounter @time@a}%
+                    {pgf@intersect@solution@\the\pgfutil@tempcnta @time@a}%
+                %
+                \pgfintersectionsolutionsortbytime@swap{pgf@intersect@solution@props@\pgfmathcounter}%
+                    {pgf@intersect@solution@props@\the\pgfutil@tempcnta}%
+            \fi%
+    \repeatpgfmathloop%
+    \ifpgf@intersect@solutions@sortfinish%
+    \else%
+        \expandafter\pgfintersectionsolutionsortbytime%
+    \fi%
+}%
+
+\def\pgfintersectionsolutionsortbytime@swap#1#2{%
+    \pgfutil@namelet{pgf@intersect@temp}{#1}%
+    \pgfutil@namelet{#1}{#2}%
+    \pgfutil@namelet{#2}{pgf@intersect@temp}%
+}%
+
+\endinput

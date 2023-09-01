@@ -1,0 +1,59 @@
+\ifx
+  \ProvidesPackage\undefined\begingroup\def\ProvidesPackage
+    #1#2[#3]{\endgroup\immediate\write-1{Package: #1 #3}}
+\fi
+\ProvidesPackage{ctablestack}
+  [2015/10/01 v1.0 Catcode table stable support]
+\edef\ctstackatcatcode{\the\catcode`\@}
+\catcode`\@=11
+\ifx\newluafunction\@undefined
+  \input{ltluatex}%
+\fi
+\def\@setcatcodetable#1#2{%
+  \begingroup
+    #2%
+    \savecatcodetable#1%
+  \endgroup
+}
+\def\@setrangecatcode#1#2#3{%
+  \ifnum#1>#2 %
+    \expandafter\@gobble
+  \else
+    \expandafter\@firstofone
+  \fi
+    {%
+      \catcode#1=#3 %
+      \expandafter\@setrangecatcode\expandafter
+        {\number\numexpr#1+1\relax}{#2}{#3}%
+    }%
+}
+\def\@catcodetablelist{}
+\def\@catcodetablestack{}
+\newcount\@catcodetablestackcnt
+\def\@pushcatcodetable{%
+  \ifx\@catcodetablelist\empty
+    \global\advance\@catcodetablestackcnt by\@ne
+    \edef\@tempa{\csname ct@\the\@catcodetablestackcnt\endcsname}%
+    \expandafter\newcatcodetable\@tempa
+    \xdef\@catcodetablelist{\@tempa}%
+  \fi
+  \expandafter\@pushctbl\@catcodetablelist\@nil
+}
+\def\@pushctbl#1#2\@nil{%
+  \gdef\@catcodetablelist{#2}%
+  \xdef\@catcodetablestack{#1\@catcodetablestack}%
+  \savecatcodetable#1%
+}
+\def\@popcatcodetable{%
+  \if!\@catcodetablestack!%
+    \errmessage{Attempt to pop empty catcodetable stack}%
+  \else
+    \expandafter\@popctbl\@catcodetablestack\@nil
+  \fi
+}
+\def\@popctbl#1#2\@nil{%
+  \gdef\@catcodetablestack{#2}%
+  \xdef\@catcodetablelist{\@catcodetablelist#1}%
+  \catcodetable#1%
+}
+\catcode`\@\ctstackatcatcode\relax

@@ -1,0 +1,110 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-vtex.def}
+
+\pgfutil@packagewarning
+  {pgfsys-vtex.def}%
+  {This driver is deprecated and will be removed by the end of 2022.
+   Please switch to another TeX engine}
+
+% Driver commands for vtex
+
+% Invoking things:
+\def\pgfsys@invoke#1{\special{pS: grestore #1 gsave}} % to protect against things happeing in between
+\def\pgfsys@outerinvoke#1{\special{pS: #1}}
+\def\pgf@sys@postscript@header#1{\immediate\special{pS: #1}}
+\def\pgf@sys@postscript@object#1{\immediate\special{pS: #1}}
+
+
+%
+% Load common postscript commands:
+%
+\input pgfsys-common-postscript.def
+
+
+%
+% vtex-specific stuff:
+%
+
+
+% Starting and ending a picture:
+\def\pgfsys@beginpicture{\special{pS:
+  save
+    /pgfx currentpoint /pgfy exch def def
+    currentpoint translate
+    gsave}%
+  \let\set@color=\pgf@sys@vtex@set@color%
+  \let\reset@color=\pgf@sys@vtex@reset@color%
+}
+\def\pgf@sys@vtex@setcolor#1{%
+  \pgfutil@colorlet{pgf@tempcolor}{#1}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgf@tempcolor}}%
+  \expandafter\expandafter\expandafter\pgf@sys@vtex@@setcolor\csname\string\color@pgf@tempcolor\endcsname%
+}
+\def\pgf@sys@vtex@@setcolor#1#2#3#4#5{%
+  \pgfsysps@color@resetnow%
+  \expandafter\ifx\csname pgfsys@color@#4\endcsname\relax%
+    \pgferror{Unsupported color model `#4'. Sorry}%
+  \else%
+    \edef\pgf@colmarshal{\expandafter\noexpand\csname pgfsys@color@#4\endcsname}%
+    \pgf@uncomma#5,,%
+    \pgf@colmarshal%
+  \fi}
+\def\pgf@sys@vtex@set@color{\pgf@sys@vtex@setcolor{.}\aftergroup\reset@color}
+\def\pgf@sys@vtex@reset@color{\pgf@sys@vtex@setcolor{.}}
+\def\pgfsys@endpicture{\special{pS:
+    newpath
+    grestore
+  newpath
+  restore}}
+
+% Graphics:
+\def\pgfsys@imagesuffixlist{.epsi:.eps:.ps:.pdf:}
+
+% Starting and ending a box:
+\def\pgfsys@hbox#1{%
+  \pgfsys@invoke{save pgfx neg pgfy neg translate}%
+      \wd#1=0pt%
+      \ht#1=0pt%
+      \dp#1=0pt%
+      \box#1
+  \pgfsys@invoke{restore}%
+}
+
+\def\pgfsys@color@unstacked#1{\special{pS: \XC@usecolor{#1}}}
+
+\def\pgfsys@fill@opacity#1{\pgf@sys@fail{opacity}}
+\def\pgfsys@stroke@opacity#1{\pgf@sys@fail{opacity}}
+
+\AtBeginDocument{
+  % Always present specials.
+  \immediate\special{pS:
+    /pgfsc{} bind def% stroke color is empty by default
+    /pgffc{} bind def% fill color is empty by default
+    /pgfstr{stroke} bind def%
+    /pgffill{fill} bind def%
+    /pgfeofill{eofill} bind def%
+    /pgfe{moveto dup 0 rlineto exch 0 exch rlineto neg 0 rlineto closepath} bind def% rectangle
+    /pgfw{setlinewidth} bind def % setlinewidth
+    }
+}
+
+% vtex commands for changing the paper size
+\def\pgfsys@papersize#1#2{\mediawidth#1\mediaheight#2}
+
+
+
+
+
+\endinput
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

@@ -1,0 +1,1477 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcorepathconstruct.code.tex}
+
+
+\newdimen\pgf@path@lastx
+\newdimen\pgf@path@lasty
+
+\let\pgfgetpath=\pgfsyssoftpath@getcurrentpath
+\let\pgfsetpath=\pgfsyssoftpath@setcurrentpath
+
+
+
+% Replace corners by arcs.
+%
+% #1 = in-size of arc
+% #2 = out-size of arc
+%
+% Description:
+%
+% This command influences path construction command like
+% \pgfpathlineto or \pgfpatharc. It will cause the corners at the end
+% of these commands to be replaced by little arcs. If the
+% corner is a 90 degrees corner and if #1=#2, a quarter-circle of
+% radius #1 is put in place of the corner. If #1 and #2 are different,
+% the quarter circle will instead by a quarter ellipse. If the angle
+% is different from 90 degrees, a deformed quarter circle will
+% result, which may or may not be desirable. For a ``perfect'' arc you
+% must use the \pgfpatharc command.
+%
+%
+% Example: One rounded corner.
+%
+% \pgfpathmoveto{\pgfpointxy{0}{0}}
+% \pgfsetcornersarced{4pt}{4pt}
+% \pgfpathlineto{\pgfpointxy{0}{1}}
+% \pgfpathlineto{\pgfpointxy{1}{1}}
+% \pgfstroke
+%
+% Example: A rounded rectangle
+%
+% \pgfsetcornersarced{4pt}{4pt}
+% \pgfpathrectangle{\pgfpointorigin}{\pgfpoint{1cm}{1cm}}
+% \pgfstroke
+%
+% Example: A rounded triangles
+%
+% \pgfsetcornersarced{4pt}{4pt}
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathlineto{\pgfpoint{1cm}{0cm}}
+% \pgfpathlineto{\pgfpoint{1cm}{1cm}}
+% \pgfpathclose
+% \pgfstroke
+
+\newif\ifpgf@arccorners
+
+\def\pgfsetcornersarced#1{%
+  \pgf@process{#1}%
+  \edef\pgf@corner@arc{{\the\pgf@x}{\the\pgf@y}}%
+  \pgf@arccornerstrue%
+  \ifdim\pgf@x=0pt%
+    \ifdim\pgf@y=0pt\relax%
+      \pgf@arccornersfalse%
+    \fi%
+  \fi%
+}
+
+\def\pgf@roundcornerifneeded{%
+  \ifpgf@arccorners\expandafter\pgfsyssoftpath@specialround\pgf@corner@arc\fi%
+}
+
+
+
+% The following protocol the passed sizes and all the corresponding
+% softpath commands. The nonlinear transformation (nlt) module
+% overwrites these commands.
+
+\def\pgf@lt@moveto#1#2{%
+  \pgf@protocolsizes{#1}{#2}%
+  \pgfsyssoftpath@moveto{\the#1}{\the#2}%
+}
+\def\pgf@lt@lineto#1#2{%
+  \pgf@protocolsizes{#1}{#2}%
+  \pgfsyssoftpath@lineto{\the#1}{\the#2}%
+}
+\def\pgf@lt@curveto#1#2#3#4#5#6{%
+  \pgf@protocolsizes{#1}{#2}%
+  \pgf@protocolsizes{#3}{#4}%
+  \pgf@protocolsizes{#5}{#6}%
+  \pgfsyssoftpath@curveto{\the#1}{\the#2}{\the#3}{\the#4}{\the#5}{\the#6}%
+}
+
+\let\pgf@lt@closepath\pgfsyssoftpath@closepath
+
+\let\pgf@nlt@moveto\pgf@lt@moveto
+\let\pgf@nlt@lineto\pgf@lt@lineto
+\let\pgf@nlt@curveto\pgf@lt@curveto
+\let\pgf@nlt@closepath\pgf@lt@closepath
+
+\let\pgf@nlt@list\pgfutil@empty % If non-empty, the nlt module is active
+
+
+% Move current point to #1.
+%
+% #1 = new current point
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfxy(0,0)}
+% \pgfpathlineto{\pgfxy(0,1)}
+% \pgfstroke
+
+\def\pgfpathmoveto#1{%
+  \pgfpointtransformed{#1}%
+  \pgf@nlt@moveto{\pgf@x}{\pgf@y}%
+  \global\pgf@path@lastx=\pgf@x%
+  \global\pgf@path@lasty=\pgf@y%
+}
+
+\def\pgf@protocolsizes#1#2{%
+  \ifpgf@relevantforpicturesize%
+    \ifdim#1<\pgf@picminx\global\pgf@picminx#1\fi%
+    \ifdim#1>\pgf@picmaxx\global\pgf@picmaxx#1\fi%
+    \ifdim#2<\pgf@picminy\global\pgf@picminy#2\fi%
+    \ifdim#2>\pgf@picmaxy\global\pgf@picmaxy#2\fi%
+    \ifpgf@size@hooked%
+      \let\pgf@size@hook@x#1\let\pgf@size@hook@y#2\pgf@path@size@hook%
+    \fi%
+  \fi%
+  \ifdim#1<\pgf@pathminx\global\pgf@pathminx#1\fi%
+  \ifdim#1>\pgf@pathmaxx\global\pgf@pathmaxx#1\fi%
+  \ifdim#2<\pgf@pathminy\global\pgf@pathminy#2\fi%
+  \ifdim#2>\pgf@pathmaxy\global\pgf@pathmaxy#2\fi%
+}
+\newif\ifpgf@size@hooked
+\let\pgf@path@size@hook=\pgfutil@empty%
+
+\def\pgf@resetpathsizes{%
+  \global\pgf@pathmaxx=-16000pt\relax%
+  \global\pgf@pathminx=16000pt\relax%
+  \global\pgf@pathmaxy=-16000pt\relax%
+  \global\pgf@pathminy=16000pt\relax%
+}
+
+\def\pgf@getpathsizes#1{%
+  \edef#1{{\the\pgf@pathmaxx}{\the\pgf@pathminx}{\the\pgf@pathmaxy}{\the\pgf@pathminy}}%
+}
+\def\pgf@setpathsizes#1{%
+  \expandafter\pgf@@setpathsizes#1%
+}
+\def\pgf@@setpathsizes#1#2#3#4{%
+  \global\pgf@pathmaxx=#1\relax%
+  \global\pgf@pathminx=#2\relax%
+  \global\pgf@pathmaxy=#3\relax%
+  \global\pgf@pathminy=#4\relax%
+}
+
+
+
+
+
+% Append a line from the current point to #1 to the current path.
+%
+% #1 = end of line
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfxy(0,0)}
+% \pgfpathlineto{\pgfxy(0,1)}
+% \pgfstroke
+
+\def\pgfpathlineto#1{%
+  \pgfpointtransformed{#1}%
+  \pgf@roundcornerifneeded%
+  \pgf@nlt@lineto{\pgf@x}{\pgf@y}%
+  \global\pgf@path@lastx=\pgf@x%
+  \global\pgf@path@lasty=\pgf@y%
+}
+
+
+
+% Close the current path.
+%
+% Example:
+%
+% % Draws two triangles
+% \pgfpathmoveto{\pgfxy(0,0)}
+% \pgfpathlineto{\pgfxy(0,1)}
+% \pgfpathlineto{\pgfxy(1,0)}
+% \pgfclosepath
+% \pgfpathmoveto{\pgfxy(2,0)}
+% \pgfpathlineto{\pgfxy(2,1)}
+% \pgfpathlineto{\pgfxy(3,0)}
+% \pgfpathclose
+% \pgfstroke
+
+\def\pgfpathclose{%
+  \pgf@roundcornerifneeded%
+  \pgf@nlt@closepath%
+}
+
+
+% Append a cubic bezier spline from the current point to #3 with control
+% points #1 and #2 to the current path.
+%
+% #1 = first control point
+% #2 = second control point
+% #3 = end point
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointxy{0}{0}}
+% \pgfpathcurveto{\pgfpointxy{0}{1}}{\pgfpointxy{1}{1}}{\pgfpointxy{1}{2}}
+% \pgfstroke
+
+\def\pgfpathcurveto#1#2#3{%
+  \pgfpointtransformed{#3}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgfpointtransformed{#2}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgfpointtransformed{#1}%
+  \pgf@roundcornerifneeded%
+  \pgf@nlt@curveto{\pgf@x}{\pgf@y}{\pgf@xa}{\pgf@ya}{\pgf@xb}{\pgf@yb}%
+  \global\pgf@path@lastx=\pgf@xb%
+  \global\pgf@path@lasty=\pgf@yb%
+}
+
+
+
+% Append a quadratic bezier spline from the current point to #2 with
+% control point #1 to the current path.
+%
+% #1 = control point
+% #2 = end point
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointxy{0}{0}}
+% \pgfpathquadraticcurveto{\pgfpointxy{1}{1}}{\pgfpointxy{2}{0}}
+% \pgfstroke
+
+\def\pgfpathquadraticcurveto#1#2{%
+  \pgfpointtransformed{#2}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgfpointtransformed{#1}%
+  \pgf@xc=.6666666\pgf@x%
+  \pgf@yc=.6666666\pgf@y%
+  % compute second control point:
+  \pgf@xa=.33333333\pgf@xb%
+  \pgf@ya=.33333333\pgf@yb%
+  \advance\pgf@xa by\pgf@xc%
+  \advance\pgf@ya by\pgf@yc%
+  % compute first control point
+  \advance\pgf@xc by.3333333\pgf@path@lastx%
+  \advance\pgf@yc by.3333333\pgf@path@lasty%
+  \pgf@roundcornerifneeded%
+  \pgf@nlt@curveto{\pgf@xc}{\pgf@yc}{\pgf@xa}{\pgf@ya}{\pgf@xb}{\pgf@yb}%
+  \global\pgf@path@lastx=\pgf@xb%
+  \global\pgf@path@lasty=\pgf@yb%
+}
+
+
+
+
+% Append an arc to the current point, where the current point is at
+% angle #1 and the end is at angle #2. If #2 > #1, the arc is drawn
+% counter-clockwise, otherwise it is clockwise.
+%
+% #1 = angle of first point
+% #2 = angle of second point
+% #3 = radius or x-radius/y-radius
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfxy(0,0)}
+% \pgfpatharc{0}{90}{2cm}
+% \pgfstroke
+
+\def\pgfpatharc#1#2#3{%
+  {%
+    \pgfmathparse{#1}\let\pgf@temp@a=\pgfmathresult%
+    \pgfmathparse{#2}\let\pgf@temp@b=\pgfmathresult%
+    \pgfutil@in@{and }{#3}%
+    \ifpgfutil@in@%
+      \pgf@arc@get@radii#3\pgf@arc@stop%
+    \else
+      \pgf@arc@get@radii#3and #3\pgf@arc@stop%
+    \fi%
+    \pgf@arc@local@angle@a=\pgf@temp@a pt%
+    \pgf@arc@local@angle@b=\pgf@temp@b pt%
+    \loop%
+      \pgfutil@tempdima=\pgf@arc@local@angle@a%
+      \advance\pgfutil@tempdima by-\pgf@arc@local@angle@b\relax%
+      \ifdim\pgfutil@tempdima<0pt\relax%
+        \pgfutil@tempdima=-\pgfutil@tempdima\relax%
+      \fi%
+    \ifdim\pgfutil@tempdima>90pt\relax%
+      \ifdim\pgfutil@tempdima>115pt\relax%
+        \pgf@arc@temp=90pt% big skip
+      \else%
+        \pgf@arc@temp=60pt% smaller skip to ensure wide segments
+                          % (important shortened end segments because
+                          % of arrow tips)
+      \fi%
+      \ifdim\pgf@arc@local@angle@b>\pgf@arc@local@angle@a\relax%
+        {%
+          \pgf@arc@local@angle@b=\pgf@arc@local@angle@a\relax%
+          \advance\pgf@arc@local@angle@b by\pgf@arc@temp\relax%
+          \pgf@arc%
+        }
+        \advance\pgf@arc@local@angle@a by\pgf@arc@temp\relax%
+      \else
+        {%
+          \pgf@arc@local@angle@b=\pgf@arc@local@angle@a\relax%
+          \advance\pgf@arc@local@angle@b by-\pgf@arc@temp\relax%
+          \pgf@arc%
+        }%
+        \advance\pgf@arc@local@angle@a by-\pgf@arc@temp\relax%
+      \fi%
+    \repeat%
+    \pgf@roundcornerifneeded%
+    \pgf@arc%
+  }%
+}
+\dimendef\pgf@arc@local@angle@a=0
+\dimendef\pgf@arc@local@angle@b=1
+\dimendef\pgf@arc@temp=2
+
+\def\pgf@arc@get@radii#1and #2\pgf@arc@stop{%
+  \pgfmathparse{#1}\let\pgf@arc@radius@a=\pgfmathresult%
+  \pgfmathparse{#2}\let\pgf@arc@radius@b=\pgfmathresult%
+}
+
+
+\def\pgf@arc{%
+  {%
+  \pgfutil@tempdima=\pgf@arc@radius@a pt%
+  \pgfutil@tempdimb=\pgf@arc@radius@b pt%
+  %
+  \pgf@xa=\pgf@arc@local@angle@a\relax%
+  \pgf@xb=\pgf@arc@local@angle@b\relax%
+  \advance\pgf@xb by-\pgf@xa\relax%
+  \ifdim\pgf@xb<0pt\relax%
+    \pgf@xb=-\pgf@xb\relax%
+  \fi%
+  \ifdim\pgf@xb=90.0pt%
+    \def\pgfmathresult{0.55228475}%
+  \else%
+    \pgfmathparse{1.333333333*tan(.25*\pgf@sys@tonumber{\pgf@xb})}% many thanks to Ken Starks
+  \fi%
+  \pgfutil@tempdima=\pgfmathresult\pgfutil@tempdima%
+  \pgfutil@tempdimb=\pgfmathresult\pgfutil@tempdimb%
+  %.. controls +(\pgf@xa+90:\pgfutil@tempdima) and +(\pgf@xb-90:\pgfutil@tempdima) .. +(-(#1:#3)+(#2:#3))%
+  % store first support vector in xa/ya:
+  \pgf@xa=\pgf@arc@local@angle@a\relax%
+  \ifdim\pgf@arc@local@angle@b>\pgf@arc@local@angle@a\relax%
+    \advance\pgf@xa by 90pt\relax%
+  \else%
+    \advance\pgf@xa by -90pt\relax%
+  \fi%
+  \edef\pgf@arc@angle{\pgf@sys@tonumber{\pgf@xa}}%
+  \pgfpointtransformed{\pgfpointpolar{\pgf@arc@angle}{\pgfutil@tempdima and \pgfutil@tempdimb}}%
+  \advance\pgf@x by-\pgf@pt@x%
+  \advance\pgf@y by-\pgf@pt@y%
+  \pgf@xa=\pgf@path@lastx%
+  \pgf@ya=\pgf@path@lasty%
+  \advance\pgf@xa by \pgf@x%
+  \advance\pgf@ya by \pgf@y%
+  % store target in xb/yb:
+  \pgfpointtransformed{\pgfpointpolar{\pgf@sys@tonumber{\pgf@arc@local@angle@a}}{\pgf@arc@radius@a pt and \pgf@arc@radius@b pt}}%
+  \pgf@xb=\pgf@path@lastx%
+  \pgf@yb=\pgf@path@lasty%
+  \advance\pgf@xb by -\pgf@x%
+  \advance\pgf@yb by -\pgf@y%
+  \pgfpointtransformed{\pgfpointpolar{\pgf@sys@tonumber{\pgf@arc@local@angle@b}}{\pgf@arc@radius@a pt and \pgf@arc@radius@b pt}}%
+  \advance\pgf@xb by \pgf@x%
+  \advance\pgf@yb by \pgf@y%
+  % store second support xc/yc:
+  \ifdim\pgf@arc@local@angle@b>\pgf@arc@local@angle@a\relax%
+    \advance\pgf@arc@local@angle@b by -90pt\relax%
+  \else%
+    \advance\pgf@arc@local@angle@b by 90pt\relax%
+  \fi%
+  \pgfpointtransformed{\pgfpointpolar{\pgf@sys@tonumber{\pgf@arc@local@angle@b}}{\pgfutil@tempdima and \pgfutil@tempdimb}}%
+  \advance\pgf@x by-\pgf@pt@x%
+  \advance\pgf@y by-\pgf@pt@y%
+  \pgf@xc=\pgf@xb\relax%
+  \pgf@yc=\pgf@yb\relax%
+  \advance \pgf@xc by \pgf@x\relax%
+  \advance \pgf@yc by \pgf@y\relax%
+  \pgf@nlt@curveto{\pgf@xa}{\pgf@ya}{\pgf@xc}{\pgf@yc}{\pgf@xb}{\pgf@yb}%
+  \global\pgf@path@lastx=\pgf@xb%
+  \global\pgf@path@lasty=\pgf@yb%
+  }%
+}
+
+
+% Append an arc to the current point, where the arc is on an ellipse
+% given by two axis vectors.
+%
+% #1 = angle of first point
+% #2 = angle of second point
+% #3 = first axis
+% #4 = second axis
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfxy(0,0)}
+% \pgfpatharcaxes{0}{90}{\pgfpointxy{2}{0}}{\pgfpointxy{0}{2}}
+% \pgfstroke
+
+\def\pgfpatharcaxes#1#2#3#4{%
+  {%
+    \pgftransformtriangle{\pgfpointorigin}{#3}{#4}%
+    \pgfpatharc{#1}{#2}{1pt}%
+  }%
+}
+
+
+
+% Append an arc to the current point that ends at a given position.
+%
+% #1 = x-radius
+% #2 = y-radius
+% #3 = x-axis-rotation (in degrees)
+% #4 = large-arc-sweep-flag (0 or 1)
+% #5 = sweep-flag (0 or 1)
+% #6 = target point
+%
+% Description:
+%
+% This command implements an arc drawing where a given target
+% coordinate (#6) is given and the task is to draw an arc of an
+% ellipse with the given radii. The center point of the ellipse is not
+% give, but computed automatically.
+%
+% This kind of "endpoint parameterization" of an arc is exactly the
+% same as the one specified by the SVG-specification for the "A" and
+% "a" path commands. Please see the SVG-specification for details.
+%
+% Note that the problem is internally converted to drawing an arc
+% using \pgfpatharc. This means that there may be a heavy loss of
+% accuracy.
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpoint{1cm}{1cm}}
+% \pgfpatharcto{1cm}{1cm}{0}{0}{0}{\pgfpoint{0cm}{2cm}}
+
+\def\pgfpatharcto#1#2#3#4#5#6{%
+  {%
+    % The following code is based on the transformation described in svg
+    % 1.1 specification Section F.6.5
+    %
+    % Step 1: store the simple parameters (xa=x1 since TeX does not
+    % allow numbers in names)
+    %
+    \pgfmathsetmacro\pgf@arcto@rx{abs(#1)}%
+    \pgfmathsetmacro\pgf@arcto@ry{abs(#2)}%
+    \ifdim\pgf@arcto@rx pt=0pt% special rule: zero radius=straight line
+      \gdef\pgf@marshal{\pgfpathlineto{#6}}%
+    \else
+    \ifdim\pgf@arcto@ry pt=0pt% special rule: zero radius=straight line
+      \gdef\pgf@marshal{\pgfpathlineto{#6}}%
+    \else
+    \pgfmathsetmacro\pgf@arcto@phi{#3}%
+    \pgfmathsetmacro\pgf@arcto@fA{#4}%
+    \ifdim\pgf@arcto@fA pt=0pt
+    \else
+      \pgfmathsetmacro\pgf@arcto@fA{1.0} % Special rule: every non-zero value is 1.
+    \fi
+    \pgfmathsetmacro\pgf@arcto@fS{#5}%
+    \ifdim\pgf@arcto@fS pt=0pt
+    \else
+      \pgfmathsetmacro\pgf@arcto@fS{1.0} % Special rule: every non-zero value is 1.
+    \fi
+    \pgf@process{#6}
+    \edef\pgf@arcto@xb{\the\pgf@x}%
+    \edef\pgf@arcto@yb{\the\pgf@y}%
+    %
+    % Step 2: x1,y1 is more complicated to compute: It is given by lastx
+    % and lasty, but these are transformed coordinates, we need the
+    % untransformed ones. So, we inverse the transformation (arghh...)
+    %
+    \pgftransforminvert%
+    \pgf@process{\pgfpointtransformed{\pgfqpoint{\pgf@path@lastx}{\pgf@path@lasty}}}
+    \edef\pgf@arcto@xa{\the\pgf@x}
+    \edef\pgf@arcto@ya{\the\pgf@y}
+    \edef\pgf@temp@a{\pgf@arcto@xa,\pgf@arcto@ya}
+    \edef\pgf@temp@b{\pgf@arcto@xb,\pgf@arcto@yb}
+    \ifx\pgf@temp@a\pgf@temp@b% special rule: skip!
+      \global\let\pgf@marshal\pgfutil@empty
+    \else
+    %
+    % Ok, now we got all the parameters setup. Now comes the
+    % computation...
+    %
+    %
+    % Step 3: Start with a new coordinate system and rotate everything
+    % by the negated phi.
+    %
+    \pgftransformreset
+    \pgftransformrotate{-\pgf@arcto@phi}
+    % Ok, using \pgfpointtransformed we now get transformed points...
+    %
+    % Step 4: Compute x1' and y1' (xaprime and yaprime)
+    %
+    \pgf@process{
+      \pgfpointtransformed{\pgfpointscale{.5}{\pgfpointdiff
+          {\pgfqpoint{\pgf@arcto@xb}{\pgf@arcto@yb}}
+          {\pgfqpoint{\pgf@arcto@xa}{\pgf@arcto@ya}}
+        }
+      }
+    }
+    \edef\pgf@arcto@xaprime{\pgf@sys@tonumber\pgf@x}
+    \edef\pgf@arcto@yaprime{\pgf@sys@tonumber\pgf@y}
+    %
+    % Compute Lambda
+    %
+    \pgfmathsetmacro\pgf@arcto@frac@x{\pgf@arcto@xaprime/\pgf@arcto@rx}
+    \pgfmathsetmacro\pgf@arcto@frac@y{\pgf@arcto@yaprime/\pgf@arcto@ry}
+    \pgfmathsetmacro\pgf@arcto@lambda{
+      \pgf@arcto@frac@x*\pgf@arcto@frac@x+\pgf@arcto@frac@y*\pgf@arcto@frac@y
+    }
+    \ifdim\pgf@arcto@lambda pt>1pt%
+      \pgfmathsetmacro\pgf@arcto@sqrt@lambda{sqrt(\pgf@arcto@lambda)}
+      \pgfmathsetmacro\pgf@arcto@rx{\pgf@arcto@sqrt@lambda*\pgf@arcto@rx}
+      \pgfmathsetmacro\pgf@arcto@ry{\pgf@arcto@sqrt@lambda*\pgf@arcto@ry}
+    \fi
+    %
+    % Do some scaling
+    %
+    \pgfmathsetmacro\pgf@arcto@xaprime@abs{abs(\pgf@arcto@xaprime)}
+    \pgfmathsetmacro\pgf@arcto@yaprime@abs{abs(\pgf@arcto@yaprime)}
+    \pgfmathmax@{\pgf@arcto@rx,\pgf@arcto@ry,\pgf@arcto@xaprime@abs,\pgf@arcto@yaprime@abs}
+    \pgfmathsetmacro\pgf@arcto@scaling{20/\pgfmathresult}
+    \pgfmathsetmacro\pgf@arcto@rx@scaled{\pgf@arcto@scaling*\pgf@arcto@rx}
+    \pgfmathsetmacro\pgf@arcto@ry@scaled{\pgf@arcto@scaling*\pgf@arcto@ry}
+    \pgfmathsetmacro\pgf@arcto@xaprime@scaled{\pgf@arcto@scaling*\pgf@arcto@xaprime}
+    \pgfmathsetmacro\pgf@arcto@yaprime@scaled{\pgf@arcto@scaling*\pgf@arcto@yaprime}
+    %
+    % Step 5: Now comes the messy computation of c1' and c2'.
+    %
+    \ifdim\pgf@arcto@rx pt>\pgf@arcto@ry pt%
+      \pgfmathsetmacro\pgf@arcto@rx@over@ry{\pgf@arcto@rx/\pgf@arcto@ry}
+      \pgfmathsetmacro\pgf@arcto@ry@over@rx{\pgf@arcto@ry/\pgf@arcto@rx}
+      \pgfmathsetmacro\pgf@arcto@temp{\pgf@arcto@ry@over@rx*\pgf@arcto@xaprime@scaled}
+      \pgfmathsetmacro\pgf@arcto@numerator{
+        \pgf@arcto@ry@scaled*\pgf@arcto@ry@scaled-
+        \pgf@arcto@yaprime@scaled*\pgf@arcto@yaprime@scaled-
+        \pgf@arcto@temp*\pgf@arcto@temp
+      }
+      \pgfmathsetmacro\pgf@arcto@denominator{
+        \pgf@arcto@yaprime@scaled*\pgf@arcto@yaprime@scaled+
+        \pgf@arcto@temp*\pgf@arcto@temp
+      }
+    \else
+      \pgfmathsetmacro\pgf@arcto@rx@over@ry{\pgf@arcto@rx/\pgf@arcto@ry}
+      \pgfmathsetmacro\pgf@arcto@ry@over@rx{\pgf@arcto@ry/\pgf@arcto@rx}
+      \pgfmathsetmacro\pgf@arcto@temp{\pgf@arcto@rx@over@ry*\pgf@arcto@yaprime@scaled}
+      \pgfmathsetmacro\pgf@arcto@numerator{
+        \pgf@arcto@rx@scaled*\pgf@arcto@rx@scaled-
+        \pgf@arcto@xaprime@scaled*\pgf@arcto@xaprime@scaled-
+        \pgf@arcto@temp*\pgf@arcto@temp
+      }
+      \pgfmathsetmacro\pgf@arcto@denominator{
+        \pgf@arcto@xaprime@scaled*\pgf@arcto@xaprime@scaled+
+        \pgf@arcto@temp*\pgf@arcto@temp
+      }
+    \fi
+    \pgfmathsetmacro\pgf@arcto@frac{
+      \pgf@arcto@numerator/\pgf@arcto@denominator
+    }
+    \ifdim\pgf@arcto@frac pt<0pt
+      \pgfmathsetmacro\pgf@arcto@factor{0}
+    \else
+      \pgfmathsetmacro\pgf@arcto@factor{sqrt(\pgf@arcto@frac)}
+    \fi
+    \ifx\pgf@arcto@fA\pgf@arcto@fS
+      \pgfmathsetmacro\pgf@arcto@factor{-\pgf@arcto@factor}
+    \fi
+    \pgfmathsetmacro\pgf@arcto@cxprime{
+      \pgf@arcto@factor*\pgf@arcto@rx@over@ry*\pgf@arcto@yaprime
+    }
+    \pgfmathsetmacro\pgf@arcto@cyprime{
+      -\pgf@arcto@factor*\pgf@arcto@ry@over@rx*\pgf@arcto@xaprime
+    }
+    %
+    % Step 6: Ok, now compute cx,cy
+    %
+    \pgftransformreset
+    \pgftransformrotate{\pgf@arcto@phi}
+    \pgf@process{
+      \pgfpointtransformed{\pgfqpoint{\pgf@arcto@cxprime pt}{\pgf@arcto@cyprime pt}}
+    }
+    \edef\pgf@arcto@temp{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+    \pgf@process{\pgfpointadd{\pgf@arcto@temp}{
+        \pgfpointscale{.5}{
+          \pgfpointadd
+          {\pgfqpoint{\pgf@arcto@xa}{\pgf@arcto@ya}}
+          {\pgfqpoint{\pgf@arcto@xb}{\pgf@arcto@yb}}        }
+      }
+    }
+    \edef\pgf@arcto@cx{\the\pgf@x}
+    \edef\pgf@arcto@cy{\the\pgf@y}
+    %
+    % Step 7: Compute start angle:
+    %
+    \pgfmathsetmacro\pgf@arcto@vec@x{(\pgf@arcto@xaprime-\pgf@arcto@cxprime)/\pgf@arcto@rx}
+    \pgfmathsetmacro\pgf@arcto@vec@y{(\pgf@arcto@yaprime-\pgf@arcto@cyprime)/\pgf@arcto@ry}
+    \pgfmathsetmacro\pgf@arcto@denominator{veclen(\pgf@arcto@vec@x,\pgf@arcto@vec@y)}
+    \pgfmathsetmacro\pgf@arcto@frac{\pgf@arcto@vec@x/\pgf@arcto@denominator}
+    \pgfmathsetmacro\pgf@arcto@theta@start{acos(\pgf@arcto@frac)}
+    \ifdim\pgf@arcto@vec@y pt<0pt
+      \pgfmathsetmacro\pgf@arcto@theta@start{-\pgf@arcto@theta@start}
+    \fi
+    %
+    % Step 8: Compute end angle:
+    %
+    \pgfmathsetmacro\pgf@arcto@vec@x{(-\pgf@arcto@xaprime-\pgf@arcto@cxprime)/\pgf@arcto@rx}
+    \pgfmathsetmacro\pgf@arcto@vec@y{(-\pgf@arcto@yaprime-\pgf@arcto@cyprime)/\pgf@arcto@ry}
+    \pgfmathsetmacro\pgf@arcto@denominator{veclen(\pgf@arcto@vec@x,\pgf@arcto@vec@y)}
+    \pgfmathsetmacro\pgf@arcto@frac{\pgf@arcto@vec@x/\pgf@arcto@denominator}
+    \pgfmathsetmacro\pgf@arcto@theta@end{acos(\pgf@arcto@frac)}
+    \ifdim\pgf@arcto@vec@y pt<0pt
+      \pgfmathsetmacro\pgf@arcto@theta@end{-\pgf@arcto@theta@end}
+    \fi
+    \pgfmathsetmacro\pgf@arcto@delta@theta{abs(\pgf@arcto@theta@start-\pgf@arcto@theta@end)}
+    \ifdim\pgf@arcto@fA pt=0pt%
+      \ifdim\pgf@arcto@delta@theta pt>180pt%
+        % Ok, we need to adjust the angle!
+        \ifdim\pgf@arcto@theta@end pt>\pgf@arcto@theta@start pt
+          \pgfmathsetmacro\pgf@arcto@theta@end{\pgf@arcto@theta@end-360}
+        \else
+          \pgfmathsetmacro\pgf@arcto@theta@end{\pgf@arcto@theta@end+360}
+        \fi
+      \fi
+    \else
+      \ifdim\pgf@arcto@delta@theta pt<180pt%
+        % Ok, we need to adjust the angle!
+        \ifdim\pgf@arcto@theta@end pt>\pgf@arcto@theta@start pt
+          \pgfmathsetmacro\pgf@arcto@theta@end{\pgf@arcto@theta@end-360}
+        \else
+          \pgfmathsetmacro\pgf@arcto@theta@end{\pgf@arcto@theta@end+360}
+        \fi
+      \fi
+    \fi
+    \xdef\pgf@marshal{\noexpand
+      \pgfpatharcaxes{\pgf@arcto@theta@start}{\pgf@arcto@theta@end}
+      {\noexpand\pgfpointpolar{\pgf@arcto@phi}{\pgf@arcto@rx}}
+      {\noexpand\pgfpointpolar{\pgf@arcto@phi+90}{\pgf@arcto@ry}}
+    }
+    \fi\fi\fi
+  }
+  \pgf@marshal
+}
+
+
+
+% the quality of arc approximation by means of Bezier splines is
+% controlled by a mesh width.
+%
+% The mesh width is provided in (full!) degrees. The smaller the mesh
+% width, the more precise the arc approximation.
+%
+% Use an empty value to disable spline approximation (uses a single
+% cubic polynomial for the complete arc).
+%
+% The value must be an integer!
+\def\pgfpatharctomaxstepsize{45}
+
+% A specialized arc operation for an arc on an (axis--parallel) ellipse.
+%
+% In contrast to \pgfpatharc, it explicitly interpolates start- and end points.
+%
+% In contrast to \pgfpatharcto, this routine is numerically stable and
+% quite fast since it relies on a lot of precomputed information.
+%
+% #1 center of ellipse
+% #2 angle of last path position inside of the ellipse
+% #3 end angle
+% #4 end point (a \pgfpoint)
+% #5 xradius
+% #6 yradius
+% #7 the ratio xradius/yradius of the ellipse
+% #8 the ratio yradius/xradius of the ellipse
+% Example:
+%    \def\cx{1cm}% center x
+%    \def\cy{1cm}% center y
+%    \def\startangle{0}%
+%    \def\endangle{45}%
+%    \def\a{5cm}% xradius
+%    \def\b{10cm}% yradius
+%    \pgfmathparse{\a/\b}\let\abratio=\pgfmathresult
+%    \pgfmathparse{\b/\a}\let\baratio=\pgfmathresult
+%
+% \pgfpathmoveto{\pgfpoint{\cx+\a*cos(\startangle)}{\cy+\b*sin(\startangle)}}%
+% \pgfpatharctoprecomputed
+%    {\pgfpoint{\cx}{\cy}}
+%    {\startangle}
+%    {\endangle}
+%    {\pgfpoint{\cx+\a*cos(\endangle)}{\cy+\b*sin(\endangle)}}%
+%    {\a}
+%    {\b}
+%    {\abratio}
+%    {\baratio}
+%
+\def\pgfpatharctoprecomputed#1#2#3#4#5#6#7#8{%
+    \begingroup
+    % Implementation idea:
+    %
+    % let
+    %   m = center (#1)
+    %   \gamma_0 = start angle
+    %   \gamma_1 = end angle
+    %   a = x radius
+    %   b = y radius
+    %
+    % an axis parallel ellipse is parameterized by
+    % C(\gamma) = m + ( a cos(\gamma), b sin(\gamma) ), \gamma in [0,360].
+    %
+    % Now, consider the segment \gamma(t),
+    %   \gamma:[0,1] -> [\gamma_0,\gamma_1],
+    %            t   ->  \gamma_0 + t(\gamma_1 - \gamma_0)
+    % and
+    %   C(\gamma(t)) which is defined on [0,1].
+    %
+    % I'd like to approximate the arc by one or more cubic bezier
+    % splines which interpolate through the last and first provided
+    % points.
+    %
+    % In general, a Bezier spline C:[0,1] -> \R of order n fulfills
+    % C'(0) = n ( P_1 - P_0 ),
+    % C'(1) = n ( P_n - P_{n-1} ).
+    % For n=3 and given P_0 and P_3, I can directly compute P_1 and P_2 once I know
+    % the derivatives at t=0 and t=1.
+    %
+    % The derivatives in our case are
+    %   ( C \circ \gamma )'(t) = C'[\gamma(t)] * \gamma'(t)
+    %       = ( -a pi/180 sin(\gamma(t)),  b pi/180 cos(\gamma(t)) ) * (\gamma_1 - \gamma_0).
+    % The pi/180 comes into play since we are working with degrees.
+    %
+    % Expression (C\circ\gamma)'(0) using P_0 and (C \circ \gamma)'(1)
+    % using P_3 yields the expressions
+    %   (C \circ \gamma)'(0) =
+    %       pi/180 * (\gamma_1 - \gamma_0)* [ - a/b(P_0^y - my), b/a (P_0^x - mx) ]
+    %   (C \circ \gamma)'(1) =
+    %       pi/180 * (\gamma_1 - \gamma_0)* [ - a/b(P_3^y - my), b/a (P_3^x - mx) ]
+    %
+    % defining
+    %  scaleA = a/b * pi / (3*180) * (\gamma_1 - \gamma_0)
+    % and
+    %  scaleB = b/a * pi / (3*180) * (\gamma_1 - \gamma_0)
+    % yields the direct expressions for the intermediate bezier
+    % control points
+    %
+    % P_1 = [
+    %   P_0^x - scaleA* ( P_0^y -my),
+    %   P_0^y + scaleB* ( P_0^x -mx) ]
+    % and
+    % P_2 = [
+    %   P_3^x + scaleA* ( P_3^y -my),
+    %   P_3^y - scaleB* ( P_3^x -mx) ].
+    %
+    % This works fast, with few operations, if
+    % - a/b and b/a are known in advance
+    % - P_0 and P_3 are known in advance
+    % - \gamma_0 and \gamma_1 are known.
+    %
+    % It is also reliable if (\gamma_1 - \gamma_0) is small
+    %
+    \pgf@process{#1}%
+    \edef\pgfpath@center@x{\the\pgf@x}%
+    \edef\pgfpath@center@y{\the\pgf@y}%
+    \def\pgfpath@completearcend{#4}%
+    % compute scale (#3-#2) * pi/(3*180) = (#3 - #2) * pi/27 * 1/20
+    % splitting pi/(3*180) into two scales has higher TeX accuracy
+    \pgf@xa=#2pt
+    \pgf@xb=#3pt
+    \edef\pgfpath@startangle{#2pt}%
+    \edef\pgfpath@endangle{\pgf@sys@tonumber\pgf@xb}%
+    %
+    \pgf@ya=\pgf@xb
+    \advance\pgf@ya by-\pgf@xa
+    %
+    \ifx\pgfpatharctomaxstepsize\pgfutil@empty
+        \def\pgfpath@N{1}%
+        \pgf@xc=\pgf@ya
+    \else
+        \pgf@xc=\pgf@ya% compute N = floor((gamma_1 - gamma_0) / max) +1
+        \ifdim\pgf@xc<0pt
+            \multiply\pgf@xc by-1
+        \fi
+        \divide\pgf@xc by\pgfpatharctomaxstepsize\relax
+        \afterassignment\pgfutil@gobble@until@relax
+        \c@pgf@counta=\the\pgf@xc\relax
+        \advance\c@pgf@counta by1
+        \edef\pgfpath@N{\the\c@pgf@counta}%
+        %
+        \pgf@xc=\pgf@ya
+        \divide\pgf@xc by\c@pgf@counta
+    \fi
+    %
+    \edef\pgfpath@h{\pgf@sys@tonumber\pgf@xc}%
+    %
+%\message{pgfpathellipse: using N =\pgfpath@N\space spline points y0 = \pgfpath@startangle, y0+i*h, yN=\pgfpath@endangle, i=1,...,(\pgfpath@N-1), with h=\pgfpath@h\space mesh width (total arc angle \pgf@sys@tonumber\pgf@ya).}%
+    %
+    %
+    \pgf@xc=0.116355283466289\pgf@xc % pi/27
+    \divide\pgf@xc by20
+    \pgf@xa=#7\pgf@xc
+    \edef\pgfpath@scale@A{\pgf@sys@tonumber\pgf@xa}%
+    \pgf@xa=#8\pgf@xc
+    \edef\pgfpath@scale@B{\pgf@sys@tonumber\pgf@xa}%
+    %
+    % compute intermediate spline segments for
+    %  i = 1,...,N-1
+    % this is a no-op for N=1.
+    \c@pgf@countd=1
+    \pgfutil@loop
+    \ifnum\c@pgf@countd<\pgfpath@N\relax
+        %
+        \pgf@xa=\pgfpath@startangle % compute \pgf@xa = y_0 + i*h
+        \pgf@xb=\pgfpath@h pt
+        \multiply\pgf@xb by\c@pgf@countd
+        \advance\pgf@xa by\pgf@xb
+        \edef\pgfpath@angle@i{\pgf@sys@tonumber\pgf@xa}%
+%\message{angle \the\c@pgf@countd: \pgfpath@angle@i...}%
+        %
+        \pgfpatharcofellipse@{%
+            \pgfpoint
+                {\pgfpath@center@x + #5*cos(\pgfpath@angle@i)}
+                {\pgfpath@center@y + #6*sin(\pgfpath@angle@i)}%
+        }%
+        %
+        \advance\c@pgf@countd by1
+    \pgfutil@repeat
+    %
+    % compute final spline segment. It only differs insofar as the
+    % final point is already known explicitly and should be
+    % interpolated without additional math error.
+%\message{angle \pgfpath@N: \pgfpath@endangle...}%
+    \pgfpatharcofellipse@{\pgfpath@completearcend}%
+    \endgroup
+}%
+\def\pgfpatharcofellipse@#1{%
+    \begingroup
+    \pgf@process{#1}%
+    \edef\pgfpath@endpt{\global\pgf@x=\the\pgf@x\space\global\pgf@y=\the\pgf@y\space}%
+    %
+    \pgfpathcurveto{
+        \begingroup
+        \global\pgf@x=\pgf@path@lastx
+        \global\pgf@y=\pgf@path@lasty
+        \pgf@xa=\pgf@x \advance\pgf@xa by-\pgfpath@center@x
+        \pgf@ya=\pgf@y \advance\pgf@ya by-\pgfpath@center@y
+        \global\advance\pgf@x by-\pgfpath@scale@A\pgf@ya
+        \global\advance\pgf@y by \pgfpath@scale@B\pgf@xa
+        \endgroup
+    }{%
+        \begingroup
+        \pgfpath@endpt
+        \pgf@xa=\pgf@x \advance\pgf@xa by-\pgfpath@center@x
+        \pgf@ya=\pgf@y \advance\pgf@ya by-\pgfpath@center@y
+        \global\advance\pgf@x by \pgfpath@scale@A\pgf@ya
+        \global\advance\pgf@y by-\pgfpath@scale@B\pgf@xa
+        \endgroup
+    }{%
+        \pgfpath@endpt
+    }%
+    \endgroup
+}
+
+
+
+
+
+
+
+
+
+% Append  an ellipse to the current path.
+%
+% #1 = center
+% #2 = first axis
+% #3 = second axis
+%
+% Example:
+%
+% % Add a circle of radius 3cm around the origin
+% \pgfpathellipse{\pgforigin}{\pgfxy(2,0)}{\pgfxy(0,1)}
+%
+% % Draw a non-filled circle of radius 1cm around the point (1,1)
+% \pgfpathellipse{\pgfxy(1,1)}{\pgfxy(1,1)}{\pgfxy(-2,2)}
+% \pgfstroke
+
+\def\pgfpathellipse#1#2#3{%
+  \pgfpointtransformed{#1}% store center in xc/yc
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \pgfpointtransformed{#2}%
+  \pgf@xa=\pgf@x% store first axis in xa/ya
+  \pgf@ya=\pgf@y%
+  \advance\pgf@xa by-\pgf@pt@x%
+  \advance\pgf@ya by-\pgf@pt@y%
+  \pgfpointtransformed{#3}%
+  \pgf@xb=\pgf@x% store second axis in xb/yb
+  \pgf@yb=\pgf@y%
+  \advance\pgf@xb by-\pgf@pt@x%
+  \advance\pgf@yb by-\pgf@pt@y%
+  {%
+    \advance\pgf@xa by\pgf@xc%
+    \advance\pgf@ya by\pgf@yc%
+    \pgf@nlt@moveto{\pgf@xa}{\pgf@ya}%
+  }%
+  \pgf@x=0.55228475\pgf@xb% first arc
+  \pgf@y=0.55228475\pgf@yb%
+  \advance\pgf@x by\pgf@xa%
+  \advance\pgf@y by\pgf@ya%
+  \advance\pgf@x by\pgf@xc%
+  \advance\pgf@y by\pgf@yc%
+  \edef\pgf@temp{\pgf@xc\the\pgf@x\pgf@yc\the\pgf@y}%
+  \pgf@x=0.55228475\pgf@xa%
+  \pgf@y=0.55228475\pgf@ya%
+  \advance\pgf@x by\pgf@xb%
+  \advance\pgf@y by\pgf@yb%
+  {%
+    \advance\pgf@x by\pgf@xc%
+    \advance\pgf@y by\pgf@yc%
+    \advance\pgf@xb by\pgf@xc%
+    \advance\pgf@yb by\pgf@yc%
+    \pgf@temp%
+    \pgf@nlt@curveto{\pgf@xc}{\pgf@yc}{\pgf@x}{\pgf@y}{\pgf@xb}{\pgf@yb}%
+  }%
+  \pgf@xa=-\pgf@xa% flip first axis
+  \pgf@ya=-\pgf@ya%
+  \pgf@x=0.55228475\pgf@xa% second arc
+  \pgf@y=0.55228475\pgf@ya%
+  \advance\pgf@x by\pgf@xb%
+  \advance\pgf@y by\pgf@yb%
+  \advance\pgf@x by\pgf@xc%
+  \advance\pgf@y by\pgf@yc%
+  \edef\pgf@temp{\pgf@xc\the\pgf@x\pgf@yc\the\pgf@y}%
+  \pgf@x=0.55228475\pgf@xb%
+  \pgf@y=0.55228475\pgf@yb%
+  \advance\pgf@x by\pgf@xa%
+  \advance\pgf@y by\pgf@ya%
+  {%
+    \advance\pgf@x by\pgf@xc%
+    \advance\pgf@y by\pgf@yc%
+    \advance\pgf@xa by\pgf@xc%
+    \advance\pgf@ya by\pgf@yc%
+    \pgf@temp%
+    \pgf@nlt@curveto{\pgf@xc}{\pgf@yc}{\pgf@x}{\pgf@y}{\pgf@xa}{\pgf@ya}%
+  }%
+  \pgf@xb=-\pgf@xb% flip second axis
+  \pgf@yb=-\pgf@yb%
+  \pgf@x=0.55228475\pgf@xb% third arc
+  \pgf@y=0.55228475\pgf@yb%
+  \advance\pgf@x by\pgf@xa%
+  \advance\pgf@y by\pgf@ya%
+  \advance\pgf@x by\pgf@xc%
+  \advance\pgf@y by\pgf@yc%
+  \edef\pgf@temp{\pgf@xc\the\pgf@x\pgf@yc\the\pgf@y}%
+  \pgf@x=0.55228475\pgf@xa%
+  \pgf@y=0.55228475\pgf@ya%
+  \advance\pgf@x by\pgf@xb%
+  \advance\pgf@y by\pgf@yb%
+  {%
+    \advance\pgf@x by\pgf@xc%
+    \advance\pgf@y by\pgf@yc%
+    \advance\pgf@xb by\pgf@xc%
+    \advance\pgf@yb by\pgf@yc%
+    \pgf@temp%
+    \pgf@nlt@curveto{\pgf@xc}{\pgf@yc}{\pgf@x}{\pgf@y}{\pgf@xb}{\pgf@yb}%
+  }%
+  \pgf@xa=-\pgf@xa% flip first axis once more
+  \pgf@ya=-\pgf@ya%
+  \pgf@x=0.55228475\pgf@xa% fourth arc
+  \pgf@y=0.55228475\pgf@ya%
+  \advance\pgf@x by\pgf@xb%
+  \advance\pgf@y by\pgf@yb%
+  \advance\pgf@x by\pgf@xc%
+  \advance\pgf@y by\pgf@yc%
+  \edef\pgf@temp{\pgf@xc\the\pgf@x\pgf@yc\the\pgf@y}%
+  \pgf@x=0.55228475\pgf@xb%
+  \pgf@y=0.55228475\pgf@yb%
+  \advance\pgf@x by\pgf@xa%
+  \advance\pgf@y by\pgf@ya%
+  {%
+    \advance\pgf@x by\pgf@xc%
+    \advance\pgf@y by\pgf@yc%
+    \advance\pgf@xa by\pgf@xc%
+    \advance\pgf@ya by\pgf@yc%
+    \pgf@temp%
+    \pgf@nlt@curveto{\pgf@xc}{\pgf@yc}{\pgf@x}{\pgf@y}{\pgf@xa}{\pgf@ya}%
+  }%
+  \pgf@nlt@closepath%
+  \pgf@nlt@moveto{\pgf@xc}{\pgf@yc}%
+}
+
+
+
+% Append a circle to the current path
+%
+% #1 = center
+% #2 = radius
+%
+% Example:
+%
+% % Append a circle of radius 3cm around the point (1,1)
+% \pgfpathcircle{\pgxy(1,1)}{3cm}
+
+\def\pgfpathcircle#1#2{\pgfpathellipse{#1}{\pgfpoint{#2}{0pt}}{\pgfpoint{0pt}{#2}}}
+
+
+
+
+% Append a rectangle to the current path
+%
+% #1 = lower left corner point of rectangle
+% #2 = width and height vector
+%
+% Example:
+%
+% % A rectangle with corners (2,2) and (3,3)
+% \pgfpathrectangle{\pgfpointxy{2}{2}}{\pgfpointxy{1}{1}}
+
+\def\pgfpathrectangle{%
+  \let\pgfrect@next=\pgf@specialrect%
+  \ifpgf@pt@identity%
+    \ifpgf@arccorners%
+    \else%
+      \ifx\pgf@nlt@list\pgfutil@empty%
+        \let\pgfrect@next=\pgf@normalrect%
+      \fi%
+    \fi%
+  \fi%
+  \pgfrect@next%
+}
+
+\def\pgf@normalrect#1#2{%
+  \pgf@process{#2}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgfpointtransformed{#1}%
+  \pgfsyssoftpath@rect{\the\pgf@x}{\the\pgf@y}{\the\pgf@xa}{\the\pgf@ya}%
+  \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+  \advance\pgf@x by\pgf@xa\relax%
+  \advance\pgf@y by\pgf@ya\relax%
+  \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+}
+
+\def\pgf@specialrect#1#2{%
+  \pgf@process{#2}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{#1}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \advance\pgf@xa by\pgf@xb%
+  \advance\pgf@ya by\pgf@yb%
+  \pgfpathmoveto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xb}{\pgf@ya}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xb}{\pgf@yb}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@yb}}%
+  \pgfpathclose%
+  \pgfpathmoveto{\pgfqpoint{\pgf@xb}{\pgf@yb}}%
+}
+
+% Append a rectangle to the current path
+%
+% #1 = one corner of the rectangle
+% #2 = opposite corner of the rectangle
+%
+% Example:
+%
+% % A rectangle with corners (2,2) and (3,3)
+% \pgfpathrectanglecorners{\pgfpointxy{2}{2}}{\pgfpointxy{3}{3}}
+
+\def\pgfpathrectanglecorners#1#2{%
+  \pgf@process{#2}%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \pgf@process{#1}%
+  \advance\pgf@xc by-\pgf@x%
+  \advance\pgf@yc by-\pgf@y%
+  \pgfpathrectangle{#1}{\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+}
+
+
+% Append a grid to the current path.
+%
+% #1 = first corner point of grid
+% #2 = second corner point of grid
+%
+% Options:
+%
+% stepx = x-step dimension (default 1cm)
+% stepy = y-step dimension (default 1cm)
+% step  = dimension vector
+%
+% Example:
+%
+% \pgfsetlinewidth{0.8pt}
+% \pgfgrid{\pgfxy(0,0)}{\pgfxy(3,2)}
+% \pgfsetlinewidth{0.4pt}
+% \pgfgrid[stepx=1cm,stepy=1cm]{\pgfxy(0,0)}{\pgfxy(3,2)}
+
+\pgfkeys{
+  /pgf/stepx/.initial=1cm,
+  /pgf/stepy/.initial=1cm,
+  /pgf/step/.code={\pgf@process{#1}\pgfkeysalso{/pgf/stepx/.expanded=\the\pgf@x,/pgf/stepy/.expanded=\the\pgf@y}},
+  /pgf/step/.value required
+}
+
+\def\pgfpathgrid{\pgfutil@ifnextchar[{\pgf@pathgrid}{\pgf@pathgrid[]}}
+\def\pgf@pathgrid[#1]#2#3{%
+  \pgfset{#1}%
+  \pgfmathsetlength\pgf@xc{\pgfkeysvalueof{/pgf/stepx}}%
+  \pgfmathsetlength\pgf@yc{\pgfkeysvalueof{/pgf/stepy}}%
+  \pgf@process{#3}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@process{#2}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  % Swap coordinates if one of them is smaller than the other:
+  \ifdim\pgf@xa>\pgf@xb%
+    \pgf@x=\pgf@xb%
+    \pgf@xb=\pgf@xa%
+    \pgf@xa=\pgf@x%
+  \fi%
+  \ifdim\pgf@ya>\pgf@yb%
+    \pgf@y=\pgf@yb%
+    \pgf@yb=\pgf@ya%
+    \pgf@ya=\pgf@y%
+  \fi%
+  \ifdim \pgf@yc > .01pt\relax% if to draw horizontal lines
+    \c@pgf@counta=\pgf@ya\relax%
+    \c@pgf@countb=\pgf@yc\relax%
+    \divide\c@pgf@counta by\c@pgf@countb\relax%
+    \pgfutil@tempdima=\c@pgf@counta\pgf@yc\relax%
+    \ifdim\pgfutil@tempdima<\pgf@ya%
+      \advance\pgfutil@tempdima by\pgf@yc%
+    \fi%
+    \pgfutil@tempdimb\pgf@x
+    \pgfutil@loop% horizontal lines
+      {%
+        \pgf@xa=\pgfutil@tempdimb%
+        \pgf@ya=\pgfutil@tempdima%
+        \pgf@pos@transform{\pgf@xa}{\pgf@ya}
+        \pgf@nlt@moveto{\pgf@xa}{\pgf@ya}%
+        \pgf@xa=\pgf@xb%
+        \pgf@ya=\pgfutil@tempdima%
+        \pgf@pos@transform{\pgf@xa}{\pgf@ya}
+        \pgf@nlt@lineto{\pgf@xa}{\pgf@ya}%
+      }%
+    \advance\pgfutil@tempdima by\pgf@yc%
+    \ifdim\pgfutil@tempdima<\pgf@yb%
+    \pgfutil@repeat%
+    \advance\pgfutil@tempdima by-0.01pt\relax%
+    \ifdim\pgfutil@tempdima<\pgf@yb%
+      {%
+        \pgf@xa=\pgfutil@tempdimb%
+        \pgf@ya=\pgfutil@tempdima%
+        \pgf@pos@transform{\pgf@xa}{\pgf@ya}
+        \pgf@nlt@moveto{\pgf@xa}{\pgf@ya}%
+        \pgf@xa=\pgf@xb%
+        \pgf@ya=\pgfutil@tempdima%
+        \pgf@pos@transform{\pgf@xa}{\pgf@ya}
+        \pgf@nlt@lineto{\pgf@xa}{\pgf@ya}%
+      }%
+    \fi%
+  \fi%
+  \ifdim \pgf@xc > .01pt\relax% if to draw vertical lines
+    \c@pgf@counta=\pgf@xa\relax%
+    \c@pgf@countb=\pgf@xc\relax%
+    \divide\c@pgf@counta by\c@pgf@countb\relax%
+    \pgfutil@tempdimb=\c@pgf@counta\pgf@xc\relax%
+    \ifdim\pgfutil@tempdimb<\pgf@xa%
+      \advance\pgfutil@tempdimb by\pgf@xc%
+    \fi%
+    \pgfutil@loop% vertical lines
+      {%
+        \pgf@xc=\pgfutil@tempdimb%
+        \pgf@yc=\pgf@ya%
+        \pgf@pos@transform{\pgf@xc}{\pgf@yc}
+        \pgf@nlt@moveto{\pgf@xc}{\pgf@yc}%
+        \pgf@xc=\pgfutil@tempdimb%
+        \pgf@yc=\pgf@yb%
+        \pgf@pos@transform{\pgf@xc}{\pgf@yc}
+        \pgf@nlt@lineto{\pgf@xc}{\pgf@yc}%
+      }%
+      \advance\pgfutil@tempdimb by\pgf@xc%
+    \ifdim\pgfutil@tempdimb<\pgf@xb%
+    \pgfutil@repeat%
+    \advance\pgfutil@tempdimb by-0.01pt\relax%
+    \ifdim\pgfutil@tempdimb<\pgf@xb%
+      {%
+        \pgf@xc=\pgfutil@tempdimb%
+        \pgf@yc=\pgf@ya%
+        \pgf@pos@transform{\pgf@xc}{\pgf@yc}
+        \pgf@nlt@moveto{\pgf@xc}{\pgf@yc}%
+        \pgf@xc=\pgfutil@tempdimb%
+        \pgf@yc=\pgf@yb%
+        \pgf@pos@transform{\pgf@xc}{\pgf@yc}
+        \pgf@nlt@lineto{\pgf@xc}{\pgf@yc}%
+      }%
+    \fi%
+  \fi%
+  \pgf@process{#3}%
+  \pgf@pos@transform{\pgf@x}{\pgf@y}%
+  \pgf@nlt@moveto{\pgf@x}{\pgf@y}%
+}
+
+
+
+% Append two half-parabolas to the path
+%
+% #1 = bend (relative to current point)
+% #2 = end point (relative to bend point)
+%
+% Description:
+%
+% This command appends a half-parabola that starts at the current point
+% and has its bend at #1+current point. Then, a second parabola is
+% appended that starts at #1+current point, where it also has its
+% minimum/maximum, and ends at #1+current point+#2, which becomes the
+% new current point.
+%
+% By setting #2 = (0,0) you draw only a half parabola that goes from the
+% current point to the bend; by setting #1 = (0,0)
+% you draw a half parabola that going to current point + #2 and has its
+% bend at the current point.
+%
+% Examples:
+%
+% % Half-parabola going ``up and right''
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathparabola{\pgfpointorigin}{\pgfpoint{2cm}{4cm}}
+%
+% % Half-parabola going ``down and right''
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathparabola{\pgfpoint{-2cm}{4cm}}}{\pgfpointorigin}
+%
+% % Full parabola
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathparabola{\pgfpoint{-2cm}{4cm}}{\pgfpoint{2cm}{4cm}}
+
+\def\pgfpathparabola#1#2{%
+  {%
+    \pgf@process{#2}% untransformed
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgf@process{#1}% untransformed
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \pgfutil@tempswatrue%
+    \ifdim\pgf@xb=0pt\relax%
+      \ifdim\pgf@yb=0pt\relax%
+        \pgfutil@tempswafalse%
+      \fi%
+    \fi%
+    {%
+      \ifpgfutil@tempswa%
+        \pgf@arccornersfalse
+      \else%
+      \fi%
+      \pgfutil@tempswatrue%
+      \ifdim\pgf@xc=0pt\relax%
+        \ifdim\pgf@yc=0pt\relax%
+          \pgfutil@tempswafalse%
+        \fi%
+      \fi%
+      \ifpgfutil@tempswa
+      {%
+        \pgf@pt@x=\pgf@path@lastx%
+        \pgf@pt@y=\pgf@path@lasty%
+        \pgfpathcurveto%
+          {\pgfqpoint{.1125\pgf@xc}{.225\pgf@yc}}% found by trial and error
+          {\pgfqpoint{.5\pgf@xc}{\pgf@yc}}% found by trial and error
+          {\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+      }%
+      \fi%
+    }%
+    \ifpgfutil@tempswa%
+      \pgf@xc=\pgf@xb%
+      \pgf@yc=\pgf@yb%
+      {%
+        \pgf@pt@x=\pgf@path@lastx%
+        \pgf@pt@y=\pgf@path@lasty%
+        \pgfpathcurveto%
+          {\pgfqpoint{.5\pgf@xc}{0\pgf@yc}}% found by trial and error
+          {\pgfqpoint{.8875\pgf@xc}{.775\pgf@yc}}% found by trial and error
+          {\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+      }%
+    \fi%
+  }%
+}
+
+
+
+
+% Append a sine curve between 0 and \pi/2 to the path.
+%
+% #1 = vector, describing the width and height of the curve
+%
+% Description:
+%
+% This command appends a sine curve in the interval 0 and \pi/2 to the
+% current path. The sine curve ends at currentpoint+#1.
+%
+% Examples:
+%
+% % One complete sine in the interval [0,\pi]
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathsine{\pgfpoint{1.57cm}{1cm}}
+% \pgfpathcosine{\pgfpoint{3.141cm}{0cm}}
+
+\def\pgfpathsine#1{%
+  {%
+    \pgf@process{#1}% untransformed
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \pgf@pt@x=\pgf@path@lastx% evil trickery to transform to the last point
+    \pgf@pt@y=\pgf@path@lasty%
+    \pgfpathcurveto%
+      {\pgfqpoint{.3260\pgf@xc}{.5120\pgf@yc}}%
+      {\pgfqpoint{.6380\pgf@xc}{\pgf@yc}}%
+      {\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+  }%
+}
+
+% Append a cosine curve between 0 and \pi/2 to the path.
+%
+% #1 = vector, describing the width and height of the curve
+%
+% Examples:
+%
+% % One complete sine in the interval [0,\pi]
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathsine{\pgfpoint{1.57cm}{1cm}}
+% \pgfpathcosine{\pgfpoint{3.141cm}{0cm}}
+
+\def\pgfpathcosine#1{%
+  {%
+    \pgf@process{#1}% untransformed
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \pgf@pt@x=\pgf@path@lastx% evil trickery to transform to the last point
+    \pgf@pt@y=\pgf@path@lasty%
+    \pgfpathcurveto%
+      {\pgfqpoint{.3620\pgf@xc}{0pt}}%
+      {\pgfqpoint{.6740\pgf@xc}{.4880\pgf@yc}}%
+      {\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+  }%
+}
+
+
+
+% Draw part of a curve between two specified times s and t.
+%
+% #1 - a start time s.
+% #2 - an end time t.
+% #3 - start point of the curve
+% #4 - first control
+% #5 - second control
+% #6 - end point of the curve
+%
+% There are two versions, \pgfpathcurvebetweentime and
+% \pgfpathcurvebetweentimecontinue. The latter does not insert a
+% moveto to the first point.
+%
+\def\pgfpathcurvebetweentime{\pgf@ignoremovetofalse\pgf@@pathcurvebetweentime}
+\def\pgfpathcurvebetweentimecontinue{\pgf@ignoremovetotrue\pgf@@pathcurvebetweentime}
+\newif\ifpgf@ignoremoveto
+
+\def\pgf@@pathcurvebetweentime#1#2#3#4#5#6{%
+  \pgfmathparse{#1}%
+  \let\pgf@time@s=\pgfmathresult%
+  \pgfmathparse{#2}%
+  \let\pgf@time@t=\pgfmathresult%
+  \ifdim\pgf@time@s pt>\pgf@time@t pt\relax%
+    \pgfmathsetmacro\pgf@time@s{1-#1}%
+    \pgfmathsetmacro\pgf@time@t{1-#2}%
+    \pgf@@@pathcurvebetweentime{\pgf@time@t}{#6}{#5}{#4}{#3}%
+  \else%
+    \pgf@@@pathcurvebetweentime{\pgf@time@t}{#3}{#4}{#5}{#6}%
+  \fi%
+}
+
+\def\pgf@@@pathcurvebetweentime#1#2#3#4#5{%
+  % Q1 = P1.
+  \pgf@process{#2}%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  % Q2 = P1 + t*(P2-P1).
+  \pgf@process{%
+    \pgf@process{#3}%
+    \pgf@xa=#1\pgf@x%
+    \pgf@ya=#1\pgf@y%
+    \pgf@process{#2}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \advance\pgf@x by-#1\pgf@xb%
+    \advance\pgf@y by-#1\pgf@yb%
+    \advance\pgf@x by\pgf@xa%
+    \advance\pgf@y by\pgf@ya%
+  }%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  % Q3 = Q2 + t*((P2 + t*(P3-P2)) - Q2).
+  \pgf@process{%
+    \pgf@process{#4}%
+    \pgf@xa=#1\pgf@x%
+    \pgf@ya=#1\pgf@y%
+    %
+    \pgf@process{#3}%
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \advance\pgf@xc by-#1\pgf@x%
+    \advance\pgf@yc by-#1\pgf@y%
+    %
+    \pgf@x=\pgf@xb%
+    \pgf@y=\pgf@yb%
+    \advance\pgf@x by#1\pgf@xa%
+    \advance\pgf@y by#1\pgf@ya%
+    \advance\pgf@x by-#1\pgf@xb%
+    \advance\pgf@y by-#1\pgf@yb%
+    \advance\pgf@x by#1\pgf@xc%
+    \advance\pgf@y by#1\pgf@yc%
+  }%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  % Q4 = (1-t)^3*P1 + 3*t(1-t)^2*P2 + 3*t^2(1-t)*P3 + t^3*P4.
+  \pgf@process{\pgfpointcurveattime{#1}{#2}{#3}{#4}{#5}}%
+  \ifx#1\pgf@time@t%
+    % First time round...
+    \pgfmathdivide@{\pgf@time@s}{\pgf@time@t}%
+    \pgfmathadd@{-\pgfmathresult}{1}%
+    \let\pgf@time@s=\pgfmathresult%
+    \edef\pgf@marshal{%
+      \noexpand\pgf@@@pathcurvebetweentime{\noexpand\pgf@time@s}%
+        {\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+        {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+    }%
+  \else%
+    % ...second time round.
+    \ifpgf@ignoremoveto%
+      \edef\pgf@marshal{%
+        \noexpand\pgfpathcurveto{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+          {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+      }%
+    \else%
+      \edef\pgf@marshal{%
+        \noexpand\pgfpathmoveto{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+        \noexpand\pgfpathcurveto{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+          {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+      }%
+    \fi%
+  \fi%
+  \pgf@marshal%
+}
+
+
+\endinput

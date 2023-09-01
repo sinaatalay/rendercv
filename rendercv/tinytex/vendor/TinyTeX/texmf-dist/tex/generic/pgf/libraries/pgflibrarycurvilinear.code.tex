@@ -1,0 +1,379 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibrarycurvilinear.code.tex}
+
+%
+% This file defines commands for computing points in curvilinear
+% coordinate systems.
+%
+
+
+%
+% Curvilinear coordinate systems defined in terms of a Bezier curve.
+%
+% For the following coordinate systems, you must first provide a
+% Bezier curve (using, as always, four points), which will be set for
+% the current scope. When the curve is "installed" some expensive
+% precomputations are done; subsequent calls to
+% \pgfpointcurvilinearxxx based on this Bezier curve will be
+% relatively quick.
+%
+
+
+
+% Install a Bezier curve
+%
+% #1 = start point
+% #2 = first control point
+% #3 = second control point
+% #4 = end point
+%
+% Description:
+%
+% Subsequent calls to functions like
+% \pgfpointcurvilinearbezierorthogonal will be relative to the curve
+% installed using this command. The main job of this macro is a
+% precomputation for computing length along the curve.
+% All lengths along the Bezier curve are approximated using a lookup table
+% of four time/length points. For this, an approximate time for length
+% 1pt is computed first, and then the length for twice this time, four
+% times this time, and eight times this time are approximated. A
+% distance-to-time conversion is then done by a linear interpolation
+% of distance-to-time for these four points. Note that all of these
+% computations are not particularly precise, but a compromise trading
+% speed against precision. Also note that the results will only be
+% best near the start of the curve and may be far off near the end if
+% that end is degenerate (second control point very near to end
+% point).
+%
+% Example:
+%
+% \pgfsetcurvilinearbeziercurve
+% {\pgfpoint{0mm}{10mm}}
+% {\pgfpoint{5.5mm}{10mm}}
+% {\pgfpoint{10mm}{5.5mm}}
+% {\pgfpoint{10mm}{0mm}} % nearly a quarter circle
+% \pgfpointcurvilinearbezierorthogonal{5mm}{5mm}
+%   % should be 5mm along the circle, put at
+%   % distance 15mm from the origin (5mm from the circle line).
+
+\def\pgfsetcurvilinearbeziercurve#1#2#3#4{%
+  \pgf@process{#1}%
+  \edef\pgf@curvilinear@line@a{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgf@xa=-\pgf@x%
+  \pgf@ya=-\pgf@y%
+  \pgf@process{#2}%
+  \edef\pgf@curvilinear@line@b{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgf@xb=-\pgf@x%
+  \pgf@yb=-\pgf@y%
+  \advance\pgf@x by\pgf@xa%
+  \advance\pgf@y by\pgf@ya%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@lenab\pgfmathresult%
+  \pgf@process{#3}%
+  \edef\pgf@curvilinear@line@c{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgf@xc=-\pgf@x%
+  \pgf@yc=-\pgf@y%
+  \advance\pgf@x by\pgf@xb%
+  \advance\pgf@y by\pgf@yb%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@lenbc\pgfmathresult%
+  \pgf@process{#4}%
+  \edef\pgf@curvilinear@line@d{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \advance\pgf@x by\pgf@xc%
+  \advance\pgf@y by\pgf@yc%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@lencd\pgfmathresult
+  %
+  \pgf@x=\pgf@curvilinear@lenab pt%
+  \advance\pgf@x by\pgf@curvilinear@lenbc pt%
+  \advance\pgf@x by\pgf@curvilinear@lencd pt%
+  \pgfmathreciprocal@{\pgf@sys@tonumber\pgf@x}%
+  \pgf@curvilinear@time@a\pgfmathresult pt%
+  \pgf@process{\pgfpointcurveattime{\pgf@curvilinear@time@a}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}}%
+  \pgf@xb=-\pgf@x%
+  \pgf@yb=-\pgf@y%
+  \advance\pgf@x by\pgf@xa%
+  \advance\pgf@y by\pgf@ya%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+  \pgf@curvilinear@length@a\pgfmathresult pt%
+  \ifdim\pgf@curvilinear@length@a>1pt\relax%
+    % Ok, too large, let us make this smaller
+    \pgfmathdivide@{\pgf@sys@tonumber\pgf@curvilinear@time@a}{\pgf@sys@tonumber\pgf@curvilinear@length@a}%
+    \pgf@curvilinear@time@a\pgfmathresult pt%
+    \pgf@process{\pgfpointcurveattime{\pgf@curvilinear@time@a}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}}
+    \pgf@xb=-\pgf@x%
+    \pgf@yb=-\pgf@y%
+    \advance\pgf@x by\pgf@xa%
+    \advance\pgf@y by\pgf@ya%
+    \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+    \pgf@curvilinear@length@a\pgfmathresult pt%
+  \fi%
+  % Compute three positions:
+  \pgf@process{\pgfpointcurveattime{2\pgf@curvilinear@time@a}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}}
+  \pgf@xa=-\pgf@x%
+  \pgf@ya=-\pgf@y%
+  \advance\pgf@x by\pgf@xb%
+  \advance\pgf@y by\pgf@yb%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+  \pgf@curvilinear@length@b\pgfmathresult pt%
+  \advance\pgf@curvilinear@length@b by\pgf@curvilinear@length@a%
+  \pgf@process{\pgfpointcurveattime{4\pgf@curvilinear@time@a}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}}
+  \pgf@xb=-\pgf@x%
+  \pgf@yb=-\pgf@y%
+  \advance\pgf@x by\pgf@xa%
+  \advance\pgf@y by\pgf@ya%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+  \pgf@curvilinear@length@c\pgfmathresult pt%
+  \advance\pgf@curvilinear@length@c by\pgf@curvilinear@length@b%
+  \pgf@process{\pgfpointcurveattime{8\pgf@curvilinear@time@a}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}}
+  \advance\pgf@x by\pgf@xb%
+  \advance\pgf@y by\pgf@yb%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+  \pgf@curvilinear@length@d\pgfmathresult pt%
+  \advance\pgf@curvilinear@length@d by\pgf@curvilinear@length@c%
+  \let\pgf@curvilinear@comp@a\pgf@curvilinear@comp@a@initial%
+  \let\pgf@curvilinear@comp@b\pgf@curvilinear@comp@b@initial%
+  \let\pgf@curvilinear@comp@c\pgf@curvilinear@comp@c@initial%
+  \let\pgf@curvilinear@comp@d\pgf@curvilinear@comp@d@initial%
+  \let\pgf@curvilinear@comp@e\pgf@curvilinear@comp@e@initial%
+  \let\pgf@curvilinear@point\pgf@curvilinear@curve@point%
+}%
+\newdimen\pgf@curvilinear@time@a
+\newdimen\pgf@curvilinear@length@a
+\newdimen\pgf@curvilinear@length@b
+\newdimen\pgf@curvilinear@length@c
+\newdimen\pgf@curvilinear@length@d
+
+
+\def\pgf@curvilinear@comp@a@initial{%
+  \pgfmathdivide@{\pgf@sys@tonumber\pgf@curvilinear@time@a}{\pgf@sys@tonumber\pgf@curvilinear@length@a}%
+  \let\pgf@curvilinear@quot@a\pgfmathresult%
+  \let\pgf@curvilinear@comp@a\pgf@curvilinear@comp@a@cont%
+  \pgf@curvilinear@comp@a@cont%
+}%
+\def\pgf@curvilinear@comp@a@cont{%
+  \pgf@x\pgf@curvilinear@quot@a\pgf@x%
+}%
+
+\def\pgf@curvilinear@comp@b@initial{%
+  \pgf@y=\pgf@curvilinear@length@b%
+  \advance\pgf@y by-\pgf@curvilinear@length@a%
+  \pgfmathdivide@{\pgf@sys@tonumber\pgf@curvilinear@time@a}{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@quot@b\pgfmathresult%
+  \pgf@y\pgfmathresult\pgf@curvilinear@length@a%
+  \pgf@y-\pgf@y%
+  \advance\pgf@y by\pgf@curvilinear@time@a%
+  \edef\pgf@curvilinear@correct@b{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@comp@b\pgf@curvilinear@comp@b@cont%
+  \pgf@curvilinear@comp@b@cont%
+}%
+\def\pgf@curvilinear@comp@b@cont{%
+  \pgf@x\pgf@curvilinear@quot@b\pgf@x%
+  \advance\pgf@x by\pgf@curvilinear@correct@b pt%
+}%
+
+\def\pgf@curvilinear@comp@c@initial{%
+  \pgf@y=\pgf@curvilinear@length@c%
+  \advance\pgf@y by-\pgf@curvilinear@length@b%
+  \pgf@y.5\pgf@y%
+  \pgfmathdivide@{\pgf@sys@tonumber\pgf@curvilinear@time@a}{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@quot@c\pgfmathresult%
+  \pgf@y\pgf@curvilinear@quot@c\pgf@curvilinear@length@b%
+  \pgf@y-\pgf@y%
+  \advance\pgf@y by2\pgf@curvilinear@time@a%
+  \edef\pgf@curvilinear@correct@c{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@comp@c\pgf@curvilinear@comp@c@cont%
+  \pgf@curvilinear@comp@c@cont%
+}%
+\def\pgf@curvilinear@comp@c@cont{%
+  \pgf@x\pgf@curvilinear@quot@c\pgf@x%
+  \advance\pgf@x by\pgf@curvilinear@correct@c pt%
+}%
+
+\def\pgf@curvilinear@comp@d@initial{%
+  \pgf@y=\pgf@curvilinear@length@d%
+  \advance\pgf@y by-\pgf@curvilinear@length@c%
+  \pgf@y.25\pgf@y%
+  \pgfmathdivide@{\pgf@sys@tonumber\pgf@curvilinear@time@a}{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@quot@d\pgfmathresult%
+  \pgf@y\pgf@curvilinear@quot@d\pgf@curvilinear@length@c%
+  \pgf@y-\pgf@y%
+  \advance\pgf@y by4\pgf@curvilinear@time@a%
+  \edef\pgf@curvilinear@correct@d{\pgf@sys@tonumber\pgf@y}%
+  \let\pgf@curvilinear@comp@d\pgf@curvilinear@comp@d@cont%
+  \pgf@curvilinear@comp@d@cont%
+}%
+\def\pgf@curvilinear@comp@d@cont{%
+  \pgf@x\pgf@curvilinear@quot@d\pgf@x%
+  \advance\pgf@x by\pgf@curvilinear@correct@d pt%
+}%
+
+\def\pgf@curvilinear@comp@e@initial{%
+  \pgfmathmultiply@{8}{\pgf@sys@tonumber\pgf@curvilinear@time@a}%
+  \expandafter\pgfmathdivide@\expandafter{\pgfmathresult}{\pgf@sys@tonumber\pgf@curvilinear@length@d}%
+  \let\pgf@curvilinear@quot@e\pgfmathresult%
+  \let\pgf@curvilinear@comp@e\pgf@curvilinear@comp@e@cont%
+  \pgf@curvilinear@comp@e@cont%
+}%
+\def\pgf@curvilinear@comp@e@cont{%
+  \pgf@x\pgf@curvilinear@quot@e\pgf@x%
+}%
+
+
+% Convert a distance into a time
+%
+% #1 = a distance
+%
+% Description:
+%
+% After having called \pgfsetcurvilinearbeziercurve, you can use this
+% macro to convert a distance into a time along the curve set in that
+% command. The result will be stored in \pgf@x. It will only be
+% reasonably precise for small nonnegative #1 (in particular, #1
+% should not be more than about half the length of the curve).
+
+\def\pgfcurvilineardistancetotime#1{%
+  \pgfmathsetlength{\pgf@x}{#1}%
+  \ifdim\pgf@x<\pgf@curvilinear@length@c\relax%
+    \ifdim\pgf@x<\pgf@curvilinear@length@a\relax%
+      \pgf@curvilinear@comp@a%
+    \else\ifdim\pgf@x<\pgf@curvilinear@length@b\relax%
+      \pgf@curvilinear@comp@b%
+    \else%
+      \pgf@curvilinear@comp@c%
+    \fi\fi%
+  \else\ifdim\pgf@x<\pgf@curvilinear@length@d\relax%
+    \pgf@curvilinear@comp@d%
+  \else%
+    \pgf@curvilinear@comp@e%
+  \fi\fi%
+}%
+
+
+
+% Compute a "Bezier-orthogonal" point for use in a nonlinear transformation.
+%
+% #1 = x
+% #2 = y
+%
+% Description:
+%
+% In this coordinate system, the x-axis "goes along" the Bezier curve
+% installed using \pgfsetcurvilinearbeziercurve
+% and the y-axis is always perpendicular to the (Bezier) curve at the
+% given x-coordinate. Formally, given a pair (x,y), let B(x) be the point on
+% the Bezier curve B at distance x from the start of the curve. Let
+% T(x) be the tangent of B at B(x) and let P(x) be the (normalized)
+% vector perpendicular to T(x). Then (x,y) would be mapped to B(x) +
+% y*P(x). As an example, if B is a circle, then the corresponding
+% curvilinear coordinate system is (essentially, except for an offset in
+% the y value) the polar coordinate system.
+%
+% In addition to setting \pgf@x and \pgf@y, \pgf@xa/ya will be set to
+% a tangent along the curve at the given point and \pgf@xb/yb to a
+% tangent orthogonal to the curve.
+
+\def\pgfpointcurvilinearbezierorthogonal#1#2{%
+  \pgfmathsetmacro\pgf@curvilinear@yfactor{#2}%
+  \pgfcurvilineardistancetotime{#1}%
+  \pgfpointcurveattime{\pgf@x}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}
+  \pgf@xc\pgf@x% save
+  \pgf@yc\pgf@y% save
+  % compute normal:
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \ifdim\pgf@xb<0.0001pt\ifdim\pgf@xb>-0.0001pt\ifdim\pgf@yb<0.0001pt\ifdim\pgf@yb>-0.0001pt\pgf@diff@curvi@ac\fi\fi\fi\fi
+  \pgf@process{\pgfpointnormalised{\pgf@x=\pgf@yb\pgf@y=-\pgf@xb}}
+  \pgf@x\pgf@curvilinear@yfactor\pgf@x%
+  \pgf@y\pgf@curvilinear@yfactor\pgf@y%
+  \advance\pgf@x by\pgf@xc%
+  \advance\pgf@y by\pgf@yc%
+}%
+
+\def\pgf@diff@curvi@ac{%
+  \pgf@curvilinear@line@a%
+  \pgf@xa\pgf@x\pgf@ya\pgf@y%
+  \pgf@curvilinear@line@c%
+  \pgf@xb\pgf@x\pgf@yb\pgf@y%
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \ifdim\pgf@xb<0.0001pt\ifdim\pgf@xb>-0.0001pt\ifdim\pgf@yb<0.0001pt\ifdim\pgf@yb>-0.0001pt% still degenerate!
+    \pgf@curvilinear@line@d%
+    \pgf@xb\pgf@x\pgf@yb\pgf@y%
+    \advance\pgf@xb by-\pgf@xa%
+    \advance\pgf@yb by-\pgf@ya%
+  \fi\fi\fi\fi%
+  \pgf@xb-\pgf@xb%
+  \pgf@yb-\pgf@yb%
+}%
+
+
+
+% Compute a "Bezier-polar" point.
+%
+% #1 = x
+% #2 = y
+%
+% Description:
+%
+% Let (r:d) be the point (x,y) in polar coordinates, that is, r is the
+% angle and d the distance of (x,y) to the origin. The point returned
+% by \pgfpointcurvilinearbezierpolar is now defined as follows: First,
+% we compute that point at distance d along the Bezier curve B. Let
+% B(d) be this point. Then, we rotate this point around the start of
+% the curve (B(0)) by r degrees.
+%
+% As an example, consider a triangle with one tip at the origin and
+% the other tips as (4cm,3cm) and (4cm,-3cm). Then this triangle would be
+% transformed as follows: We take the first 5cm of the Bezier curve
+% and rotate it by roughly 37 degrees to the left and by 37 degrees to
+% the right.
+%
+% Note that this command is pretty expensive.
+
+\def\pgfpointcurvilinearbezierpolar#1#2{%
+  \pgfmathsetlength\pgfutil@tempdima{#1}%
+  \pgfmathsetlength\pgfutil@tempdimb{#2}%
+  % Compute angle:
+  \pgfpointnormalised{\pgfqpoint{\pgfutil@tempdima}{\pgfutil@tempdimb}}%
+  \ifdim\pgfutil@tempdimb=0pt\relax\ifdim\pgfutil@tempdima=0pt\pgf@x1pt\pgf@y0pt\fi\fi%
+  \ifdim\pgfutil@tempdima<0pt%
+    \pgf@x-\pgf@x%
+    \pgf@y-\pgf@y%
+  \fi%
+  \pgf@ya=-\pgf@y%
+  \pgfsettransformentries%
+    {\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+    {\pgf@sys@tonumber\pgf@ya}{\pgf@sys@tonumber\pgf@x}{0pt}{0pt}%
+  \pgftransformshift{\pgfpointscale{-1}{\pgf@curvilinear@line@a}}%
+  \pgfmathveclen@{\pgf@sys@tonumber\pgfutil@tempdima}{\pgf@sys@tonumber\pgfutil@tempdimb}%
+  \ifdim\pgfutil@tempdima<0pt%
+    \edef\pgfmathresult{-\pgfmathresult}%
+  \fi%
+  \pgfcurvilineardistancetotime{\pgfmathresult}%
+  % Now, transform:
+  \pgf@process{%
+    \pgfpointadd{%
+      \pgfpointtransformed{%
+        \pgfpointcurveattime%
+          {\pgf@x}%
+          {\pgf@curvilinear@line@a}%
+          {\pgf@curvilinear@line@b}%
+          {\pgf@curvilinear@line@c}%
+          {\pgf@curvilinear@line@d}%
+      }%
+    }%
+    \pgf@curvilinear@line@a%
+  }%
+}%
+
+
+\endinput

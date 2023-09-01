@@ -1,0 +1,122 @@
+% eccsc.mf
+%
+% (c) Copyright 1995, 1996, 1997 J"org Knappen
+% (c) Copyright 1990, 1992 Norbert Schwarz
+%
+% This file is part of ecfonts version 1.0
+%
+% Please read the files 00readme.txt, 00inst.txt, 00error.txt, and
+% copyrite.txt for further information
+%
+% You find some documentation in ecdoc.tex (needs LaTeX2e)
+%
+% Content:
+%
+%   driver file, called by parameter files for "caps and small caps" fonts
+%
+
+%
+%     dx  r   l   west
+%         i   u   east
+%         :   :   :
+%         :   :   west '3xx / east '2xx
+%         :   uppercase/lowercase
+%         roman / italic
+
+version_check(1,0);  % |version_check| was introduced in dc1.3
+
+input exaccess;  % accessories for polish special letters
+input expseudo;  % pseudoparameters
+mode_setup; font_setup; pseudo_setup;
+
+input exruwest;
+input exrueast;
+input exrulett;  % upper case (majuscules)
+
+input exbraces;  % ^ ~ cwm  ( ) < | > [ ] \ { } _ - (177) space (040)
+input expunct;   %  < << > >>  ! ` ' *  + , . / = ; : (spanish !)
+
+input exsign;    %  zero for mille, " # $ % @ pound sign
+%
+input exromp;    % (roman punctuation)  & ? (spanish ?)
+%
+input exrdigit;  % roman digits
+%
+
+boolean is_small_cap; is_small_cap:=true;
+%%% fine higher
+% the `higher' values are used while putting accents and attaching ogoneks
+forsuffixes $=u,o,letter_fit,x_height,bar_height,body_height,stem:
+ higher.$.#:=$.#; higher.$:=$;
+endfor
+
+%%% fine lower
+begingroup
+forsuffixes $= u, width_adj, cap_serif_fit, letter_fit,
+ body_height, cap_height, x_height, bar_height, comma_depth,
+ flare, dot_size, cap_hair, stem, cap_stem, cap_curve, cap_ess,
+ cap_jut, beak_jut, beak, slab, cap_bar, cap_band, cap_notch_cut,
+ o, apex_o: save $; $.#:=lower.$.#; endfor
+fudge:=lower.fudge;
+
+% optional part:
+forsuffixes $ = depth_corr, left_corr, top_breadth_corr, tip_breadth_corr,
+  tip_xcorr, tip_ycorr, pre_angle, post_angle, pre_limit, post_limit,
+  pre_lightness, post_lightness, pre_deflexion, post_deflexion, cap_flat,
+  ogonek_pen#: if known lower.$: $:=lower.$; fi
+endfor
+
+input expseudo;  % Recalculate pseudoparameters
+
+font_setup; pseudo_setup;  % now try again with |lower| settings
+
+input excspl;    % dotless i,j; letter ligatures  FF FI FL FFI FFL D-
+
+
+extra_endchar:=extra_endchar&"charcode:=charcode+code_offset";
+code_offset:=ASCII"a" - ASCII"A";
+
+input exrulett;  % upper case (majuscules)
+
+suppress_i_dot := true;
+
+input exruwest;
+input exrueast;
+
+code_offset:=0;
+input txpseudo; % Recalculate pseudoparameters for capital accents
+font_setup; pseudo_setup;
+input txaccent; % Accents for capital letters with small cap parameters
+
+endgroup;
+
+
+% Fontparameter
+%
+font_coding_scheme:="Extended TeX Font Encoding - Latin";
+boundarychar:=oct"027";
+font_slant slant; 
+font_x_height x_height#;
+font_cap_height cap_height#;
+font_asc_height asc_height#;
+font_acc_cap_height (cap_height#+acc_height#);
+font_desc_depth desc_depth#;
+font_max_height (max(asc_height#,body_height#,
+  cap_height#+acc_height#));
+font_max_depth (max(desc_depth#,paren_depth#,the_ogonek_depth#));
+% font_digit_width % set inside the digits file
+% font_cap_stem    % set after the programme of the capital I
+font_baselineskip max(1.2*designsize,body_height#+paren_depth#);
+
+if monospace: font_normal_space 9u#; % no stretching or shrinking
+ font_quad 18u#;
+ font_extra_space 9u#;
+ input exmligtb;   % do the monospace ligature programs
+else: font_normal_space 6u#+2letter_fit#;
+ font_normal_stretch 3u#; font_normal_shrink 2u#;
+ font_quad 18u#+4letter_fit#;
+ font_extra_space 2u#;
+ input excligtb;    % do the ligature programs, not for monospaced fonts
+fi
+
+bye.

@@ -1,0 +1,931 @@
+%%
+%% This is file `soul-ori.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% soul-ori.dtx  (with options: `package')
+%% 
+%% Copyright (C) 1998--2003  Melchior FRANZ
+%% Copyright (C) 2007 Heiko Oberdiek
+%% Copyright (C) 2022-2023 Oberdiek Package Support Group
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    https://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "soul bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: soul-ori.dtx
+%% Original author data:
+%% ====================================================================
+%%  @LaTeX-package-file{
+%%     author          = "Melchior FRANZ",
+%%     version         = "2.4",
+%%     date            = "17 November 2003",
+%%     filename        = "soul.dtx",
+%%     address         = "Melchior FRANZ
+%%                        Rieder Hauptstrasse 52
+%%                        A-5212 SCHNEEGATTERN
+%%                        AUSTRIA",
+%%     telephone       = "++43 7746 3109",
+%%     URL             = "http://www.unet.univie.ac.at/~a8603365/",
+%%     email           = "a8603365@unet.univie.ac.at",
+%%     codetable       = "ISO/ASCII",
+%%     keywords        = "spacing out, letterspacing, underlining, striking out,
+%%                        highlighting",
+%%     supported       = "yes",
+%%     docstring       = "This article describes the `soul' package, which
+%%                        provides hyphenatable letterspacing (spacing out),
+%%                        underlining, and some derivatives.
+%%                        All features are based upon a common mechanism
+%%                        that allows to typeset text syllable by syllable,
+%%                        where the excellent TeX hyphenation algorithm is
+%%                        used to find the proper hyphenation points.
+%%                        Two examples show how to use the provided interface to
+%%                        implement things such as `an-a-lyz-ing syl-la-bles'.
+%%                        Although the package is optimized for LaTeX2e,
+%%                        it works with Plain TeX and with other
+%%                        packages, too.",
+%%  }
+%% ====================================================================
+\expandafter\ifx\csname SOUL@\endcsname\relax\else
+    \expandafter\endinput
+\fi
+\ifx\documentclass\SOULundefined
+    \chardef\atcode=\catcode`@
+    \catcode`\@=11
+    \def\DeclareRobustCommand*{\def}
+    \let\newcommand\DeclareRobustCommand
+    \def\DeclareOption#1#2{\expandafter\def\csname#1\endcsname{#2}}
+    \def\PackageError#1#2#3{{%
+        \newlinechar`^^J%
+        \errorcontextlines\z@
+        \edef\\{\errhelp{#3}}\\%
+        \errmessage{Package #1 error: #2}%
+    }}
+    \def\@height{height}
+    \def\@depth{depth}
+    \def\@width{width}
+    \def\@plus{plus}
+    \def\@minus{minus}
+    \font\SOUL@tt=ectt1000
+    \let\@xobeysp\space
+    \let\linebreak\break
+    \let\mbox\hbox
+\else
+    \NeedsTeXFormat{LaTeX2e}
+    \ProvidesPackage{soul-ori}
+        [2023-06-14 v3.1 letterspacing/underlining  (mf)]
+    \newfont\SOUL@tt{ectt1000}
+    \newcommand*\sodef{}
+    \newcommand*\resetso{}
+    \newcommand*\capsdef{}
+    \newcommand*\capsfont{}
+    \newcommand*\setulcolor{}
+    \newcommand*\setuloverlap{}
+    \newcommand*\setul{}
+    \newcommand*\resetul{}
+    \newcommand*\setuldepth{}
+    \newcommand*\setstcolor{}
+    \newcommand*\sethlcolor{}
+    \newcommand*\so{}
+    \newcommand*\ul{}
+    \newcommand*\st{}
+    \newcommand*\hl{}
+    \newcommand*\caps{}
+    \newcommand*\soulaccent{}
+    \newcommand*\soulregister{}
+    \newcommand*\soulfont{}
+    \newcommand*\soulomit{}
+\fi
+\newtoks\SOUL@word
+\newtoks\SOUL@lasttoken
+\newtoks\SOUL@syllable
+\newtoks\SOUL@cmds
+\newtoks\SOUL@buffer
+\newtoks\SOUL@token
+\newdimen\SOUL@syllgoal
+\newdimen\SOUL@syllwidth
+\newdimen\SOUL@charkern
+\newdimen\SOUL@hyphkern
+\newdimen\SOUL@dimen
+\newdimen\SOUL@dimeni
+\newcount\SOUL@minus
+\newcount\SOUL@comma
+\newcount\SOUL@apo
+\newcount\SOUL@grave
+\newskip\SOUL@spaceskip
+\newif\ifSOUL@ignorespaces
+\def\soulomit#1{#1}
+\def\SOUL@stopM{\SOUL@stop}
+\let\SOUL@stop\relax
+\def\SOUL@lowerthan{}
+\def\SOUL@lowerthanM{\<}
+\def\SOUL@hyphenhintM{\-}
+\def\SOUL@n*{\let\SOUL@spc= }\SOUL@n* %
+\def\SOUL@{%
+    \futurelet\SOUL@@\SOUL@expand
+}
+\def\SOUL@expand{%
+    \ifcat\bgroup\noexpand\SOUL@@
+        \let\SOUL@n\SOUL@start
+    \else
+        \bgroup
+            \def\\##1##2{\def##2{\noexpand##2}}%
+            \the\SOUL@cmds
+            \SOUL@buffer={%
+                \\\TeX\\\LaTeX\\\soulomit\\\mbox\\\hbox\\\textregistered
+                \\\slash\\\textcircled\\\copyright\\\S\\\,\\\<\\\>\\~%
+                \\\\%
+            }%
+            \def\\##1{\def##1{\noexpand##1}}%
+            \the\SOUL@buffer
+            \let\protect\noexpand
+            \xdef\SOUL@n##1{\noexpand\SOUL@start{\SOUL@@}}%
+        \egroup
+    \fi
+    \SOUL@n
+}
+\long\def\SOUL@start#1{{%
+    \let\<\SOUL@lowerthan
+    \let\>\empty
+    \def\soulomit{\noexpand\soulomit}%
+    \gdef\SOUL@eventuallyexhyphen##1{}%
+    \let\SOUL@soeventuallyskip\relax
+    \SOUL@spaceskip=\fontdimen\tw@\font\@plus\fontdimen\thr@@\font
+        \@minus\fontdimen4\font
+    \SOUL@ignorespacesfalse
+    \leavevmode
+    \SOUL@preamble
+    \SOUL@lasttoken={}%
+    \SOUL@word={}%
+    \SOUL@minus\z@
+    \SOUL@comma\z@
+    \SOUL@apo\z@
+    \SOUL@grave\z@
+    \SOUL@do{#1}%
+    \SOUL@postamble
+}}
+\long\def\SOUL@do#1{%
+    \SOUL@scan#1\SOUL@stop
+}
+\def\SOUL@scan{%
+    \futurelet\SOUL@@\SOUL@eval
+}
+\def\SOUL@eval{%
+    \def\SOUL@n*##1{\SOUL@scan}%
+    \if\noexpand\SOUL@@\SOUL@spc
+    \else
+        \SOUL@ignorespacesfalse
+    \fi
+    \ifnum\SOUL@minus=\thr@@
+        \SOUL@flushminus
+    \else\ifnum\SOUL@comma=\tw@
+        \SOUL@flushcomma
+    \else\ifnum\SOUL@apo=\tw@
+        \SOUL@flushapo
+    \else\ifnum\SOUL@grave=\tw@
+        \SOUL@flushgrave
+    \fi\fi\fi\fi
+    \ifx\SOUL@@-\else\SOUL@flushminus\fi
+    \ifx\SOUL@@,\else\SOUL@flushcomma\fi
+    \ifx\SOUL@@'\else\SOUL@flushapo\fi
+    \ifx\SOUL@@`\else\SOUL@flushgrave\fi
+    \ifx\SOUL@@-%
+        \advance\SOUL@minus\@ne
+    \else\ifx\SOUL@@,%
+        \advance\SOUL@comma\@ne
+    \else\ifx\SOUL@@'%
+        \advance\SOUL@apo\@ne
+    \else\ifx\SOUL@@`%
+        \advance\SOUL@grave\@ne
+    \else
+        \SOUL@flushminus
+        \SOUL@flushcomma
+        \SOUL@flushapo
+        \SOUL@flushgrave
+        \ifx\SOUL@@\SOUL@stop
+            \def\SOUL@n*{%
+                \SOUL@doword
+                \SOUL@eventuallyexhyphen\null
+            }%
+        \else\ifx\SOUL@@\par
+            \def\SOUL@n*\par{\par\leavevmode\SOUL@scan}%
+        \else\if\noexpand\SOUL@@\SOUL@spc
+            \SOUL@doword
+            \SOUL@eventuallyexhyphen\null
+            \ifSOUL@ignorespaces
+            \else
+                \SOUL@everyspace{}%
+            \fi
+            \def\SOUL@n* {\SOUL@scan}%
+        \else\ifx\SOUL@@\\%
+            \SOUL@doword
+            \SOUL@eventuallyexhyphen\null
+            \SOUL@everyspace{\unskip\nobreak\hfil\break}%
+            \SOUL@ignorespacestrue
+        \else\ifx\SOUL@@~%
+            \SOUL@doword
+            \SOUL@eventuallyexhyphen\null
+            \SOUL@everyspace{\nobreak}%
+        \else\ifx\SOUL@@\slash
+            \SOUL@doword
+            \SOUL@eventuallyexhyphen{/}%
+            \SOUL@exhyphen{/}%
+        \else\ifx\SOUL@@\mbox
+            \def\SOUL@n*{\SOUL@addprotect}%
+        \else\ifx\SOUL@@\hbox
+            \def\SOUL@n*{\SOUL@addprotect}%
+        \else\ifx\SOUL@@\soulomit
+            \def\SOUL@n*\soulomit##1{%
+                \SOUL@doword
+                {\spaceskip\SOUL@spaceskip##1}%
+                \SOUL@scan
+            }%
+        \else\ifx\SOUL@@\break
+            \SOUL@doword
+            \break
+        \else\ifx\SOUL@@\linebreak
+            \SOUL@doword
+            \SOUL@everyspace{\linebreak}%
+        \else\ifcat\bgroup\noexpand\SOUL@@
+            \def\SOUL@n*{\SOUL@addgroup{}}%
+        \else\ifcat$\noexpand\SOUL@@
+            \def\SOUL@n*{\SOUL@addmath}%
+        \else
+            \def\SOUL@n*{\SOUL@dotoken}%
+        \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi
+    \fi\fi\fi\fi
+    \SOUL@n*%
+}
+\def\SOUL@flushminus{%
+    \ifcase\SOUL@minus
+    \else
+        \SOUL@doword
+        \SOUL@eventuallyexhyphen{-}%
+        \ifcase\SOUL@minus
+        \or
+            \SOUL@exhyphen{-}%
+        \or
+            \SOUL@exhyphen{--}%
+        \or
+            \SOUL@exhyphen{---}%
+        \fi
+        \SOUL@minus\z@
+    \fi
+}
+\def\SOUL@flushcomma{%
+    \ifcase\SOUL@comma
+    \or
+        \edef\x{\SOUL@word={\the\SOUL@word,}}\x
+    \or
+        \edef\x{\SOUL@word={\the\SOUL@word{{,,}}}}\x
+    \fi
+    \SOUL@comma\z@
+}
+\def\SOUL@flushapo{%
+    \ifcase\SOUL@apo
+    \or
+        \edef\x{\SOUL@word={\the\SOUL@word'}}\x
+    \or
+        \edef\x{\SOUL@word={\the\SOUL@word{{''}}}}\x
+    \fi
+    \SOUL@apo\z@
+}
+\def\SOUL@flushgrave{%
+    \ifcase\SOUL@grave
+    \or
+        \edef\x{\SOUL@word={\the\SOUL@word`}}\x
+    \or
+        \edef\x{\SOUL@word={\the\SOUL@word{{``}}}}\x
+    \fi
+    \SOUL@grave\z@
+}
+\def\SOUL@dotoken#1{%
+    \def\SOUL@@{\SOUL@addtoken{#1}}%
+    \def\\##1##2{%
+        \edef\SOUL@x{\string#1}%
+        \edef\SOUL@n{\string##2}%
+        \ifx\SOUL@x\SOUL@n
+            \def\SOUL@@{\SOUL@docmd{##1}{#1}}%
+        \else
+            \edef\SOUL@n{\string##2\space}%
+            \ifx\SOUL@x\SOUL@n
+                \def\SOUL@@{\SOUL@docmd{##1}{#1}}%
+            \fi
+        \fi
+    }%
+    \the\SOUL@cmds
+    \SOUL@@
+}
+\def\SOUL@docmd#1#2{%
+    \ifx9#1%
+        \def\SOUL@@{\SOUL@addgroup{#2}}%
+    \else\ifx8#1%
+        \SOUL@doword
+        \def\SOUL@@##1{%
+            \SOUL@token={\footnotemark}%
+            \SOUL@everytoken
+            \SOUL@syllable={\footnotemark}%
+            \SOUL@everysyllable
+            \footnotetext{##1}%
+            \SOUL@doword
+            \SOUL@scan
+        }%
+    \else\ifx7#1%
+        \SOUL@doword
+        \def\SOUL@@##1{%
+            \SOUL@token={#2{##1}}%
+            \SOUL@everytoken
+            \SOUL@syllable={#2{##1}}%
+            \SOUL@everysyllable
+            \SOUL@doword
+            \SOUL@scan
+        }%
+    \else\ifx1#1%
+        \SOUL@doword
+        \def\SOUL@@##1{%
+            #2{\protect\SOUL@do{##1}}%
+            \SOUL@scan
+        }%
+    \else
+        \SOUL@doword
+        #2%
+        \let\SOUL@@\SOUL@scan
+    \fi\fi\fi\fi
+    \SOUL@@
+}
+\def\SOUL@addgroup#1#2{%
+    {\let\protect\noexpand
+    \edef\x{\global\SOUL@word={\the\SOUL@word{{\noexpand#1#2}}}}\x}%
+    \SOUL@scan
+}
+\def\SOUL@addmath$#1${%
+    {\let\protect\noexpand
+    \edef\x{\global\SOUL@word={\the\SOUL@word{{\hbox{$#1$}}}}}\x}%
+    \SOUL@scan
+}
+\def\SOUL@addprotect#1#2{%
+    {\let\protect\noexpand
+    \edef\x{\global\SOUL@word={\the\SOUL@word{{\hbox{#2}}}}}\x}%
+    \SOUL@scan
+}
+\def\SOUL@addtoken#1{%
+    \edef\x{\SOUL@word={\the\SOUL@word\noexpand#1}}\x
+    \SOUL@scan
+}
+\def\SOUL@exhyphen#1{%
+    \SOUL@getkern{\the\SOUL@lasttoken}{\SOUL@hyphkern}{#1}%
+    \gdef\SOUL@eventuallyexhyphen##1{%
+        \SOUL@getkern{#1}{\SOUL@charkern}{##1}%
+        \SOUL@everyexhyphen{#1}%
+        \gdef\SOUL@eventuallyexhyphen####1{}%
+    }%
+}
+\SOUL@cmds={%
+    \\9\`\\9\'\\9\^\\9\"\\9\~\\9\=\\9\.%
+    \\9\u\\9\v\\9\H\\9\t\\9\c\\9\d\\9\b\\9\r
+    \\1\emph\\1\textrm\\1\textsf\\1\texttt\\1\textmd\\1\textbf
+    \\1\textup\\1\textsl\\1\textit\\1\textsc\\1\textnormal
+    \\0\rmfamily\\0\sffamily\\0\ttfamily\\0\mdseries\\0\upshape
+    \\0\slshape\\0\itshape\\0\scshape\\0\normalfont
+    \\0\em\\0\rm\\0\bf\\0\it\\0\tt\\0\sc\\0\sl\\0\sf
+    \\0\tiny\\0\scriptsize\\0\footnotesize\\0\small
+    \\0\normalsize\\0\large\\0\Large\\0\LARGE\\0\huge\\0\Huge
+    \\1\MakeUppercase\\7\textsuperscript\\8\footnote
+    \\1\textfrak\\1\textswab\\1\textgoth
+    \\0\frakfamily\\0\swabfamily\\0\gothfamily
+}
+\def\soulregister#1#2{{%
+    \edef\x{\global\SOUL@cmds={\the\SOUL@cmds
+        \noexpand\\#2\noexpand#1}}\x
+}}
+\def\soulaccent#1{\soulregister{#1}9}
+\let\soulfont\soulregister
+\def\SOUL@doword{%
+    \edef\x{\the\SOUL@word}%
+    \ifx\x\empty
+    \else
+        \SOUL@buffer={}%
+        \setbox\z@\vbox{%
+            \SOUL@tt
+            \hyphenchar\font`\-
+            \hfuzz\maxdimen
+            \hbadness\@M
+            \pretolerance\m@ne
+            \tolerance\@M
+            \leftskip\z@
+            \rightskip\z@
+            \hsize1sp
+            \everypar{}%
+            \parfillskip\z@\@plus1fil
+            \hyphenpenalty-\@M
+            \noindent
+            \hskip\z@
+            \relax
+            \the\SOUL@word}%
+        \let\SOUL@errmsg\SOUL@error
+        \let\-\relax
+        \count@\m@ne
+        \SOUL@analyze
+        \SOUL@word={}%
+    \fi
+}
+\setbox\z@\hbox{\SOUL@tt-}
+\newdimen\SOUL@ttwidth
+\SOUL@ttwidth\wd\z@
+\def\SOUL@sethyphenchar{%
+    \ifnum\hyphenchar\font=\m@ne
+    \else
+        \char\hyphenchar\font
+    \fi
+}
+\def\SOUL@analyze{{%
+    \setbox\z@\vbox{%
+        \unvcopy\z@
+        \unskip
+        \unpenalty
+        \global\setbox\@ne=\lastbox}%
+    \ifvoid\@ne
+    \else
+        \setbox\@ne\hbox{\unhbox\@ne}%
+        \SOUL@syllgoal=\wd\@ne
+        \advance\count@\@ne
+        \SOUL@analyze
+        \SOUL@syllwidth\z@
+        \SOUL@syllable={}%
+        \ifnum\count@>\z@
+            \advance\SOUL@syllgoal-\SOUL@ttwidth
+            \SOUL@dosyllable
+            \SOUL@getkern{\the\SOUL@lasttoken}{\SOUL@hyphkern}%
+                {\SOUL@sethyphenchar}%
+            \SOUL@everyhyphen
+        \else
+            \SOUL@dosyllable
+        \fi
+    \fi
+}}
+\def\SOUL@dosyllable{%
+    \SOUL@gettoken
+    \SOUL@eventuallyexhyphen{\the\SOUL@token}%
+    \edef\x{\the\SOUL@token}%
+    \ifx\x\SOUL@hyphenhintM
+        \let\SOUL@n\SOUL@dosyllable
+    \else\ifx\x\SOUL@lowerthanM
+        \SOUL@gettoken
+        \SOUL@getkern{\the\SOUL@lasttoken}{\SOUL@charkern}
+            {\the\SOUL@token}%
+        \SOUL@everylowerthan
+        \SOUL@puttoken
+        \let\SOUL@n\SOUL@dosyllable
+    \else\ifdim\SOUL@syllwidth=\SOUL@syllgoal
+        \SOUL@everysyllable
+        \SOUL@puttoken
+        \let\SOUL@n\relax
+    \else\ifx\x\SOUL@stopM
+        \SOUL@errmsg
+        \global\let\SOUL@errmsg\relax
+        \let\SOUL@n\relax
+    \else
+        \setbox\tw@\hbox{\SOUL@tt\the\SOUL@token}%
+        \advance\SOUL@syllwidth\wd\tw@
+        \global\SOUL@lasttoken=\SOUL@token
+        \SOUL@gettoken
+        \SOUL@getkern{\the\SOUL@lasttoken}{\SOUL@charkern}
+            {\the\SOUL@token}%
+        \SOUL@puttoken
+        \global\SOUL@token=\SOUL@lasttoken
+        \SOUL@everytoken
+        \edef\x{\SOUL@syllable={\the\SOUL@syllable\the\SOUL@token}}\x
+        \let\SOUL@n\SOUL@dosyllable
+    \fi\fi\fi\fi
+    \SOUL@n
+}
+\def\SOUL@gettoken{%
+    \edef\x{\the\SOUL@buffer}%
+    \ifx\x\empty
+        \SOUL@nexttoken
+    \else
+        \global\SOUL@token=\SOUL@buffer
+        \global\SOUL@buffer={}%
+    \fi
+}
+\def\SOUL@puttoken{%
+    \edef\x{\the\SOUL@buffer}%
+    \ifx\x\empty
+        \global\SOUL@buffer=\SOUL@token
+        \global\SOUL@token={}%
+    \else
+        \SOUL@debug{puttoken called twice}%
+    \fi
+}
+\def\SOUL@nexttoken{%
+    \edef\x{\the\SOUL@word}%
+    \ifx\x\empty
+        \SOUL@token={\SOUL@stop}%
+    \else
+        \expandafter\SOUL@splittoken\the\SOUL@word\SOUL@stop
+    \fi
+}
+\def\SOUL@splittoken#1#2\SOUL@stop{%
+    \global\SOUL@token={#1}%
+    \global\SOUL@word={#2}%
+}
+\def\SOUL@getkern#1#2#3{%
+    \setbox\tw@\hbox{#1#3}%
+    #2\wd\tw@
+    \setbox\tw@\hbox{#1\null#3}%
+    \advance#2-\wd\tw@
+}
+\def\SOUL@setkern#1{\ifdim#1=\z@\else\kern#1\fi}
+\def\SOUL@error{%
+    \vrule\@height.8em\@depth.2em\@width1em
+    \PackageError{soul}{Reconstruction failed}{%
+        I came across hyphenatable material enclosed in group
+        braces,^^Jwhich I can't handle. Either drop the braces or
+        make the material^^Junbreakable using an \string\mbox\space
+        (\string\hbox). Note that a space^^Jalso counts as possible
+        hyphenation point. See page 4 of the manual.^^JI'm leaving
+        a black square so that you can see where I am right now.%
+    }%
+}
+\def\SOUL@setup{%
+    \let\SOUL@preamble\relax
+    \let\SOUL@postamble\relax
+    \let\SOUL@everytoken\relax
+    \let\SOUL@everysyllable\relax
+    \def\SOUL@everyspace##1{##1\space}%
+    \let\SOUL@everyhyphen\relax
+    \def\SOUL@everyexhyphen##1{##1}%
+    \let\SOUL@everylowerthan\relax
+}
+\SOUL@setup
+\def\SOUL@sosetletterskip{\nobreak\hskip\SOUL@soletterskip}
+\def\SOUL@sopreamble{%
+    \ifdim\lastskip>5sp
+        \unskip
+        \hskip\SOUL@soouterskip
+    \fi
+    \spaceskip\SOUL@soinnerskip
+}
+\def\SOUL@sopostamble{%
+    \global\skip@=\SOUL@soouterskip
+    \aftergroup\SOUL@socheck
+}
+\def\SOUL@socheck{%
+    \futurelet\SOUL@@\SOUL@sodoouter
+}
+\def\SOUL@sodoouter{%
+    \def\SOUL@n*##1{\hskip\skip@}%
+    \ifcat\egroup\noexpand\SOUL@@
+        \unkern
+        \egroup
+        \def\SOUL@n*{\afterassignment\SOUL@socheck\let\SOUL@x=}%
+    \else\ifx\SOUL@spc\SOUL@@
+        \def\SOUL@n* {\hskip\skip@}%
+    \else\ifx~\SOUL@@
+        \def\SOUL@n*~{\nobreak\hskip\skip@}%
+    \else\ifx\ \SOUL@@
+    \else\ifx\space\SOUL@@
+    \else\ifx\@xobeysp\SOUL@@
+    \else
+        \def\SOUL@n*{}%
+        \let\SOUL@@\relax
+    \fi\fi\fi\fi\fi\fi
+    \SOUL@n*%
+}
+\def\SOUL@soeverytoken{%
+    \edef\x{\the\SOUL@token}%
+    \ifx\x\SOUL@lowerthanM
+    \else
+        \global\let\SOUL@soeventuallyskip\SOUL@sosetletterskip
+        \the\SOUL@token
+        \SOUL@gettoken
+        \edef\x{\the\SOUL@token}%
+        \ifx\x\SOUL@stopM
+        \else
+            \SOUL@setkern\SOUL@charkern
+            \SOUL@sosetletterskip
+            \SOUL@puttoken
+        \fi
+    \fi
+}
+\def\SOUL@soeveryspace#1{#1\space\kern\z@}
+\def\SOUL@soeveryhyphen{%
+    \discretionary{%
+        \unkern
+        \SOUL@setkern\SOUL@hyphkern
+        \SOUL@sethyphenchar
+    }{}{}%
+}
+\def\SOUL@soeveryexhyphen#1{%
+    \SOUL@setkern\SOUL@hyphkern
+    \SOUL@soeventuallyskip
+    \hbox{#1}%
+    \discretionary{}{}{%
+        \SOUL@setkern\SOUL@charkern
+    }%
+    \SOUL@sosetletterskip
+    \global\let\SOUL@soeventuallyskip\relax
+}
+\def\SOUL@soeverylowerthan{%
+    \unskip
+    \unpenalty
+    \global\let\SOUL@soeventuallyskip\relax
+    \SOUL@setkern\SOUL@charkern
+}
+\def\SOUL@sosetup{%
+    \SOUL@setup
+    \let\SOUL@preamble\SOUL@sopreamble
+    \let\SOUL@postamble\SOUL@sopostamble
+    \let\SOUL@everytoken\SOUL@soeverytoken
+    \let\SOUL@everyspace\SOUL@soeveryspace
+    \let\SOUL@everyhyphen\SOUL@soeveryhyphen
+    \let\SOUL@everyexhyphen\SOUL@soeveryexhyphen
+    \let\SOUL@everylowerthan\SOUL@soeverylowerthan
+}
+\def\SOUL@setso#1#2#3{%
+    \def\SOUL@soletterskip{#1}%
+    \def\SOUL@soinnerskip{#2}%
+    \def\SOUL@soouterskip{#3}%
+}
+\def\sodef#1#2#3#4#5{%
+    \DeclareRobustCommand*#1{\SOUL@sosetup
+        \def\SOUL@preamble{%
+            \SOUL@setso{#3}{#4}{#5}%
+            #2%
+            \SOUL@sopreamble
+        }%
+        \SOUL@
+    }%
+}
+\def\resetso{%
+    \sodef\textso{}{.25em}{.65em\@plus.08em\@minus.06em}%
+        {.55em\@plus.275em\@minus.183em}%
+}
+\resetso
+\sodef\sloppyword{%
+    \linepenalty10
+    \hyphenpenalty10
+    \adjdemerits\z@
+    \doublehyphendemerits\z@
+    \finalhyphendemerits\z@
+    \emergencystretch.1em}%
+    {\z@\@plus.1em}%
+    {.33em\@plus.11em\@minus.11em}%
+    {.33em\@plus.11em\@minus.11em}
+\ifx\documentclass\@undefined
+\let\capsfont\relax
+\let\capsreset\relax
+\def\capsdef#1#2#3#4#5{}
+\def\capssave#1{}
+\def\capsselect#1{}
+\sodef\textcaps{\capsfont}
+    {.028em\@plus.005em\@minus.01em}%
+    {.37em\@plus.1667em\@minus.111em}%
+    {.37em\@plus.1em\@minus.14em}
+\else
+\DeclareRobustCommand*\capsreset{%
+    \let\SOUL@capsbase\empty
+    \SOUL@capsdefault
+}
+\def\capsdef#1#2#3#4#5{{%
+    \toks\z@{\\{#1/#2/#3/#4/#5}}%
+    \toks\tw@=\expandafter{\SOUL@capsbase}%
+    \xdef\SOUL@capsbase{\the\toks\z@\the\toks\tw@}%
+}}
+\DeclareRobustCommand*\capssave[1]{%
+    \expandafter\global\expandafter\let
+        \csname SOUL@db@#1\endcsname\SOUL@capsbase
+}
+\DeclareRobustCommand*\capsselect[1]{%
+    \expandafter\let\expandafter\SOUL@capsbase
+        \csname SOUL@db@#1\endcsname
+}
+\def\SOUL@capsfind#1/#2/#3/#4/#5/#6/#7/#8/#9/{%
+    \let\SOUL@match=1%
+    \SOUL@chk{#1}\f@encoding
+    \SOUL@chk{#2}\f@family
+    \SOUL@chk{#3}\f@series
+    \SOUL@chk{#4}\f@shape
+    \SOUL@dimchk{#5}\f@size
+    \if\SOUL@match1%
+        \let\\\@gobble
+        \gdef\SOUL@caps{%
+            \SOUL@sosetup
+            \def\SOUL@preamble{\SOUL@setso{#7}{#8}{#9}#6%
+                \SOUL@sopreamble}%
+            \SOUL@}%
+    \fi
+}
+\def\SOUL@chk#1#2{%
+    \if$#1$%
+    \else
+        \def\SOUL@n{#1}%
+        \ifx#2\SOUL@n\else\let\SOUL@match=0\fi
+    \fi
+}
+\def\SOUL@dimchk#1#2{\if$#1$\else\SOUL@rangechk{#2}#1--\@ne\@@\fi}
+\def\SOUL@rangechk#1#2-#3-#4\@@{%
+    \count@=#4%
+    \ifnum\count@>\z@
+        \ifdim#1\p@=#2\p@\else\let\SOUL@match=0\fi
+    \else
+        \SOUL@dimen=\if$#2$\z@\else#2\p@\fi
+        \ifdim#1\p@<\SOUL@dimen\let\SOUL@match=0\fi
+        \SOUL@dimen=\if$#3$\maxdimen\else#3\p@\fi
+        \ifdim#1\p@<\SOUL@dimen\else\let\SOUL@match=0\fi
+    \fi
+}
+\DeclareRobustCommand*\textcaps{{%
+    \def\\##1{\expandafter\SOUL@capsfind##1/}%
+    \SOUL@capsbase
+    \aftergroup\SOUL@caps
+}}
+\def\SOUL@capsdefault{%
+    \capsdef{////}%
+    \SOUL@capsdfltfnt
+    {.028em\@plus.005em\@minus.01em}%
+    {.37em\@plus.1667em\@minus.1em}%
+    {.37em\@plus.111em\@minus.14em}%
+}
+\let\SOUL@capsdfltfnt\scshape
+\capsreset
+\fi
+\newdimen\SOUL@uldp
+\newdimen\SOUL@ulht
+\def\SOUL@ulleaders{%
+    \leaders\hrule\@depth\SOUL@uldp\@height\SOUL@ulht\relax
+}
+\def\SOUL@ulunderline#1{{%
+    \setbox\z@\hbox{#1}%
+    \SOUL@dimen=\wd\z@
+    \SOUL@dimeni=\SOUL@uloverlap
+    \advance\SOUL@dimen2\SOUL@dimeni
+    \rlap{%
+        \null
+        \kern-\SOUL@dimeni
+        \SOUL@ulcolor{\SOUL@ulleaders\hskip\SOUL@dimen\kern\z@}%
+    }%
+    \unhcopy\z@
+}}
+\def\SOUL@ulpreamble{%
+    \SOUL@uldp=\SOUL@uldepth
+    \SOUL@ulht=-\SOUL@uldp
+    \advance\SOUL@uldp\SOUL@ulthickness
+    \spaceskip\SOUL@spaceskip
+}
+\def\SOUL@uleverysyllable{%
+    \SOUL@ulunderline{%
+        \the\SOUL@syllable
+        \SOUL@setkern\SOUL@charkern
+    }%
+}
+\def\SOUL@uleveryspace#1{%
+    \SOUL@ulcolor{%
+        #1%
+        \SOUL@ulleaders
+        \hskip\spaceskip
+        \kern\z@
+    }%
+    \null
+}
+\def\SOUL@uleveryhyphen{%
+    \discretionary{%
+        \unkern
+        \SOUL@ulunderline{%
+            \SOUL@setkern\SOUL@hyphkern
+            \SOUL@sethyphenchar
+        }%
+    }{}{}%
+}
+\def\SOUL@uleveryexhyphen#1{%
+    \SOUL@setkern\SOUL@hyphkern
+    \SOUL@ulunderline{#1}%
+    \discretionary{}{}{%
+        \SOUL@setkern\SOUL@charkern
+    }%
+}
+\let\SOUL@ulcolor\relax
+\def\setulcolor#1{%
+    \if$#1$
+        \let\SOUL@ulcolor\relax
+    \else
+        \def\SOUL@ulcolor{\textcolor{#1}}%
+    \fi
+}
+\def\setuloverlap#1{\def\SOUL@uloverlap{#1}}
+\setuloverlap{.25pt}
+\def\SOUL@ulsetup{%
+    \SOUL@setup
+    \let\SOUL@preamble\SOUL@ulpreamble
+    \let\SOUL@everysyllable\SOUL@uleverysyllable
+    \let\SOUL@everyspace\SOUL@uleveryspace
+    \let\SOUL@everyhyphen\SOUL@uleveryhyphen
+    \let\SOUL@everyexhyphen\SOUL@uleveryexhyphen
+}
+\DeclareRobustCommand*\textul{\SOUL@ulsetup\SOUL@}
+\def\setul#1#2{%
+    \if$#1$\else\def\SOUL@uldepth{#1}\fi
+    \if$#2$\else\def\SOUL@ulthickness{#2}\fi
+}
+\def\resetul{\setul{.65ex}{.1ex}}
+\resetul
+\def\setuldepth#1{{%
+    \def\SOUL@n{#1}%
+    \setbox\z@\hbox{%
+        \tracinglostchars\z@
+        \ifx\SOUL@n\empty
+            \count@\z@
+            \loop
+                \ifnum\catcode\count@=11\char\count@\fi
+            \ifnum\count@<\@cclv
+                \advance\count@\@ne
+            \repeat
+        \else
+            #1%
+        \fi
+    }%
+    \SOUL@dimen\dp\z@
+    \advance\SOUL@dimen\p@
+    \xdef\SOUL@uldepth{\the\SOUL@dimen}%
+}}
+\def\SOUL@stpreamble{%
+    \SOUL@dimen\SOUL@ulthickness
+    \SOUL@dimeni=-.5ex
+    \advance\SOUL@dimeni-.5\SOUL@dimen
+    \edef\SOUL@uldepth{\the\SOUL@dimeni}%
+    \let\SOUL@ulcolor\SOUL@stcolor
+    \SOUL@ulpreamble
+}
+\def\SOUL@stsetup{%
+    \SOUL@ulsetup
+    \let\SOUL@preamble\SOUL@stpreamble
+}
+\DeclareRobustCommand*\textst{\SOUL@stsetup\SOUL@}
+\let\SOUL@stcolor\relax
+\def\setstcolor#1{%
+    \if$#1$
+        \let\SOUL@stcolor\relax
+    \else
+        \def\SOUL@stcolor{\textcolor{#1}}%
+    \fi
+}
+\def\SOUL@hlpreamble{%
+    \setul{}{2.5ex}%
+    \let\SOUL@stcolor\SOUL@hlcolor
+    \SOUL@stpreamble
+}
+\def\SOUL@hlsetup{%
+    \SOUL@stsetup
+    \let\SOUL@preamble\SOUL@hlpreamble
+}
+\DeclareRobustCommand*\texthl{\SOUL@hlsetup\SOUL@}
+\def\sethlcolor#1{\if$#1$\else\def\SOUL@hlcolor{\textcolor{#1}}\fi}
+\sethlcolor{yellow}
+\let\so\textso
+\let\ul\textul
+\let\st\textst
+\let\hl\texthl
+\let\caps\textcaps
+\ifx\documentclass\@undefined
+    \ifx\mdqoff\@undefined
+    \else
+        \soulaccent{"}%
+    \fi
+    \catcode`\@=\atcode
+\else
+    \bgroup
+        \catcode`\"\active
+        \AtBeginDocument{%
+            \@ifundefined{color}{%
+                \let\SOUL@color\relax
+                \let\setulcolor\@gobble
+                \let\setstcolor\@gobble
+                \let\sethlcolor\@gobble
+                \let\hl\ul
+            }{}
+            \@ifundefined{mdqoff}{}{\soulaccent{"}}
+        }
+    \egroup
+    \DeclareOption{capsdefault}{%
+        \AtBeginDocument{%
+            \def\SOUL@capsdfltfnt#1{%
+                \SOUL@ulsetup
+                \SOUL@ulpreamble
+                \scshape
+            }%
+        }%
+    }
+    \InputIfFileExists{soul.cfg}%
+        {\PackageInfo{soul}{Local config file soul.cfg used}}{}
+    \ProcessOptions
+\fi
+%% 
+%%
+%% End of file `soul-ori.sty'.

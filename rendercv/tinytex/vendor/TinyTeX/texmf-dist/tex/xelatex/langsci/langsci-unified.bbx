@@ -1,0 +1,754 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%      File: langscibook.cls
+%%    Author: Language Science Press (http://langsci-press.org)
+%%      Date: 2019-03-06 13:12 UTC
+%%   Purpose: An implementation of the Unified Style Sheet for Linguistics bibliographies (https://www.linguisticsociety.org/resource/unified-style-sheet)
+%%  This work is based on the styles provided by Semantics \& Pragmatics 
+%%  Language: LaTeX
+%%  Copyright 2017- Language Science Press
+%%  Licence: This work may be distributed and/or modified under the
+%%  conditions of the LaTeX Project Public License, either version 1.3
+%%  of this license or (at your option) any later version.
+%%  The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%%  and version 1.3 or later is part of all distributions of LaTeX
+%%  version 2005/12/01 or later.
+%%% This work has the LPPL maintenance status `maintained'.
+%%% The Current Maintainer of this work is Sebastian Nordhoff.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ProvidesFile{langsci-unified.bbx}
+
+% NB: The Unified Style Sheet wants abbreviated "ed(s)", "edn". But using the abbreviate option also abbreviates the names of months. But then dateabbrev=false restores the long names of months
+
+% For backward compatibility: choose labeldate or labeldateparts depending on the biblatex version
+\@ifpackagelater{biblatex}{2016/09/09}
+{%
+  \ExecuteBibliographyOptions{labeldateparts} % as of biblatex 3.5 (2016/09/10)
+}
+{%
+  \ExecuteBibliographyOptions{labeldate}
+  \def\printlabeldateextra{\printdateextralabel}
+}%
+
+\ExecuteBibliographyOptions{sorting=nyt,abbreviate,dateabbrev=false,useprefix=true}
+
+% biblatex by default calls biblatex.def, we add to this authoryear.bbx, which in turn loads standard.bbx. So, sp-biblatex.bbx is built on top of those styles; once authoryear.bbx is loaded, we tell it not to put in dashes for repeated authors (in accordance with the Unified Stylesheet)
+
+\RequireBibliographyStyle{authoryear}
+\ExecuteBibliographyOptions{dashed=false,isbn=false,eprint=false}
+
+% If an @article entry contains Issuetitle and Editor information, we might
+% not want to print it. The Unified Style Sheet does not offer explicit
+% guidelines on this. It is often used if an article has no page numbers, 
+% but is supplied with an Article ID (some online-only journals do this).
+% But other users might not want it.
+% Therefore, we can offer an option for the user to decide whether to print it. 
+% The default will be to print it. The user can desable printing by setting 
+% `issueandeditor=false` as a package option when biblatex is called.
+\newtoggle{issueandeditor}
+\DeclareBibliographyOption{issueandeditor}[true]{%
+  \settoggle{issueandeditor}{#1}}
+
+% Formatting directives for name lists
+% ------------------------------------------------------------------
+%
+% In biblatex.def, there are name formats defined: first-last, last-first, last-first/first-last. They could be simplified (we don't need provisions for using initials only, since the Unified Style doesn't do that), but since biblatex.def is loaded automatically, there's no point. The name formats call bibmacros that figure out how to order the internal of name components. These are re-defined here to make sure that "von" is treated as part of the last name (it still doesn't count for sorting -- which is controlled by the \useprefix package option)
+% name:last is used to produce citation labels
+% name:last-first is used to produce the first author's name listing in the alphabetical bibliography
+
+% Also moved the Jr part to after the first name and inserted another comma, because the Unified Stylesheet disagrees with standard.bbx: it wants "Jr." not to be treated as part of the last name.
+
+% The macros here get 4 arguments passed to them. They are: #1 last name, #2 first name, #3 von, #4 Jr.
+
+% In biblatex v3.3 and onwards, the name formatting has changed in a big way. See for example: http://tex.stackexchange.com/questions/299036/biblatex-3-3-name-formatting, https://github.com/plk/biblatex/issues/372, and http://www.texdev.net/2016/03/13/biblatex-a-new-syntax-for-declarenameformat/. The name formats in biblatex.def are not called first-last etc. anymore but given-family etc. And while there are safeguard legacy aliases (\DeclareNameAlias{first-last}{given-family}, for example), the new formats then use macros like \usebibmacro{name:family-given}, which of course our old redefinitions didn't adjust. So, for newer biblatex, we need to do new versions of \renewbibmacro{name:...}.
+
+%% Redefinitions of name:last and name:last-first for old biblatex
+\renewbibmacro*{name:last}[4]{%
+     \usebibmacro{name:delim}{#3#1}%
+     \usebibmacro{name:hook}{#3#1}%
+     \ifblank{#3}
+       {}
+       {\ifcapital
+          {\mkbibnameprefix{\MakeCapital{#3}}\isdot}
+          {\mkbibnameprefix{#3}\isdot}%
+        \ifpunctmark{'}{}{\bibnamedelimc}}%
+  \mkbibnamelast{#1}}%
+
+\renewbibmacro*{name:last-first}[4]{%
+     \usebibmacro{name:delim}{#3#1}%
+     \usebibmacro{name:hook}{#3#1}%
+     \ifblank{#3}{}{%
+       \mkbibnameprefix{#3}\isdot%
+       \ifpunctmark{'}{}{\bibnamedelimc}}%
+     \mkbibnamelast{#1}\isdot
+     \ifblank{#2}{}{\addcomma\bibnamedelimd\mkbibnamefirst{#2}\isdot}%
+     \ifblank{#4}{}{\addcomma\bibnamedelimd\mkbibnameaffix{#4}\isdot}}
+
+%% Redefinitions of name:family and name:family-given for new biblatex
+
+\renewbibmacro*{name:family}[4]{%
+  \usebibmacro{name:delim}{#3#1}%
+     \usebibmacro{name:hook}{#3#1}%
+     \ifdefvoid{#3}
+       {}
+       {\ifcapital
+          {\mkbibnameprefix{\MakeCapital{#3}}\isdot}
+          {\mkbibnameprefix{#3}\isdot}%
+        \ifprefchar{}{\bibnamedelimc}}%
+  \mkbibnamefamily{#1}\isdot}%
+
+\renewbibmacro*{name:family-given}[4]{%
+  \usebibmacro{name:delim}{#3#1}%
+     \usebibmacro{name:hook}{#3#1}%
+     \ifdefvoid{#3}{}{%
+       \mkbibnameprefix{#3}\isdot
+       \ifprefchar{}{\bibnamedelimc}}%
+     \mkbibnamefamily{#1}\isdot
+     \ifdefvoid{#2}{}{\revsdnamepunct\bibnamedelimd\mkbibnamegiven{#2}\isdot}%
+     \ifdefvoid{#4}{}{\addcomma\bibnamedelimd\mkbibnamesuffix{#4}\isdot}}
+     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Sort the bibliography, in particular pay
+% respect to the cite order
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareSortingTemplate{nycot}{%name-year-citeorder-title, based on nyt from biblatex.def
+  \sort{
+    \field{presort}
+  }
+  \sort[final]{
+    \field{sortkey}
+  }
+  \sort{
+    \field{sortname}
+    \field{author}
+    \field{editor}
+    \field{translator}
+    \field{sorttitle}
+    \field{title}
+  }
+  \sort{
+    \field{sortyear}
+    \field{year}
+  }
+  \sort{
+    \citeorder
+  }
+  \sort{
+    \field{sorttitle}
+    \field{title}
+  }
+  \sort{
+    \field{volume}
+    \literal{0}
+  }
+}  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Various bibmacros used in producing the bibliography
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Thanks to moeve, https://tex.stackexchange.com/a/402702,
+%% One case added by Stefan Müller
+\renewbibmacro*{citeindex}{%
+  \ifciteindex
+    {\iffieldequalstr{labelnamesource}{shortauthor} 
+      {\ifnameundef{indexauthor}                     
+        {\indexnames{author}}                       
+        {\indexnames{indexauthor}}}                  
+      {\iffieldequalstr{labelnamesource}{author}    
+        {\ifnameundef{indexauthor}                   
+          {\indexnames{author}}
+          {\indexnames{indexauthor}}} 
+        {\iffieldequalstr{labelnamesource}{shorteditor} 
+          {\ifnameundef{indexeditor}                     
+            {\indexnames{editor}}                       
+            {\indexnames{indexeditor}}}                  
+          {\iffieldequalstr{labelnamesource}{editor}    
+            {\ifnameundef{indexeditor}
+              {\indexnames{editor}}
+              {\indexnames{indexeditor}}}} 
+          {\indexnames{labelname}}}}} 
+    {}}
+
+\newbibmacro*{date+extradate}{%
+  \iffieldundef{labelyear}
+    {}
+    {\printtext{\printlabeldateextra}}}% Took out the parentheses around the year
+
+\renewbibmacro*{author}{%
+  \ifboolexpr{
+    test \ifuseauthor
+    and
+    not test {\ifnameundef{author}}
+  }
+    {\usebibmacro{bbx:dashcheck}
+       {\bibnamedash}
+       {\usebibmacro{bbx:savehash}%
+        \printnames{author}%
+  \iffieldundef{authortype}
+    {\newunit}%                               period instead of space
+    {\setunit{\addcomma\space}}}%
+     \iffieldundef{authortype}
+       {}
+       {\usebibmacro{authorstrg}%
+  \newunit}}%                                 period instead of space
+    {\global\undef\bbx@lasthash
+     \usebibmacro{labeltitle}%
+     \newunit}%                               period instead of space
+  \usebibmacro{date+extradate}}
+
+\renewbibmacro*{editor}{%
+  \usebibmacro{bbx:editor}{editorstrg}}
+\renewbibmacro*{editor+others}{%
+  \usebibmacro{bbx:editor}{editor+othersstrg}}
+\renewbibmacro*{bbx:editor}[1]{%
+  \ifboolexpr{
+    test \ifuseeditor
+    and
+    not test {\ifnameundef{editor}}
+  }
+    {\usebibmacro{bbx:dashcheck}
+       {\bibnamedash}
+       {\printnames{editor}%
+  \setunit{\addspace}%
+  \usebibmacro{bbx:savehash}}%
+     \printtext[parens]{\usebibmacro{#1}}%
+     \clearname{editor}%
+     \newunit}%                                         period instead of space
+    {\global\undef\bbx@lasthash
+     \usebibmacro{labeltitle}%
+     \newunit}%                                         period instead of space
+  \usebibmacro{date+extradate}}
+
+\renewbibmacro*{translator}{%
+  \usebibmacro{bbx:translator}{translatorstrg}}
+\renewbibmacro*{translator+others}{%
+  \usebibmacro{bbx:translator}{translator+othersstrg}}
+\renewbibmacro*{bbx:translator}[1]{%
+  \ifboolexpr{
+    test \ifusetranslator
+    and
+    not test {\ifnameundef{translator}}
+  }
+    {\usebibmacro{bbx:dashcheck}
+       {\bibnamedash}
+       {\printnames{translator}%
+  \setunit{\addcomma\space}%
+  \usebibmacro{bbx:savehash}}%
+     \usebibmacro{translator+othersstrg}%
+     \clearname{translator}%
+     \newunit}%                                     period instead of space
+    {\global\undef\bbx@lasthash
+     \usebibmacro{labeltitle}%
+     \newunit}%                                     period instead of space
+  \usebibmacro{date+extradate}}
+
+\renewbibmacro*{journal}{%
+  \iffieldundef{journaltitle}
+    {}
+    {\printtext{%
+       \printfield{journaltitle}%
+       \setunit{\subtitlepunct}%
+       \printfield{journalsubtitle}}}}
+
+\newbibmacro*{journal+issuetitle+editor}{%
+  \usebibmacro{journal}%
+  \setunit*{\addspace}%
+  \iffieldundef{series}
+    {}
+    {\newunit
+     \printfield{series}%
+     \setunit{\addspace}}%
+  \usebibmacro{volume+number+eid}%
+  \iftoggle{issueandeditor}
+    {\setunit{\addspace}%
+     \usebibmacro{issue+date}%
+     \setunit{\addcolon\space}%
+     \usebibmacro{issue}
+     % The following three lines were originally not included inside of
+     % the journal+issuetitle bibmacro. They have been moved inside of
+     % this macro in order to allow them to be controlled by the toggle
+     % `issuetitle` that is defined at the top of this style file.
+     \newunit
+     \usebibmacro{byeditor+others}%
+     \newunit}
+    {}%
+  \newunit}
+
+% In case that year is not given, but pubstate. This mainly occurs for titles that are forthcoming, in press, etc.
+\renewbibmacro*{addendum+pubstate}{% Thanks to https://tex.stackexchange.com/a/154367 for the idea
+  \printfield{addendum}%
+  \iffieldequalstr{labeldatesource}{pubstate}{}
+  {\newunit\newblock\printfield{pubstate}}
+}
+
+\DeclareLabeldate{%
+    \field{date}
+    \field{year}
+    \field{eventdate}
+    \field{origdate}
+    \field{urldate}
+    \field{pubstate}
+    \literal{nodate}
+}
+
+% The next three bib macros are for printing the maintitle and booktitle fields
+% of an @inproceedings entry with an ISSN as an article in accordance with the
+% unified style sheet guidelines.
+% 1. maintitle
+\newbibmacro*{unified:proc-as-article:maintitle}{%
+  \ifboolexpr{
+    test {\iffieldundef{maintitle}}
+    and
+    test {\iffieldundef{mainsubtitle}}
+  }
+    {}
+    {\printtext{%
+       \printfield[maintitle]{maintitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[maintitle]{mainsubtitle}}%
+     \newunit}%
+  \printfield{maintitleaddon}}
+
+% 2. booktitle
+\newbibmacro*{unified:proc-as-article:booktitle}{%
+  \ifboolexpr{
+    test {\iffieldundef{booktitle}}
+    and
+    test {\iffieldundef{booksubtitle}}
+  }
+    {}
+    {\printtext{%
+       \printfield[booktitle]{booktitle}%
+       \setunit{\subtitlepunct}%
+       \printfield[booktitle]{booksubtitle}}%
+     \newunit}%
+  \printfield{booktitleaddon}}
+
+% 3. maintitle+booktitle
+\newbibmacro*{unified:proc-as-article:maintitle+booktitle}{%
+  \iffieldundef{maintitle}
+    {}
+    {\usebibmacro{unified:proc-as-article:maintitle}%
+     \newunit\newblock}
+  \usebibmacro{unified:proc-as-article:booktitle}%
+  \setunit{\addspace}}
+
+\renewbibmacro*{volume+number+eid}{%
+  \printfield{volume}%
+%  \setunit*{\adddot}%
+  \printfield[parens]{number}%        parentheses instead of dot before issue number
+  \setunit{\addcomma\space}%
+  \printfield{eid}}
+
+% This is for printing the volume field of a proceedings with an ISSN as an article
+% in accordance with the unified style sheet guidelines. It depends on the declared
+% field format below.
+\newbibmacro*{unified:proc-as-article:volume+number+eid}{%
+  \printfield[volume:unified:proc-as-article]{volume}%
+  \printfield[parens]{number}%
+  \setunit{\addcomma\space}%
+  \printfield{eid}}
+
+% Because of the weird format "3 May, 2007" specified in the Unified Stylesheet for URL access dates, we need a special way to format the urldate
+
+\newcommand{\mkbibdateunified}[3]{% Year-Month-Day as input --> xx Month, Year
+  \iffieldundef{#3}
+    {}
+    {\stripzeros{\thefield{#3}}%
+     \nobreakspace}%
+  \iffieldundef{#2}
+    {\iffieldundef{#1}%
+      {}%
+      {\stripzeros{\thefield{#1}}}}%
+    {\mkbibmonth{\thefield{#2}}%
+     \iffieldundef{#1}%
+      {}%
+      {\iffieldundef{#3}%
+           {}%
+           {,}%
+         \space\stripzeros{\thefield{#1}}}%
+    }%
+  }%
+
+\renewbibmacro*{url+urldate}{%
+  \printfield{url}%
+  \iffieldundef{urlyear}%
+    {}%
+    {\setunit*{\addspace}%
+     \printtext[parens]{\mkbibdateunified{urlyear}{urlmonth}{urlday}}}%
+  }
+
+\renewbibmacro*{series+number}{%
+  \iffieldundef{series}
+    {}
+    {\printtext[parens]{%
+      \printfield{series}%
+      \setunit*{\addspace}%
+      \printfield{number}}%
+    }}
+
+\renewbibmacro*{byeditor+others}{%
+  \ifnameundef{editor}
+    {}
+    {\printnames[byeditor]{editor}%
+     \setunit{\addspace}%
+     \printtext[parens]{\usebibmacro{editor+othersstrg}}%  putting (ed.) or (eds.) after editors of books
+     \clearname{editor}%
+     \newunit}%
+  \usebibmacro{byeditorx}%
+  \usebibmacro{bytranslator+others}}
+
+\renewbibmacro*{chapter+pages}{%
+  \iffieldundef{chapter}%
+  {}%
+  {\printfield{chapter}%
+  \setunit{\addcomma\space}}%
+  \printfield{pages}%
+  \newunit}
+
+\renewbibmacro*{note+pages}{%
+  \iffieldundef{note}%
+  {}%
+  {\printfield{note}%
+  \setunit{\addcomma\space}}%
+  \printfield{pages}%
+  \newunit}
+
+\newbibmacro*{institution+location+type+date}{%
+  \printlist{location}%
+  \iflistundef{institution}
+    {}
+    {\setunit*{\addcolon\space}}%
+  \printlist{institution}%
+  \setunit*{\addcomma\space}%
+  \usebibmacro{date} %
+  \setunit{\adddot\space}%
+  \printtext[parens]{\printfield{type}}%
+  \newunit}
+
+% The following is a hack to satisfy the Unified Stylesheet's decision to give the edition right after the OED as used as a sortlabel.
+
+\renewbibmacro*{labeltitle}{%
+  \iffieldundef{label}
+    {\iffieldundef{shorttitle}
+       {\printfield{title}%
+        \setunit{\addcomma\space}%     Here it comes, preparing for the edition
+        \printfield{edition}%          Here's the edition
+        \clearfield{title}%
+        \clearfield{edition}}%         Clearing the edition field, so it's not printed again below
+       {\printfield[title]{shorttitle}}}
+    {\printfield{label}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Punctuation & formatting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This gets rid of the Oxford comma in name lists and uses the ampersand rather than "and":
+
+\renewcommand*{\finalnamedelim}{\addspace\&\addspace}
+\renewcommand*{\finallistdelim}{\addspace\&\addspace}
+
+% no colon after "In" in incollection entries (overriding biblatex.def):
+
+\renewcommand{\intitlepunct}{\addspace}
+
+\renewcommand*{\subtitlepunct}{\addcolon\space}
+\renewcommand*{\bibpagespunct}{\newunitpunct}  % No comma before pages, just the usual new unit period
+
+\DefineBibliographyStrings{english}{%
+  edition          = {edn\adddot},
+  phdthesis        = {Doctoral dissertation},
+}
+
+% basically everything is in sentence case, other than journals and book series (recurring titles)
+\DeclareFieldFormat[article,book,collection,incollection,inproceedings,thesis,unpublished]{titlecase}{\MakeSentenceCase*{#1}}%
+
+% No quotes around titles
+\DeclareFieldFormat[article,inbook,incollection,inproceedings,patent,thesis,unpublished]{title}{#1}
+
+% Just like book titles, thesis titles are in italics
+\DeclareFieldFormat[thesis]{title}{\mkbibemph{#1}}
+
+\DeclareFieldFormat{pages}{#1}     % no pp. prefix, took \mkpageprefix out [kvf]
+\DeclareFieldFormat{doi}{%
+  {\color{lsDOIGray}DOI\addcolon\space
+  \ifhyperref
+    {\href{https://doi.org/#1}{\nolinkurl{#1}}}
+    {\nolinkurl{#1}}}}
+\DeclareFieldFormat{url}{\url{#1}}
+
+% This is for printing the volume field of a proceedings with an ISSN as an article
+% in accordance with the unified style sheet guidelines
+\DeclareFieldFormat{volume:unified:proc-as-article}{#1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The bibliography drivers, specifying the formats of each type of entry in the bibliography
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% First, the entry types used in the Unified Test Bibliography. Could rely on standard.bbx for all others as a fallback.
+
+% For the article type, the only departure from standard.bbx is that
+% we don't use a literal "In: " before the journal title; other formatting
+% departures are done in the format specs and bibmacros
+
+\DeclareBibliographyDriver{article}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/translator+others}%
+  \setunit{\labelnamepunct}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \printlist{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{bytranslator+others}%
+  \newunit\newblock
+  \printfield{version}%
+  \newunit\newblock
+% \usebibmacro{in:}%                         We don't use "In: " before journal titles
+  \usebibmacro{journal+issuetitle+editor}%
+  \newblock%                          \newblock ensures period before pages
+  \usebibmacro{note+pages}%
+  \newunit\newblock
+  \iftoggle{bbx:isbn}
+    {\printfield{issn}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+\DeclareBibliographyDriver{book}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author/editor+others/translator+others}%
+  \setunit{\labelnamepunct}\newblock
+  \usebibmacro{maintitle+title}%
+  \newunit
+  \printlist{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \usebibmacro{byeditor+others}%
+  \newunit\newblock
+  \printfield{edition}%
+  \setunit{\addcomma\space}
+  \iffieldundef{maintitle}
+    {\printfield{volume}%
+     \printfield{part}}
+    {}%
+  \setunit{\addcomma\space}
+  \printfield{volumes}%
+  \setunit{\addspace}%
+  \usebibmacro{series+number}%
+  \newunit\newblock
+  \printfield{note}%
+  \newunit\newblock
+  \usebibmacro{publisher+location+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \printfield{pagetotal}%
+  \newunit\newblock
+  \iftoggle{bbx:isbn}
+    {\printfield{isbn}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+% Aliased to ensure no period between the title and the series.
+\DeclareBibliographyAlias{collection}{book}
+
+\DeclareBibliographyAlias{incollection}{inproceedings}
+
+
+% \DeclareBibliographyAlias{techreport}{standard}
+
+% Given the guidelines in the unified style sheet, we should print conference
+% proceedings and working papers as @article's just in case the publication has
+% an ISSN. So, rather than have users handle this in the database by changing the
+% entry type, we can implement this by checking if the inproceedings entry has an
+% ISSN. If the field is undefined, the driver will do what driver did for
+% @inproceedings entries as of 512f11657199a6044f7663da454f3eac338bdbd5
+% except that \printlist{organization} and \newunit have been removed.
+% On the other hand, if the ISSN field is not undefined, then we will do largely
+% the exact same thing that we do in the @article driver, except that we use the
+% two macros \usebibmacro{unified:proc-as-article:maintitle+booktitle} and
+% \usebibmacro{unified:proc-as-article:volume+number+eid} instead of
+% \usebibmacro{journal+issuetitle} and except that \usebibmacro{byeditor+others}
+% has been removed so as to ensure that the editors are not listed even if they
+% are present in the database.
+\DeclareBibliographyDriver{inproceedings}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \iffieldundef{issn}
+    {\usebibmacro{author/translator+others}%
+     \setunit{\labelnamepunct}\newblock
+     \usebibmacro{title}%
+     \newunit
+     \printlist{language}%
+     \newunit\newblock
+     \usebibmacro{byauthor}%
+     \newunit\newblock
+     \usebibmacro{in:}%
+     \ifnameundef{editor}
+       {\setunit{\addspace}}
+       {\usebibmacro{byeditor+others}\setunit{\addcomma\space}}
+     \usebibmacro{maintitle+booktitle}%
+     \setunit{\addcomma\space}
+     \printfield{edition}%
+     \setunit{\addcomma\space}
+     \iffieldundef{maintitle}
+       {\printfield{volume}%
+        \printfield{part}}
+       {}%
+     \setunit{\addcomma\space}
+     \printfield{volumes}%
+     \setunit{\addspace}%
+     \usebibmacro{series+number}%
+     \setunit{\addcomma\space}
+     \usebibmacro{chapter+pages}%
+     \newunit\newblock
+     \printfield{note}%
+     \newunit\newblock
+     \usebibmacro{publisher+location+date}%
+     \newunit\newblock
+     \iftoggle{bbx:isbn}
+       {\printfield{isbn}}
+       {}%
+     \newunit\newblock
+     \usebibmacro{doi+eprint+url}%
+     \newunit\newblock
+     \usebibmacro{addendum+pubstate}%
+     \setunit{\bibpagerefpunct}\newblock
+     \usebibmacro{pageref}%
+     \newunit\newblock
+     \iftoggle{bbx:related}
+       {\usebibmacro{related:init}%
+        \usebibmacro{related}}
+       {}}
+    {\usebibmacro{author/translator+others}%
+     \setunit{\labelnamepunct}\newblock
+     \usebibmacro{title}%
+     \newunit
+     \printlist{language}%
+     \newunit\newblock
+     \usebibmacro{byauthor}%
+     \newunit\newblock
+     \usebibmacro{bytranslator+others}%
+     \newunit\newblock
+     \printfield{version}%
+     \newunit\newblock
+     \usebibmacro{unified:proc-as-article:maintitle+booktitle}%
+     \usebibmacro{unified:proc-as-article:volume+number+eid}
+     \newunit\newblock%                           \newblock ensures period before pages
+     \usebibmacro{note+pages}%
+     \newunit\newblock
+     \iftoggle{bbx:isbn}
+       {\printfield{issn}}
+       {}%
+     \newunit\newblock
+     \usebibmacro{doi+eprint+url}%
+     \newunit\newblock
+     \usebibmacro{addendum+pubstate}%
+     \setunit{\bibpagerefpunct}\newblock
+     \usebibmacro{pageref}%
+     \newunit\newblock
+     \iftoggle{bbx:related}
+       {\usebibmacro{related:init}%
+        \usebibmacro{related}}
+       {}}
+  \usebibmacro{finentry}}
+
+\DeclareBibliographyDriver{thesis}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author}%
+  \setunit{\labelnamepunct}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \printlist{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \printfield{note}%
+  \newunit\newblock
+  \usebibmacro{institution+location+type+date}%
+  \newunit\newblock
+  \usebibmacro{chapter+pages}%
+  \newunit
+  \printfield{pagetotal}%
+  \newunit\newblock
+  \iftoggle{bbx:isbn}
+    {\printfield{isbn}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{doi+eprint+url}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+\DeclareBibliographyDriver{unpublished}{%
+  \usebibmacro{bibindex}%
+  \usebibmacro{begentry}%
+  \usebibmacro{author}%
+  \setunit{\labelnamepunct}\newblock
+  \usebibmacro{title}%
+  \newunit
+  \printlist{language}%
+  \newunit\newblock
+  \usebibmacro{byauthor}%
+  \newunit\newblock
+  \printfield{howpublished}%
+  \newunit\newblock
+  \printfield{note}%
+  \newunit\newblock
+  \usebibmacro{location+date}%
+  \newunit\newblock
+  \iftoggle{bbx:url}
+    {\usebibmacro{url+urldate}}
+    {}%
+  \newunit\newblock
+  \usebibmacro{addendum+pubstate}%
+  \setunit{\bibpagerefpunct}\newblock
+  \usebibmacro{pageref}%
+  \newunit\newblock
+  \iftoggle{bbx:related}
+    {\usebibmacro{related:init}%
+     \usebibmacro{related}}
+    {}%
+  \usebibmacro{finentry}}
+
+%% changes of bibliography style (bbx)
+\DeclareFieldFormat{postnote}{#1}% display pages without page prefix (p., pp.)
+\DeclareBibliographyAlias{inbook}{incollection}% see https://github.com/semprag/biblatex-sp-unified/issues/35
+\DeclareFieldFormat[techreport,report,misc]{titlecase}{\MakeSentenceCase*{#1}}% techreport/report and misc are not genuinely supported by biblatex-sp-unified 
+\AtBeginBibliography{\sloppy}

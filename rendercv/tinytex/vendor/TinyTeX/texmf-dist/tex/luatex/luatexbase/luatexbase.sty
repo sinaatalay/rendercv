@@ -1,0 +1,301 @@
+\ifx\BeginCatcodeRegime\undefined\else\expandafter\endinput\fi
+
+\ifx
+  \ProvidesPackage\undefined\begingroup\def\ProvidesPackage
+  #1#2[#3]{\endgroup\immediate\write-1{Package: #1 #3}}
+\fi
+\ProvidesPackage{luatexbase}
+[2015/10/04 v1.3
+  luatexbase interface to LuaTeX
+]
+\edef\emuatcatcode{\the\catcode`\@}
+\catcode`\@=11
+\ifx\@setrangecatcode\@undefined
+  \ifx\RequirePackage\@undefined
+    \input{ctablestack.sty}%
+  \else
+    \RequirePackage{ctablestack}
+  \fi
+\fi
+\def\RequireLuaModule#1{\directlua{require("#1")}\@gobbleoptarg}
+\ifdefined\@ifnextchar
+\def\@gobbleoptarg{\@ifnextchar[\@gobble@optarg{}}%
+\else
+\long\def\@gobbleoptarg#1{\ifx[#1\expandafter\@gobble@optarg\fi#1}%
+\fi
+\def\@gobble@optarg[#1]{}
+\let\CatcodeTableIniTeX\catcodetable@initex
+\let\CatcodeTableString\catcodetable@string
+\let\CatcodeTableLaTeX\catcodetable@latex
+\let\CatcodeTableLaTeXAtLetter\catcodetable@atletter
+\newcatcodetable\CatcodeTableOther
+\@setcatcodetable\CatcodeTableOther{%
+  \catcodetable\CatcodeTableString
+  \catcode32 12 }
+\newcatcodetable\CatcodeTableExpl
+\@setcatcodetable\CatcodeTableExpl{%
+  \catcodetable\CatcodeTableLaTeX
+  \catcode126 10 % tilde is a space char
+  \catcode32  9  % space is ignored
+  \catcode9   9  % tab also ignored
+  \catcode95  11 % underscore letter
+  \catcode58  11 % colon letter
+}
+\def\BeginCatcodeRegime#1{%
+  \@pushcatcodetable
+  \catcodetable#1\relax}
+\def\EndCatcodeRegime{%
+  \@popcatcodetable}
+\let\PushCatcodeTableNumStack\@pushcatcodetable
+\let\PopCatcodeTableNumStack\@popcatcodetable
+\let\SetCatcodeRange\@setrangecatcode
+\let\setcatcodetable\@setcatcodetable
+\directlua{
+function luatexbase.reset_callback(name,make_false)
+  for _,v in pairs(luatexbase.callback_descriptions(name))
+  do
+    luatexbase.remove_from_callback(name,v)
+  end
+  if make_false == true then
+    luatexbase.disable_callback(name)
+  end
+end
+luatexbase.base_add_to_callback=luatexbase.add_to_callback
+function luatexbase.add_to_callback(name,fun,description,priority)
+  local priority= priority
+  if priority==nil then
+   priority=\string#luatexbase.callback_descriptions(name)+1
+  end
+  if(luatexbase.callbacktypes[name] == 3 and
+     priority == 1 and
+     \string#luatexbase.callback_descriptions(name)==1) then
+    luatexbase.module_warning("luatexbase",
+                              "resetting exclusive callback: " .. name)
+    luatexbase.reset_callback(name)
+  end
+  local saved_callback={},ff,dd
+  for k,v in pairs(luatexbase.callback_descriptions(name)) do
+    if k >= priority then
+      ff,dd= luatexbase.remove_from_callback(name, v)
+      saved_callback[k]={ff,dd}
+    end
+  end
+  luatexbase.base_add_to_callback(name,fun,description)
+  for k,v in pairs(saved_callback) do
+    luatexbase.base_add_to_callback(name,v[1],v[2])
+  end
+  return
+end
+luatexbase.catcodetables=setmetatable(
+ {['latex-package'] = \number\CatcodeTableLaTeXAtLetter,
+  ini    = \number\CatcodeTableIniTeX,
+  string = \number\CatcodeTableString,
+  other  = \number\CatcodeTableOther,
+  latex  = \number\CatcodeTableLaTeX,
+  expl   = \number\CatcodeTableExpl,
+  expl3  = \number\CatcodeTableExpl},
+ { __index = function(t,key)
+    return luatexbase.registernumber(key) or nil
+  end}
+)}
+\ifnum\luatexversion<80 %
+\def\newcatcodetable#1{%
+  \e@alloc\catcodetable\chardef
+    \e@alloc@ccodetable@count\m@ne{"8000}#1%
+  \initcatcodetable\allocationnumber
+  {\escapechar=\m@ne
+  \directlua{luatexbase.catcodetables['\string#1']=%
+    \the\allocationnumber}}%
+}
+\fi
+\directlua{
+function luatexbase.priority_in_callback (name,description)
+  for i,v in ipairs(luatexbase.callback_descriptions(name))
+  do
+    if v == description then
+      return i
+    end
+  end
+  return false
+end
+luatexbase.is_active_callback = luatexbase.in_callback
+luatexbase.base_provides_module=luatexbase.provides_module
+function luatexbase.errwarinf(name)
+    return
+    function(s,...) return luatexbase.module_error(name, s:format(...)) end,
+    function(s,...) return luatexbase.module_warning(name, s:format(...)) end,
+    function(s,...) return luatexbase.module_info(name, s:format(...)) end,
+    function(s,...) return luatexbase.module_info(name, s:format(...)) end
+end
+function luatexbase.provides_module(info)
+  luatexbase.base_provides_module(info)
+  return luatexbase.errwarinf(info.name)
+end
+}
+\ifnum\luatexversion<80 %
+\def\newattribute#1{%
+  \e@alloc\attribute\attributedef
+    \e@alloc@attribute@count\m@ne\e@alloc@top#1%
+  {\escapechar=\m@ne
+  \directlua{luatexbase.attributes['\string#1']=%
+    \the\allocationnumber}}%
+}
+\fi
+\ifx\@percentchar\@undefined
+  {\catcode`\%=12 \gdef\@percentchar{%}}
+\fi
+\directlua{%
+local copynode          = node.copy
+local newnode           = node.new
+local nodesubtype       = node.subtype
+local nodetype          = node.id
+local stringformat      = string.format
+local tableunpack       = unpack or table.unpack
+local texiowrite_nl     = texio.write_nl
+local texiowrite        = texio.write
+local whatsit_t         = nodetype"whatsit"
+local user_defined_t    = nodesubtype"user_defined"
+local unassociated      = "__unassociated"
+local user_whatsits       = {  __unassociated = { } }
+local whatsit_ids         = { }
+local anonymous_whatsits  = 0
+local anonymous_prefix    = "anon"
+local new_user_whatsit_id = function (name, package)
+    if name then
+        if not package then
+            package = unassociated
+        end
+    else % anonymous
+        anonymous_whatsits = anonymous_whatsits + 1
+        warning("defining anonymous user whatsit no. \@percentchar
+                  d", anonymous_whatsits)
+        package = unassociated
+        name    = anonymous_prefix .. tostring(anonymous_whatsits)
+    end
+
+    local whatsitdata = user_whatsits[package]
+    if not whatsitdata then
+        whatsitdata             = { }
+        user_whatsits[package]  = whatsitdata
+    end
+
+    local id = whatsitdata[name]
+    if id then %- warning
+        warning("replacing whatsit \@percentchar s:\@percentchar
+                  s (\@percentchar d)", package, name, id)
+    else %- new id
+        id=luatexbase.new_whatsit(name)
+        whatsitdata[name]   = id
+        whatsit_ids[id]     = { name, package }
+    end
+    return id
+end
+luatexbase.new_user_whatsit_id = new_user_whatsit_id
+local new_user_whatsit = function (req, package)
+    local id, whatsit
+    if type(req) == "string" then
+        id              = new_user_whatsit_id(req, package)
+        whatsit         = newnode(whatsit_t, user_defined_t)
+        whatsit.user_id = id
+    elseif req.id == whatsit_t and req.subtype == user_defined_t then
+        id      = req.user_id
+        whatsit = copynode(req)
+        if not whatsit_ids[id] then
+            warning("whatsit id \@percentchar d unregistered; "
+                    .. "inconsistencies may arise", id)
+        end
+    end
+    return function () return copynode(whatsit) end, id
+end
+luatexbase.new_user_whatsit         = new_user_whatsit
+local get_user_whatsit_id = function (name, package)
+    if not package then
+        package = unassociated
+    end
+    return user_whatsits[package][name]
+end
+luatexbase.get_user_whatsit_id = get_user_whatsit_id
+local get_user_whatsit_name = function (asked)
+    local id
+    if type(asked) == "number" then
+        id = asked
+    elseif type(asked) == "function" then
+        %- node generator
+        local n = asked()
+        id = n.user_id
+    else %- node
+        id = asked.user_id
+    end
+    local metadata = whatsit_ids[id]
+    if not metadata then % unknown
+        warning("whatsit id \@percentchar d unregistered;
+                   inconsistencies may arise", id)
+        return "", ""
+    end
+    return tableunpack(metadata)
+end
+luatexbase.get_user_whatsit_name = get_user_whatsit_name
+local dump_registered_whatsits = function (asked_package)
+    local whatsit_list = { }
+    if asked_package then
+        local whatsitdata = user_whatsits[asked_package]
+        if not whatsitdata then
+            error("(no user whatsits registered for package
+                      \@percentchar s)", asked_package)
+            return
+        end
+        texiowrite_nl("(user whatsit allocation stats for " ..
+                          asked_package)
+        for name, id in next, whatsitdata do
+            whatsit_list[\string#whatsit_list+1] =
+                stringformat("(\@percentchar s:\@percentchar
+                     s \@percentchar d)", asked_package, name, id)
+        end
+    else
+        texiowrite_nl("(user whatsit allocation stats")
+        texiowrite_nl(stringformat(" ((total \@percentchar d)\string\n
+                         (anonymous \@percentchar d))",
+            current_whatsit, anonymous_whatsits))
+        for package, whatsitdata in next, user_whatsits do
+            for name, id in next, whatsitdata do
+                whatsit_list[\string#whatsit_list+1] =
+                    stringformat("(\@percentchar s:\@percentchar
+                        s \@percentchar d)", package, name, id)
+            end
+        end
+    end
+    texiowrite_nl" ("
+    local first = true
+    for i=1, \string#whatsit_list do
+        if first then
+            first = false
+        else % indent
+            texiowrite_nl"  "
+        end
+        texiowrite(whatsit_list[i])
+    end
+    texiowrite"))\string\n"
+end
+luatexbase.dump_registered_whatsits = dump_registered_whatsits
+luatexbase.newattribute            = new_attribute
+luatexbase.newuserwhatsit          = new_user_whatsit
+luatexbase.newuserwhatsitid        = new_user_whatsit_id
+luatexbase.getuserwhatsitid        = get_user_whatsit_id
+luatexbase.getuserwhatsitname      = get_user_whatsit_name
+luatexbase.dumpregisteredwhatsits  = dump_registered_whatsits
+}
+\let\newluatexattribute\newattribute
+\let\setluatexattribute\setattribute
+\let\unsetluatexattribute\unsetattribute
+\let\newluatexcatcodetable\newcatcodetable
+\let\setluatexcatcodetable\setcatcodetable
+\let\luatexbase@directlua\directlua
+\let\luatexbase@ensure@primitive\@gobble
+\let\luatexattribute\attribute
+\let\luatexattributedef\attributedef
+\let\luatexcatcodetable\catcodetable
+\let\luatexluaescapestring\luaescapestring
+\let\luatexlatelua\latelua
+\let\luatexoutputbox\outputbox
+\let\luatexscantextokens\scantextokens
+\catcode`\@=\emuatcatcode\relax

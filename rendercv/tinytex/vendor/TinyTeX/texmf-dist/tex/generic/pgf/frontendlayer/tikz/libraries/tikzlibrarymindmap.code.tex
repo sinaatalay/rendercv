@@ -1,0 +1,417 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarymindmap.code.tex}
+
+
+\usetikzlibrary{trees,decorations}%
+
+
+% A decoration for connecting circle nodes
+%
+% Parameters: start radius, end radius, amplitude, angle
+
+\pgfdeclaredecoration{circle connection bar}{initial}
+{%
+  \state{initial}[width=0pt,next state=bar]
+  {
+    {
+    \pgftransformxshift{-\pgfkeysvalueof{/pgf/decoration/start radius}}%
+    \pgfpathmoveto{\pgfpointpolar{\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/start radius}}}
+    \pgfpatharc{\pgfdecorationsegmentangle}{-\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/start radius}}
+    \pgfutil@tempcnta=-\pgfdecorationsegmentangle\relax
+    \advance\pgfutil@tempcnta by90\relax
+    \pgfmathsetlength\pgfutil@tempdima{\pgfkeysvalueof{/pgf/decoration/start radius}}
+    \pgfmathsetlength\pgfutil@tempdimb{\pgfdecorationsegmentamplitude}
+    \pgfpathcurveto
+    {\pgfpointadd
+      {\pgfpointpolar{-\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/start radius}}}
+      {\pgfpointpolar{\the\pgfutil@tempcnta}{.25\pgfutil@tempdima}}}
+    {\pgfqpoint{1.25\pgfutil@tempdima}{-.5\pgfutil@tempdimb}}
+    {\pgfqpoint{1.5\pgfutil@tempdima}{-.5\pgfutil@tempdimb}}
+    \pgfpathlineto{\pgfpoint{1.5\pgfutil@tempdima}{.5\pgfutil@tempdimb}}
+    \pgfutil@tempcnta=\pgfdecorationsegmentangle\relax
+    \advance\pgfutil@tempcnta by-90\relax
+    \pgfpathcurveto
+    {\pgfpoint{1.25\pgfutil@tempdima}{.5\pgfutil@tempdimb}}
+    {\pgfpointadd
+      {\pgfpointpolar{\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/start radius}}}
+      {\pgfpointpolar{\the\pgfutil@tempcnta}{.25\pgfutil@tempdima}}}
+    {\pgfpointpolar{\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/start radius}}}
+    \pgfpathclose
+    }
+  }%
+  \state{bar}[width=0pt,next state=end]
+  {
+    \pgfmathsetlength\pgfutil@tempdima{\pgfkeysvalueof{/pgf/decoration/start radius}}%
+    \pgfmathsetlength\pgfutil@tempdimb{\pgfkeysvalueof{/pgf/decoration/end radius}}%
+    \pgfmathsetlength\pgf@xc{\pgfdecorationsegmentamplitude}%
+    \pgfpathrectangle
+    {\pgfqpoint{.5\pgfutil@tempdima}{-.5\pgf@xc}}
+    {\pgfpoint{\pgfdecoratedremainingdistance+-.5\pgfutil@tempdimb+-.5\pgfutil@tempdima}{\pgf@xc}}
+  }%
+  \state{end}[width=0pt,next state=final]
+  {
+    {
+    \pgftransformxshift{\pgfdecoratedremainingdistance}%
+    \pgftransformxscale{-1}%
+    \pgftransformxshift{-\pgfkeysvalueof{/pgf/decoration/end radius}}%
+    \pgfpathmoveto{\pgfpointpolar{\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/end radius}}}
+    \pgfpatharc{\pgfdecorationsegmentangle}{-\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/end radius}}
+    \pgfutil@tempcnta=-\pgfdecorationsegmentangle\relax
+    \advance\pgfutil@tempcnta by90\relax
+    \pgfmathsetlength\pgfutil@tempdima{\pgfkeysvalueof{/pgf/decoration/end radius}}
+    \pgfmathsetlength\pgfutil@tempdimb{\pgfdecorationsegmentamplitude}%
+    \pgfpathcurveto
+    {\pgfpointadd
+      {\pgfpointpolar{-\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/end radius}}}
+      {\pgfpointpolar{\the\pgfutil@tempcnta}{.25\pgfutil@tempdima}}}
+    {\pgfqpoint{1.25\pgfutil@tempdima}{-.5\pgfutil@tempdimb}}
+    {\pgfqpoint{1.5\pgfutil@tempdima}{-.5\pgfutil@tempdimb}}
+    \pgfpathlineto{\pgfpoint{1.5\pgfutil@tempdima}{.5\pgfutil@tempdimb}}
+    \pgfutil@tempcnta=\pgfdecorationsegmentangle\relax
+    \advance\pgfutil@tempcnta by-90\relax
+    \pgfpathcurveto
+    {\pgfpoint{1.25\pgfutil@tempdima}{.5\pgfutil@tempdimb}}
+    {\pgfpointadd
+      {\pgfpointpolar{\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/end radius}}}
+      {\pgfpointpolar{\the\pgfutil@tempcnta}{.25\pgfutil@tempdima}}}
+    {\pgfpointpolar{\pgfdecorationsegmentangle}{\pgfkeysvalueof{/pgf/decoration/end radius}}}
+    \pgfpathclose
+    }
+  }%
+  \state{final}
+  {}%
+}%
+
+
+
+\pgfkeys{/pgf/decoration/angle=20}%
+
+% To paths for connecting circle nodes
+
+\tikzset{circle connection bar/.style=
+{to path={
+  \pgfextra{%
+    \tikz@lib@mindmap@check{\tikztostart}%
+    \tikz@compute@circle@radii\tikz@compute@segmentamplitude%
+  }
+  [every circle connection bar]
+  decorate [decoration=circle connection bar]
+  { -- (\tikztotarget) \tikztonodes}
+},
+append after command={[fill=\tikz@concept@color,draw=none]}
+}}%
+\tikzset{every circle connection bar/.style={}}%
+
+\def\tikz@compute@circle@radii{%
+  \pgf@process{\pgfpointtransformed{\pgfpointanchor{\tikztostart}{center}}}%
+  \pgf@xa=\pgf@x%
+  \pgf@process{\pgfpointtransformed{\pgfpointanchor{\tikztostart}{west}}}%
+  \advance\pgf@xa by-\pgf@x%
+  \pgfkeys{/pgf/decoration/start radius/.expanded=\the\pgf@xa}%
+  \pgf@process{\pgfpointtransformed{\pgfpointanchor{\tikztotarget}{center}}}%
+  \pgf@xa=\pgf@x%
+  \pgf@process{\pgfpointtransformed{\pgfpointanchor{\tikztotarget}{west}}}%
+  \advance\pgf@xa by-\pgf@x%
+  \pgfkeys{/pgf/decoration/end radius/.expanded=\the\pgf@xa}%
+}%
+\def\tikz@compute@segmentamplitude{%
+  \pgf@x=\pgfkeysvalueof{/pgf/decoration/start radius}\relax%
+  \ifdim\pgf@x>\pgfkeysvalueof{/pgf/decoration/end radius}\relax%
+    \pgf@x=\pgfkeysvalueof{/pgf/decoration/end radius}\relax%
+  \fi%
+  \pgf@x=.175\pgf@x\relax%
+  \edef\pgfdecorationsegmentamplitude{\the\pgf@x}%
+}%
+
+
+
+% Check whether start and end are nodes!
+
+\def\tikz@lib@mindmap@check#1{%
+  \pgfutil@ifundefined{pgf@sh@ns@#1}%
+  {\tikzerror{You are attempting to connect two things by a circle
+      connection bar where one is not a node}}{%
+    \expandafter\ifx\csname pgf@sh@ns@#1\endcsname\tikz@lib@coordinate@text%
+      \tikzerror{You are attempting to connect node of shape
+        'coordinate' by a circle connection bar. The shape should be
+        'circle' or something similar, instead.}
+    \fi%
+  }
+}%
+
+\def\tikz@lib@coordinate@text{coordinate}%
+
+
+% Switch color in a mindmap
+
+\tikzoption{circle connection bar switch color}{\tikz@parse@switch#1\pgf@unique}%
+\def\tikz@parse@switch from (#1) to (#2)\pgf@unique{%
+  \tikzset{to path={%
+      \pgfextra{%
+        \tikz@lib@mindmap@check{\tikztostart}%
+        \tikz@compute@circle@radii\tikz@compute@segmentamplitude%
+        \global\let\tikz@lib@save@start=\tikztostart%
+        \global\let\tikz@lib@save@target=\tikztotarget%
+        \pgfkeysgetvalue{/pgf/decoration/start radius}\pgf@temp%
+        \global\let\tikz@lib@saved@start@radius=\pgf@temp%
+        \pgfkeysgetvalue{/pgf/decoration/end radius}\pgf@temp%
+        \global\let\tikz@lib@saved@end@radius=\pgf@temp%
+      }%
+      [every circle connection bar]
+      decorate [decoration=circle connection bar]
+      { -- (\tikztotarget) \tikztonodes}
+    },
+    append after command={
+      [fill=none,draw=none,path picture=\tikz@lib@shade@pic]
+      \pgfextra{
+        \pgfutil@colorlet{tikz@switch@from}{#1}%
+        \pgfutil@colorlet{tikz@switch@to}{#2}%
+      }}
+  }
+}%
+
+\def\tikz@lib@shade@pic{%
+  % We have to draw the shading...
+  % compute start point:
+ \pgftransformreset%
+ \pgf@process{\pgfpointnormalised{\pgfpointdiff{\pgfpointanchor{\tikz@lib@save@start}{center}}{\pgfpointanchor{\tikz@lib@save@target}{center}}}}%
+  \edef\tikz@lib@mm@vec{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgfmathsetlength\pgf@xc{\tikz@lib@saved@start@radius}
+  \pgf@process{\pgfpointadd{\pgfpointtransformed{\pgfpointanchor{\tikz@lib@save@start}{center}}}
+                           {\pgfpointscale{\pgf@sys@tonumber{\pgf@xc}}{\tikz@lib@mm@vec}}}
+  \edef\tikz@lib@mm@start{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgfmathsetlength\pgf@xc{\tikz@lib@saved@end@radius}
+  \pgf@process{\pgfpointdiff{\tikz@lib@mm@start}{\pgfpointadd{\pgfpointtransformed{\pgfpointanchor{\tikz@lib@save@target}{center}}}
+                           {\pgfpointscale{-\pgf@sys@tonumber{\pgf@xc}}{\tikz@lib@mm@vec}}}}
+  \edef\tikz@lib@mm@end{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgftransformshift{\tikz@lib@mm@start}
+   \pgflowlevelsynccm
+  \pgf@process{\tikz@lib@mm@vec}
+  {
+    \pgf@xa=-\pgf@x%
+    \pgftransformcm{\pgf@sys@tonumber{\pgf@x}}{\pgf@sys@tonumber{\pgf@y}}%
+      {\pgf@sys@tonumber{\pgf@y}}{\pgf@sys@tonumber{\pgf@xa}}%
+      {\pgfpointorigin}%
+    \pgf@process{\pgfpointtransformed{\tikz@lib@mm@end}}%
+    \expandafter
+  }
+  \edef\tikz@lib@mm@length{\the\pgf@x}%
+  \pgf@process{\tikz@lib@mm@vec}
+  \pgf@ya=-\pgf@y%
+  \pgftransformcm{\pgf@sys@tonumber{\pgf@x}}{\pgf@sys@tonumber{\pgf@y}}%
+    {\pgf@sys@tonumber{\pgf@ya}}{\pgf@sys@tonumber{\pgf@x}}%
+    {\pgfpointorigin}%
+  % Y scale:
+  \pgfmathsetlength\pgf@y{\tikz@lib@saved@start@radius}%
+  \pgfmathsetlength\pgf@ya{\tikz@lib@saved@end@radius}%
+  \ifdim\pgf@y<\pgf@ya%
+    \pgf@y=\pgf@ya%
+  \fi%
+  \pgf@y=0.01992528\pgf@y%
+  \pgftransformyscale{\pgf@sys@tonumber{\pgf@y}}%
+  \pgfpathrectanglecorners
+  {\pgfpoint{-\tikz@lib@saved@start@radius}{-50bp}}
+  {\pgfpoint{1pt}{50bp}}
+  \pgfsetfillcolor{tikz@switch@from}
+  \pgfusepath{fill}
+  \pgfpathrectanglecorners
+  {\pgfpoint{\tikz@lib@mm@length+\tikz@lib@saved@end@radius}{-50bp}}
+  {\pgfpoint{\tikz@lib@mm@length-1pt}{50bp}}
+  \pgfsetfillcolor{tikz@switch@to}
+  \pgfusepath{fill}
+  % X scale:
+  \pgf@x=\tikz@lib@mm@length%
+  \pgf@x=0.009962\pgf@x%
+  \pgftransformxscale{\pgf@sys@tonumber{\pgf@x}}%
+  \pgftransformxshift{50bp}
+  \pgflowlevelsynccm%
+  \pgfuseshading{tikz@shade@bar}
+}%
+
+\tikzoption{concept color}{%
+  \let\tikz@old@concept@color=\tikz@concept@color%
+  \def\tikz@edge@to@parent@path{
+    (\tikzparentnode)
+    to[circle connection bar switch color=from (\tikz@old@concept@color) to (#1)]
+    (\tikzchildnode)}
+  \def\tikz@concept@color{#1}%
+}%
+
+\pgfdeclarehorizontalshading[tikz@switch@from,tikz@switch@to]{tikz@shade@bar}{100bp}{%
+  color(0pt)=(tikz@switch@from);
+  color(100bp)=(tikz@switch@to)}%
+
+
+
+
+% A concept node
+
+\tikzset{concept/.style=          {circle,fill=\tikz@concept@color,draw=\tikz@concept@color,every concept}}%
+\tikzset{every concept/.style=    {}}%
+
+\def\tikz@concept@color{black}%
+
+\tikzset{tikz@concept@setting/.style={edge from parent path={(\tikzparentnode) to [circle connection bar] (\tikzchildnode)}}}%
+\tikzset{tikz@concept@color@set/.style={}}%
+
+
+\tikzset{extra concept/.style=     {concept color=black!50,level 2 concept,concept,every extra concept}}%
+\tikzset{every extra concept/.style={}}%
+
+\tikzset{concept connection/.style={line width=1mm,shorten <=2mm,shorten >=2mm,cap=round,draw=black!50}}%
+
+
+% A mindmap
+
+\tikzset{mindmap/.style=
+  {fill,draw,very thick,outer sep=0pt,inner sep=1pt,%
+   every child/.append style={style=tikz@concept@setting,style=tikz@concept@color@set},%
+   root concept,
+   level 1/.append style={level 1 concept},
+   level 2/.append style={level 2 concept},
+   level 3/.append style={level 3 concept},
+   level 4/.append style={level 4 concept},
+   text centered,%
+   segment angle=20,
+   style=every mindmap,
+  }}%
+\tikzset{every mindmap/.style={}}%
+
+
+\tikzset{root concept/.style=   {minimum size=4cm,text width=3.5cm,font=\pgfutil@font@large}}%
+\tikzset{level 1 concept/.style={minimum size=2.25cm,
+                                 level distance=5cm,
+                                 text width=2cm,
+                                 sibling angle=60,
+                                 font=\pgfutil@font@small}}%
+\tikzset{level 2 concept/.style={minimum size=1.75cm,%
+                                 level distance=2.9cm,%
+                                 text width=1.5cm,%
+                                 sibling angle=60,%
+                                 font=\pgfutil@font@footnotesize}}%
+\tikzset{level 3 concept/.style={minimum size=1.15cm,%
+                                 text width=1cm,%
+                                 level distance=2.4cm,%
+                                 sibling angle=30,%
+                                 font=\pgfutil@font@tiny}}%
+\tikzset{level 4 concept/.style={minimum size=0.9cm,%
+                                 text width=0.7cm,
+                                 level distance=1.85cm,%
+                                 sibling angle=30,%
+                                 font=\pgfutil@font@tiny}}%
+
+\tikzset{small mindmap/.style=
+  {%
+  root concept/.style={minimum size=2.3cm,text width=2.1cm,font=\pgfutil@font@footnotesize},
+  level 1 concept/.style={%
+    minimum size=1.5cm,
+    level distance=2.8cm,
+    text width=1.4cm,
+    sibling angle=75,
+    font=\pgfutil@font@scriptsize},%
+  level 2 concept/.style={%
+    minimum size=1.1cm,%
+    level distance=2.2cm,%
+    text width=1.1cm,%
+    sibling angle=60,%
+    font=\pgfutil@font@tiny},%
+  level 3 concept/.style={%
+    level 2 concept,
+    sibling angle=30,%
+    font=\pgfutil@font@tiny},%
+  level 4 concept/.style={%
+    level 3 concept,
+  },
+  mindmap,%
+  line width=2pt,
+  }}%
+
+\tikzset{large mindmap/.style=
+  {%
+  root concept/.style={minimum size=5.6cm,text width=4.5cm,font=\pgfutil@font@Large},
+  level 1 concept/.style={%
+    minimum size=3.2cm,
+    level distance=7cm,
+    text width=2.8cm,
+    sibling angle=60,
+    font=},%
+  level 2 concept/.style={%
+    minimum size=2.45cm,%
+    level distance=4cm,%
+    text width=2.2cm,%
+    sibling angle=60,%
+    font=\pgfutil@font@small%
+    },%
+  level 3 concept/.style={%
+    minimum size=1.63cm,%
+    text width=1.4cm,%
+    level distance=3.38cm,%
+    sibling angle=30,%
+    font=\pgfutil@font@scriptsize},%
+  level 4 concept/.style={%
+    minimum size=1.27cm,%
+    text width=1cm,
+    level distance=2.60cm,%
+    sibling angle=30,%
+    font=\pgfutil@font@tiny},%
+  mindmap,%
+  line width=2pt,
+  }}%
+
+\tikzset{huge mindmap/.style=
+  {%
+  root concept/.style={minimum size=8cm,text width=7cm,font=\pgfutil@font@huge},
+  level 1 concept/.style={%
+    minimum size=4.5cm,
+    level distance=10cm,
+    text width=4cm,
+    sibling angle=60,
+    font=\pgfutil@font@large},%
+  level 2 concept/.style={%
+    minimum size=3.5cm,%
+    level distance=5.8cm,%
+    text width=3cm,%
+    sibling angle=60,%
+    font=%
+    },%
+  level 3 concept/.style={%
+    minimum size=2.3cm,%
+    text width=2cm,%
+    level distance=4.8cm,%
+    sibling angle=30,%
+    font=\pgfutil@font@footnotesize},%
+  level 4 concept/.style={%
+    minimum size=1.7cm,%
+    text width=1.4cm,
+    level distance=3.7cm,%
+    sibling angle=30,%
+    font=\pgfutil@font@scriptsize},%
+  mindmap,%
+  line width=3pt,
+  }}%
+
+
+% Annotations
+
+\tikzset{annotation/.style={shape=rectangle,
+                            minimum size=0pt,
+                            text width=3.5cm,
+                            outer sep=1.5mm,
+                            inner sep=1mm,
+                            text badly ragged,
+                            rounded corners,
+                            font=\pgfutil@font@tiny,
+                            every annotation}}%
+\tikzset{every annotation/.style={}}%
+
+
+
+\endinput

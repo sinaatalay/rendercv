@@ -1,0 +1,126 @@
+% Copyright 2019 by Henri Menke
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+
+% Guard against reading twice
+\ifx\pgfintloaded\pgfutil@undefined
+  \let\pgfintloaded=\relax
+\else
+  \expandafter\endinput
+\fi
+
+% This module is pretty much a rip-off of the LaTeX3 l3int module for integer
+% calculations.  Since PGF supports e-TeX now, we can make use of those
+% extended facilities.
+
+% In contrast to l3int we will just admit that integers are regular TeX \count
+% register and will not implement an extra "integer datatype".
+
+% Evaluate an integer expression using \numexpr
+\def\pgfinteval#1{\number\numexpr#1\relax}
+
+% Get the absolute value of an integer by stripping off a leading minus sign
+\def\pgfintabs#1{\number\expandafter\pgfint@abs\number\numexpr#1\relax}
+\def\pgfint@abs#1{\ifx-#1\else\expandafter#1\fi}
+
+% Minimum and maximum
+\def\pgfintmax#1#2{%
+  \number\expandafter\pgfint@minmax
+  \number\numexpr#1\expandafter;%
+  \number\numexpr#2;%
+  >
+}
+\def\pgfintmin#1#2{%
+  \number\expandafter\pgfint@minmax
+  \number\numexpr#1\expandafter;%
+  \number\numexpr#2;%
+  <
+}
+\def\pgfint@minmax#1;#2;#3{%
+  \ifnum#1#3#2
+    #1%
+  \else
+    #2%
+  \fi
+}
+
+% \numexpr has the annoying property to round divisions rather than truncating
+% (as you would expect for integer arithmetic).  Therefore we need a truncating
+% division function.
+\def\pgfintdivtruncate#1#2{%
+  \number\numexpr\expandafter\pgfint@divtruncate
+  \number\numexpr#1\expandafter;%
+  \number\numexpr#2;%
+  \relax
+}
+\def\pgfint@divtruncate#1#2;#3#4;{%
+  \ifx0#1
+    0%
+  \else
+    (#1#2%
+      \ifx-#1 +\else-\fi
+      (\ifx-#3 -\fi#3#4-1)/2%
+    )%
+  \fi
+  /#3#4%
+}
+
+% \pgfintdivtruncate always truncates the result which leads to a rounding
+% towards zero.  Donald Knuth defines in TAoCP, Vol 1, 3rd Ed, Section 1.2.4
+% that the modulo operation is
+%
+%    x mod y = x - y * floor(x/y)
+%
+% In contrast to truncated division, floored division always rounds towards
+% -inf, i.e. floor(1/2) = 0 and floor(-1/2) = -1.  This is also how integer
+% division is done in Lua.
+\def\pgfintdivfloor#1#2{%
+  \number\numexpr\expandafter\pgfint@divfloor
+  \number\numexpr#1\expandafter;%
+  \number\numexpr#2;%
+  \relax
+}
+\def\pgfint@divfloor#1#2;#3#4;{%
+  \ifx0#1
+    0%
+  \else
+    \ifnum
+      0\ifx-#1\ifx#3-\else1\fi\fi
+      0\ifx-#3\ifx#1-\else1\fi\fi
+      >0
+      \pgfint@@divfloor#1#2;#3#4;-+%
+    \else
+      \pgfint@@divfloor#1#2;#3#4;+-%
+    \fi
+  \fi
+  /#3#4%
+}
+\def\pgfint@@divfloor#1#2;#3#4;#5#6{%
+  (#1#2%
+  \ifx-#1 #5\else#6\fi
+    (\ifx-#3 -\fi#3#4#61)/2%
+  )%
+}
+
+% Round
+\def\pgfintdivround#1#2{\number\numexpr(#1)/(#2)\relax}
+
+% Modulo
+\def\pgfintmod#1#2{%
+  \number\numexpr\expandafter\pgfint@mod%
+  \number\numexpr#1\expandafter;%
+  \number\numexpr#2;%
+  \relax
+}
+\def\pgfint@mod#1;#2;{#1-(\pgfint@divfloor#1;#2;)*#2}
+
+% Setter function so we don't always have to write \pgfinteval
+\def\pgfintset#1#2{#1 \numexpr#2\relax}
+
+\endinput

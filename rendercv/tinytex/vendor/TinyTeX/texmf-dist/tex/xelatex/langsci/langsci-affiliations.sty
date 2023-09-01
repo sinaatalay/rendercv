@@ -1,0 +1,474 @@
+%%
+%% This is file `langsci-affiliations.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% langsci-affiliations.dtx  (with options: `package')
+%% ------------------------------------------------------------------------------
+%% 
+%% langsci-affiliations collects, orders, and outputs author-affiliation pairs.
+%% It makes use of data types from LaTeX3.
+%% 
+%% The package is aimed to be helpful to class authors, i.e. those who design
+%% and maintain document templates in publishing houses, universities, etc. The
+%% package is probably of only limited use to document authors/end users.
+%% 
+%% langsci-affiliations was developed at Language Science Press to help in the
+%% production of scientific texts in linguistics.
+%% 
+%% Copyright (C) 2022 by Felix Kopecky, Language Science Press
+%% 
+%% This work consists of the file  langsci-affiliations.dtx
+%%           and the derived files langsci-affiliations.sty,
+%%                                 langsci-affiliations.pdf.
+%% 
+%% It may be distributed and/or modified under the conditions of the
+%% LaTeX Project Public License (LPPL), either version 1.3c of this
+%% license or (at your option) any later version. The latest version
+%% of this license is at <http://www.latex-project.org/lppl.txt>.
+%% 
+%% This work is ``maintained'' (per LPPL maintenance status) by
+%% Felix Kopecky <felix.kopecky@langsci-press.org>.
+%% 
+%% The development version can be found at
+%% 
+%%    https://github.com/langsci/langsci-affiliations
+%% 
+%% for those who are interested. Pull requests are welcome.
+%% 
+%% Please report any bugs or feature requests to
+%% 
+%%    https://github.com/langsci/langsci-affiliations/issues
+%% 
+%% ------------------------------------------------------------------------------
+
+
+
+
+\RequirePackage{xparse}
+\ProvidesExplPackage {langsci-affiliations}
+{2022-10-11} {1.1}
+{A LaTeX3 package to collect and order authors and affiliations}
+
+\NewDocumentCommand{\ResolveAffiliations}{ O{} +m }
+  {%
+    \group_begin:
+    \keys_set:nn { affiliations } { #1 }%
+    \exp_args:No \affiliations_resolve:n { #2 }%
+    \group_end:
+  }
+
+\ProvideDocumentCommand{\LinkToORCIDinAffiliations}{ +m }{ #1 }
+
+\NewExpandableDocumentCommand{\CountAuthorsFromAffiliations}{ O{} +m }
+  {%
+    \group_begin:
+    \keys_set:nn { affiliations } { #1 }%
+    \exp_args:No \affiliations_count_authors:n { #2 }%
+    \group_end:
+  }
+
+\NewDocumentCommand{\SetupAffiliations}{ m }
+  {%
+    \keys_set:nn { affiliations } { #1 }
+  }
+\keys_define:nn { affiliations }
+  {
+    mark~style .tl_set:N
+        = \l__affiliations_style_tl,
+    mark~style .initial:n
+        = { alphabetic },
+    output~affiliation .bool_set:N
+        = \l__affiliations_output_affiliation_bool,
+    output~affiliation .initial:n
+        = { true },
+    orcid~placement .tl_set:N
+        = \l__affiliations_orcid_place_tl,
+    orcid~placement .initial:n
+        = { none },
+    output~in~groups .bool_set:N
+        = \l__affiliations_output_grouped_bool,
+    output~in~groups .initial:n
+        = { true },
+    separator~between~two .tl_set:N
+        = \l__affiliations_separator_between_two_tl,
+    separator~between~two .initial:n
+        = {~\&~},
+    separator~between~multiple .tl_set:N
+        = \l__affiliations_separator_between_mult_tl,
+    separator~between~multiple .initial:n
+        = {,~},
+    separator~between~final~two .tl_set:N
+        = \l__affiliations_separator_between_last_two_tl,
+    separator~between~final~two .initial:n
+        = {~\&~},
+    separator~between~affiliations .tl_set:N
+        = \l__affiliations_afil_separator_tl,
+    separator~between~affiliations .initial:n
+        = {,},
+    output~authors~font .cs_set:Np
+        = \__affiliations_output_authors_font:,
+    output~authors~font .initial:n
+        = {\Large},
+    output~affiliation~font .cs_set:Np
+        = \__affiliations_output_affiliation_font:,
+    output~affiliation~font .initial:n
+        = {\normalsize},
+    input~names~separator .tl_set:N
+        = \l__affiliations_input_names_sep_tl,
+    input~names~separator .initial:n
+        = {~and~},
+    input~affiliation~separator .tl_set:N
+        = \l_affiliations_input_afil_sep_tl,
+    input~affiliation~separator .initial:n
+        = {;}
+  }
+
+\cs_generate_variant:Nn \prop_put:Nnn { Nxx }
+\cs_generate_variant:Nn \prop_put:Nnn { Nnx }
+\cs_generate_variant:Nn \seq_set_split:Nnn { NVV }
+\cs_generate_variant:Nn \seq_set_split:Nnn { NVn }
+\cs_generate_variant:Nn \tl_replace_all:Nnn { NnV }
+\clist_new:N \l__affiliations_tmpa_clist
+\int_new:N \l__affiliations_tmpa_int
+\int_new:N \g__affiliations_num_authors_int
+\seq_new:N \l__affiliations_affiliations_seq
+\seq_new:N \l__affiliations_authors_seq
+\seq_new:N \l__affiliations_names_seq
+\seq_new:N \l__affiliations_tmpa_seq
+\seq_new:N \l__affiliations_tmpb_seq
+\seq_new:N \l__affiliations_tmp_affil_seq
+\seq_new:N \l__affiliations_tmp_orcid_seq
+\tl_new:N \l__affiliations_tmpa_tl
+\tl_new:N \l__affiliations_tmpb_tl
+\tl_new:N \l__affiliations_tmpc_tl
+\prop_new:N \l__affiliations_tmpa_prop
+\prop_new:N \l__affiliations_output_prop
+\prop_new:N \l__affiliations_affiliations_prop
+\prop_new:N \l__affiliations_orcids_prop
+\prop_const_from_keyval:Nn \l__affiliations_icons_prop
+  {
+     0 = \char"2460,  1 = \char"2461,  2 = \char"2462,  3 = \char"2463,
+     4 = \char"2464,  5 = \char"2465,  6 = \char"2466,  7 = \char"2467,
+     8 = \char"2468,  9 = \char"2469, 10 = \char"246A, 11 = \char"246B,
+    12 = \char"246C, 13 = \char"246D, 14 = \char"246E, 15 = \char"246F,
+    16 = \char"2470, 17 = \char"2471, 18 = \char"2472, 19 = \char"2473
+  }
+\cs_new:Npn \__affiliations_resolve_affiliations: #1#2
+  {
+    \clist_clear:N \l__affiliations_tmpa_clist
+    \tl_if_empty:nTF {#2}
+      {
+        \prop_put:Nnn \l__affiliations_output_prop {#1} {}
+      }
+      {
+        \seq_set_split:NVn \l__affiliations_tmpa_seq
+                           \l_affiliations_input_afil_sep_tl
+                           { #2 }
+        \seq_map_inline:Nn \l__affiliations_tmpa_seq
+          {
+            \prop_get:NnNTF \l__affiliations_affiliations_prop
+                            {##1}
+                            \l__affiliations_tmpa_tl
+              {
+                \clist_put_right:NV \l__affiliations_tmpa_clist
+                                    \l__affiliations_tmpa_tl
+              }
+              {
+                %Not yet present
+                \clist_put_right:Nx \l__affiliations_tmpa_clist
+                  {
+                    \prop_count:N \l__affiliations_affiliations_prop
+                  }
+                \prop_put:Nnx \l__affiliations_affiliations_prop {##1}
+                  { \prop_count:N \l__affiliations_affiliations_prop }
+              }
+          }
+        \prop_put:NnV \l__affiliations_output_prop
+                      {#1}
+                      \l__affiliations_tmpa_clist
+      }
+  }
+\cs_new:Nn \__affiliations_output_affiliations:
+  {
+    \prop_map_inline:Nn \l__affiliations_affiliations_prop
+      {
+        \int_set:Nn \l__affiliations_tmpa_int { ##2 }
+        \str_case_e:nn { \l__affiliations_style_tl }
+          {
+            {alphabetic}
+              {
+                \textsuperscript{\int_to_alph:n{ \int_eval:n
+                  {  \l__affiliations_tmpa_int + 1  }
+                } }
+              }
+            {numeric}
+              { \textsuperscript{\int_eval:n {\l__affiliations_tmpa_int + 1} } }
+            {circled}
+              {
+                \prop_item:Nn \l__affiliations_icons_prop
+                              {\l__affiliations_tmpa_int}
+              }
+            {none} { }
+          }
+        \tl_rescan:nn {} {##1} ~
+      }
+  }
+\cs_new:Npn \__affiliations_return_afil_text:n #1
+  {
+    \int_set:Nn \l__affiliations_tmpa_int { #1 }
+    \str_case_e:nn { \l__affiliations_style_tl }
+      {
+        {alphabetic}
+          {
+            \seq_put_right:Nx \l__affiliations_tmpb_seq
+                              { \int_to_alph:n{ \int_eval:n {#1 + 1} } }
+           }
+        {numeric}
+          {
+            \seq_put_right:Nx \l__affiliations_tmpb_seq
+                              { \int_eval:n {\l__affiliations_tmpa_int + 1} }
+          }
+        {circled}
+          {
+            \seq_put_right:Nx \l__affiliations_tmpb_seq
+                              { \prop_item:Nn \l__affiliations_icons_prop
+                                              { \l__affiliations_tmpa_int} }
+          }
+        {none} { }
+      }
+  }
+
+\cs_new:Nn \__affiliations_output_authors:
+  {
+    \seq_clear:N \l__affiliations_tmpa_seq
+    \prop_map_inline:Nn \l__affiliations_output_prop
+      {
+        \seq_clear:N \l__affiliations_tmpb_seq
+        \clist_map_function:nN {##2} \__affiliations_return_afil_text:n
+        \tl_set:Nn \l__affiliations_tmpb_tl
+          {
+            \seq_use:Nn \l__affiliations_tmpb_seq
+                        {\l__affiliations_afil_separator_tl}
+          }
+        \str_case_e:nn { \l__affiliations_orcid_place_tl }
+          {
+            {none}
+            {
+              \seq_put_right:Nx \l__affiliations_tmpa_seq
+                {
+                  \tl_rescan:nn {} {##1}
+                  \exp_not:N \textsuperscript{\tl_use:N \l__affiliations_tmpb_tl}
+                }
+            }
+            {before}
+            {
+              \seq_put_right:Nx \l__affiliations_tmpa_seq
+                {
+                  \exp_not:N \__affiliations_recover_orcid:n { ##1 }
+                  \tl_rescan:nn {} {##1}
+                  \exp_not:N \textsuperscript{\tl_use:N \l__affiliations_tmpb_tl}
+                }
+            }
+            {after}
+            {
+              \seq_put_right:Nx \l__affiliations_tmpa_seq
+                {
+                  \tl_rescan:nn {} {##1}
+                  \exp_not:N \__affiliations_recover_orcid:n { ##1 }
+                  \exp_not:N \textsuperscript{\tl_use:N \l__affiliations_tmpb_tl}
+                }
+            }
+          }
+      }
+    \seq_use:Nnnn \l__affiliations_tmpa_seq
+                    {\l__affiliations_separator_between_two_tl}
+                    {\l__affiliations_separator_between_mult_tl}
+                    {\l__affiliations_separator_between_last_two_tl}
+  }
+
+\cs_new:Npn \affiliations_resolve:n #1
+  {
+    \tl_set:Nn \l__affiliations_tmpc_tl { #1 }
+    \tl_replace_all:NnV \l__affiliations_tmpc_tl
+                        { \and }
+                        \l__affiliations_input_names_sep_tl
+    \seq_set_split:NVV \l__affiliations_names_seq
+                       \l__affiliations_input_names_sep_tl
+                       \l__affiliations_tmpc_tl
+    \seq_map_inline:Nn \l__affiliations_names_seq
+      {
+        \tl_clear_new:N \l__affiliations_names_tmp_tl
+        \tl_set:Nn \l__affiliations_names_tmp_tl { ##1 }
+
+
+        \regex_extract_once:nnN
+          {\c{affiliation} \cB. (\c[^BE].*) \cE.}
+          { ##1 }
+          \l__affiliations_tmp_affil_seq
+
+        \regex_extract_once:nnN
+          {\c{orcid} \cB. (\c[^BE].*) \cE.}
+          { ##1 }
+          \l__affiliations_tmp_orcid_seq
+
+
+        \regex_replace_all:nnN {\c{orcid} \cB. (\c[^BE].*) \cE.}
+                               {}
+                               \l__affiliations_names_tmp_tl
+        \regex_replace_all:nnN {\c{affiliation} \cB. (\c[^BE].*) \cE.}
+                               {}
+                               \l__affiliations_names_tmp_tl
+
+
+        \prop_put:Nxx \l__affiliations_tmpa_prop
+        { \tl_use:N \l__affiliations_names_tmp_tl }
+        { \seq_item:Nn \l__affiliations_tmp_affil_seq {2} }
+
+        \prop_put:Nxx \l__affiliations_orcids_prop
+        { \tl_use:N \l__affiliations_names_tmp_tl }
+        { \seq_item:Nn \l__affiliations_tmp_orcid_seq {2} }
+      }
+    \bool_if:NTF \l__affiliations_output_affiliation_bool
+      {
+        \bool_if:NTF \l__affiliations_output_grouped_bool
+          {
+            \prop_map_function:NN \l__affiliations_tmpa_prop
+                                  \__affiliations_resolve_affiliations:
+            \group_begin:
+              \__affiliations_output_authors_font:
+              \__affiliations_output_authors:
+            \group_end:\\[0.5ex]
+            \group_begin:
+              \__affiliations_output_affiliation_font:
+              \__affiliations_output_affiliations:
+            \group_end:
+          }
+          {
+            \seq_clear:N \l__affiliations_tmpa_seq
+            \prop_map_inline:Nn \l__affiliations_tmpa_prop
+              {
+                \str_case_e:nn { \l__affiliations_orcid_place_tl }
+                  {
+                    {none}
+                    {
+                      \seq_put_right:Nx \l__affiliations_tmpa_seq
+                        {
+                          \group_begin:
+                            \exp_not:N \__affiliations_output_authors_font:
+                            \tl_rescan:nn {} {##1}\\[0.5ex]
+                          \group_end:
+                          \group_begin:
+                            \exp_not:N \__affiliations_output_affiliation_font:
+                            \tl_rescan:nn {} {##2}
+                          \group_end:
+                        }
+                    }
+                    {before}
+                    {
+                      \seq_put_right:Nx \l__affiliations_tmpa_seq
+                        {
+                          \group_begin:
+                            \exp_not:N \__affiliations_output_authors_font:
+                            \exp_not:N \__affiliations_recover_orcid:n { ##1 }
+                            \tl_rescan:nn {} {##1}\\[0.5ex]
+                          \group_end:
+                          \group_begin:
+                            \exp_not:N \__affiliations_output_affiliation_font:
+                            \tl_rescan:nn {} {##2}
+                          \group_end:
+                        }
+                    }
+                    {after}
+                    {
+                      \seq_put_right:Nx \l__affiliations_tmpa_seq
+                        {
+                          \group_begin:
+                            \exp_not:N \__affiliations_output_authors_font:
+                            \tl_rescan:nn {} {##1}
+                            \exp_not:N \__affiliations_recover_orcid:n { ##1 }\\[0.5ex]
+                          \group_end:
+                          \group_begin:
+                            \exp_not:N \__affiliations_output_affiliation_font:
+                            \tl_rescan:nn {} {##2}
+                          \group_end:
+                        }
+                    }
+                  }
+              }
+            \seq_use:Nnnn \l__affiliations_tmpa_seq
+                            {\l__affiliations_separator_between_two_tl}
+                            {\l__affiliations_separator_between_mult_tl}
+                            {\l__affiliations_separator_between_last_two_tl}
+          }
+      }
+      {
+        \group_begin:
+        \__affiliations_output_authors_font:
+        \seq_clear:N \l__affiliations_tmpa_seq
+        \prop_map_inline:Nn \l__affiliations_tmpa_prop
+          {
+            \str_case_e:nn { \l__affiliations_orcid_place_tl }
+              {
+                {none}
+                  {
+                    \seq_put_right:Nx \l__affiliations_tmpa_seq
+                                      { \tl_rescan:nn {} {##1} }
+                  }
+                {before}
+                  {
+                    \seq_put_right:Nx \l__affiliations_tmpa_seq
+                                      {
+                                        \exp_not:N \__affiliations_recover_orcid:n { ##1 }
+                                        \tl_rescan:nn {} {##1}
+                                      }
+                  }
+                {after}
+                  {
+                    \seq_put_right:Nx \l__affiliations_tmpa_seq
+                                      {
+                                        \tl_rescan:nn {} {##1}
+                                        \exp_not:N \__affiliations_recover_orcid:n { ##1 }
+                                      }
+                  }
+                }
+          }
+        \seq_use:Nnnn \l__affiliations_tmpa_seq
+                        {\l__affiliations_separator_between_two_tl}
+                        {\l__affiliations_separator_between_mult_tl}
+                        {\l__affiliations_separator_between_last_two_tl}
+        \group_end:
+      }
+  }
+\cs_new:Npn \affiliations_count_authors:n #1
+  {
+    \tl_set:Nn \l__affiliations_tmpc_tl { #1 }
+    \tl_replace_all:NnV \l__affiliations_tmpc_tl
+                        { \and }
+                        \l__affiliations_input_names_sep_tl
+    \seq_set_split:NVV \l__affiliations_names_seq
+                       \l__affiliations_input_names_sep_tl
+                       \l__affiliations_tmpc_tl
+    \int_gset:Nn \g__affiliations_num_authors_int
+      {  \seq_count:N \l__affiliations_names_seq  }
+  }
+\cs_new:Npn \__affiliations_recover_orcid:n #1
+  {
+    \prop_get:NnNTF \l__affiliations_orcids_prop { #1 }
+      \l__affiliations_tmpd_tl
+      {
+        \tl_if_empty:NTF \l__affiliations_tmpd_tl
+          % No ORCID present; no action done.
+          { }
+          {
+            \LinkToORCIDinAffiliations{\tl_use:N \l__affiliations_tmpd_tl}
+          }
+      }
+      % No database entry for author; no action done.
+      { }
+  }
+
+%% 
+%%
+%% End of file `langsci-affiliations.sty'.

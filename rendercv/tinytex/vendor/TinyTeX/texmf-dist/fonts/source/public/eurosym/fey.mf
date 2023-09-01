@@ -1,0 +1,289 @@
+% Euro symbol for TeX.
+%
+% History
+%  Version 1.4:
+%   - correct width
+%  Version 1.3:
+%   - Licence
+%  Version 1.2:
+%   - Recieved a gif file containing the official construction of the
+%     Euro symbol from Rowland.
+%   - Andreas Schwab told me why the checksum mismatches didn't work
+%     Unfortunately I couldn't make his patch work so I had to fix
+%     this myself although some other things were in there (modes.mf
+%     etc.)
+%
+%  Version 1.1:
+%   - finished sometime on August 1998
+%
+% Design size: 10pt
+
+% Richtmaﬂe (set up in the top level file):
+%scaleunit:= 0.425;
+  % to be able to enlarge, shrink easily
+  % the number here is obtained by comparison with the cmr `C' character.
+
+% this is from c't magazine 11/98, S.211.
+% Some things are guessed from the construction.
+
+%firstunit#:= scaleunit * pt#;
+%overunder#:= 0.4firstunit#;
+
+unit#:= firstunit# + overunder#;                   % line width is 1:
+radiusaussen#:= 6unit#;
+
+% for adjustment settings at special sizes:
+hintpt:= 0.415106;  % hppp bei 1pt @ 300dpi
+% I noticed the following things to be fixed at small hppp's:
+%   - 14.4pt @ 300dpi (7pt @ 600dpi): the bars are too thin
+%   - 12pt   @ 300dpi (6pt @ 600dpi): the bars are too close together
+%   - 6pt    @ 300dpi: the bars are too thin
+
+def isabout(expr a, b)= (((a/b) < 1.1) and ((a/b) > 0.9)) enddef;
+
+boolean thickenbars;
+boolean spacebars;
+thickenbars:= isabout (hppp, 14.4hintpt) or isabout (hppp, 6hintpt);
+spacebars:=   isabout (hppp, 12hintpt);
+
+bold#= if boldamount>0: 0.5 else: 0.0 fi unit#;
+radiusinnen#:= 5unit# - bold#;
+olineo#:=  1.5unit# + bold#;
+olineu#:=  0.5unit#;
+ulineo#:= -0.5unit#;
+ulineu#:= -1.5unit# - bold#;
+
+bigangle= 80;
+
+em#:= 15unit#;
+ex#:= 2radiusaussen# - overunder#;
+
+eurowidth#:= 0.832em#;
+euroheight#:= 1ex#;
+eurodepth#:= overunder#;
+
+if doslant:
+  slant:= 1/6;
+else:
+  slant:= 0;
+fi
+
+font_quad           1em#;
+font_normal_space   1/2em#;
+font_normal_stretch 1/3em#;
+font_normal_shrink  1/4em#;
+font_extra_space    0unit#;
+font_slant          slant;
+font_x_height       1ex#;
+font_coding_scheme  "U";
+font_identifier     "eurosym";
+
+message "hppp=" & str [hppp];
+
+define_pixels (em,ex,unit,
+               radiusinnen,radiusaussen,
+               eurowidth,euroheight,
+               bold,
+               olineu, olineo, ulineu, ulineo, overunder);
+
+pen open, hpen;
+hpen= pencircle scaled 0.03unit;
+if boldamount>0:
+  open= pencircle scaled 0.5unit;
+else:
+  open= pencircle scaled 0.3unit;
+fi
+
+def drawit (expr a) =
+  if dooutline:
+    pickup open;
+    draw(a);
+  else:
+    fill(a);
+  fi
+enddef;
+
+def overdraw (expr a, b, c, d, x, y) =
+  draw ((a shifted ((b-a)*d))--(a shifted ((b-a)*c))) shifted (x,y);
+enddef;
+
+path baro, baru;
+path thepath;
+pair refleft, refright;
+
+beginchar(0,eurowidth#,euroheight#,eurodepth#);
+  "reference euro glyph with wrong bounding box";
+% This is for the designer who wants to see the symbol's construction.
+
+% took some time to see that circles are specified by diameter instead of radius:
+  z0= (1/2em+9/16unit, radiusaussen-overunder);
+  x0:= good.x (x0);
+  y0:= good.y (y0);
+
+  path innerring;  innerring= fullcircle scaled 2radiusinnen shifted z0;
+  path outerring;  outerring= fullcircle scaled 2radiusaussen shifted z0;
+  % angles start at 3 o'clock, so:
+  numeric bigangleup;    bigangleup   =   1/2bigangle;
+  numeric bigangledown;  bigangledown = - 1/2bigangle;
+  path pa;
+  pa= (z0 shifted (left scaled eurowidth)) -- (z0 shifted (right scaled eurowidth));
+
+  t1=  ypart ((z0--(z0 shifted ((dir bigangleup)   scaled eurowidth))) intersectiontimes innerring);
+  t2=  ypart ((z0--(z0 shifted ((dir bigangledown) scaled eurowidth))) intersectiontimes innerring);
+  t3=  ypart ((z0--(z0 shifted (down scaled eurowidth))) intersectiontimes outerring);
+%  t14= ypart ((z0--(z0 shifted (right scaled eurowidth))) intersectiontimes outerring);
+  z1=  point t1 of innerring;
+  z2=  point t2 of innerring;
+  z3=  point t3 of outerring;
+%  z14= point t14 of outerring;  This wasn't right.
+
+  path pb, pc, paoo, pao, pau, pauu;
+  pb= z3--(z3+((z1-z3) scaled 2));
+  pc= z1--(z1 shifted (down scaled euroheight));
+
+  t4= ypart (pb intersectiontimes outerring);
+  t5= ypart (pc intersectiontimes outerring);
+  z4= point t4 of outerring;
+  z5= point t5 of outerring;
+
+  %  path innerh;
+  %  path outerh;
+  %  innerh= subpath (t1, t2) of innerring;
+  %  outerh= subpath (t4, t5) of outerring;
+  paoo= pa shifted (0, olineo);
+  pao=  pa shifted (0, olineu);
+  pau=  pa shifted (0, ulineo);
+  pauu= pa shifted (0, ulineu);
+
+  t6= ypart (paoo intersectiontimes pb);
+  t7= ypart (pao  intersectiontimes pb);
+  t8= ypart (pau  intersectiontimes pb);
+%  t9= ypart (pauu intersectiontimes pb);
+  z6= point t6 of pb;
+  z7= point t7 of pb;
+  z8= point t8 of pb;
+%  z9= point t9 of pb; % Better sollution:
+
+% I had problems with straightforward approaches to overcome the problem of
+% bad looking bars with small sizes.  The complicated approach works in two
+% steps.  a) calculate the intersections with the exact positions of the bars,
+% b) recalculate he end positions of the bars using good.y().
+
+% Step a):
+  z9-z8= z7-z6;
+
+  z11= z0 shifted (-2unit - radiusaussen, olineu);
+  z13= z0 shifted (-2unit - radiusaussen, ulineu);
+  z10-z11= z6-z7;
+  z12-z13= z8-z9;
+
+  t15= ypart ((z6 -- z10) intersectiontimes innerring);
+  t16= ypart ((z7 -- z11) intersectiontimes innerring);
+  t17= ypart ((z8 -- z12) intersectiontimes innerring);
+  t18= ypart ((z9 -- z13) intersectiontimes innerring);
+  t19= ypart ((z6 -- z10) intersectiontimes outerring);
+  t20= ypart ((z7 -- z11) intersectiontimes outerring);
+  t21= ypart ((z8 -- z12) intersectiontimes outerring);
+  t22= ypart ((z9 -- z13) intersectiontimes outerring);
+
+  z15= point t15 of innerring;
+  z16= point t16 of innerring;
+  z17= point t17 of innerring;
+  z18= point t18 of innerring;
+  z19= point t19 of outerring;
+  z20= point t20 of outerring;
+  z21= point t21 of outerring;
+  z22= point t22 of outerring;
+  z23= z0 shifted (-radiusaussen,0);
+
+% Step b):
+  y10:= y19:= y15:= y6:= good.y (y6 if thickenbars or spacebars: +0.5 fi);
+  y11:= y20:= y16:= y7:= good.y (y7 if spacebars: +0.5 fi);
+  y12:= y21:= y17:= y8:= good.y (y8);
+  y13:= y22:= y18:= y9:= y8 + (y7-y6);
+
+% Construct the path.  This is more complicated now, too.  We use tX for the
+% intersection times /and/ zX for the end points.
+  thepath= (subpath (t1, t15) of innerring --
+           z15 -- z6 -- z7 -- z16 --
+           subpath (t16, t17) of innerring --
+           z17 -- z8 -- z9 -- z18 --
+           subpath (t18, t2) of innerring --
+           z2 -- z5 --
+           subpath (t5, t22) of outerring --
+           z22 -- z13 -- z12 -- z21 --
+           subpath (t21, t20) of outerring --
+           z20 -- z11 -- z10 -- z19 --
+           subpath (t19, t4) of outerring --
+           z4 -- cycle) slanted slant;
+  baro= (z6 -- z7 -- z11 -- z10 -- cycle) slanted slant;
+  baru= (z8 -- z9 -- z13 -- z12 -- cycle) slanted slant;
+  refleft=  z13;
+  refright= z4;
+
+  drawit(thepath);
+  penlabels (0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23);
+
+  pickup hpen;
+  overdraw (z0, z1, 1.5, 0, 0, 0);
+  overdraw (z0, z2, 1.5, 0, 0, 0);
+  overdraw (z0, z3, 1.5, -1.5, 0, 0);
+  overdraw (z0, z3, 1.5, -1.5, x13-x3, 0);
+  overdraw (z0, z3, 1.5, -1.5, x12-x3, 0);
+  overdraw (z0, z3, 1.5, -1.5, x23-x3, 0);
+  overdraw (z1, z2, 1.5, 0, 0, 0);
+  overdraw (z3, z1, 1.5, -0.2, 0, 0);
+  overdraw (z3, z1, 1.5, -0.2, x13-x9, 0);
+  overdraw (z3, z1, 1.5, -0.2, x11-x7, 0);
+endchar;
+
+% Now the real symbols, the first one is for design purposes only and
+% could be deleted in the real fonts.  I want to use the paths to
+% define the bounding box so Metafont has to calculate them first.
+% But I also want to see the penlabels.
+
+% realwidth was once dependent on the resolution, so checksum mismatches
+% occur.  Thanks to Andreas Schwab for telling me the reason for
+% those mismatches.  This fixes the problem.
+%
+% A bold correction is added as well.  This is more or less a hack,
+% since the width of the Euro symbol character is not necessarily
+% equal to the dimensions of the glyph itself.  However, I didn't
+% find any specifications.  Until I do, this is the best hack I
+% think.
+%realwidth= (xpart refright-xpart refleft)/hppp;
+realwidth= (2radiusaussen#-10/30bold#) + 0.22unit#;
+pair shift; shift= (xpart (-refleft), 0);
+
+% However, these are the real characters:
+beginchar(" ",realwidth,euroheight#,eurodepth#); "Space";
+  % dunno why. A Space with the dimensions of a Euro symbol
+endchar;
+
+%  fill innerh -- reverse outerh -- cycle;
+%  fill z10 -- z6 -- z7 -- z11 -- cycle;
+%  fill z12 -- z8 -- z9 -- z13 -- cycle;
+
+% The official symbol ``Euro glyph''.
+beginchar("e", realwidth, euroheight#,eurodepth#); "Euro glyph";
+  drawit(thepath shifted shift);
+endchar;
+
+% only the bars for creating symbols with any other font:
+beginchar("A", realwidth, euroheight#,eurodepth#); "Euro glyph bars (normal)";
+  drawit(baro shifted shift);
+  drawit(baru shifted shift);
+endchar;
+
+% same as before but only 80% wide; most of the fonts' C's are less wide
+% than the Euro glyph.
+beginchar("B", realwidth, euroheight#,eurodepth#); "Euro glyph bars (narrow)";
+  drawit(baro shifted shift xscaled 0.8);
+  drawit(baru shifted shift xscaled 0.8);
+endchar;
+
+% same as before but only 110% wide
+beginchar("C", realwidth, euroheight#,eurodepth#); "Euro glyph bars (wide)";
+  drawit(baro shifted shift xscaled 1.2);
+  drawit(baru shifted shift xscaled 1.2);
+endchar;

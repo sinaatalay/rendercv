@@ -1,0 +1,661 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcorepathusage.code.tex}
+
+
+% Stroke/fill/clip/etc. the current path. Depending on the options,
+% the current path will be stroked/filled/clipped/etc. If no options
+% are given, the path is stroked. If multiple options are given, all
+% of them are performed (in a sensible order).
+%
+% #1 = action(s) to be applied to the current path. Valid actions are:
+%      stroke -  strokes the path.
+%      draw -    strokes the path and adds arrow tips.
+%      tips -    adds arrow tips.
+%      fill -    fills the path.
+%      clip -    clip the path.
+%      discard - Discards the path. Same effect as having an empty
+%                options list.
+%
+% Example:
+%
+% % Draws an edge.
+% \pgfpathmoveto{\pgfxy(0,0)}
+% \pgfpathlineto{\pgfxy(0,1)}
+% \pgfpathlineto{\pgfxy(1,0)}
+% \pgfusepath{stroke}
+
+\pgfkeys{
+  /pgf/stroke/.code=\let\pgf@up@stroke\pgf@up@stroke@text\pgf@up@path@neededtrue,
+  /pgf/draw/.code=\let\pgf@up@stroke\pgf@up@stroke@text\pgf@up@path@neededtrue,
+  /pgf/fill/.code=\let\pgf@up@fill\pgf@up@fill@text\pgf@up@path@neededtrue,
+  /pgf/clip/.code=\let\pgf@up@clip\pgf@up@clip@text\pgf@up@path@neededtrue,
+  /pgf/discard/.code=,
+  /pgf/use as bounding box/.code=\let\pgf@up@bb\pgf@do@up@bb,
+  /pgf/arrow keys/flex/.code=\pgferror{You need to say \string\usetikzlibrary{bending} for flexing and bending arrows},
+  /pgf/arrow keys/flex'/.code=\pgferror{You need to say \string\usetikzlibrary{bending} for flexing and bending arrows},
+  /pgf/arrow keys/bend/.code=\pgferror{You need to say \string\usetikzlibrary{bending} for flexing and bending arrows},
+  /pgf/arrow keys/quick/.code=\pgfarrowsaddtooptions{\let\pgf@arrow@flex@mode\pgf@arrow@mode@is@quick},
+}
+
+\pgfkeys{
+  /pgf/.cd,
+  tips/.is choice,
+  tips/.default=true,
+  tips/proper/.code=\let\pgf@tips@mode\pgf@tips@mode@onproper,
+  tips/on proper draw/.code=\let\pgf@tips@mode\pgf@tips@mode@onproperdraw,
+  tips/true/.code=\let\pgf@tips@mode\pgf@tips@mode@true,
+  tips/on draw/.code=\let\pgf@tips@mode\pgf@tips@mode@ondraw,
+  tips/never/.code=\let\pgf@tips@mode\pgf@tips@mode@false,
+  tips/false/.code=\let\pgf@tips@mode\pgf@tips@mode@false,
+}
+\def\pgf@tips@mode@onproper{4}
+\def\pgf@tips@mode@onproperdraw{3}
+\def\pgf@tips@mode@true{2}
+\def\pgf@tips@mode@ondraw{1}
+\def\pgf@tips@mode@false{0}
+\let\pgf@tips@mode\pgf@tips@mode@ondraw
+
+
+% The following can only be set to "true" using the options in the
+% module "bending"
+\newif\ifpgf@precise@shortening
+\def\pgf@arrow@mode@is@quick{0}
+\let\pgf@arrow@flex@mode\pgf@arrow@mode@is@quick
+
+\newif\ifpgf@up@path@needed
+\newif\ifpgf@up@draw@arrows
+\def\pgf@up@stroke@text{stroke}
+\def\pgf@up@fill@text{fill}
+\def\pgf@up@clip@text{clip}
+\def\pgf@do@up@bb{\pgf@relevantforpicturesizefalse}
+
+\def\pgfusepath#1{%
+  \pgf@up@path@neededfalse%
+  \pgf@up@draw@arrowsfalse%
+  \let\pgf@up@stroke\pgfutil@empty%
+  \let\pgf@up@fill\pgfutil@empty%
+  \let\pgf@up@clip\pgfutil@empty%
+  \let\pgf@up@bb\pgfutil@empty%
+  \pgfset{#1}%
+  \expandafter\def\expandafter\pgf@up@action\expandafter{\csname pgfsys@\pgf@up@fill\pgf@up@stroke\endcsname}%
+  \ifnum\pgf@tips@mode=2\relax%
+    \pgf@up@path@neededtrue%
+  \fi%
+  \ifnum\pgf@tips@mode=4\relax%
+    \pgf@up@path@neededtrue%
+  \fi%
+  \ifpgf@up@path@needed%
+  \else%
+    \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+  \fi%
+  \ifx\pgf@up@stroke\pgfutil@empty%
+    \ifx\pgf@up@fill\pgfutil@empty%
+      \let\pgf@up@action=\pgfutil@empty%
+      \ifx\pgf@up@clip\pgfutil@empty%
+      \else%
+        % only clipping
+        \let\pgf@up@action=\pgfsys@discardpath%
+      \fi%
+    \fi%
+  \fi%
+  \pgfsyssoftpath@getcurrentpath\pgf@last@processed@path
+  \pgfprocessround{\pgf@last@processed@path}{\pgf@last@processed@path}% change the path
+  \pgfsyssoftpath@setcurrentpath\pgf@last@processed@path%
+  %
+  % Check whether the path is stroked. If so, add half the line width
+  % to the bounding box.
+  %
+  \ifpgf@relevantforpicturesize%
+    \ifx\pgf@up@stroke\pgfutil@empty%
+    \else%
+      \ifdim\pgf@picmaxx=-16000pt\relax%
+      \else%
+        \pgf@x=\pgf@pathminx\advance\pgf@x by-.5\pgflinewidth%
+        \ifdim\pgf@x<\pgf@picminx\global\pgf@picminx\pgf@x\fi%
+        \pgf@y=\pgf@pathminy\advance\pgf@y by-.5\pgflinewidth%
+        \ifdim\pgf@y<\pgf@picminy\global\pgf@picminy\pgf@y\fi%
+        \pgf@x=\pgf@pathmaxx\advance\pgf@x by.5\pgflinewidth%
+        \ifdim\pgf@x>\pgf@picmaxx\global\pgf@picmaxx\pgf@x\fi%
+        \pgf@y=\pgf@pathmaxy\advance\pgf@y by.5\pgflinewidth%
+        \ifdim\pgf@y>\pgf@picmaxy\global\pgf@picmaxy\pgf@y\fi%
+      \fi%
+    \fi%
+  \fi%
+  %
+  \ifx\pgf@up@clip\pgfutil@empty%
+    \ifx\pgf@up@stroke\pgfutil@empty%
+      \ifx\pgf@up@action\pgfutil@empty%
+        \ifnum\pgf@tips@mode=2\relax%
+          \pgf@up@draw@arrows@only%
+        \fi%
+        \ifnum\pgf@tips@mode=4\relax%
+          \pgf@up@draw@arrows@only%
+        \fi%
+      \else%
+        \pgfsyssoftpath@invokecurrentpath%
+        \pgf@up@action%
+      \fi%
+    \else%
+      \pgfgetpath\pgf@arrowpath%
+      \pgf@path@setup@tempswa%
+      \pgfprocesscheckclosed{\pgf@arrowpath}{\pgfutil@tempswafalse}%
+      \pgf@path@check@proper%
+      \ifpgfutil@tempswa%
+        \pgf@check@for@arrow@and@animation%
+        \pgf@prepare@end@of@path%
+        \begingroup%
+          \pgf@prepare@start@of@path%
+      \fi%
+          \pgfsyssoftpath@invokecurrentpath%
+          \pgf@up@action%
+          \ifdim\pgfinnerlinewidth>0pt\relax%
+            \pgf@stroke@inner@line%
+          \fi%
+      \ifpgfutil@tempswa%
+          \pgf@add@arrow@at@start%
+        \endgroup%
+        \pgf@add@arrow@at@end%
+      \fi%
+    \fi%
+  \else%
+    \pgfsyssoftpath@invokecurrentpath%
+    \pgfsys@clipnext%
+    \pgf@up@action%
+    \pgf@relevantforpicturesizefalse%
+  \fi%
+  \pgf@up@bb%
+  \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+  \pgf@resetpathsizes%
+  \ignorespaces%
+}
+\def\pgf@path@setup@tempswa{%
+  \ifnum\pgf@tips@mode>0\relax
+    \pgfutil@tempswatrue%
+  \else
+    \pgfutil@tempswafalse%
+  \fi%
+}
+\def\pgf@up@draw@arrows@only{%
+  \pgfgetpath\pgf@arrowpath%
+  \pgfutil@tempswatrue%
+  \pgfprocesscheckclosed{\pgf@arrowpath}{\pgfutil@tempswafalse}%
+  \pgf@path@check@proper%
+  \ifpgfutil@tempswa%
+    \pgf@check@for@arrow@and@animation%
+    \pgf@prepare@end@of@path%
+    \begingroup%
+      \pgf@prepare@start@of@path%
+      \pgf@add@arrow@at@start%
+    \endgroup%
+    \pgf@add@arrow@at@end%
+  \fi%
+}
+
+\def\pgf@check@for@arrow@and@animation{\pgfsys@if@fresh@currentid{\pgf@check@for@arrow@and@animation@}{}}%
+\def\pgf@check@for@arrow@and@animation@{%
+  \expandafter\ifx\csname pgfsysanim@path@is@animated@\pgf@sys@id@current@id @\pgfsys@current@type\endcsname\pgfutil@empty%
+    % Ok, an animation is here!
+    \ifx\pgf@end@tip@sequence\pgfutil@empty%
+      \ifx\pgf@start@tip@sequence\pgfutil@empty%
+      \else%
+        \pgf@check@for@arrow@and@animation@error%
+      \fi%
+    \else%
+      \pgf@check@for@arrow@and@animation@error%
+    \fi%
+  \fi%
+}
+\def\pgf@check@for@arrow@and@animation@error{\pgferror{Animated path may not have normal arrow tips. Use a base path with arrow tips}}
+
+\def\pgf@path@check@proper{%
+  \ifpgfutil@tempswa%
+    \ifnum\pgf@tips@mode>2\relax%
+      \pgf@path@check@proper@%
+    \fi%
+  \fi%
+}
+
+\def\pgf@path@check@proper@{%
+  {%
+    \pgf@x0pt\pgf@y\pgf@x%
+    \pgfutil@tempswatrue%
+    \let\pgfsyssoftpath@movetotoken\pgf@path@proper@init%
+    \let\pgfsyssoftpath@linetotoken\pgf@path@proper@test%%
+    \let\pgfsyssoftpath@curvetosupportatoken\pgf@path@proper@test%
+    \let\pgfsyssoftpath@curvetosupportbtoken=\pgf@path@proper@test%
+    \let\pgfsyssoftpath@curvetotoken\pgf@path@proper@test%
+    \let\pgfsyssoftpath@rectcornertoken\pgf@path@proper@test%
+    \let\pgfsyssoftpath@rectsizetoken\pgf@path@proper@zero@test%
+    \let\pgfsyssoftpath@closepathtoken\pgf@path@proper@test%
+    % Execute the path:
+    \pgf@arrowpath%
+    \expandafter
+  }%
+  \ifpgfutil@tempswa\pgfutil@tempswafalse\else\pgfutil@tempswatrue\fi%
+}
+
+\def\pgf@path@proper@init#1#2{\pgfutil@tempswatrue\pgf@x#1\pgf@y#2}%
+\def\pgf@path@proper@test#1#2{%
+  \ifdim\pgf@x=#1\relax\else\pgfutil@tempswafalse\fi%
+  \ifdim\pgf@y=#2\relax\else\pgfutil@tempswafalse\fi}
+\def\pgf@path@proper@zero@test#1#2{%
+  \ifdim\pgf@x=0pt\relax\else\pgfutil@tempswafalse\fi%
+  \ifdim\pgf@y=0pt\relax\else\pgfutil@tempswafalse\fi}
+
+
+
+
+\def\pgf@stroke@inner@line{%
+  \let\pgf@temp@save=\pgf@strokecolor@global
+  \pgfsys@beginscope%
+  {%
+    \pgfsys@setlinewidth{\pgfinnerlinewidth}%
+    \pgfsetstrokecolor{\pgfinnerstrokecolor}%
+    \pgfsyssoftpath@invokecurrentpath%
+    \pgfsys@stroke%
+  }%
+  \pgfsys@endscope%
+  \global\let\pgf@strokecolor@global=\pgf@temp@save
+}
+
+\let\pgf@prepare@start@of@path\relax%
+
+
+
+
+% Shorten start/end of paths by a certain amount.
+%
+% #1 = amount by which paths should be shortened.
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathlineto{\pgfpoint{10pt}{0pt}
+%
+% % The following has the same effect:
+% \pgfsetshortenstart{1pt}
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfpathlineto{\pgfpoint{11pt}{0pt}
+
+\def\pgfsetshortenstart#1{\pgfmathsetlength\pgf@shorten@start@additional{#1}}
+\def\pgfsetshortenend#1{\pgfmathsetlength\pgf@shorten@end@additional{#1}}
+
+\newdimen\pgf@shorten@end@additional
+\newdimen\pgf@shorten@start@additional
+
+
+
+%
+%
+% Handling the end of a path
+%
+%
+% The "handling" consists of first testing whether we need to do
+% anything at all, namely because either an arrow tip should be drawn
+% at the end or because the path should be shortened at the end. If
+% so, we shorten the path if needed and, later on, add the arrow tip.
+%
+
+\newif\ifpgf@worry
+
+
+% Prepare the end of the path: Test whether anything must be done
+% (step 0) and, if so, split the path (step 1), extract the interesting points from
+% the path (step 2), prepare further computations (step 3), shorten
+% the path (step 4) if necessary, and add the arrow tip (step 4 in
+% macro \pgf@add@arrow@at@end, which is called later).
+
+\def\pgf@prepare@end@of@path{%
+  \let\pgfprocessresultpathsuffix\relax% flag that nothing has happened...
+  \let\pgfprocessresultsubpathsuffix\relax%
+  \pgfsyssoftpath@getcurrentpath\pgf@arrowpath%
+  %
+  % Step 0 start:
+  %
+  % Do we need to worry about the end?
+  %
+  \ifx\pgf@arrowpath\pgfutil@empty\else%
+    \pgf@worryfalse%
+    \ifx\pgf@end@tip@sequence\pgfutil@empty%
+    \else%
+      \pgf@worrytrue% Yes, worry if we have to draw an arrow
+    \fi%
+    \pgf@precise@shorteningfalse%
+    \pgf@arrow@compute@shortening\pgf@end@tip@sequence%
+    \advance\pgf@xa by\pgf@shorten@end@additional%
+    \advance\pgf@xb by\pgf@shorten@end@additional%
+    \ifdim\pgf@xa=0pt\relax\else\pgf@worrytrue\fi% Also, worry if shortening is requested
+    \edef\pgf@path@shortening@distance{\the\pgf@xa}%
+    \edef\pgf@arrow@tip@total@length{\the\pgf@xb}%
+    %
+    % Step 0 done.
+    %
+    \ifpgf@worry%
+      % Ok, need to "worry" about the end, either because we need to
+      % shorten it or to draw an arrow head.
+      %
+      % Step 1: Split
+      %
+      \pgfprocesssplitpath{\pgf@arrowpath}%
+      \pgfprocesssplitsubpath{\pgfprocessresultpathsuffix}%
+      %
+      % Step 2: extract
+      %
+      \expandafter\pgf@parse@end\pgfprocessresultsubpathsuffix\pgf@stop\pgf@stop\pgf@stop%
+      %
+      % Step 3: prep
+      %
+      \pgf@prep@end%
+      %
+      % Step 4: shorten
+      %
+      \ifdim\pgf@path@shortening@distance=0pt\else\pgf@do@shorten@end\fi%
+      \expandafter\expandafter\expandafter\def%
+      \expandafter\expandafter\expandafter\pgf@arrowpath%
+      \expandafter\expandafter\expandafter{\expandafter\pgfprocessresultpathprefix\pgfprocessresultpathsuffix}%
+      \pgfsyssoftpath@setcurrentpath\pgf@arrowpath%
+    \fi%
+  \fi%
+}
+
+\def\pgf@parse@end#1#2#3#4#5#6{%
+  \ifx#4\pgf@stop% Only a moveto! -> do nothing!
+    \def\pgfpointlastonpath{\pgfqpoint{#2}{#3}}%
+    \let\pgf@next\relax%
+    \let\pgf@do@shorten@end\relax%
+    \let\pgf@do@draw@end\pgf@do@draw@straightend%
+    \let\pgf@prep@end\pgf@prep@movetoend%
+  \else\ifx#4\pgfsyssoftpath@curvetosupportatoken% A curve -> this will get complicated...
+    \def\pgfsubpathfourthlasttoken{#1}%
+    \def\pgfpointfourthlastonpath{\pgfqpoint{#2}{#3}}%
+    \def\pgfpointthirdlastonpath{\pgfqpoint{#5}{#6}}%
+    \ifpgf@precise@shortening%
+      \let\pgf@do@shorten@end\pgf@do@shorten@curvedend%
+      \let\pgf@do@draw@end\pgf@do@draw@curvedend%
+      \let\pgf@prep@end\pgf@prep@curveend%
+    \else%
+      \def\pgfsubpathstart{\noexpand#1{#2}{#3}\noexpand#4{#5}{#6}}%
+      \let\pgf@do@shorten@end\pgf@do@shorten@straightend%
+      \let\pgf@do@draw@end\pgf@do@draw@straightend%
+      \let\pgf@prep@end\pgf@prep@straightend%
+    \fi%
+    \let\pgf@next\pgf@parse@end@curve@cont%
+  \else% A straight line -> great!
+    \def\pgfsubpathstart{\noexpand#1{#2}{#3}\noexpand#4}%
+    \def\pgfpointsecondlastonpath{\pgfqpoint{#2}{#3}}%
+    \def\pgfpointlastonpath{\pgfqpoint{#5}{#6}}%
+    \let\pgfpointfourthlastonpath\relax%
+    \let\pgfpointthirdlastonpath\relax%
+    \let\pgf@next\pgf@parse@end@gobble@three%
+    \let\pgf@do@shorten@end\pgf@do@shorten@straightend%
+    \let\pgf@do@draw@end\pgf@do@draw@straightend%
+    \let\pgf@prep@end\pgf@prep@straightend%
+  \fi\fi%
+  \pgf@next% Needed for reading rest of path...
+}
+
+\def\pgf@parse@end@gobble@three#1#2#3{}%
+\def\pgf@parse@end@curve@cont#1#2#3#4#5#6#7#8#9{%
+  \def\pgfpointsecondlastonpath{\pgfqpoint{#2}{#3}}%
+  \def\pgfpointlastonpath{\pgfqpoint{#5}{#6}}%
+  \ifpgf@precise@shortening%
+  \else%
+    \expandafter\def\expandafter\pgfsubpathstart\expandafter{\pgfsubpathstart\noexpand#1{#2}{#3}\noexpand#4}%
+  \fi%
+}
+
+%
+% Preps
+%
+\def\pgf@prep@movetoend{%
+  \pgf@process{\pgfpointlastonpath}%
+  \pgf@xb\pgf@x
+  \pgf@yb\pgf@y
+  \pgf@xc\pgf@x
+  \pgf@yc\pgf@y
+}
+\def\pgf@prep@straightend{%
+  \let\pgf@ref\pgfpointsecondlastonpath
+  \ifx\pgfpointlastonpath\pgfpointsecondlastonpath% degenerate!
+    \ifx\pgfpointthirdlastonpath\relax% cannot help it: really a zero-length path
+    \else%
+      \ifx\pgfpointlastonpath\pgfpointthirdlastonpath% double degenerate!
+        \let\pgf@ref\pgfpointfourthlastonpath% Use third point for reference.
+      \else
+        \let\pgf@ref\pgfpointthirdlastonpath% Use third point for reference.
+      \fi%
+    \fi%
+  \fi%
+  \pgfpointlineatdistance{\pgf@path@shortening@distance}{\pgfpointlastonpath}{\pgf@ref}%
+  \pgf@xa\pgf@x%
+  \pgf@ya\pgf@y%
+}
+
+
+%
+% Line shortening for straight lines:
+%
+\def\pgf@do@shorten@straightend{%
+  \edef\pgfprocessresultsubpathsuffix{\pgfsubpathstart{\the\pgf@xa}{\the\pgf@ya}}%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgfprocessresultpathsuffix%
+  \expandafter\expandafter\expandafter{\expandafter\pgfprocessresultsubpathprefix\pgfprocessresultsubpathsuffix}%
+}
+
+
+%
+% Draw an end arrow by calling an appropriate subfunction, if necessary
+%
+
+\def\pgf@add@arrow@at@end{%
+  \ifx\pgf@arrowpath\pgfutil@empty\else%
+    \ifx\pgf@end@tip@sequence\pgfutil@empty\else%
+      \pgf@do@draw@end%
+    \fi%
+  \fi%
+}
+
+%
+% Draw an end arrow at the end of a straight line
+%
+\def\pgf@do@draw@straightend{%
+  {%
+    \pgftransformreset%
+    \pgftransformarrow{\pgfqpoint{\pgf@xc}{\pgf@yc}}{\pgfqpoint{\pgf@xb}{\pgf@yb}}%
+    \pgf@arrow@draw@arrow\pgf@end@tip@sequence\pgf@arrow@tip@total@length%
+  }%
+}
+
+
+
+
+
+%
+%
+% Handling the start of a path
+%
+%
+% The "handling" is similar to the case for the start of the path. We
+% may be able to skip the splitting if that was done already for the
+% end. Otherwise, things are basically the same.
+%
+
+% Prepare the start of the path: Test whether anything must be done
+% (step 0) and, if so, split the path (step 1) if necessary, extract
+% the interesting points from the path (step 2), prepare computations
+% (step 3) needed for both shortening and tip adding, shorten the path
+% (step 4), and add the arrow tip (step 5 in macro
+% \pgf@add@arrow@at@start, which is called later).
+
+\def\pgf@prepare@start@of@path{%
+  %
+  % Step 0 start:
+  %
+  % Do we need to worry about the start?
+  %
+  \ifx\pgf@arrowpath\pgfutil@empty\else%
+    \pgf@worryfalse%
+    \ifx\pgf@start@tip@sequence\pgfutil@empty\else\pgf@worrytrue\fi% Yes, worry if we have to draw an arrow
+    \pgf@precise@shorteningfalse%
+    \pgf@arrow@compute@shortening\pgf@start@tip@sequence%
+    \advance\pgf@xa by\pgf@shorten@start@additional%
+    \advance\pgf@xb by\pgf@shorten@start@additional%
+    \ifdim\pgf@xa=0pt\relax\else\pgf@worrytrue\fi% Also, worry if shortening is requested
+    \edef\pgf@path@shortening@distance{\the\pgf@xa}%
+    \edef\pgf@arrow@tip@total@length{\the\pgf@xb}%
+    %
+    % Step 0 done.
+    %
+    \ifpgf@worry%
+      % Ok, need to "worry" about the start, either because we need to
+      % shorten it or to draw an arrow head.
+      %
+      % Step 1: Split
+      %
+      \ifx\pgfprocessresultpathsuffix\relax%
+        % Ok, still need to compute the split:
+        \pgfprocesssplitpath{\pgf@arrowpath}%
+      \fi%
+      %
+      % Step 2: extract
+      %
+      \expandafter\pgf@parse@start\pgfprocessresultpathsuffix\pgf@stop\pgf@stop\pgf@stop%
+      %
+      % Step 3: prep
+      %
+      \pgf@prep@start%
+      %
+      % Step 4: shorten
+      %
+      \ifdim\pgf@path@shortening@distance=0pt\else\pgf@do@shorten@start\fi%
+      \expandafter\expandafter\expandafter\def%
+      \expandafter\expandafter\expandafter\pgf@arrowpath%
+      \expandafter\expandafter\expandafter{\expandafter\pgfprocessresultpathprefix\pgfprocessresultpathsuffix}%
+      \pgfsyssoftpath@setcurrentpath\pgf@arrowpath%
+    \fi%
+  \fi%
+}
+
+\def\pgf@parse@start#1#2#3#4#5#6{%
+  \def\pgfpointfirstonpath{\pgfqpoint{#2}{#3}}%
+  \def\pgfpointsecondonpath{\pgfqpoint{#5}{#6}}%
+  \let\pgfpointthirdonpath\relax%
+  \let\pgfpointfourthonpath\relax%
+  \def\pgfsubpathfirsttoken{\noexpand#1}%
+  \def\pgfsubpathsecondtoken{\noexpand#4}%
+  \ifx#4\pgf@stop% Only a moveto! -> do nothing!
+    \let\pgf@next\relax%
+    \let\pgf@do@shorten@start\relax%
+    \let\pgf@prep@start\pgf@prep@movetostart%
+    \let\pgf@do@draw@start\pgf@do@draw@straightstart%
+  \else\ifx#4\pgfsyssoftpath@curvetosupportatoken% A curve -> this will get complicated...
+    \ifpgf@precise@shortening%
+      \let\pgf@next\pgf@parse@start@curve@cont%
+      \let\pgf@do@shorten@start\pgf@do@shorten@curvedstart%
+      \let\pgf@do@draw@start\pgf@do@draw@curvedstart%
+      \let\pgf@prep@start\pgf@prep@curvedstart%
+    \else% can treat the end like a straight line...
+      \let\pgf@next\pgf@parse@start@curve@cont@straight%
+      \let\pgf@do@shorten@start\pgf@do@shorten@straightstart%
+      \let\pgf@do@draw@start\pgf@do@draw@straightstart%
+      \let\pgf@prep@start\pgf@prep@straightstart%
+    \fi%
+  \else% A straight line -> great!
+    \let\pgf@next\pgf@parse@start@till@stop%
+    \let\pgf@do@shorten@start\pgf@do@shorten@straightstart%
+    \let\pgf@do@draw@start\pgf@do@draw@straightstart%
+    \let\pgf@prep@start\pgf@prep@straightstart%
+  \fi\fi%
+  \pgf@next% Needed for reading rest of path...
+}
+
+\def\pgf@parse@start@till@stop#1\pgf@stop\pgf@stop\pgf@stop{\def\pgfsubpathend{#1}}%
+
+\def\pgf@parse@start@curve@cont#1#2#3#4#5#6#7\pgf@stop\pgf@stop\pgf@stop{%
+  \def\pgfpointthirdonpath{\pgfqpoint{#2}{#3}}%
+  \def\pgfpointfourthonpath{\pgfqpoint{#5}{#6}}%
+  \def\pgfsubpathend{#7}%
+}
+
+\def\pgf@parse@start@curve@cont@straight#1#2#3#4#5#6#7\pgf@stop\pgf@stop\pgf@stop{%
+  \def\pgfpointthirdonpath{\pgfqpoint{#2}{#3}}%
+  \def\pgfpointfourthonpath{\pgfqpoint{#5}{#6}}%
+  \def\pgfsubpathend{#1{#2}{#3}#4{#5}{#6}#7}%
+}
+
+%
+% Preps
+%
+\def\pgf@prep@movetostart{%
+  \pgf@process{\pgfpointfirstonpath}%
+  \pgf@xb\pgf@x
+  \pgf@yb\pgf@y
+  \pgf@xc\pgf@x
+  \pgf@yc\pgf@y
+}
+\def\pgf@prep@straightstart{%
+  \let\pgf@ref\pgfpointsecondonpath
+  \ifx\pgfpointfirstonpath\pgfpointsecondonpath% degenerate!
+    \ifx\pgfpointthirdonpath\relax% cannot help it: really a zero-length path
+    \else%
+      \ifx\pgfpointfirstonpath\pgfpointthirdonpath% double degenerate!
+        \let\pgf@ref\pgfpointfourthonpath% Use third point for reference.
+      \else
+        \let\pgf@ref\pgfpointthirdonpath% Use third point for reference.
+      \fi%
+    \fi%
+  \fi%
+  \pgfpointlineatdistance{\pgf@path@shortening@distance}{\pgfpointfirstonpath}{\pgf@ref}%
+  \pgf@xa\pgf@x%
+  \pgf@ya\pgf@y%
+}
+
+%
+% Line shortening for straight lines:
+%
+\def\pgf@do@shorten@straightstart{%
+  \edef\pgfprocessresultpathsuffix{\pgfsubpathfirsttoken{\the\pgf@xa}{\the\pgf@ya}\pgfsubpathsecondtoken{\the\pgf@xc}{\the\pgf@yc}}%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgfprocessresultpathsuffix%
+  \expandafter\expandafter\expandafter{\expandafter\pgfprocessresultpathsuffix\pgfsubpathend}%
+}
+
+
+%
+% Draw a start arrow by calling an appropriate subfunction, if necessary
+%
+
+\def\pgf@add@arrow@at@start{%
+  \ifx\pgf@arrowpath\pgfutil@empty\else%
+    \ifx\pgf@start@tip@sequence\pgfutil@empty\else%
+      \pgf@do@draw@start%
+    \fi%
+  \fi%
+}
+
+%
+% Draw an start arrow at the start of a straight line
+%
+\def\pgf@do@draw@straightstart{%
+  {%
+    \pgftransformreset%
+    \pgftransformarrow{\pgfqpoint{\pgf@xc}{\pgf@yc}}{\pgfqpoint{\pgf@xb}{\pgf@yb}}%
+    \pgf@arrow@draw@arrow\pgf@start@tip@sequence\pgf@arrow@tip@total@length%
+  }%
+}
+
+
+
+\let\pgf@shorten@end=\pgfutil@empty
+\let\pgf@shorten@start=\pgfutil@empty
+
+
+\endinput%

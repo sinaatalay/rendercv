@@ -1,0 +1,1253 @@
+% Copyright 2006, 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcorearrows.code.tex}
+
+
+
+% Define a new (meta) arrow or a shorthand
+%
+% #1 = key--value pairs
+%
+% Description:
+%
+% This command is used to define a new arrow tip kind. For more
+% details on the description of the keys, please see the pgfmanual.
+%
+% name         = Name of the arrow. If the name contains a dash
+%                (hyphen), the text before the hyphen is the start name
+%                and the text behind it the end name.
+%
+% means        = If set, none of the below options may be
+%                given. The effect is that whenever the arrow is
+%                used, it gets replaced by this "text", which is
+%                parsed by the parser.
+%
+% setup code   = Code that does "precomputations". These will be
+%                executed only once for each combination of the
+%                dependencies. At the end of this code, you can use
+%                \savethe and \save to "save" computed values, which
+%                will then be available inside the "code". Values needed
+%                only for the "... end" keys and the convex hull do not
+%                need to be saved since these are also executed only
+%                once.
+% drawing code = Code for drawing the arrow. When the cache key is set to
+%                true, which is the default, the code will be protocolled
+%                and the resulting code is inserted using \pgflowlevelobj.
+% cache        = Boolean that decides whether the arrow can be cached. The
+%                default is true, so you have to say cache=false to switch
+%                caching off. In this case, each time the arrow is drawn,
+%                its code is simply executed. This allows you to put things
+%                like text or shadings in arrow tips.
+% bending mode = Can be set to "orthogonal", "polar", or
+%                "none". Defaults to "orthogonal".
+% defaults     = A list of "default" options for the arrow tip. These
+%                are executed as if they were given to the arrow tip in
+%                brackets. This is useful for setting up default values.
+% parameters   = A list of comma-separated macro names on whose values
+%                the appearance of the arrow tip depends. When an arrow
+%                tip is used, these macros are expanded. If an
+%                arrow tip was already installed with the same macro
+%                names (and caching is true), the cached code is
+%                used. Note that when you use dimensions here, add \the.
+%
+% Inside the setup code, the following macros are available:
+%
+% \pgfarrowssettipend
+%              The code should draw an arrow pointing "right along the x
+%              axis". The "tip" key specifies how far the arrow goes
+%              along the x axis, that is, it should be the x coordinate
+%              of the very tip of the arrow. In previous versions this
+%              was called the "right extend". The value passed to this
+%              key should be some code that sets the dimension
+%              "\pgfarrowresult", which is \let to be equal to
+%              \pgf@x. A \relax will be added after the code provided
+%              here, so you can write things like "\pgfarrowresult=1pt".
+% \pgfarrowssetbackend
+%              The leftmost x-coordinate that is still part of the
+%              arrow tip (the "back end" of the arrow"). This coordinate
+%              will be used when multiple arrow tips are
+%              composed. Defaults to 0pt.
+% \pgfarrowssetlineend
+%              The x-coordinate where a line should stop inside the arrow
+%              tip so that it gets "obscured" by the arrow. Defaults to 0pt.
+% \pgfarrowssetvisualtipend
+%              When the arrow tip is drawn in flex mode, it is rotated
+%              such that the x-coordinates of "visual tip end" and "visual
+%              back end" lie on the path. Defaults to \pgfarrowssettipend.
+% \pgfarrowssetvisualbackend
+%              See above. Defaults to \pgfarrowssetbackend
+
+\def\pgfdeclarearrow#1{%
+  \let\pgf@decl@arrow@defaults\pgfutil@empty%
+  \let\pgf@decl@arrow@means\relax%
+  \let\pgf@decl@arrow@code\relax%
+  \pgfkeys{/pgf/@arrows decl/.cd,
+    name=,
+    setup code=,
+    cache=true,
+    bending mode=orthogonal,
+    parameters=,%
+    #1%
+  }%
+  \ifx\pgf@decl@arrow@name@end\pgfutil@empty%
+    \pgferror{Declaring unnamed arrow}%
+  \else%
+    \pgf@arrow@letter{name@end}%
+    \pgf@arrow@letter{name@start}%
+    \expandafter\let\csname pgf@ar@start@\pgf@decl@arrow@name@start\endcsname\pgf@decl@arrow@name@end%
+    \expandafter\let\expandafter\pgf@old@code\csname pgf@ar@code@\pgf@decl@arrow@name@end\endcsname%
+    \expandafter\let\expandafter\pgf@old@means\csname pgf@ar@means@\pgf@decl@arrow@name@end\endcsname%
+    \ifx\pgf@decl@arrow@code\relax%
+      \ifx\pgf@decl@arrow@means\relax%
+        \pgferror{You must set either the 'means' or the drawing code' keys for arrow tip '\pgf@decl@arrow@name@end'}%
+      \else%
+        \ifx\pgf@old@code\relax%
+          \let\pgf@arrow@tip@sequence\pgfutil@empty%
+          \let\pgf@arrow@translate\relax%
+          \expandafter\let\expandafter\pgf@arrows@direct\csname pgf@arrows@direct@name@end@\pgf@decl@arrow@means\endcsname%
+          \ifx\pgf@arrows@direct\relax%
+            \let\pgf@arrows@options\pgfutil@empty%
+            \expandafter\pgfarrows@initial@parser\pgf@decl@arrow@means[]\pgf@stop%
+          \else%
+            \let\pgf@arrow@tip@sequence\pgf@arrows@direct%
+          \fi%
+          \pgf@arrow@letter@\pgf@arrow@tip@sequence{means}%
+          \expandafter\let\csname pgf@ar@code@\pgf@decl@arrow@name@end\endcsname\relax%
+        \else%
+          \pgferror{Arrow tip '\pgf@decl@arrow@name@end' was already
+            defined with key 'drawing code' previously and you cannot change this}%
+        \fi%
+      \fi%
+    \else%
+      \ifx\pgf@decl@arrow@means\relax%
+        \ifx\pgf@old@means\relax%
+          \pgf@arrow@letter{code}%
+          \pgf@arrow@letter{defaults}%
+          \pgf@arrow@letter{setup}%
+          \pgf@arrow@letter{bending@mode}%
+          \pgf@arrow@letter{par}%
+          \expandafter\let\csname pgf@ar@do@cache@\pgf@decl@arrow@name@end\endcsname\pgf@decl@arrow@cache%
+        \else%
+          \pgferror{Arrow tip '\pgf@decl@arrow@name@end' was already
+            defined with key 'means' previously and you cannot change this}%
+        \fi%
+      \else%
+        \pgferror{You cannot set both the 'means' and also the 'drawing code'
+          keys for arrow tip '\pgf@decl@arrow@name@end'}%
+      \fi%
+    \fi%
+  \fi%
+}
+
+\def\pgf@arrow@letter#1{%
+  \expandafter\pgf@arrow@letter@\expandafter{\csname pgf@decl@arrow@#1\endcsname}{#1}%
+}
+\def\pgf@arrow@letter@#1#2{%
+  \expandafter\let\csname pgf@ar@#2@\pgf@decl@arrow@name@end\endcsname#1%
+}
+
+\pgfkeys{
+  /pgf/@arrows decl/.cd,
+  name/.code={%
+    \pgfutil@in@-{#1}%
+    \ifpgfutil@in@%
+      \pgf@arrows@name@decomp#1\pgf@stop%
+    \else%
+      \def\pgf@decl@arrow@name@end{#1}\let\pgf@decl@arrow@name@start\pgf@decl@arrow@name@end%
+    \fi},
+  means/.store in=\pgf@decl@arrow@means,
+  setup code/.store in=\pgf@decl@arrow@setup,
+  drawing code/.store in=\pgf@decl@arrow@code,
+  cache/.store in=\pgf@decl@arrow@cache,
+  bending mode/.is choice,
+  bending mode/none/.code=\let\pgf@decl@arrow@bending@mode\pgfutil@empty,
+  bending mode/orthogonal/.code=\def\pgf@decl@arrow@bending@mode{\pgfpointcurvilinearbezierorthogonal},
+  bending mode/polar/.code=\def\pgf@decl@arrow@bending@mode{\pgfpointcurvilinearbezierpolar},
+  parameters/.store in=\pgf@decl@arrow@par,
+  defaults/.code={%
+    \let\pgf@arrows@options\pgfutil@empty%
+    \pgfkeys{/pgf/arrow keys/.cd,#1}%
+    \let\pgf@decl@arrow@defaults\pgf@arrows@options%
+  }
+}
+
+\def\pgf@arrows@name@decomp#1-#2\pgf@stop{%
+  \def\pgf@decl@arrow@name@start{#1}%
+  \def\pgf@decl@arrow@name@end{#2}%
+}
+
+
+% Handler for defining arrow tips:
+%
+% Description:
+%
+% When you write "my name/.tip = arrow spec", this has the same
+% effect as writing \pgfdeclarearrow{name = my name, means = arrow spec}.
+
+\pgfkeys{/handlers/.tip/.code=%
+  \expandafter\expandafter\expandafter\pgf@arrows@unravel\pgfkeyscurrentpath/\pgf@stop%
+  \expandafter\pgf@arrows@key@call\expandafter{\pgf@arrows@unravelled}{#1}}
+\def\pgf@arrows@unravel#1/{\pgfutil@ifnextchar\pgf@stop{\def\pgf@arrows@unravelled{#1}\pgfutil@gobble}{\pgf@arrows@unravel}}
+\def\pgf@arrows@key@call#1#2{\pgfdeclarearrow{name={#1},means={#2}}}
+
+
+
+
+% Draw an arrow
+%
+% #1 = arrow specification
+%
+% Description:
+%
+% Draws the arrow in the given specification (and "end"
+% specification). The arrow will be drawn such that it touches the
+% origin "from the left", that is, the arrow will lie completely in
+% the half plane with negative $x$ values and the tip will end exactly
+% at the origin.
+
+\def\pgfarrowdraw#1{%
+  {%
+    \pgfsetarrowsend{#1}%
+    \pgf@arrow@compute@shortening\pgf@end@tip@sequence%
+    \pgf@arrow@draw@arrow\pgf@end@tip@sequence\pgf@xb%
+  }%
+}
+
+
+
+% Compute the length of an arrow
+%
+% #1 = arrow specification
+%
+% Description:
+%
+% In \pgf@x, this will return the total length of the arrow given as
+% #1, in \pgf@xa it will return the distance from the tip to the line
+% end.
+
+\def\pgfarrowtotallength#1{%
+  {%
+    \pgfsetarrowsend{#1}%
+    \pgf@arrow@compute@shortening\pgf@end@tip@sequence%
+    \expandafter\expandafter\expandafter%
+  }%
+  \expandafter\expandafter\expandafter\pgf@x\expandafter\the\expandafter\pgf@xb\expandafter\pgf@xa\the\pgf@xa%
+}
+
+
+
+
+
+% Sets the end arrow tip
+%
+% #1 = An arrow specification
+%
+% Description:
+%
+% An "arrow specification" is a sequence of names of meta arrow tips
+% together with options in brackets. In detail:
+%
+% In #1, consider the text from the start up to the first bracket. If
+% this text is the name of a (meta) arrow tip, we use this arrow tip
+% with the provided options. If it is the name of a arrow tip
+% shorthand, this shorthand is expanded and the options are applied to
+% each arrow tip inside the shorthand. If the text is neither or the
+% above, the first letter of text is treated as a shorthand without
+% options.
+%
+% The special arrow tip "." is used to indicate the end of the line.
+%
+% \pgfsetarrowsend{stealth[reversed]}
+% \pgfsetarrowsend{stealth[length=1pt] . stealth[length=2pt]}
+% \pgfsetarrowsend{>>>}
+% \pgfsetarrowsend{>.>}
+
+\def\pgfsetarrowsend#1{%
+  \let\pgf@arrow@tip@sequence\pgfutil@empty%
+  \pgf@arrows@translatefalse%
+  \expandafter\let\expandafter\pgf@arrows@direct\csname pgf@arrows@direct@name@end@#1\endcsname%
+  \ifx\pgf@arrows@direct\relax%
+    \edef\pgf@marshal{\noexpand\pgfarrows@initial@parser#1[]\noexpand\pgf@stop}%
+    \pgf@marshal%
+  \else%
+    \let\pgf@arrow@tip@sequence\pgf@arrows@direct%
+  \fi%
+  \let\pgf@end@tip@sequence\pgf@arrow@tip@sequence%
+}
+
+\newif\ifpgf@arrows@translate
+
+\def\pgfarrows@initial@parser{%
+  \pgfutil@ifnextchar[\pgfarrows@initial@parser@{\pgfarrows@initial@parser@[]}}%}
+
+\def\pgfarrows@initial@parser@[#1]{%
+  \let\pgf@arrows@options\pgfutil@empty%
+  \pgfkeys{/pgf/arrow keys/.cd,#1}%
+  \let\pgf@arrows@options@initial\pgf@arrows@options%
+  \pgfarrows@parser%
+}
+
+\def\pgfarrows@parser#1[{%
+  \pgfkeys@spdef\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfutil@empty%
+    \let\pgf@next\pgf@arrows@empty%
+  \else%
+    \ifx\pgf@temp\pgf@dot@text%
+      \let\pgf@next\pgf@arrows@dot@parsed%
+    \else%
+      \let\pgf@untranslated\pgf@temp%
+      \ifpgf@arrows@translate%
+        \pgf@arrow@swapper%
+      \fi%
+      % Now, let's see what we do with this...
+      \expandafter\ifx\csname pgf@ar@code@\pgf@temp\endcsname\relax
+        \expandafter\ifx\csname pgf@ar@means@\pgf@temp\endcsname\relax
+          % #1 should start with a single-char shorthands
+          \let\pgf@next\pgf@arrows@single@char@parser%
+          \let\pgf@temp\pgf@untranslated%
+        \else%
+          % #1 is a shorthand!
+          \let\pgf@next\pgf@arrows@shorthand@parsed%
+        \fi%
+      \else%
+        % #1 is a meta arrow!
+        \let\pgf@next\pgf@arrows@meta@parsed%
+      \fi%
+    \fi%
+  \fi%
+  \expandafter\pgf@next\pgf@temp[%
+}
+
+\def\pgf@arrows@empty[#1]{%
+  \pgfutil@ifnextchar\pgf@stop\pgf@arrows@parser@done\pgfarrows@parser%
+}
+
+\def\pgf@arrows@single@char@parser#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgf@dot@text%
+    \let\pgf@next\pgf@arrows@dot@parsed%
+  \else%
+    \let\pgf@untranslated\pgf@temp%
+    \ifpgf@arrows@translate%
+      \pgf@arrow@swapper%
+    \fi%
+    \expandafter\ifx\csname pgf@ar@code@\pgf@temp\endcsname\relax
+      \expandafter\ifx\csname pgf@ar@means@\pgf@temp\endcsname\relax
+        \let\pgf@temp\pgf@untranslated%
+        \let\pgf@next\pgf@arrows@unknown%
+      \else%
+        \let\pgf@next\pgf@arrows@shorthand@parsed%
+      \fi%
+    \else%
+      \let\pgf@next\pgf@arrows@meta@parsed%
+    \fi
+  \fi
+  \expandafter\pgf@next\pgf@temp[]%
+}
+\def\pgf@arrows@unknown#1[]#2[#3]{%
+  \pgferror{Unknown arrow tip kind '#1#2'}%
+}
+
+\def\pgf@arrows@meta@parsed#1[#2]{%
+  % Ok, run the keys #2. This will add commands to \pgf@arrows@options:
+  %
+  \let\pgf@arrows@options\pgf@arrows@options@initial%
+  \pgfkeys{/pgf/arrow keys/.cd,#2}%
+  % Append the arrow and its options to the arrow tip sequence:
+  \expandafter\pgf@arrows@meta@set\expandafter{\pgf@arrows@options}{#1}{\pgf@arrow@handle}%
+  \pgfutil@ifnextchar\pgf@stop\pgf@arrows@parser@done\pgfarrows@parser%
+}
+
+\def\pgf@arrows@parser@done#1{%
+}
+
+\def\pgf@arrows@dot@parsed#1[#2]{%
+  \pgf@arrows@append@to@tips{\pgf@arrow@handle@dot}%
+  \pgfutil@ifnextchar\pgf@stop\pgf@arrows@parser@done\pgfarrows@parser%
+}
+
+\def\pgf@arrows@meta@set#1#2#3{%
+  \pgf@arrows@append@to@tips{#3{#2}{#1}}%
+}
+\def\pgf@arrows@append@to@tips#1{%
+  \let\pgf@tempa\pgf@arrow@tip@sequence%
+  \def\pgf@tempb{#1}%
+  \ifpgf@arrows@translate%
+    \let\pgf@tempa\pgf@tempb%
+    \let\pgf@tempb\pgf@arrow@tip@sequence%
+  \fi%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgf@arrow@tip@sequence%
+  \expandafter\expandafter\expandafter{\expandafter\pgf@tempa\pgf@tempb}%
+}
+
+\def\pgf@arrows@shorthand@parsed#1[#2]{%
+  \let\pgf@arrows@options\pgf@arrows@options@initial%
+  \pgfkeys{/pgf/arrow keys/.cd,#2}%
+  \ifx\pgf@arrows@options\pgfutil@empty%
+    \expandafter\pgf@arrows@append@to@tips\expandafter{%
+      \expandafter\pgf@arrow@handle@shorthand@empty\expandafter{\csname pgf@ar@means@#1\endcsname}}%
+  \else%
+    \expandafter\expandafter\expandafter\pgf@arrows@meta@set\expandafter\expandafter\expandafter{%
+      \expandafter\pgf@arrows@options\expandafter}\expandafter{\csname pgf@ar@means@#1\endcsname}{\pgf@arrow@handle@shorthand}%
+  \fi%
+  \pgfutil@ifnextchar\pgf@stop\pgf@arrows@parser@done\pgfarrows@parser%
+}
+
+
+% General handler:
+
+\def\pgf@arrow@handle@shorthand@empty#1{#1}
+
+\def\pgf@arrow@handle@shorthand#1#2{%
+  \def\pgf@temp@opt{#2}%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgf@arrows@nested@options@temp%
+  \expandafter\expandafter\expandafter{\expandafter\pgf@temp@opt\pgf@arrows@nested@options}%
+  \expandafter\let\expandafter\pgf@arrows@nested@options\expandafter\pgf@arrows@nested@options@temp%
+  \expandafter#1% all these expandafters to avoid creating groups, but having the options nest
+  \expandafter\def\expandafter\pgf@arrows@nested@options\expandafter{\pgf@arrows@nested@options}%
+}
+
+\let\pgf@arrows@nested@options\pgfutil@empty
+
+
+
+
+% Sets the start arrow tip
+%
+% #1 = An arrow specification
+%
+% Description:
+%
+% This works like \pgfsetarrowsend, only the order of the tips in the
+% arrow specification is reversed and the "reversed names" are used.
+%
+% \pgfsetarrowsend{<<}
+% \pgfsetarrowsend{>.>}
+
+\def\pgfsetarrowsstart#1{%
+  \let\pgf@arrow@tip@sequence\pgfutil@empty%
+  \pgf@arrows@translatetrue%
+  \expandafter\let\expandafter\pgf@arrows@direct\csname pgf@arrows@direct@name@start@#1\endcsname%
+  \ifx\pgf@arrows@direct\relax%
+    \edef\pgf@marshal{\noexpand\pgfarrows@initial@parser#1[]\noexpand\pgf@stop}%
+    \pgf@marshal%
+  \else%
+    \let\pgf@arrow@tip@sequence\pgf@arrows@direct%
+  \fi%
+  \let\pgf@start@tip@sequence\pgf@arrow@tip@sequence%
+}
+
+\def\pgf@arrow@swapper{%
+  \expandafter\let\expandafter\pgf@temp\csname pgf@ar@start@\pgf@temp\endcsname%
+  \ifx\pgf@temp\relax%
+    \def\pgf@temp{undefined}%
+  \fi%
+}
+
+\let\pgf@start@tip@sequence\pgfutil@empty
+\let\pgf@end@tip@sequence\pgfutil@empty
+
+
+\expandafter\def\csname pgf@arrows@direct@name@start@\endcsname{}
+\expandafter\def\csname pgf@arrows@direct@name@end@\endcsname{}
+
+
+% Predefined lengths and ifs
+
+\newdimen\pgfarrowsep
+
+\newif\ifpgfarrowswap
+\newif\ifpgfarrowreversed
+\newif\ifpgfarrowharpoon
+\newif\ifpgfarrowopen
+
+\let\pgf@arrows@stroke@color\pgfutil@empty
+\let\pgf@arrows@fill@color\pgfutil@empty
+
+\def\pgfarrows@length@scale{1}
+\def\pgfarrows@width@scale{1}
+\def\pgfarrows@slant{0}
+
+\let\pgfarrows@scale@list\pgfutil@empty
+\def\pgfarrowsaddtolengthscalelist#1{\expandafter\def\expandafter\pgfarrows@scale@list\expandafter{\pgfarrows@scale@list#1\pgfarrows@length@scale#1}}
+\def\pgfarrowsaddtowidthscalelist#1{\expandafter\def\expandafter\pgfarrows@scale@list\expandafter{\pgfarrows@scale@list#1\pgfarrows@width@scale#1}}
+
+\pgfkeys{
+  /pgf/arrow keys/.cd,
+  scale/.code={%
+    \pgfmathparse{#1}%
+    \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgfarrows@length@scale\expandafter{\pgfmathresult}}%
+    \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgfarrows@width@scale\expandafter{\pgfmathresult}}%
+  },
+  scale length/.code={\pgfmathparse{#1}\expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgfarrows@length@scale\expandafter{\pgfmathresult}}},
+  scale width/.code={\pgfmathparse{#1}\expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgfarrows@width@scale\expandafter{\pgfmathresult}}},
+  slant/.code={\pgfmathparse{#1}\expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgfarrows@slant\expandafter{\pgfmathresult}}},
+  sep/.code={
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\pgfarrowslinewidthdependent\pgfarrowstheparameters\pgfarrowsep\pgf@x}%
+  },
+  sep/.default=0.88pt .3 1,
+  %
+  swap/.code=\pgfarrowsaddtooptions{\ifpgfarrowswap\pgfarrowswapfalse\else\pgfarrowswaptrue\fi},
+  reversed/.code=\pgfarrowsaddtooptions{\ifpgfarrowreversed\pgfarrowreversedfalse\else\pgfarrowreversedtrue\fi},
+  harpoon/.is choice,
+  harpoon/.default=true,
+  harpoon/true/.code=\pgfarrowsaddtooptions{\pgfarrowharpoontrue},
+  harpoon/false/.code=\pgfarrowsaddtooptions{\pgfarrowharpoonfalse},
+  left/.style={harpoon},
+  right/.style={harpoon,swap},
+  %
+  color/.code=\pgfarrowsaddtooptions{\def\pgf@arrows@stroke@color{#1}},
+  fill/.code={%
+    \def\pgf@temp{#1}%
+    \ifx\pgf@temp\pgf@nonetext%
+      \pgfarrowsaddtooptions{\pgfarrowopentrue}
+    \else
+      \pgfarrowsaddtooptions{\pgfarrowopenfalse\def\pgf@arrows@fill@color{#1}}
+    \fi
+  },
+  fill/.value required,
+  open/.style={fill=none},
+  .unknown/.code={
+    \expandafter\pgfutil@in@\expandafter!\expandafter{\pgfkeyscurrentname}%
+    \ifpgfutil@in@%
+      % this is a color!
+      \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgf@arrows@stroke@color\expandafter{\pgfkeyscurrentname}}%
+    \else%
+      \pgfutil@doifcolorelse{\pgfkeyscurrentname}
+      {%
+        \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgf@arrows@stroke@color\expandafter{\pgfkeyscurrentname}}%
+      }
+      {%
+        \edef\pgf@temp{\pgfkeyscurrentname}%
+        \pgfkeys{/errors/unknown key/.expand once=\expandafter{\pgf@temp}{#1}}%
+      }
+      \fi
+    }
+}
+\def\pgf@nonetext{none}
+
+\def\pgfarrowsaddtooptions#1{\expandafter\def\expandafter\pgf@arrows@options\expandafter{\pgf@arrows@options#1}}
+\def\pgfarrowsaddtolateoptions#1{\expandafter\def\expandafter\pgf@arrows@options\expandafter{\pgf@arrows@options\pgf@arrows@add@to@late@options{#1}}}
+\def\pgf@arrows@add@to@late@options#1{\expandafter\def\expandafter\pgf@arrows@late@options\expandafter{\pgf@arrows@late@options#1}}
+
+
+
+\def\pgfarrowsthreeparameters#1{%
+  \pgfarrowsthreeparameters@#1 +0 +0 +0 \pgf@stop%
+}
+\def\pgfarrowsthreeparameters@#1 #2 #3 #4\pgf@stop{%
+  \pgfmathsetlength\pgf@x{#1}%
+  \pgfmathsetmacro\pgf@temp@a{#2}%
+  \pgfmathsetmacro\pgf@temp@b{#3}%
+  \edef\pgfarrowstheparameters{{\the\pgf@x}{\pgf@temp@a}{\pgf@temp@b}}%
+}
+
+\def\pgfarrowsfourparameters#1{%
+  \pgfarrowsfourparameters@#1 +0 +0 +0 \pgf@stop%
+}
+\def\pgfarrowsfourparameters@#1:#2 #3 #4 #5\pgf@stop{%
+  \pgfmathsetmacro\pgf@temp@z{#1}%
+  \pgfmathsetlength\pgf@x{#2}%
+  \pgfmathsetmacro\pgf@temp@a{#3}%
+  \pgfmathsetmacro\pgf@temp@b{#4}%
+  \edef\pgfarrowstheparameters{{\pgf@temp@z}{\the\pgf@x}{\pgf@temp@a}{\pgf@temp@b}}%
+}
+
+\def\pgfarrows@angle@setup#1#2#3#4{%
+  \pgfarrowslinewidthdependent{#2}{#3}{#4}
+  \pgf@xc\pgf@x
+  \pgf@yc#1 pt%
+  \pgf@yc.5\pgf@yc%
+  \pgfpointpolar{\pgf@yc}{\pgf@xc}
+  \pgfarrowlength\pgf@x%
+  \pgf@y2\pgf@y%
+  \expandafter\pgf@arrows@add@to@late@options\expandafter{\expandafter\pgfarrowwidth\the\pgf@y}%
+}
+
+\def\pgfarrows@angle@setup@prime#1{%
+  \pgf@yc#1 pt %
+  \pgf@yc=0.5\pgf@yc
+  \pgfmathtan@{\pgf@sys@tonumber\pgf@yc}%
+  \pgfarrowwidth\pgfmathresult\pgfarrowlength%
+  \pgfarrowwidth2\pgfarrowwidth%
+}
+
+\def\pgfarrowslinewidthdependent#1#2#3{%
+  \pgf@x#1%
+  \ifdim\pgfinnerlinewidth>0pt%
+    \pgf@arrows@inner@line@width@dep{#2}{#3}%
+  \else%
+    \advance\pgf@x by#2\pgflinewidth%
+  \fi%
+}
+\def\pgf@arrows@inner@line@width@dep#1#2{%
+  % #1*((1-#2/2)*full line width - (#2/2) * inner line width)
+  % Compute "real" line width
+  \pgf@xa\pgflinewidth%
+  \pgf@xb-.5\pgflinewidth%
+  \pgf@xb#2\pgf@xb%
+  \advance\pgf@xa by\pgf@xb%
+  \pgf@xb\pgfinnerlinewidth%
+  \pgf@xb-.5\pgf@xb
+  \advance\pgf@xa by#2\pgf@xb%
+  \advance\pgf@x by#1\pgf@xa%
+}
+
+
+\def\pgfarrowslengthdependent#1#2#3#4{%
+  #4#1%
+  \advance#4by#2\pgfarrowlength%
+  \advance#4by#3\pgflinewidth%
+}
+
+
+
+% Build the full name:
+
+\def\pgf@arrow@fullname#1{pgf@@ar@#1@\the\pgflinewidth @\pgfinnerlinewidth @\ifpgfarrowreversed r\fi @\pgf@arrows@stroke@color @\pgf@arrows@fill@color @\csname pgf@ar@par@#1\endcsname}
+\def\pgf@arrow@id@count{0}%
+
+% Compute the arrow id of an arrow
+%
+% #1 = arrow name
+% #2 = options
+%
+% Description:
+%
+% Returns the an id in \pgf@arrow@id that identifies the instantiation
+% of the given arrow. If the arrow was not instantiated, this happens now.
+
+\def\pgfarrows@getid#1#2{%
+  % Execute options:
+  \let\pgf@arrows@late@options\pgfutil@empty%
+  % 1. Defaults:
+  \csname pgf@ar@defaults@#1\endcsname%
+  % 2. Scope:
+  \pgf@arrows@options@scope
+  % 3. Local:
+  #2\relax%
+  % 4. Nested:
+  \pgf@arrows@nested@options%
+  % 5. Last options:
+  \pgf@arrows@late@options%
+  % 6. Scaling:
+  \pgfarrows@scale@list%
+  % Now, test:
+  \expandafter\global\expandafter\let\expandafter\pgf@arrow@id\csname\pgf@arrow@fullname{#1}\endcsname\relax%
+  \ifx\pgf@arrow@id\relax%
+    \pgf@arrows@instantiate{#1}
+  \fi%
+}
+
+\def\pgf@arrows@instantiate#1{%
+  % Not defined. Rats!
+  % Allocate new id:
+  \pgfutil@tempcnta\pgf@arrow@id@count\relax%
+  \advance\pgfutil@tempcnta by1\relax%
+  \xdef\pgf@arrow@id@count{\the\pgfutil@tempcnta}%
+  \expandafter\global\expandafter\let\csname\pgf@arrow@fullname{#1}\endcsname\pgf@arrow@id@count%
+  \global\let\pgf@arrow@id\pgf@arrow@id@count%
+  {%
+    \pgfclearid%
+    \csname pgf@ar@setup@#1\endcsname%
+    % Handle reversal
+    \ifpgfarrowreversed%
+      % Compute transformation:
+      \pgf@arrows@handle@reverse%
+    \fi%
+    % Save computed values
+    \expandafter\global\expandafter\let\csname pgf@ar@saves@\pgf@arrow@id\endcsname\pgf@arrows@saves%
+    \expandafter\global\expandafter\let\csname pgf@ar@hull@\pgf@arrow@id\endcsname\pgf@arrows@convexhull%
+    \expandafter\xdef\csname pgf@ar@ends@\pgf@arrow@id\endcsname{{\pgf@arrows@the@tipend}{\pgf@arrows@the@backend}{\pgf@arrows@the@lineend}}%
+    \expandafter\xdef\csname pgf@ar@visual@\pgf@arrow@id\endcsname{{\pgf@arrows@the@visualtipend}{\pgf@arrows@the@visualbackend}{}}%
+    % Save code (needed for bending)
+    \edef\pgf@arrow@code{%
+      \ifpgfarrowreversed\noexpand\pgftransformxscale{-1}\fi%
+      \expandafter\noexpand\csname pgf@ar@code@#1\endcsname%
+    }%
+    \expandafter\global\expandafter\let\csname pgf@ar@inst@code@\pgf@arrow@id\endcsname\pgf@arrow@code%
+    % Should we cache?
+    \expandafter\ifx\csname pgf@ar@do@cache@#1\endcsname\pgf@truetext%
+      \pgfsysprotocol@getcurrentprotocol\pgf@arrow@temp%
+      {%
+        \pgfinterruptpath%
+          \let\pgfusepath=\pgf@nousepath@here%
+          \pgf@relevantforpicturesizefalse%
+          \pgftransformreset%
+          \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+          \pgfsysprotocol@bufferedtrue%
+          \pgfscope%
+          \pgf@arrow@code%
+          \endpgfscope%
+          \pgfsysprotocol@getcurrentprotocol\pgf@@arrow@temp%
+          \expandafter\gdef\expandafter\pgf@arrow@code\expandafter{\expandafter\pgfsysprotocol@literal\expandafter{\pgf@@arrow@temp}}%
+        \endpgfinterruptpath%
+      }%
+      \pgfsysprotocol@setcurrentprotocol\pgf@arrow@temp%
+    \fi%
+    \expandafter\global\expandafter\let\csname pgf@ar@cache@\pgf@arrow@id\endcsname\pgf@arrow@code%
+  }%
+}
+\def\pgf@truetext{true}
+
+% Ok, now run setup:
+\def\pgf@arrows@copy@tipend{\pgf@arrows@the@tipend}
+\def\pgf@arrows@copy@backend{\pgf@arrows@the@backend}
+\def\pgf@arrows@copy@lineend{\pgf@arrows@the@lineend}
+\def\pgf@arrows@zeropt{0pt}%
+
+\let\pgf@arrows@saves\pgfutil@empty%
+\let\pgf@arrows@convexhull\pgfutil@empty%
+\let\pgf@arrows@the@tipend\pgf@arrows@zeropt%
+\let\pgf@arrows@the@backend\pgf@arrows@zeropt%
+\let\pgf@arrows@the@lineend\pgf@arrows@zeropt%
+\let\pgf@arrows@the@visualtipend\pgf@arrows@copy@tipend%
+\let\pgf@arrows@the@visualbackend\pgf@arrows@copy@backend%
+
+
+\def\pgf@arrows@handle@reverse{%
+  \pgf@x\pgf@arrows@the@visualtipend\pgf@x-\pgf@x%
+  \pgf@y\pgf@arrows@the@visualbackend\pgf@y-\pgf@y
+  \edef\pgf@arrows@the@visualtipend{\the\pgf@y}%
+  \edef\pgf@arrows@the@visualbackend{\the\pgf@x}%
+  \pgf@x\pgf@arrows@the@tipend\pgf@x-\pgf@x%
+  \pgf@y\pgf@arrows@the@backend\pgf@y-\pgf@y
+  \edef\pgf@arrows@the@tipend{\the\pgf@y}%
+  \edef\pgf@arrows@the@backend{\the\pgf@x}%
+  \pgf@x\pgf@arrows@the@lineend\pgf@x-\pgf@x\edef\pgf@arrows@the@lineend{\the\pgf@x}%
+  \let\pgf@temp\pgf@arrows@convexhull%
+  \let\pgf@arrows@convexhull\pgfutil@empty%
+  \let\pgf@arrow@hull@point\pgf@arrow@hull@point@reverse%
+  \pgf@temp%
+}
+\def\pgf@arrow@hull@point@reverse#1#2{%
+  \pgf@x#1%
+  \pgfarrowshullpoint{-\pgf@x}{#2}%
+}
+
+\def\pgf@nousepath@here#1{\pgferror{The definition of an arrow may not use \string\pgfusepath}}
+
+\def\pgfarrowssavethe#1{%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgf@arrows@saves%
+  \expandafter\expandafter\expandafter{\expandafter\pgf@arrows@saves\expandafter#1\the#1\relax}
+}
+
+\def\pgfarrowssave#1{%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgf@arrows@saves%
+  \expandafter\expandafter\expandafter{\expandafter\pgf@arrows@saves\expandafter\def\expandafter#1\expandafter{#1}}
+}
+
+\def\pgfarrowshullpoint#1#2{%
+  \pgf@x#1\relax%
+  \pgf@y#2\relax%
+  \edef\pgf@arrows@temp{\noexpand\pgf@arrows@convexhull\noexpand\pgf@arrow@hull@point{\the\pgf@x}{\the\pgf@y}}%
+  \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@arrows@convexhull\expandafter\expandafter\expandafter{\pgf@arrows@temp}%
+}
+
+\def\pgfarrowsupperhullpoint#1#2{%
+  \pgf@x#1\relax%
+  \pgf@y#2\relax%
+  \ifdim\pgf@y>0pt
+    \edef\pgf@arrows@temp{\noexpand\pgf@arrows@convexhull\noexpand\pgf@arrow@hull@point{\the\pgf@x}{\the\pgf@y}\ifpgfarrowharpoon\else\noexpand\pgf@arrow@hull@point{\the\pgf@x}{-\the\pgf@y}\fi}%
+  \else
+    \edef\pgf@arrows@temp{\noexpand\pgf@arrows@convexhull\noexpand\pgf@arrow@hull@point{\the\pgf@x}{\the\pgf@y}}%
+  \fi
+  \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@arrows@convexhull\expandafter\expandafter\expandafter{\pgf@arrows@temp}%
+}
+
+\def\pgfarrowssettipend#1{\pgf@x#1\edef\pgf@arrows@the@tipend{\the\pgf@x}}
+\def\pgfarrowssetbackend#1{\pgf@x#1\edef\pgf@arrows@the@backend{\the\pgf@x}}
+\def\pgfarrowssetlineend#1{\pgf@x#1\edef\pgf@arrows@the@lineend{\the\pgf@x}}
+\def\pgfarrowssetvisualtipend#1{\pgf@x#1\edef\pgf@arrows@the@visualtipend{\the\pgf@x}}
+\def\pgfarrowssetvisualbackend#1{\pgf@x#1\edef\pgf@arrows@the@visualbackend{\the\pgf@x}}
+
+
+% Internal computation of the line end (shortening) for an arrow
+%
+% #1 = arrow tip list
+%
+% Description:
+%
+% \pgf@xa will contain the necessary path shortening for the given
+% arrow tip list, \pgf@xb will contain the total length of the arrow
+% tip list (sum of the differences between tip end and back end plus
+% the seps).
+
+\def\pgf@arrow@compute@shortening#1{%
+  \let\pgf@arrow@handle\pgf@arrow@compute@shortening@
+  \let\pgf@arrow@handle@dot\pgf@arrow@after@line@endtrue%
+  \pgf@arrow@after@line@endfalse%
+  \pgf@xa0pt%
+  \pgf@xb0pt%
+  #1%
+}
+\newif\ifpgf@arrow@after@line@end
+
+\def\pgf@arrow@compute@shortening@#1#2{%
+  {\pgfarrows@getid{#1}{#2}\ifnum\pgf@arrow@flex@mode>0\relax\global\pgf@precise@shorteningtrue\fi\expandafter}\expandafter\pgf@x\the\pgfarrowsep%
+  \expandafter\expandafter\expandafter\pgf@arrow@cont@short\csname pgf@ar@ends@\pgf@arrow@id\endcsname%
+}
+\def\pgf@dot@text{.}
+
+\def\pgf@arrow@cont@short#1#2#3{% tip end, back end, line end, sep
+  \advance\pgf@xb by#1%
+  \pgf@xc#2%
+  \advance\pgf@xb by-\pgf@xc%
+  \advance\pgf@xb by\pgf@x%
+  \ifpgf@arrow@after@line@end%
+    \advance\pgf@xa by#1%
+    \advance\pgf@xa by\pgf@x%
+    \pgf@xc#2%
+    \advance\pgf@xa by-\pgf@xc%
+  \else%
+    \pgf@xa#1%
+    \advance\pgf@xa by\pgf@x%
+    \pgf@xc#3%
+    \advance\pgf@xa by-\pgf@xc%
+  \fi%
+}
+
+
+
+\def\pgf@arrow@rigid@arrow#1#2{%
+  {%
+    \pgf@xb=#2%
+    \pgftransformxshift{-\pgf@xb}%
+    \let\pgf@arrow@handle\pgf@arrow@rigid
+    \let\pgf@arrow@handle@dot\relax%
+    #1%
+  }%
+}
+
+
+\def\pgf@arrow@rigid#1#2{%
+  % Prepare:
+  {%
+    \pgfarrows@getid{#1}{#2}%
+    % Do shift:
+    \expandafter\expandafter\expandafter\pgf@arrow@drawer@shift\csname pgf@ar@ends@\pgf@arrow@id\endcsname%
+    % Do slant:
+    \ifdim\pgfarrows@slant pt=0pt%
+    \else%
+      \pgftransformxslant{\pgfarrows@slant}%
+    \fi%
+    % do swap:
+    \ifpgfarrowswap%
+      \pgftransformyscale{-1}%
+    \fi%
+    {%
+      \csname pgf@ar@saves@\pgf@arrow@id\endcsname%
+      \pgf@arrows@rigid@hull%
+    }%
+  \expandafter}%
+  % Transform to next tip:
+  \expandafter\pgftransformxshift\expandafter{\the\pgf@xc}%
+}
+
+
+
+
+% Draw an arrow
+%
+% #1 = arrow tip list
+% #2 = total length of the arrow (the value of \pgf@xb computed by
+% \pgf@arrow@compute@shortening)
+%
+% Description:
+%
+% Draws an arrow tip list. The coordinate system must have been
+% transformed so that the to-be-drawn arrow points right and should
+% "end" at the origin.
+
+\def\pgf@arrow@draw@arrow#1#2{%
+  {%
+    \pgf@xb=#2%
+    \pgftransformxshift{-\pgf@xb}%
+    \let\pgf@arrow@handle\pgf@arrow@drawer
+    \let\pgf@arrow@handle@dot\relax%
+    #1%
+  }%
+}
+
+
+\def\pgf@arrow@drawer#1#2{%
+  % Prepare:
+  {%
+    \pgfarrows@getid{#1}{#2}%
+    % Do shift:
+    \expandafter\expandafter\expandafter\pgf@arrow@drawer@shift\csname pgf@ar@ends@\pgf@arrow@id\endcsname%
+    % Do slant:
+    \ifdim\pgfarrows@slant pt=0pt%
+    \else%
+      \pgftransformxslant{\pgfarrows@slant}%
+    \fi%
+    % do swap:
+    \ifpgfarrowswap%
+      \pgftransformyscale{-1}%
+    \fi%
+    {%
+      \csname pgf@ar@saves@\pgf@arrow@id\endcsname%
+      \pgfscope%
+        \pgf@arrows@color@setup%
+        \pgflowlevelsynccm\csname pgf@ar@cache@\pgf@arrow@id\endcsname%
+      \endpgfscope%
+      \pgf@arrows@rigid@hull%
+    }%
+  \expandafter}%
+  % Transform to next tip:
+  \expandafter\pgftransformxshift\expandafter{\the\pgf@xc}%
+}
+
+\def\pgf@arrows@color@setup@restore@std@colors{%
+  % we want to allow 'arrows={fill=pgffillcolor}'. To this end, we have to ensure that \string\color@pgffillcolor is known.
+  % we can safely keep the macro in the current TeX group since it has global character anyway.
+  %
+  % Note that declaring \string\color@pgfstrokecolor as \global macro causes save stack issues and should be avoided.
+  \pgfutil@namelet{\string\color@pgfstrokecolor}{pgf@strokecolor@global}%
+  \pgfutil@namelet{\string\color@pgffillcolor}{pgf@fillcolor@global}%
+  %
+}%
+
+\def\pgf@arrows@color@setup{%
+  \ifx\pgf@arrows@stroke@color\pgfutil@empty\else\pgfsetstrokecolor{\pgf@arrows@stroke@color}\fi%
+  \ifx\pgf@arrows@fill@color\pgfutil@empty%
+    \ifx\pgf@strokecolor@global\pgf@fillcolor@global
+    \else
+      \pgf@arrows@color@setup@restore@std@colors
+      \pgfsetfillcolor{pgfstrokecolor}%
+    \fi%
+  \else%
+    \pgf@arrows@color@setup@restore@std@colors
+    \pgfsetfillcolor{\pgf@arrows@fill@color}%
+  \fi%
+}
+
+\def\pgf@arrow@drawer@shift#1#2#3{% tip end, back end, line end, sep
+  \pgf@xb#2\pgftransformxshift{-\pgf@xb}%
+  \pgf@xc#1%
+  \advance\pgf@xc by\pgfarrowsep%
+  \advance\pgf@xc by-\pgf@xb%
+}
+
+\def\pgf@arrows@rigid@hull{%
+  \ifpgf@relevantforpicturesize%
+    % Do bb update:
+    \expandafter\let\expandafter\pgf@temp\csname pgf@ar@hull@\pgf@arrow@id\endcsname%
+    \ifx\pgf@temp\pgfutil@empty\else%
+      \let\pgf@arrow@hull@point\pgf@arrow@hull@point@first%
+      \pgf@temp%
+      \pgf@arrow@update@bb%
+    \fi%
+  \fi
+}
+
+
+% Convex hull stuff:
+
+\def\pgf@arrow@hull@point@first#1#2{%
+% {\pgfsys@beginscope\pgfpathcircle{\pgfqpoint{#1}{#2}}{0.5pt}\pgfusepathqfill\pgfsys@endscope}%
+  \pgf@x#1\pgf@y#2%
+  \pgf@xa\pgf@pt@aa\pgf@x%
+  \advance\pgf@xa by\pgf@pt@ba\pgf@y%
+  \pgf@ya\pgf@pt@ab\pgf@x%
+  \advance\pgf@ya by\pgf@pt@bb\pgf@y%
+  \pgf@xb\pgf@xa\pgf@yb\pgf@ya%
+  \let\pgf@arrow@hull@point\pgf@arrow@hull@point@other%
+}
+\def\pgf@arrow@hull@point@other#1#2{%
+%  {\pgfsys@beginscope\pgfpathcircle{\pgfqpoint{#1}{#2}}{0.5pt}\pgfusepathqfill\pgfsys@endscope}%
+  \pgfutil@tempdima#1\pgfutil@tempdimb#2%
+  \pgf@x\pgf@pt@aa\pgfutil@tempdima%
+  \advance\pgf@x by\pgf@pt@ba\pgfutil@tempdimb%
+  \pgf@y\pgf@pt@ab\pgfutil@tempdima%
+  \advance\pgf@y by\pgf@pt@bb\pgfutil@tempdimb%
+  \ifdim\pgf@x<\pgf@xa\pgf@xa\pgf@x\else\ifdim\pgf@x>\pgf@xb\pgf@xb\pgf@x\fi\fi%
+  \ifdim\pgf@y<\pgf@ya\pgf@ya\pgf@y\else\ifdim\pgf@y>\pgf@yb\pgf@yb\pgf@y\fi\fi%
+}
+
+\def\pgf@arrow@update@bb{%
+  \advance\pgf@xa by\pgf@pt@x%
+  \advance\pgf@ya by\pgf@pt@y%
+  \advance\pgf@xb by\pgf@pt@x%
+  \advance\pgf@yb by\pgf@pt@y%
+  \ifdim\pgf@picmaxx=-16000pt\relax%
+    \global\pgf@picminx\pgf@xa%
+    \global\pgf@picmaxx\pgf@xb%
+    \global\pgf@picminy\pgf@ya%
+    \global\pgf@picmaxy\pgf@yb%
+  \else%
+    \ifdim\pgf@xa<\pgf@picminx\global\pgf@picminx\pgf@xa\fi%
+    \ifdim\pgf@ya<\pgf@picminy\global\pgf@picminy\pgf@ya\fi%
+    \ifdim\pgf@xb>\pgf@picmaxx\global\pgf@picmaxx\pgf@xb\fi%
+    \ifdim\pgf@yb>\pgf@picmaxy\global\pgf@picmaxy\pgf@yb\fi%
+  \fi%
+}
+
+
+
+% Sets arrows
+%
+% #1 = An arrow specification of the form
+%      <start spec>-<end spec>. This will call \pgfsetstartarrow{start
+%        spec} and \pgfsetendarrow{end spec}.
+%
+%      Alternatively, it may be of the form [options]. In this case,
+%      the arrow options are set for the local scope and all arrows in
+%      the current scope will have these options set.
+%
+% Example:
+%
+% \pgfsetarrows{-to}
+
+\def\pgfsetarrows#1{\pgf@arrows#1\pgf@stop}
+\def\pgf@arrows{\pgfutil@ifnextchar[\pgf@arrows@test@opt\pgf@arrows@}%}
+\def\pgf@arrows@#1-#2\pgf@stop{%
+  \pgfsetarrowsstart{#1}%
+  \pgfsetarrowsend{#2}%
+}
+\def\pgf@arrows@test@opt[{%
+  \pgfutil@ifnextchar-{\pgf@arrows@[}%} go back to normal reading for compat. reasons.
+  \pgf@arrows@test@opt@%
+}
+\def\pgf@arrows@test@opt@#1]{%
+  \pgfutil@ifnextchar\pgf@stop{%
+    \let\pgf@arrows@options\pgf@arrows@options@scope%
+    \pgfkeys{/pgf/arrow keys/.cd,#1}%
+    \let\pgf@arrows@options@scope\pgf@arrows@options%
+    % Ok, setup the options
+    \pgfutil@gobble%
+  }{%
+    \pgf@arrows@[#1]% Oops: go back to normal mode
+  }%
+}
+
+\let\pgf@arrows@options@scope\pgfutil@empty
+
+
+
+
+%
+% Predefined arrows:
+%
+
+
+% A dot is used to indicate the end of the line:
+
+\pgfdeclarearrow{
+  name = .,
+  drawing code =
+}
+
+
+% An underscore adds a space as in >_> or >_ >. However, it will be
+% faster to say ">[sep] >" or ">[sep=2pt] >".
+
+\pgfdeclarearrow{
+  name = _,
+  defaults = {sep},
+  drawing code =
+}
+
+
+
+% Default shorthands:
+
+\pgfdeclarearrow{ name = To,  means = } % forward declaration
+\pgfdeclarearrow{ name = Bar, means = } % forward declaration
+\pgfkeys{
+  <-> /.tip           = {To},
+  >-< /.tip           = {>[reversed]},
+  | /.tip             = {Bar}
+}
+
+
+
+% Compatibility with old arrow system:
+
+\pgfkeys {}
+
+\def\pgf@arrows@direct@def#1#2{\expandafter\pgf@arrows@direct@def@\expandafter{\csname pgf@ar@means@#2\endcsname}{#1}}
+\def\pgf@arrows@direct@def@#1#2{\expandafter\def\csname pgf@arrows@direct@name@#2\endcsname{\pgf@arrow@handle@shorthand@empty{#1}}}
+\pgf@arrows@direct@def{start@[}{]}
+\pgf@arrows@direct@def{start@]}{[}
+\pgf@arrows@direct@def{start@spaced [}{spaced ]}
+\pgf@arrows@direct@def{start@spaced ]}{spaced [}
+\pgf@arrows@direct@def{end@[}{[}
+\pgf@arrows@direct@def{end@]}{]}
+\pgf@arrows@direct@def{end@spaced [}{spaced [}
+\pgf@arrows@direct@def{end@spaced ]}{spaced ]}
+
+\def\pgfsetarrowoptions#1#2{\expandafter\def\csname pgf@arrow@compat@opt@#1\endcsname{#2}}
+\def\pgfgetarrowoptions#1{\csname pgf@arrow@compat@opt@#1\endcsname}
+\def\pgfarrowsdeclare#1#2#3#4{%
+  \pgfdeclarearrow{ name  ={#1}-{#2}, setup code ={#3}, drawing code={#4}, parameters/.expand once={\csname pgf@arrow@compat@opt@#2\endcsname}}%
+  \expandafter\def\csname pgf@arrow@compat@opt@#2\endcsname{0}}
+\def\pgfarrowsleftextend#1{\pgfmathsetlength\pgf@xa{#1}\pgfarrowssetbackend{\pgf@xa}}
+\def\pgfarrowsrightextend#1{\pgfmathsetlength\pgf@xb{#1}\pgfarrowssettipend{\pgf@xb}}
+\def\pgfarrowsdeclarealias#1#2#3#4{\pgfdeclarearrow{ name  ={#1}-{#2}, means ={#4} } }
+\def\pgfarrowsdeclarereversed#1#2#3#4{\pgfdeclarearrow{ name ={#1}-{#2}, means={{#4}[reversed]}}}
+\def\pgfarrowsdeclarecombine{\pgfutil@ifnextchar*{\pgfarrowsdeclarecombine@star}{\pgf@@arrowsdeclarecombine}}
+\def\pgf@@arrowsdeclarecombine{\pgfutil@ifnextchar[{\pgf@arrowsdeclarecombine}{\pgf@arrowsdeclarecombine[0pt]}}
+\def\pgf@arrowsdeclarecombine[#1]#2#3#4#5#6#7{\def\pgf@@temp{#1}\ifx\pgf@@temp\pgf@linewidthtext\def\pgf@@temp{+0pt 1}\fi%
+  \pgfdeclarearrow{name ={#2}-{#3}, means={#5[sep/.expand once=\pgf@@temp]#6}}}
+\def\pgf@linewidth@text{\pgflinewidth}
+\def\pgfarrowsdeclarecombine@star*{\pgfutil@ifnextchar[{\pgf@arrowsdeclarecombine@star}{\pgf@arrowsdeclarecombine@star[0pt]}}
+\def\pgf@arrowsdeclarecombine@star[#1]#2#3#4#5#6#7{\def\pgf@@temp{#1}\ifx\pgf@@temp\pgf@linewidthtext\def\pgf@@temp{+0pt 1}\fi%
+  \pgfdeclarearrow{name ={#2}-{#3}, means={#5[sep/.expand once=\pgf@@temp].#6}}}
+\def\pgfarrowsdeclaredouble{\pgfutil@ifnextchar[{\pgf@arrowsdeclaredouble}{\pgf@arrowsdeclaredouble[0pt]}}
+\def\pgf@arrowsdeclaredouble[#1]#2#3#4#5{\pgfarrowsdeclarecombine[#1]{#2}{#3}{#4}{#5}{#4}{#5}}
+\def\pgfarrowsdeclaretriple{\pgfutil@ifnextchar[{\pgf@arrowsdeclaretriple}{\pgf@arrowsdeclaretriple[0pt]}}
+\def\pgf@arrowsdeclaretriple[#1]#2#3#4#5{ \pgfarrowsdeclarecombine[#1]{pgf@trip@#2}{pgf@trip@#3}{#4}{#5}{#4}{#5}%
+  \pgfarrowsdeclarecombine[#1]{#2}{#3}{pgf@trip@#2}{pgf@trip@#3}{#4}{#5}}
+\def\pgf@linewidthtext{\pgflinewidth}
+
+\pgfarrowsdeclare{stealth}{stealth}
+{
+  \pgfutil@tempdima=0.28pt%
+  \pgfutil@tempdimb=\pgflinewidth%
+  \ifdim\pgfinnerlinewidth>0pt%
+    \pgfmathsetlength\pgfutil@tempdimb{.6\pgflinewidth-.4*\pgfinnerlinewidth}%
+  \fi%
+  \advance\pgfutil@tempdima by.3\pgfutil@tempdimb%
+  \pgfarrowsleftextend{+-3\pgfutil@tempdima}
+  \pgfarrowsrightextend{+5\pgfutil@tempdima}
+}
+{
+  \pgfutil@tempdima=0.28pt%
+  \pgfutil@tempdimb=\pgflinewidth%
+  \ifdim\pgfinnerlinewidth>0pt%
+    \pgfmathsetlength\pgfutil@tempdimb{.6\pgflinewidth-.4*\pgfinnerlinewidth}%
+  \fi%
+  \advance\pgfutil@tempdima by.3\pgfutil@tempdimb%
+  \pgfpathmoveto{\pgfqpoint{5\pgfutil@tempdima}{0pt}}
+  \pgfpathlineto{\pgfqpoint{-3\pgfutil@tempdima}{4\pgfutil@tempdima}}
+  \pgfpathlineto{\pgfpointorigin}
+  \pgfpathlineto{\pgfqpoint{-3\pgfutil@tempdima}{-4\pgfutil@tempdima}}
+  \pgfusepathqfill
+}
+\pgfarrowsdeclarereversed{stealth reversed}{stealth reversed}{stealth}{stealth}
+\pgfarrowsdeclare{to}{to}
+{
+  \pgfutil@tempdima=-0.84pt%
+  \advance\pgfutil@tempdima by-1.3\pgflinewidth%
+  \pgfutil@tempdimb=0.21pt%
+  \advance\pgfutil@tempdimb by.625\pgflinewidth%
+  \pgfarrowsleftextend{+\pgfutil@tempdima}
+  \pgfarrowsrightextend{+\pgfutil@tempdimb}
+}
+{
+  \pgfutil@tempdima=0.28pt%
+  \advance\pgfutil@tempdima by.3\pgflinewidth%
+  \pgfsetlinewidth{0.8\pgflinewidth}
+  \pgfsetdash{}{+0pt}
+  \pgfsetroundcap
+  \pgfsetroundjoin
+  \pgfpathmoveto{\pgfqpoint{-3\pgfutil@tempdima}{4\pgfutil@tempdima}}
+  \pgfpathcurveto
+  {\pgfqpoint{-2.75\pgfutil@tempdima}{2.5\pgfutil@tempdima}}
+  {\pgfqpoint{0pt}{0.25\pgfutil@tempdima}}
+  {\pgfqpoint{0.75\pgfutil@tempdima}{0pt}}
+  \pgfpathcurveto
+  {\pgfqpoint{0pt}{-0.25\pgfutil@tempdima}}
+  {\pgfqpoint{-2.75\pgfutil@tempdima}{-2.5\pgfutil@tempdima}}
+  {\pgfqpoint{-3\pgfutil@tempdima}{-4\pgfutil@tempdima}}
+  \pgfusepathqstroke
+}
+\pgfkeys{To /.tip = to}
+\pgfarrowsdeclare{to reversed}{to reversed}
+{
+  \pgfutil@tempdima=-0.21pt%
+  \advance\pgfutil@tempdima by-0.475\pgflinewidth%
+  \pgfutil@tempdimb=0.98pt%
+  \advance\pgfutil@tempdimb by1.45\pgflinewidth%
+  \pgfarrowsleftextend{+\pgfutil@tempdima}
+  \pgfarrowsrightextend{+\pgfutil@tempdimb}
+}
+{
+  \pgfutil@tempdima=0.28pt%
+  \advance\pgfutil@tempdima by.3\pgflinewidth%
+  \pgfsetlinewidth{+0.8\pgflinewidth}
+  \pgfsetdash{}{+0pt}
+  \pgfsetroundcap
+  \pgfsetroundjoin
+  \pgfpathmoveto{\pgfqpoint{3.5\pgfutil@tempdima}{4\pgfutil@tempdima}}
+  \pgfpathcurveto
+  {\pgfqpoint{3.25\pgfutil@tempdima}{2.5\pgfutil@tempdima}}
+  {\pgfqpoint{0.5\pgfutil@tempdima}{0.25\pgfutil@tempdima}}
+  {\pgfqpoint{-0.25\pgfutil@tempdima}{0\pgfutil@tempdima}}
+  \pgfpathcurveto
+  {\pgfqpoint{0.5\pgfutil@tempdima}{-0.25\pgfutil@tempdima}}
+  {\pgfqpoint{3.25\pgfutil@tempdima}{-2.5\pgfutil@tempdima}}
+  {\pgfqpoint{3.5\pgfutil@tempdima}{-4\pgfutil@tempdima}}
+  \pgfusepathqstroke
+}
+\pgfarrowsdeclare{latex}{latex}
+{
+  \pgfutil@tempdima=0.28pt%
+  \pgfutil@tempdimb=\pgflinewidth%
+  \ifdim\pgfinnerlinewidth>0pt%
+    \pgfmathsetlength\pgfutil@tempdimb{.6\pgflinewidth-.4*\pgfinnerlinewidth}%
+  \fi%
+  \advance\pgfutil@tempdima by.3\pgfutil@tempdimb%
+  \pgfarrowsleftextend{+-1\pgfutil@tempdima}
+  \pgfarrowsrightextend{+9\pgfutil@tempdima}
+}
+{
+  \pgfutil@tempdima=0.28pt%
+  \pgfutil@tempdimb=\pgflinewidth%
+  \ifdim\pgfinnerlinewidth>0pt%
+    \pgfmathsetlength\pgfutil@tempdimb{.6\pgflinewidth-.4*\pgfinnerlinewidth}%
+  \fi%
+  \advance\pgfutil@tempdima by.3\pgfutil@tempdimb%
+  \pgfpathmoveto{\pgfqpoint{9\pgfutil@tempdima}{0pt}}
+  \pgfpathcurveto
+  {\pgfqpoint{6.3333\pgfutil@tempdima}{.5\pgfutil@tempdima}}
+  {\pgfqpoint{2\pgfutil@tempdima}{2\pgfutil@tempdima}}
+  {\pgfqpoint{-1\pgfutil@tempdima}{3.75\pgfutil@tempdima}}
+  \pgfpathlineto{\pgfqpoint{-1\pgfutil@tempdima}{-3.75\pgfutil@tempdima}}
+  \pgfpathcurveto
+  {\pgfqpoint{2\pgfutil@tempdima}{-2\pgfutil@tempdima}}
+  {\pgfqpoint{6.3333\pgfutil@tempdima}{-.5\pgfutil@tempdima}}
+  {\pgfqpoint{9\pgfutil@tempdima}{0pt}}
+  \pgfusepathqfill
+}
+\pgfarrowsdeclarereversed{latex reversed}{latex reversed}{latex}{latex}
+\pgfarrowsdeclare{@bar}{@bar}
+{
+  \pgfarrowsleftextend{+-0.25\pgflinewidth}
+  \pgfarrowsrightextend{+.75\pgflinewidth}
+}
+{
+  \pgfutil@tempdima=2pt%
+  \advance\pgfutil@tempdima by1.5\pgflinewidth%
+  \pgfsetdash{}{+0pt}
+  \pgfsetrectcap
+  \pgfpathmoveto{\pgfqpoint{0.25\pgflinewidth}{-\pgfutil@tempdima}}
+  \pgfpathlineto{\pgfqpoint{0.25\pgflinewidth}{\pgfutil@tempdima}}
+  \pgfusepathqstroke
+}
+\pgfkeys{Bar /.tip = @bar}
+\pgfarrowsdeclare{space}{space}
+{
+  \pgfutil@tempdima=0.88pt%
+  \advance\pgfutil@tempdima by.3\pgflinewidth%
+  \pgfarrowsleftextend{0pt}
+  \pgfarrowsrightextend{\pgfutil@tempdima}
+}
+{}
+
+
+
+\endinput

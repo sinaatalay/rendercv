@@ -1,0 +1,63 @@
+% $Id: lualatexquotejobname.tex 22998 2011-06-15 22:08:46Z mpg $
+% Manuel Pegourie-Gonnard, originally written 2010. WTFPL v2.
+%
+% Quote \jobname if it contains spaces, similarly to what other engines do.
+%
+% Recent versions of luatex kindly provide a process_jobname callback for
+% this. Detect if it is available and use a fallback in pure TeX otherwise.
+% If using the callback, register it at \everyjob time since callbacks are not
+% dumped in formats currently.
+%
+% The TeX version fails (jobname is set to texput) with invocations like
+%   luatex '\input foo'
+% but work correctly with the following:
+%   luatex foo\ bar
+%   luatex -jobname foo\ bar '\input "foo bar"'
+% It is is not possible to support all this case without the callback. It is
+% debatable if supporting another set cases would be better, but this is the
+% historical (TL 2010) behaviour, so just keep it.
+%
+% \jobname quoting is normalized in the same way as in web2c's
+% normalize_quotes() function (see lib/texmfmp.c, non-XeTeX case), that is:
+% - remove quotes
+% - complain if quotes are not "balanced" (ie not in even number)
+% - enclose the result in quotes iff it contains spaces
+%
+% This file is inputed after latex.ltx.
+%
+\makeatletter
+\everyjob\expandafter{\the\everyjob
+  \ifcase\directlua{
+    tex.sprint(callback.list().process_jobname == nil and 0 or 1)}\relax
+    % no callback, do what we can in TeX
+    \begingroup
+    % strip quotes from job name and count them
+    \def\stripquotes#1"#2\@nil{%
+      \edef\clean{\clean#1}%
+      \ifx\empty#2\empty \else
+        \advance\count@\@ne
+        \stripquotes#2\@nil
+      \fi}%
+    \count@\z@
+    \def\clean{}%
+    \expandafter\stripquotes\jobname"\@nil
+    % complain if their was not an even ("balanced") number of quotes
+    \ifodd\count@
+      \errmessage{Unbalanced quotes in jobname: \jobname}%
+    \fi
+    % now check if their are spaces and quote if necessary
+    \def\testsp#1 #2\@nil{%
+      \ifx\empty#2\empty
+        \edef\fixjobname{\def\noexpand\jobname{\clean}}%
+      \else
+        \edef\fixjobname{\def\noexpand\jobname{"\clean"}}%
+      \fi}%
+    \edef\dotest{\noexpand\testsp\clean\space\noexpand\@nil}\dotest
+    % do it after closing the group
+    \expandafter\endgroup\fixjobname
+  \or % callback available, use it
+    % function in a separate file for convenience (uses %, ~, etc)
+    \directlua{dofile(assert(kpse.find_file("lualatexquotejobname.lua")))}
+  \fi}
+\makeatother
+\endinput

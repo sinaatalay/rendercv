@@ -1,0 +1,217 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+
+\catcode`\@=11\relax
+
+\pgfutil@format@is@latextrue
+
+\let\pgfutil@auxout=\@auxout
+\def\pgfutil@writetoaux#1{\if@filesw\write\pgfutil@auxout{#1}\fi}
+
+\let\pgfutil@tempcnta=\@tempcnta
+\let\pgfutil@tempcntb=\@tempcntb
+\let\pgfutil@voidb@x=\voidb@x
+\let\pgfutil@toks@=\toks@
+
+\let\pgfutil@packageerror=\PackageError
+\let\pgfutil@packagewarning=\PackageWarning
+
+\def\pgfutil@protect{\protect}
+
+
+\def\pgfutil@definecolor{\definecolor}
+\def\pgfutil@color{\color}
+\def\pgfutil@colorlet#1#2{%
+  % If the color is a defined named color, we have to use the [named]
+  % option for colorlet to force xcolor to perform color model
+  % conversion.
+  \expandafter\ifx\csname\expandafter\string\csname color@#2\endcsname\endcsname\relax
+    \colorlet{#1}{#2}%
+  \else
+    \colorlet[named]{#1}{#2}%
+  \fi
+}
+
+\def\pgfutil@extractcolorspec{\extractcolorspec}
+\def\pgfutil@convertcolorspec{\convertcolorspec}
+
+\def\pgfutil@globalcolorsfalse{\let\ifglobalcolors\iffalse}
+\def\pgfutil@globalcolorstrue{\let\ifglobalcolors\iftrue}
+
+\let\pgfutil@minipage=\minipage
+\let\pgfutil@endminipage=\endminipage
+
+\def\pgfutil@doifcolorelse#1#2#3{%
+  \expandafter\ifx\csname\string\color@#1\endcsname\relax%
+    \let\pgf@next=\pgfutil@secondoftwo%
+  \else
+    \let\pgf@next=\pgfutil@firstoftwo%
+  \fi%
+  \pgf@next{#2}{#3}%
+}
+
+\let\pgfutil@raggedleft\raggedleft
+\let\pgfutil@raggedright\raggedright
+
+\let\pgfutil@flushglue=\@flushglue
+
+\def\pgfutil@font@tiny{\tiny}
+\def\pgfutil@font@scriptsize{\scriptsize}
+\def\pgfutil@font@footnotesize{\footnotesize}
+\def\pgfutil@font@small{\small}
+\def\pgfutil@font@normalsize{\normalsize}
+\def\pgfutil@font@large{\large}
+\def\pgfutil@font@Large{\Large}
+\def\pgfutil@font@huge{\huge}
+\def\pgfutil@font@Huge{\Huge}
+
+\def\pgfutil@font@itshape{\itshape}
+\def\pgfutil@font@bfseries{\bfseries}
+
+\def\pgfutil@font@normalfont{\normalfont}
+
+\def\pgfutil@usemodule#1{\usepackage{#1}}
+
+\let\pgfutil@selectfont=\selectfont
+
+\let\pgfutil@tempboxa=\@tempboxa
+
+\let\pgfmath@tempdima\pgfutil@tempdima
+\let\pgfmath@tempdima\pgfutil@tempdima
+\let\pgfmath@tempcnta\pgfutil@tempcnta
+\let\pgfmath@tempcntb\pgfutil@tempcntb
+
+\def\pgfutil@check@rerun#1#2{\@newl@bel{pgf@lab}{#1}{#2}}
+
+\AtBeginDocument{\AtEndDocument{%
+    \if\relax\detokenize\expandafter{\the\pgfutil@everybye}\relax\else
+        \expandafter\clearpage\expandafter\the\expandafter\pgfutil@everybye
+    \fi}}
+
+% \@ifl@t@r is defined \@onlypremable so we have to save it here
+\let\pgfutil@ifl@t@r=\@ifl@t@r
+
+\def\pgfutil@insertatbegincurrentpagefrombox#1{%
+  \edef\pgf@temp{\the\wd\pgfutil@abb}%
+  \global\setbox\pgfutil@abb\hbox{%
+    \unhbox\pgfutil@abb%
+    %
+    % the order in which \pgfutil@insertatbegincurrentpagefrombox
+    % matters unless we make the following -shift!
+    % To see this, consider writing two such statements. The second
+    % one will (naturally) be placed more to the right, although there
+    % is no apparent reason why it should.
+    %
+    % CF observed problems when placing patterns in XObjects without
+    % this skip (dvipdfmx driver for pgfplots shader=interp)
+    \hskip\dimexpr\pgfutil@ifl@t@r\fmtversion{2020/10/01}{2in-2\hoffset}{}-\pgf@temp\relax%
+    #1%
+    \pgfutil@ifl@t@r\fmtversion{2020/10/01}{\hskip\dimexpr-2in-2\hoffset\relax}{}%
+  }%
+}
+\newbox\pgfutil@abb%
+\def\pgfutil@insertatbegincurrentpage#1{%
+  \expandafter\gdef\expandafter\pgfutil@abc\expandafter{\pgfutil@abc#1}%
+}
+\let\pgfutil@abc\pgfutil@empty%
+\def\pgfutil@insertatbegineverypage#1{%
+  \expandafter\gdef\expandafter\pgfutil@abe\expandafter{\pgfutil@abe#1}%
+}
+\let\pgfutil@abe\pgfutil@empty%
+
+\pgfutil@ifl@t@r\fmtversion{2020/10/01}{%
+  \AddToHook{shipout/background}{%
+    \put(\hoffset-1in,\voffset-1in){%
+      \pgfutil@abe\unhbox\pgfutil@abb\pgfutil@abc\global\let\pgfutil@abc\pgfutil@empty
+    }%
+  }%
+}{%
+  \RequirePackage{everyshi}
+  \EveryShipout{%
+    % Add at begin page stuff
+   \setbox\@cclv=\vbox{%
+      \setbox\z@=\hbox{%
+          % the boxes \pgfutil@abe ("every page") and \pgfutil@abb ("current page")
+          % are used to generate pdf objects / dictionaries which are
+          % required for the graphics which are somewhere in the "real"
+          % page content.
+          % BUT: these pdf objects MUST NOT be affected by text layout
+          % shifts! Consequently, we have to undo \hoffset and \voffset
+          % (which are h/v shifts to the page layout).
+          %
+          % Note that this of importance for shadings. To be more
+          % specific: try out shadings with standalone (which uses
+          % \hoffset) and with xdvipdfmx (which appears to be more
+          % fragile than pdflatex) - they break unless we undo \hoffset
+          % and \voffset.
+          \ifdim\hoffset=0pt \else \hskip-\hoffset\fi
+          \pgfutil@abe\unhbox\pgfutil@abb\pgfutil@abc\global\let\pgfutil@abc\pgfutil@empty
+          \ifdim\hoffset=0pt \else \hskip+\hoffset\fi
+      }%
+      \wd\z@=\z@%
+      \ht\z@=\z@%
+      \dp\z@=\z@%
+      % ... see remark above regarding \hoffset/\voffset:
+      \ifdim\voffset=0pt \else \vskip-\voffset\fi
+      \box\z@%
+      \ifdim\voffset=0pt \else \vskip+\voffset\fi
+      %
+      % if TeX changes into vertical mode, it inserts \parskip and
+      % \lineskip. Disable it here:
+      \nointerlineskip%
+      \ifvbox\@cclv \unvbox\@cclv \else\hsize=\wd\@cclv \noindent\unhbox\@cclv \fi%
+      %\box\@cclv
+      % using \box instead of \unhbox or \unvbox
+      % has the advantage that glue settings won't be
+      % altered (as for \unhbox/\unvbox). But \box breaks compatibility
+      % with the 'remember picture' feature.
+    }%
+  }
+
+  % Preview hack: preview.sty hacks into \shipout (which is ok), but
+  % does not honour everyshi.sty (which is not ok). This causes everyshi
+  % material to get lost.
+  \AtBeginDocument{
+      \@ifpackageloaded{preview}{%
+          % Ok, package loaded. Swap definitions of everyshi.sty's shipout
+          % and preview.sty's shipout:
+          \ifPreview
+              \let\shipout\@EveryShipout@Org@Shipout%This is the null version of \shipout, created by preview and saved by everyshi
+              \let\@EveryShipout@Org@Shipout\pr@shipout% This is the original shipout
+              \let\pr@shipout\@EveryShipout@Shipout%
+          \fi
+          }{}%
+  }
+}
+
+% Guess the driver:
+
+\def\pgfutil@guessdriver{
+  \ifx\HCode\@undefined%
+    \edef\pgfsysdriver{pgfsys-\Gin@driver}% should be right
+  \else%
+    \def\pgfsysdriver{pgfsys-tex4ht.def}% should be right
+  \fi%
+}
+
+% pgfcalendar uses translations
+
+\ifx\translate\@undefined % check if \translate is available
+  \def\pgfutil@translate#1{#1}
+\else
+  \def\pgfutil@translate#1{\translate{#1}}
+\fi
+
+% e-TeX primitives
+
+\let\pgfutil@protected\protected
+\let\pgfutil@unexpanded\unexpanded
+
+\endinput

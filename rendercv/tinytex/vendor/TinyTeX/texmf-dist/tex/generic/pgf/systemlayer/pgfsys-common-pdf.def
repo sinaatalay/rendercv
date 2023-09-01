@@ -1,0 +1,119 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-common-pdf.def}
+
+
+% Common driver commands for all drivers that produce pdf
+
+
+% Path construction:
+\def\pgfsys@lineto#1#2{\pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgfsysprotocol@literal{l}}
+\def\pgfsys@moveto#1#2{\pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgfsysprotocol@literal{m}}
+\def\pgfsys@curveto#1#2#3#4#5#6{%
+  \pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgf@sys@bp{#3}\pgf@sys@bp{#4}\pgf@sys@bp{#5}\pgf@sys@bp{#6}\pgfsysprotocol@literal{c}}
+\def\pgfsys@rect#1#2#3#4{\pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgf@sys@bp{#3}\pgf@sys@bp{#4}\pgfsysprotocol@literal{re}}
+\def\pgfsys@closepath{\pgfsysprotocol@literal{h}}
+
+% Path usage:
+\def\pgfsys@stroke{\pgfsysprotocol@literal{S}}
+\def\pgfsys@closestroke{\pgfsysprotocol@literal{s}}
+\def\pgfsys@fill{\ifpgfsys@eorule\pgfsysprotocol@literal{f*}\else\pgfsysprotocol@literal{f}\fi}
+\def\pgfsys@fillstroke{\ifpgfsys@eorule\pgfsysprotocol@literal{B*}\else\pgfsysprotocol@literal{B}\fi}
+\def\pgfsys@clipnext{\ifpgfsys@eorule\pgfsysprotocol@literal{W*}\else\pgfsysprotocol@literal{W}\fi}
+\def\pgfsys@discardpath{\pgfsysprotocol@literal{n}}
+
+% Transformation:
+\def\pgfsys@transformcm#1#2#3#4#5#6{%
+  \pgfsysprotocol@literalbuffered{#1 #2 #3 #4}\pgf@sys@bp{#5}\pgf@sys@bp{#6}\pgfsysprotocol@literal{cm}}
+
+% Scopes
+\def\pgfsys@beginscope{\pgfsysprotocol@literal{q}}
+\def\pgfsys@endscope{\pgfsysprotocol@literal{Q}}
+
+% Graphics state
+\def\pgfsys@setdash#1#2{%
+  \pgfsysprotocol@literalbuffered{[}%
+  \pgfutil@for\pgf@sys@temp:={#1}\do{\pgf@sys@bp{\pgf@sys@temp}}%
+  \pgfsysprotocol@literalbuffered{]}%
+  \pgf@sys@bp{#2}\pgfsysprotocol@literal{d}}
+\def\pgfsys@setlinewidth#1{\pgf@sys@bp{#1}\pgfsysprotocol@literal{w}}
+\def\pgfsys@setmiterlimit#1{\pgfsysprotocol@literal{#1 M}}
+\def\pgfsys@buttcap{\pgfsysprotocol@literal{0 J}}
+\def\pgfsys@roundcap{\pgfsysprotocol@literal{1 J}}
+\def\pgfsys@rectcap{\pgfsysprotocol@literal{2 J}}
+\def\pgfsys@miterjoin{\pgfsysprotocol@literal{0 j}}
+\def\pgfsys@roundjoin{\pgfsysprotocol@literal{1 j}}
+\def\pgfsys@beveljoin{\pgfsysprotocol@literal{2 j}}
+\def\pgfsys@color@rgb@stroke#1#2#3{\pgfsysprotocol@literal{#1 #2 #3 RG}}
+\def\pgfsys@color@rgb@fill#1#2#3{\pgfsysprotocol@literal{#1 #2 #3 rg}}
+\def\pgfsys@color@cmyk@stroke#1#2#3#4{\pgfsysprotocol@literal{#1 #2 #3 #4 K}}
+\def\pgfsys@color@cmyk@fill#1#2#3#4{\pgfsysprotocol@literal{#1 #2 #3 #4 k}}
+\def\pgfsys@color@cmy@stroke#1#2#3{\pgfsysprotocol@literal{#1 #2 #3 0 K}}
+\def\pgfsys@color@cmy@fill#1#2#3{\pgfsysprotocol@literal{#1 #2 #3 0 k}}
+\def\pgfsys@color@gray@stroke#1{\pgfsysprotocol@literal{#1 G}}
+\def\pgfsys@color@gray@fill#1{\pgfsysprotocol@literal{#1 g}}
+
+% Visibility
+\def\pgfsys@begininvisiblescope{\pgfsys@beginscope{\pgfsys@discardpath\pgfsys@clipnext\pgfsys@moveto{0pt}{0pt}\pgfsys@discardpath}}
+\def\pgfsys@endinvisiblescope{\pgfsys@endscope}
+
+% Opacity
+\def\pgfsys@stroke@opacity#1{%
+  \expandafter\ifx\csname pgf@sys@pdf@so@#1\endcsname\relax%
+    \expandafter\gdef\csname pgf@sys@pdf@so@#1\endcsname{/pgf@CA#1}%
+    \pgfutil@addpdfresource@extgs{/pgf@CA#1 << /CA #1 >>}%<<
+  \fi%
+  \pgfsysprotocol@literal{\csname pgf@sys@pdf@so@#1\endcsname\space gs}%
+}
+\def\pgfsys@fill@opacity#1{%
+  \expandafter\ifx\csname pgf@sys@pdf@fo@#1\endcsname\relax%
+    \expandafter\gdef\csname pgf@sys@pdf@fo@#1\endcsname{/pgf@ca#1}%
+    \pgfutil@addpdfresource@extgs{/pgf@ca#1 << /ca #1 >>}%<<
+  \fi%
+  \pgfsysprotocol@literal{\csname pgf@sys@pdf@fo@#1\endcsname\space gs}%
+}
+
+% Blending
+\def\pgfsys@blend@mode#1{%
+  \expandafter\ifx\csname pgf@sys@pdf@bm@#1\endcsname\relax%
+    \expandafter\let\expandafter\pgf@temp\csname pgf@sys@pdf@blend@mode@map@#1\endcsname%
+    \expandafter\xdef\csname pgf@sys@pdf@bm@#1\endcsname{/pgf@bm\pgf@temp}%
+    \ifx\pgf@temp\relax%
+      \pgferror{Unknown blend mode '#1'}%
+      \def\pgf@temp{Normal}%
+    \fi%
+    \edef\pgf@temp{/pgf@bm\pgf@temp << /BM /\pgf@temp >>}%<<
+    \expandafter\pgfutil@addpdfresource@extgs\expandafter{\pgf@temp}%
+  \fi%
+  \pgfsysprotocol@literal{\csname pgf@sys@pdf@bm@#1\endcsname\space gs}%
+}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@normal\endcsname{Normal}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@multiply\endcsname{Multiply}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@screen\endcsname{Screen}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@overlay\endcsname{Overlay}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@darken\endcsname{Darken}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@lighten\endcsname{Lighten}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@color dodge\endcsname{ColorDodge}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@color burn\endcsname{ColorBurn}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@hard light\endcsname{HardLight}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@soft light\endcsname{SoftLight}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@difference\endcsname{Difference}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@exclusion\endcsname{Exclusion}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@saturation\endcsname{Saturation}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@color\endcsname{Color}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@hue\endcsname{Hue}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@luminosity\endcsname{Luminosity}
+
+\endinput
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

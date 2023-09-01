@@ -1,0 +1,121 @@
+# mktex.opt -- common mktex* options, etc.
+# Meant to be sourced after $usage, $version, and $MT_TEXMFMAIN have been set,
+# and optionally mt_min_args and/or mt_max_args.
+# 
+# Originally written by Thomas Esser.  Public domain.
+# $Id: mktex.opt 34656 2014-07-18 23:38:50Z karl $
+ 
+if test "x$1" = x--help || test "x$1" = x-help; then
+  echo "$usage"
+  exit 0
+elif test "x$1" = x--version || test "x$1" = x-version; then
+  echo "$0 $version"
+  kpsewhich --version
+  exit 0
+elif test $# -lt ${mt_min_args-1}; then
+  echo "$0: Missing argument(s)." >&2
+  echo "Try \``basename $0` --help' for more information." >&2
+  exit 1
+elif test $# -gt ${mt_max_args-1}; then
+  num=$#
+  while test $# -gt `expr $num - ${mt_max_args-1}`; do shift; done
+  echo "$0: Extra arguments $*." >&2
+  echo "Try \``basename $0` --help' for more information." >&2
+  exit 1
+fi
+
+# MS-DOS and MS-Windows define $COMSPEC or $ComSpec and use `;' to separate
+# directories in path lists whereas Unix uses `:'.  Make an exception for
+# Cygwin, which pretends to be UNIX.
+# Create a variable that holds the right character to be used by the scripts.
+DOSISH=no
+case `uname -s` in
+  CYGWIN*|Cygwin*|cygwin*) ;;
+  *) if test -n "$COMSPEC" || test -n "$ComSpec"; then DOSISH=yes; fi
+esac
+if test "$DOSISH" = "no"; then SEP=':'; else SEP=';';fi
+
+# TEMPDIR needs to be unique to each process because of the possibility of two
+# people running dvips (or whatever) simultaneously.
+if test -n "$TMPDIR"; then
+  TEMPDIR="${TMPDIR}/mt$$.tmp"
+else
+  TEMPDIR="/tmp/mt$$.tmp"
+fi
+
+# We want to output only filenames to standard output, but it's too
+# error-prone to write the scripts that way, so we direct stdout here.
+STDOUT="$TEMPDIR/mt$$.out"
+
+# We will change search paths to include $KPSE_DOT. This is necessary
+# since we cd to $TEMPDIR.
+: ${KPSE_DOT=`pwd`}; export KPSE_DOT
+
+# Clean up on normal or abnormal exit.
+# The "cd /" is for MS-DOS and MS-Windows, where there is a separate
+# current directory on each drive, and therefore "cd $KPSE_DOT" might
+# still leave $TMPDIR current directory on its drive, in which case it
+# cannot be removed.
+trap 'rc=$?; cd /; cd "$KPSE_DOT"; test -f "$STDOUT" && cat "$STDOUT"; rm -rf "$TEMPDIR"; exit $rc' \
+  0 1 2 3 7 13 15
+
+(umask 077 && mkdir "$TEMPDIR") || exit 1
+cd "$TEMPDIR" || exit 1
+
+# The alternative location for fonts.  The directory need not exist,
+# so we use --expand-var here.  We also perform a sanity check.
+: ${MT_VARTEXFONTS=`kpsewhich --expand-var='$VARTEXFONTS' | sed 's%^!!%%'`}
+if test -z "$MT_VARTEXFONTS"; then
+  echo "$0: VARTEXFONTS is not defined.  Defaulting to \`$KPSE_DOT'." >&2
+  MT_VARTEXFONTS='$KPSE_DOT'
+fi
+
+# The supporting scripts:
+: ${MT_MKTEXNAM=`kpsewhich --format='web2c files' mktexnam`}
+test -n "$MT_MKTEXNAM" || MT_MKTEXNAM="$MT_TEXMFMAIN/web2c/mktexnam"
+: ${MT_MKTEXNAM_OPT=`kpsewhich --format='web2c files' mktexnam.opt`}
+test -n "$MT_MKTEXNAM_OPT" || MT_MKTEXNAM_OPT="$MT_TEXMFMAIN/web2c/mktexnam.opt"
+: ${MT_MKTEXDIR=`kpsewhich --format='web2c files' mktexdir`}
+test -n "$MT_MKTEXDIR" || MT_MKTEXDIR="$MT_TEXMFMAIN/web2c/mktexdir"
+: ${MT_MKTEXDIR_OPT=`kpsewhich --format='web2c files' mktexdir.opt`}
+test -n "$MT_MKTEXDIR_OPT" || MT_MKTEXDIR_OPT="$MT_TEXMFMAIN/web2c/mktexdir.opt"
+: ${MT_MKTEXUPD=`kpsewhich --format='web2c files' mktexupd`}
+test -n "$MT_MKTEXUPD" || MT_MKTEXUPD="$MT_TEXMFMAIN/web2c/mktexupd"
+
+# mktexupd and mktexlsr make sure they're coordinated via this.  A copy of
+# the first string is found in mktexlsr.
+ls_R_magic='% ls-R -- filename database for kpathsea; do not change this line.'
+# Old ls-R files should continue to work.
+old_ls_R_magic='% ls-R -- maintained by MakeTeXls-R; do not change this line.'
+
+# Read defaults from mktex.cnf if that file exists. Can be used to
+# overwrite anything defined below. Please use the same syntax as
+# given here (e.g. ``: ${MODE=ljfour}'', not just ``MODE=ljfour'', as
+# this can cause trouble (e.g. when the mode for mktexnam is
+# already specified on the command line).
+: ${MT_MKTEX_CNF=`kpsewhich --format='web2c files' mktex.cnf`}
+test -n "$MT_MKTEX_CNF" && test -r "$MT_MKTEX_CNF" && . "$MT_MKTEX_CNF"
+
+# Possible features: appendonlydir dosnames fontmaps nomfdrivers nomode
+#                    stripsupplier striptypeface texmfvar varfonts.
+if test "$DOSISH" = "yes"; then
+  : ${MT_FEATURES=appendonlydir:dosnames}
+else
+  : ${MT_FEATURES=appendonlydir}
+fi
+: ${MODE=ljfour}
+: ${BDPI=600}
+: ${DPI=600}
+: ${MAG=1.0}
+: ${ps_to_pk=gsftopk} # some prefer ps2pk
+
+# Allow fonts to be read and written (especially in case we make
+# directories) by everyone.
+umask 0
+
+# Cache values that may be useful for recursive calls.
+export MT_MKTEX_OPT MT_MKTEX_CNF 
+export MT_MKTEXNAM MT_MKTEXNAM_OPT
+export MT_MKTEXDIR MT_MKTEXDIR_OPT
+export MT_MKTEXUPD
+export MT_TEXMFMAIN MT_VARTEXFONTS

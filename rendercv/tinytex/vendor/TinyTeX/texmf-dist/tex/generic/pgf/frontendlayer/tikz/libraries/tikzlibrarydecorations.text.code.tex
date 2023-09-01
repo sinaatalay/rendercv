@@ -1,0 +1,704 @@
+% Copyright 2018 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usetikzlibrary{decorations}%
+\usepgflibrary{decorations.text}%
+
+
+% Code for the `text effects along path' decoration
+
+% Some text constants
+% To do: merge these with existing text constants
+\def\tikz@lib@dec@te@space@text{space}%
+\def\tikz@lib@dec@align@left@text{left}%
+\def\tikz@lib@dec@align@right@text{right}%
+\def\tikz@lib@dec@align@center@text{center}%
+\def\tikz@lib@dec@te@none@text{none}%
+
+% Some ifs
+\newif\iftikz@lib@dec@te@pathfromtext%
+\newif\iftikz@lib@dec@te@segmentfromwidth%
+\newif\iftikz@lib@dec@te@scaletexttopath%
+\newif\iftikz@lib@dec@te@fittexttopath%
+\newif\iftikz@lib@dec@te@wordsep%
+\newif\iftikz@lib@dec@te@finalletter%
+
+
+% Utility macros
+% To do: integrate with existing pgf macros
+\def\tikz@lib@dec@te@addto@macro#1#2{%
+  \expandafter\def\expandafter#1\expandafter{#1#2}%
+}%
+
+\def\tikz@lib@dec@te@namelet#1#2{%
+  \expandafter\expandafter\expandafter\let\expandafter\expandafter\csname\expandafter#1\expandafter\endcsname\expandafter=\csname#2\endcsname%
+}%
+
+\def\tikz@lib@dec@te@advancecountmacro#1#2{%
+  \pgfutil@tempcnta=#1\relax%
+  \advance\pgfutil@tempcnta by#2\relax%
+  \edef#1{\the\pgfutil@tempcnta}%
+}%
+
+\def\tikz@lib@dec@te@advancedimenmacro#1#2{%
+  \pgf@x=#1\relax%
+  \advance\pgf@x by#2\relax%
+  \edef#1{\the\pgf@x}%
+}%
+
+% Macros for defining and updating text parameters
+\def\tikz@lib@dec@te@start@parameters#1{%
+ \expandafter\let\csname tikz@lib@dec@te@character@#1\endcsname=\pgfutil@empty%
+}%
+
+\def\tikz@lib@dec@te@addto@parameters#1#2{%
+ \expandafter\tikz@lib@dec@te@addto@macro\expandafter%
+   {\csname tikz@lib@dec@te@character@#1\endcsname}{#2}%
+}%
+\def\tikz@lib@dec@te@addmacroto@parameters#1#2{%
+ \def\tikz@lib@dec@te@marshal{\expandafter\tikz@lib@dec@te@addto@macro\expandafter%
+   {\csname tikz@lib@dec@te@character@#1\endcsname}}%
+  \expandafter\tikz@lib@dec@te@marshal\expandafter{\expandafter\def\expandafter#2\expandafter{#2}}%
+}%
+
+\def\tikz@lib@dec@te@getparameters#1{\csname tikz@lib@dec@te@character@#1\endcsname}%
+
+
+
+\let\tikz@lib@dec@te@textoptions=\pgfutil@empty
+\let\tikz@lib@dec@te@widthoptions=\pgfutil@empty
+\let\tikz@lib@dec@te@charactercountvar=\pgfutil@empty
+\let\tikz@lib@dec@te@charactertotalvar=\pgfutil@empty
+\let\tikz@lib@dec@te@lettercountvar=\pgfutil@empty
+\let\tikz@lib@dec@te@lettertotalvar=\pgfutil@empty
+\let\tikz@lib@dec@te@wordcountvar=\pgfutil@empty
+\let\tikz@lib@dec@te@wordctotalvar=\pgfutil@empty
+\let\tikz@lib@dec@te@transformtext=\pgfutil@empty%
+
+
+% Keys... lots of them...
+\pgfkeys{/pgf/decoration/text effects/.cd,
+   .unknown/.code={\let\tikz@lib@dec@te@key@tmp=\pgfkeyscurrentname%
+    \pgfkeysalso{/tikz/\tikz@lib@dec@te@key@tmp={#1}}},
+   path from text/.is if=tikz@lib@dec@te@pathfromtext,
+   path from text angle/.store in=\tikz@lib@dec@te@pathfromtextangle,
+   path from text angle=0,
+   fit text to path/.is if=tikz@lib@dec@te@fittexttopath,
+   characters/.style={/pgf/decoration/text effects/every character/.style={#1}},
+   characters/.append/.code={\pgfkeysalso{/pgf/decoration/text effects/every character/.append style={#1}}},
+   character widths/.code={\pgfkeysalso{/pgf/decoration/text effects/every character width/.style={#1}}},
+   character widths/.append/.code={\pgfkeysalso{/pgf/decoration/text effects/every character width/.append style={#1}}},
+   character count/.store in=\tikz@lib@dec@te@charactercountvar,
+   character count=,
+   character total/.store in=\tikz@lib@dec@te@charactertotalvar,
+   character total=,
+   letter count/.store in=\tikz@lib@dec@te@lettercountvar,
+   letter count=,
+   letter total/.store in=\tikz@lib@dec@te@lettertotalvar,
+   letter total=,
+   word count/.store in=\tikz@lib@dec@te@wordcountvar,
+   word count=,
+   word total/.store in=\tikz@lib@dec@te@wordtotalvar,
+   word total=,
+   %
+   style characters/.code args={#1 with #2}{\tikz@lib@dec@te@parse@stylecharacters{#1}{#2}},
+   text along path/.style={
+     inner xsep=0pt,
+     anchor=base,
+     transform shape
+   },
+   segment from width/.is if=tikz@lib@dec@te@segmentfromwidth,
+   segment from width=true,
+   word separator/.code={%
+     \def\tikz@lib@dec@te@tmp{#1}%
+     \ifx\tikz@lib@dec@te@tmp\tikz@lib@dec@te@space@text%
+       \let\tikz@lib@dec@te@wordsep=\tikz@lib@dec@te@spacetoken%
+     \else%
+       \def\tikz@lib@dec@te@wordsep{#1}
+     \fi},
+   word separator=space,
+   character command/.code={%
+    \def\tikz@lib@dec@te@tmp{#1}%
+    \ifx\tikz@lib@dec@te@tmp\pgfutil@empty%
+        \def\tikz@lib@dec@te@charactercommand{\tikz@lib@dec@te@charactertypesetonly}%
+    \else%
+        \def\tikz@lib@dec@te@charactercommand{#1}%
+    \fi%
+   },
+   character command=,
+   every character width/.style={/pgf/decoration/text effects/every character/.try},
+   every character/.style={},
+   reverse text/.code={\tikz@lib@dec@te@addto@macro\tikz@lib@dec@te@transformtext%
+     {\tikz@lib@dec@te@reversetext}},
+   group letters into words/.code={\tikz@lib@dec@te@addto@macro\tikz@lib@dec@te@transformtext%
+     {\tikz@lib@dec@te@groupletters}},
+   group letters/.code={\tikz@lib@dec@te@addto@macro\tikz@lib@dec@te@transformtext%
+     {\tikz@lib@dec@te@groupletters}},
+   replace characters/.code args={#1 with #2}{\tikz@lib@dec@te@parse@replacecharacters{#1}{#2}},
+   scale text to path/.is if=tikz@lib@dec@te@scaletexttopath,
+   fit text to path/.is if=tikz@lib@dec@te@fittexttopath,
+   repeat text/.store in=\tikz@lib@dec@te@repeattext,
+   repeat text/.default=-1,
+   repeat text=0,
+}%
+
+
+\def\tikz@lib@dec@te@charactertypesetonly#1{#1}%
+
+\tikzset{%
+  text effects/.code={\pgfkeysalso{/pgf/decoration/text effects/.cd,#1}},
+}%
+
+
+
+
+
+
+% Prepare the decoration text
+%
+% This sets up all the character/letter/word, counts/totals
+% and calculates the default width of the characters/text
+% (which may be modified later).
+%
+\def\tikz@lib@dec@te@preparetext{%
+  % Step 1: scan all the characters in the decoration text
+  \let\tikz@lib@dec@te@text=\pgfdecorationtext%
+  \tikz@lib@dec@te@scancharacters{%
+    \expandafter\let\csname tikz@lib@dec@te@character@\tikz@lib@dec@te@scancount @token\endcsname=%
+      \tikz@lib@dec@te@character%
+  }%
+  \let\tikz@lib@dec@te@charactertotalcount=\tikz@lib@dec@te@scancount%
+  % Step 2: reverse and/or group characters/letters.
+  \ifx\tikz@lib@dec@te@transformtext\pgfutil@empty%
+  \else%
+    \tikz@lib@dec@te@transformtext%
+  \fi%
+  % Step 3: get the character/letter/word counts
+  \def\tikz@lib@dec@te@charactercount{0}%
+  \def\tikz@lib@dec@te@wordcount{0}%
+  \def\tikz@lib@dec@te@wordsepcount{0}%
+  \def\tikz@lib@dec@te@lettercount{0}%
+  \def\tikz@lib@dec@te@lastcharacter{0}%
+  \pgfmathloop%
+  \ifnum\pgfmathcounter>\tikz@lib@dec@te@charactertotalcount%
+    \ifnum\tikz@lib@dec@te@lettercount>0\relax%
+      \tikz@lib@dec@te@addto@parameters{\tikz@lib@dec@te@lastcharactercount}{\tikz@lib@dec@te@finallettertrue}%
+    \fi
+  \else%
+    \expandafter\let\expandafter\tikz@lib@dec@te@character\expandafter=\csname tikz@lib@dec@te@character@\pgfmathcounter @token\endcsname%
+    \tikz@lib@dec@te@advancecountmacro{\tikz@lib@dec@te@charactercount}{1}%
+    \tikz@lib@dec@te@start@parameters{\tikz@lib@dec@te@charactercount}%
+    \tikz@lib@dec@te@addmacroto@parameters{\tikz@lib@dec@te@charactercount}{\tikz@lib@dec@te@charactercount}%
+    \ifx\tikz@lib@dec@te@character\tikz@lib@dec@te@wordsep%
+      \tikz@lib@dec@te@advancecountmacro{\tikz@lib@dec@te@wordsepcount}{1}%
+      \ifnum\tikz@lib@dec@te@lettercount>0\relax%
+        \tikz@lib@dec@te@addto@parameters{\tikz@lib@dec@te@lastcharactercount}{\tikz@lib@dec@te@finallettertrue}%
+      \fi
+      \def\tikz@lib@dec@te@lettercount{0}%
+      \tikz@lib@dec@te@addto@parameters{\tikz@lib@dec@te@charactercount}{\tikz@lib@dec@te@wordseptrue}%
+    \else
+      \ifnum\tikz@lib@dec@te@lettercount=0\relax%
+        \tikz@lib@dec@te@advancecountmacro\tikz@lib@dec@te@wordcount{1}%
+      \fi%
+      \tikz@lib@dec@te@addto@parameters{\tikz@lib@dec@te@charactercount}{\tikz@lib@dec@te@finalletterfalse}%
+      \tikz@lib@dec@te@advancecountmacro{\tikz@lib@dec@te@lettercount}{1}%
+      \tikz@lib@dec@te@addto@parameters{\tikz@lib@dec@te@charactercount}{\tikz@lib@dec@te@wordsepfalse}%
+       \expandafter\let\csname tikz@lib@dec@te@word \tikz@lib@dec@te@wordcount @lettercount\endcsname=\tikz@lib@dec@te@lettercount%
+    \fi%
+    \tikz@lib@dec@te@addmacroto@parameters{\tikz@lib@dec@te@charactercount}{\tikz@lib@dec@te@lettercount}%
+    \tikz@lib@dec@te@addmacroto@parameters{\tikz@lib@dec@te@charactercount}{\tikz@lib@dec@te@wordcount}%
+    \tikz@lib@dec@te@addmacroto@parameters{\tikz@lib@dec@te@charactercount}{\tikz@lib@dec@te@character}%
+    \let\tikz@lib@dec@te@lastcharactercount=\pgfmathcounter%
+  \repeatpgfmathloop%
+  \let\tikz@lib@dec@te@wordtotal=\tikz@lib@dec@te@wordcount%
+  % Step 4: add character/letter/word totals
+  \pgfmathloop
+  \ifnum\pgfmathcounter>\tikz@lib@dec@te@charactertotalcount%
+  \else%
+    \tikz@lib@dec@te@addmacroto@parameters{\pgfmathcounter}{\tikz@lib@dec@te@charactertotalcount}%
+    \tikz@lib@dec@te@addmacroto@parameters{\pgfmathcounter}{\tikz@lib@dec@te@wordtotal}%
+    \expandafter\let\expandafter\tikz@lib@dec@te@lettertotalcount\expandafter=\csname tikz@lib@dec@te@word \tikz@lib@dec@te@wordcount @lettercount\endcsname%
+    \tikz@lib@dec@te@addmacroto@parameters{\pgfmathcounter}{\tikz@lib@dec@te@lettertotalcount}%
+  \repeatpgfmathloop%
+  % Step 5: calculate the the text and character width
+  % but do not add to the parameters yet.
+  \def\tikz@lib@dec@te@textwidth{0pt}%
+  \pgfmathloop%
+  \ifnum\pgfmathcounter>\tikz@lib@dec@te@charactertotalcount%
+  \else%
+    \def\tikz@lib@dec@te@characterwidth{0pt}%
+    \tikz@lib@dec@te@getcharacterwidth{\pgfmathcounter}%
+    \expandafter\let\csname tikz@lib@dec@te@character@\pgfmathcounter @width\endcsname=\tikz@lib@dec@te@characterwidth%
+    \pgf@x=\tikz@lib@dec@te@characterwidth\relax%
+    \pgf@x=0.5\pgf@x%
+    \expandafter\edef\csname tikz@lib@dec@te@character@\pgfmathcounter @prewidth\endcsname{\the\pgf@x}%
+    \expandafter\edef\csname tikz@lib@dec@te@character@\pgfmathcounter @postwidth\endcsname{\the\pgf@x}%
+    \tikz@lib@dec@te@advancedimenmacro{\tikz@lib@dec@te@textwidth}{\tikz@lib@dec@te@characterwidth}%
+  \repeatpgfmathloop%
+}%
+
+% Does the category code of the space matter?
+\def\tikz@lib@dec@te@spacetoken{ }%
+
+\let\tikz@lib@dec@te@wordsep=\tikz@lib@dec@te@spacetoken
+
+
+% Scan and count the characters in \tikz@lib@dec@te@text
+%
+% Create macros \tikz@lib@dec@te@character@<n>@token containing
+% the nth character.
+%
+% Total number of characters is store in
+% \tikz@lib@dec@te@chractertotal@count
+%
+\def\tikz@lib@dec@te@scancharacters#1{%
+  \def\tikz@lib@dec@te@@@scancharacters@process{#1}%
+  \def\tikz@lib@dec@te@scancount{0}%
+  \expandafter\tikz@lib@dec@te@@scancharacters\tikz@lib@dec@te@text\tikz@lib@dec@te@scancharacters}%
+
+\def\tikz@lib@dec@te@@scancharacters{%
+  \futurelet\tikz@lib@dec@te@token\tikz@lib@dec@te@@@scancharacters}%
+
+\def\tikz@lib@dec@te@@@scancharacters{%
+  \ifx\tikz@lib@dec@te@token\tikz@lib@dec@te@scancharacters%
+    \let\tikz@lib@dec@te@next=\tikz@lib@dec@te@@@@scancharacters%
+  \else%
+    \tikz@lib@dec@te@advancecountmacro\tikz@lib@dec@te@scancount{1}%
+    \ifx\tikz@lib@dec@te@token\pgfutil@sptoken%
+      \let\tikz@lib@dec@te@next=\tikz@lib@dec@te@@@scancharacters@space%
+    \else%
+      \ifx\tikz@lib@dec@te@token\bgroup%
+        \let\tikz@lib@dec@te@next=\tikz@lib@dec@te@@@scancharacters@bgroup%
+      \else%
+        \let\tikz@lib@dec@te@next=\tikz@lib@dec@te@@@scancharacters@normal%
+      \fi%
+    \fi%
+  \fi%
+  \tikz@lib@dec@te@next%
+}%
+
+\def\tikz@lib@dec@te@@@scancharacters@space{%
+  \let\tikz@lib@dec@te@character=\tikz@lib@dec@te@spacetoken%
+  \tikz@lib@dec@te@@@scancharacters@process%
+  \pgfutil@ifnextchar x\tikz@lib@dec@te@@scancharacters\tikz@lib@dec@te@@scancharacters%
+}%
+
+\def\tikz@lib@dec@te@@@scancharacters@bgroup#1{%
+  \def\tikz@lib@dec@te@character{{#1}}%
+  \tikz@lib@dec@te@@@scancharacters@process%
+  \tikz@lib@dec@te@@scancharacters%
+}%
+
+\def\tikz@lib@dec@te@@@scancharacters@normal#1{%
+  \def\tikz@lib@dec@te@character{#1}%
+  \tikz@lib@dec@te@@@scancharacters@process%
+  \tikz@lib@dec@te@@scancharacters%
+}%
+
+
+\def\tikz@lib@dec@te@@@@scancharacters#1\tikz@lib@dec@te@scancharacters{}%
+
+
+% Reverse the order of the scanned characters in the text
+% (Actually reverse the ordering of the macros containing the characters)
+\def\tikz@lib@dec@te@reversetext{%
+  \c@pgf@counta=\tikz@lib@dec@te@charactertotalcount%
+  \pgfmathloop%
+  \ifnum\pgfmathcounter>\c@pgf@counta%
+  \else%
+    \tikz@lib@dec@te@namelet{tikz@lib@dec@te@tmp}{tikz@lib@dec@te@character@\pgfmathcounter @token}%
+    \tikz@lib@dec@te@namelet{tikz@lib@dec@te@character@\pgfmathcounter @token}{tikz@lib@dec@te@character@\the\c@pgf@counta @token}%
+    \tikz@lib@dec@te@namelet{tikz@lib@dec@te@character@\the\c@pgf@counta @token}{tikz@lib@dec@te@tmp}%
+    \advance\c@pgf@counta by-1\relax%
+  \repeatpgfmathloop%
+}%
+
+% Group letters (i.e., anything that isn't the word separator)
+% as single characters (words).
+\def\tikz@lib@dec@te@groupletters{%
+  \c@pgf@counta=0\relax%
+  \let\tikz@lib@dec@te@tmp=\pgfutil@empty%
+  \let\tikz@lib@dec@te@@tmp=\pgfutil@empty%
+  \pgfmathloop%
+  \ifnum\pgfmathcounter>\tikz@lib@dec@te@charactertotalcount%
+    \ifx\tikz@lib@dec@te@@tmp\pgfutil@empty%
+    \else%
+      \advance\c@pgf@counta by1\relax%
+      \tikz@lib@dec@te@namelet{tikz@lib@dec@te@character@\the\c@pgf@counta @token}{tikz@lib@dec@te@@tmp}%
+    \fi%
+  \else%
+    \tikz@lib@dec@te@namelet{tikz@lib@dec@te@tmp}{tikz@lib@dec@te@character@\pgfmathcounter @token}%
+    \ifx\tikz@lib@dec@te@tmp\tikz@lib@dec@te@wordsep%
+      \advance\c@pgf@counta by1\relax%
+      \tikz@lib@dec@te@namelet{tikz@lib@dec@te@character@\the\c@pgf@counta @token}{tikz@lib@dec@te@@tmp}%
+      \let\tikz@lib@dec@te@@tmp=\pgfutil@empty%
+      \advance\c@pgf@counta by1\relax%
+      \tikz@lib@dec@te@namelet{tikz@lib@dec@te@character@\the\c@pgf@counta @token}{tikz@lib@dec@te@wordsep}%
+    \else%
+      \expandafter\tikz@lib@dec@te@addto@macro\expandafter{\expandafter\tikz@lib@dec@te@@tmp\expandafter}\expandafter{\tikz@lib@dec@te@tmp}%
+    \fi%
+  \repeatpgfmathloop%
+  \edef\tikz@lib@dec@te@charactertotalcount{\the\c@pgf@counta}%
+}%
+
+
+% Get width of node containing only the current character.
+\def\tikz@lib@dec@te@getcharacterwidth#1{%
+  \csname tikz@lib@dec@te@character@#1\endcsname%
+  \tikz@lib@dec@te@getoptions{every character width/.try}%
+  \let\tikz@lib@dec@te@lastcharacterwidth=\tikz@lib@dec@te@characterwidth%
+  \pgfpositionnodelater\tikz@lib@dec@te@@getcharacterwidth%
+  \pgfutil@ifundefined{tikz@lib@dec@te@character@replacements@\meaning\tikz@lib@dec@te@character @code}{%
+    \expandafter\node\expandafter[\tikz@lib@dec@te@options,scale=\tikz@lib@dec@scaledcharacterwidthfactor]%
+    {\hbox{\tikz@lib@dec@te@charactercommand{\tikz@lib@dec@te@character}}};%
+    \let\tikz@lib@dec@te@characterwidth=\tikz@lib@dec@te@characterwidth@tmp%
+  }{%
+    \tikz@lib@dec@te@getcharacter@replacementwidth{\tikz@lib@dec@te@character}%
+    \let\tikz@lib@dec@te@characterwidth=\tikz@lib@dec@te@character@replacementwidth%
+  }%
+}%
+
+% Update the character parameters with the widths.
+\def\tikz@lib@dec@te@addwidthstoparameters{%
+  \pgfmathloop%
+  \ifnum\pgfmathcounter>\tikz@lib@dec@te@charactertotalcount%
+  \else%
+    \tikz@lib@dec@te@namelet{tikz@lib@dec@te@characterwidth}{tikz@lib@dec@te@character@\pgfmathcounter @width}%
+    \tikz@lib@dec@te@namelet{tikz@lib@dec@te@characterprewidth}{tikz@lib@dec@te@character@\pgfmathcounter @prewidth}%
+    \tikz@lib@dec@te@namelet{tikz@lib@dec@te@characterpostwidth}{tikz@lib@dec@te@character@\pgfmathcounter @postwidth}%
+    \tikz@lib@dec@te@addmacroto@parameters{\pgfmathcounter}{\tikz@lib@dec@te@characterwidth}%
+    \tikz@lib@dec@te@addmacroto@parameters{\pgfmathcounter}{\tikz@lib@dec@te@characterprewidth}%
+    \tikz@lib@dec@te@addmacroto@parameters{\pgfmathcounter}{\tikz@lib@dec@te@characterpostwidth}%
+  \repeatpgfmathloop%
+}%
+
+% Get the options to applied to a character node.
+
+\def\tikz@lib@dec@te@addoptions#1{%
+  \expandafter\def\expandafter\tikz@lib@dec@te@options\expandafter{\tikz@lib@dec@te@options,#1}%
+}%
+
+\def\tikz@lib@dec@te@getoptions#1{%
+  \let\tikz@lib@dec@te@lastcharactercommand=\tikz@lib@dec@te@charactercommand%
+  \def\tikz@lib@dec@te@options{/pgf/decoration/text effects/.cd}%
+  \tikz@lib@dec@te@addoptions{#1}%
+  \let\tikzdecorationcharactercount=\tikz@lib@dec@te@charactercount%
+  \let\tikzdecorationcharactertotal=\tikz@lib@dec@te@charactertotalcount%
+  \let\tikzdecorationlettercount=\tikz@lib@dec@te@lettercount%
+  \let\tikzdecorationlettertotal=\tikz@lib@dec@te@lettertotalcount%
+  \let\tikzdecorationwordcount=\tikz@lib@dec@te@wordcount%
+  \let\tikzdecorationwordtotal=\tikz@lib@dec@te@wordtotal%
+  \let\tikzdecorationcharacter=\tikz@lib@dec@te@character%
+  %
+  % Define the count variables (if required)
+  \ifx\tikz@lib@dec@te@charactercountvar\pgfutil@empty%
+  \else%
+    \expandafter\let\tikz@lib@dec@te@charactercountvar=\tikz@lib@dec@te@charactercount%
+  \fi%
+  %
+  \ifx\tikz@lib@dec@te@charactertotalvar\pgfutil@empty%
+  \else%
+    \expandafter\let\tikz@lib@dec@te@charactertotalvar=\tikz@lib@dec@te@charactertotalcount%
+  \fi%
+  %
+  \ifx\tikz@lib@dec@te@wordcountvar\pgfutil@empty%
+  \else%
+    \expandafter\let\tikz@lib@dec@te@wordcountvar=\tikz@lib@dec@te@wordcount%
+  \fi%
+  %
+  \ifx\tikz@lib@dec@te@wordtotalvar\pgfutil@empty%
+    \else%
+      \expandafter\let\tikz@lib@dec@te@wordtotalvar=\tikz@lib@dec@te@wordtotal%
+    \fi%
+  %
+  \ifx\tikz@lib@dec@te@lettercountvar\pgfutil@empty%
+  \else%
+    \expandafter\let\tikz@lib@dec@te@lettercountvar=\tikz@lib@dec@te@lettercount%
+  \fi%
+  %
+  \ifx\tikz@lib@dec@te@lettertotalvar\pgfutil@empty%
+  \else%
+    \expandafter\let\tikz@lib@dec@te@lettertotalvar=\tikz@lib@dec@te@lettetotal%
+  \fi%
+  %
+  \edef\tikz@lib@dec@te@tmp{character \tikz@lib@dec@te@charactercount/.try,%
+    character {\meaning\tikz@lib@dec@te@character}/.try}%
+  \expandafter\tikz@lib@dec@te@addoptions\expandafter{\tikz@lib@dec@te@tmp}%
+  \ifx\tikz@lib@dec@te@character\tikz@lib@dec@te@wordsep%
+    \tikz@lib@dec@te@addoptions{/pgf/decoration/text effects/every word separator/.try}%
+  \else%
+      \ifnum\tikz@lib@dec@te@wordcount>0\relax%
+        \edef\tikz@lib@dec@te@tmp{every word/.try, word \tikz@lib@dec@te@wordcount/.try}%
+        \expandafter\tikz@lib@dec@te@addoptions\expandafter{\tikz@lib@dec@te@tmp}%
+        \ifnum\tikz@lib@dec@te@lettercount>0\relax%
+          \edef\tikz@lib@dec@te@tmp{every letter/.try,every \tikz@lib@dec@te@lettercount\space letter/.try}%
+          \expandafter\tikz@lib@dec@te@addoptions\expandafter{\tikz@lib@dec@te@tmp}%
+          \ifnum\tikz@lib@dec@te@lettercount=1\relax%
+            \edef\tikz@lib@dec@te@tmp{every first letter/.try}%
+            \expandafter\tikz@lib@dec@te@addoptions\expandafter{\tikz@lib@dec@te@tmp}%
+          \fi%
+          \iftikz@lib@dec@te@finalletter%
+            \tikz@lib@dec@te@addoptions{every final letter/.try}%
+          \fi%
+        \fi%
+      \fi%
+  \fi%
+}%
+
+% Called by `late positioning' of the node
+% to get the width of the bounding box
+% of a character.
+\def\tikz@lib@dec@te@@getcharacterwidth{%
+  \iftikz@lib@dec@te@segmentfromwidth%
+    \pgf@x=\pgfpositionnodelatermaxx\relax%
+    \advance\pgf@x by-\pgfpositionnodelaterminx\relax%
+  \else%
+    \pgf@x=\pgfpositionnodelatermaxy\relax%
+    \advance\pgf@x by-\pgfpositionnodelaterminy\relax%
+  \fi%
+  \xdef\tikz@lib@dec@te@characterwidth@tmp{\the\pgf@x}%
+}%
+
+
+\def\tikz@lib@dec@te@drawcharacter{%
+  \csname tikz@lib@dec@te@character@\tikz@lib@dec@te@charactercount\endcsname%
+  \tikz@lib@dec@te@getoptions{every character/.try}%
+  \pgfpositionnodelater\relax%
+  \pgfutil@ifundefined{tikz@lib@dec@te@character@replacements@\meaning\tikz@lib@dec@te@character @code}{%
+    \expandafter\node\expandafter[\tikz@lib@dec@te@options, scale=\tikz@lib@dec@scaledcharacterwidthfactor]{\hbox{\tikz@lib@dec@te@charactercommand{\tikz@lib@dec@te@character}}};%
+  }{\tikz@lib@dec@te@drawcharacter@replacement{\tikz@lib@dec@te@character}}%
+}%
+
+% Replace the character #1 with a character@replacement
+%
+\def\tikz@lib@dec@te@drawcharacter@replacement#1{%
+  \pgfscope%
+  \expandafter\tikzset\expandafter{\tikz@lib@dec@te@options}%
+  \csname tikz@lib@dec@te@character@replacements@\meaning#1@code\endcsname%
+  \endpgfscope%
+}%
+
+% Get the width of the character@replacement associated with
+% the character #1
+%
+\newbox\tikz@lib@dec@te@box
+\def\tikz@lib@dec@te@getcharacter@replacementwidth#1{%
+  \pgfinterruptpicture%
+  \setbox\tikz@lib@dec@te@box=\hbox{%
+  \pgfpicture
+  \expandafter\tikzset\expandafter{\tikz@lib@dec@te@options}%
+  \csname tikz@lib@dec@te@character@replacements@\meaning#1@code\endcsname%
+  \endpgfpicture}%
+  \xdef\tikz@lib@dec@te@character@replacementwidth{\the\wd\tikz@lib@dec@te@box}%
+  \endpgfinterruptpicture%
+}%
+
+\def\tikz@lib@dec@scaledcharacterwidthfactor{1}%
+
+% Set up the decoration
+\def\tikz@lib@dec@te@state@setup@precomputation{%
+  \def\tikz@lib@te@alignshift{0pt}%
+  \iftikz@lib@dec@te@pathfromtext%
+    % The width of the text and characters has already been calculated.
+  \else%
+    \let\tikz@lib@dec@te@text=\pgfdecorationtext%
+    % Get the character tokens and the total number of characters.
+    \tikz@lib@dec@te@preparetext%
+    \iftikz@lib@dec@te@scaletexttopath%
+      % OK, *scaling* text to path is easy.
+      % Simply divide the path length by the text width to
+      % obtain the scaling factor which will be applied
+      % "at the last minute"...
+      \pgfmathdivide{\pgfdecoratedpathlength}{\tikz@lib@dec@te@textwidth}%
+      \let\tikz@lib@dec@scaledcharacterwidthfactor=\pgfmathresult%
+      \expandafter\pgfkeys\expandafter{\tikz@lib@dec@te@tmp}%
+      % ... and recalculate the (pre and post) widths.
+      \pgfmathloop
+      \ifnum\pgfmathcounter>\tikz@lib@dec@te@charactertotalcount%
+      \else%
+        \pgf@x=\csname tikz@lib@dec@te@character@\pgfmathcounter @prewidth\endcsname\relax%
+        \pgf@x=\tikz@lib@dec@scaledcharacterwidthfactor\pgf@x%
+        \expandafter\edef\csname tikz@lib@dec@te@character@\pgfmathcounter @prewidth\endcsname{\the\pgf@x}%
+        %
+        \pgf@x=\csname tikz@lib@dec@te@character@\pgfmathcounter @postwidth\endcsname\relax%
+        \pgf@x=\tikz@lib@dec@scaledcharacterwidthfactor\pgf@x%
+        \expandafter\edef\csname tikz@lib@dec@te@character@\pgfmathcounter @postwidth\endcsname{\the\pgf@x}%
+      \repeatpgfmathloop%
+      % Update parameters with thewidths.
+      \tikz@lib@dec@te@addwidthstoparameters%
+      \let\tikz@lib@dec@te@textwidth=\pgfdecoratedpathlength%
+    \else%
+      \iftikz@lib@dec@te@fittexttopath%
+        % *Fitting* text is less easy.
+        % The pre and post width of all except the first and last characters
+        % must be recalculated.
+        % Only the post width of the first character and the pre width
+        % of the final character are scaled as these characters should be
+        % fixed and the start and end of the path, respectively.
+        %
+        % We hope that the decoration engine is accurate enough to position
+        % the last word correctly.
+        \pgf@x=\pgfdecoratedpathlength%
+        \pgf@xa=\csname tikz@lib@dec@te@character@1@postwidth\endcsname\relax%
+        \pgf@xb=\csname tikz@lib@dec@te@character@\tikz@lib@dec@te@charactertotalcount @prewidth\endcsname\relax%
+        \advance\pgf@x by-\pgf@xa%
+        \advance\pgf@x by-\pgf@xb%
+        \pgf@y=\tikz@lib@dec@te@textwidth\relax%
+        \advance\pgf@y by-\pgf@xa%
+        \advance\pgf@y by-\pgf@xb%
+        %
+        \pgfmathdivide{\the\pgf@x}{\the\pgf@y}%
+        \let\tikz@lib@dec@characterwidthscale=\pgfmathresult%
+        \pgfmathloop
+        \ifnum\pgfmathcounter>\tikz@lib@dec@te@charactertotalcount\relax%
+        \else%
+        \ifnum\pgfmathcounter>1\relax%
+          \pgf@x=\csname tikz@lib@dec@te@character@\pgfmathcounter @prewidth\endcsname\relax%
+          \pgf@x=\tikz@lib@dec@characterwidthscale\pgf@x%
+            \expandafter\edef\csname tikz@lib@dec@te@character@\pgfmathcounter @prewidth\endcsname{\the\pgf@x}%
+          \fi%
+          \ifnum\pgfmathcounter<\tikz@lib@dec@te@charactertotalcount\relax%
+            \pgf@x=\csname tikz@lib@dec@te@character@\pgfmathcounter @postwidth\endcsname\relax%
+            \pgf@x=\tikz@lib@dec@characterwidthscale\pgf@x%
+            \expandafter\edef\csname tikz@lib@dec@te@character@\pgfmathcounter @postwidth\endcsname{\the\pgf@x}%
+          \fi%
+        \repeatpgfmathloop%
+        % Update parameters with widths.
+        \tikz@lib@dec@te@addwidthstoparameters%
+        \let\tikz@lib@dec@te@textwidth=\pgfdecoratedpathlength%
+      \else%
+        % Calculate the distance to move along the path for alignment.
+        \pgfkeysgetvalue{/pgf/decoration/text align/align}{\tikz@lib@dec@align}%
+        \ifx\tikz@lib@dec@align\tikz@lib@dec@align@center@text%
+           \pgf@x=\pgfdecoratedpathlength\relax%
+           \advance\pgf@x by-\tikz@lib@dec@te@textwidth\relax%
+           \ifdim\pgf@x<0pt\relax%
+             \pgf@x=0pt\relax%
+           \fi%
+           \divide\pgf@x by2\relax%
+           % Adjust the pre-width of the first character...
+           \pgf@xa=\csname tikz@lib@dec@te@character@1@prewidth\endcsname\relax%
+           \advance\pgf@xa by\pgf@x%
+           \expandafter\edef\csname tikz@lib@dec@te@character@1@prewidth\endcsname{\the\pgf@xa}%
+           % ...and the post-width of the last character.
+           \pgf@xa=\csname tikz@lib@dec@te@character@\tikz@lib@dec@te@charactertotalcount @postwidth\endcsname\relax%
+           \advance\pgf@xa by\pgf@x%
+           \expandafter\edef\csname tikz@lib@dec@te@character@\tikz@lib@dec@te@charactertotalcount @postwidth\endcsname{\the\pgf@xa}%
+        \else%
+          \ifx\tikz@lib@dec@align\tikz@lib@dec@align@right@text%
+            \pgf@x=\pgfdecoratedpathlength\relax%
+            \advance\pgf@x by-\tikz@lib@dec@te@textwidth\relax%
+            \ifdim\pgf@x<0pt\relax%
+              \pgf@x=0pt\relax%
+            \fi%
+            % Adjust the pre-width of the first character...
+            \pgf@xa=\csname tikz@lib@dec@te@character@1@prewidth\endcsname\relax%
+            \advance\pgf@xa by\pgf@x%
+            \expandafter\edef\csname tikz@lib@dec@te@character@1@prewidth\endcsname{\the\pgf@xa}%
+          \fi%
+        \fi%
+        \tikz@lib@dec@te@addwidthstoparameters%
+      \fi%
+    \fi%
+  \fi%
+}%
+
+
+% Evil hack into the decoration code.
+%
+% If the path contains single move to and the `path from text'
+% key is set to true. The width of the text is calculated here
+% and the (straight line) path automatically calculated.
+%
+\def\pgf@decorate@path@check@moveto#1{%
+  \expandafter\pgf@decorate@path@@check@moveto#1\pgf@decorate@stop\pgf@decorate@@stop}%
+
+\def\pgf@decorate@token@stop{\pgf@decorate@stop}%
+\def\pgf@decorate@path@@check@moveto#1#2#3#4\pgf@decorate@@stop#5#6{%
+  \def\pgf@decorate@temp{#4}%
+  \pgf@x=#2\relax%
+  \pgf@y=#3\relax%
+  \ifx\pgf@decorate@temp\pgf@decorate@token@stop%
+     \iftikz@lib@dec@te@pathfromtext%
+       % Get the start position...
+      \pgfextract@process\tikz@lib@dec@te@pathstart{}%
+      \tikz@lib@dec@te@preparetext%
+      \tikz@lib@dec@te@addwidthstoparameters%
+      % ... and create a lineto path of the correct length.
+      \pgfsetpath\pgfutil@empty%
+      \pgfpathmoveto{\tikz@lib@dec@te@pathstart}%
+      \pgfpathlineto{\pgfpointadd{\tikz@lib@dec@te@pathstart}%
+        {\pgfpointpolar{\tikz@lib@dec@te@pathfromtextangle}{\tikz@lib@dec@te@textwidth}}}%
+      \pgfgetpath\pgfdecoratedpath%
+      \pgfsetpath\pgfutil@empty%
+    \else%
+      #5%
+    \fi%
+  \else%
+    \tikz@lib@dec@te@pathfromtextfalse%
+    #6%
+  \fi%
+}%
+
+
+\pgfdeclaredecoration{text effects along path}{setup}{%
+  \state{setup}[width=+0pt, next state=scan, persistent precomputation={%
+    \tikz@lib@dec@te@state@setup@precomputation%
+    \def\tikz@lib@dec@te@charactercount{0}%
+  }]{}%
+  %
+\state{scan}[width=+0pt, next state=pre token, persistent precomputation={%
+  \tikz@lib@dec@te@advancecountmacro\tikz@lib@dec@te@charactercount{1}%
+  % Usual switch to final state is based on distance.
+  % Here we also need it to be on the number of the
+  % current character.
+  \ifnum\tikz@lib@dec@te@charactercount>\tikz@lib@dec@te@charactertotalcount\relax%
+    \ifnum\tikz@lib@dec@te@repeattext=0\relax%
+      \def\pgf@decorate@next@state{final}%
+    \else%
+      \tikz@lib@dec@te@advancecountmacro\tikz@lib@dec@te@repeattext{-1}%
+      \def\tikz@lib@dec@te@charactercount{1}%
+    \fi%
+  \fi%
+  % Install parameters for this character.
+  \csname tikz@lib@dec@te@character@\tikz@lib@dec@te@charactercount\endcsname%
+}]{}%
+%
+\state{pre token}[width=+\tikz@lib@dec@te@characterprewidth, next state=token]{}%
+\state{token}[width=+0pt, next state=post token]
+{%
+  \tikz@lib@dec@te@drawcharacter%
+}%
+\state{post token}[width=+\tikz@lib@dec@te@characterpostwidth, next state=scan]{}%
+}%
+
+
+% Parse styles for individual characters
+% #1 a string of characters (e.g., aieou{\"U}{\"a"})
+% #2 the options for to apply to each character.
+%
+\def\tikz@lib@dec@te@parse@stylecharacters#1#2{%
+  \def\tikz@lib@dec@te@text{#1}%
+  \tikz@lib@dec@te@scancharacters{%
+    \pgfkeysalso{/pgf/decoration/text effects/character {\meaning\tikz@lib@dec@te@character}/.style={#2}}%
+  }%
+}%
+
+% Parse replacement code for for individual characters
+% #1 a string of characters (e.g., aieou{\"U}{\"a"})
+% #2 the code to execute to each character.
+%
+\def\tikz@lib@dec@te@parse@replacecharacters#1#2{%
+  \def\tikz@lib@dec@te@text{#1}%
+  \tikz@lib@dec@te@scancharacters{%
+    \expandafter\def\csname tikz@lib@dec@te@character@replacements@\meaning\tikz@lib@dec@te@character @code\endcsname{#2}%
+  }%
+}%
+
+\endinput

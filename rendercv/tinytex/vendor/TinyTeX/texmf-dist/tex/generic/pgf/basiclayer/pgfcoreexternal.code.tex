@@ -1,0 +1,542 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcoreexternal.code.tex}
+
+
+
+\newif\ifpgfexternal@aux@in@dpth
+\newif\ifpgfexternal@info
+
+\pgfkeys{
+    /pgf/images/include external/.code={\pgfimage{#1}},
+    /pgf/images/aux in dpth/.is if=pgfexternal@aux@in@dpth,
+    /pgf/images/aux in dpth/.default=true,
+    /pgf/images/trim external/.code n args={4}{%
+        \def\pgf@external@kern@left{#1}%
+        \def\pgf@external@kern@bottom{#2}%
+        \def\pgf@external@kern@right{#3}%
+        \def\pgf@external@kern@top{#4}%
+        \ifx\pgf@external@kern@left\pgfutil@empty\def\pgf@external@kern@left{0sp}\fi%
+        \ifx\pgf@external@kern@bottom\pgfutil@empty\def\pgf@external@kern@bottom{0sp}\fi%
+        \ifx\pgf@external@kern@right\pgfutil@empty\def\pgf@external@kern@right{0sp}\fi%
+        \ifx\pgf@external@kern@top\pgfutil@empty\def\pgf@external@kern@top{0sp}\fi%
+    },
+    /pgf/images/trim external={1truein}{1truein}{1truein}{1truein},
+    /pgf/images/external info/.is if=pgfexternal@info,
+    /pgf/images/external info/.default=true,
+}
+
+% The external read/write mechanism is used as follows:
+%
+% In your document, you put a number or all of your pgfpicture (or
+% tikzpicture) environments inside a pair of \beginpgfexternal and
+% \endpgfexternal. The \beginpgfexternal gets one parameter called the
+% graphics name.
+%
+% Once this is done, the next step is to declare the names of your
+% graphics in the document at the beginning using the
+% \pgfdeclaregraphicname command.
+%
+% Now, when you typeset your document, each time a \beginpgfexternal
+% command is encountered, it will be checked whether the corresponding
+% graphics file exists. If this is the case, it will be included and
+% the code between \beginpgfexternal and \endpgfexternal is
+% ignored. Otherwise, the code is executed normally.
+%
+% Things change when you run tex on your file with the \jobname set to
+% the name of a declared graphics name. In this case, only your
+% graphic will be typeset, the rest of the document will be "thrown away".
+% To be more precise, everything is gobbled up to the beginning
+% of the first \beginpgfexternal with the given graphics name. Then,
+% the content of the "environment" is put in a box (this "environment"
+% need not contain a graphics, it may contain anything that can be put
+% in a box). Then a single page is output whose size is exactly the
+% size of the picture.
+%
+% So, once you have run tex repeatedly, each time with the jobname set
+% to each of the graphics, you can then run tex on the whole document
+% and this will cause all graphics to be included rather than begin
+% typeset.
+%
+% Finally, once all the graphics have been created, you can also say
+% \input pgfexternal.tex instead of including pgf/TikZ.
+
+
+\newif\ifpgfexternalreadmainaux
+\pgfexternalreadmainauxtrue
+
+% Tells pgf which jobname is the name of the real file
+%
+% #1 = name
+%
+% Description:
+%
+% This command is used to tell pgf that the file named #1 should be
+% typeset normally. If \jobname is not equal to #1, only
+% the graphic called \jobname will be typeset.
+%
+% Example:
+%
+% \pgfrealjobname{survey}
+%
+% Note that afterwards, \jobname will be set to the argument. In our
+% example, \jobname will be 'survey'. This is to accomplish
+% compatibility with aux-file generation.
+
+\def\pgfrealjobname#1{%
+  \global\let\pgfactualjobname=\jobname
+  \edef\pgf@tempa{\expandafter\string\csname #1\endcsname}%
+  \edef\pgf@tempb{\expandafter\string\csname\jobname\endcsname}%
+  \ifx\pgf@tempa\pgf@tempb%
+  \else%
+    \pgf@external@grabshipouttrue%
+    \pgfexternal@nofiles% see also \pgf@external@init@aux@in@dpth
+    \ifpgfexternalreadmainaux
+        % and reset the jobname. This should allow to handle any
+        % \label/\ref constructions which are stored in \jobname.aux (and
+        % which won't be found otherwise)
+        \gdef\jobname{#1}%
+    \fi
+    \ifpgfexternal@aux@in@dpth
+        \csname newwrite\endcsname\w@pgfexternal@auxout
+    \fi
+    \pgfexternal@geometry@compatibility
+  \fi%
+  \gdef\pgfrealjobname##1{}% avoid multiple calls.
+}
+
+\def\pgfexternal@geometry@compatibility{%
+    % check if \usepackage{geometry} is loaded:
+    \pgfutil@ifundefined{geometry}{%
+    }{%
+        % The geometry package hooks into \begin{document}, evaluates
+        % its driver -- and generates \special instructions to set the
+        % paper size.
+        %
+        % Unfortunately, this confuses dvips utterly - and perhaps
+        % other drivers as well.
+        %
+        % Thus, if we currently about to generate some external
+        % graphics, we WANT to disable geometry (it has no purpose in
+        % this context anyway).
+        %
+        % This here works well:
+        \pgf@typeout{Package TikZ externalization: calling \string\geometry{driver=none} during externalization.^^J}%
+        \geometry{driver=none}%
+    }%
+}%
+
+\def\pgfexternal@nofiles{%
+    % replace \relax. The \nofiles macros does
+    % \let\makeglossary=\relax
+    % but the glossary.sty calls \renewcommand\makeglossary (which
+    % will fail if \makeglossary=\relax). Stupid, but it works.
+    \let\pgfexternal@nofiles@=\relax
+    \def\relax{\relax}%
+    %
+    % suppress generation of LaTeX .aux, .toc etc files.
+    % generation of these files is not thread-safe.
+    % the \csname \endcsname yields \relax if \nofiles doesn't exist.
+    \csname nofiles\endcsname
+    %
+    \let\relax=\pgfexternal@nofiles@
+}%
+
+\newif\ifpgf@external@grabshipout
+\newbox\pgfexternal@startupbox
+
+\pgfutil@ifundefined{AtBeginDocument}{}{%
+    \AtBeginDocument{%
+      \ifpgf@external@grabshipout%
+        \global\let\pgfexternal@originalshipout=\shipout%
+        \global\def\shipout{\setbox\pgfpic=}%
+        \maxdeadcycles=10000%
+        % Ok, gather everything we have seen up to now in a box. This box
+        % will contain any specials that have been used.
+        {%
+          \output{\global\setbox\pgfexternal@startupbox=\vbox{\csname @begindvi\endcsname\unvbox255}}%
+          \hbox{}\eject%
+        }%
+      \fi%
+    }
+}%
+
+\pgfutil@ifundefined{AtEndDocument}{}{%
+    \AtEndDocument{%
+      \ifpgf@external@grabshipout
+        \pgfutil@ifundefined{pgfexternal@did@a@shipout}{%
+          \pgfexternal@error@no@shipout
+        }{}%
+      \fi
+    }%
+}
+
+% This will be overwritten by the tikz external lib if it is loaded.
+\def\pgfexternal@error@no@shipout{%
+    \pgferror{Sorry, image externalization failed: the resulting image was EMPTY. I tried to externalize '\pgfactualjobname'. Perhaps there was a typo somewhere? Please check that your document contains '\string\beginpgfgraphicnamed{\pgfactualjobname} ... \string\endpgfgraphicnamed'}%
+}%
+
+
+% "Environment" for an external graphic.
+%
+% #1 = graphic name
+%
+% Example:
+%
+% \beginpgfgraphicnamed{main-graphic2}
+%   \begin{tikzpicture}
+%     ...
+%   \end{tikzpicture}
+% \endpgfgraphicnamed
+
+\def\pgf@externalbegin#1{%
+  % First, check whether we wish to grab this graphic:
+  \let\pgf@next=\pgf@external@normal%
+  \ifpgf@external@grabshipout%
+    \edef\pgf@tempa{\expandafter\string\csname #1\endcsname}%
+    \edef\pgf@tempb{\expandafter\string\csname\pgfactualjobname\endcsname}%
+    \ifx\pgf@tempa\pgf@tempb%
+      \let\pgf@next=\pgf@external@grab%
+    \fi%
+  \fi%
+  \pgf@next{#1}%
+}
+
+
+\AtBeginDocument{
+  \let\beginpgfgraphicnamed=\pgf@externalbegin% overwrite definition of pgfexternal.tex if necessary
+  \let\endpgfgraphicnamed=\unskip
+}
+
+
+% Normal operation: Include an external graphic instead of the
+% picture, if such an external picture exists.
+\def\pgf@external@normal#1{%
+  \let\pgf@filename=\pgfutil@empty%
+  \expandafter\pgf@findfile\pgfsys@imagesuffixlist:+{#1}%
+  \ifx\pgf@filename\pgfutil@empty%
+    % Ok, no such image... Just typeset the picture normally.
+    \let\pgf@next=\relax%
+  \else%
+    \let\pgf@next=\pgf@replacepicturebygraphic%
+  \fi%
+  \pgf@next%
+}
+
+\long\def\pgf@replacepicturebygraphic#1\endpgfgraphicnamed{%
+    \expandafter\pgfincludeexternalgraphics\expandafter{\pgf@filename}\unskip
+}
+
+% This is almost the same as \includegraphics{#1}, but it checks
+% whether '#1.dpth' exists. In such case, it restores the boxes depth
+% stored in #1.dpth.
+%
+% Furthermore, the .dpth file may contain .aux related information
+% collected for the external graphics (references). They start after
+% the first line (if any).
+\def\pgfincludeexternalgraphics#1{%
+    \begingroup
+    \pgfexternalreaddpth{#1}%
+    \pgfkeysifdefined{/pgf/images/include external/#1/.@cmd}{%
+        \pgfkeysgetvalue{/pgf/images/include external/#1/.@cmd}\pgf@tempa
+        \pgfkeyslet{/pgf/images/include external/.@cmd}\pgf@tempa
+    }{}%
+    \setbox1=\hbox{\pgfkeysvalueof{/pgf/images/include external/.@cmd}{#1}\pgfeov}%
+    \ifdim\pgfexternaltrimleft=0sp \else \kern\pgfexternaltrimleft\relax \fi
+    \ifdim\pgfexternaldepth=0pt
+        \box1
+    \else
+        \dimen0=\pgfexternaldepth\relax
+        \hbox{\lower\dimen0 \box1 }%
+    \fi
+    \ifdim\pgfexternaltrimright=0sp \else \kern\pgfexternaltrimright\relax \fi
+    \endgroup
+}
+
+% Reads the .dpth file which contains meta data of the external
+% picture.
+%
+% This command handles the following stuff:
+% - it defines \pgfexternaldepth . The macro contains the contents of
+%   a line which does not start with a control sequence (for example a
+%   line containing '50pt')
+% - it defines \pgfexternaltrimleft and \pgfexternaltrimright
+% - it checks if the .dpth file contains content stored by means of
+%   \pgfexternalstorecommand. If so, the argument of
+%   \pgfexternalstorecommand will be restored.
+% - anything else will be appended to the main .aux file, assuming that
+%   it contains \label or \ref information (only if the LaTeX switch
+%   \if@filesw is \iftrue).
+%
+%
+% #1: the image file name (such that #1.dpth exists)
+\def\pgfexternalreaddpth#1{%
+    % no \begingroup. Handle that manually:
+    \edef\pgfexternalreaddpth@restore{%
+        \noexpand\endlinechar=\the\endlinechar\space
+        \noexpand\catcode`\noexpand\@=\the\catcode`\@\space
+    }%
+    %
+    \def\pgfexternaldepth{0sp}%
+    \def\pgfexternaltrimleft{0sp}%
+    \def\pgfexternaltrimright{0sp}%
+    \endlinechar=-1 % suppress white space at end
+    \catcode`\@=11
+    \openin\r@pgf@reada=#1.dpth
+    \pgfincludeexternalgraphics@read@dpth
+    %
+    \pgfexternalreaddpth@restore
+}%
+%
+% The .dpth consists of 0-N lines, where each is either a single
+% dimension (the box' depth) or something which belongs to the .aux
+% file (such lines will always start with a macro).
+\def\pgfincludeexternalgraphics@read@dpth{%
+    \ifeof\r@pgf@reada
+        \closein\r@pgf@reada
+    \else
+        \read\r@pgf@reada to\pgfincludeexternalgraphics@auxline
+        \ifx\pgfincludeexternalgraphics@auxline\pgfutil@empty
+        \else
+            \expandafter\pgfincludeexternalgraphics@read@dpth@line\pgfincludeexternalgraphics@auxline\pgfincludeexternalgraphics@read@dpth@line@EOI
+        \fi
+        \expandafter\pgfincludeexternalgraphics@read@dpth
+    \fi
+}%
+
+\def\pgfexternal@restore#1{#1}%
+
+\long\def\pgfincludeexternalgraphics@read@dpth@line@getfirst#1#2\pgfincludeexternalgraphics@read@dpth@line@EOI{%
+    \def\pgf@first{#1}%
+}%
+\long\def\pgfincludeexternalgraphics@read@dpth@line#1\pgfincludeexternalgraphics@read@dpth@line@EOI{%
+    \pgfincludeexternalgraphics@read@dpth@line@getfirst#1\pgfincludeexternalgraphics@read@dpth@line@EOI
+    \expandafter\ifcat\expandafter\noexpand\pgf@first\relax
+        % Ah -- the first token is a control sequence. It belongs to
+        % the .aux file.
+        %
+        \expandafter\ifx\pgf@first\pgfexternal@restore
+            % if the first line in the .dpth file starts with the
+            % magic string \pgfexternal@restore, the complete line
+            % will be executed as-is. Example:
+            % \pgfexternal@restore{\def\somevalue{1}}
+            #1%
+        \else
+            % do NOT execute #1! many LaTeX commands don't support it (\label for example)
+            \pgfutil@ifundefined{if@filesw}{%
+                % sorry, .aux file support only for latex
+            }{%
+                % append to main .aux file (for forward references)
+                \if@filesw
+                    {%
+                    \toks0={#1}%
+                    % believe it or not, but the
+                    % \def\dpthimport{...}\dpthimport *makes* a
+                    % difference! In ensures any occurring `##' characters are properly expanded to `#'.
+                    \immediate\write\@auxout{%
+                        \noexpand\def\noexpand\dpthimport{\the\toks0}\noexpand\dpthimport}%
+                    }%
+                \fi
+            }%
+        \fi
+    \else% it is the depth (which is simply a number for backwards compatibility)
+        \def\pgfexternaldepth{#1}%
+    \fi
+}%
+
+% Stores '#1' (expanded!) into the .dpth file of the currently
+% exported image.
+%
+% This command has only an effect if an image is being exported.
+%
+% The stored contents will be read in the context where
+% /pgf/images/include external is active (i.e. by
+% \pgfexternalreaddpth).
+%
+\def\pgfexternalstorecommand#1{%
+}%
+\def\pgfexternalstorecommand@isexporting#1{%
+    \immediate\write\w@pgfexternal@auxout{\noexpand\pgfexternal@restore{#1}}%
+}%
+
+
+
+% Grab operation: If jobname matches the graphic name, typeset this
+% picture normal.
+% REMARK:
+%   this method is also invoked from within the tikz external library.
+\def\pgf@external@grab#1{%
+  \def\pgf@filename{#1}%
+  \ifpgfexternal@aux@in@dpth
+    \begingroup
+    \pgf@external@init@aux@in@dpth
+    \let\G@refundefinedtrue=\pgf@external@grab@refundefinedtrue
+  \fi
+  \gdef\pgf@trimleft@final{0sp}%
+  \gdef\pgf@trimright@final{0sp}%
+  \setbox\pgfpic=\hbox\bgroup\bgroup%
+    \let\endpgfgraphicnamed=\pgf@externalend%
+}
+
+{\catcode`\^=12 \gdef\pgfexternal@hat{^}}
+
+\expandafter\let\expandafter\pgf@external@grab@refundefinedtrue@orig\csname G@refundefinedtrue\endcsname
+
+\def\pgf@external@grab@refundefinedtrue{%
+    \pgf@external@grab@refundefinedtrue@orig
+    \begingroup
+    \def\n{\pgfexternal@hat\pgfexternal@hat J}%
+    \pgfexternalstorecommand{%
+      \pgf@external@grab@refundefinedtrue@code
+      \noexpand\immediate\noexpand\write16{\pgf@external@grab@refundefinedtrue@warning}%
+      \noexpand\G@refundefinedtrue
+    }%
+    \endgroup
+}%
+
+% A hook. will be overwritten by \usetikzlibrary{external}
+\def\pgf@external@grab@refundefinedtrue@code{}
+
+\def\pgf@external@grab@refundefinedtrue@warning{%
+    LaTeX Warning: External picture `\pgfactualjobname' contains undefined references\noexpand\on@line.\n
+}%
+
+\let\pgf@external@@protected@write@orig=\protected@write
+\long\def\pgf@external@@protected@write@immediate#1#2#3{%
+  \begingroup
+    \let\pgf@write@=\write
+    \def\write{\noexpand\immediate\pgf@write@}%
+    \pgf@external@@protected@write@orig{#1}{#2}{#3}%
+  \endgroup
+}%
+
+\def\pgf@external@init@aux@in@dpth{%
+  \let\pgfexternalstorecommand=\pgfexternalstorecommand@isexporting
+  %
+  % tell LaTeX to write aux files...
+  \csname @fileswtrue\endcsname
+  % ... but redirect output to the .dpth file!
+  \immediate\openout\w@pgfexternal@auxout=\pgf@filename.dpth
+  \let\@auxout=\w@pgfexternal@auxout
+  % ... and disable the correct page numbers. I can't get that
+  % (because the correct page number is only available in the
+  % shipout routine). Use immediate output:
+  \let\protected@write=\pgf@external@@protected@write@immediate
+}%
+
+\def\pgf@externalend@storeshifts#1{%
+  \immediate\write#1{\the\dp\pgfpic}% store the depth simply as number for backw. compat.
+  \ifx\pgf@trimleft@final\pgfutil@empty\else
+    \immediate\write#1{\noexpand\pgfexternal@restore{\noexpand\def\noexpand\pgfexternaltrimleft{\pgf@trimleft@final}}}%
+  \fi
+  \ifx\pgf@trimright@final\pgfutil@empty\else
+    \immediate\write#1{\noexpand\pgfexternal@restore{\noexpand\def\noexpand\pgfexternaltrimright{\pgf@trimright@final}}}%
+  \fi
+  \ifpgfexternal@info
+    \immediate\write#1{\noexpand\pgfexternal@restore{\noexpand\def\noexpand\pgfexternalwidth{\the\wd\pgfpic}}}%
+    \immediate\write#1{\noexpand\pgfexternal@restore{\noexpand\def\noexpand\pgfexternalheight{\the\dimen0}}}%
+  \fi
+}
+% REMARK:
+%   this method is also invoked from within the tikz external library.
+\def\pgf@externalend{%
+  \unskip\egroup\egroup%
+  {%
+    \def\pgf@external@trim{0}%
+    \def\pgf@external@store@dpth{0}%
+    %
+    \ifpgf@trim@lowlevel
+      \gdef\pgf@trimleft@final{}%
+      \gdef\pgf@trimright@final{}%
+    \else
+      \ifdim\pgf@trimleft@final=0sp  \gdef\pgf@trimleft@final{}  \else\def\pgf@external@trim{1}\fi
+      \ifdim\pgf@trimright@final=0sp \gdef\pgf@trimright@final{} \else\def\pgf@external@trim{1}\fi
+      \if1\pgf@external@trim
+          % UNDO the trimming! export to pdf doesn't supported trimmed
+          % bounding boxes (has to do with the mediabox/trimbox etc).
+          % I'll keep the bounding box intact and store the trim information
+          % into the .dpth file.
+          \setbox\pgfpic=\hbox{%
+              \ifx\pgf@trimleft@final\pgfutil@empty\else\kern-\pgf@trimleft@final\fi
+              \box\pgfpic
+              \ifx\pgf@trimright@final\pgfutil@empty\else\kern-\pgf@trimright@final\fi
+          }%
+          \def\pgf@external@store@dpth{1}%
+      \fi
+    \fi
+    %
+    \parindent0pt % leave the space
+%    \leftmargin0pt%
+%    \rightmargin0pt%
+    \hoffset=0pt % reset to default
+    \voffset=0pt
+    \dimen0\ht\pgfpic%
+    \advance\dimen0\dp\pgfpic%
+    \ifdim\dp\pgfpic=0pt\relax
+    \else% store the picture's depth. Otherwise, it would be lost.
+      \def\pgf@external@store@dpth{1}%
+    \fi
+    \ifpgfexternal@info
+      \def\pgf@external@store@dpth{1}%
+    \fi
+    %
+    \if1\pgf@external@store@dpth
+      \ifpgfexternal@aux@in@dpth
+        \pgf@externalend@storeshifts\@auxout
+        \immediate\closeout\@auxout
+      \else
+        \immediate\openout\pgf@plotwrite=\pgf@filename.dpth
+        \pgf@externalend@storeshifts\pgf@plotwrite
+        \immediate\closeout\pgf@plotwrite
+      \fi
+    \fi
+    \pgfsys@prepare@papersize{\the\wd\pgfpic}{\the\dimen0}%
+    %
+    \setbox0=\vbox{%
+      % I admit that I don't know why there is this kerning:
+      \kern -\pgf@external@kern@top\relax%
+      \hbox{%
+        \kern -\pgf@external@kern@left\relax%
+        \hbox to0pt{%
+          \wd\pgfexternal@startupbox=0pt %
+          \ht\pgfexternal@startupbox=0pt %
+          \dp\pgfexternal@startupbox=0pt %
+          \box\pgfexternal@startupbox%
+          \pgfsys@atbegindocument\hss}%
+        \box\pgfpic%
+        \kern\pgf@external@kern@right\relax%
+      }%
+      \kern\pgf@external@kern@bottom\relax%
+    }%
+    %
+    % compatibility with eso-pic package: \nointerlineskip is not
+    % allowed here, but the eso-pic package uses \nointerlineskip in
+    % its shipout routine.
+    \let\pgfexternal@nointerlineskip@orig=\nointerlineskip
+    \let\nointerlineskip=\pgfexternal@nointerlineskip
+    %
+    \pgfexternal@originalshipout\box0 %
+    \gdef\pgfexternal@did@a@shipout{1}%
+  }%
+  \ifpgfexternal@aux@in@dpth
+    \endgroup
+  \fi
+}
+
+\def\pgfexternal@nointerlineskip{%
+    \ifvmode
+      \pgfexternal@nointerlineskip@orig
+    \else
+      \relax% \nointerlineskip in horizontal mode not allowed. Silently ignore the error message.
+    \fi
+}%
+
+\endinput
+% vi: tabstop=4 shiftwidth=2 expandtab

@@ -1,0 +1,875 @@
+%
+% Copyright (C) 1998-2021 Javier Bezos http://www.texnia.com
+%
+% This file may be distributed and/or modified under the conditions of
+% the MIT License. A version can be found at the end of this file.
+%
+% Repository: https://github.com/jbezos/titlesec
+%
+%
+% Release
+% ~~~~~~~
+
+\ifx\ttl@coreps\@empty\else      % START code for package
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{titleps}[2021/07/05 v2.14 Page styles]
+
+% This package is mainly a wrapper for the pagestyle macros provided
+% by titlesec, so that they can be used without it.  Functionality is
+% almost similar. First, some definitions from titlesec.
+
+\expandafter\newif\csname ifttl@ps\endcsname
+\expandafter\newif\csname ifttl@toclabel\endcsname
+\ttl@toclabeltrue
+
+\def\ttl@calcneg#1#2{%
+  {\setlength\@tempskipa{#2}%
+   #1{-\@tempskipa}}}
+
+\expandafter\newif\csname ifttl@premark\endcsname
+\ttl@premarkfalse
+
+% 2019-02-25. Added the \lastskip stuff, because a mark 'forgets' the
+% last skip.
+
+\def\ttl@premark#1#2{%
+  \let\ttl@lastskip\relax
+  \ifvmode
+    \ifdim\lastskip=\z@\else
+      \edef\ttl@lastskip{\the\lastskip}% 
+      \vskip-\ttl@lastskip\relax
+    \fi
+  \fi
+  \protected@xdef\ttl@prevmarks{\ttl@marks}%
+  \csname#1mark\endcsname{#2}%
+  \ifx\ttl@lastskip\relax\else
+    \vskip\ttl@lastskip\relax
+  \fi
+  \gdef\ttl@prevmarks{\ttl@marks}}
+
+\let\ttl@savemark\@empty
+
+% Patching sectioning commands
+
+\newcommand\TitlepsPatchSection{%
+  \@ifstar{\ttl@setsec\@gobbletwo}%
+          {\ttl@setsec\pretitlemark}}
+
+\def\ttl@setsec#1#2{%
+  \@ifundefined{#2}{}{%
+    \expandafter\let\csname ttl@s@#2\expandafter\endcsname
+      \csname#2\endcsname
+    \@namedef{#2}{%
+      \@ifstar{\ttl@presec@s{#2}}%
+              {\@dblarg{\ttl@presec@x#1{#2}}}}}}%
+
+% premark/gobble, sect-name, opt, title
+\def\ttl@presec@x#1#2[#3]#4{%
+  #1{#2}{#3}%
+  \@nameuse{ttl@s@#2}[#3]{#4}}
+
+\def\ttl@presec@s#1#2{%
+  \gdef\ttl@savemark{\@nameuse{#1mark}{#2}}%
+  \@nameuse{ttl@s@#1}*{#2}}
+
+\def\ttl@atbegin{%
+  \TitlepsPatchSection*{chapter}%
+  \TitlepsPatchSection{section}%
+  \TitlepsPatchSection{subsection}%
+  \TitlepsPatchSection{subsubsection}%
+  \TitlepsPatchSection{paragraph}%
+  \TitlepsPatchSection{subparagraph}}
+
+\AtBeginDocument{\ttl@atbegin}
+
+% Package options
+
+\DeclareOption{psfloats}{\let\ttl@replace\@empty} % a flag
+
+\DeclareOption{outermarks}{%
+  \def\ttl@titlemarks{\outertitlemarks}}
+\DeclareOption{topmarks}{
+  \def\ttl@titlemarks{\toptitlemarks}}
+\DeclareOption{botmarks}{%
+  \def\ttl@titlemarks{\bottitlemarks}}
+\DeclareOption{innermarks}{%
+  \def\ttl@titlemarks{\innertitlemarks}}
+\DeclareOption{extramarks}{\let\ttl@fetchmark\@empty}
+\DeclareOption{nopatches}{\let\ttl@atbegin\relax}
+
+\ExecuteOptions{innermarks}
+
+\ProcessOptions
+
+% Load the package body
+
+\let\newpagestyle\@empty
+\let\renewpagestyle\@empty
+\let\widenhead\@empty
+
+\fi                          % PAUSE code for package
+
+% START core code
+
+% As before, all marks has two parts but now they don't refer to left or 
+% right pages at all.  There are some issues related to top marks which 
+% are explained by Knuth in \textit{The \TeX book}, pp.  259f, as well 
+% as an incompatibility between them and \LaTeX{} floats.  To overcome 
+% both limitations, in the \textsf{titleps} page styles, the second 
+% part in |\cs{firstmark}| is a \emph{fixed} top mark and the first one 
+% the actual first mark; the right way to get the bot mark is from the 
+% second part.  Marks are stored at each section and used before and 
+% after the title (straight class); the first part contains the values 
+% of current title, but the second one contains the previously stored 
+% values in the mark before the title, and the current values in the 
+% mark after.
+
+\ifx\ttl@compatps\@undefined\else
+  \PackageWarningNoLine{titlesec}
+      {You are using an old interface for page styles\MessageBreak
+      (or you forgot the package option 'pagestyles').\MessageBreak
+      You could proceed but don't complain if you run\MessageBreak
+      into errors}
+\fi
+
+\ttl@pstrue
+
+\let\parttitle\@empty
+\let\chaptertitle\@empty
+\let\sectiontitle\@empty
+\let\subsectiontitle\@empty
+\let\subsubsectiontitle\@empty
+\let\paragraphtitle\@empty
+\let\subparagraphtitle\@empty
+
+\newcommand\iftitle[1]{%
+  \expandafter\ifx\csname #1title\endcsname\@empty
+    \expandafter\@secondoftwo
+  \else
+    \expandafter\@firstoftwo
+  \fi}
+
+% \newtitlemarks belongs to a nameless markset (ie, \@empty).
+% For named extra marksets see below. 
+
+\newcommand\newtitlemark{%
+  \@ifstar{\@tempswafalse\ttl@newmk@i\@empty}%
+          {\@tempswatrue\ttl@newmk@i\@empty}}
+
+\def\ttl@newmk@i#1#2{%   markset, macro/var
+  \edef\ttl@a{\expandafter\@gobble\string#2}%
+  \expandafter\ifx\csname\ttl@a\endcsname#2\else
+    \edef\ttl@a{c@#2}%
+  \fi
+  \expandafter\ttl@newmk@ii\expandafter{\ttl@a}{#1}}
+
+\def\ttl@newmk@ii#1#2{%   macro/var, markset
+  \expandafter\let\expandafter\ttl@a\csname ttl@mks@#2\endcsname
+  \if@tempswa
+    \expandafter\def\expandafter\ttl@a\expandafter{%
+      \ttl@a
+      \protect\@namedef{#1}{\@nameuse{#1}}}%
+  \else
+    \expandafter\def\expandafter\ttl@a\expandafter{%
+      \ttl@a
+      \protect\@nameuse{#1}=\the\@nameuse{#1}\relax}%
+  \fi
+  \expandafter\let\csname ttl@mks@#2\endcsname\ttl@a}
+
+\let\ttl@mks@\@empty
+\def\ttl@moremarks{\ttl@mks@} % backward compat
+
+\def\ttl@prevmarks{\ttl@marks}
+\let\ttl@marks\relax
+
+% The following command sets the ifthe... commands to
+% be used in heads. When the call is from inside a sectioning
+% command, toclabel is either true (in most of cases) or false
+% (a chapter in the front matter, for example). Otherwise (an
+% explicit \...mark) is false
+
+\def\ttl@setifthe#1{%
+  \expandafter\protected@edef\csname ifthe#1\endcsname{%
+    \ifttl@toclabel
+      \protect\@firstoftwo
+    \else
+      \protect\@secondoftwo
+    \fi}}
+
+% At this point \ttl@toclabel is always false
+
+\ttl@setifthe{part}
+\ttl@setifthe{chapter}
+\ttl@setifthe{section}
+\ttl@setifthe{subsection}
+\ttl@setifthe{subsubsection}
+\ttl@setifthe{paragraph}
+\ttl@setifthe{subparagraph}
+
+% Putting marks
+% -------------
+
+\newtitlemark{\ttl@running}
+\let\ttl@enccode\relax
+\def\ttl@running{\ttl@enccode}
+
+% \ttl@markboth redefines temporarily \mark to fetch changes made by
+% babel or ams, saved in \ttl@running.  When this is done, the actual
+% \mark es emitted, which has \ttl@running as part of the markset (see
+% the \newtitlemark above). As of 2019 and due to a change in the LaTex
+% kernel, we consider two possibilities (2.13).
+
+\expandafter\ifx\csname markboth \endcsname\relax
+  \def\ttl@mb@mark{\markboth}
+\else
+  \edef\ttl@mb@mark{\expandafter\noexpand\csname markboth \endcsname}
+\fi
+
+\def\ttl@mb@warn{%
+  \PackageWarningNoLine{titleps}
+    {Direct use of \string\markboth\space and \string\markleft\space
+     can lead\MessageBreak
+     to unpredictable results. Please, read the manual\MessageBreak
+     for an explanation of this warning.}}
+
+\def\ttl@markboth#1{%
+ \begingroup
+   \let\protect\@unexpandable@protect
+   \let\@mkboth\@gobbletwo
+   \let\ttl@enccode\relax
+   \let\label\relax
+   \let\index\relax
+   \let\glossary\relax
+   \let\ttl@c\mark
+   \def\mark##1{\xdef\ttl@running{\expandafter\@gobble##1}}%
+   \ttl@mb@mark{}{\ttl@enccode}%
+   \expandafter\let\csname#1mark\endcsname\@gobble
+   \xdef\ttl@marks{\ttl@marks}%
+   \gdef\@themark{{\ttl@marks}{\ttl@prevmarks}}%
+   \ttl@c{\@themark\let\noexpand\ttl@mb@warn\relax}%
+   \@nameuse{ttl@tem@#1}%
+   \if@nobreak\ifvmode\nobreak\fi\fi
+ \endgroup}
+
+\newcommand\settitlemarks{\@ifstar\ttl@svmarks@s\ttl@svmarks@x}
+
+\def\ttl@svmarks@x#1{\def\ttl@marksset{{#1}}}
+\def\ttl@svmarks@s#1{\def\ttl@marksset{*{#1}}}
+
+\newcommand\setmarks[2]{\settitlemarks{#1,#2}} % back compat
+
+\def\ttl@settopmark#1\@@{%
+  \expandafter\def\csname#1mark\endcsname##1{%
+    \expandafter\gdef\csname#1title\endcsname{##1}%
+    \ttl@setifthe{#1}%
+    \expandafter\let\expandafter\ttl@marks\csname ttl@tm@#1\endcsname
+    \ttl@markboth{#1}}%
+  \global\@namedef{ttl@tm@#1}{%
+    \protect\@namedef{#1title}{\@nameuse{#1title}}%
+    \protect\@namedef{the#1}{\@nameuse{the#1}}%
+    \protect\@namedef{ifthe#1}{\@nameuse{ifthe#1}}}%
+  \def\ttl@elt##1{%
+    \expandafter\ttl@setsubmark\ttl@a\@@{##1}}%
+  \ttl@c}%
+
+\def\ttl@setsubmark#1\@@#2{%
+  \expandafter\g@addto@macro\csname ttl@tm@#2\endcsname{%
+    \protect\@namedef{#1title}{}%
+    \protect\@namedef{the#1}{}%
+    \protect\@namedef{ifthe#1}{\protect\@secondoftwo}}
+  \expandafter\g@addto@macro\csname ttl@tm@#1\endcsname{%
+    \protect\@namedef{#2title}{\@nameuse{#2title}}%
+    \protect\@namedef{the#2}{\@nameuse{the#2}}%
+    \protect\@namedef{ifthe#2}{\@nameuse{ifthe#2}}}}%
+
+\def\ttl@setmarks@x#1{%
+  \let\ttl@c\@empty % sub list
+  \@for\ttl@a:=#1\do{%
+    \expandafter\ttl@settopmark\ttl@a\@@
+    \let\ttl@elt\relax
+    \xdef\ttl@c{\ttl@c\ttl@elt{\ttl@a}}}%
+  \@for\ttl@a:=#1\do{%
+    \expandafter\g@addto@macro\csname ttl@tm@\ttl@a\endcsname{%
+      \ttl@moremarks}}}
+
+\def\ttl@setmarks@s#1{% Solo con extramarks
+  \PackageError{titleps}%
+     {You need `extramarks' for \string\settitlemarks*}%
+     {\string\settitlemarks* requires the package option `extramarks'}}
+
+\newcommand\pretitlemark{%
+  \global\ttl@premarktrue
+  \@ifstar{\ttl@pretitlemark\z@}%
+          {\ttl@pretitlemark\@ne}}
+
+\def\ttl@pretitlemark#1#2#3{%
+  \addtocounter{#2}#1%
+  \ttl@premark{#2}{#3}%
+  \addtocounter{#2}{-#1}}
+
+% Rules
+% -----
+
+\newcommand\headrule{\setheadrule{.4\p@}}
+\newcommand\footrule{\setfootrule{.4\p@}}
+
+\newcommand\setheadrule[1]{%
+  \ifdim#1=\z@
+    \let\makeheadrule\@empty
+  \else
+    \def\makeheadrule{\rule[-.3\baselineskip]{\linewidth}{#1}}%
+  \fi}
+\newcommand\setfootrule[1]{%
+  \ifdim#1=\z@
+    \let\makefootrule\@empty
+  \else
+    \def\makefootrule{\rule[.7\baselineskip]{\linewidth}{#1}}%
+  \fi}
+
+\renewcommand\newpagestyle[1]{%
+  \begingroup
+  \catcode`\^^M=9
+  \@ifnextchar[%
+    {\ttl@pagestyle\newcommand{#1}}%
+    {\ttl@pagestyle\newcommand{#1}[]}}
+
+\renewcommand\renewpagestyle[1]{%
+  \begingroup
+  \catcode`\^^M=9
+  \@ifnextchar[%
+    {\ttl@pagestyle\renewcommand{#1}}%
+    {\ttl@pagestyle\renewcommand{#1}[]}}
+
+\def\ttl@pagestyle#1#2[#3]#4{%
+  \endgroup
+  \expandafter#1\csname ps@#2\endcsname{%
+    \ttl@defaultps
+    \def\ttl@headfmt{#3}%
+    #4%
+    \def\settitlemarks{\@ifstar\ttl@svmarks@s\ttl@svmarks@x}}}
+
+\def\ttl@userunning#1#2{\csname ttlr@#1#2\endcsname}
+
+\def\ttl@defaultps{%
+  \let\makeheadrule\@empty
+  \let\makefootrule\@empty
+  \def\@mkboth{\ttl@savemark\@gobbletwo}%
+  \def\@oddfoot{\ttl@userunning of}%
+  \def\@evenfoot{\ttl@userunning ef}%
+  \def\@oddhead{\ttl@userunning oh}%
+  \def\@evenhead{\ttl@userunning eh}%
+  \def\ttlr@of{\ttl@makefoot\@empty\@@\ttl@hiol\ttl@hior}%
+  \def\ttlr@ef{\ttl@makefoot\@empty\@@\ttl@hiel\ttl@hier}%
+  \def\ttlr@oh{\ttl@makehead\@empty\@@\ttl@hiol\ttl@hior}%
+  \def\ttlr@eh{\ttl@makehead\@empty\@@\ttl@hiel\ttl@hier}%
+  \let\ttlr@of@b\relax  \let\ttlr@of@p\relax
+  \let\ttlr@ef@b\relax  \let\ttlr@ef@p\relax
+  \let\ttlr@oh@t\relax  \let\ttlr@oh@p\relax
+  \let\ttlr@eh@t\relax  \let\ttlr@eh@p\relax
+  \def\settitlemarks{\@ifstar\ttl@setmarks@s\ttl@setmarks@x}%
+  \expandafter\settitlemarks\ttl@marksset}
+
+\@ifundefined{chapter}%
+  {\settitlemarks{section,subsection}}%
+  {\settitlemarks{chapter,section}}
+
+\newcommand\usepage{\protect\thepage} % back compat
+
+\newcommand\toptitlemarks{\expandafter\@secondoftwo\firstmark{}{}{}}
+\def\firsttitlemarks{%
+   \toks@\expandafter\expandafter\expandafter{%
+      \expandafter\@secondoftwo \firstmark{}{}{}}%
+   \@temptokena\expandafter\expandafter\expandafter{%
+      \expandafter\@secondoftwo \botmark{}{}{}}%
+   \edef\ttl@a{\the\toks@}%
+   \edef\ttl@b{\the\@temptokena}%
+   \ifx\ttl@a\ttl@b
+     \expandafter\@secondoftwo\firstmark{}{}{}%
+   \else
+     \expandafter\@firstoftwo \firstmark{}{}{}%
+   \fi}
+\newcommand\bottitlemarks{\expandafter\@secondoftwo\botmark{}{}{}}
+\newcommand\nexttoptitlemarks{\expandafter\@firstoftwo\botmark{}{}{}}
+\newcommand\outertitlemarks{%
+  \if@twoside
+    \ifodd\c@page\relax
+      \bottitlemarks
+    \else
+      \toptitlemarks
+    \fi
+  \else
+    \toptitlemarks
+  \fi}
+\newcommand\innertitlemarks{%
+  \if@twoside
+    \ifodd\c@page\relax
+      \firsttitlemarks
+    \else
+      \bottitlemarks
+    \fi
+  \else
+    \bottitlemarks
+  \fi}
+
+\def\ttl@duplthreeargs#1#2#3#4{#1[#2][#3][#4]{#2}{#3}{#4}}
+\def\ttl@dupltwoargs#1#2#3{#1[#2][#3]{#2}{#3}}
+\def\ttl@duplthreeargsrev#1#2#3#4{#1[#4][#3][#2]{#2}{#3}{#4}}
+\def\ttl@dupltwoargsrev#1#2#3{#1[#3][#2]{#2}{#3}}
+
+\def\ttl@setany#1{%
+  \@ifstar{\ttl@duplthreeargsrev#1}%
+          {\@ifnextchar[{#1}{\ttl@duplthreeargs#1}}}
+
+\newcommand\setfoot{\ttl@setany\ttl@setfoot}
+\newcommand\sethead{\ttl@setany\ttl@sethead}
+
+\def\ttl@setfoot[#1][#2][#3]#4#5#6{%
+  \def\ttlr@ef{\ttl@makefoot{#1}{#2}{#3}\@@\ttl@hiel\ttl@hier}%
+  \def\ttlr@of{\ttl@makefoot{#4}{#5}{#6}\@@\ttl@hiol\ttl@hior}}
+
+\def\ttl@sethead[#1][#2][#3]#4#5#6{%
+  \def\ttlr@eh{\ttl@makehead{#1}{#2}{#3}\@@\ttl@hiel\ttl@hier}%
+  \def\ttlr@oh{\ttl@makehead{#4}{#5}{#6}\@@\ttl@hiol\ttl@hior}}
+
+\def\ttl@headinline#1#2#3{%
+  \ttl@headfmt
+  \def\ttl@a{#1#3}\def\ttl@b{#2}%
+  \ifx\ttl@a\@empty
+    \hfil{#2}\hfil
+  \else\ifx\ttl@b\@empty
+    {#1}\hfil{#3}%
+  \else
+    \sbox\z@ {#1}%
+    \sbox\tw@{#3}%
+    \copy\z@
+    \ifdim\wd\z@<\wd\tw@
+      \kern-\wd\z@\kern\wd\tw@
+    \fi
+    \hfil{#2}\hfil
+    \ifdim\wd\z@>\wd\tw@
+      \kern-\wd\tw@\kern\wd\z@
+    \fi
+    \box\tw@
+  \fi\fi}
+
+\def\ttl@makeboth#1#2#3#4{%
+  \ttl@calcneg\hspace{#3}%
+  \normalsize
+  \linewidth\textwidth
+  \addtolength\linewidth{#3}%
+  \addtolength\linewidth{#4}%
+  \ifx#2\@empty\else   
+    \setbox\z@\hb@xt@\linewidth{%
+      \color@begingroup
+      #2%
+      \color@endgroup}%
+      \wd\z@\z@
+      \ht\z@\z@
+      \dp\z@\z@
+      \box\z@
+  \fi
+  \ttl@titlemarks % Must precede the format. Defines \ttl@running
+  \def\ttl@enccode{\ttl@headinline#1{}{}{}}% which contains ttl@enccode
+  \ttl@running
+  \ttl@calcneg\hspace{#4}}% 
+
+\def\ttl@makehead#1\@@{\ttl@makeboth{#1}\makeheadrule}
+\def\ttl@makefoot#1\@@{\ttl@makeboth{#1}\makefootrule}
+
+\renewcommand\widenhead{%
+  \@ifstar{\ttl@dupltwoargsrev\ttl@widenhd}%
+          {\@ifnextchar[{\ttl@widenhd}{\ttl@dupltwoargs\ttl@widenhd}}}
+
+\def\ttl@widenhd[#1][#2]#3#4{%
+  \def\ttl@hiel{#1}\def\ttl@hier{#2}%
+  \def\ttl@hiol{#3}\def\ttl@hior{#4}}
+
+\let\setheadindent\widenhead
+
+\def\ttl@hiel{\z@}\def\ttl@hier{\z@}
+\def\ttl@hiol{\z@}\def\ttl@hior{\z@}
+
+% A tool:
+
+\def\ifsamemark#1#2{%
+  {#1\global\let\ttl@c#2}%
+  \ifx\ttl@c#2%
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+
+% Another tool:
+% As of 2019 and due to a change in the LaTex kernel, we consider two
+% possibilities (2.13).
+
+\expandafter\ifx\csname markboth \endcsname\relax
+
+  \newcommand\setmarkboth{%
+    \ifx\markboth\ttl@mb@use\else
+      \let\ttl@mb@mark\markboth
+      \let\markboth\ttl@mb@use
+    \fi
+    \def\ttl@mb@new##1##2}
+
+  % \ttl@mb@temp is a trick to allow resetting inside \setmarkboth.
+
+  \def\ttl@mb@use#1#2{%
+    \let\markboth\ttl@mb@mark
+    \def\ttl@mb@temp{\let\markboth\ttl@mb@use}%
+    \ttl@mb@new{#1}{#2}%
+    \ttl@mb@temp
+    \let\ttl@mb@temp\@undefined}
+
+  \newcommand\resetmarkboth{%
+    \ifx\ttl@mb@temp\@undefined
+      \let\markboth\ttl@mb@mark
+      \def\ttl@mb@mark{\markboth}%
+    \else
+      \def\ttl@mb@temp{%
+        \let\markboth\ttl@mb@mark
+        \def\ttl@mb@mark{\markboth}}%
+    \fi}
+
+\else
+
+  \newcommand\setmarkboth{%
+    \expandafter\ifx\csname markboth \endcsname\ttl@mb@use\else
+      \expandafter\let\expandafter\ttl@mb@mark\csname markboth \endcsname
+      \expandafter\let\csname markboth \endcsname\ttl@mb@use
+    \fi
+    \def\ttl@mb@new##1##2}
+
+  \def\ttl@mb@use#1#2{%
+    \expandafter\let\csname markboth \endcsname\ttl@mb@mark
+    \def\ttl@mb@temp{\expandafter\let\csname markboth \endcsname\ttl@mb@use}%
+    \ttl@mb@new{#1}{#2}%
+    \ttl@mb@temp
+    \let\ttl@mb@temp\@undefined}
+
+  \newcommand\resetmarkboth{%
+    \ifx\ttl@mb@temp\@undefined
+      \expandafter\let\csname markboth \endcsname\ttl@mb@mark
+      \edef\ttl@mb@mark{\expandafter\noexpand\csname markboth \endcsname}%
+    \else
+      \def\ttl@mb@temp{%
+        \expandafter\let\csname markboth \endcsname\ttl@mb@mark
+        \edef\ttl@mb@mark{\expandafter\noexpand\csname markboth \endcsname}}%
+    \fi}
+
+\fi
+
+% ===========
+% EXTRA MARKS
+% ===========
+
+\ifx\ttl@fetchmark\@empty
+
+\ifx\newmarks\@undefined
+  \PackageInfo{titleps}{%
+    You have requested `extramarks' but etex or similar\MessageBreak
+    has not been loaded. I'll do it for you.}
+  \RequirePackage{etex}
+\fi
+
+\def\ttl@setmarks@s#1{%
+   \@for\ttl@a:=#1\do{%
+     \@ifundefined{ttl@mkc@\ttl@a}{%
+       \expandafter\newmarks\csname ttl@mkc@\ttl@a\endcsname}{}%
+     \expandafter\xdef\csname ttl@tem@\ttl@a\endcsname{%
+       \marks\expandafter\noexpand\csname ttl@mkc@\ttl@a\endcsname
+       {\noexpand\@themark}}}%
+  \ttl@setmarks@x{#1}}%
+
+\newcommand\newmarkset[1]{%
+  \expandafter\newmarks\csname ttl@mkc@#1\endcsname
+  \@namedef{ttl@mks@#1}{}%
+  \@namedef{ttl@premks@#1}{\@nameuse{ttl@mks@#1}}}
+
+\newcommand\newextramark{%
+  \@ifstar{\@tempswafalse\ttl@newmk@i}%
+          {\@tempswatrue\ttl@newmk@i}}
+
+\def\ttl@extramark#1{%
+ \begingroup
+   \let\protect\@unexpandable@protect
+   \let\@mkboth\@gobbletwo
+   \let\label\relax
+   \let\index\relax
+   \let\glossary\relax\endgroup}
+
+\newcommand\extramark[1]{%
+  \begingroup
+    \let\protect\@unexpandable@protect
+    \let\@mkboth\@gobbletwo
+    \let\label\relax
+    \let\index\relax
+    \let\glossary\relax
+    \marks\csname ttl@mkc@#1\endcsname{%
+      {\@nameuse{ttl@mks@#1}}%
+      {\@nameuse{ttl@mks@#1}}}%
+    \expandafter\xdef\csname ttl@premks@#1\endcsname
+      {\@nameuse{ttl@mks@#1}}%
+  \endgroup
+  \if@nobreak\ifvmode\nobreak\fi\fi}%
+
+\newcommand\preextramark[1]{%
+  \begingroup
+    \let\protect\@unexpandable@protect
+    \let\@mkboth\@gobbletwo
+    \let\label\relax
+    \let\index\relax
+    \let\glossary\relax
+    \marks\csname ttl@mkc@#1\endcsname{%
+      {\csname ttl@mks@#1\endcsname}%
+      {\csname ttl@premks@#1\endcsname}}%
+  \endgroup
+  \if@nobreak\ifvmode\nobreak\fi\fi}
+
+\newcommand\newshortmark[1]{%
+  \newmarkset{\string#1}%
+  \newextramark{\string#1}#1}
+
+\newcommand\shortmark[1]{\extramark{\string#1}}
+\newcommand\preshortmark[1]{\preextramark{\string#1}}
+
+\newcommand\topshortmark[1]{{\topextramarks{\string#1}#1}}
+\newcommand\firstshortmark[1]{{\firstextramarks{\string#1}#1}}
+\newcommand\botshortmark[1]{{\botextramarks{\string#1}#1}}
+\newcommand\nexttopshortmark[1]{{\nexttopextramarks{\string#1}#1}}
+
+\def\ttl@fetchmark#1#2#3{%
+  \expandafter#1#2\csname ttl@mkc@#3\endcsname{}{}{}}
+
+\newcommand\topextramarks[1]{\ttl@fetchmark\@secondoftwo\firstmarks{#1}}
+\newcommand\firstextramarks[1]{%
+   \toks@\expandafter\expandafter\expandafter{%
+      \ttl@fetchmark\@secondoftwo\firstmarks{#1}}%
+   \@temptokena\expandafter\expandafter\expandafter{%
+      \ttl@fetchmark\@secondoftwo\botmarks{#1}}%
+   \edef\ttl@a{\the\toks@}%
+   \edef\ttl@b{\the\@temptokena}%
+   \ifx\ttl@a\ttl@b
+     \ttl@fetchmark\@secondoftwo\firstmarks{#1}%
+   \else
+     \ttl@fetchmark\@firstoftwo\firstmarks{#1}%
+   \fi}
+\newcommand\botextramarks[1]{\ttl@fetchmark\@secondoftwo\botmarks{#1}}
+\newcommand\nexttopextramarks[1]{\ttl@fetchmark\@firstoftwo\botmarks{#1}}
+
+\newcommand\outerextramarks[1]{%
+  \if@twoside
+    \ifodd\c@page\relax
+      \botextramarks{#1}%
+    \else
+      \topextramarks{#1}%
+    \fi
+  \else
+    \topextramarks{#1}%
+  \fi}
+\newcommand\innerextramarks[1]{%
+  \if@twoside
+    \ifodd\c@page\relax
+      \firstextramarks{#1}%
+    \else
+      \botextramarks{#1}%
+    \fi
+  \else
+    \botextramarks{#1}%
+  \fi}
+
+\fi
+
+% ======
+% FLOATS
+% ======
+%
+% Pagestyles with floats. There macros are defined only with the
+% psfloats package option.
+
+\ifx\ttl@replace\@undefined\else
+
+% User interface
+
+  \newcommand\setfloatfoot{%
+    \let\ttl@c\@empty % <- current float, empty if general
+    \ttl@setany\ttl@setftfoot}
+
+  \newcommand\setfloathead{%
+    \let\ttl@c\@empty % <- current float, empty if general
+    \ttl@setany\ttl@setfthead}
+
+  \def\ttl@setftfoot[#1][#2][#3]#4#5#6#7{%
+    \@ifnextchar[{\ttl@setftfoot@i{#1}{#2}{#3}{#4}{#5}{#6}{#7}}%
+                 {\ttl@setftfoot@i{#1}{#2}{#3}{#4}{#5}{#6}{#7}[bp]}}
+
+  \def\ttl@setfthead[#1][#2][#3]#4#5#6#7{%
+    \@ifnextchar[{\ttl@setfthead@i{#1}{#2}{#3}{#4}{#5}{#6}{#7}}%
+                 {\ttl@setfthead@i{#1}{#2}{#3}{#4}{#5}{#6}{#7}[tp]}}
+
+  \def\ttl@setftfoot@i#1#2#3#4#5#6#7[#8]{%
+    \@tfor\ttl@b:=#8\do{%
+      \@namedef{ttlr@ef@\ttl@b\ttl@c}%
+         {#7\ttl@makefoot{#1}{#2}{#3}\@@\ttl@hiel\ttl@hier}%
+      \@namedef{ttlr@of@\ttl@b\ttl@c}%
+         {#7\ttl@makefoot{#4}{#5}{#6}\@@\ttl@hiol\ttl@hior}}}
+
+  \def\ttl@setfthead@i#1#2#3#4#5#6#7[#8]{%
+    \@tfor\ttl@b:=#8\do{%
+      \@namedef{ttlr@eh@\ttl@b\ttl@c}%
+         {#7\ttl@makehead{#1}{#2}{#3}\@@\ttl@hiel\ttl@hier}%
+      \@namedef{ttlr@oh@\ttl@b\ttl@c}%
+         {#7\ttl@makehead{#4}{#5}{#6}\@@\ttl@hiol\ttl@hior}}}
+
+  \newcommand\nextfloathead{%
+    \ttl@nextfree  % returns ttl@c with the next float
+    \ttl@setany\ttl@setfthead}
+
+  \newcommand\nextfloatfoot{%
+    \ttl@nextfree  % returns ttl@c with the next float
+    \ttl@setany\ttl@setftfoot}
+
+% Compat mode with floatps
+
+  \ifx\ttl@replace\space
+
+    \let\ttl@setnewfoot\ttl@setftfoot
+    \let\ttl@setnewhead\ttl@setfthead
+
+    \def\ttl@setftfoot[#1][#2][#3]#4#5#6{%
+      \ttl@setnewfoot[#1][#2][#3]{#4}{#5}{#6}{}}
+    \def\ttl@setfthead[#1][#2][#3]#4#5#6{%
+      \ttl@setnewhead[#1][#2][#3]{#4}{#5}{#6}{}}
+
+  \fi
+
+% The simple default value of \ttl@userunning is
+% replaced by one more elaborated
+
+  \def\ttl@userunning#1#2{%
+    \if@fcolmade  % From a post by D. Arseneau to comp.text.tex
+      \def\@elt##1{\edef\ttl@pageft{\string##1}}%
+      \@flsucceed
+      \let\@elt\relax
+      \if#2h%
+        \ttl@replace #1hp\ttl@pageft
+      \else
+        \ttl@replace #1fp\ttl@pageft
+        \ttl@killftps\ttl@pageft
+      \fi
+    \else\if#2h%
+      \ifx\ttl@topft\@empty\else
+        \ttl@replace #1ht\ttl@topft
+      \fi
+    \else
+      \ifx\ttl@botft\@empty\else
+        \ttl@replace #1fb\ttl@botft
+      \fi
+    \fi\fi
+    \csname ttlr@#1#2\endcsname}
+
+% [Don't move above as \ttl@replace is used as a flag.]
+
+  \def\ttl@replace#1#2#3#4{%
+      \@ifundefined{ttlr@#1#2@#3#4}%
+        {\@ifundefined{ttlr@#1#2@#3}{}%
+           {\@namedef{ttlr@#1#2}{\@nameuse{ttlr@#1#2@#3}}}}%
+        {\csname ttlr@xx@x#4\endcsname\@gobble
+         {\expandafter\let\csname ttlr@#1#2\expandafter\endcsname
+           \csname ttlr@#1#2@#3#4\endcsname}}}
+
+  \def\ttl@nextfree{%
+    \def\@elt##1{%
+      \edef\ttl@c{\string##1}%
+      \let\@elt\@gobble}%
+    \@freelist
+    \let\@elt\relax
+    \@ifundefined{ttlr@xx@x\ttl@c}%
+      {\expandafter\let\csname ttlr@xx@x\ttl@c\endcsname\@secondoftwo
+       \@tfor\ttl@a:={eh@t}{oh@t}{ef@b}{of@b}{eh@p}{oh@p}{ef@p}{of@p}\do{%
+         \expandafter\global\expandafter
+         \let\csname ttlr@\ttl@a\ttl@c\endcsname\relax}}{}}
+
+  \def\ttl@killftps#1{%
+    \expandafter\global\expandafter
+    \let\csname ttlr@xx@x#1\endcsname\relax}
+
+  \let\ttl@topft\@empty
+  \let\ttl@botft\@empty
+  \let\ttl@pageft\@empty
+
+  \def\ttl@combinefloats{%
+   \ifx\@toplist\@empty\else   
+     \def\@elt##1{%
+       \edef\ttl@topft{\string##1}%
+       \def\@elt####1{\ttl@killftps{\string####1}}}%
+     \@toplist
+    \fi
+    \ifx\@botlist\@empty\else
+      \def\@elt##1{%
+        \def\@elt####1{%
+          \def\@elt####1{\ttl@killftps\ttl@botft}%
+          \edef\ttl@botft{\string####1}}%
+        \edef\ttl@botft{\string##1}}%
+      \@botlist
+    \fi
+    \let\@elt\relax
+    \ttl@combinefloats@x}
+
+  \AtBeginDocument{%
+    \let\ttl@combinefloats@x\@combinefloats
+    \let\@combinefloats\ttl@combinefloats}
+
+\fi
+
+% END core code
+
+\ifx\ttl@coreps\@empty\else      % CONTINUE code for package
+
+% Raise error if the following are used without titlesec
+
+\DeclareRobustCommand\ttl@naerror[1]{%
+  \PackageError{titleps}%
+    {#1\space only available in titlesec.\MessageBreak
+     Consider using it instead of titleps}%
+    {titleps provides a subset of the macros\MessageBreak
+     for pagestyles defined in titlesec.}}
+
+\def\ttl@setifthe#1{%
+  \expandafter\protected@edef\csname ifthe#1\endcsname{%
+    \ttl@naerror{\string\ifthe#1}}}
+
+\ttl@setifthe{part}
+\ttl@setifthe{chapter}
+\ttl@setifthe{section}
+\ttl@setifthe{subsection}
+\ttl@setifthe{subsubsection}
+\ttl@setifthe{paragraph}
+\ttl@setifthe{subparagraph}
+
+\fi
+
+\endinput
+
+MIT License
+-----------
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

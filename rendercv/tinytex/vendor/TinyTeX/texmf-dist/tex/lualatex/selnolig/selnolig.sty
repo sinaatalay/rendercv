@@ -1,0 +1,267 @@
+% !TeX root = selnolig.tex
+% !TEX TS-program = lualatex
+
+% This entire package is placed under the terms of the
+% LaTeX Project Public License, version 1.3 or later
+% (http://www.latex-project.org/lppl.txt).
+% It has the status "maintained".
+%
+% Author: Mico Loretan (loretan dot mico at gmail dot com)
+
+
+% Part 1: Preliminaries
+% ---------------------
+
+\def\selnoligpackagename{selnolig}
+\def\selnoligpackageversion{0.302}
+\def\selnoligpackagedate{2015/10/26}
+
+% Announce who we are. 
+
+\typeout{=== Package \selnoligpackagename, 
+             Version \selnoligpackageversion, 
+             Date    \selnoligpackagedate\space ===}
+\ProvidesPackage{selnolig}[\selnoligpackagedate]
+
+
+% Issue warning message if not running under LuaLaTeX.
+
+\RequirePackage{ifluatex}
+\ifluatex
+  \RequirePackage{luatexbase}
+\else
+  \typeout{ ======================================= }
+  \typeout{      WARNING   WARNING    WARNING       }
+  \typeout{ --------------------------------------- }
+  \typeout{ The ligature suppression macros of the  }
+  \typeout{ selnolig package *require* LuaLaTeX.    }
+  \typeout{ Because you're NOT running this package }
+  \typeout{ under LuaLaTeX, ligature suppression    }
+  \typeout{ *can not* be performed.                 }
+  \typeout{=========================================}
+\fi
+
+% If the 'fontspec' package isn't loaded by the time
+% the '\begin{document}' directive is encoutered, issue
+% an error message and exit. 
+
+\AtBeginDocument{%
+\ifluatex
+  \@ifpackageloaded{fontspec}{}{%  
+  \PackageError{selnolig}{%
+     ========================================== \MessageBreak
+          Error Alert      Error Alert          \MessageBreak
+     ------------------------------------------ \MessageBreak
+     The selnolig package *requires* the        \MessageBreak
+     'fontspec' package, but it hasn't been     \MessageBreak
+     loaded. Exiting now.                       \MessageBreak
+     ===========================================}
+  }
+\fi
+}
+
+% Set up some fundamental Boolean variables, their
+% default values, and define the user options.
+
+% The main language options are 'english' and 'german'.
+% We provide the option 'otherlang' option just in case
+% a user wants to provide ligature suppression patterns 
+% for languages other than English and German.
+
+\newif\if@english\@englishfalse
+\newif\if@german\@germanfalse
+\newif\if@otherlang\@otherlangfalse
+
+\DeclareOption{english}{\@englishtrue}
+% synonymous options:
+  \DeclareOption{usenglish}{\@englishtrue}
+  \DeclareOption{ukenglish}{\@englishtrue}
+  \DeclareOption{USenglish}{\@englishtrue}
+  \DeclareOption{UKenglish}{\@englishtrue}
+  \DeclareOption{american}{\@englishtrue}
+  \DeclareOption{british}{\@englishtrue}
+  \DeclareOption{canadian}{\@englishtrue}
+  \DeclareOption{australian}{\@englishtrue}
+  \DeclareOption{newzealand}{\@englishtrue}
+
+\DeclareOption{ngerman}{\@germantrue}
+% synonymous options:
+  \DeclareOption{german}{\@germantrue}
+  \DeclareOption{austrian}{\@germantrue}
+  \DeclareOption{naustrian}{\@germantrue}
+  \DeclareOption{swiss}{\@germantrue}
+  \DeclareOption{swissgerman}{\@germantrue}
+
+\DeclareOption{otherlang}{\@otherlangtrue}
+% synonymous option:
+  \DeclareOption{otherlanguage}{\@otherlangtrue}
+
+
+% For English, the default is to load only a fairly basic
+% set of non-ligation rules pertaining to f-ligatures.
+% Among them are the "standard five" (ff, fi, fl, ffi,
+% and ffl) ligatures as well as the ft ligature.
+%
+% Two options to augment the "basic" setting:
+% - broadf   More non-ligation rules for f-ligatures
+% - hdlig    Additional ligature suppression rules for 
+%            'historic' and/or 'discretionary' ligatures, 
+%            e.g., ct, sp, st, sk, th, as, is, us, fr, 
+%            ll, et, at, and ta
+
+\newif\if@broadfset\@broadfsetfalse
+\DeclareOption{broadf}{\@broadfsettrue}
+
+\newif\if@hdligset\@hdligsetfalse 
+\DeclareOption{hdlig}{\@hdligsettrue}
+
+% The 'basic' option automatically sets the preceding 
+% Booleans to 'false'. 
+
+\DeclareOption{basic}{\@broadfsetfalse\@hdligsetfalse}
+
+
+% The package also provides hyphenation exception 
+% patterns for English and German language words. 
+% Loading these patterns is enabled by default. This
+% can be disabled by providing the option
+% 'noadditionalhyphenationpatterns'.
+
+\newif\if@addlhyph\@addlhyphtrue
+\DeclareOption{noadditionalhyphenationpatterns}{\@addlhyphfalse}
+
+
+
+% The option 'noftligs' serves to suppress ft and fft
+% ligatures *globally*. Default value: 'false'.
+
+\newif\if@noftligs\@noftligsfalse
+\DeclareOption{noftligs}{\@noftligstrue}
+
+
+% Finally, an option to set most language-related 
+% Boolean variables (other than '@addlhyph') to 
+% 'true' simultaneously.
+
+\DeclareOption{all}{%
+   \@englishtrue \@broadfsettrue \@hdligsettrue
+   \@germantrue \@otherlangtrue}
+
+% Finally, process all options
+\ProcessOptions\relax
+
+
+
+% Part 2: Load the lua code and set up the user macros
+% ----------------------------------------------------
+
+\ifluatex 
+  % Load the lua code contained in 'selnolig.lua'.
+  \directlua{  require("selnolig.lua")  }
+  
+  % Commands to switch selnolig's routines on and off
+  \newcommand\selnoligon{%
+    \directlua{ enableselnolig() }%
+  }
+
+  \newcommand\selnoligoff{%
+    \directlua{ disableselnolig() }%
+  }
+  
+  % By default, selnolig's macros are switched on
+  \selnoligon
+  
+  
+  % Recording operations of selnolig package to the log 
+  % file is enabled via the '\debugon' command. 
+  % Note: the default value of 'debug' (set in 
+  %    'selnolig.lua') is 'false'. To turn off logging 
+  % of selnolig's activity, use the command \debugoff.
+  \newcommand\debugon{%
+     \directlua{ debug=true }
+  }
+  \newcommand\debugoff{% 
+     \directlua{ debug=false }
+  }
+
+
+  % The first main user macro is called '\nolig':
+  \newcommand\nolig[2]{
+     \directlua{
+        suppress_liga( "\luatexluaescapestring{#1}",
+                       "\luatexluaescapestring{#2}" )
+     }
+  }
+  
+  % A second user macro allows global overriding of
+  % rules set by \nolig instructions:
+  \newcommand\keeplig[1]{
+     \directlua{
+        always_keep_liga( "\luatexluaescapestring{#1}" )
+     }
+  }
+
+  % A third user macro turns ligature suppression off
+  % temporarily:
+  \newcommand\uselig[1]{%
+    \directlua{ enable_suppression(false) }%
+    \mbox{#1}%
+    \directlua{ enable_suppression(true) }%
+  }
+
+  % A fourth user macro: '\breaklig'. This is  
+  % hopefully easier to remember than having to 
+  % type "\-\hspace{0pt}".
+
+  \newcommand{\breaklig}{\-{\hspace{0pt}}}
+
+
+\else
+  % If *not* running under LuaLaTeX, provide dummy
+  % definitions for package's four main user macros
+  % as well as for the auxilliary macros \selnoligon,
+  % \selnoligoff, \debugon, and \debugoff.
+  \newcommand{\nolig}[2]{}
+  \newcommand{\keeplig}[1]{}
+  \newcommand{\uselig}[1]{\mbox{#1}}
+  \newcommand{\breaklig}{\-{\hspace{0pt}}} 
+  \let\selnoligon\relax
+  \let\selnoligoff\relax
+  \let\debugon\relax
+  \let\debugoff\relax
+
+\fi
+
+
+% Part 3: What to do if the 'english' option is set
+% -------------------------------------------------
+
+\if@english
+   \ifluatex % English ligature suppression rules
+      \RequirePackage{selnolig-english-patterns}
+   \fi
+   \if@addlhyph
+      \RequirePackage{selnolig-english-hyphex}
+   \fi
+\fi
+
+
+% Part 4: What to do if the 'ngerman' option is set
+% -------------------------------------------------
+
+\if@german
+   \ifluatex % German ligature suppression rules
+      \RequirePackage{selnolig-german-patterns}
+   \fi
+   \if@addlhyph
+      \RequirePackage{selnolig-german-hyphex}
+   \fi
+\fi
+
+
+% Part 5: What to do if the 'otherlang' option is set
+% ---------------------------------------------------
+
+\if@otherlang
+    % currently nothing included
+\fi

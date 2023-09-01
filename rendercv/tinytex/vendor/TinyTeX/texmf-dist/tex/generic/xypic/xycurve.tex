@@ -1,0 +1,2702 @@
+%% xycurve.tex from $Id: xycurve.doc,v 3.12 2011/03/14 20:14:00 krisrose Exp $
+%%
+%% Xy-pic ``Curves and Splines'' extension.
+%% Copyright (c) 1993-1997 Ross Moore <ross.moore@mq.edu.au>
+%%
+%% This file is part of the Xy-pic package for graphs and diagrams in TeX.
+%% See the companion README and INSTALL files for further information.
+%% Copyright (c) 1991-2011 Kristoffer H. Rose <krisrose@tug.org>
+%%
+%% The Xy-pic package is free software; you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by the
+%% Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% The Xy-pic package is distributed in the hope that it will be useful, but
+%% WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+%% or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+%% for more details.
+%%
+%% You should have received a copy of the GNU General Public License along
+%% with this package; if not, see http://www.gnu.org/licenses/.
+%%
+\ifx\xyloaded\undefined \input xy \fi
+\xyprovide{curve}{Curve and Spline extension}{\stripRCS$Revision: 3.12 $}%
+ {Ross Moore}{ross.moore@mq.edu.au}%
+ {Mathematics Department, Macquarie University, NSW~2109, Australia}
+\message{curve,}
+\xynew@{count}\crv@cnt@
+\xydef@\xynumctrlpts@{\the\crv@cnt@}
+\xynew@{toks}\crvpts@
+\xydef@\setcurve@{%
+ \edef\xysplineparams@{%
+ \expandafter\noexpand\csname params@\endcsname}%
+ \edef\xysplineedges@{%
+ \expandafter\noexpand\csname edges@\endcsname}%
+ \edef\xycrvcnt@{%
+ \expandafter\noexpand\csname crvcnt@\endcsname}%
+ \expandafter\edef\xycrvcnt@{\number\crv@cnt@}%
+ \ifcase\crv@cnt@
+ \expandafter\xycvxhull@\or
+ \expandafter\xyquadbezier@\or
+ \expandafter\xycubicbezier@\or
+ \expandafter\xybspline@iii\or
+ \expandafter\xybspline@iv\else
+ \expandafter\xybspline@
+ \fi}
+\xydef@\curve{\connect\crv}
+\xydef@\crv#1#{\hbox \bgroup \crvresetbreaks@ \initshape@
+ \def\pure@crv{\crv@saveStyles@}\crv@{#1}}
+\xydef@\crv@#1#2{%
+ \DN@{#1}\ifx\empty\next@
+ \DN@{\def\afterCURVEaction@{}\parsecurve@\xycurve@@}%
+ \else\DN@{\parseCURVE@#1\parsecurve@\curveSTYLE@}\fi
+ \next@ #2\@endcurve\endcrv@ }
+\xydef@\curveSTYLE@{\xycurve@@}%
+\xydef@\afterCURVEaction@{}%
+\xydef@\@endcurve{}%
+\xydef@\endcrv@@{\endcrv@\POS}%
+\xydef@\pure@crv{\relax}
+\xywarnifdefined\crv@normaltemplate
+\xywarnifdefined\crv@othertemplate
+\xywarnifdefined\crv@specialtemplate@@
+{\xyuncatcodes \catcode`\@=11 \catcode`\#=6
+ \gdef\crv@normaltemplate#1{{}{~**#1\xy@@crvaddstack@}}
+ \gdef\crv@othertemplate#1{{}{~*=<2\jot>{}~**#1\xy@@crvaddstack@}}
+ \gdef\crv@specialtemplate@@#1{{}{~**\dir{#1}\xy@@crvaddstack@}}
+}
+\xydef@\crvs#1#{\hbox \bgroup \def\pure@crv{\relax}\crvs@{#1}}%
+\xydef@\crvi#1#{\hbox \bgroup \def\pure@crv{\relax}\invisbreaks@ \crvs@{#1}}%
+\xydef@\crvs@#1{\DN@{\initshape@ \@crv@{#1}}%
+ \def\crv@defaultshape{-}%
+ \ifx\bstartPLACE@\relax \else
+ \ifx\bstartPLACE@\empty \Invisible@true \else
+\splinetrace@{bstartPLACE@=\bstartPLACE@, bendPLACE@=\bendPLACE@}%
+ \DN@{\let\xy@@crvaddstack@=\xy@@samecurve@
+ \let\saveshape@=\savesame@ 
+ \let\savectrlptsnum@=\relax
+ \let\startxycurve@=\recovercurve@ 
+ \crv@cnt@=\xycrvptsnum@\relax \@crv@{#1}}%
+ \fi \fi \next@ }
+\xydef@\xy@@samecurve@{\xyFN@\checkendcurve@}
+\xydef@\savesame@{\egroup }
+\xydef@\recovercurve@{%
+ \crv@cnt@=\xycrvptsnum@ \splinereset@ \recovercv@end
+ \ifx\bendPLACE@\relax \def\bendPLACE@{1}\fi
+ \ifdim\zz@\R@c \ifdim\zz@\L@c \ifdim\zz@\D@c \ifdim\zz@\U@c
+ \Edge@c={\zeroEdge}\fi\fi\fi\fi
+ \edef\cv@end{\cfromthec@}\edef\cv@start{\cfromthep@}}
+\xydef@\recovercv@end{\count@=\ptsnum@\relax\advance\count@\@ne
+ \edef\tmp@{\the\count@}\csname cv@\tmp@\endcsname}%
+\xydef@\crvSTYLE@@{}
+\expandafter\xydef@\expandafter\crv@defaultshape\expandafter{\addDASH@{}}
+\xydef@\crv@noobject{\Invisible@true}
+\xydef@\@crv@#1#2{\DN@{#1#2}%
+ \ifx\next@\empty \edef\next@{\crv@defaultshape}%
+ \ifx\bstartPLACE@\empty \xdef\crvSTYLE@@{{\crv@defaultshape}}\fi
+ \else 
+ \ifx\bstartPLACE@\empty \gdef\crvSTYLE@@{#1{#2}}\fi
+ \fi
+ \ifx\next@\empty \crv@noobject \DN@{\crv@{}{\xy@@crvaddstack@}}%
+ \else\def\tmp@{-}\ifx\next@\tmp@ \DN@{\crv@{}{\xy@@crvaddstack@}}%
+ \else\def\tmp@{=}\ifx\next@\tmp@ 
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir{=}}}%
+ \else\def\tmp@{2-}\ifx\next@\tmp@ 
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir{2.}}}%
+ \else\def\tmp@{3-}\ifx\next@\tmp@ 
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir{3.}}}%
+ \else\def\tmp@{--}\ifx\next@\tmp@
+ \DN@{\expandafter\crv@\crv@specialtemplate@{--}}%
+ \else\def\tmp@{==}\ifx\next@\tmp@ 
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir2{--}}}%
+ \else\def\tmp@{2--}\ifx\next@\tmp@ 
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir2{--}}}%
+ \else\def\tmp@{3--}\ifx\next@\tmp@ 
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir3{--}}}%
+ \else\def\tmp@{.}\ifx\next@\tmp@
+ \DN@{\expandafter\crv@\crv@specialtemplate@{.}}%
+ \else\def\tmp@{:}\ifx\next@\tmp@
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir{:}}}%
+ \else\def\tmp@{2.}\ifx\next@\tmp@
+ \DN@{\expandafter\crv@\crv@normaltemplate{\dir{:}}}%
+ \else\def\tmp@{..}\ifx\next@\tmp@
+ \DN@{\expandafter\crv@\crv@specialtemplate@{.}}%
+ \else
+ \DN@{\expandafter\crv@\crv@othertemplate{\dir#1{#2}}}%
+ \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi \next@}
+\xylet@\crv@specialtemplate@=\crv@specialtemplate@@
+\xydef@\crv@special#1{}
+\xydef@\parseCURVE@{\def\curveSTYLE@{\xycurve@@}\def\afterCURVEaction@{}%
+ \xyFN@\parseCURVE@@}
+\xydef@\parseCURVE@@{%
+ \ifx\space@\next\expandafter\DN@\space{\xyFN@\parseCURVE@@}%
+ \else\ifx ~\next \DN@ ~{\xy@~{}\xyFN@\setcurveSTYLE@@}%
+ \else\ifx\parsecurve@\next\DN@{}%
+ \else\ifcat\active\noexpand\next\DN@{\xyactive@Warning}%
+ \else\ifcat a\noexpand\next\DN@##1{\xytilde@Warning\setcurveSTYLE@{##1}%
+ \xyFN@\parseCURVE@@}%
+ \else\DN@{}\fi\fi\fi\fi\fi \next@ }%
+\xydef@\xyactive@Warning{\xywarning@{expandable control sequences should 
+ not be here, results are unpredictable in diagrams.}}%
+\xydef@\xytilde@Warning{Please use ~ to set curve style.}%
+\xydef@\setcurveSTYLE@#1{\xyFN@\setcurveSTYLE@@#1}
+\xydef@\setcurveSTYLE@@{%
+ \ifx\next p\def\curveSTYLE@{\xyc@trlpts@@}%
+ \DN@ p{\xyFN@\setafterCURVEaction@}%
+ \else\ifx\next P\def\curveSTYLE@{\xyc@trlpts@}%
+ \DN@ P{\xyFN@\setafterCURVEaction@}%
+ \else\ifx\next l\def\curveSTYLE@{\xyc@vxhull@@}%
+ \DN@ l{\xyFN@\setafterCURVEaction@}%
+ \else\ifx\next L\def\curveSTYLE@{\xyc@vxhull@}%
+ \DN@ L{\xyFN@\setafterCURVEaction@}%
+ \else\ifx\next c\def\curveSTYLE@{\xycurve@@}%
+ \DN@ c{\xyFN@\setafterCURVEaction@}%
+ \else\ifx\next C\def\curveSTYLE@{\xycurve@@}%
+ \DN@ C{\xyFN@\setafterCURVEaction@}%
+ \else \DN@##1{\xywarning@{unknown curve style ##1}\xyFN@\parseCURVE@@}%
+ \fi\fi\fi\fi\fi\fi \next@ }
+\xydef@\setafterCURVEaction@{%
+ \ifx\next~\DN@~{\xyFN@\setcurveSTYLE@@}%
+ \else\ifcat a\noexpand\next\DN@{\setafterCURVEaction@@}%
+ \else\DN@{\xyFN@\parseCURVE@@}%
+ \fi\fi \next@}
+\xydef@\setafterCURVEaction@@{%
+ \ifx\next c\DN@ c{%
+ \def\afterCURVEaction@{\noexpand\endcurve\noexpand\xy@curve@}%
+ \xyFN@\parseCURVE@@ }%
+ \else\ifx\next C\DN@ C{%
+ \def\afterCURVEaction@{\noexpand\endcurve\noexpand\xy@curve@@}%
+ \xyFN@\parseCURVE@@ }%
+ \else \DN@##1{\xywarning@{unknown after-curve action ##1}%
+ \xyFN@\parseCURVE@@ }%
+ \fi\fi \next@ }
+\xydef@\parsecurve@{\xyFN@\parsecurve@@}
+\xydef@\parsecurve@@{%
+ \ifx\space@\next\expandafter\DN@\space{\xyFN@\parsecurve@@}%
+ \else\ifx\next\@endcurve\DN@\@endcurve{\checkafterCURVE@}%
+ \else\ifcat\active\noexpand\next\DN@{\relax}%
+ \else\DN@{\xycurve@@}\fi\fi\fi\next@}%
+\xydef@\xycurve@{\begingroup\afterCURVE{\setcurve@\endgroup}\crvobjects@
+ \startxycurve@\xycrvmods@}
+\xydef@\xycurve@@{\afterCURVE{\setcurve@}\crvobjects@\startxycurve@
+ \xycrvmods@}
+\xydef@\xy@curve@{\xy@curve@@@{\splinedefaulttol@\crvobjects@}}
+\xydef@\xy@curve@@{\xy@curve@@@{\resetcrvobjects@}}
+\xydef@\xy@curve@@@#1{\ifx\cv@start\relax
+ \DN@{\xywarning@{There is no curve to plot}}.
+ \else\DN@{\begingroup\afterCURVE{\setcurve@\endgroup}#1\cv@end}%
+ \fi \next@ }
+\xydef@\crvobjects@{\def\xycrvdrop@{}\def\xycrvconn@{}}
+\xydef@\resetcrvobjects@{\crvobjects@}
+\xylet@\savecurve=\xycurve@@
+\xylet@\samecurve=\xy@curve@
+\xydef@\xycrvmods@{\xyFN@\xy@crvmods@}%
+\xydef@\xy@crvmods@{%
+ \ifx\space@\next\expandafter\DN@\space{\xyFN@\xy@crvmods@}%
+ \else\ifx\next ~\DN@ ~{\xyFN@\xy@crvmods@@}%
+ \else\DN@{\xy@crvmods@@@@}\fi\fi \next@}%
+\xydef@\xy@crvmods@@@@{\xyFN@\checkendcurve@}%
+\xydef@\xy@crvmods@@{%
+ \ifx\space@\next\expandafter\DN@\space{\xyFN@\xy@crvmods@@}%
+ \else\ifx\next *\DN@ *{\xyFN@\xy@@crvmods@}%
+ \else\addAT@\ifx\next\addAT@\DN@{\xyFN@\xy@@crvaddstack}%
+ \else\DN@{\xywarning@{badly-formed curve option}\xyFN@\xy@crvmods@}%
+ \fi\fi\fi \next@}%
+\xydef@\xy@@crvmods@{%
+ \ifx\space@\next\expandafter\DN@\space{\xyFN@\xy@@crvmods@}%
+ \else\ifx\next *\DN@ *{\xyFN@\xy@@crvmods@@}%
+ \else\DN@{\xy@crv@mods@@}\fi\fi \next@}%
+\xydef@\xy@crv@mods@@#1#{\DN@##1{\xy@crvmods@@@{#1}{##1}}\next@}%
+\xydef@\xy@crvmods@@@#1#2{%
+ \DN@{#1#2}\ifx\next@\empty \def\xycrvdrop@{ #1{\zerodot}}%
+ \else \def\xycrvdrop@{ #1{#2}}\fi
+ \xyFN@\xy@crvmods@ }%
+\xydef@\xy@@crvmods@@#1#{\DN@##1{\xy@@crvmods@@@{#1}{##1}}\next@}%
+\xydef@\xy@@crvmods@@@#1#2{\def\xycrvconn@{ #1{#2}}\xyFN@\xy@crvmods@ }%
+\xydef@\checkendcurve@{%
+ \ifx\space@\next\expandafter\DN@\space{\xyFN@\checkendcurve@}%
+ \else\ifx\next\endcurve\DN@\endcurve{\clearsearchflag@\endxycurve@}%
+ \else\ifx\next\@endcurve\DN@\@endcurve{\checkafterCURVE@}%
+ \else\ifx\next\xy@@crvaddstack@\DN@{}%
+ \else\ifx\next\endxy\DN@{\clearsearchflag@\sloppyendcrv@}%
+ \else\testAND@\iffalse \DN@##1{\clearsearchflag@\searchnextpt@}%
+ \else\ifx ~\next\DN@ ~{\xyFN@\checkcrvtilde@}%
+ \else\ifx\next\relax\DN@\relax{\clearsearchflag@\searchnextpt@}%
+ \else\ifx\next\\\DN@\\{\clearsearchflag@\searchnextpt@}%
+ \else\ifx\searchflag@\relax
+ \DN@{\setsearchflag@\searchnextpt@}%
+ \else\DN@##1{\flagwarn@{##1}}\fi
+ \fi\fi\fi\fi\fi\fi\fi\fi\fi \next@ }
+\xydef@\searchnextpt@{\afterPOS{\xy@@\addtocrv@ \xyFN@\checkendcurve@}}
+\xydef@\checkafterCURVE@{%
+ \edef\tmp@{\noexpand\xyFN@\noexpand\checkendcurve@
+ \afterCURVEaction@\noexpand\endcurve}\tmp@ }
+\xylet@\searchflag@=\relax
+\xydef@\setsearchflag@{\let\searchflag@=@}
+\xydef@\clearsearchflag@{\let\searchflag@=\relax}
+\xydef@\flagwarn@#1{%
+ \ifx\next\@endcurve\DN@{\xyFN@\checkendcurve@\endcurve}%
+ \else\setsearchflag@\DN@{\xyFN@\checkendcurve@}%
+ \xywarning@{skipping invalid token \string#1\space in curve}%
+ \fi \next@ }
+\xydef@\sloppyendcrv@{%
+\xywarning@{Please use \string\endcurve\space to end the curve.}\endxycurve@}
+\xydef@\endcrv@{\saveshape@
+ \Edge@c={\splineEdge}\Invisible@false\Hidden@false
+ \edef\Drop@@{\noexpand\ifInvisible@ \setbox\z@=\copy\voidb@x
+ \noexpand\else
+ \noexpand\wdz@=\z@
+ \noexpand\ht\z@=\z@ \noexpand\dp\z@=\z@
+ \noexpand\splineDrop@
+ \noexpand\fi }%
+ \edef\Connect@@{%
+ \noexpand\setbox\z@=\noexpand\box\lastobjectbox@
+ \noexpand\wdz@=\z@
+ \noexpand\ht\z@=\z@ \noexpand\dp\z@=\z@
+ \expandafter\noexpand\pure@crv
+ \noexpand\ifInvisible@ \noexpand\crv@saveStyles@ \noexpand\else 
+ \noexpand\crv@getStyles@\noexpand\styledboxz@ \noexpand\fi
+ \noexpand\ifHidden@\noexpand\else 
+ \noexpand\ifx\noexpand\COORD@\noexpand\xymatrixCOORD@ \noexpand\else
+ \noexpand\X@min=\the\X@min \noexpand\X@max=\the\X@max 
+ \noexpand\Y@min=\the\Y@min \noexpand\Y@max=\the\Y@max
+ \noexpand\fi \noexpand\fi
+ \savecrvparams@ \noexpand\crvconnect@
+ }%
+ \wdz@=\z@
+ \ht\z@=\z@ \dp\z@=\z@ }
+\xydef@\crvXY@pre@{}
+\xydef@\crvXY@post@{}
+\xydef@\crv@saveStyles@{\def\xy@style@{}%
+ \expandafter\def\expandafter\crvXY@pre@\expandafter{\preXY@style@}%
+ \expandafter\def\expandafter\crvXY@post@\expandafter{\postXY@style@}}
+\xydef@\crv@getStyles@{\def\xy@style@{}%
+ \gdef\preXY@style@{\crvXY@pre@}\gdef\postXY@style@{\crvXY@post@}}
+\xydef@\initshape@{\savescope@ 
+ \ifdim\X@c>\X@p \X@min=\X@p \X@max=\X@c \else \X@max=\X@p \X@min=\X@c \fi
+ \ifdim\Y@c>\Y@p \Y@min=\Y@p \Y@max=\Y@c \else \Y@max=\Y@p \Y@min=\Y@c \fi }
+\xydef@\saveshape@{\savectrlptsnum@ 
+ \R@c=\X@max \advance\R@c-\X@c \L@c=\X@c \advance\L@c-\X@min
+ \U@c=\Y@max \advance\U@c-\Y@c \D@c=\Y@c \advance\D@c-\Y@min
+ \edef\tmp@{\egroup \U@c=\the\U@c \D@c=\the\D@c \L@c=\the\L@c \R@c=\the\R@c
+ \noexpand\ifdim\noexpand\X@min>\the\X@min\noexpand\X@min=\the\X@min\noexpand\fi
+ \noexpand\ifdim\noexpand\Y@min>\the\Y@min\noexpand\Y@min=\the\Y@min\noexpand\fi
+ \noexpand\ifdim\noexpand\X@max<\the\X@max\noexpand\X@max=\the\X@max\noexpand\fi
+ \noexpand\ifdim\noexpand\Y@max<\the\Y@max\noexpand\Y@max=\the\Y@max\noexpand\fi
+ \savecrvparams@ \def\noexpand\pure@crv{\expandafter\noexpand\pure@crv}}%
+ \tmp@ }
+\xydef@\savecrvparams@{\crvpts@={\the\crvpts@}%
+ \noexpand\def\noexpand\crvconnect@{\expandafter\noexpand\crvconnect@}}%
+\xydef@\splineEdge{\rectangleEdge}
+\xydef@\xy@@crvaddstack{%
+ \ifx\next ~\xywarning@{there should be a poslist here, \string~@ ignored}%
+ \DN@{\xy@crvmods@}%
+ \else\DN@{\xy@@crvaddstack@}\fi \next@}
+\xydef@\xy@@crvaddstack@{\smapxy@@\addtocrv@ \xyFN@\checkendcurve@}
+\xydef@\checkcrvtilde@{%
+ \addAT@\ifx\next\addAT@\DN@{\xy@@crvaddstack@}%
+ \else\xywarning@{invalid token after ~, ignored}%
+ \DN@##1{\xyFN@\checkendcurve@}%
+ \fi \next@ }
+\xydef@\crvconnect@@{%
+ \def\Creset@@{\crvreset@}%
+ \def\Cshavep@@{\crvshavep@}%
+ \def\Cshavec@@{\crvshavec@}%
+ \def\Cslidep@@{\crvslidep@}%
+ \def\Cslidec@@{\crvslidec@}%
+ \def\Calong@@{\crvalong@}%
+ \def\Cintercept@@{\crvintercept@}%
+ \def\Cbreak@@{\crvbreak@}%
+ \def\Clast@@{\crvlast@}%
+}
+\xydef@\straitconnect@{\crvconnect@@ 
+ \let\crvreset@=\straitreset@
+ \let\crvshavep@=\straitshavep@
+ \let\crvshavec@=\straitshavec@
+ \let\crvslidep@=\straitslidep@
+ \let\crvslidec@=\straitslidec@
+ \let\crvalong@=\straitalong@
+ \let\crvintercept@=\straitintercept@
+ \let\crvbreak@=\straitbreak@
+ \let\crvlast@=\straitlast@
+}
+\xydef@\straitreset@{\the\crvpts@ 
+ \edef\xycrvptsnum@{\csname ptsnum@\endcsname}%
+ \def\segmentnum@{0}}
+\xydef@\straitslidep@{\setupDirection@ii \noCslidep@@ }
+\xydef@\straitslidec@{\setupDirection@ii \noCslidec@@ }
+\xydef@\straitshavep@{%
+ \expandafter\ifnum\xycrvptsnum@>\z@
+ \def\segmentnum@{0}%
+ \csname cv@1\endcsname 
+ \resetDirection@ \setupDirection@ii 
+ \fi \noCshavep@@ }
+\xydef@\straitshavec@{%
+ \expandafter\ifnum\xycrvptsnum@>\z@
+ \expandafter\count@@\xycrvptsnum@\relax 
+ \bgroup \csname cv@\number\count@@\endcsname 
+ \edef\tmp@{\egroup \X@p=\the\X@c \Y@p=\the\Y@c}\tmp@ 
+ \edef\segmentnum@{\xycrvptsnum@}%
+ \resetDirection@ \setupDirection@ii 
+ \fi \noCshavec@@ }
+\xydef@\straitalong@#1{%
+ \ifdim#1\p@<\z@ 
+ \xywarning@{parameter value #1 is negative, using 0}%
+ \cfromp@ \def\PLACEf@{{0}}%
+ \else 
+ \dimen@=#1\p@ \count@=\dimen@ \divide\count@\p@ 
+ \expandafter\count@@\xycrvptsnum@\relax \advance\count@@\@ne
+ \advance\dimen@\segmentnum@\p@ 
+ \advance\count@\segmentnum@\relax 
+ \def\segmentnum@{0}%
+ \ifnum\count@@<\count@
+ \xywarning@{parameter value #1 too large, using \the\count@@}%
+ \count@=\count@@ \advance\count@\m@ne \edef\PLACEf@{{1}}%
+ \else
+ \advance\dimen@-\count@\p@ 
+ \ifdim\zz@\dimen@\ifnum\count@>\z@
+ \advance\count@\m@ne \advance\dimen@\p@ \fi\fi
+ \edef\PLACEf@{{\expandafter\removePT@\the\dimen@}}%
+ \fi
+ \ifnum\count@=\z@\else \bgroup
+ \csname cv@\number\count@\endcsname 
+ \edef\tmp@{\egroup \X@p=\the\X@c \Y@p=\the\Y@c}\tmp@
+ \fi
+ \advance\count@\@ne
+ \ifnum\count@<\count@@
+\splinetrace@{find place \the\dimen@\space along straight segment 
+ \the\count@}%
+ \csname cv@\number\count@\endcsname
+ \fi
+ \d@X=\X@c \advance\d@X-\X@p \d@Y=\Y@c \advance\d@Y-\Y@p 
+ \fi \expandafter\noCalong@@\PLACEf@ \czeroEdge@ }
+\xydef@\straitintercept@{\noCintercept@@}
+\xydef@\straitbreak@{\straightCbreak@@}
+\xydef@\straitlast@{\straightClast@@}
+\xydef@\splineconnect@{%
+ \let\crvreset@=\splinereset@
+ \let\crvshavep@=\splineshavep@
+ \let\crvshavec@=\splineshavec@
+ \let\crvslidep@=\splineslidep@
+ \let\crvslidec@=\splineslidec@
+ \let\crvalong@=\splinealong@
+ \let\crvintercept@=\splineintercept@
+ \let\crvbreak@=\splinebreak@
+ \let\crvlast@=\splinelast@
+}
+\xydef@\splinereset@{\the\crvpts@ 
+ \edef\xycrvptsnum@{\csname ptsnum@\endcsname}%
+ \edef\xysplineparams@{%
+ \expandafter\noexpand\csname params@\endcsname}%
+ \edef\xysplineedges@{%
+ \expandafter\noexpand\csname edges@\endcsname}%
+ \def\segmentnum@{1}\def\splinecorrect@p{0}\def\splinecorrect@c{0}%
+ \splinelength@=\z@ \def\splineplace@f{.5}%
+}
+\xydef@\splineshavep@{\begingroup 
+ \edef\xysplineedges@{%
+ \expandafter\noexpand\csname edges@\endcsname}%
+ \expandafter\expandafter\expandafter\getsplineedges@safe\xysplineedges@ @@%
+ \edef\tmp@{\noexpand\removePT@\the\dimen5}%
+ \edef\tmp@{\endgroup 
+ \noexpand\def\noexpand\splinecorrect@p{\tmp@}}\tmp@ 
+ \setupDirection@ii }
+\xydef@\splineshavec@{\begingroup 
+ \edef\xysplineedges@{%
+ \expandafter\noexpand\csname edges@\endcsname}%
+ \expandafter\expandafter\expandafter\getsplineedges@safe\xysplineedges@ @@%
+ \dimen@=-\dimen7\relax \advance\dimen@\p@
+%% \getcrvsegsnum@ \advance\dimen@\count@\p@
+ \edef\tmp@{\noexpand\removePT@\the\dimen@}%
+ \edef\tmp@{\endgroup 
+ \noexpand\def\noexpand\splinecorrect@c{\tmp@}}\tmp@ 
+ \setupDirection@ii }
+\xydef@\splineslidep@#1{\enter@{\pfromthep@}%
+ \begingroup \splinealong@@{0}{#1}+\splineslidep@@@
+ \setupDirection@ii \leave@ }%
+\xydef@\splineslidep@@@{%
+ \d@X=\dimen5 \d@Y=\dimen7 \edef\tmp@{\postfind@}\tmp@ \dimen@=\splineval@
+ \expandafter\count@\xycrvptsnum@\relax
+ \ifnum\count@>\tw@ \advance\count@\m@ne 
+ \advance\dimen@\segmentnum@\p@ \advance\dimen@-\p@ 
+ \fi 
+ \edef\tmp@{\endgroup \endgroup
+ \noexpand\def\noexpand\xysplineval@{\the\splineval@}%
+ \noexpand\def\noexpand\splinecorrect@p{\expandafter\removePT@\the\dimen@}%
+\splinetrace@{slide = \the\splinelength@}%
+ \X@c=\dimen@i \Y@c=\dimen3
+ \d@X=\the\d@X \d@Y=\the\d@Y
+ \noexpand\def\noexpand\segmentnum@{\segmentnum@}}\tmp@ }
+\xydef@\splineslidec@#1{\enter@{\pfromthep@}%
+ \begingroup
+ \expandafter\splinealong@@\PLACEf@{#1}+\splineslidec@@@
+ \setupDirection@ii \leave@ }
+\xydef@\splineslidec@@@{%
+ \d@X=\dimen5 \d@Y=\dimen7 \edef\tmp@{\postfind@}\tmp@ \dimen@=\splineval@
+ \expandafter\count@\xycrvptsnum@\relax
+ \ifnum\count@>\tw@ \advance\count@\m@ne 
+ \advance\dimen@\segmentnum@\p@ \advance\dimen@-\p@ 
+ \dimen@=-\dimen@ \advance\dimen@\count@\p@
+ \else \dimen@=-\dimen@ \advance\dimen@\p@ \fi
+%% splinecorrect@c is probably wrong here!!
+ \edef\tmp@{\endgroup \endgroup
+ \noexpand\def\noexpand\xysplineval@{\the\splineval@}%
+ \noexpand\def\noexpand\splinecorrect@c{\expandafter\removePT@\the\dimen@}%
+\splinetrace@{slide = \the\splinelength@; correct@c=\noexpand\splinecorrect@c}%
+ \X@c=\dimen@i \Y@c=\dimen3
+ \d@X=\the\d@X \d@Y=\the\d@Y
+ \noexpand\def\noexpand\segmentnum@{\segmentnum@}}\tmp@ }
+\xydef@\checkslidemore@#1{%
+ \dimen@ii=-#1\relax\ifdim\dimen@ii<\z@\multiply\dimen@ii\m@ne\fi
+ \dimen@=-\splinelength@ \advance\dimen@\dimen@ii\relax 
+ \ifdim\dimen@<\z@\dimen@ii=-\dimen@\else\dimen@ii=\dimen@\fi
+ \ifdim\dimen@ii<.2\p@\DN@{\splineslidec@@ \leave@}%
+ \else \splinetrace@{not found yet, \the\dimen@ii\space still to go}%
+ \dimen@ii=#1\relax\ifdim\dimen@ii<\z@\multiply\dimen@\m@ne\fi
+ \DN@{\expandafter\splineslidemore@\expandafter{\the\dimen@}}\fi 
+ \next@}%
+\xydef@\splineslidemore@#1{%
+ \expandafter\count@\segmentnum@\relax
+ \ifdim#1<\z@\advance\count@\m@ne\dimen@=\p@
+ \else\advance\count@\@ne\dimen@=\z@\fi
+ \ifnum\count@<\@ne
+ \expandafter\splinesegment@\expandafter{\segmentnum@}%
+ \DN@{\xywarning@{cannot slide beyond start of curve}%
+ \spline@find{\z@}{\z@}{}\splineslidec@@ \leave@ }%
+ \else \expandafter\count@@\xycrvptsnum@\relax\advance\count@@\m@ne
+ \expandafter\ifnum\count@@<\count@\relax
+ \expandafter\splinesegment@\expandafter{\segmentnum@}%
+ \DN@{\xywarning@{cannot slide beyond end of curve}%
+ \spline@find{\p@}{\z@}{}\splineslidec@@ \leave@ }%
+ \else
+ \edef\segmentnum@{\the\count@}%
+ \expandafter\splinesegment@\expandafter{\segmentnum@}%
+\splinetrace@{sliding onto segment \segmentnum@}%
+ \expandafter\spline@find\expandafter{\the\dimen@}{#1}{}%
+ \DN@{\checkslidemore@{#1}}%
+ \fi\fi \next@ }
+\xydef@\splineslidec@@{%
+ \dimen@=\splineval@ \advance\dimen@\segmentnum@\p@\advance\dimen@-\p@ 
+ \edef\tmp@{\endgroup 
+ \noexpand\def\noexpand\xysplineval@{\the\dimen@}%
+\splinetrace@{slide = \the\splinelength@}%
+ \X@c=\the\dimen@i \Y@c=\the\dimen3 \d@X=\the\dimen5 \d@Y=\the\dimen7 \postfind@ 
+ \noexpand\def\noexpand\segmentnum@{\segmentnum@}}\tmp@
+ \setupDirection@ii}
+\xydef@\splinealong@#1{\def\postfind@{}\splinealong@@{#1}\z@+%
+ \splineslidec@@ 
+ \dimen@=\xysplineval@\relax 
+ \count@=\xycrvptsnum@\relax \ifnum\count@>\@ne \advance\count@\m@ne\fi
+ \ifnum\count@>\@ne \dimen@nth\count@\dimen@
+ \fi \edef\bthisPLACE@{\expandafter\removePT@\the\dimen@}%
+\splinetrace@{bthisPLACE@=\bthisPLACE@}}%
+\xydef@\splinealong@@#1#2#3{%
+ \edef\tmp@{#1}\relax \dimen@ii\tmp@\p@ 
+%% \getcrvsegsnum@
+%% \dimen@=-\count@\p@ 
+ \dimen@=-\p@
+ \expandafter\advance\expandafter\dimen@\splinecorrect@p\p@
+ \expandafter\advance\expandafter\dimen@\splinecorrect@c\p@
+ \edef\tmp@{#1}\relax \dimen@=-\tmp@\dimen@ \relax
+ \expandafter\advance\expandafter\dimen@\splinecorrect@p\p@
+ \getcrvsegsnum@ \multiply \dimen@ by\count@\relax
+\splinetrace@{actual:\the\dimen@; f:\the\dimen@ii; p:\splinecorrect@p, c:\splinecorrect@c}%
+ \count@=\dimen@ \divide\count@\p@ \DN@{\relax}%
+ \def\tmp@{\relax}\ifx\next@\tmp@
+ \expandafter\ifnum\xycrvptsnum@<\count@
+ \xywarning@{parameter value #1 too large}%
+ \DNii@{\relax}\DN@{\begingroup}%
+ \else
+ \edef\xysplineval@{\the\dimen@}%
+ \advance\dimen@-\count@\p@ 
+ \ifdim\dimen@=\z@ 
+\splinetrace@{find knot point \the\count@}%
+ \ifnum\count@=\z@ \count@=\@ne \else \dimen@=\p@ \fi
+ \else \advance\count@\@ne
+\splinetrace@{find point \the\dimen@\space on spline segment \the\count@}%
+ \fi 
+ \edef\segmentnum@{\the\count@}%
+ \edef\next@{\begingroup\noexpand\splinesegment@{\the\count@}}%
+ \edef\nextii@{%
+ \noexpand\spline@find{\the\dimen@}{#2}{}\noexpand\checksplinefind@{#2}}%
+ \ifx>#3\relax 
+ \edef\nextii@{%
+ \noexpand\spline@find{\the\dimen@}{#2}#3\noexpand\checksplinefind@{#2}}%
+ \else\ifx-#3\relax \ifdim\dimen@>\z@\relax \ifdim\dimen@<\p@
+ \dimen@=-\dimen@ \advance\dimen@\p@
+ \edef\nextii@{\noexpand\splinereverse@ 
+ \noexpand\spline@find{\the\dimen@}{#2}{}\noexpand\checksplinefind@{#2}}%
+ \fi\fi
+ \else\ifx<#3\relax \ifdim\dimen@>\z@\relax \ifdim\dimen@<\p@
+ \dimen@=-\dimen@ \advance\dimen@\p@
+ \edef\nextii@{\noexpand\splinereverse@ 
+ \noexpand\spline@find{\the\dimen@}{#2}#3\noexpand\checksplinefind@{#2}}%
+ \fi\fi
+ \fi\fi\fi
+ \fi\fi \expandafter\next@\nextii@ }
+\xydef@\checksplinefind@#1{%
+ \dimen@ii=#1\relax \dimen@=\splinelength@
+ \ifdim\dimen@ii=\z@\DN@{}%
+ \else
+ \ifdim\dimen@ii<\z@\advance\dimen@\dimen@ii
+ \else\advance\dimen@-\dimen@ii\fi
+ \ifdim\dimen@<\z@\multiply\dimen@\m@ne\fi
+ \ifdim\dimen@<.2\p@\DN@{}%
+ \else
+ \count@=\segmentnum@\relax 
+ \ifdim\dimen@ii<\z@\advance\dimen@ii\splinelength@
+ \ifnum\count@>\@ne\advance\count@\m@ne
+ \edef\next@{\noexpand\splinesegment@{\the\count@}%
+ \noexpand\spline@find\p@{\the\dimen@ii}{}%
+ \noexpand\checksplinefind@{\the\dimen@ii}}%
+ \else
+ \xywarning@{cannot slide \the\dimen@ii\space before start}%
+ \DN@{\splinesegment@\@ne \spline@find\z@\z@{}}\fi
+ \else\advance\dimen@ii-\splinelength@
+ \count@@=\numcontrolpts 
+ \ifnum\count@<\count@@ \advance\count@\@ne
+ \edef\next@{\noexpand\splinesegment@{\the\count@}%
+ \noexpand\spline@find\z@{\the\dimen@ii}{}%
+ \noexpand\checksplinefind@{\the\dimen@ii}}%
+ \else
+ \xywarning@{cannot slide \the\dimen@ii\space beyond end}%
+ \DN@{\splinesegment@{\the\count@@}\spline@find\p@\z@{}}\fi
+ \fi
+ \fi\fi \next@ }
+\xydef@\resetbreaks@{%
+ \let\bstartPLACE@=\relax \let\bthisPLACE@=\empty
+ \let\bendPLACE@=\relax \let\bprevPLACE@=\relax}
+\xydef@\invisbreaks@{\resetbreaks@ \let\bstartPLACE@=\empty}
+\xydef@\crvresetbreaks@{\resetbreaks@ \let\bstartPLACE@=\relax }
+\xydef@\initbreaks@{\xy@@{\ifx\bstartPLACE@\relax
+ \def\bstartPLACE@{0}\def\bendPLACE@{1}\else
+ \ifx\bstartPLACE@\empty\def\bstartPLACE@{0}\def\bendPLACE@{1}%
+ \fi\fi}}
+\xydef@\lastbreaks@{\ifx\bprevPLACE@\relax \def\bstartPLACE@{0}%
+ \else \expandafter \bprevPLACE@ \fi 
+ \let\bprevPLACE@\relax \let\bendPLACE@\relax}
+\xylet@\bstartPLACE@\relax
+\xylet@\bendPLACE@\relax
+\xylet@\bprevPLACE@\relax
+\xydef@\bthisPLACE@{1}
+\xydef@\splinebreak@{%
+\splinetrace@{***new break*** this:\bthisPLACE@ }%
+ \ifx\bthisPLACE@\empty\def\bendPLACE@{1}%
+ \else\edef\bendPLACE@{\bthisPLACE@}\let\bthisPLACE@\empty\fi
+ \ifx\bprevPLACE@\relax\def\bstartPLACE@{0}\else\expandafter\bprevPLACE@\fi
+ \edef\bprevPLACE@{\def\noexpand\bstartPLACE@{\bendPLACE@}\pfromthec@}%
+\splinetrace@{splineBREAK: \bstartPLACE@ <> \bendPLACE@}%
+ \edef\cv@brend{\cfromthec@}%
+ \edef\cv@brstart{\cfromthep@}%
+ \expandafter\connect\expandafter\crvs\crvSTYLE@@{}%
+ \let\cv@brend=\relax
+ \let\cv@brstart=\relax
+\splinetrace@{**break done**}%
+} 
+\xydef@\splinelast@{\splinereset@ \lastbreaks@
+\splinetrace@{splineLAST}%
+ \edef\cv@brend{\cfromthec@}%
+ \edef\cv@brstart{\cfromthep@}%
+ \expandafter\connect\expandafter\crvs\crvSTYLE@@{}%
+ \let\cv@brend=\relax
+ \let\cv@brstart=\relax
+\splinetrace@{**last done**}%
+ \resetbreaks@}
+\xydef@\splineNointercept@{\enter@{\pfromthep@}%
+ \begingroup \splinereset@ \csname cv@0\endcsname \swap@ 
+ \count@=\ptsnum@ \advance\count@\@ne \csname cv@\the\count@\endcsname 
+ \edef\tmp@{\endgroup \X@origin=\the\X@p \Y@origin=\the\Y@p
+ \R@c=\the\d@X \U@c=\the\d@Y}\tmp@
+ \loop@
+ \dimen@=\ifdim\R@c<\z@-\fi\R@c
+ \advance\dimen@ \ifdim\U@c<\z@-\fi\U@c
+ \ifdim\dimen@>10\p@
+ \advance\R@c \ifdim\R@c<\z@-\fi 16sp \divide\R@c\KK@ 
+ \advance\U@c \ifdim\U@c<\z@-\fi 16sp \divide\U@c\KK@
+ \repeat@
+ \intersect@ \leave@}
+\xydef@\splineintercept@{\Hidden@true\Invisible@true\splineintercept@i}
+\xydef@\splineintercept@i{\enter@{\pfromthep@}\begingroup 
+ \R@p=\X@c \L@p=\X@p \d@X=\R@p \advance\d@X-\L@p
+ \D@p=\Y@c \U@p=\Y@p \d@Y=\D@p \advance\d@Y-\U@p
+ \dimen@nth\KK@\d@X \edef\sd@X{\expandafter\removePT@\the\d@X}%
+ \dimen@nth\KK@\d@Y \edef\sd@Y{\expandafter\removePT@\the\d@Y}%
+ \dimen@=\sd@Y\L@p \advance\dimen@-\sd@X\U@p 
+ \edef\sideOffset@{\the\dimen@}\def\closestseg@{1}%
+ \let\crvconnect@@=\relax \crvconnect@
+ \let\spline@end=\splinef@end
+ \def\spline@start{\bgroup \def\prevnext@{+-}%
+ \def\splinerec@{\let\splinerec@=\splineIrec@ \splineinterceptTest@}%
+ \def\splinedecast@{\let\splinedecast@=\splinedecast@@
+ \def\splineadvance@{\splineIadvance@@}\splinedecast@@}%
+ \def\splineadvance@{\intercepthull@}%
+ \global\let\splinepoint=\splineIpt@@
+ \global\let\splinegoal@=\splinef@pt
+ \global\let\splinefinish@=\splinefinish@@}%
+ \begingroup \splineIsegment@ 
+ \splinesetparams@ \splined@@ \def\postfind@{}\splineIplace@
+ \setupDirection@ii \leave@ }
+\xydef@\splineIplace@{%
+ \d@X=\dimen5 \d@Y=\dimen7 \dimen@=\splineval@
+ \expandafter\count@\xycrvptsnum@\relax
+ \ifnum\count@>\tw@ \advance\count@\m@ne
+ \advance\dimen@\segmentnum@\p@ \advance\dimen@-\p@ 
+ \dimen@nth\count@\dimen@
+ \fi \edef\tmp@{\endgroup \endgroup
+ \def\noexpand\PLACEf@{{\expandafter\removePT@\the\dimen@}}%
+ \X@c=\dimen@i \Y@c=\dimen3
+ \d@X=\the\d@X \d@Y=\the\d@Y }\tmp@
+\splinetrace@{PLACE = \PLACEf@:(\the\X@c, \the\Y@c)}%
+ \expandafter\edef\expandafter\bthisPLACE@\PLACEf@
+ }
+\xydef@\splineIrec@{\splineinterceptTest@ }
+\xydef@\squineIpt@{\edef\tmp@{\endgroup
+ \def\noexpand\prevnext@{\next}\begingroup}\tmp@ }
+\xydef@\squineIadvance@{\edef\tmp@{\endgroup
+ \def\noexpand\prevnext@{\next}\def\noexpand\howclose@{\howclose@}}%
+ \tmp@ \splineadvance@@\begingroup}
+\xydef@\cubicIpt@{\edef\tmp@{\endgroup
+ \def\noexpand\prevnext@{\next}\begingroup}\tmp@ }
+\xydef@\cubicIadvance@{\edef\tmp@{\egroup
+ \def\noexpand\prevnext@{\next}\def\noexpand\howclose@{\howclose@}}%
+ \tmp@ \splineadvance@@\bgroup}
+\xydef@\splineIsegment@{\DN@{\splinesegment@\@ne}%
+ \ifx\splinesegment@\squinesegment@\else
+ \ifx\splinesegment@\cubicsegment@\else\DN@{\findIsegment@}%
+ \fi\fi\next@}
+\xydef@\findIsegment@{\expandafter\count@\xycrvptsnum@ \count@@\z@ 
+ \loop@ \advance\count@@\@ne \bgroup 
+ \expandafter\splinesegment@\expandafter{\the\count@@}%
+ \xysidesofinterval@
+ \findIsegment@i \repeat@ 
+ \expandafter\dimen@\prevhowclose@ \relax
+ \ifdim\dimen@=\z@ \edef\closestseg@{\the\count@@}\fi
+ \expandafter\splinesegment@\expandafter{\closestseg@}}
+\xydef@\findIsegment@i{%
+ \expandafter\ifx\next \expandafter\findIsegment@ii
+ \else\expandafter\findIsegment@x\fi \next@ }
+\xydef@\findIsegment@ii{\expandafter\count@\xycrvptsnum@ \relax
+ \advance\count@\m@ne \ifnum\count@>\segmentnum@\relax
+ \expandafter\findIsegment@y\else\expandafter\findIsegment@x\fi}
+\xydef@\findIsegment@x{%
+ \edef\next@{\egroup\def\noexpand\next{\next}%
+ \def\noexpand\prevhowclose@{\prevhowclose@}%
+ \def\noexpand\closestseg@{\closestseg@}\noexpand\iffalse}}
+\xydef@\findIsegment@y{%
+ \edef\next@{\egroup\def\noexpand\next{\next}%
+ \def\noexpand\prevhowclose@{\prevhowclose@}%
+ \def\noexpand\closestseg@{\closestseg@}\noexpand\iftrue}}
+\xydef@\xysidesofinterval@{\bgroup 
+ \L@p=\sd@X\Y@p \advance\L@p-\sd@Y\X@p \advance\L@p\sideOffset@
+ \U@p=\sd@X\Y@c \advance\U@p-\sd@Y\X@c \advance\U@p\sideOffset@
+ \def\this@{}\ifdim\L@p>\almostz@ \ifdim\U@p>\almostz@ \def\next{++}\else
+ \ifdim\U@p<-\almostz@ \def\next{+-}\else\def\next{+0}\def\this@{-}\fi\fi
+ \else\ifdim\L@p<-\almostz@ \ifdim\U@p>\almostz@ \def\next{-+}\else
+ \ifdim\U@p<-\almostz@ \def\next{--}\else\def\next{-0}\def\this@{+}\fi\fi
+ \else \ifdim\U@p>\almostz@ \def\next{0+}\else
+ \ifdim\U@p<-\almostz@ \def\next{0-}\else\def\next{00}\def\this@{+}\fi\fi
+ \fi\fi
+ \ifx\this@\empty
+ \L@p=\ifdim\L@p<\z@-\fi\L@p \U@p=\ifdim\U@p<\z@-\fi\U@p 
+ \ifdim\L@p<\U@p \edef\howclose@{\the\L@p}\def\this@{-}%
+ \else \edef\howclose@{\the\U@p}\def\this@{+}\fi
+ \else\def\howclose@{0.0pt}\fi 
+\splinetrace@{\next:\this@:\howclose@;\the\splineval@:%
+ (\the\X@p,\the\Y@p);(\the\X@c,\the\Y@c)}%
+ \ifdim\howclose@<\prevhowclose@\relax 
+ \edef\tmp@{\egroup\def\noexpand\this@{\this@}\def\noexpand\next{\next}%
+ \def\noexpand\howclose@{\howclose@}\def\noexpand\prevhowclose@{\howclose@}%
+ \def\noexpand\closestseg@{\segmentnum@}}%
+\splinetrace@{closest yet: \howclose@, in segment \segmentnum@}%
+ \else
+ \edef\tmp@{\egroup\def\noexpand\this@{\this@}\def\noexpand\next{\next}%
+ \def\noexpand\howclose@{\howclose@}}%
+ \fi \tmp@ }
+\xydef@\splineinterceptTest@{%
+ \xysidesofinterval@ \DN@{\splineadvance@}%
+ \DNii@{0.0pt}\ifx\howclose@\nextii@ \DN@{\splineclosest@}%
+ \else\expandafter\ifx\next \expandafter\ifx\prevnext@
+ \ifx\next\prevnext@\else\DN@{\X@c=\X@p \Y@c=\Y@p 
+ \splinefinishf@}\fi\fi
+ \else \DN@{\splinedecast@}\fi\fi 
+ {\splinefar@false \splinenear@\X@p\X@c\Y@p\Y@c 
+ \ifsplinefar@ \aftergroup\next@
+ \else\aftergroup\splineclosest@
+\splinetrace@{too close: (\the\X@p,\the\Y@p)::(\the\X@c,\the\Y@c)}%
+ \fi}}
+\xydef@\splineclosest@{%
+ \expandafter\ifx\this@-\relax
+ \X@c=\X@p \Y@c=\Y@p \global\advance\splineval@-\splinedepth@
+ \fi \splinefinishf@ }%
+\xydef@\squinetestcvxhull@{\begingroup
+\splinetrace@{hull: closest in segment \closestseg@}%
+ \expandafter\splinesegment@\ifx\undefined\closestseg@\@ne\else\closestseg@\fi
+ \X@c=\L@c \Y@c=\U@c \xysidesofinterval@ 
+ \expandafter\ifx\next \expandafter\splineoutsidehull@@
+ \else \expandafter\splineinsidehull@\fi}
+\xydef@\cubictestcvxhull@{\begingroup
+ \expandafter\splinesegment@\ifx\undefined\closestseg@\@ne\else\closestseg@\fi
+ \X@c=\L@c \Y@c=\U@c \xysidesofinterval@ 
+ \expandafter\ifx\next \expandafter\cubictestcvxhull@i
+ \else \expandafter\splineinsidehull@\fi}
+\xydef@\cubictestcvxhull@i{%
+ \X@c=\R@c \Y@c=\D@c \xysidesofinterval@ 
+ \expandafter\ifx\next \expandafter\splineoutsidehull@@
+ \else \expandafter\splineinsidehull@\fi}
+\xydef@\xysidesofhull@{\bgroup 
+ \L@p=\sd@X\Y@p \advance\L@p-\sd@Y\X@p \advance\L@p\sideOffset@
+ \U@p=\sd@X\Y@c \advance\U@p-\sd@Y\X@c \advance\U@p\sideOffset@
+ \L@p=\ifdim\L@p<\z@-\fi\L@p \U@p=\ifdim\U@p<\z@-\fi\U@p 
+ \ifdim\L@p<\U@p \edef\howclose@{\the\L@p}\def\this@{-}%
+ \else \edef\howclose@{\the\U@p}\def\this@{+}\fi
+ \ifx\splinedecast@\squinedecast@ \D@c=\U@c \R@c=\L@c \fi
+ \L@p=\sd@X\U@c \advance\L@p-\sd@Y\L@c \advance\L@p\sideOffset@
+ \L@p=\ifdim\L@p<\z@-\fi\L@p 
+ \expandafter\if\this@-%
+ \ifdim\L@p<\prevhowclose@ \def\next{-+}\else \def\next{--}\fi
+ \else
+ \ifdim\L@p<\howclose@ \def\next{-+}\else 
+ \U@p=\sd@X\D@c \advance\U@p-\sd@Y\R@c \advance\U@p\sideOffset@
+ \U@p=\ifdim\U@p<\z@-\fi\U@p
+ \ifdim\U@p<\howclose@ \def\next{+-}\else \def\next{++}\fi
+ \fi\fi
+ \edef\tmp@{\egroup\def\noexpand\this@{\this@}\def\noexpand\next{\next}%
+ \def\noexpand\howclose@{\howclose@}}\tmp@ }
+\def\PLACE@intercept@#1{%
+ \xy@@{\enter@{\pfromthep@\basefromthebase@}\begingroup}%
+ \xy@@ix@{#1}\xy@@{\plainxy@ \def\Creset@@{}%
+ \expandafter\POS\the\toks9\relax
+ \DNii@{\crvreset@}\ifx\nextii@\Creset@@ \edef\next@{\endgroup
+ \def\noexpand\xyinterceptpts@{\the\crvpts@}%
+ \X@c =\the\X@c \Y@c=\the\Y@c \X@p=\the\X@p \Y@p=\the\Y@p
+ \noexpand\CCintercept@@ }%
+ \else \edef\next@{\endgroup
+ \X@c =\the\X@c \Y@c=\the\Y@c \X@p=\the\X@p \Y@p=\the\Y@p
+ \noexpand\Cintercept@@ }%
+ \fi \next@ \leave@}%
+ \PLACE@@}
+\xydef@\CCintercept@@{\splineSintercept@}
+\xydef@\splineSintercept@{\enter@{\pfromthep@}\begingroup 
+ \Creset@@ \edef\connect@pts{\cfromthec@ \pfromthep@}%
+ \xyinterceptpts@ \splinereset@ \connect@pts \splineintercept@
+ \edef\next@{\endgroup \cfromthec@ \DirectionfromtheDirection@ }%
+ \next@ \let\xyinterceptpts@=\empty \leave@}
+\xydef@\nointerceptwarning@{\let\nointerceptwarning@=\relax
+ \xywarning@{perhaps no curve intersection, or many. }}
+\xydef@\intercepthull@{\nointerceptwarning@ 
+ \expandafter\def\expandafter\prevnext@\expandafter{\next}%
+ \splinetestcvxhull@}
+\xydef@\splinetestcvxhull@{\begingroup 
+ \X@c=\L@c \Y@c=\U@c \splinetrace@{hull:}\xysidesofinterval@ 
+ \expandafter\ifx\next \expandafter\splineoutsidehull@@
+ \else \expandafter\splineinsidehull@\fi}
+\xydef@\splineinsidehull@{\edef\tmp@{\endgroup 
+ \def\noexpand\howcvxclose@{\howclose@}%
+ \noexpand\interceptinsidehull@}\tmp@ }
+\xydef@\interceptinsidehull@{\edef\prevhowclose@{\howclose@}%
+ \splinedecast@@ }
+{\xdef\next{\the\maxdimen}}
+\xylet@\prevhowclose@=\next
+\xydef@\splineoutsidehull@{\edef\tmp@{\endgroup
+ \def\noexpand\howcvxclose@{\howclose@}%
+ \noexpand\interceptoutsidehull@}\tmp@}
+\xylet@\splineoutsidehull@@=\splineoutsidehull@
+\xydef@\interceptoutsidehull@{\dimen@=\howcvxclose@ \relax
+\splinetrace@{OUTSIDE HULL: \the\dimen@ : (\howclose@)(\prevhowclose@)}%
+ \let\splinedecast@=\splinedecast@@
+ \let\splinerec@\splineHnear@test
+ \let\splineadvance@\splineIadvance@@
+ \splinedecast@@ }
+\xydef@\splineHnear@test{%
+ \xysidesofhull@ \DN@{\splinedecast@}%
+ \ifdim\howclose@<\prevhowclose@\edef\howclose@{\prevhowclose@}\fi
+ \expandafter\if\this@-%
+ \expandafter\ifx\next\DN@{\splineclosest@}\fi
+ \else
+ \expandafter\ifx\next\DN@{\splineadvance@}\fi
+ \fi
+ {\splinefar@false \splinenear@\X@p\X@c\Y@p\Y@c 
+ \ifsplinefar@ \aftergroup\next@
+ \else\aftergroup\splineclosest@
+\splinetrace@{too close: (\the\X@p,\the\Y@p)::(\the\X@c,\the\Y@c)}%
+ \fi}}
+\xydef@\cubicoutsidehull@{\edef\tmp@{\endgroup
+ \def\noexpand\howcvxclose@{\howclose@}}\tmp@
+ \edef\prevhowcvxclose@{\howcvxclose@}\begingroup 
+ \X@p=\R@c \Y@p=\D@c \splinetrace@{hullii:}\xysidesofinterval@ 
+ \expandafter\ifx\next \expandafter\cubicoutsidehull@i
+ \else \expandafter\cubicinsidehull@\fi} 
+\xydef@\cubicinsidehull@{\edef\tmp@{\endgroup
+ \def\noexpand\howclose@{\howclose@}}\tmp@
+ \cubicoutsidehull@ii }
+\xydef@\cubicoutsidehull@i{\edef\tmp@{\endgroup
+ \def\noexpand\howcvxclose@{\howclose@}}\tmp@
+ \dimen@=\prevhowcvxclose@\relax 
+ \ifdim\dimen@<\howcvxclose@ \relax
+ \edef\howcvxclose@{\the\dimen@}\expandafter\interceptoutsidehull@
+ \else \expandafter\cubicoutsidehull@ii\fi }
+\xydef@\cubicoutsidehull@ii{%
+ \def\splineadvance@{\splineadvance@@}%
+ \def\splinepoint\endgroup{\endgroup
+ \global\let\splinepoint=\relax
+ \def\splineadvance@{\intercepthull@}}%
+ \splinedecast@@ }%
+\xydef@\splineHadvance@{\futurelet\next@\splineHadvance@i}
+\xydef@\splineHadvance@i{\ifx\next@\endgroup
+ \expandafter\splineHadvance@x\else\expandafter\splineclosest@\fi}
+\xydef@\splineHadvance@x{\edef\tmp@{\endgroup
+ \def\noexpand\prevhowclose@{\prevhowclose@}%
+ \def\noexpand\prevnext@{\next}\def\noexpand\howcvxclose@{\howclose@}}%
+ \tmp@ \dimen@=\prevhowclose@ \relax
+ \ifdim\dimen@<\howclose@ \relax \DN@{\splineclosest@\begingroup}%
+ \else\ifdim\howcvxclose@=\dimen@\DN@{\splineclosest@\begingroup}%
+ \else\DN@{\splineadvance@@\begingroup}\fi\fi \next@ }
+\xydef@\xyclearcrv@{\cv@end\cv@restore\loop@
+ \expandafter\let\csname cv@\number\crv@cnt@\endcsname\relax
+ \ifnum\crv@cnt@>0\advance\crv@cnt@\m@ne\repeat@
+ \let\cv@start=\relax \let\cv@end=\relax \let\cv@restore=\relax \POS}
+\xylet@\clearcurve=\xyclearcrv@
+\xylet@\numcontrolpts=\xynumctrlpts@
+\xydef@\xycontrolpt@#1{{%
+ \ifnum#1<\z@\aftergroup\cv@restore\aftergroup\cv@start
+ \else
+ \expandafter\count@\xycrvptsnum@\relax \advance\count@\@ne
+ \ifnum#1>\count@ \ifx\cv@end\relax 
+ \expandafter\aftergroup\csname cv@\number#1\endcsname
+ \else\aftergroup\cv@end\fi
+ \else 
+ \expandafter\ifx\csname cv@\number#1\endcsname\relax
+ \ifnum#1=\z@\aftergroup\cv@start\else\aftergroup\cv@end\fi
+ \else\expandafter\aftergroup\csname cv@\number#1\endcsname
+ \fi\fi\fi}}%
+\xylet@\xycontrolpt=\xycontrolpt@
+\xydef@\startxycurve@@{\crv@cnt@=\z@
+ \edef\cv@start{\cfromthep@}%
+ \ifdim\zz@\R@c \ifdim\zz@\L@c \ifdim\zz@\D@c \ifdim\zz@\U@c
+ \Edge@c={\zeroEdge}\fi\fi\fi\fi
+ \edef\cv@end{\cfromthec@}%
+ \edef\cv@restore{\pfromthep@\basefromthebase@}}
+\xylet@\startxycurve@=\startxycurve@@
+\xylet@\cv@start=\relax
+\xylet@\cv@end=\relax
+\xylet@\cv@restore=\relax
+\xydef@\readxycurve@{\startxycurve@\xycrvmods@}
+\xylet@\readxycurve=\readxycurve@
+\xydef@\addtocrv@{\advance\crv@cnt@\@ne 
+ \edef\tmp@{%
+ \expandafter\noexpand\csname cv@\number\crv@cnt@\endcsname}%
+ \expandafter\edef\tmp@{\cfromthec@}%
+ \edef\tmp@{\noexpand\addtocrvpts@{\noexpand\def
+ \expandafter\noexpand\tmp@{\X@c=\the\X@c \Y@c=\the\Y@c }}}\tmp@
+ \edef\xycrvptsnum@{\the\crv@cnt@}%
+}
+\xydef@\xycrvdrop@{ {\zerodot}}
+\xydef@\xycrvconn@{}
+\xydef@\xyc@trlpts@{\def\xycrvdrop@{ \dir{x}}\def\xycrvconn@{}%
+ \afterCURVE{\savecrvobjects@\xyctrlpts@}\readxycurve@}
+\xydef@\xyc@trlpts@@{%
+ \afterCURVE{\savecrvobjects@\def\xycrvdrop@{ \dir{x}}%
+ \def\xycrvconn@{}\xyctrlpts@}\readxycurve@}
+\xydef@\xyc@vxhull@{\def\xycrvdrop@{ {}}%
+ \edef\xycrvconn@{ \noexpand\dir{\addDASH@{}}}%
+ \afterCURVE{\savecrvobjects@\xycvxhull@}\readxycurve@}
+\xydef@\xyc@vxhull@@{%
+ \afterCURVE{\savecrvobjects@\def\xycrvdrop@{ {}}%
+ \edef\xycrvconn@{ \noexpand\dir{\addDASH@{}}}\xycvxhull@}\readxycurve@}
+\xylet@\controlpts=\xyc@trlpts@
+\xylet@\convexhull=\xyc@vxhull@
+\xydef@\savecrvobjects@{\bgroup 
+ \expandafter\toks@\expandafter{\xycrvdrop@}%
+ \expandafter\toks@ii\expandafter{\xycrvconn@}%
+ \edef\tmp@{\egroup\noexpand\def\noexpand\resetcrvobjects@{%
+ \noexpand\def\noexpand\xycrvdrop@{\the\toks@}%
+ \noexpand\def\noexpand\xycrvconn@{\the\toks@ii}%
+ }}\tmp@}
+\xydef@\afterCURVE#1{\def\afterCURVE@{#1}}
+\xydef@\endxycurve@{\cv@end\savectrlptsnum@
+ \expandafter\def\csname params@\endcsname{\the\crvpts@}%
+ \cv@restore\afterCURVE@\POS}
+\xylet@\endcurve=\endxycurve@
+\xydef@\xyctrlpts@{\cv@end \cv@restore
+ \def\crvconnect@{\straitconnect@}%
+ \ifnum\crv@cnt@>\z@ 
+ \count@@@=\@ne \DN@{\loop@\xycontrolpt@{\count@@@}\relax
+ \expandafter\xycvxhulldrop@\xycrvdrop@
+ \ifnum\crv@cnt@>\count@@@\advance\count@@@\@ne\repeat@ 
+ \cv@end \cv@restore }%
+ \else\DN@{\relax}\fi \next@ }
+\xylet@\xyctrlpts=\xyctrlpts@
+\xydef@\addtocrvpts@#1{\crvpts@=\expandafter{\the\crvpts@#1}}
+\xydef@\savescope@{\crvpts@={}%
+ \edef\tmp@{\expandafter\noexpand\csname cv@0\endcsname}%
+ \edef\tmp@{\noexpand\addtocrvpts@{\noexpand\def
+ \expandafter\noexpand\tmp@{\X@c=\the\X@p \Y@c=\the\Y@p}}}%
+ \tmp@ }
+\xydef@\savectrlptsnum@{%
+ \advance\crv@cnt@\@ne \edef\tmp@{%
+ \expandafter\noexpand\csname cv@\number\crv@cnt@\endcsname}%
+ \edef\tmp@{\noexpand\addtocrvpts@{\noexpand\def
+ \expandafter\noexpand\tmp@{\X@c=\the\X@c \Y@c=\the\Y@c}}}\tmp@
+ \advance\crv@cnt@\m@ne 
+ \edef\tmp@{\expandafter\noexpand\csname ptsnum@\endcsname}%
+ \edef\tmp@{\noexpand\addtocrvpts@{%
+ \noexpand\def\expandafter\noexpand\tmp@{\number\crv@cnt@}}}%
+ \tmp@ }
+\xydef@\xycvxhull@{\cv@end \cv@restore 
+ \addtocrvpts@{\def\crvconnect@{\straitconnect@}}%
+ \def\crvconnect@{\straitconnect@}%
+ \ifnum\crv@cnt@>\z@ 
+ \count@@@=\@ne\relax \DN@{\loop@\xycontrolpt@{\count@@@}\relax
+ \expandafter\xycvxhulldrop@\xycrvdrop@
+ {\expandafter\connect\xycrvconn@{}}\pfromc@
+ \ifnum\crv@cnt@>\count@@@\relax \advance\count@@@\@ne\repeat@ 
+ \cv@end }%
+ \else
+ \ifx\empty\xycrvconn@
+ \edef\xycrvconn@{\noexpand!C\noexpand\dir{\addDASH@{}}}\fi
+ \DN@{\relax}\fi \next@ 
+ {{\expandafter\connect\xycrvconn@{}}}%
+ \cv@end \cv@restore }
+\xylet@\xycvxhull=\xycvxhull@
+\xydef@\xycvxhulldrop@#1#{\drop@{#1}}
+\xydef@\savespline@{%
+\splinetrace@{savespline@:}%
+ \edef\endspline@{\endgroup 
+ \savesplineparams@ \savesplinerefs@
+ \X@min=\the\X@min\relax \X@max=\the\X@max\relax
+ \Y@min=\the\Y@min\relax \Y@max=\the\Y@max\relax
+ \ifInvisible@\noexpand\Invisible@true
+ \else\noexpand\Invisible@false\fi
+ }\endspline@ 
+ \edef\tmp@{\noexpand\addtocrvpts@{\savesplineparams@}}\tmp@
+ \xycontrolpt@\z@ \cv@end }
+\xydef@\savesplineparams@{%
+ \noexpand\def\expandafter\noexpand\xysplineedges@{\xysplineedges@}}
+\xydef@\savesplinerefs@{%
+ \noexpand\def\noexpand\xysplineparams@{%
+ \expandafter\noexpand\xysplineparams@}%
+ \noexpand\def\noexpand\xysplineedges@{%
+ \expandafter\noexpand\xysplineedges@}%
+}
+\xynew@{box}\splinebox@ 
+\xynew@{dimen}\splineval@ 
+\xynew@{dimen}\splinedepth@ 
+\xynew@{dimen}\splinetol@ 
+\xynew@{dimen}\splinelength@ 
+\xynew@{if}\ifsplinefar@
+\xynew@{if}\ifsplineplot@
+\xydef@\splinetracing{\let\splinetrace@=\W@}
+\xydef@\splineignore@#1{}
+\xylet@\splinetrace@=\splineignore@
+\xydef@\readsplineparams@{%
+ \expandafter\expandafter\expandafter\getsplineparams@\xysplineparams@
+ \expandafter\expandafter\expandafter\getsplineedges@safe\xysplineedges@ @@}
+\xydef@\getsplineedges@safe#1@@{\DN@{#1}%
+ \ifx\next@\empty \DN@{\getsplineedges@.0pt;0.0pt,0.0pt;0.0pt,}%
+ \else \DN@{\getsplineedges@safe@#1@@}\fi \next@}
+\xydef@\getsplineedges@safe@#1;#2,#3@@{\DN@{#3}%
+\splinetrace@{getsplineedges@safe}%
+ \ifx\next@\empty \DN@{\getsplineedges@#1;#2,0.0pt;0.0pt,}%
+ \else \DN@{\getsplineedges@#1;#2,#3}\fi \next@}
+\xydef@\getsplineedges@#1;#2,#3;#4,{%
+ \global\dimen@i=#1\global\dimen5=#2\relax
+ \dimen@=#3\multiply\dimen@\m@ne \advance\dimen@\splinelength@
+ \global\dimen3=\dimen@
+ \dimen@=#4\relax 
+ \ifdim\dimen@>\p@ \xywarning@{edge out-of-range: \the\dimen@}%
+ \count@=\dimen@ \divide\count@\p@
+ \advance\dimen@-\count@\p@ \multiply\dimen@\m@ne
+ \advance\dimen@ \count@\p@ \advance\dimen@\p@
+\splinetrace@{\the\dimen@}%
+ \else
+ \multiply\dimen@\m@ne \advance\dimen@\p@
+ \fi
+ \global\dimen7=\dimen@ }
+\xydef@\dimen@half{%
+ \advance\dimen@ \ifdim\dimen@<\z@-\fi 1sp \divide\dimen@\tw@}
+\xydef@\halve@dimen#1{\dimen@=#1\relax \dimen@half #1=\dimen@}
+\xydef@\dimen@nth#1#2{\dimen@=#2\relax \dimen@ii=#1sp
+ \advance\dimen@ \ifdim\dimen@<\z@-\fi.5\dimen@ii 
+ \divide\dimen@ by#1\relax #2=\dimen@}
+\xydef@\splinetolerance@#1{\dimen@=#1\relax
+ \ifdim\dimen@>\z@ \splinetol@=\dimen@
+ \else\splinetol@=.4\p@\fi}
+\xylet@\splinedefaulttol@=\relax
+\xydef@\splinetolerance#1{\splinetolerance@{#1}%
+ \edef\splinedefaulttol@{\splinetol@=\the\splinetol@}}
+\splinetolerance\z@
+\xydef@\SloppyCurves{\splinetolerance{.8\p@}}
+\xydef@\xylowtolerance@{\splinedefaulttol@
+ \ifdim\splinetol@<\p@ \divide\splinetol@\tw@ \fi}
+\xywarnifdefined\splinedrop@
+\xydef@\setstdsplinedrop@{%
+ \setbox\splinebox@=\hbox\bgroup
+ \setboxz@h{\expandafter\object\xycrvdrop@{}}%
+ \splinedefaulttol@ \dimen@=\wd\z@ \dimen@ii=\ht\z@ \advance\dimen@ii\dp\z@
+ \ifdim\dimen@ii>\dimen@ \dimen@=\dimen@ii \fi \dimen@=1.4142\dimen@
+ \ifdim\dimen@>\splinetol@ \splinetol@=\dimen@\else\dimen@=\splinetol@\fi
+ \dimen@=.5\wd\z@ 
+ \ht\z@=\z@ \dp\z@=\z@ \wd\z@=\z@ \kern-\dimen@ \Drop@@ \kern\dimen@
+ \edef\tmp@{\egroup \splinetol@=\the\splinetol@
+ \ifInvisible@\noexpand\Invisible@true
+ \else\noexpand\Invisible@false\fi}\tmp@
+ \edef\splinedefaulttol@{\splinetol@=\the\splinetol@}%
+ \def\splinedrop@{\copy\splinebox@\splineextra@@}}
+\xywarnifdefined\splineconn@
+\xydef@\stdsplineconn@{{\setsplinedir@
+ \setboxz@h\bgroup\expandafter\object\xycrvconn@{}%
+ \edef\tmp@{\egroup\L@c=\the\L@c \R@c=\the\R@c \D@c=\the\D@c \U@c=\the\U@c
+ \noexpand\def\noexpand\Drop@@}\expandafter\tmp@\expandafter{\Drop@@}%
+ \setboxz@h{\kern-\L@c \boxz@}%
+ \ht\z@=\z@ \dp\z@=\z@ \wd\z@=\z@ \Drop@@}}
+\xydef@\setcrvobjects@{\setstdsplinedrop@ \def\splineconn@{\stdsplineconn@}}
+\xylet@\splineextra@@=\relax
+\xydef@\splinenear@#1#2#3#4{{\d@X=#1\advance\d@X-#2%
+ \ifdim\d@X<\z@ \d@X=-\d@X\fi
+ \ifdim\splinetol@<\d@X \aftergroup\splinefar@true
+ \else \d@Y=#3\advance\d@Y-#4\ifdim\d@Y<\z@ \d@Y=-\d@Y\fi
+ \ifdim\splinetol@<\d@Y\aftergroup\splinefar@true
+ \else \xydist@\d@X\d@Y
+ \ifdim\splinetol@<\dimen@ \aftergroup\splinefar@true
+ \else 
+ \ifdim\dimen@<.1\splinetol@\aftergroup\splinetooclose@\fi
+ \fi\fi\fi}}
+\xydef@\splineadvance@@{\global\advance\splineval@\splinedepth@}
+\xydef@\splinetooclose@{\aftergroup\aftergroup\aftergroup\splinetooclose@@}
+\xydef@\splinetooclose@@{\def\splineplotpt@{\relax}}
+\xydef@\splinepoint@@{%
+\splinetrace@{P@:(\the\X@c,\the\Y@c)::\the\splineval@;\the\splinedepth@}%
+ {\splinetest@\ifsplineplot@\relax\else\aftergroup\splinecontinue\fi}}
+\xydef@\splinepoint@{%
+ {\splinetest@\ifsplineplot@\aftergroup\splinecontinue\fi}}
+\xylet@\splinepoint=\splinepoint@
+\xydef@\splinecontinue@{%
+ \global\let\splinepoint=\splinepoint@@
+ \global\let\splinecontinue=\splinecontinue@@}
+\xydef@\splinecontinue@@{%
+ \global\let\splinepoint=\splinepoint@
+ \global\let\splinecontinue=\relax}
+\xylet@\splinecontinue=\splinecontinue@
+\xydef@\splineknotpoint@{{\X@p=\X@c \Y@p=\Y@c \cv@start 
+ \the\Edge@c\@ne \ifInside@\else\aftergroup\splineknotpoint@@\fi}}%
+\xydef@\splineknotpoint@@{{\X@p=\X@c \Y@p=\Y@c \cv@end 
+ \the\Edge@c\@ne \ifInside@\else \aftergroup\splinepoint\fi}}%
+\xylet@\firstsplinepoint@=\splineknotpoint@
+\xylet@\lastsplinepoint@= \splineknotpoint@
+\xydef@\splined@@@{%
+\splinetrace@{finding end types}%
+\splinetrace@{bstartPLACE@:\bstartPLACE@; bendPLACE@:\bendPLACE@}%
+ \DN@{\splinescan@}\ifx\bstartPLACE@\empty
+ \ifx\bendPLACE@\relax\def\bendPLACE@{1}\fi
+ \else\ifx\bstartPLACE@\relax
+ \else\ifx\bstartPLACE@\undefined
+ \else 
+ \DN@{\splinescanbreak@}\ifx\bendPLACE@\relax\def\bendPLACE@{1}\fi
+ \DNii@{0}\ifx\bstartPLACE@\nextii@
+ \DNii@{1}\ifx\bendPLACE@\nextii@\DN@{}%
+ \fi\fi
+ \fi\fi\fi \next@ }%
+\xydef@\splineStarttest@{{\X@p=\X@c \Y@p=\Y@c \cv@start \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@false\else\aftergroup\splineplot@true\fi}}%
+\xydef@\splineEndtest@{{\X@p=\X@c \Y@p=\Y@c \cv@end \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@false\else\aftergroup\splineplot@true\fi}}%
+\xydef@\splineBreakStarttest@{{\X@p=\X@c \Y@p=\Y@c \cv@brstart \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@false\else\aftergroup\splineplot@true\fi}}%
+\xydef@\splineBreakEndtest@{{\X@p=\X@c \Y@p=\Y@c \cv@brend \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@false\else\aftergroup\splineplot@true\fi}}%
+\xylet@\splineStarttest=\splineStarttest@
+\xylet@\splineEndtest=\splineEndtest@
+\xydef@\splineSlowStarttest{{\X@p=\X@c \Y@p=\Y@c \cv@start \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@maybe@@\else\aftergroup\splineplot@true\fi}}%
+\xydef@\splineSlowEndtest{{\X@p=\X@c \Y@p=\Y@c \cv@end \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@maybe@@\else\aftergroup\splineplot@true\fi}}%
+\xydef@\splineplot@maybe{\splineplot@false}%
+\xylet@\splineplot@maybe@@=\splineplot@maybe
+\xydef@\splinescan@{\bgroup%
+ \expandafter\def\xysplineedges@{\z@;\z@,\z@;\z@,}%
+ \bgroup \cv@start 
+ \expandafter\DN@\expandafter{\the\Edge@c}\DNii@{\zeroEdge}%
+ \ifx\next@\nextii@ \gdef\splineedges@{\z@;\z@,}%
+ \else\aftergroup\splinestartScan@\fi
+ \egroup \relax
+ \bgroup \cv@end 
+ \expandafter\DN@\expandafter{\the\Edge@c}\DNii@{\zeroEdge}%
+ \ifx\next@\nextii@ 
+ \getcrvsegsnum@ \edef\segmentnum@{\the\count@}%
+ \splineval@=\z@ \splineRecordEndValue@
+ \else\aftergroup\splineendScan@\fi
+ \egroup \egroup
+ \expandafter\testsplineedges@\splineedges@;,@@%
+ \expandafter\edef\xysplineedges@{\splineedges@}%
+ \global\let\splineedges@=\relax
+\splinetrace@{edge params: \xysplineedges@}}%
+\xydef@\testsplineedges@#1;#2,#3;#4,#5@@{%
+ \DN@{#5}\ifx\next@\empty
+ \DNii@{#4}\ifx\nextii@\empty
+ \xynoedgespline@{end}\def\splineedges@{#1;#2,\z@;\z@,}\fi
+ \DNii@{#2}\ifx\nextii@\empty
+ \xynoedgespline@{start}\def\splineedges@{\z@;\z@,\z@;\z@,}\fi
+ \fi }
+\xydef@\xynoedgespline@#1{\xywarning@{#1 edge of spline not found}}%
+\xydef@\splinestartScan@{\bgroup
+\splinetrace@{scan for start}%
+ \global\let\splineadvance@=\splineadvance@@
+ \let\spline@start=\splinefindStart@
+ \let\spline@end=\spline@end@@
+ \let\splinefinish@=\splinefinish@@
+ \let\splinewhich=\relax
+ \global\splinelength@=\z@
+ \def\splinerec@{\let\splinerec@=\splineSrec@ \splinedecast@@}%
+ \edef\splineedges@{}%
+ \expandafter\let\xysplineedges@\relax
+ \xylowtolerance@ \splined@@ 
+ \ifx\splineedges@\empty\expandafter\splineslowScan@\fi
+ \ifx\splineedges@\relax\expandafter\splinenostart@\fi
+ \egroup }%
+\xydef@\splineslowScan@{%
+ \let\splineStarttest=\splineSlowStarttest 
+ \let\splinescanStarttest=\relax 
+ \def\splinerec@{\let\splinerec@=\splineSrec@ \splinedecast@@}%
+ \splined@@ }
+\xydef@\splineslowEnd@{%
+ \global\let\splineEndtest=\splineSlowEndtest 
+ \let\splinescanEndtest=\relax 
+ \def\splinerec@{\let\splinerec@=\splineErec@ \splinedecast@@}%
+ \splined@@ }
+\xydef@\splinenostart@{%
+ \def\segmentnum@{1}\splinelength@=\z@ \splineval@=\z@
+ \xynoedgespline@{start}\splineRecordValue@ }
+\xydef@\splineendScan@{\bgroup
+ \bgroup
+\splinetrace@{scan for end}%
+ \global\let\splineadvance@=\splineadvance@@
+ \let\spline@start=\splinefindEnd@
+ \let\spline@end=\spline@end@@ 
+ \let\splinefinish@=\splinefinish@@
+ \let\splinewhich=\relax
+ \global\splinelength@=\z@ 
+ \global\let\splineEndtest=\splineEndtest@ 
+ \def\splinerec@{\let\splinerec@=\splineErec@ \splinedecast@@}%
+ \expandafter\def\expandafter\prevedges@\expandafter{\splineedges@}%
+ \xylowtolerance@ \splined@@ 
+ \ifx\splineedges@\prevedges@\expandafter\splineslowScan@\fi
+ \egroup \egroup}
+\xydef@\splinescanbreak@{%
+\splinetrace@{SCANBREAK}%
+ \gdef\breakedges@{}%
+ \DN@{0}\ifx\next@\bstartPLACE@
+ \DN@{\bgroup \def\tmp@####1;####2,####3;####4,{%
+ \global\splineval@=####2\relax}%
+ \expandafter\expandafter\expandafter\tmp@\xysplineedges@
+ \def\segmentnum@{1}\splineRecordBreakValue@ \egroup}%
+ \else
+ \bgroup \cv@start 
+ \expandafter\DN@\expandafter{\the\Edge@c}\DNii@{\zeroEdge}%
+ \ifx\next@\nextii@ \aftergroup\splinezerostart
+ \else\aftergroup\splinewidestart\fi
+ \egroup 
+ \fi \next@ 
+ \DN@{1}\ifx\next@\bendPLACE@ 
+ \DN@{\bgroup \def\tmp@####1;####2,####3;####4,{%
+ \global\splineval@=####4\relax}%
+ \expandafter\expandafter\expandafter\tmp@\xysplineedges@
+%% \multiply\splineval@\m@ne \advance\splineval@\p@
+%% \def\segmentnum@{1}
+ \getcrvsegsnum@ \edef\segmentnum@{\the\count@}%
+ \global\multiply\splineval@\count@ 
+ \splineRecordEndBreakValue@ \egroup}%
+ \else
+ \bgroup \cv@end 
+ \expandafter\DN@\expandafter{\the\Edge@c}\DNii@{\zeroEdge}%
+ \ifx\next@\nextii@ \aftergroup\splinezeroend
+ \else\aftergroup\splinewideend\fi
+ \egroup 
+ \fi \next@ 
+ \expandafter\def\expandafter
+ \xybreakedges@\expandafter{\breakedges@}%
+ \global\let\breakedges@=\relax
+\splinetrace@{break params: \xybreakedges@::\bstartPLACE@--\bendPLACE@}%
+ \expandafter\let\xysplineedges@\xybreakedges@ }
+\xydef@\getcrvsegsnum@{%
+ \count@=\ptsnum@\relax \ifnum\count@>\@ne\advance\count@\m@ne\fi}
+\xydef@\splinezerostart{\DN@{\bgroup 
+\splinetrace@{splinezerostart:}%
+ \dimen@=\bstartPLACE@\p@ 
+ \global\splineval@=\dimen@ 
+ \splineRecordBreakValue@ \egroup }}
+\xydef@\splinezeroend{\DN@{\bgroup 
+\splinetrace@{splinezeroend:}%
+ \dimen@=\bendPLACE@\p@
+ \multiply\dimen@\m@ne \advance\dimen@\p@
+ \def\segmentnum@{0}\global\splineval@=\dimen@ 
+ \splineRecordEndBreakValue@ \egroup }}
+\xydef@\splinewidestart{\DN@{\bgroup 
+ \splinetrace@{scan for start}%
+ \let\splinefbcontinue@=\breakstartcontinue@
+ \let\splinef@pt=\splinef@breakpt
+ \let\splinef@end=\break@start
+ \edef\tmp@{{\bstartPLACE@}}%
+ \expandafter\splinealong@@\tmp@\z@>\endgroup\egroup }}
+\xydef@\splinewideend{\DN@{\bgroup 
+ \splinetrace@{scan for wide end}%
+ \let\splinefbcontinue@=\breakendcontinue@
+ \let\splinef@pt=\splinef@breakpt
+ \let\splinef@end=\break@end
+ \edef\tmp@{{\bendPLACE@}}%
+ \expandafter\splinealong@@\tmp@\z@<\endgroup\egroup }}
+\xydef@\splineSrec@{{%
+\splinetrace@{v=\the\splineval@ + d=\the\splinedepth@ :
+ (\the\X@p,\the\Y@p);(\the\X@c,\the\Y@c):Srec }%
+ \splineStarttest
+ \ifsplineplot@ 
+ \ifdim\splinedepth@<.0001\p@ \aftergroup\splinefinish@
+ \global\advance\splineval@ .5\splinedepth@
+ \else\aftergroup\splinedecast@@ \fi
+ \else \aftergroup\splineadvance@ \fi}}
+\xydef@\splinefindStart@@{\bgroup \bgroup 
+ \expandafter\expandafter\expandafter\getsplineparams@\xysplineparams@
+ \global\let\splineadvance@=\splineadvance@@
+ \global\let\splinepoint=\relax
+ \let\splinegoal@=\splineRecordValue@ \global\dimen5=\z@ 
+ {\X@c=\X@p \Y@c=\Y@p \splinescanStarttest }%
+} 
+\xydef@\splinefindStart@{%
+ \expandafter\crv@cnt@\xycrvptsnum@\relax
+ \ifnum\crv@cnt@>\tw@
+ \crv@cnt@=\@ne \splineplot@false \splinesegment@{\crv@cnt@}%
+ {\splineStarttest
+ \ifsplineplot@\aftergroup\splineplot@true\fi}%
+ \ifsplineplot@ \else \searchforStartsegment@ \fi 
+ \splinesegment@{\crv@cnt@}%
+\splinetrace@{start is in segment \segmentnum@}%
+ \else \splinesegment@\@ne \fi
+ \splineplot@false \splinefindStart@@
+}
+\xydef@\searchforStartsegment@{\splineplot@true\loop@ 
+ \advance\crv@cnt@\@ne 
+ \expandafter\count@\xycrvptsnum@\relax
+ \ifnum\count@=\crv@cnt@\expandafter\splineplot@false
+ \else 
+ \splinesegment@{\crv@cnt@}{\splineStarttest
+ \ifsplineplot@\aftergroup\splineplot@false
+ \else\aftergroup\splineplot@true\fi }%
+ \fi \ifsplineplot@\repeat@ 
+}
+\xydef@\splinefindEnd@@{\bgroup \bgroup
+ \expandafter\expandafter\expandafter\getsplineparams@\xysplineparams@
+\splinetrace@{params:\xysplineparams@}%
+ \splinereverse@@
+\splinetrace@{params:\xysplineparams@}%
+ \global\let\splineadvance@=\splineadvance@@
+ \global\let\splinepoint=\splinescanEndtest 
+ \let\splinegoal@=\splineRecordEndValue@ \global\dimen5=\z@ 
+ {\X@c=\X@p \Y@c=\Y@p \splinescanEndtest }%
+}
+\xydef@\splinereverse@@{\splinereverse@@@}
+\xydef@\splinereverse@@@{%
+ \def\postspline@{\d@X=-\d@X \d@Y=-\d@Y}%
+ \dimen@ii=\X@c \X@c=\X@p \X@p=\dimen@ii 
+ \dimen@ii=\Y@c \Y@c=\Y@p \Y@p=\dimen@ii 
+ \global\dimen5=-\dimen5\relax 
+ \global\advance\dimen5\splinelength@ }
+\xydef@\postspline@{}
+\xydef@\splineErec@{{%
+ \dimen@=\splineval@ \advance\dimen@\splinedepth@
+\splinetrace@{ER (\the\X@p,\the\Y@p);(\the\X@c,\the\Y@c);;;
+\the\dimen@,\the\splinedepth@}%
+ \splineEndtest
+ \ifsplineplot@ 
+ \ifdim\splinedepth@<.0001\p@ \aftergroup\splinefinish@
+ \else\aftergroup\splinedecast@@ \fi
+ \else \aftergroup\splineadvance@ \fi}}
+\xydef@\splinefindEnd@{%
+ \expandafter\crv@cnt@\xycrvptsnum@\relax 
+ \ifnum\crv@cnt@>\tw@
+ \advance\crv@cnt@\m@ne 
+ \splineplot@false \splinesegment@{\crv@cnt@}%
+ {\X@c=\X@p \Y@c=\Y@p \splineEndtest
+ \ifsplineplot@\aftergroup\splineplot@true\fi }%
+ \ifsplineplot@ 
+ \else \searchforEndsegment@ \fi 
+ \splinesegment@{\crv@cnt@}%
+\splinetrace@{end is in segment: \segmentnum@ }%
+ \else \splinesegment@\@ne \fi
+ \splineplot@false\splinefindEnd@@
+}
+\xydef@\searchforEndsegment@{\splineplot@true\loop@ 
+ \advance\crv@cnt@\m@ne 
+ \ifnum\crv@cnt@=\z@\expandafter\splineplot@false
+ \else 
+ \splinesegment@{\crv@cnt@}{\X@c=\X@p \Y@c=\Y@p \splineEndtest
+ \ifsplineplot@\aftergroup\splineplot@false
+ \else\aftergroup\splineplot@true\fi}%
+ \fi \ifsplineplot@\repeat@ 
+}
+\xydef@\splinescanStarttest{%
+\splinetrace@{SST (\the\X@c,\the\Y@c); \the\splinelength@, \the\splineval@}%
+ {\splineplot@false\splineStarttest
+ \ifsplineplot@\expandafter\splinefinish@\fi}}
+\xydef@\splinescanEndtest{%
+\splinetrace@{SET (\the\X@c,\the\Y@c); \the\splinelength@, \the\splineval@}%
+ {\splineplot@false\splineEndtest 
+ \ifsplineplot@\expandafter\splinefinish@\fi}}
+\xydef@\splineBrec@{{%
+ \dimen@=\splineval@ \advance\dimen@\splinedepth@
+\splinetrace@{BR (\the\X@p,\the\Y@p);(\the\X@c,\the\Y@c);;;
+\the\dimen@,\the\splinedepth@}%
+ \splineEndtest
+ \ifsplineplot@ \aftergroup\splineadvance@ \else
+ \ifdim\splinedepth@<.0001\p@ \aftergroup\splinefinish@
+ \else\aftergroup\splinedecast@@ \fi \fi}}
+\xydef@\splineBSrec@{{%
+\splinetrace@{SR (\the\X@p,\the\Y@p);(\the\X@c,\the\Y@c);;;
+\the\dimen@,\the\splinedepth@:SR}%
+ \splineStarttest
+ \ifsplineplot@ 
+ \ifdim\splinedepth@<.0001\p@ \aftergroup\splinefinish@
+ \global\advance\splineval@ .5\splinedepth@
+ \else \advance\splineval@\splinedepth@
+ \splinetest@ \advance\splineval@-\splinedepth@
+ \ifsplineplot@\aftergroup\splineadvance@
+ \else\aftergroup\splinedecast@@\fi
+ \fi
+ \else
+ \global\advance\splineval@\splinedepth@
+ \aftergroup\splinefinish@ \fi }}
+\xydef@\splineBErec@{{%
+ \dimen@=\splineval@ \advance\dimen@\splinedepth@
+\splinetrace@{BE (\the\X@p,\the\Y@p);(\the\X@c,\the\Y@c);;;
+ \the\dimen@,\the\splinedepth@}%
+ \splineEndtest
+ \ifsplineplot@ 
+ \ifdim\splinedepth@<.0001\p@ \aftergroup\splinefinish@
+ \global\advance\splineval@ .5\splinedepth@
+ \else \advance\splineval@\splinedepth@
+ \splinetest@ \advance\splineval@-\splinedepth@
+ \ifsplineplot@\aftergroup\splineadvance@
+ \else\aftergroup\splinedecast@@\fi
+ \fi
+ \else
+ \ifdim\splinedepth@<\p@ \global\advance\splineval@\splinedepth@ \fi
+ \aftergroup\splinefinish@ \fi }}
+\xydef@\splinef@breakpt#1{%
+ \ifdim\splineval@>\z@
+\splinetrace@{found: val=\the\splineval@;(\the\X@c,\the\Y@c)}%
+ \else
+\splinetrace@{found: val=\the\splineval@;(\the\X@p,\the\Y@p)}%
+ \fi \splinefbcontinue@ }
+\xydef@\splinef@pt@@{%
+ \ifdim\splineval@>\z@ 
+\splinetrace@{found: val=\the\splineval@;c:(\the\X@c,\the\Y@c)}%
+ \global\dimen@i=\X@c \global\dimen3=\Y@c 
+ \else
+\splinetrace@{found: val=\the\splineval@;p:(\the\X@p,\the\Y@p)}%
+ \fi
+ \setsplinedir@ \global\dimen5=\d@X \global\dimen7=\d@Y 
+ \global\splineval@=\splineval@
+ \aftergroup\splinefocus@ }
+\xydef@\findbreakwarning@#1{%
+ \xywarning@{#1 of break not found: bSTART=\bstartPLACE@, bEND=\bendPLACE@}%
+ \DN@{#1}\def\DNii@{start}\ifx\next@\nextii@\splineRecordBreakValue@
+ \else\splineRecordEndBreakValue@\fi\egroup}%
+\xydef@\breakstartcontinue@{\bgroup \cv@start
+ \expandafter\DN@\expandafter{\the\Edge@c}\DNii@{\zeroEdge}%
+ \ifx\next@\nextii@ \aftergroup\breakstartfound@
+ \else \aftergroup\breakstartcontinue@i\fi \egroup }%
+\xydef@\breakstartcontinue@i{%
+\splinetrace@{move to start edge, from (\the\X@c,\the\Y@c): val=\the\splineval@ }%
+ \global\let\splineEndtest=\splineBreakStarttest@
+ \global\let\splinetest@=\splineBreakStarttest@
+ \gdef\splinerec@{\global\let\splinerec@=\splineSrec@ \splinedecast@@}%
+ \global\let\splinepoint=\relax
+ \global\let\spline@end=\checkfoundSbreak@ 
+ \global\let\splinegoal@=\splineRecordSBreakValue@ 
+ \global\let\splinefinish@=\splinefinish@@ }
+\xydef@\breakstartfound@{%
+\splinetrace@{found start edge, at (\the\X@c,\the\Y@c): val=\the\splineval@ }%
+ \global\let\splinetest@=\splineStarttest
+ \gdef\splinerec@{\splinegoal@ \global\let\splinerec@=\splinefinish@ }%
+ \global\let\splinepoint=\relax
+ \global\let\spline@end=\relax
+ \global\let\splinegoal@=\splineRecordBreakValue@ 
+ \global\let\splinefinish@=\splinefinish@@
+ }
+\xydef@\checkfoundSbreak@{%
+ \ifnum\xycrvptsnum@<\thr@@\DN@{\findbreakwarning@{start}}%
+ \else\DN@{\searchBreakSsegment@}\fi \next@ }%
+\xydef@\searchBreakSsegment@{%
+ \crv@cnt@=\segmentnum@ \DN@{}\count@=\crv@cnt@
+ \DNii@{}\ifnum\splineval@=\z@ \ifnum\crv@cnt@=\@ne
+ \ifnum\xycrvptsnum@=\@ne\count@=\z@\DNii@{\egroup}\fi
+ \else \DN@{\egroup}\fi 
+ \else \ifnum\splineval@=\m@ne 
+ \else \advance\crv@cnt@\@ne \fi \fi
+ \ifnum\crv@cnt@=\xycrvptsnum@\relax
+ \ifnum\xycrvptsnum@>\tw@ \DNii@{\egroup}\fi
+ \DN@{\expandafter\splineRecordBreakValue@\nextii@}%
+ \else
+ \DN@{\splinesegment@{\crv@cnt@}\splinesetparams@
+ \splined@@ \egroup}%
+ \fi \next@ }
+\xydef@\checkfoundEbreak@{%
+ \ifnum\xycrvptsnum@<\thr@@\DN@{\findbreakwarning@{end}}%
+ \else\DN@{\searchBreakEsegment@}\fi \next@ }%
+\xydef@\searchBreakEsegment@{%
+ \crv@cnt@=\segmentnum@ \DN@{}\count@=\crv@cnt@
+ \DNii@{}\ifnum\splineval@=\z@ \ifnum\crv@cnt@=\@ne
+ \ifnum\xycrvptsnum@=\@ne\count@=\z@\DNii@{\egroup}\fi
+ \else\DN@{\egroup}\fi
+ \else \advance\crv@cnt@\m@ne \fi 
+ \ifnum\count@=\z@
+ \ifnum\xycrvptsnum@>\tw@ \splineval@=\m@ne\p@
+ \DNii@{\egroup}\fi
+ \DN@{\expandafter\splineRecordEndBreakValue@\nextii@}\else
+ \DN@{\splinesegment@{\crv@cnt@}\splinereverse@
+ \readsplineparams@ \splined@@ \egroup}%
+ \fi \next@ }
+\xydef@\break@start{\egroup \egroup 
+\splinetrace@{scan for start}%
+ \global\let\splineadvance@=\splineadvance@@
+ \let\spline@start=\splinefindBStart@
+ \let\spline@end=\egroup
+ \let\splinefinish@=\splinefinish@@
+ \let\splinewhich=\relax
+ \global\let\splineadvance@=\splineadvance@@
+ \global\let\splinepoint=\relax
+ \let\splinegoal@=\splineRecordBreakValue@
+ \global\dimen5=\z@ \global\splinelength@=\z@
+ \let\splinerec@=\splineSrec@ 
+ \def\breakedges@{}%
+ \bgroup \bgroup \splined@@ }
+\xydef@\splinefindBStart@{\bgroup
+ \global\splineval@=\z@ \splinedepth@=.5\p@}
+\xydef@\breakendcontinue@{\bgroup
+ \edef\tmp@{\X@p = \the\X@c \Y@p=\the\Y@c}\cv@end\tmp@
+ \expandafter\DN@\expandafter{\the\Edge@c}\DNii@{\zeroEdge}%
+ \ifx\next@\nextii@ \aftergroup\breakendfound@
+ \else\aftergroup\breakendcontinue@i\fi \egroup }%
+\xydef@\breakendcontinue@i{%
+\splinetrace@{move to end edge, from (\the\X@c,\the\Y@c): val=\the\splineval@ }%
+ \global\let\splineEndtest=\splineBreakEndtest@
+ \global\let\splinetest@=\splineBreakEndtest@
+ \gdef\splinerec@{\global\let\splinerec@=\splineErec@\splinedecast@@}%
+ \global\let\splinepoint=\relax
+ \global\let\spline@end=\checkfoundEbreak@ 
+ \global\let\splinegoal@=\splineRecordEBreakValue@ 
+ \global\let\splinefinish@=\splinefinish@@ 
+ \splinerec@ }
+\xydef@\splineRecordEBreakValue@{%
+\splinetrace@{\the\count@\space segments, \the\splineval@}%
+ \splineRecordEndBreakValue@ }
+\xydef@\splineRecordSBreakValue@{\getcrvsegsnum@
+ \dimen@=\splineval@ 
+ \advance\dimen@\segmentnum@\p@ \advance\dimen@-\p@
+ \dimen@nth\count@\dimen@
+ \global\splineval@=\dimen@ \def\segmentnum@{1}%
+ \splineRecordBreakValue@ }
+\xydef@\breakendfound@{%
+\splinetrace@{found end edge, at (\the\X@c,\the\Y@c): val=\the\splineval@ }%
+ \global\let\splinetest@=\splineEndtest
+ \gdef\splinerec@{\splinegoal@ \global\let\splinerec@=\splinefinish@}%
+ \global\let\splinepoint=\relax
+ \global\let\spline@end=\relax
+ \global\let\splinegoal@=\splineRecordEndBreakValue@ 
+ \global\let\splinefinish@=\splinefinish@@ }
+\xydef@\break@end{\egroup \egroup
+ \global\let\splineadvance@=\splineadvance@@
+ \let\spline@start=\splinefindBEnd@
+ \let\spline@end=\egroup 
+ \let\splinefinish@=\splinefinish@@
+ \let\splinewhich=\relax
+ \global\let\splineadvance@=\splineadvance@@
+ \global\let\splinegoal@=\splineRecordEndBreakValue@
+ \global\splinelength@=\z@ 
+ \let\splinerec@=\splineErec@ 
+ \global\let\splineEndtest=\splineEndtest@ 
+ \bgroup \splined@@ }
+\xydef@\splinefindBEnd@{\bgroup\bgroup 
+ \splinereverse@ \readsplineparams@ 
+ \global\splineval@=\z@ }
+\xydef@\splineRecordValue@{%
+ \ifx\unknown\segmentnum@\relax
+ \else
+ \getcrvsegsnum@ 
+ \dimen@=\splineval@ \advance\dimen@ \segmentnum@\p@
+ \advance\dimen@-\p@ \dimen@nth\count@\dimen@
+ \global\splineval@=\dimen@
+ \fi
+ \xdef\splineedges@{\splineedges@\the\splinelength@;\the\splineval@,}%
+\splinetrace@{found edge: \splineedges@}}
+\xydef@\splineRecordEndValue@{%
+ \ifx\unknown\segmentnum@\relax
+ \else
+ \getcrvsegsnum@
+ \dimen@=\splineval@ \advance\dimen@ \count@\p@
+ \advance\dimen@-\segmentnum@\p@ \dimen@nth\count@\dimen@
+ \global\splineval@=\dimen@
+ \fi
+ \xdef\splineedges@{\splineedges@\the\splinelength@;\the\splineval@,}%
+\splinetrace@{found edge: \splineedges@}}
+\xydef@\splineRecordBreakValue@{%
+ \ifx\unknown\segmentnum@\relax
+ \else\expandafter\advance\expandafter\splineval@\segmentnum@\p@
+ \count@=\segmentnum@\relax 
+ \ifnum\count@>0 \advance\splineval@-\p@ \fi\fi
+ \xdef\breakedges@{\breakedges@\the\splinelength@;\the\splineval@,}%
+ \global\let\spline@end=\egroup
+\splinetrace@{found break edge: \breakedges@}}
+\xydef@\splineRecordEndBreakValue@{%
+ \ifx\unknown\segmentnum@\relax 
+ \else\count@=\segmentnum@\relax \ifnum\count@=\z@
+ \else \getcrvsegsnum@ 
+ \count@@=\count@ \advance\count@@-\segmentnum@\relax
+ \dimen@=\splineval@ \advance\dimen@ \count@@\p@
+ \dimen@nth\count@\dimen@
+ \global\splineval@=\dimen@
+ \fi\fi
+ \ifdim\splineval@<\z@ \relax\splineval@=\z@ \fi
+ \ifx\breakedges@\relax\relax\else\ifx\breakedges@\empty\else
+ \ifdim\splineval@<\p@\relax \ifdim\splineval@>\z@ 
+ \expandafter\testbreakedges@\breakedges@ @%
+ \fi\fi\fi\fi
+ \xdef\breakedges@{\breakedges@\the\splinelength@;\the\splineval@,}%
+ \global\let\spline@end=\egroup
+\splinetrace@{found break edge: \breakedges@}}
+\xydef@\testbreakedges@#1;#2,#3@{\bgroup \dimen@=#2\relax
+ \advance\dimen@\splineval@ \advance\dimen@-\p@
+\splinetrace@{testbreak: #1;#2,#3@ \the\splineval@::\the\dimen@}%
+ \DN@{\egroup}\ifdim\dimen@>\z@
+ \edef\next@{\egroup\def\noexpand\breakedges@{#1;1pt,#3}}%
+ \else\ifdim\zz@\dimen@ 
+ \edef\next@{\egroup\def\noexpand\breakedges@{#1;1pt,#3}}%
+ \fi \fi \next@ }
+\xydef@\splineRecordBreakEValue{%
+ \ifdim\splineval@>\z@
+ \splineval@=-\splineval@ \advance\splineval@\p@ \fi
+ \splineRecordBreakValue@ }%
+\xydef@\xydist@#1#2{\ifdim#1>#2\relax
+ \quotient@@\tmp@#2#1\expandafter\dimen@ii\tmp@#2\relax
+ \ifdim\dimen@ii>.41422#1\relax
+ \dimen@=1.060665#1\advance\dimen@ .353555\dimen@ii\relax
+ \else \dimen@=#1\advance\dimen@.5\dimen@ii\fi
+ \else 
+ \quotient@@\tmp@#1#2\expandafter\dimen@ii\tmp@#1\relax
+ \ifdim\dimen@ii>.41422#2\relax
+ \dimen@=1.060665#2\advance\dimen@ .353555\dimen@ii\relax
+ \else \dimen@=#2\advance\dimen@.5\dimen@ii\fi
+ \fi}
+\xydef@\splineDadvance@{\splineadvance@@
+ \expandafter\splineDadvance@@\splineDadvance@@@}
+\xydef@\splineDadvance@@#1#2#3#4{%
+ {\d@X=#1\advance\d@X-#2\ifdim\d@X<\z@ \d@X=-\d@X\fi 
+ \d@Y=#3\advance\d@Y-#4\ifdim\d@Y<\z@ \d@Y=-\d@Y\fi
+ \xydist@\d@X\d@Y 
+ \global\advance\splinelength@\dimen@ 
+\splinetrace@{d=(\the\d@X,\the\d@Y): v=\the\splineval@: l=\the\splinelength@}%
+}}
+\xydef@\spline@end@{\lastsplinepoint@ \egroup \egroup
+ \ht\z@=\z@ \dp\z@=\z@ \wdz@=\z@ \boxz@}%
+\gdef\splinetest@{\splineplot@true}
+\xydef@\spline@end@@{\egroup \egroup}
+\xydef@\splinefrec@{{%
+ \advance\splineval@\splinedepth@
+\splinetrace@{F:(\the\X@p,\the\Y@p);(\the\X@c,\the\Y@c);;
+\the\splineval@;\the\splinedepth@}%
+ \ifdim\dimen5=\splineval@ \aftergroup\splinefinishf@ 
+ \else \dimen@=\dimen5\advance\dimen@-\splineval@
+ \ifdim\dimen@<\z@ \dimen@=-\dimen@ \fi
+ \ifdim\dimen@<.0001\p@ \aftergroup\splinefinishf@
+ \else
+ \ifdim\dimen5<\splineval@\aftergroup\splinedecast@@
+ \else \aftergroup\splineadvance@ 
+ \fi\fi\fi}}
+\xydef@\splinefinishf@{\global\advance\splineval@\splinedepth@
+ \splinefinish@}%
+\xydef@\spline@find#1#2#3{%
+\splinetrace@{spline@find #1 #2 #3}%
+ \readsplineparams@
+ \global\let\splinefinish@=\splinefinish@@
+ \global\let\splinegoal@=\splinef@pt 
+ \global\let\splinepoint=\relax
+ \dimen@=#1\relax\dimen@ii=#2\relax
+ \ifdim\dimen@ii=\z@ \def\postfind@{}%
+ \else\def\postfind@{}%
+ \ifdim\dimen@ii<\z@ \splinereverse@ 
+ \readsplineparams@ 
+\splinetrace@{reverse orientation: (\the\X@p,\the\Y@p),(\the\X@c,\the\Y@c)}%
+ \dimen@=#1\relax\dimen@ii=#2\relax
+ \multiply\dimen@\m@ne \advance\dimen@\p@ \multiply\dimen@ii\m@ne
+ \def\postfind@{\d@X=-\the\d@X \d@Y=-\the\d@Y \noexpand\reversesplineval@}%
+ \fi\fi
+ \expandafter\splinetrace@\expandafter{\xysplineparams@}%
+ \edef\next@{\noexpand\spline@@find{\the\dimen@}{\the\dimen@ii}{#3}}%
+ \next@ }
+\xydef@\reversesplineval@{\splineval@=-\splineval@ \advance\splineval@\p@ }
+\xydef@\spline@@find#1#2#3{%
+\splinetrace@{spline@@find #1 #2 #3}%
+ \let\splinerec@=\splinefrec@ 
+ \global\let\splineadvance@=\splineadvance@@
+ \dimen5=#1\relax
+ \ifdim #2=\z@\relax
+ \ifdim #1=\z@\relax \bgroup 
+ \let\splined@@=\spline@@knot
+ \global\splineval@=\m@ne\p@ 
+ \else\ifdim #1=\p@\relax \bgroup
+ \let\splined@@=\spline@@knot 
+ \global\splineval@=\z@ 
+ \else 
+ \global\splineval@=\z@ 
+ \global\let\splineadvance@=\splineadvance@@
+ \DN@{#3}\ifx\next@\empty \setsplinetest@\splineval@>{#1}{}%
+ {{\ifdim\splineval@=\dimen5\aftergroup\splineplot@false\fi}}%
+ \else\DNii@{>}\ifx\next@\nextii@
+ \setsplineundertest@\splineval@>{#1}{}{}%
+ \let\splinerec@=\splineBSrec@ 
+ \else\DNii@{<}\ifx\next@\nextii@
+ \setsplineundertest@\splineval@>{#1}{}{}%
+ \let\splinerec@=\splineBErec@ 
+ \else\xywarning@{unknown find-mode: #3}\fi\fi\fi
+ \fi\fi
+ \else 
+ \global\splineval@=\z@ 
+ \def\splineslidetest@@{%
+ \setsplinetest@\splinelength@<{#2}{}{}}%
+ \let\splinefinish@=\splinefcontinue@
+ \fi
+ \let\spline@end=\splinef@end
+ \let\splinepoint@=\relax
+ \splinelength@=\z@ 
+ \def\spline@start{\bgroup\xylowtolerance@}%
+ \splined@@ }
+\xydef@\spline@@knot{%
+ \let\setsplinedir@=\setsplineknotdir@
+ \splinesetparams@\spline@start
+ \splinedepth@=\p@
+ \global\dimen@i=\X@p \global\dimen3=\Y@p 
+ \splinefinishf@ \spline@end \egroup }
+\xydef@\splinefcontinue@{%
+\splinetrace@{sliding... from (\the\X@c,\the\Y@c): val=\the\splineval@ }%
+ \global\let\splinerec@=\splinerec@@
+ \global\splinelength@=\z@
+ \global\splineval@=\splineval@
+ \global\let\splinepoint=\splinefindtest@
+ \global\let\splinegoal@=\splinef@pt 
+ \global\let\splineadvance@=\splineDadvance@
+ \global\let\splinefinish@=\splinefinish@@ 
+ \splineslidetest@@ 
+ }
+\xydef@\splinefindtest@{%
+\splinetrace@{SFT (\the\X@c,\the\Y@c); \the\splinelength@, \the\splineval@}%
+ {\splineplot@false\splinetest@ 
+ \ifsplineplot@\expandafter\splinefinishf@\fi}}
+\def\setsplineundertest@#1#2#3#4#5{%
+\splinetrace@{setsplineundertest@: #1,#2,#3,#4,#5,}%
+ \DNii@{\gdef\splinetest@}%
+ \DN@##1\next{\def\tmp@{{\splineplot@false 
+ \ifdim#1#2##1\relax #4\else\splineplot@true#5\fi }}}%
+ \next@#3\relax\next
+ \expandafter\nextii@\tmp@ }
+\xydef@\splinef@end{\edef\tmp@{\egroup\splinelength@=\the\splinelength@}\tmp@}
+\xydef@\splinef@pt{%
+ \ifdim\splineval@>\z@ 
+\splinetrace@{found: val=\the\splineval@;c:(\the\X@c,\the\Y@c)}%
+ \global\dimen@i=\X@c \global\dimen3=\Y@c 
+ \else
+\splinetrace@{found: val=\the\splineval@;p:(\the\X@p,\the\Y@p)}%
+ \fi
+ \setsplinedir@ \global\dimen5=\d@X \global\dimen7=\d@Y 
+ \global\splineval@=\splineval@
+ \aftergroup\splinefocus@ }
+\def\setsplinetest@#1#2#3#4#5{%
+ \DNii@{\gdef\splinetest@}%
+ \DN@##1\next{\def\tmp@{{\splineplot@false \ifdim#1#2##1\relax
+ #4\else\splineplot@true#5\fi}}}%
+ \next@#3\relax\next
+ \expandafter\nextii@\tmp@ }%
+\xydef@\splinefocus@{%
+ \d@X=\dimen5\relax \d@Y=\dimen7\relax \setsplinedir@ }
+\xydef@\splinesegment@#1{}
+\xydef@\xyprecurve@{}
+\xydef@\xypostcurve@{}
+\xydef@\splineset@{%
+\splinetrace@{splineset@:}%
+ \ifx\bstartPLACE@\empty
+ \DN@{\xyprecurve@ 
+ \edef\tmp@{\egroup \X@max=\the\X@max \X@min=\the\X@min
+ \Y@max=\the\Y@max \Y@min=\the\Y@min}\tmp@ \xypostcurve@ }%
+ \else
+ \DN@{\xyprecurve@ \xysplinespecialcases@
+ \edef\tmp@{\egroup \X@max=\the\X@max \X@min=\the\X@min
+ \Y@max=\the\Y@max \Y@min=\the\Y@min}\tmp@ \xypostcurve@ }%
+ \fi
+ \next@ }
+\xydef@\xysplinespecialcases@{%
+ \ifx\empty\xycrvdrop@ 
+ \ifx\empty\xycrvconn@ \DN@{\splinesolid@}%
+ \else \DN@{ \dir{-}}\ifx\next@\xycrvconn@ \DN@{\splinesolid@}%
+ \else \DN@{ \dir 2{-}}\ifx\next@\xycrvconn@ \DN@{\splinedoubled@}%
+ \else \DN@{ \dir{=}}\ifx\next@\xycrvconn@ \DN@{\splineribboned@}%
+ \else \DN@{ \dir {2.}}\ifx\next@\xycrvconn@ \DN@{\splinedoubled@}%
+ \else \DN@{ \dir 3{-}}\ifx\next@\xycrvconn@ \DN@{\splinetrebled@}%
+ \else \DN@{ \dir {3.}}\ifx\next@\xycrvconn@ \DN@{\splinetrebled@}%
+ \else \DN@{ \dir{--}}\ifx\next@\xycrvconn@ \DN@{\splinedashed@}%
+ \else \DN@{ \dir{.}}\ifx\next@\xycrvconn@ \DN@{\splinedotted@}%
+ \else \DN@{ \dir{:}}\ifx\next@\xycrvconn@ \DN@{\splinedbldotted@}%
+ \else \ifdim\splinetol@>\z@ \else \splinedefaulttol@ \fi
+ \DN@{\splineset@@}\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi
+ \else
+ \DN@{\splineset@@}%
+ \fi \ifInvisible@\DN@{}\fi \next@ }
+\xydef@\splinesolid@{\setbox\splinebox@=\zerodot \def\xycrvdrop@{ }%
+ \def\xycrvconn@{}\splineset@@}
+\xydef@\splinedoubled@{\splinedefaulttol@\def\xycrvdrop@{ }\def\splinedrop@{}%
+ \def\xycrvconn@{!C\dir2{.}}\splineset@@}
+\xydef@\splineribboned@{\splinedefaulttol@\def\xycrvdrop@{ }\def\splinedrop@{}%
+ \def\xycrvconn@{!C\dir{:}}\splineset@@}
+\xydef@\splinetrebled@{\splinedefaulttol@\def\xycrvdrop@{ }\def\splinedrop@{}%
+ \def\xycrvconn@{!C\dir3{.}}\splineset@@}
+\xydef@\splinedashed@{\splinetol@=1.5pc \def\xycrvdrop@{ }%
+ \def\splinedrop@{}\edef\xycrvconn@{\noexpand!C\noexpand\dir{\addDASH@{}}}%
+ \splineset@@}
+\xydef@\splinedotted@{\setbox\splinebox@=\zerodot \def\xycrvdrop@{ }%
+ \splinetol@=1.5\jot \def\xycrvconn@{}\splineset@@}
+\xydef@\splinedbldotted@{\def\xycrvdrop@{ }\def\splinedrop@{}%
+ \splinetol@=1.5\jot \def\xycrvconn@{!C\dir{:}}\splineset@@}
+\xydef@\splineset@@{%
+ \readsplineparams@
+ \ifx\xycrvdrop@\empty \splinetol@=7.5\p@
+ \def\splinedefaulttol@{\splinetol@=7.5\p@}\def\splinedrop@{}%
+ \else\edef\splinedefaulttol@{\splinetol@=\the\splinetol@}\fi
+ \ifx\xycrvconn@\empty \def\splineconn@{}\fi
+\splinetrace@{set the curve: >\the\dimen5, <\the\dimen7}%
+ \global\let\splineadvance@=\splineadvance@@
+ \let\splinerec@=\splineTrec@
+ \def\splineStarttest{\splinetest@}%
+ \global\let\splinepoint=\relax
+ \let\spline@start=\spline@start@
+ \let\spline@end=\spline@end@
+ \ifdim\dimen7=\p@ 
+ \gdef\splinecontinue{\splinesetting@
+ \global\let\splinetest@=\splineplot@true}%
+ \else
+ \ifdim\dimen7=\tw@\p@
+%% \ifdim\bendPLACE@\p@=\z@ \emptyspline@ \else
+ \ifdim\bendPLACE@\p@=\p@
+ \fi
+ \else
+ \xdef\splinecontinue{\noexpand\setsplinetest@
+ \splineval@>{\the\dimen7}{\noexpand\splinebreakcancel@}{}%
+ \noexpand\splinesetting@ }%
+ \fi\fi
+ \ifdim\dimen7>\z@ \DN@{\splinesetting@\splinecontinue}%
+ \ifdim\zz@{\dimen5}%
+ \else 
+ \edef\next@{\noexpand\setsplinetest@
+ \splineval@<{\the\dimen5}{}%
+ {\noexpand\expandafter\noexpand\splinecontinue}%
+ \noexpand\splinesetting@ }%
+ \fi
+ \else\DN@{\dimen5=\p@}\fi
+ \next@
+ \ifdim\dimen5=\p@\DN@{}\else\DN@{\splined@@}\fi \next@ 
+ }
+\xydef@\emptyspline@{\xywarning@{empty curve subsegment}%
+\splinetrace@{bstartPLACE@=\bstartPLACE@, bendPLACE@=\bendPLACE@, 
+ empty segment}%
+ \gdef\splinecontinue{\splinesetting@
+ \global\let\splinetest@=\splineplot@false
+ \global\dimen5=\z@ }}
+\xydef@\splineTrec@{{%
+ \advance\splineval@\splinedepth@
+ \ifdim\dimen5=\splineval@
+ \aftergroup\splinecontinue
+ \else \dimen@=\dimen5\advance\dimen@-\splineval@
+ \ifdim\dimen@<\z@ \dimen@=-\dimen@ \fi
+ \ifdim\dimen@<.001\p@
+ \aftergroup\splinecontinue
+ \else
+ \ifdim\dimen5<\splineval@\aftergroup\splinedecast@@
+ \else \aftergroup\splineadvance@
+ \fi\fi\fi}}
+\xydef@\splinesetting@{\splinesetting@@}
+\xydef@\splinesetting@@{%
+\splinetrace@{splinesetting@@:}%
+ \ifdim\splinedepth@=\z@ \splinedepth@=\p@ \fi
+ \ifdim\splinedepth@=\p@
+ \def\splinerec@{\global\let\splinerec@=\splinerec@@\splinedecast@@}%
+ \else \global\let\splinerec@=\splinerec@@ \fi
+ \gdef\splinepoint{\splineplotpt@}}
+\xydef@\splineplotpt@{{\global\advance\dimen@i-\X@c 
+ \splinetest@ \DN@{\splineglue@}\ifsplineplot@ 
+ \DN@{\dosplineplotpt@}%
+ \fi \next@ \global\dimen@i=\X@c \global\dimen3=\Y@c }}
+\xydef@\splineglue@{\hglue-\dimen@i
+\splinetrace@{N:(\the\X@c,\the\Y@c);;\the\dimen@i;\the\dimen3%
+ ,\the\splinelength@,\the\splineval@,\the\splinedepth@}}
+\xydef@\dosplineplotpt@{\ifdim\dimen@i<\z@
+ \raise\Y@c\hbox to-\dimen@i{\hfill\splinedrop@}%
+ \else \kern-\dimen@i\raise\Y@c\hbox{\splinedrop@}\fi
+ \ifx\splineconn@\relax\else\raise\Y@c\hbox{%
+ \setboxz@h{\splineconn@}\Drop@@}\fi
+\splinetrace@{P:(\the\X@c,\the\Y@c);;\the\dimen@i;\the\dimen3
+ ,\the\splinelength@,\the\splineval@,\the\splinedepth@}}
+\xydef@\splinefinish@@{\postspline@ \splinegoal@ \splinecancel@ }
+\xydef@\splinecancel@{%
+ \global\let\splinerec@=\relax
+ \global\let\splinepoint=\relax 
+ \global\let\splinecontinue=\relax
+ \global\let\splinedecast@=\relax
+ }
+\xydef@\splinebreakcancel@{\bsplinecancel@ \splinecancel@}
+\xydef@\bsplinecancel@{\gdef\lastbspline@{\leave@\leave@}%
+ \global\let\middlebspline@=\lastbspline@ }
+\xydef@\splinegoal@{\ifdim\splineval@>\z@
+ \global\dimen@i=\X@c \global\dimen3=\Y@c \fi
+ \global\splineval@=\splineval@ \global\splinelength@=\splinelength@
+ \splinesetdir@ }
+\xylet@\splinefinish@\splinefinish@@
+\xylet@\splinewhich\splineDwhich@
+\xydef@\squinewhich@{%
+ \ifdim\dimen5>\squinelength
+ \d@X=\X@c \d@Y=\Y@c \advance\d@X-\L@c \advance\d@Y-\U@c 
+ \advance\squineval-\squinedepth 
+ \else \X@c=\X@p \Y@c=\Y@p \advance\squineval-\squinedepth
+ \d@X=\L@c \d@Y=\U@c \advance\d@X-\X@p \advance\d@Y-\Y@p \fi
+ \d@X=-\d@X \d@Y=-\d@Y
+ \squinefinish}
+\xydef@\squineDwhich@{%
+ \ifdim\dimen5>\squinelength
+ \d@X=\X@c \d@Y=\Y@c \advance\d@X-\L@c \advance\d@Y-\U@c 
+ \else \X@c=\X@p \Y@c=\Y@p \advance\squineval-\squinedepth
+ \d@X=\L@c \d@Y=\U@c \advance\d@X-\X@p \advance\d@Y-\Y@p \fi
+ \d@X=-\d@X \d@Y=-\d@Y
+ \squinefinish}
+\xydef@\xyquadbezier@{%
+ \global\let\splinerec@=\relax
+ \addtocrvpts@{\def\crvconnect@{\squineconnect@}}%
+ \xyquadmethods@ \let\splinesegment@=\squinesegment@
+ \begingroup\setcrvobjects@ \xysplineparams@ \splined@@@
+ \bgroup \setupsquine@ \squined@ \splineset@ \savespline@ }
+\xydef@\xyquadmethods@{%
+ \def\crvconnect@{\squineconnect@}%
+ \def\splinereverse@@{\splinereverse@@@}%
+ \let\getsplineparams@=\getsquineparams@
+ \let\spline@start@=\squine@start@
+ \let\splinedecast@@=\squinedecast@
+ \let\splinerec@@=\squinerec@
+ \let\splined@@=\squined@@
+ \let\splineIpt@@=\squineIpt@
+ \let\splineIadvance@@=\squineIadvance@
+ \let\splineinfo@=\squineinfo@
+ \let\setsplinedir@=\setsquinedir@
+ \let\splinetestcvxhull@=\squinetestcvxhull@
+ \let\setsplineknotdir@=\setsquineknotdir@
+ \let\splinereverse@=\squinereverse@
+ \let\splineDadvance@@@=\squineDadvance@@@
+ \let\splinesetparams@=\squinesetparams@
+ \let\splineplot@maybe@@=\squineplot@maybe
+}
+\xydef@\squineconnect@{\splineconnect@ \crvconnect@@ 
+ \let\splinesegment@=\squinesegment@ }%
+\xydef@\squinesegment@#1{\xyquadmethods@ \def\segmentnum@{1}%
+ \setupsquine@ \squined@ }
+\xydef@\setupsquine@{%
+ \xycontrolpt@\z@ \X@p=\X@c \Y@p=\Y@c
+ \xycontrolpt@\@ne \A@=\X@c \B@=\Y@c 
+ \xycontrolpt@\tw@ 
+ \ifdim \A@>\X@max
+ \dimen@=\X@p\advance\dimen@\A@ \dimen@half
+ \ifdim \dimen@>\X@max \X@max=\dimen@ \fi
+ \dimen@=\X@c\advance\dimen@\A@ \dimen@half
+ \ifdim \dimen@>\X@max \X@max=\dimen@ \fi
+ \else \ifdim \A@<\X@min 
+ \dimen@=\X@p\advance\dimen@\A@ \dimen@half
+ \ifdim \dimen@<\X@min \X@min=\dimen@ \fi
+ \dimen@=\X@c\advance\dimen@\A@ \dimen@half
+ \ifdim \dimen@>\X@min \X@min=\dimen@ \fi
+ \fi\fi
+ \ifdim \B@>\Y@max 
+ \dimen@=\Y@p\advance\dimen@\B@ \dimen@half
+ \ifdim \dimen@>\Y@max \Y@max=\dimen@ \fi
+ \dimen@=\Y@c\advance\dimen@\B@ \dimen@half
+ \ifdim \dimen@>\Y@max \Y@max=\dimen@ \fi
+ \else \ifdim \B@<\Y@min
+ \dimen@=\Y@p\advance\dimen@\B@ \dimen@half
+ \ifdim \dimen@<\Y@min \Y@min=\dimen@ \fi
+ \dimen@=\Y@c\advance\dimen@\B@ \dimen@half
+ \ifdim \dimen@>\Y@min \Y@min=\dimen@ \fi
+ \fi\fi }
+\xydef@\squinedecast@{\halve@dimen\splinedepth@
+ \R@c=\L@c \advance\L@c\X@p \halve@dimen\L@c
+ \advance\R@c\X@c \halve@dimen\R@c
+ \A@=\L@c \advance\A@\R@c \halve@dimen\A@
+ \D@c=\U@c \advance\U@c\Y@p \halve@dimen\U@c
+ \advance\D@c\Y@c \halve@dimen\D@c
+ \B@=\U@c \advance\B@\D@c \halve@dimen\B@
+ \begingroup \X@c=\A@ \Y@c=\B@ \splinerec@ \endgroup
+ \begingroup \X@c=\A@ \Y@c=\B@ \splinepoint \endgroup
+ \X@p=\A@ \L@c=\R@c \Y@p=\B@ \U@c=\D@c \splinerec@}
+\xydef@\squinerec@{{\splinefar@false \splinenear@\X@p\X@c\Y@p\Y@c 
+ \ifsplinefar@ \aftergroup\squinedecast@ 
+ \else \aftergroup\splineadvance@ \fi}}
+\xydef@\squineDadvance@@@{\X@p\L@c\Y@p\D@c}
+\xydef@\squineplot@maybe{{\X@p=\L@c \Y@p=\U@c \cv@start \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@false\else\aftergroup\splineplot@true\fi}}
+\xydef@\setsquinedir@{%
+ \d@X=\X@c \advance\d@X-\L@c \d@Y=\Y@c \advance\d@Y-\U@c 
+ \dimen@=\ifdim\d@X<\z@-\fi\d@X \ifdim\dimen@<.02\p@
+ \dimen@=\ifdim\d@Y<\z@-\fi\d@Y \ifdim\dimen@<.02\p@ 
+ \d@X=\X@c \advance\d@X-\X@p \d@Y=\Y@c \advance\d@Y-\Y@p \fi\fi
+ \ifdim\X@c=\X@p \ifdim\Y@c=\Y@p 
+ \d@X=\L@c \advance\d@X-\X@p \d@Y=\U@c \advance\d@Y-\Y@p \fi\fi
+ \setupDirection@ii } 
+\xydef@\setsquineknotdir@{%
+ \ifdim\zz@\splineval@ \expandafter \setsquinezerodir@
+ \else\expandafter \setsquinedir@ \fi } 
+\xydef@\setsquinezerodir@{%
+ \d@X=\L@c \advance\d@X-\X@p \d@Y=\U@c \advance\d@Y-\Y@p 
+ \ifdim\zz@\d@X \ifdim\zz@\d@Y 
+ \d@X=\X@c \advance\d@X-\X@p \d@Y=\Y@c \advance\d@Y-\Y@p 
+ \fi\fi \setupDirection@ii }
+\xydef@\getsquineparams@#1,#2,#3,#4,#5,#6,#7,{%
+ \splinelength@=#1\relax\X@p=#2\relax\Y@p=#3\relax
+ \A@=#4\relax\B@=#5\relax\X@c=#6\relax\Y@c=#7\relax
+}
+\xydef@\squineinfo@{%
+\expandafter\removePT@\the\X@c\space
+\expandafter\removePT@\the\Y@c\space
+\expandafter\removePT@\the\A@\space
+\expandafter\removePT@\the\B@\space
+\expandafter\removePT@\the\X@p\space
+\expandafter\removePT@\the\Y@p\space
+\expandafter\removePT@\the\dimen5\space\space
+\expandafter\removePT@\the\dimen7\space
+ }%
+\xydef@\squinereverse@{\readsplineparams@
+ \expandafter\edef\xysplineparams@{\the\splinelength@,%
+ \the\X@c,\the\Y@c,\the\A@,\the\B@,\the\X@p,\the\Y@p,}}%
+\xydef@\squine@start@{\setboxz@h\bgroup
+ \global\splinelength@=\z@ \global\dimen@i=\z@ \global\dimen3=\z@
+ \kern\X@p
+ {\squinesetparams@ \X@c=\X@p \Y@c=\Y@p \firstsplinepoint@
+ }\bgroup }
+\xydef@\squinesetparams@{%
+ \global\dimen@i=\X@p \global\dimen3=\Y@p 
+ \L@c=\A@ \U@c=\B@ \R@c=\L@c \D@c=\U@c }%
+\xydef@\squined@{%
+ \expandafter\edef\xysplineparams@{%
+ \the\z@,\the\X@p,\the\Y@p,\the\A@,\the\B@,\the\X@c,\the\Y@c,}}
+\xydef@\squined@@{%
+ \splinedepth@=\p@ 
+ \global\splineval@=\z@ 
+ \global\dimen@i=\X@p \global\dimen3=\Y@p
+ \spline@start 
+ \ifx\splinerec@\relax \let\splinerec@=\squinerec@\fi
+ \L@c=\A@ \U@c=\B@ \R@c=\L@c \D@c=\U@c 
+ \splinerec@ \spline@end }
+\xydef@\xycubicbezier@{%
+ \addtocrvpts@{\def\crvconnect@{\cubicconnect@}}%
+ \xycubicmethods@ \let\splinesegment@=\cubicsegment@
+ \begingroup \setcrvobjects@ \xysplineparams@ \splined@@@ 
+ \bgroup \setupcubic@ \cubiced@ \splineset@ \savespline@ }
+\xydef@\xycubicmethods@{%
+ \def\crvconnect@{\cubicconnect@}%
+ \def\splinereverse@@{\cubicreverse@@}%
+ \let\getsplineparams@=\getcubicparams@
+ \let\spline@start@=\cubic@start@
+ \let\splinedecast@@=\cubicdecast@
+ \let\splinerec@@=\cubicrec@
+ \let\splined@@=\cubiced@@
+ \let\splineIpt@@=\cubicIpt@
+ \let\splineIadvance@@=\cubicIadvance@
+ \let\splineoutsidehull@@=\cubicoutsidehull@
+ \let\splinetestcvxhull@=\cubictestcvxhull@
+ \let\splineinfo@=\cubicinfo@
+ \let\setsplinedir@=\setcubicdir@
+ \let\setsplineknotdir@=\setcubicknotdir@
+ \let\splinereverse@=\cubicreverse@ 
+ \let\splineDadvance@@@=\cubicDadvance@@@
+ \let\splinesetparams@=\cubicsetparams@
+ \let\splineplot@maybe@@=\cubicplot@maybe
+ }
+\xydef@\cubicconnect@{\splineconnect@ \crvconnect@@
+ \let\splinesegment@=\cubicsegment@ }%
+\xydef@\cubicsegment@#1{\xycubicmethods@ \def\segmentnum@{1}%
+ \setupcubic@ \cubiced@ }
+\xydef@\setupcubic@{%
+ \xycontrolpt@\z@ \X@p=\X@c \Y@p=\Y@c
+ \xycontrolpt@\@ne \A@=\X@c \B@=\Y@c 
+ \xycontrolpt@\tw@ \global\dimen3=\X@c \global\dimen5=\Y@c
+ \xycontrolpt@\thr@@ 
+ \adjustmaxmin@ }
+\xydef@\adjustmaxmin@{%
+ \ifdim \A@>\X@max \dimen@=\A@ \advance\dimen@\X@p \dimen@half 
+ \ifdim\dimen@>\X@max \X@max=\dimen@ \fi \else
+ \ifdim \A@<\X@min \dimen@=\A@ \advance\dimen@\X@p \dimen@half 
+ \ifdim\dimen@<\X@min \X@min=\dimen@ \fi \fi\fi
+ \ifdim \B@>\Y@max \dimen@=\B@ \advance\dimen@\Y@p \dimen@half 
+ \ifdim\dimen@>\Y@max \Y@max=\dimen@ \fi \else
+ \ifdim \B@<\Y@min \dimen@=\B@ \advance\dimen@\Y@p \dimen@half 
+ \ifdim\dimen@<\Y@min \Y@min=\dimen@ \fi \fi\fi
+ \ifdim \dimen3>\X@max \dimen@=\dimen3\advance\dimen@\X@c \dimen@half 
+ \ifdim\dimen@>\X@max \X@max=\dimen@ \fi \else
+ \ifdim \dimen3<\X@min \dimen@=\dimen3\advance\dimen@\X@c \dimen@half 
+ \ifdim\dimen@<\X@min \X@min=\dimen@ \fi \fi\fi
+ \ifdim \dimen5>\Y@max \dimen@=\dimen5\advance\dimen@\Y@c \dimen@half 
+ \ifdim\dimen@>\Y@max \Y@max=\dimen@ \fi \else
+ \ifdim \dimen5<\Y@min \dimen@=\dimen5\advance\dimen@\Y@c \dimen@half 
+ \ifdim\dimen@<\Y@min \Y@min=\dimen@ \fi \fi\fi
+ \dimen@=\A@ \advance\dimen@\dimen3 \dimen@half
+ \ifdim\dimen@>\X@max \X@max=\dimen@
+ \else \ifdim\dimen@<\X@min \X@min=\dimen@ \fi\fi
+ \dimen@=\B@ \advance\dimen@\dimen5 \dimen@half
+ \ifdim\dimen@>\Y@max \Y@max=\dimen@
+ \else \ifdim\dimen@<\Y@min \Y@min=\dimen@ \fi\fi
+}
+\xydef@\cubicdecast@{\halve@dimen\splinedepth@
+ \A@=\L@c \advance\A@\R@c \halve@dimen\A@
+ \advance\R@c\X@c \halve@dimen\R@c
+ \B@=\U@c \advance\B@\D@c \halve@dimen\B@
+ \advance\D@c\Y@c \halve@dimen\D@c
+ \advance\L@c\X@p \halve@dimen\L@c
+ \advance\U@c\Y@p \halve@dimen\U@c
+ \begingroup 
+ \X@c=\R@c \advance\X@c\L@c \halve@dimen\X@c
+ \advance\X@c\A@ \halve@dimen\X@c
+ \Y@c=\D@c \advance\Y@c\U@c \halve@dimen\Y@c
+ \advance\Y@c\B@ \halve@dimen\Y@c
+ \R@c=\L@c \advance\R@c\A@ \halve@dimen\R@c
+ \D@c=\U@c \advance\D@c\B@ \halve@dimen\D@c
+ \bgroup \splinerec@ 
+ \egroup \splinepoint \endgroup 
+ \X@p=\L@c \advance\X@p\R@c \halve@dimen\X@p
+ \advance\X@p\A@ \halve@dimen\X@p
+ \L@c=\R@c \advance\L@c\A@ \halve@dimen\L@c
+ \Y@p=\U@c \advance\Y@p\D@c \halve@dimen\Y@p
+ \advance\Y@p\B@ \halve@dimen\Y@p
+ \U@c=\D@c \advance\U@c\B@ \halve@dimen\U@c
+ \splinerec@ }
+\xydef@\cubicrec@{{\splinefar@false \splinenear@\X@p\X@c\Y@p\Y@c 
+ \ifsplinefar@ \aftergroup\cubicdecast@
+ \else \aftergroup\splineadvance@ \fi}}
+\xydef@\cubicDadvance@@@{\X@p\X@c\Y@p\Y@c}
+\xydef@\cubicplot@maybe{{\X@p=\L@c \Y@p=\U@c \cv@start \the\Edge@c\@ne 
+ \ifInside@\aftergroup\cubicplot@maybeii\else\aftergroup\splineplot@true\fi}}
+\xydef@\cubicplot@maybeii{{\X@p=\R@c \Y@p=\D@c \cv@start \the\Edge@c\@ne 
+ \ifInside@\aftergroup\splineplot@false\else\aftergroup\splineplot@true\fi}}
+\xydef@\cubiced@@{%
+ \splinedepth@=\p@ 
+ \global\splineval@=\z@ 
+ \spline@start 
+ \global\dimen@i=\X@p \global\dimen3=\Y@p
+ \splinerec@ \spline@end }
+\xydef@\setcubicdir@{%
+ \ifdim\splinedepth@<.001\p@\DN@{\cubiccoarsedir@}%
+ \else\DN@{\cubicfinedir@}\fi \next@ }
+\xydef@\cubicfinedir@{%
+ \d@X=\X@c \advance\d@X-\R@c \d@Y=\Y@c \advance\d@Y-\D@c 
+ \ifdim\zz@\d@X \ifdim\zz@\d@Y 
+ \d@X=\X@c \advance\d@X-\L@c \d@Y=\Y@c \advance\d@Y-\U@c 
+ \ifdim\zz@\d@X \ifdim\zz@\d@Y 
+ \d@X=\X@c \advance\d@X-\X@p \d@Y=\Y@c \advance\d@Y-\Y@p 
+ \fi\fi \fi\fi
+ \setupDirection@ii 
+\splinetrace@{dir:(\the\d@X,\the\d@Y),\the\Direction; depth:\the\splinedepth@}%
+} 
+\xydef@\cubiccoarsedir@{%
+ \d@X=\X@c \advance\d@X-\X@p \d@Y=\Y@c \advance\d@Y-\Y@p \setupDirection@ii
+ \global\dimen5=\d@X \global\dimen7=\d@Y
+\splinetrace@{dir:(\the\d@X,\the\d@Y),\the\Direction; depth:\the\splinedepth@}%
+}
+\xydef@\setcubicknotdir@{%
+ \ifdim\zz@\splineval@ \DN@{\setcubiczerodir@}%
+ \else \DN@{\cubicfinedir@}\fi \next@ } 
+\xydef@\setcubiczerodir@{%
+ \d@X=\L@c \advance\d@X-\X@p \d@Y=\U@c \advance\d@Y-\Y@p 
+ \ifdim\zz@\d@X \ifdim\zz@\d@Y 
+ \d@X=\R@c \advance\d@X-\X@p \d@Y=\D@c \advance\d@Y-\Y@p 
+ \ifdim\zz@\d@X \ifdim\zz@\d@Y 
+ \d@X=\X@c \advance\d@X-\X@p \d@Y=\Y@c \advance\d@Y-\Y@p 
+ \fi\fi \fi\fi \setupDirection@ii }
+\xydef@\getcubicparams@#1,#2,#3,#4,#5,#6,#7,#8,#9,{%
+ \splinelength@=#1\relax\X@p=#2\relax\Y@p=#3\relax\L@c=#4\relax
+ \U@c=#5\relax\R@c=#6\relax\D@c=#7\relax\X@c=#8\relax\Y@c=#9\relax
+}%
+\xydef@\cubicinfo@{%
+\expandafter\removePT@\the\X@p\space
+\expandafter\removePT@\the\Y@p\space
+\expandafter\removePT@\the\L@c\space
+\expandafter\removePT@\the\U@c\space
+\expandafter\removePT@\the\R@c\space
+\expandafter\removePT@\the\D@c\space
+\expandafter\removePT@\the\X@c\space
+\expandafter\removePT@\the\Y@c\space
+\expandafter\removePT@\the\dimen5\space\space
+\expandafter\removePT@\the\dimen7\space
+ }%
+\xydef@\cubicreverse@{\readsplineparams@
+ \expandafter\edef\xysplineparams@{\the\splinelength@,%
+ \the\X@c,\the\Y@c,\the\R@c,\the\D@c,\the\L@c,\the\U@c,\the\X@p,\the\Y@p,}}%
+\xydef@\cubicreverse@@{%
+ \splinereverse@@@ 
+ \dimen@ii=\L@c \L@c=\R@c \R@c=\dimen@ii 
+ \dimen@ii=\U@c \U@c=\D@c \D@c=\dimen@ii }
+\xydef@\cubic@start@{\setboxz@h\bgroup
+ \global\splinelength@=\z@ \global\dimen@i=\z@ \global\dimen3=\z@
+ \kern\X@p
+ {\cubicsetparams@ \X@c=\X@p \Y@c=\Y@p \R@c=\X@c \D@c=\Y@c
+ \firstsplinepoint@ }\bgroup 
+}
+\xydef@\cubicsetparams@{%
+ \expandafter\expandafter\expandafter\getsplineparams@\xysplineparams@
+ \global\dimen@i=\X@p \global\dimen3=\Y@p }
+\xydef@\cubiced@{%
+ \expandafter\edef\xysplineparams@{\the\z@,\the\X@p,\the\Y@p
+ ,\the\A@,\the\B@,\the\dimen3,\the\dimen5,\the\X@c,\the\Y@c,}%
+ }%
+\xydef@\xybspline@iii{%
+ \addtocrvpts@{\def\crvconnect@{\bsplineiiiconnect@}}%
+ \def\crvconnect@{\bsplineiiiconnect@}\xybsplinemethods@ 
+ \let\splinesegment@=\bsplinesegment@iii
+ \begingroup\setcrvobjects@ \dobspline@ \savespline@ }
+\xydef@\bsplineiiiconnect@{\splineconnect@ \crvconnect@@
+ \let\splinesegment@=\bsplinesegment@iii }%
+\xydef@\xybspline@iv{%
+ \addtocrvpts@{\def\crvconnect@{\bsplineivconnect@}}%
+ \def\crvconnect@{\bsplineivconnect@}\xybsplinemethods@
+ \let\splinesegment@=\bsplinesegment@iv
+ \begingroup\setcrvobjects@ \dobspline@ \savespline@ }
+\xydef@\bsplineivconnect@{\splineconnect@ \crvconnect@@
+ \let\splinesegment@=\bsplinesegment@iv }%
+\xydef@\xybspline@{%
+\splinetrace@{B-spline with \numcontrolpts\space control points.}%
+ \addtocrvpts@{\def\crvconnect@{\bsplineconnect@}}%
+ \def\crvconnect@{\bsplineconnect@}\xybsplinemethods@ 
+ \let\splinesegment@=\bsplinesegment@ 
+ \begingroup\setcrvobjects@
+ \dobspline@ \savespline@ }
+\xydef@\xybsplinemethods@{%
+ \def\splinereverse@@{\cubicreverse@@}%
+ \let\getsplineparams@=\getbsplineparams@
+ \let\spline@start@=\cubic@start@
+ \let\splinedecast@@=\cubicdecast@
+ \let\splinerec@@=\cubicrec@
+ \let\splineIpt@@=\cubicIpt@
+ \let\splineIadvance@@=\cubicIadvance@
+ \let\splined@@=\bsplined@@
+ \let\splineinfo@=\cubicinfo@
+ \let\setsplinedir@=\setcubicdir@
+ \let\setsplineknotdir@=\setcubicknotdir@
+ \let\splinereverse@=\cubicreverse@ 
+ \let\splineDadvance@@@=\cubicDadvance@@@
+ \let\splinesetparams@=\cubicsetparams@
+ \global\let\lastbspline@=\lastbspline@@
+ \global\let\middlebspline@=\middlebspline@@
+}
+\xydef@\bsplined@@{%
+ \splinedepth@=\p@ 
+ \global\splineval@=\z@ 
+ \spline@start 
+ \global\dimen@i=\X@p \global\dimen3=\Y@p
+ \splinerec@ \spline@end }
+\xydef@\bsplineconnect@{\splineconnect@ \crvconnect@@
+ \let\splinesegment@=\bsplinesegment@ }%
+\xydef@\getbsplineparams@{\getcubicparams@}
+\xydef@\dobspline@{\xysplineparams@ \scanbspline@ \firstbspline@ }%
+\xydef@\firstbspline@{%
+ \enter@{\pfromthep@ \cfromthec@}\enter@{\cfromthec@}\bgroup
+ \def\segmentnum@{1}\xycontrolpt@\z@ \X@p=\X@c \Y@p=\Y@c
+\splinetrace@{0: \the\X@p, \the\Y@p}%
+ \xycontrolpt@\@ne \A@=\X@c \B@=\Y@c 
+\splinetrace@{1: \the\X@c, \the\Y@c}%
+ \xycontrolpt@\tw@ 
+\splinetrace@{2: \the\X@c, \the\Y@c}%
+ \dimen@=\X@c \advance\dimen@\A@ \dimen@half
+ \global\dimen3=\dimen@
+ \dimen@=\Y@c \advance\dimen@\B@ \dimen@half
+ \global\dimen5=\dimen@
+ \xycontrolpt@{3}%
+\splinetrace@{3: \the\X@c, \the\Y@c}%
+ \expandafter\count@\xycrvcnt@\relax
+ \ifnum\count@=3\relax 
+ \advance\X@c-\A@ \dimen@nth4\X@c
+ \advance\X@c\dimen3\relax
+ \advance\Y@c-\B@ \dimen@nth4\Y@c
+ \advance\Y@c\dimen5\relax
+ \enter@{\X@p=\the\X@c \Y@p=\the\Y@c \crv@cnt@=\@ne\relax
+ \noexpand\lastbspline@ }%
+ \else 
+ \advance\X@c 7\dimen3 \advance\X@c-2\A@ 
+ \dimen@nth6\X@c
+ \advance\Y@c 7\dimen5 \advance\Y@c-2\B@ 
+ \dimen@nth6\Y@c
+ \enter@{\X@p=\the\X@c \Y@p=\the\Y@c \crv@cnt@=\@ne\relax
+ \noexpand\middlebspline@ }%
+ \fi \adjustmaxmin@ \czeroEdge@
+ \bsplined@ \splineset@ \leave@ }
+\xydef@\lastbspline@@{\bgroup 
+ \advance\crv@cnt@\@ne \edef\segmentnum@{\the\crv@cnt@}%
+\splinetrace@{<: \the\X@p, \the\Y@p}%
+ \advance\crv@cnt@\@ne \xycontrolpt@{\crv@cnt@}%
+ \global\dimen3=\X@c \global\dimen5=\Y@c
+\splinetrace@{\the\crv@cnt@: \the\X@c, \the\Y@c}%
+ \advance\crv@cnt@\m@ne \xycontrolpt@{\crv@cnt@}%
+\splinetrace@{\the\crv@cnt@: \the\X@c, \the\Y@c}%
+ \A@=\X@c \advance\A@\dimen3 \halve@dimen\A@
+ \B@=\Y@c \advance\B@\dimen5 \halve@dimen\B@
+ \adjustmaxmin@ \leave@ \relax \cv@end
+\splinetrace@{>: \the\X@c, \the\Y@c}%
+ \bsplined@ \splineset@ \leave@ }%
+\xylet@\lastbspline@=\lastbspline@@
+\xydef@\middlebspline@@{%
+ \advance\crv@cnt@\@ne \edef\segmentnum@{\the\crv@cnt@}%
+\splinetrace@{<: \the\X@p, \the\Y@p}%
+ \bgroup 
+ \xycontrolpt@{\crv@cnt@}\A@=2\X@c \B@=2\Y@c
+\splinetrace@{\the\crv@cnt@: \the\X@c, \the\Y@c}%
+ \advance\crv@cnt@\@ne \xycontrolpt@{\crv@cnt@}%
+\splinetrace@{\the\crv@cnt@: \the\X@c, \the\Y@c}%
+ \advance\A@\X@c \dimen@nth3\A@
+ \advance\B@\Y@c \dimen@nth3\B@
+ \advance\X@c\A@ \halve@dimen\X@c
+ \advance\Y@c\B@ \halve@dimen\Y@c
+ \global\dimen3=\X@c \global\dimen5=\Y@c 
+ \advance\crv@cnt@\@ne \xycontrolpt@{\crv@cnt@}%
+\splinetrace@{\the\crv@cnt@: \the\X@c, \the\Y@c}%
+ \expandafter\count@\xycrvcnt@\relax 
+ \ifnum\crv@cnt@<\count@\relax 
+ \advance\X@c 7\dimen3\advance\X@c-2\A@
+ \dimen@nth6\X@c
+ \advance\Y@c 7\dimen5\advance\Y@c-2\B@
+ \dimen@nth6\Y@c
+ \enter@{\X@p=\the\X@c \Y@p=\the\Y@c \crv@cnt@=\segmentnum@\relax
+ \noexpand\middlebspline@}%
+ \else 
+ \advance\X@c-\A@ \dimen@nth4\X@c
+ \advance\X@c \dimen3\relax
+ \advance\Y@c-\B@ \dimen@nth4\Y@c
+ \advance\Y@c \dimen5\relax
+ \enter@{\X@p=\the\X@c \Y@p=\the\Y@c \noexpand\lastbspline@}%
+ \fi \adjustmaxmin@ 
+ \bsplined@ \splineset@ \leave@ } 
+\xylet@\middlebspline@=\middlebspline@@
+\xydef@\scanbspline@{\splined@@@}
+\xydef@\bsplined@{\cubiced@ 
+ \expandafter\ifx\xysplineedges@\relax\relax\DN@{}%
+ \else\DN@{\adjustbsplineedges@}\fi \next@ }
+\xydef@\adjust@forsegments@{\getcrvsegsnum@ 
+ \ifnum\count@>\@ne
+\splinetrace@{adjust for \the\count@\space segments:
+ \the\dimen5, \the\dimen7}%
+ \multiply\dimen5 by \count@\relax \dimen@=\segmentnum@\p@
+ \ifnum\dimen5>\dimen@ \relax\dimen5=\p@
+ \else \advance\dimen5-\segmentnum@\p@ \advance\dimen5 by\p@ \fi
+ \ifnum\dimen5<\z@ \relax\dimen5=\z@\relax\fi
+ \multiply\dimen7 by \count@\relax
+ \dimen@=\segmentnum@\p@
+ \ifnum\dimen7<\dimen@ \advance\dimen@-\p@
+ \ifnum\dimen7>\dimen@ \advance\dimen7-\dimen@
+ \else \dimen7=\z@ \fi
+ \else \dimen7=\p@ \fi
+\splinetrace@{adjusted for \the\count@\space segments:
+ \the\dimen5, \the\dimen7}%
+ \fi}
+\xydef@\adjustbsplineedges@{\bgroup
+\splinetrace@{** adjusting edges **}%
+ \readsplineparams@ \adjust@forsegments@
+\splinetrace@{params:\xysplineparams@}%
+\splinetrace@{segment \segmentnum@:<\the\dimen5,\the\dimen7>:\xysplineedges@}%
+ \multiply\dimen7by\m@ne \advance\dimen7by\p@
+ \expandafter\edef\xysplineedges@{%
+ \noexpand\z@;\the\dimen5,\noexpand\z@;\the\dimen7,}%
+ \edef\tmp@{\egroup 
+ \noexpand\def\expandafter\noexpand\xysplineedges@{\xysplineedges@}}%
+ \tmp@ }
+\xydef@\bsegment@@ii@iii{%
+ \xycontrolpt@{\count@@}\global\dimen3=\X@c \global\dimen5=\Y@c
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \advance\count@@\@ne \xycontrolpt@{\count@@}\A@=\X@c \B@=\Y@c
+ \advance\A@ by2\dimen3 \dimen@nth3\A@
+ \advance\B@ by2\dimen5 \dimen@nth3\B@
+ \dimen@=\dimen3 \advance\dimen@ by2\X@c
+ \dimen@nth3\dimen@
+ \global\dimen3=\dimen@
+ \dimen@=\dimen5 \advance\dimen@ by2\Y@c
+ \dimen@nth3\dimen@
+ \global\dimen5=\dimen@
+\splinetrace@{<: \the\dimen3, \the\dimen5}%
+\splinetrace@{>: \the\A@, \the\B@}%
+ \advance\count@@\m@ne }
+\xydef@\bsegment@@i{\bgroup
+ \advance\count@@\m@ne \xycontrolpt@{\count@@}%
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \edef\tmp@{\egroup \X@p=\the\X@c \Y@p=\the\Y@c}\tmp@
+ \advance\X@p-2\dimen3\advance\X@p by7\A@
+ \dimen@nth6\X@p
+ \advance\Y@p-2\dimen5\advance\Y@p by7\B@ 
+ \dimen@nth6\Y@p
+}
+\xydef@\bsegment@@iv{%
+ \advance\count@@\tw@ \xycontrolpt@{\count@@}%
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \advance\X@c by7\dimen3\advance\X@c-2\A@ 
+ \dimen@nth6\X@c
+ \advance\Y@c by7\dimen5\advance\Y@c-2\B@ 
+ \dimen@nth6\Y@c
+\splinetrace@{>>: \the\X@c, \the\Y@c }%
+}
+\xydef@\bsegment@@ii@i{\bgroup
+ \advance\count@@\m@ne \xycontrolpt@{\count@@}%
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \edef\tmp@{\egroup \X@p=\the\X@c \Y@p=\the\Y@c}\tmp@
+ \advance\X@p-\dimen3\advance\X@p by4\A@ 
+ \dimen@nth4\X@p
+ \advance\Y@p-\dimen5\advance\Y@p by4\B@ 
+ \dimen@nth4\Y@p
+\splinetrace@{<<: \the\X@p, \the\Y@p}%
+}
+\xydef@\bsegment@@y@iv{%
+ \advance\count@@\tw@ \xycontrolpt@{\count@@}%
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \advance\X@c by4\dimen3\advance\X@c-\A@ 
+ \dimen@nth4\X@c
+ \advance\Y@c by4\dimen5\advance\Y@c-\B@ 
+ \dimen@nth4\Y@c
+}
+\xydef@\bsegment@i{%
+ \xycontrolpt@\z@ \X@p=\the\X@c \Y@p=\the\Y@c
+\splinetrace@{0: \the\X@p \the\Y@p}%
+ \xycontrolpt@\@ne
+\splinetrace@{1: \the\X@c, \the\Y@c}\A@=\X@c \B@=\Y@c 
+ \xycontrolpt@\tw@
+ \dimen@=\X@c \advance\dimen@\A@ \dimen@half
+ \global\dimen3=\dimen@
+\splinetrace@{2: \the\X@c, \the\Y@c}%
+ \dimen@=\Y@c \advance\dimen@\B@ \dimen@half
+ \global\dimen5=\dimen@ }
+\xydef@\bsegment@i@iv{%
+ \xycontrolpt@{3}%
+\splinetrace@{3: \the\X@c, \the\Y@c}%
+ \advance\X@c by7\dimen3\advance\X@c-2\A@ 
+ \dimen@nth6\X@c
+ \advance\Y@c by7\dimen5\advance\Y@c-2\B@ 
+ \dimen@nth6\Y@c
+ }
+\xydef@\bsegment@z{%
+ \expandafter\count@@\xycrvptsnum@ \advance\count@@\@ne 
+ \xycontrolpt@{\the\count@@}\relax
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \advance\count@@\m@ne
+ \bgroup
+ \xycontrolpt@{\the\count@@}%
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \global\dimen3=\X@c \global\dimen5=\Y@c
+ \advance\count@@\m@ne \xycontrolpt@{\the\count@@}%
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \A@=\X@c \advance\A@\dimen3 \halve@dimen\A@
+ \B@=\Y@c \advance\B@\dimen5 \halve@dimen\B@
+ \edef\tmp@{\egroup \A@=\the\A@ \B@=\the\B@ \count@@=\the\count@@}%
+ \tmp@ }
+\xydef@\bsegment@z@i{%
+ \expandafter\count@@\xycrvptsnum@\relax\advance\count@@-\tw@ 
+ \bgroup
+ \xycontrolpt@{\count@@}\X@p=\the\X@c \Y@p=\the\Y@c
+\splinetrace@{\the\count@@: \the\X@c, \the\Y@c}%
+ \advance\X@p by7\A@ \advance\X@p-2\dimen3 \dimen@nth6\X@p
+ \advance\Y@p by7\B@ \advance\Y@p-2\dimen5 \dimen@nth6\Y@p
+ \edef\tmp@{\egroup \X@p=\the\X@p \Y@p=\the\Y@p}%
+ \tmp@ }
+\xydef@\bsplinesegment@#1{\xybsplinemethods@ 
+ \count@@=#1\relax 
+ \ifnum\count@@=\@ne
+ \bsegment@i \bsegment@i@iv
+ \else\ifnum\count@@=\tw@
+ \bsegment@@ii@iii \bsegment@@ii@i \bsegment@@iv
+ \else\expandafter\count@\xycrvptsnum@\advance\count@\m@ne
+ \ifnum\count@@=\count@
+ \bsegment@z \bsegment@z@i 
+ \else\advance\count@\m@ne
+ \ifnum\count@@=\count@
+ \bsegment@@ii@iii \bsegment@@i \bsegment@@y@iv
+ \else
+ \bsegment@@ii@iii \bsegment@@i \bsegment@@iv
+ \fi\fi\fi\fi 
+ \expandafter\def\expandafter\segmentnum@\expandafter{\number#1}%
+ \bsplined@ }
+\xydef@\bsplinesegment@iii#1{\xybsplinemethods@ 
+\splinetrace@{2 segments; \number#1}%
+ \count@@=#1\relax 
+ \ifnum\count@@=\@ne \bsegment@i 
+ \xycontrolpt@{3}%
+\splinetrace@{3: \the\X@c, \the\Y@c}%
+ \advance\X@c 4\dimen3\advance\X@c-\A@ 
+ \dimen@nth4\X@c
+ \advance\Y@c 4\dimen5\advance\Y@c-\B@ 
+ \dimen@nth4\Y@c
+ \else\ifnum\count@@=\tw@ \bsegment@z 
+ \bgroup\xycontrolpt@{\@ne}%
+\splinetrace@{1: \the\X@c, \the\Y@c}%
+ \edef\tmp@{\egroup \X@p=\the\X@c \Y@p=\the\Y@c}\tmp@
+ \advance\X@p 4\A@ \advance\X@p-\dimen3
+ \dimen@nth4\X@p
+ \advance\Y@p 4\B@ \advance\Y@p-\dimen5
+ \dimen@nth4\Y@p
+ \fi\fi
+ \expandafter\def\expandafter\segmentnum@\expandafter{\number#1}%
+ \bsplined@ }
+\xydef@\bsplinesegment@iv#1{\xybsplinemethods@ 
+\splinetrace@{3 segments; \number#1}%
+ \count@@=#1\relax
+ \ifnum\count@@=\@ne \bsegment@i \bsegment@i@iv
+ \else\ifnum\count@@=\tw@
+ \bsegment@@ii@iii \bsegment@@ii@i \bsegment@@y@iv
+ \else\ifnum\count@@=3\relax
+ \bsegment@z \bsegment@z@i
+ \fi\fi\fi 
+ \expandafter\def\expandafter\segmentnum@\expandafter{\number#1}%
+ \bsplined@ }
+\message{circles,}
+\xydef@\Circmagic@@{0.5517847}
+\xylet@\Circmagic=\Circmagic@@
+\xydef@\twoPi@{6.2831852}
+\xydef@\fullPi@{3.1415926}
+\xydef@\halfPi@{1.5707963}
+\xynew@{dimen}\L@
+\xydef@\xycircle#1#{\hbox\bgroup\afterVECTORorEMPTY{%
+ \xy@@{\R@=\X@c \L@=\Y@c}\xycircle@}{\xy@@{\R@=\R@c \L@=\L@c}\xycircle@}#1@}
+\xydef@\xycircle@#1@#2{%
+ \DN@{#1}\ifx\next@\empty\def\onlyQuad@{}\else \count@=#1\relax 
+ \ifnum\count@<5 \advance\count@-3\relax 
+ \ifnum\count@<\z@ \advance\count@ 4\relax\fi \edef\onlyQuad@{\the\count@}%
+ \else\xyerror@{illegal circle <radius>: must be <vector> or <empty>}{}\fi
+ \fi \xy@@{\def\circleSTYLE@{#2}}\def\circleSTYLE@{#2}\xycircle@i}
+\xydef@\xycircle@i{\hbox{\vbox{\vskip\L@
+ \hbox to2\R@{\hfill \buildcircle@ \hfill}\vskip\L@ }}%
+ \L@c=\R@ \R@c=\R@ \D@c=\L@ \U@c=\L@ \def\Leftness@{.5}\def\Upness@{.5}%
+ \def\Drop@@{\styledboxz@}\def\Connect@@{\straight@\relax}\Edge@c={\circleEdge}%
+ \OBJECT@x}
+\xydef@\adjustMinMaxcirc@#1#2{%
+ \dimen@=\X@c \advance\dimen@#1\relax\ifdim\dimen@>\X@max \X@max=\dimen@\fi
+ \dimen@=\X@c \advance\dimen@-#1\relax\ifdim\dimen@<\X@min \X@min=\dimen@\fi
+ \dimen@=\Y@c \advance\dimen@#2\relax\ifdim\dimen@>\Y@max \Y@max=\dimen@\fi
+ \dimen@=\Y@c \advance\dimen@-#2\relax\ifdim\dimen@<\Y@min \Y@min=\dimen@\fi
+}
+%% \cubicCircleControls@@ 
+\xydef@\cubicCircleControls@@{\X@origin=\z@ \Y@origin=\z@
+ \X@xbase=\R@ \Y@xbase=\z@ \X@ybase=\z@ \Y@ybase=\L@
+ \vfromcartesian@@1,0@\czeroEdge@\idfromc@{0@c}%
+ \vfromcartesian@@0,1@\czeroEdge@\idfromc@{1@c}%
+ \vfromcartesian@@-1,0@\czeroEdge@\idfromc@{2@c}%
+ \vfromcartesian@@0,-1@\czeroEdge@\idfromc@{3@c}%
+ \vfromcartesian@@1,\Circmagic@@ @\czeroEdge@\idfromc@{1@m}%
+ \vfromcartesian@@\Circmagic@@,1@\czeroEdge@\idfromc@{2@m}%
+ \vfromcartesian@@-\Circmagic@@,1@\czeroEdge@\idfromc@{3@m}%
+ \vfromcartesian@@-1,\Circmagic@@ @\czeroEdge@\idfromc@{4@m}%
+ \vfromcartesian@@-1,-\Circmagic@@ @\czeroEdge@\idfromc@{5@m}%
+ \vfromcartesian@@-\Circmagic@@,-1@\czeroEdge@\idfromc@{6@m}%
+ \vfromcartesian@@\Circmagic@@,-1@\czeroEdge@\idfromc@{7@m}%
+ \vfromcartesian@@1,-\Circmagic@@ @\czeroEdge@\idfromc@{8@m}%
+ }
+\xydef@\doCircleQuadrant@@#1#2{\save@ \ifcase#2\relax
+ \doCircleQuadrant@@@{0@c}{1@m}{2@m}{1@c}{#1}\or
+ \doCircleQuadrant@@@{1@c}{3@m}{4@m}{2@c}{#1}\or
+ \doCircleQuadrant@@@{2@c}{5@m}{6@m}{3@c}{#1}\or
+ \doCircleQuadrant@@@{3@c}{7@m}{8@m}{0@c}{#1}\or
+ \doCircleQuadrant@@@{0@c}{1@m}{2@m}{1@c}{#1}\or
+ \doCircleQuadrant@@@{1@c}{3@m}{4@m}{2@c}{#1}\or
+ \doCircleQuadrant@@@{2@c}{5@m}{6@m}{3@c}{#1}\or
+ \doCircleQuadrant@@@{3@c}{7@m}{8@m}{0@c}{#1}\fi \leave@ }
+\xydef@\doCircleQuadrant@@@#1#2#3#4#5{%
+ \cfromid@{#1}\pfromc@\senter@
+ \cfromid@{#2}\spushc@\cfromid@{#3}\spushc@\cfromid@{#4}%
+ \let\bstartPLACE@=\empty \connect@\crvs{#5}\relax\sinit@\sleave@
+ \resetbreaks@}
+\xydef@\dosolidcircle@#1{%
+ \cubicCircleControls@@ 
+ \doCircleQuadrant@@{#1}1 \relax\Clast@@
+ \doCircleQuadrant@@{#1}2 \relax\Clast@@
+ \doCircleQuadrant@@{#1}3 \relax\Clast@@
+ \doCircleQuadrant@@{#1}4 \relax\Clast@@}%
+\xydef@\solidcircle@{\dosolidcircle@@}
+\xylet@\dosolidcircle@@=\dosolidcircle@
+\xydef@\circledobjects@{\cubicCircleControls@@ 
+ \setboxz@h{\expandafter\object\circleSTYLE@{}}%
+ \ifdim\L@>\R@ \dimen@ii=\ht\z@ \advance\dimen@ii \dp\z@
+ \ifdim\zz@\dimen@ii \dimen@ii=\wdz@\fi
+ \else \dimen@ii=\wdz@ 
+ \ifdim\zz@\dimen@ii \dimen@ii=\ht\z@ \advance\dimen@ii \dp\z@\fi
+ \fi \ifdim\zz@\dimen@ii \dimen@ii=2\jot\fi
+ \expandafter\dimen@\ifdim\L@>\R@ \twoPi@\L@\else \twoPi@\R@\fi
+ \advance\dimen@.5\dimen@ii
+ \count@@=\dimen@ \count@=\dimen@ii \divide\count@@\count@
+ \edef\numobjects{\the\count@@}\dimen@=4\p@
+ \dimen@nth\numobjects\dimen@
+ \edef\circleseparation@{\expandafter\removePT@\the\dimen@}%
+ \edef\circleplace@{-\circleseparation@}\placeQuadrants@}%
+\xydef@\placeQuadrants@{\DN@{\placeAllQuadrants@}%
+ \ifx\onlyQuad@\undefined\else\ifx\onlyQuad@\empty\else
+ \DN@{\expandafter\placeCircQuadrant@\expandafter{\onlyQuad@}}%
+ \fi\fi \next@ }%
+\xydef@\placeAllQuadrants@{%
+ \placeCircQuadrant@{1}%
+ \advance\dimen@-\p@\advance\dimen@-\circleseparation@\p@
+ \edef\circleplace@{\expandafter\removePT@\the\dimen@}%
+ \placeCircQuadrant@{2}%
+ \advance\dimen@-\p@\advance\dimen@-\circleseparation@\p@
+ \edef\circleplace@{\expandafter\removePT@\the\dimen@}%
+ \placeCircQuadrant@{3}%
+ \advance\dimen@-\p@\advance\dimen@-\circleseparation@\p@
+ \edef\circleplace@{\expandafter\removePT@\the\dimen@}%
+ \placeCircQuadrant@{4}}
+\xydef@\placeCircQuadrant@#1{%
+ \let\bstartPLACE@=\relax \doCircleQuadrant@@{}#1%
+ \loop@
+ \expandafter\dimen@\circleplace@\p@
+ \advance\dimen@\circleseparation@\p@
+ \edef\circleplace@{\expandafter\removePT@\the\dimen@}%
+ \ifdim\dimen@<\p@ \placeCircObject@
+ \repeat@ }
+\xydef@\placeCircObject@{\begingroup
+ \crvconnect@@ \Creset@@ \Invisible@false
+ \expandafter\splinealong@\expandafter{\circleplace@}%
+ \expandafter\drop\circleSTYLE@{}\endgroup }
+\xydef@\buildcircle@{\save@
+ \DNii@{\circledobjects@}%
+ \ifx\circleSTYLE@\empty\DNii@{\solidcircle@{}}%
+ \else \expandafter\DN@\expandafter{\addDASH@{}}\relax
+ \ifx\next@\circleSTYLE@ \DNii@{\solidcircle@{}}%
+ \else \expandafter\DN@\expandafter{\addEQ@{}}%
+ \ifx\next@\circleSTYLE@ 
+ \expandafter\circletemplate@\expandafter{\addEQ@{}}{}%
+ \else \expandafter\DN@\expandafter{\addDASH@ 2}%
+ \ifx\next@\circleSTYLE@ \DNii@{\doublecircle@{}}%
+ \else \expandafter\DN@\expandafter{\addDASH@ 3}%
+ \ifx\next@\circleSTYLE@ \DNii@{\triplecircle@{}}%
+ \else \expandafter\expandafter\expandafter\DN@\expandafter\expandafter
+ \expandafter{\expandafter\addDASH@\addDASH@{}}%
+ \ifx\next@\circleSTYLE@ \DNii@{\dashedcircle@{}}%
+ \else \expandafter\expandafter\expandafter\DN@\expandafter\expandafter
+ \expandafter{\expandafter\addEQ@\addEQ@{}}%
+ \ifx\next@\circleSTYLE@ \expandafter\expandafter\expandafter
+ \circletemplate@\expandafter\expandafter\expandafter{%
+ \expandafter\addEQ@\addEQ@{}}2%
+ \else \expandafter\expandafter\expandafter\DN@\expandafter\expandafter
+ \expandafter{\expandafter\addEQ@\addEQ@2}%
+ \ifx\next@\circleSTYLE@ \expandafter\expandafter\expandafter
+ \circletemplate@\expandafter\expandafter\expandafter{%
+ \expandafter\addEQ@\addEQ@{}}2%
+ \else \expandafter\expandafter\expandafter\DN@\expandafter\expandafter
+ \expandafter{\expandafter\addEQ@\addEQ@3}%
+ \ifx\next@\circleSTYLE@ \expandafter\expandafter\expandafter
+ \circletemplate@\expandafter\expandafter\expandafter{%
+ \expandafter\addEQ@\addEQ@{}}3%
+ \else \expandafter\DN@\expandafter{\addDOT@{}}\relax
+ \ifx\next@\circleSTYLE@ \DNii@{\dottedcircle@{}}%
+ \else \expandafter\DN@\expandafter{\addDOT@2}\relax
+ \ifx\next@\circleSTYLE@ \DNii@{\dbldottedcircle@{}}%
+ \else \expandafter\DN@\expandafter{\addDOT@3}\relax
+ \ifx\next@\circleSTYLE@ \DNii@{\trpldottedcircle@{}}%
+ \else \DN@{:}\relax
+ \ifx\next@\circleSTYLE@ \DNii@{\dbldottedcircle@{}}%
+ \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi \nextii@ \leave@}
+\xydef@\circletemplate@#1#2{\def\circleSTYLE@{\dir#2{#1}}}
+\xydef@\doublecircle@#1{%
+ \advance\R@-\p@ \advance\L@-\p@ \solidcircle@{}%
+ \advance\R@ 2\p@ \advance\L@ 2\p@ \solidcircle@{}}
+\xydef@\triplecircle@#1{%
+ \advance\R@-2\p@ \advance\L@-2\p@ \solidcircle@{}%
+ \advance\R@ 2\p@ \advance\L@ 2\p@ \solidcircle@{}%
+ \advance\R@ 2\p@ \advance\L@ 2\p@ \solidcircle@{}}
+\xydef@\dottedcircle@#1{%
+ \expandafter\def\expandafter\circleSTYLE@\expandafter{%
+ \zerodot@i}%
+ \circledobjects@}
+\xydef@\dashedcircle@#1{%
+ \expandafter\def\expandafter\circleSTYLE@\expandafter{\zerodash@i}%
+ \circledobjects@}
+\xydef@\dbldottedcircle@#1{%
+ \advance\R@-\p@ \advance\L@-\p@ \dottedcircle@{}%
+ \advance\R@ 2\p@ \advance\L@ 2\p@ \dottedcircle@{}}
+\xydef@\trpldottedcircle@{%
+ \advance\R@-2\p@ \advance\L@-2\p@ \dottedcircle@{}%
+ \advance\R@ 2\p@ \advance\L@ 2\p@ \dottedcircle@{}%
+ \advance\R@ 2\p@ \advance\L@ 2\p@ \dottedcircle@{}}
+{\xyuncatcodes \gdef\next{=<.75\jot>{\zerodot}}}
+\xylet@\zerodot@i=\next
+{\dimen0=2\xydashl@ \xyuncatcodes 
+\expandafter\gdef\expandafter\next\expandafter{\expandafter
+ =\expandafter<\the\dimen0 >_\dir{|}}}
+\xylet@\zerodash@i=\next
+{\xyuncatcodes\gdef\next{--}}
+\xylet@\dashcorntemp@@=\next
+{\xyuncatcodes\gdef\next{.}}
+\xylet@\dotcorntemp@@=\next
+\xydef@\dotcorner@#1{%
+ \expandafter\circleCorner@\expandafter{\dotcorntemp@@}{#1}}%
+\xydef@\dashcorner@#1{%
+ \expandafter\circleCorner@\expandafter{\dashcorntemp@@}{#1}}
+\xydef@\circleCorner@#1#2{\setboxz@h\bgroup 
+ \edef\next{#2\relax\R@=\the\R@\relax\L@=\R@ }%
+ \expandafter\xycircle@\next @{#1}%
+ \ifcase#2\or \setboxz@h{\lower\R@\boxz@\kern\X@c}%
+ \or \setboxz@h{\kern-\R@\lower\R@\boxz@\kern\R@\kern\X@c}%
+ \or \setboxz@h{\kern-\R@\lower\R@\boxz@\kern\R@\kern\X@c}%
+ \or \setboxz@h{\lower\R@\boxz@\kern\X@c}\fi
+ \wdz@=\R@ \ht\z@=\R@ \dp\z@=\R@ \boxz@
+ }
+\xydef@\qspline{\hbox\bgroup\crvresetbreaks@ \xy@spline@}
+\xydef@\xy@spline@#1#{\if\sempty@ \DN@{\crvs@{}\resetbreaks@}%
+ \else\DN@{\xy@spline@i{#1}}\fi \next@ }%
+\xydef@\xy@spline@i#1#2{\def\splineSTYLE@{#2}%
+ \DN@{\xy@spline@ii}\DNii@{#1}%
+ \ifx\nextii@\empty\DN@{\xy@spline@ii@@}\fi \next@ }
+\xydef@\xy@spline@ii{\save@ \cfromp@\idfromc@{@p}%
+ \enter@\cplusthec@ \count@@=\s@top\advance\count@@\m@ne
+ \cfroms@{\count@@}\leave@
+ \halve@dimen\X@c
+ \halve@dimen\Y@c
+ \czeroEdge@ \idfromc@{@c}%
+ \expandafter\doSplineStraight@\expandafter{\splineSTYLE@}%
+ \count@=\@ne \edef\next@{\the\count@}%
+ \ifx\next@\s@top\DN@{\xy@spline@iv}\else\DN@{\xy@spline@iii}\fi 
+ \next@ }
+\xylet@\xy@spline@ii@@=\xy@spline@ii
+\xydef@\xy@spline@iii{\crv@cnt@=\s@top 
+ \loop \advance\crv@cnt@\m@ne \xy@spline@g \ifnum\crv@cnt@>\@ne\repeat
+ \xy@spline@iv}
+\xydef@\xy@spline@g{\cfromid@{@c}\idfromc@{@p}%
+ \count@@=\crv@cnt@\cfroms@{\count@@}\idfromc@{@m}%
+ \enter@\cplusthec@ \count@@=\crv@cnt@ \advance\count@@\m@ne
+ \cfroms@{\count@@}\leave@
+ \halve@dimen\X@c
+ \halve@dimen\Y@c
+ \czeroEdge@\idfromc@{@c}%
+ \expandafter\doSplineSegment@\expandafter{\splineSTYLE@}}
+\xydef@\xy@spline@iv{\cfromid@{@c}\idfromc@{@p}%
+ \cfroms@{\z@}\idfromc@{@m}\leave@ \save@
+ \enter@\cplusthec@ \cfromid@{@m}\leave@
+ \halve@dimen\X@c
+ \halve@dimen\Y@c
+ \czeroEdge@\idfromc@{@c}%
+ \expandafter\doSplineSegment@\expandafter{\splineSTYLE@}%
+ \xy@spline@v }
+\xydef@\xy@spline@v{\cfromid@{@c}\idfromc@{@p}%
+ \leave@ \save@ \idfromc@{@c}%
+ \expandafter\doSplineStraight@\expandafter{\splineSTYLE@}%
+ \xy@spline@x }
+\xydef@\xy@spline@x{\leave@ 
+ \def\Drop@@{\splineDrop@ \resetbreaks@}%
+ \def\Connect@@{\straight@\relax\splineConnect@ \resetbreaks@}%
+ \OBJECT@x}
+\xydef@\splineDrop@{\ifInvisible@\setboxz@h{}%
+ \else\setboxz@h{\kern-\the\X@c\raise-\the\Y@c\hbox{\styledboxz@}}\fi
+ \wdz@=\z@ \ht\z@=\z@ \dp\z@=\z@ \boxz@ }
+\xydef@\splineConnect@{%
+ \ifInvisible@\else\box\lastobjectbox@\fi }%
+\xydef@\doSplineStraight@#1{\begingroup \sinit@
+ \cfromid@{@p}\pfromc@\cfromid@{@c}%
+ \connect@\crvs{#1}\relax\sleave@\endgroup }
+\xydef@\doSplineSegment@#1{\begingroup \sinit@
+ \cfromid@{@p}\pfromc@\senter@\cfromid@{@m}\spushc@\cfromid@{@c}%
+ \connect@\crvs{#1}\relax\sinit@\sleave@\endgroup }
+\xyendinput

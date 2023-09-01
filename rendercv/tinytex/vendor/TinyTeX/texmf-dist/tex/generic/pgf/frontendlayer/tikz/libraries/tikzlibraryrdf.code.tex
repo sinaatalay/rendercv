@@ -1,0 +1,291 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibraryrdf.code.tex}
+
+
+
+\def\tikz@add@rdf@pre@option#1{\expandafter\def\expandafter\tikz@rdf@pre@options\expandafter{\tikz@rdf@pre@options#1}}%
+\def\tikz@add@rdf@post@option#1{\expandafter\def\expandafter\tikz@rdf@post@options\expandafter{\tikz@rdf@post@options#1}}%
+
+\let\tikz@rdf@pre@options\pgfutil@empty
+\let\tikz@rdf@post@options\pgfutil@empty
+
+\tikzset{
+  %
+  % Switching on the engine
+  %
+  rdf engine on/.code={%
+    \def\tikz@clear@rdf@options{\let\tikz@rdf@pre@options\pgfutil@empty\let\tikz@rdf@post@options\pgfutil@empty}%
+    \def\tikz@do@rdf@pre@options{\tikz@rdf@pre@options\let\tikz@rdf@pre@options\pgfutil@empty}%
+    \def\tikz@do@rdf@post@options{\tikz@rdf@post@options\let\tikz@rdf@post@options\pgfutil@empty}%
+    \pgfkeys{/tikz/rdf engine/.code=\tikz@add@rdf@pre@option{\pgfqkeys{/tikz/rdf engine}{##1}}}%
+  },
+  rdf engine/.cd,
+  %
+  every statement/.style=,
+  %
+  % Namespaces
+  %
+  prefix/.code=\pgfrdfprefix{#1},
+  %
+  % Core commands
+  %
+  statement/.code={%
+    {%
+      \pgfkeys{/tikz/rdf engine/every statement}%
+      \pgfqkeys{/tikz/rdf engine/statements}{#1}%
+      \iftikz@rdf@is@a@container\tikz@rdf@init@container\fi%
+      \iftikz@rdf@is@a@member\tikz@rdf@make@member\fi%
+      \tikz@rdf@make@triple%
+    \expandafter}\tikz@rdf@action%
+  },
+  get scope curie/.code={%
+    \ifx\tikz@id@name\pgfutil@empty%
+      \def\tikz@id@name{@rdf}%
+    \fi%
+    \pgfidrefnextuse\tikz@temp{\tikz@id@name}%
+    \edef#1{\tikzrdfhashmark\tikz@temp}%
+  },
+  get new resource curie/.code={%
+    \pgfsys@new@id\tikz@temp%
+    \edef#1{\tikzrdfhashmark\tikz@temp}%
+  },
+  scope is new context/.style={get scope curie=\tikzrdfcontext}
+}%
+
+\def\tikzrdfcontext{\tikzrdfhashmark}%empty by default
+
+\tikzset{
+  rdf engine/statements/.cd,
+  %
+  % Core properties of statements
+  %
+  subject/.code={%
+    \def\tikz@rdf@target{\tikz@rdf@subject}%
+    \tikz@rdf@parse{#1}%
+  },
+  predicate/.code={%
+    \def\tikz@rdf@target{\tikz@rdf@predicate}%
+    \tikz@rdf@parse{#1}%
+  },
+  object/.code={%
+    \let\tikz@rdf@object@literal\relax%
+    \let\tikz@rdf@object\relax%
+    \def\tikz@temp{#1}%
+    \ifx\tikz@temp\tikz@rdf@current@scope@text%
+      \tikz@rdf@object@scope@contenttrue%
+    \else%
+      \tikz@rdf@object@scope@contentfalse%
+      \def\tikz@rdf@target{\tikz@rdf@object}%
+      \tikz@rdf@parse{#1}%
+    \fi%
+  },
+  %
+  % Shorthands
+  %
+  has type/.style={predicate=rdf:type,object={#1}},
+  %
+  % Containers
+  %
+  is a bag/.style={has type=rdf:Bag, is a container},
+  is a sequence/.style={has type=rdf:Seq, is a container},
+  is an alternative/.style={has type=rdf:Alt, is a container},
+  %
+  is a container/.code={\tikz@rdf@is@a@containertrue},
+  %
+  has as member/.code={\tikz@rdf@is@a@membertrue},%
+}%
+
+\def\tikz@rdf@current@scope@text{scope content}%
+
+\let\tikz@rdf@subject\relax
+\let\tikz@rdf@predicate\pgfutil@empty
+\let\tikz@rdf@object\relax
+\let\tikz@rdf@object@literal\relax
+\let\tikz@rdf@container\relax
+
+\newif\iftikz@rdf@object@scope@content
+\newif\iftikz@rdf@is@a@container
+\newif\iftikz@rdf@is@a@member
+
+
+\def\tikz@rdf@parse#1{%
+  \edef\tikz@temp{#1}%
+  \expandafter\tikz@rdf@parse@#1\relax%
+}%
+
+\def\tikz@rdf@parse@{%
+  \pgfutil@ifnextchar({\tikz@rdf@parse@name}{%)
+    \pgfutil@ifnextchar"{\tikz@rdf@parse@literals}{%
+      \tikz@rdf@parse@curie%
+    }%
+  }%
+}%
+
+\def\tikz@rdf@parse@name(#1)\relax{%
+  \pgfidrefprevuse\tikz@rdf@the@id{#1}\expandafter\edef\tikz@rdf@target{\tikzrdfhashmark\tikz@rdf@the@id}%
+}%
+\def\tikz@rdf@parse@literals"#1"{%
+  \ifx\tikz@rdf@target\tikz@rdf@object@name%
+    \def\tikz@rdf@object@literal{#1}%
+  \else%
+    \tikzerror{Only RDF objects can be literals}%
+  \fi%
+  \pgfutil@ifnextchar\relax\pgfutil@gobble\tikz@rdf@parse@literals@rest%
+}%
+\def\tikz@rdf@parse@literals@rest and scope content\relax{%
+  \tikz@rdf@object@scope@contenttrue%
+}%
+
+\def\tikz@rdf@object@name{\tikz@rdf@object}%
+\def\tikz@rdf@parse@curie#1\relax{%
+  \expandafter\def\tikz@rdf@target{#1}%
+}%
+
+{%
+  \catcode`\#=11
+  \gdef\tikzrdfhashmark{#}%
+}%
+
+
+\def\tikz@rdf@make@triple{%
+  % First, ensure that subject, predicate and object are set:
+  \ifx\tikz@rdf@subject\relax%
+    \tikzerror{RDF statement misses subject}%
+  \else%
+    \ifx\tikz@rdf@predicate\relax%
+      \tikzerror{RDF statement misses predicate}%
+    \else%
+      \iftikz@rdf@object@scope@content%
+        \edef\tikz@marshal{\noexpand\tikz@rdf@make@content@triple{\tikz@rdf@subject}{\tikz@rdf@predicate}{\tikz@rdf@object@literal}}%
+        \tikz@marshal%
+      \else%
+        \ifx\tikz@rdf@object\relax%
+          \ifx\tikz@rdf@object@literal\relax%
+            \tikzerror{RDF statement misses object}%
+          \else%
+            \edef\tikz@marshal{\noexpand\tikz@rdf@make@literal@triple{\tikz@rdf@subject}{\tikz@rdf@predicate}{\tikz@rdf@object@literal}}%
+            \tikz@marshal%
+          \fi%
+        \else%
+          \edef\tikz@marshal{\noexpand\tikz@rdf@make@normal@triple{\tikz@rdf@subject}{\tikz@rdf@predicate}{\tikz@rdf@object}}%
+          \tikz@marshal%
+        \fi%
+      \fi%
+    \fi%
+  \fi%
+}%
+
+\def\tikz@rdf@make@content@triple#1#2#3{%
+  \def\tikz@rdf@action{%
+    \def\tikz@rdf@invoke@code{%
+      \def\tikz@temp{#3}%
+      \ifx\tikz@temp\tikz@rdf@object@literal@text\else%
+        \pgfrdfcontent{#3}%
+      \fi%
+      \pgfrdfabout{#1}%
+      \pgfrdfdatatype{rdf:XMLLiteral}%
+      \foreach \tikz@rdf@pred in {#2}{%
+        \ifx\tikz@rdf@pred\pgfutil@empty\else%
+          \expandafter\pgfrdfproperty\expandafter{\tikz@rdf@pred}%
+        \fi%
+      }%
+    }%
+  }%
+}%
+
+\def\tikz@rdf@make@literal@triple#1#2#3{%
+  \def\tikz@rdf@action{%
+    \tikz@add@rdf@post@option{%
+      {%
+        \pgfrdfabout{#1}%
+        \foreach \tikz@rdf@pred in {#2}{%
+          \ifx\tikz@rdf@pred\pgfutil@empty\else%
+            \expandafter\pgfrdfproperty\expandafter{\tikz@rdf@pred}%
+          \fi%
+        }%
+        \pgfrdfcontent{#3}%
+        \pgfidscope%
+        \endpgfidscope%
+      }%
+    }%
+  }%
+}%
+
+\def\tikz@rdf@make@normal@triple#1#2#3{%
+  \def\tikz@rdf@action{%
+    \tikz@add@rdf@post@option{%
+      {%
+        \pgfrdfabout{#1}%
+        \foreach \tikz@rdf@pred in {#2}{%
+          \ifx\tikz@rdf@pred\pgfutil@empty\else%
+            \expandafter\pgfrdfproperty\expandafter{\tikz@rdf@pred}%
+          \fi%
+        }%
+        \pgfrdfresource{#3}%
+        \pgfidscope%
+        \endpgfidscope%
+      }%
+    }%
+  }%
+}%
+
+\def\tikz@rdf@object@literal@text{\tikz@rdf@object@literal}%
+
+
+
+
+% Containers
+
+\def\tikz@rdf@init@container{%
+  \ifx\tikz@rdf@subject\relax%
+    \tikzerror{RDF statement misses subject}%
+  \else%
+    \expandafter\gdef\csname tikz@rdf@c@\tikz@rdf@subject\endcsname{0}%
+  \fi%
+}%
+
+
+\def\tikz@rdf@make@member{%
+  \ifx\tikz@rdf@subject\relax%
+    \tikzerror{RDF statement misses subject}%
+  \else%
+    % Get number:
+    \expandafter\let\expandafter\tikz@temp\csname tikz@rdf@c@\tikz@rdf@subject\endcsname%
+    \ifx\tikz@temp\relax%
+      \tikzerror{RDF subject is not a container}%
+    \else%
+      \c@pgf@counta\tikz@temp%
+      \advance\c@pgf@counta by1\relax%
+      \expandafter\xdef\csname tikz@rdf@c@\tikz@rdf@subject\endcsname{\the\c@pgf@counta}%
+      \edef\tikz@rdf@predicate{rdf:_\the\c@pgf@counta}%
+    \fi%
+  \fi%
+}%
+
+
+
+
+
+% Hooks:
+
+\let\tikz@rdf@invoke@code\relax
+
+\def\tikz@rdf@id@hook{%
+  \tikz@rdf@invoke@code%
+  \let\tikz@rdf@invoke@code\relax%
+}%
+
+% Add hook:
+\expandafter\def\expandafter\tikz@id@hook\expandafter{\tikz@id@hook\tikz@rdf@id@hook}%
+
+
+
+\endinput

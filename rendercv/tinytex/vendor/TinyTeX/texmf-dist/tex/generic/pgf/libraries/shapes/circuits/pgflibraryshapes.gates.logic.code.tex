@@ -1,0 +1,103 @@
+% Copyright 2018 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+
+% Common keys for all logic gates.
+%
+\pgfkeys{/pgf/.cd,%
+  logic gate input sep/.initial=0.125cm,
+  logic gate inputs/.initial={normal,normal},%
+  logic gate inverted radius/.initial=2pt,
+}%
+
+
+% Internal macro for parsing inputs.
+%
+\expandafter\ifx\csname pgf@lib@sh@logicgate@parseinputs\endcsname\relax%
+\def\pgf@lib@sh@logicgate@parseinputs#1{%
+  \edef\pgf@lib@sh@temp{\pgfkeysvalueof{/pgf/logic gate inputs}}%
+  \c@pgf@counta#1\relax%
+  \c@pgf@countb0\relax%
+  \expandafter\pgfutil@in@\expandafter,\expandafter{\pgf@lib@sh@temp}%
+  \ifpgfutil@in@%
+    \let\pgf@lib@sh@next\pgf@lib@sh@logicgate@parseinputs@long%
+  \else%
+    \let\pgf@lib@sh@next\pgf@lib@sh@logicgate@parseinputs@short%
+  \fi%
+  \pgf@lib@sh@next%
+}%
+\def\pgf@lib@sh@itext{i}%
+\def\pgf@lib@sh@invertedtext{inverted}%
+\def\pgf@lib@sh@atchar{@}%
+\def\pgf@lib@sh@gobbletilat#1@{}%
+\def\pgf@lib@sh@gobbletilatcomma#1@,{}%
+%
+% The `short' version for input specification is an extension of
+% ideas due to Juergen Werber and Christoph Bartoschek.
+%
+\def\pgf@lib@sh@logicgate@parseinputs@short{%
+  \expandafter\pgf@lib@sh@logicgate@parseinputs@@short\pgf@lib@sh@temp @%
+}%
+\def\pgf@lib@sh@logicgate@parseinputs@@short#1{%
+  \def\pgf@lib@sh@tmp{#1}%
+  \ifx\pgf@lib@sh@tmp\pgf@lib@sh@atchar%
+    \edef\pgf@lib@sh@logicgate@numinputs{\the\c@pgf@countb}%
+    \let\pgf@lib@sh@next=\relax%
+  \else%
+    \ifnum\c@pgf@countb=\c@pgf@counta%
+      \edef\pgf@lib@sh@logicgate@numinputs{\the\c@pgf@countb}%
+      \let\pgf@lib@sh@next=\pgf@lib@sh@gobbletilat%
+    \else%
+      \advance\c@pgf@countb by1\relax%
+      \expandafter\ifx\pgf@lib@sh@itext#1%
+        \expandafter\pgf@sh@resavedmacro\expandafter{\csname input-\the\c@pgf@countb\endcsname}{%
+          \expandafter\def\csname input-\the\c@pgf@countb\endcsname{i}}%
+      \else%
+        \expandafter\pgf@sh@resavedmacro\expandafter{\csname input-\the\c@pgf@countb\endcsname}{%
+          \expandafter\def\csname input-\the\c@pgf@countb\endcsname{n}}%
+      \fi%
+      \let\pgf@lib@sh@next=\pgf@lib@sh@logicgate@parseinputs@@short%
+    \fi%
+  \fi%
+  \pgf@lib@sh@next%
+}%
+
+
+\def\pgf@lib@sh@logicgate@parseinputs@long{%
+  \expandafter\pgf@lib@sh@logicgate@parseinputs@@long\pgf@lib@sh@temp,@,%
+}%
+\def\pgf@lib@sh@logicgate@parseinputs@@long#1,{%
+  \def\pgf@lib@sh@tmp{#1}%
+  \ifx\pgf@lib@sh@tmp\pgf@lib@sh@atchar%
+    \edef\pgf@lib@sh@logicgate@numinputs{\the\c@pgf@countb}%
+    \let\pgf@lib@sh@next=\relax%
+  \else%
+    \ifnum\c@pgf@countb=\c@pgf@counta%
+      \edef\pgf@lib@sh@logicgate@numinputs{\the\c@pgf@countb}%
+      \let\pgf@lib@sh@next=\pgf@lib@sh@gobbletilatcomma%
+    \else%
+      \advance\c@pgf@countb by1\relax%
+      \def\pgf@lib@sh@temp{#1}%
+      \ifx\pgf@lib@sh@invertedtext\pgf@lib@sh@temp%
+        \expandafter\pgf@sh@resavedmacro\expandafter{\csname input-\the\c@pgf@countb\endcsname}{%
+          \expandafter\def\csname input-\the\c@pgf@countb\endcsname{i}}%
+      \else%
+        \expandafter\pgf@sh@resavedmacro\expandafter{\csname input-\the\c@pgf@countb\endcsname}{%
+          \expandafter\def\csname input-\the\c@pgf@countb\endcsname{n}}%
+      \fi%
+      \let\pgf@lib@sh@next=\pgf@lib@sh@logicgate@parseinputs@@@long%
+    \fi%
+  \fi%
+  \pgf@lib@sh@next%
+}%
+\def\pgf@lib@sh@logicgate@parseinputs@@@long{%
+  \pgfutil@ifnextchar x{\pgf@lib@sh@logicgate@parseinputs@@long}%
+    {\pgf@lib@sh@logicgate@parseinputs@@long}%
+}%
+\fi%

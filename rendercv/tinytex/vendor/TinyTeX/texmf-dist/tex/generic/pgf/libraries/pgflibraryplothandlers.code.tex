@@ -1,0 +1,1114 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibraryplothandlers.code.tex}
+
+
+% This handler converts each plot stream command into a curveto
+% command, except for the first, which is converted to the previously
+% specified action.
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfsetlinetofirstplotpoint
+% \pgfplothandlercurveto
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlercurveto}{}{%
+  point macro=\pgf@plot@curveto@handler@initial,
+  jump macro=\pgf@plot@smooth@next@moveto,
+  end macro=\pgf@plot@curveto@handler@finish
+}%
+
+\def\pgf@plot@smooth@next@moveto{%
+  \pgf@plot@curveto@handler@finish%
+  \global\pgf@plot@startedfalse%
+  \global\let\pgf@plotstreampoint\pgf@plot@curveto@handler@initial%
+}%
+
+\def\pgf@plot@curveto@handler@initial#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@plot@first@action{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \xdef\pgf@plot@curveto@first{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \global\let\pgf@plot@curveto@first@support=\pgf@plot@curveto@first%
+  \global\let\pgf@plotstreampoint=\pgf@plot@curveto@handler@second%
+}%
+
+\def\pgf@plot@curveto@handler@second#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@curveto@second{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@curveto@handler@third%
+  \global\pgf@plot@startedtrue%
+}%
+
+\def\pgf@plot@curveto@handler@third#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@curveto@current{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  % compute difference vector:
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{\pgf@plot@curveto@first}
+  \advance\pgf@xa by-\pgf@x%
+  \advance\pgf@ya by-\pgf@y%
+  % compute support directions:
+  \pgf@xa=\pgf@plottension\pgf@xa%
+  \pgf@ya=\pgf@plottension\pgf@ya%
+  % first marshal:
+  \pgf@process{\pgf@plot@curveto@second}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \advance\pgf@xc by\pgf@xa%
+  \advance\pgf@yc by\pgf@ya%
+  \edef\pgf@marshal{\noexpand\pgfpathcurveto{\noexpand\pgf@plot@curveto@first@support}%
+    {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}{\noexpand\pgf@plot@curveto@second}}%
+  {\pgf@marshal}%
+  % Prepare next:
+  \global\let\pgf@plot@curveto@first=\pgf@plot@curveto@second%
+  \global\let\pgf@plot@curveto@second=\pgf@plot@curveto@current%
+  \xdef\pgf@plot@curveto@first@support{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+}%
+
+\def\pgf@plot@curveto@handler@finish{%
+  \ifpgf@plot@started%
+    \pgfpathcurveto{\pgf@plot@curveto@first@support}{\pgf@plot@curveto@second}{\pgf@plot@curveto@second}%
+  \fi%
+}%
+
+
+% This commands sets the tension for smoothing of plots.
+%
+% #1 = tension of curves. A value of 1 will yield a circle when the
+%      control points are at quarters of a circle. A smaller value
+%      will result in a tighter curve. Default is 0.5.
+%
+% Example:
+%
+% \pgfsetplottension{0.2}
+
+\def\pgfsetplottension#1{%
+  \pgf@x=#1pt\relax%
+  \pgf@x=0.2775\pgf@x\relax%
+  \edef\pgf@plottension{\pgf@sys@tonumber\pgf@x}}%
+\pgfsetplottension{0.5}%
+
+
+% This handler converts the plot stream command into a curveto
+% command that is closed using a closepath.
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointorigin}
+% \pgfplothandlerclosedcurve
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerclosedcurve}{}{%
+  point macro=\pgf@plot@closedcurve@handler@initial,
+  end macro=\pgf@plot@closedcurve@handler@finish,
+  jump macro=\pgf@plot@closedsmooth@next@moveto
+}%
+
+\def\pgf@plot@closedsmooth@next@moveto{%
+  \pgf@plot@closedcurve@handler@finish%
+  \global\pgf@plot@startedfalse%
+  \global\let\pgf@plotstreampoint\pgf@plot@closedcurve@handler@initial%
+}%
+
+\def\pgf@plot@closedcurve@handler@initial#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \xdef\pgf@plot@closedcurve@initial{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@closedcurve@handler@second%
+  \global\pgf@plot@startedfalse%
+}%
+
+\def\pgf@plot@closedcurve@handler@second#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@closedcurve@after@initial{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  {\pgfpathmoveto{}}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@closedcurve@handler@third%
+}%
+
+\def\pgf@plot@closedcurve@handler@third#1{%
+  \global\pgf@plot@startedtrue%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@closedcurve@current{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  % compute difference vector:
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{\pgf@plot@closedcurve@initial}
+  \advance\pgf@xa by-\pgf@x%
+  \advance\pgf@ya by-\pgf@y%
+  % compute support directions:
+  \pgf@xa=\pgf@plottension\pgf@xa%
+  \pgf@ya=\pgf@plottension\pgf@ya%
+  % first marshal:
+  \pgf@process{\pgf@plot@closedcurve@after@initial}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \advance\pgf@xc by\pgf@xa%
+  \advance\pgf@yc by\pgf@ya%
+  \global\let\pgf@plot@closedcurve@first=\pgf@plot@closedcurve@after@initial%
+  \global\let\pgf@plot@closedcurve@second=\pgf@plot@closedcurve@current%
+  \xdef\pgf@plot@closedcurve@after@initial@presupport{\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}%
+  \xdef\pgf@plot@closedcurve@first@support{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@closedcurve@handler@fourth%
+}%
+
+\def\pgf@plot@closedcurve@handler@fourth#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@closedcurve@current{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  % compute difference vector:
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{\pgf@plot@closedcurve@first}
+  \advance\pgf@xa by-\pgf@x%
+  \advance\pgf@ya by-\pgf@y%
+  % compute support directions:
+  \pgf@xa=\pgf@plottension\pgf@xa%
+  \pgf@ya=\pgf@plottension\pgf@ya%
+  % first marshal:
+  \pgf@process{\pgf@plot@closedcurve@second}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \advance\pgf@xc by\pgf@xa%
+  \advance\pgf@yc by\pgf@ya%
+  \edef\pgf@marshal{\noexpand\pgfpathcurveto{\noexpand\pgf@plot@closedcurve@first@support}%
+    {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}{\noexpand\pgf@plot@closedcurve@second}}%
+  {\pgf@marshal}%
+  % Prepare next:
+  \global\let\pgf@plot@closedcurve@first=\pgf@plot@closedcurve@second%
+  \global\let\pgf@plot@closedcurve@second=\pgf@plot@closedcurve@current%
+  \xdef\pgf@plot@closedcurve@first@support{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+}%
+
+\def\pgf@plot@closedcurve@handler@finish{%
+  \ifpgf@plot@started
+    %
+    % first, draw line from 2nd last to last:
+    %
+    \pgf@process{\pgf@plot@closedcurve@initial}%
+    % compute difference vector:
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgf@plot@closedcurve@first}%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    % compute support directions:
+    \pgf@xa=\pgf@plottension\pgf@xa%
+    \pgf@ya=\pgf@plottension\pgf@ya%
+    % first marshal:
+    \pgf@process{\pgf@plot@closedcurve@second}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \advance\pgf@xb by-\pgf@xa%
+    \advance\pgf@yb by-\pgf@ya%
+    \advance\pgf@xc by\pgf@xa%
+    \advance\pgf@yc by\pgf@ya%
+    \edef\pgf@marshal{\noexpand\pgfpathcurveto{\noexpand\pgf@plot@closedcurve@first@support}%
+      {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}{\noexpand\pgf@plot@closedcurve@second}}%
+    {\pgf@marshal}%
+    \xdef\pgf@plot@closedcurve@first@support{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+    %
+    % second, draw line from last point to start:
+    %
+    \pgf@process{\pgf@plot@closedcurve@after@initial}%
+    % compute difference vector:
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgf@plot@closedcurve@second}%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    % compute support directions:
+    \pgf@xa=\pgf@plottension\pgf@xa%
+    \pgf@ya=\pgf@plottension\pgf@ya%
+    % first marshal:
+    \pgf@process{\pgf@plot@closedcurve@initial}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \advance\pgf@xb by-\pgf@xa%
+    \advance\pgf@yb by-\pgf@ya%
+    \advance\pgf@xc by\pgf@xa%
+    \advance\pgf@yc by\pgf@ya%
+    \edef\pgf@marshal{\noexpand\pgfpathcurveto{\noexpand\pgf@plot@closedcurve@first@support}%
+      {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}{\noexpand\pgf@plot@closedcurve@initial}}%
+    {\pgf@marshal}%
+    %
+    % third, draw line from first to second point:
+    %
+    \edef\pgf@marshal{\noexpand\pgfpathcurveto{\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+      {\noexpand\pgf@plot@closedcurve@after@initial@presupport}{\noexpand\pgf@plot@closedcurve@after@initial}}%
+    {\pgf@marshal}%
+    \pgfpathclose%
+  \fi%
+}%
+
+
+
+
+
+% This handler converts each point in a stream into a line from the
+% $y$-axis to the given points coordinate, resulting in a
+% ``comb.''
+%
+% Example:
+%
+% \pgfplothandlerxcomb
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerxcomb}{}{%
+  start macro=\pgfplotxzerolevelstreamstart,
+  point macro=\pgf@plot@xcomb@handler,
+  end macro=\pgfplotxzerolevelstreamend,
+}%
+
+\def\pgf@plot@xcomb@handler#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \begingroup
+  \pgfplotxzerolevelstreamnext
+  \endgroup
+  \pgf@yb=\pgf@x
+  \pgfpathmoveto{\pgfqpoint{\pgf@yb}{\pgf@ya}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+}%
+
+
+% This handler converts each point in a stream into a line from the
+% $x$-axis straight up to the given points coordinate, resulting in a
+% ``comb.''
+%
+% Example:
+%
+% \pgfplothandlerycomb
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerycomb}{}{%
+  start macro=\pgfplotyzerolevelstreamstart,
+  point macro=\pgf@plot@ycomb@handler,
+  end macro=\pgfplotyzerolevelstreamend
+}%
+
+\def\pgf@plot@ycomb@handler#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \begingroup
+  \pgfplotyzerolevelstreamnext
+  \endgroup
+  \pgf@yb=\pgf@x
+  \pgfpathmoveto{\pgfqpoint{\pgf@xa}{\pgf@yb}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+}%
+
+% PGF Bar or comb plots usually draw something from zero to the current plot's coordinate.
+%
+% The 'zero' offset can be changed using an input stream.
+%
+% There are two such streams which can be configured independently.
+% The first one returns "zeros" for coordinate x, the second one
+% returns "zeros" for coordinate y.
+%
+% \pgfplotxzerolevelstreamstart
+% \pgfplotxzerolevelstreamnext % assigns \pgf@x globally
+% \pgfplotxzerolevelstreamnext
+% \pgfplotxzerolevelstreamnext
+% \pgfplotxzerolevelstreamend
+%
+% and
+% \pgfplotyzerolevelstreamstart
+% \pgfplotyzerolevelstreamnext % assigns \pgf@x globally
+% \pgfplotyzerolevelstreamend
+%
+\def\pgfplotxzerolevelstreamstart{\pgf@plotxzerolevelstreamstart}%
+\def\pgfplotxzerolevelstreamend{\pgf@plotxzerolevelstreamend}%
+\def\pgfplotxzerolevelstreamnext{\pgf@plotxzerolevelstreamnext}
+\def\pgfplotyzerolevelstreamstart{\pgf@plotyzerolevelstreamstart}%
+\def\pgfplotyzerolevelstreamend{\pgf@plotyzerolevelstreamend}%
+\def\pgfplotyzerolevelstreamnext{\pgf@plotyzerolevelstreamnext}%
+
+% This zero level stream always returns '#1' (a dimension).
+\def\pgfplotxzerolevelstreamconstant#1{%
+    \edef\pgfplotxzerolevelstreamconstant@val{#1}%
+    \def\pgf@plotxzerolevelstreamstart{%
+        \global\let\pgf@plotxzerolevelstreamend=\relax
+        \gdef\pgf@plotxzerolevelstreamnext{\global\pgf@x=\pgfplotxzerolevelstreamconstant@val\relax}%
+    }%
+}%
+\pgfplotxzerolevelstreamconstant{0pt}%
+
+% This zero level stream always returns '#1'.
+\def\pgfplotyzerolevelstreamconstant#1{%
+    \edef\pgfplotyzerolevelstreamconstant@val{#1}%
+    \def\pgf@plotyzerolevelstreamstart{%
+        \global\let\pgf@plotyzerolevelstreamend=\relax
+        \gdef\pgf@plotyzerolevelstreamnext{\global\pgf@x=\pgfplotyzerolevelstreamconstant@val\relax}%
+    }%
+}%
+\pgfplotyzerolevelstreamconstant{0pt}%
+
+\def\pgfplotbarwidth{\pgfkeysvalueof{/pgf/bar width}}%
+\def\pgfplotbarshift{\pgfkeysvalueof{/pgf/bar shift}}%
+
+\pgfqkeys{/pgf}{%
+    bar width/.initial=10pt,
+    bar shift/.initial=0pt,
+    bar interval width/.initial=1,
+    bar interval shift/.initial=0.5,
+    %
+    % hook which is executed right before a new bar is begun.
+    at begin bar/.initial=,
+    % hook which is executed right after a bar path has been finished.
+    % In this context, the bar's path has not been used.
+    at end bar/.initial=,
+}%
+
+% This handler places a rectangle at each point in the plot stream, a
+% rectangle which touches the x-axis at one end and the current point
+% at the other end:
+%    --(X)--
+%    |     |
+%    |     |
+%    |     |
+%    --(0)--
+% Example:
+%
+% \pgfplothandlerybar
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerybar}{}{%
+  start={
+    \pgfmathparse{\pgfplotbarwidth}%
+    \xdef\pgfplotbarwidth@{\pgfmathresult pt}%
+    \pgfmathparse{\pgfplotbarshift}%
+    \xdef\pgfplotbarshift@{\pgfmathresult pt}%
+    \pgfplotyzerolevelstreamstart
+  },
+  end macro=\pgfplotyzerolevelstreamend,
+  point macro=\pgf@plot@ybar@handler
+}%
+
+\def\pgf@plot@ybar@handler#1{%
+  \pgfkeysvalueof{/pgf/at begin bar}%
+  \pgf@process{#1}%
+  \pgf@ya=\pgf@y
+  \expandafter\pgf@xb\pgfplotbarwidth@\relax
+  \pgf@xc=\pgf@x
+  \advance\pgf@xc by-.5\pgf@xb
+  \advance\pgf@xc by\pgfplotbarshift@\relax
+  \begingroup
+  \pgfplotyzerolevelstreamnext
+  \endgroup
+  \pgf@yb=\pgf@x
+  \advance\pgf@ya by-\pgf@yb
+  \pgfpathrectangle
+    {\pgfqpoint{\pgf@xc}{\pgf@yb}}%
+    {\pgfqpoint{\pgf@xb}{\pgf@ya}}%
+  \pgfkeysvalueof{/pgf/at end bar}%
+}%
+
+% This handler places a rectangle at each point in the plot stream, a
+% rectangle which touches the y-axis at one end and the current point
+% at the other end:
+%    ---------
+%    |       |
+%   (0)     (X)
+%    |       |
+%    ---------
+% Example:
+%
+% \pgfplothandlerxbar
+% \pgfplotxyfile{mytable}
+\pgfdeclareplothandler{\pgfplothandlerxbar}{}{%
+  start={
+    \pgfmathparse{\pgfplotbarwidth}%
+    \xdef\pgfplotbarwidth@{\pgfmathresult pt}%
+    \pgfmathparse{\pgfplotbarshift}%
+    \xdef\pgfplotbarshift@{\pgfmathresult pt}%
+    \pgfplotxzerolevelstreamstart
+  },
+  end macro=\pgfplotxzerolevelstreamend,
+  point macro=\pgf@plot@xbar@handler
+}%
+
+\def\pgf@plot@xbar@handler#1{%
+  \pgfkeysvalueof{/pgf/at begin bar}%
+  \pgf@process{#1}%
+  \pgf@ya=\pgf@x
+  \expandafter\pgf@xb\pgfplotbarwidth@\relax
+  \pgf@xc=\pgf@y
+  \advance\pgf@xc by-.5\pgf@xb
+  \advance\pgf@xc by\pgfplotbarshift@\relax
+  \begingroup
+  \pgfplotxzerolevelstreamnext
+  \endgroup
+  \pgf@yb=\pgf@x
+  \advance\pgf@ya by-\pgf@yb
+  \pgfpathrectangle
+    {\pgfqpoint{\pgf@yb}{\pgf@xc}}%
+    {\pgfqpoint{\pgf@ya}{\pgf@xb}}%
+  \pgfkeysvalueof{/pgf/at end bar}%
+}%
+
+% This handler is a variant of \pgfplothandlerybar which works with
+% intervals instead of points.
+%
+% Bars are drawn between successive input coordinates and the width is
+% determined relatively to the interval length.
+%
+% It looks like this:
+%
+%    |---|      |-----|
+%    |   |      |     |
+%    |   |      |     |
+%    |   |      |     |
+% (X)------(X)-----------(X)
+%
+% where (X) denotes the x-axis offsets of input coordinates.
+%
+% In more detail, if (x_i,y_i) and (x_{i+1},y_{i+1}) denote successive
+% input coordinates, the bar will be placed above the
+% interval [x_i,x_{i+1}], centered at
+%
+%    x_i + \pgfkeysvalueof{/pgf/bar interval shift} * (x_{i+1} - x_i)
+%
+% with width
+%
+%    \pgfkeysvalueof{/pgf/bar interval width} * (x_{i+1} - x_i).
+%
+% If you have N+1 input points, you will get N bars (one for each
+% interval). The y_i value of the last bar will be ignored.
+%
+% Example:
+%
+% \pgfplothandlerybarinterval
+% \pgfplotxyfile{mytable}
+\pgfdeclareplothandler{\pgfplothandlerybarinterval}{}{%
+  start={
+    \pgfmathparse{\pgfkeysvalueof{/pgf/bar interval width}}%
+    \xdef\pgfplotbarintervalwidth@{\pgfmathresult}%
+    \pgfmathparse{\pgfkeysvalueof{/pgf/bar interval shift}}%
+    \xdef\pgfplotbarintervalshift@{\pgfmathresult}%
+    \pgfplotyzerolevelstreamstart
+  },
+  end macro=\pgfplotyzerolevelstreamend,
+  point macro=\pgf@plot@ybarinterval@handler@first
+}%
+
+\def\pgf@plot@ybarinterval@handler@first#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@barinterval@intervalstart{\the\pgf@x}%
+  \xdef\pgf@plot@barinterval@bar{\the\pgf@y}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@ybarinterval@handler%
+}%
+\def\pgf@plot@ybarinterval@handler#1{%
+  \pgfkeysvalueof{/pgf/at begin bar}%
+  \pgf@process{#1}%
+  \pgf@ya=\pgf@plot@barinterval@bar
+  \xdef\pgf@plot@barinterval@bar{\the\pgf@y}%
+  \pgf@xc=\pgf@plot@barinterval@intervalstart\relax
+  \xdef\pgf@plot@barinterval@intervalstart{\the\pgf@x}%
+  \pgf@xb=\pgf@x
+  \advance\pgf@xb by-\pgf@xc
+  \advance\pgf@xc by\pgfplotbarintervalshift@\pgf@xb
+  \pgf@xb=\pgfplotbarintervalwidth@\pgf@xb
+  \advance\pgf@xc by-.5\pgf@xb% center
+  \begingroup
+  \pgfplotyzerolevelstreamnext
+  \endgroup
+  \pgf@yb=\pgf@x
+  \advance\pgf@ya by-\pgf@yb
+  \pgfpathrectangle
+    {\pgfqpoint{\pgf@xc}{\pgf@yb}}%
+    {\pgfqpoint{\pgf@xb}{\pgf@ya}}%
+  \pgfkeysvalueof{/pgf/at end bar}%
+}%
+
+% Like \pgfplothandlerybarinterval but for xbar.
+\pgfdeclareplothandler{\pgfplothandlerxbarinterval}{}{%
+  start={
+    \pgfmathparse{\pgfkeysvalueof{/pgf/bar interval width}}%
+    \xdef\pgfplotbarintervalwidth@{\pgfmathresult}%
+    \pgfmathparse{\pgfkeysvalueof{/pgf/bar interval shift}}%
+    \xdef\pgfplotbarintervalshift@{\pgfmathresult}%
+    \pgfplotxzerolevelstreamstart
+  },
+  end macro=\pgfplotxzerolevelstreamend,
+  point macro=\pgf@plot@xbarinterval@handler@first
+}%
+
+\def\pgf@plot@xbarinterval@handler@first#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@barinterval@intervalstart{\the\pgf@y}%
+  \xdef\pgf@plot@barinterval@bar{\the\pgf@x}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@xbarinterval@handler%
+}%
+\def\pgf@plot@xbarinterval@handler#1{%
+  \pgfkeysvalueof{/pgf/at begin bar}%
+  \pgf@process{#1}%
+  \pgf@ya=\pgf@plot@barinterval@bar
+  \xdef\pgf@plot@barinterval@bar{\the\pgf@x}%
+  \pgf@xc=\pgf@plot@barinterval@intervalstart\relax
+  \xdef\pgf@plot@barinterval@intervalstart{\the\pgf@y}%
+  \pgf@xb=\pgf@y
+  \advance\pgf@xb by-\pgf@xc
+  \advance\pgf@xc by\pgfplotbarintervalshift@\pgf@xb
+  \pgf@xb=\pgfplotbarintervalwidth@\pgf@xb
+  \advance\pgf@xc by-.5\pgf@xb% center
+  \begingroup
+  \pgfplotxzerolevelstreamnext
+  \endgroup
+  \pgf@yb=\pgf@x
+  \advance\pgf@ya by-\pgf@yb
+  \pgfpathrectangle
+    {\pgfqpoint{\pgf@yb}{\pgf@xc}}%
+    {\pgfqpoint{\pgf@ya}{\pgf@xb}}%
+  \pgfkeysvalueof{/pgf/at end bar}%
+}%
+
+
+% This handler is very similar to \pgfplothandlerlineto, but it
+% produces CONSTANT connected pieces of the form
+%
+%          x
+%          |
+%   x---   |
+%   |  x----
+% x-|
+%
+% Example:
+%
+% \pgfplothandlerconstantlineto
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerconstantlineto}{}{%
+  point macro=\pgf@plot@const@line@handler
+}%
+
+\def\pgf@plot@const@line@handler#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@y}%
+  \pgf@plot@first@action{}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@const@line@handler@@%
+}%
+\def\pgf@plot@const@line@handler@@#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x
+  \pgf@ya=\pgf@y
+  \pgf@yb\pgf@plot@const@line@handler@last\relax
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@yb}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@ya}%
+}%
+
+% A variant of \pgfplothandlerconstantlineto which places its mark on
+% the right line ends.
+%
+%       |---x
+% ---x  |
+%    |--x
+% x
+%
+% Example:
+%
+% \pgfplothandlerconstantlinetomarkright
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerconstantlinetomarkright}{}{%
+  point macro=\pgf@plot@const@line@mark@right@handler
+}%
+
+\def\pgf@plot@const@line@mark@right@handler#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@x}%
+  \pgf@plot@first@action{}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@const@line@mark@right@handler@@%
+}%
+\def\pgf@plot@const@line@mark@right@handler@@#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x
+  \pgf@ya=\pgf@y
+  \pgf@yb\pgf@plot@const@line@handler@last\relax
+  \pgfpathlineto{\pgfqpoint{\pgf@yb}{\pgf@ya}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@xa}%
+}%
+
+% A variant of \pgfplothandlerconstantlineto which places its mark on
+% the middle of the line segment.
+%
+%               ----x
+%               |
+%   --x---      |
+%   |    |--x----
+% x--
+%
+% Example:
+%
+% \pgfplothandlerconstantlinetomarkmid
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerconstantlinetomarkmid}{}{%
+  point macro=\pgf@plot@const@line@mark@mid@handler
+}%
+
+\def\pgf@plot@const@line@mark@mid@handler#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@const@line@handler@last{\global\pgf@x=\the\pgf@x\space\global\pgf@y=\the\pgf@y\space}%
+  \pgf@plot@first@action{}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@const@line@mark@mid@handler@@%
+}%
+\def\pgf@plot@const@line@mark@mid@handler@@#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x
+  \pgf@ya=\pgf@y
+  \pgf@plot@const@line@handler@last
+  \pgf@xc=.5\pgf@xa
+  \advance\pgf@xc by.5\pgf@x
+  \pgfpathlineto{\pgfqpoint{\pgf@xc}{\pgf@y}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xc}{\pgf@ya}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \xdef\pgf@plot@const@line@handler@last{\global\pgf@x=\the\pgf@x\space\global\pgf@y=\the\pgf@y\space}%
+}%
+
+% This handler is in fact a variant of \pgfplothandlerconstantlineto,
+% but it does not draw vertical lines. It produces a sequence of
+% line-to and move-to operations such that plot marks are placed at
+% each right end:
+%
+%          ---x
+%   ---x
+%       ---x
+% --x
+%
+% Example:
+%
+% \pgfplothandlerjumpmarkright
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerjumpmarkright}{}{%
+  point macro=\pgf@plot@jumpmarkright@handler
+}%
+
+\def\pgf@plot@jumpmarkright@handler#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@x}%
+  \pgf@plot@first@action{}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@jumpmarkright@handler@@%
+}%
+\def\pgf@plot@jumpmarkright@handler@@#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x
+  \pgf@ya=\pgf@y
+  \pgf@yb\pgf@plot@const@line@handler@last\relax
+  \pgfpathmoveto{\pgfqpoint{\pgf@yb}{\pgf@ya}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@xa}%
+}%
+
+% This handler is in fact a variant of \pgfplothandlerconstantlineto,
+% but it does not draw vertical lines. It produces a sequence of
+% line-to and move-to operations such that plot marks are placed at
+% each left end:
+%
+%          x---
+%   x---
+%       x---
+% x--
+%
+% Example:
+%
+% \pgfplothandlerjumpmarkleft
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerjumpmarkleft}{}{%
+  point macro=\pgf@plot@jumpmarkleft@handler
+}%
+\def\pgf@plot@jumpmarkleft@handler#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@y}%
+  \pgf@plot@first@action{}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@jumpmarkleft@handler@@%
+}%
+\def\pgf@plot@jumpmarkleft@handler@@#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x
+  \pgf@ya=\pgf@y
+  \pgf@yb\pgf@plot@const@line@handler@last\relax
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@yb}}%
+  \pgfpathmoveto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \xdef\pgf@plot@const@line@handler@last{\the\pgf@ya}%
+}%
+
+% This handler is in fact a variant of
+% \pgfplothandlerconstantlinetomarkmid,
+% but it does not draw vertical lines. It produces a sequence of
+% line-to and move-to operations such that plot marks are placed like
+%
+%             ----x
+%
+%   --x--
+%       --x----
+% x--
+%
+% Example:
+%
+% \pgfplothandlerjumpmarkmid
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerjumpmarkmid}{}{%
+  point macro=\pgf@plot@jump@mark@mid@handler
+}%
+
+\def\pgf@plot@jump@mark@mid@handler#1{%
+  \pgf@process{#1}%
+  \xdef\pgf@plot@const@line@handler@last{\global\pgf@x=\the\pgf@x\space\global\pgf@y=\the\pgf@y\space}%
+  \pgf@plot@first@action{}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@jump@mark@mid@handler@@%
+}%
+\def\pgf@plot@jump@mark@mid@handler@@#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x
+  \pgf@ya=\pgf@y
+  \pgf@plot@const@line@handler@last
+  \pgf@xc=.5\pgf@xa
+  \advance\pgf@xc by.5\pgf@x
+  \pgfpathlineto{\pgfqpoint{\pgf@xc}{\pgf@y}}%
+  \pgfpathmoveto{\pgfqpoint{\pgf@xc}{\pgf@ya}}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+  \xdef\pgf@plot@const@line@handler@last{\global\pgf@x=\the\pgf@x\space\global\pgf@y=\the\pgf@y\space}%
+}%
+
+
+% This handler converts each point in a stream into a line from the
+% origin to the point's coordinate, resulting in a ``star''.
+%
+% Example:
+%
+% \pgfplothandlerpolarcomb
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerpolarcomb}{}{%
+  point macro=\pgf@plot@polarcomb@handler
+}%
+
+\def\pgf@plot@polarcomb@handler#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgfpathmoveto{\pgfpointorigin}%
+  \pgfpathlineto{\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+}%
+
+
+
+
+% This handler draws a given mark at each point.
+%
+% #1 = some code to be executed at each point (with the coordinate
+%      system translated to that point).
+%      Typically, this code will be \pgfuseplotmark{whatever}.
+%
+% Example:
+%
+% \pgfplothandlermark{\pgfuseplotmark{*}}
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlermark}{#1}{%
+  start={
+    \def\pgf@plot@mark{%
+      \ifnum\pgf@plot@mark@count<\pgf@plot@mark@repeat\relax%
+      \else%
+        \global\pgf@plot@mark@count=0\relax%
+        #1%
+      \fi%
+    }%
+    \global\pgf@plot@mark@count=\pgf@plot@mark@repeat\relax%
+    \global\advance\pgf@plot@mark@count by-\pgf@plot@mark@phase\relax%
+  },
+  point macro=\pgf@plot@mark@handler
+}%
+
+\newcount\pgf@plot@mark@count
+\def\pgf@plot@mark@phase{0}%
+
+\def\pgf@plot@mark@handler#1{%
+  \global\advance\pgf@plot@mark@count by1\relax%
+  {\pgftransformshift{#1}\pgf@plot@mark}%
+}%
+
+
+% Set the repeat count for marks. For example, if 3 is given as a
+% value, only every third point will get a mark.
+%
+% #1 = repeat count
+%
+% Example:
+%
+% \pgfsetplotmarkrepeat{2}
+
+\def\pgfsetplotmarkrepeat#1{\def\pgf@plot@mark@repeat{#1}}%
+\pgfsetplotmarkrepeat{1}%
+
+
+% Set the phase for marks. For example, if 3 is the repeat and 3 is
+% the phase, already the first point will be marked.
+%
+% #1 = the index of the first point that should be marked.
+%
+% Example:
+%
+% \pgfsetplotmarkphase{3}
+
+\def\pgfsetplotmarkphase#1{\def\pgf@plot@mark@phase{#1}}%
+\pgfsetplotmarkphase{1}%
+
+
+
+% This handler draws a given mark at those points whose number is
+% given in the (pgffor-like) list.
+%
+% #1 = some code to be executed at each point (with the coordinate
+%      system translated to that point).
+%      Typically, this code will be \pgfuseplotmark{whatever}.
+% #2 = list of positions like "1,2,4,...,9,10"
+%
+% Example:
+%
+% \pgfplothandlermarklisted{\pgfuseplotmark{*}}{1,2,4,...,9}
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlermarklisted}{#1#2}{%
+  start={
+    \let\pgf@plot@mark@list=\pgfutil@empty%
+    \edef\pgf@marshal{\noexpand\foreach\noexpand\pgf@temp in{#2}}
+    \pgf@marshal{\xdef\pgf@plot@mark@list{\pgf@plot@mark@list(\pgf@temp)}}%
+    \def\pgf@plot@mark{%
+      \edef\pgf@marshal{\noexpand\pgfutil@in@{(\the\pgf@plot@mark@count)}{\pgf@plot@mark@list}}%
+      \pgf@marshal%
+      \ifpgfutil@in@#1\fi%
+    }%
+    \global\pgf@plot@mark@count=\pgf@plot@mark@repeat\relax%
+    \global\advance\pgf@plot@mark@count by-\pgf@plot@mark@phase\relax%
+  },
+  point macro=\pgf@plot@mark@handler
+}%
+
+% \def\pgfplothandlermarklisted#1#2{%
+%   \let\pgf@plot@mark@list=\pgfutil@empty%
+%   \edef\pgf@marshal{\noexpand\foreach\noexpand\pgf@temp in{#2}}
+%   \pgf@marshal{\xdef\pgf@plot@mark@list{\pgf@plot@mark@list(\pgf@temp)}}%
+%   \pgf@plothandlermark{%
+%     \edef\pgf@marshal{\noexpand\pgfutil@in@{(\the\pgf@plot@mark@count)}{\pgf@plot@mark@list}}%
+%     \pgf@marshal%
+%     \ifpgfutil@in@#1\fi}%
+% }%
+
+
+% Define a new plot mark for use with \pgfplotmark.
+%
+% #1 = a plot mark mnemonic
+% #2 = code for drawing the mark
+%
+% Example:
+%
+% \pgfdeclareplotmark{*}{\pgfpathcircle{\pgfpointorigin}{2pt}\pgfusepathqfill}
+
+\def\pgfdeclareplotmark#1#2{\expandafter\def\csname pgf@plot@mark@#1\endcsname{#2}}%
+
+
+% Set the size of plot marks. For circles, this will be the radius,
+% for other shapes it should be about half the width/height.
+%
+% Example:
+%
+% \pgfsetplotmarksize{1pt}
+
+\def\pgfsetplotmarksize#1{\pgfmathsetlength\pgfplotmarksize{#1}}%
+
+\newdimen\pgfplotmarksize
+\pgfplotmarksize=2pt
+
+
+% Insert a plot mark's code at the origin.
+%
+% #1 = plot mark mnemonic
+%
+% Example:
+%
+% \pgfuseplotmark{*}
+
+\def\pgfuseplotmark#1{\csname pgf@plot@mark@#1\endcsname}%
+
+
+% A stroke-filled circle mark
+
+\pgfdeclareplotmark{*}
+{%
+  \pgfpathellipse{\pgfpointorigin}{\pgfqpoint{\pgfplotmarksize}{0sp}}{\pgfqpoint{0sp}{\pgfplotmarksize}}%
+  \pgfusepathqfillstroke
+}%
+
+
+% A plus-sign like mark
+
+\pgfdeclareplotmark{+}
+{%
+  \pgfpathmoveto{\pgfqpoint{-\pgfplotmarksize}{0pt}}%
+  \pgfpathlineto{\pgfqpoint{\pgfplotmarksize}{0pt}}%
+  \pgfpathmoveto{\pgfqpoint{0pt}{\pgfplotmarksize}}%
+  \pgfpathlineto{\pgfqpoint{0pt}{-\pgfplotmarksize}}%
+  \pgfusepathqstroke
+}%
+
+
+% An x-shaped mark
+
+\pgfdeclareplotmark{x}
+{%
+  \pgfpathmoveto{\pgfqpoint{-.70710678\pgfplotmarksize}{-.70710678\pgfplotmarksize}}%
+  \pgfpathlineto{\pgfqpoint{.70710678\pgfplotmarksize}{.70710678\pgfplotmarksize}}%
+  \pgfpathmoveto{\pgfqpoint{-.70710678\pgfplotmarksize}{.70710678\pgfplotmarksize}}%
+  \pgfpathlineto{\pgfqpoint{.70710678\pgfplotmarksize}{-.70710678\pgfplotmarksize}}%
+  \pgfusepathqstroke
+}%
+
+% See pgflibraryplotmarks for more plot marks
+
+
+
+
+% This handler turns creates a series of straight line segments
+% between consecutive points, but leaving /pgf/gap around stream point
+% space.
+%
+% Example:
+%
+% \pgfplothandlergaplineto
+% \pgfplotxyfile{mytable}
+
+\pgfkeys{/pgf/gap around stream point/.initial=1.5pt}%
+
+\pgfdeclareplothandler{\pgfplothandlergaplineto}{}{%
+  point macro=\pgf@plot@gap@lineto@handler@initial,
+  jump macro=\pgf@plot@gap@next@moveto
+}%
+
+\def\pgf@plot@gap@next@moveto{%
+  \global\let\pgf@plotstreampoint=\pgf@plot@gap@lineto@handler@initial%
+}%
+
+\def\pgf@plot@gap@lineto@handler@initial#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \xdef\pgf@plot@gap@lineto@last{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \global\let\pgf@plotstreampoint=\pgf@plot@gap@lineto@handler%
+}%
+
+\def\pgf@plot@gap@lineto@handler#1{%
+  % Ok, compute normalized line vector
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \xdef\pgf@plot@gap@lineto@next{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \pgf@process{\pgfpointnormalised{\pgfpointdiff{\pgf@plot@gap@lineto@last}{\pgf@plot@gap@lineto@next}}}%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \pgfpathmoveto{\pgfpointadd{\pgfpointscale{\pgfkeysvalueof{/pgf/gap
+          around stream point}}{\pgfqpoint{\pgf@xc}{\pgf@yc}}}{\pgf@plot@gap@lineto@last}}%
+  \pgfpathlineto{\pgfpointadd{\pgfpointscale{\pgfkeysvalueof{/pgf/gap
+          around stream point}}{\pgfqpoint{-\pgf@xc}{-\pgf@yc}}}{\pgf@plot@gap@lineto@next}}%
+  \global\let\pgf@plot@gap@lineto@last=\pgf@plot@gap@lineto@next%
+}%
+
+
+
+
+% This handler works like \pgfplothandlergaplineto, only the last
+% point is connected to the first point, creating a closed curve
+% space.
+%
+% Example:
+%
+% \pgfplothandlergapcycle
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlergapcycle}{}{%
+  point macro=\pgf@plot@gap@cycle@handler@initial,
+  jump macro=\pgf@plot@gapcycle@next@moveto,
+  end macro=\pgf@plot@gap@cycle@handler@finish,
+  start={\global\let\pgf@plot@gap@cycle@first\relax}
+}%
+
+\def\pgf@plot@gapcycle@next@moveto{%
+  \pgf@plot@gap@cycle@handler@finish%
+  \global\let\pgf@plot@gap@cycle@first=\relax%
+  \global\let\pgf@plotstreampoint=\pgf@plot@gap@cycle@handler@initial%
+}%
+
+\def\pgf@plot@gap@cycle@handler@initial#1{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \xdef\pgf@plot@gap@cycle@last{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \global\let\pgf@plot@gap@cycle@first=\pgf@plot@gap@cycle@last%
+  \global\let\pgf@plotstreampoint=\pgf@plot@gap@cycle@handler%
+}%
+
+\def\pgf@plot@gap@cycle@handler#1{%
+  % Ok, compute normalized line vector
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \xdef\pgf@plot@gap@cycle@next{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \pgf@process{\pgfpointnormalised{\pgfpointdiff{\pgf@plot@gap@cycle@last}{\pgf@plot@gap@cycle@next}}}%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \pgfpathmoveto{\pgfpointadd{\pgfpointscale{\pgfkeysvalueof{/pgf/gap
+          around stream point}}{\pgfqpoint{\pgf@xc}{\pgf@yc}}}{\pgf@plot@gap@cycle@last}}%
+  \pgfpathlineto{\pgfpointadd{\pgfpointscale{\pgfkeysvalueof{/pgf/gap
+          around stream point}}{\pgfqpoint{-\pgf@xc}{-\pgf@yc}}}{\pgf@plot@gap@cycle@next}}%
+  \global\let\pgf@plot@gap@cycle@last=\pgf@plot@gap@cycle@next%
+}%
+
+\def\pgf@plot@gap@cycle@handler@finish{%
+  \ifx\pgf@plot@gap@cycle@first\relax%
+  \else
+    \pgf@plot@gap@cycle@handler{\pgf@plot@gap@cycle@first}%
+  \fi
+}%
+
+
+
+\endinput
+
+% Local Variables:
+% tab-width: 2
+% End:

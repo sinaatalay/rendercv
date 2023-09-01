@@ -1,0 +1,961 @@
+#! /usr/bin/perl -w
+#
+# Usage: ./urlbst.pl [--eprint] [--doi] [--pubmed]
+#    [--nohyperlinks] [--inlinelinks] [--hypertex] [--hyperref]
+#    [input-file [output-file]]
+# If either input-file or output-file is omitted, they are replaced by
+# stdin or stdout respectively.
+#
+# See https://purl.org/nxg/dist/urlbst for documentation
+#
+# Copyright 2002–23, Norman Gray <https://nxg.me.uk>
+#
+# This program is distributed under the terms of the
+# GNU General Public Licence, v2.0.
+# The modifications to the input .bst files are asserted as Copyright 2002–23, Norman Gray,
+# and distributed under the terms of the LaTeX Project Public Licence.
+# See the package README for further dicussion of licences.
+
+$version = '0.9.1';
+$releasedate = '2023 January 30';
+($progname = $0) =~ s/.*\///;
+$mymarker = "% $progname";
+$mymarkerend = "% ...$progname to here";
+$homepageurl = 'https://purl.org/nxg/dist/urlbst';
+$repourl = 'https://heptapod.host/nxg/urlbst';
+
+$infile = '-';
+$outfile = '-';
+
+# eprint support
+$settings{addeprints} = 1;
+$docstring{addeprints} = '0=no eprints; 1=include eprints';
+$literals{eprintprefix} = 'arXiv:';	# make these settable with --eprint? syntax?
+$docstring{eprintprefix} = "text prefix printed before eprint ref";
+$literals{eprinturl} = 'https://arxiv.org/abs/';
+$docstring{eprinturl} = 'prefix to make URL from eprint ref';
+
+# DOI resolver
+$settings{adddoi} = 1;
+$docstring{adddoi} = '0=no DOI resolver; 1=include it';
+$literals{doiprefix} = 'doi:';
+$docstring{doiprefix} = 'printed text to introduce DOI';
+$literals{doiurl} = 'https://doi.org/';
+$docstring{doiurl} = 'prefix to make URL from DOI';
+$settings{doiform} = 0;
+$docstring{doiform} = '0=with href; 1=with \\doi{}';
+
+# PUBMED resolver
+$settings{addpubmed} = 1;
+$docstring{addpubmed} = '0=no PUBMED resolver; 1=include it';
+$literals{pubmedprefix} = 'PMID:';
+$docstring{pubmedprefix} = 'text prefix printed before PUBMED ref';
+$literals{pubmedurl} = 'http://www.ncbi.nlm.nih.gov/pubmed/';
+$docstring{pubmedurl} = 'prefix to make URL from PUBMED';
+
+# how do we make hypterlinks
+$settings{hrefform} = 0;
+$docstring{hrefform} = '0=no crossrefs; 1=hypertex hrefs; 2=hyperref hrefs';
+$literals{urlintro} = "URL: ";
+$docstring{urlintro} = 'text prefix before URL';
+$settings{inlinelinks} = 0;
+$docstring{inlinelinks} = '0=URLs explicit; 1=URLs attached to titles';
+
+# other text
+$literals{onlinestring} = "online";
+$docstring{onlinestring} = 'label that a resource is online';
+$literals{citedstring} = "cited ";
+$docstring{citedstring} = 'label in "lastchecked" remark';
+$literals{linktextstring} = "[link]";
+$docstring{linktextstring} = 'anonymous link text';
+
+$automatic_output_filename = 0;
+
+$Usage = "$progname [--literal key=value]\n    [--setting key=value]\n    [--help] [input-file [output-file]]";
+
+# Magic environment variable: if this is set, then we're being called from a Platypus wrapper
+# See http://www.sveinbjorn.org/platypus
+if ($ENV{"CALLED_FROM_PLATYPUS"}) {
+    $automatic_output_filename = 1;
+}
+
+while ($#ARGV >= 0) {
+    if ($ARGV[0] eq '--eprint') {
+	$settings{addeprints} = 1;
+    } elsif ($ARGV[0] eq '--noeprint') {
+	$settings{addeprints} = 0;
+    } elsif ($ARGV[0] eq '--doi') {
+        $settings{adddoi} = 1;
+    } elsif ($ARGV[0] eq '--nodoi') {
+        $settings{adddoi} = 0;
+    } elsif ($ARGV[0] eq '--pubmed') {
+        $settings{addpubmed} = 1;
+    } elsif ($ARGV[0] eq '--nopubmed') {
+        $settings{addpubmed} = 0;
+    } elsif ($ARGV[0] eq '--nohyperlinks') {
+        $settings{hrefform} = 0;
+    } elsif ($ARGV[0] eq '--hyperlinks') {
+        $settings{hrefform} = 1; # redundant with --hypertex, for consistency
+    } elsif ($ARGV[0] eq '--hypertex') {
+	$settings{hrefform} = 1;
+    } elsif ($ARGV[0] eq '--hyperref') {
+	$settings{hrefform} = 2;
+    } elsif ($ARGV[0] eq '--inlinelinks') {
+        $settings{inlinelinks} = 1;
+    } elsif ($ARGV[0] eq '--noinlinelinks') {
+        $settings{inlinelinks} = 0;
+    } elsif ($ARGV[0] eq '--automatic-output') {
+        $automatic_output_filename = 1;
+    } elsif ($ARGV[0] eq '--literal') {
+        shift;
+        my $showstrings = 0;
+        if ((($k, $v) = ($ARGV[0] =~ /^(\w+)=(.*)/)) && exists $literals{$k}) {
+            $literals{$k} = $v;
+        } elsif ($ARGV[0] eq 'help') {
+            $showstrings = 1;
+        } else {
+            print "No literal found in $ARGV[0]; ignoring that\n";
+            $showstrings = 1;
+        }
+        if ($showstrings) {
+            print "Possible literal strings (and defaults) are...\n";
+            while (($k, $v) = each (%literals)) {
+                print "  $k  \t$docstring{$k} [$v]\n";
+            }
+            exit(0);
+        }
+    } elsif ($ARGV[0] eq '--setting') {
+        shift;
+        my $showstrings = 0;
+        if ((($k, $v) = ($ARGV[0] =~ /^(\w+)=(.*)/)) && exists $settings{$k}) {
+            $settings{$k} = $v;
+        } elsif ($ARGV[0] eq 'help') {
+            $showstrings = 1;
+        } else {
+            print "No setting found in $ARGV[0]; ignoring that\n";
+            $showstrings = 1;
+        }
+        if ($showstrings) {
+            print "Possible settings (and defaults) are...\n";
+            while (($k, $v) = each (%settings)) {
+                print "  $k  \t$docstring{$k} [$v]\n";
+            }
+            exit(0);
+        }
+    } elsif ($ARGV[0] eq '--help') {
+        print <<EOD;
+urlbst version $version, $releasedate
+Usage: $Usage
+
+    Options:
+      --literal key=value set one of the literal strings
+                          (see `--literal help' for possibilities)
+      --setting key=value (as --literal)
+      --help              print this help
+
+    Convenience options (can also be controlled using --setting):
+      --[no]eprint        include support for `eprint' fields
+      --[no]doi           include support for `doi' field
+      --[no]pubmed        include support for `pubmed' field
+      --nohyperlinks      do not include active links anywhere
+      --[no]inlinelinks   add hyperlinks to entry titles
+      --hypertex          include HyperTeX-style hyperlink support
+      --hyperref          include {hyperref}-style hyperlink support
+                          (generally better)
+
+    Input and output files may be given as `-' (default) to indicate stdin/out.
+
+    Homepage:     $homepageurl
+    Repository:   $repourl
+
+EOD
+        printf("    Defaults:\n");
+        printf("      eprint refs    %s\n", ($settings{addeprints} ? "included" : "not included"));
+        printf("      DOIs           %s\n", ($settings{adddoi} ? "included" : "not included"));
+        printf("      PUBMED refs    %s\n", ($settings{addpubmed} ? "included" : "not included"));
+        printf("      hyperlinks     %s\n", ($settings{hrefform}==0 ? "none" : $settings{hrefform}==1 ? "hypertex" : "hyperref"));
+        printf("      inline links   %s\n", ($settings{inlinelinks} ? "included" : "not included"));
+        exit(0);
+    } elsif ($ARGV[0] =~ /^-/) {
+        die "Unrecognised option $ARGV[0]: Usage: $Usage\n";
+    } elsif ($infile eq '-') {
+	$infile = $ARGV[0];
+    } elsif ($outfile eq '-') {
+	$outfile = $ARGV[0];
+    } else {
+	die "Usage: $Usage\n";
+    }
+    shift(@ARGV);
+}
+
+if ($settings{inlinelinks} && $settings{hrefform} == 0) {
+    print <<'EOD';
+Warning: --inlinelinks and --nohyperlinks were both specified (possibly
+    implicitly).  That combination makes no sense, so I'll ignore
+    --nohyperlinks and use --hyperref instead
+EOD
+    $settings{hrefform} = 2;
+}
+
+if ($automatic_output_filename) {
+    if ($infile eq '-') {
+        print "ERROR: No input filename given with --automatic-output\n";
+    }
+    $outfile = $infile;
+    @outparts = split /\./, $outfile;
+    $ext = pop(@outparts);
+    $outfile=join('.', @outparts);
+    if ($outfile eq '') {
+        $outfile = $ext . '-url';
+    } else {
+        $outfile = $outfile . '-url.' . $ext;
+    }
+}
+
+$exitstatus = 0;		# success status
+
+open (IN, "<$infile") || die "Can't open $infile to read";
+open (OUT, ">$outfile") || die "Can't open $outfile to write";
+
+# We have to make certain assumptions about the source files, in order
+# to patch them at the correct places.  Specifically, we assume that
+#
+#   - there's a function init.state.consts
+#
+#   - ...and an output.nonnull which does the actual outputting, which
+#         has the `usual' interface.
+#
+#   - we can replace
+#           fin.entry
+#       by
+#           new.block
+#           output.url    % the function which formats and displays any URL
+#           fin.entry
+#
+#   - there is a function which handles the `article' entry type (this
+#         will always be true)
+#
+#   - there is a function output.bibitem which is called at the
+#         beginning of each entry type
+#   - ...and one called fin.entry which is called at the end
+#
+# If the functions format.date, format.title or new.block are not defined (the
+# former is not in apalike, for example, and the last is not in the
+# AMS styles), then replacements are included in the output.
+#
+# All these assumptions are true of the standard files and, since most
+# style files derive from them more or less directly, are true of most (?)
+# other style files, too.
+#
+# There's some rather ugly Perl down here.  The parsing for
+# brace-matching could probably do with being rewritten in places, to
+# make it less ugly, and more robust.
+
+print OUT "%%% Modification of BibTeX style file ", ($infile eq '-' ? '<stdin>' : $infile), "\n";
+print OUT "%%% ... by $progname, version $version (marked with \"$mymarker\")\n%%% See <$homepageurl> and repository <$repourl>\n";
+print OUT "%%% Modifications Copyright 2002–23, Norman Gray,\n";
+print OUT "%%% and distributed under the terms of the LPPL; see README for discussion.\n";
+print OUT "%%%\n";
+print OUT "%%% Added webpage entry type, and url and lastchecked fields.\n";
+print OUT "%%% Added eprint support.\n"   if ($settings{addeprints});
+print OUT "%%% Added DOI support.\n"      if ($settings{adddoi});
+print OUT "%%% Added PUBMED support.\n"   if ($settings{addpubmed});
+print OUT "%%% Added HyperTeX support.\n" if ($settings{hrefform} == 1);
+print OUT "%%% Added hyperref support.\n" if ($settings{hrefform} == 2);
+print OUT "%%% Original headers follow...\n\n";
+
+$found{initconsts} = 0;
+$found{outputnonnull} = 0;
+$found{article} = 0;
+$found{outputbibitem} = 0;
+$found{finentry} = 0;
+$found{formatdate} = 0;
+$found{formattitle} = 0;
+$found{newblock} = 0;
+# The following are initialised negative, which Perl treats as true,
+# so the simple test 'if ($found{formateprint}) ...' will be true.
+$found{formateprint} = -1;
+$found{formatdoi} = -1;
+$found{formatpubmed} = -1;
+
+while (<IN>) {
+    /^ *%/ && do {
+        # Pass commented lines unchanged
+        print OUT;
+        next;
+    };
+
+    /^ *ENTRY/ && do {
+	# Work through the list of entry types, finding what ones are there.
+	# If we find a URL entry there already, object, since these edits
+	# will mess things up.
+	$line = $_;
+	until ($line =~ /\{\s*(\w*)/) {
+	    $line .= <IN>;
+	}
+	$bracematchtotal = 0;	# reset
+	bracematcher($line);
+	$line =~ /\{\s*(\w*)/;
+	$found{'entry'.$1} = 1;
+	print OUT $line;
+	$line = <IN>;
+	until (bracematcher($line) == 0) {
+	    # XXX deal with multiple entries on one line
+	    ($line =~ /^\s*(\w*)/) && ($found{'entry'.$1} = 1);
+	    print OUT $line;
+	    $line = <IN>;
+	}
+	if (defined($found{entryurl})) {
+	    print STDERR "$progname: style file $infile already has URL entry!\n";
+	    # print out the rest of the file, and give up
+            print OUT $line;
+	    while (<IN>) {
+		print OUT;
+	    }
+	    $exitstatus = 1;
+	    last;
+	} else {
+            print OUT "    eprint $mymarker\n    doi $mymarker\n    pubmed $mymarker\n    url $mymarker\n    lastchecked $mymarker\n";
+	}
+	print OUT $line;
+	next;
+    };
+
+    /^ *FUNCTION *\{init\.state\.consts\}/ && do {
+        # In the init.state.consts function, add an extra set of
+        # constants at the beginning.  Also use this as the marker for
+        # the place to add the init strings function.
+        print OUT <<EOD;
+$mymarker...
+% urlbst constants and state variables
+STRINGS { urlintro
+  eprinturl eprintprefix doiprefix doiurl pubmedprefix pubmedurl
+  citedstring onlinestring linktextstring
+  openinlinelink closeinlinelink }
+INTEGERS { hrefform doiform inlinelinks makeinlinelink
+  addeprints adddoi addpubmed }
+FUNCTION {init.urlbst.variables}
+{
+  % The following constants may be adjusted by hand, if desired
+
+  % The first set allow you to enable or disable certain functionality.
+EOD
+
+      while (($k, $v) = each(%settings)) {
+          print OUT "  #$v '$k :=\t% $docstring{$k}\n";
+      }
+
+      print OUT "\n  % String constants, which you _might_ want to tweak.\n";
+      while (($k, $v) = each(%literals)) {
+          print OUT "  \"$v\" '$k :=\t% $docstring{$k}\n";
+      }
+
+      print OUT <<EOD;
+
+  % The following are internal state variables, not configuration constants,
+  % so they shouldn't be fiddled with.
+  #0 'makeinlinelink :=     % state variable managed by possibly.setup.inlinelink
+  "" 'openinlinelink :=     % ditto
+  "" 'closeinlinelink :=    % ditto
+}
+INTEGERS {
+  bracket.state
+  outside.brackets
+  open.brackets
+  within.brackets
+  close.brackets
+}
+$mymarkerend
+EOD
+	$line = $_;
+	until ($line =~ /\{.*\}.*\{/s) {
+	    $line .= <IN>;
+	}
+	$line =~ s/(\{.*?\}.*?\{)/$1 #0 'outside.brackets := $mymarker...
+  #1 'open.brackets :=
+  #2 'within.brackets :=
+  #3 'close.brackets := $mymarkerend
+
+ /s;
+	print OUT $line;
+	$found{initconsts} = 1;
+	next;
+    };
+
+    /^ *EXECUTE *\{init\.state\.consts\}/ && do {
+        print OUT "EXECUTE {init.urlbst.variables} $mymarker\n";
+        print OUT;
+        next;
+    };
+
+    /^ *FUNCTION *\{new.block\}/ && do {
+        $found{newblock} = 1;
+    };
+
+    /^ *FUNCTION *\{format.doi\}/ && do {
+        #print STDERR "$progname: style file $infile already supports DOIs; urlbst format.doi disabled\n(see generated .bst style: you may need to make edits near \$settings{adddoi})\n";
+        $found{formatdoi} = 1;
+        $settings{adddoi} = 0;
+    };
+
+    /^ *FUNCTION *\{format.eprint\}/ && do {
+        #print STDERR "$progname: style file $infile already supports eprints; urlbst format.eprint disabled\n(see generated .bst style: you may need to make edits near \$settings{addeprints})\n";
+        $found{formateprint} = 1;
+        $settings{addeprints} = 0;
+    };
+
+    /^ *FUNCTION *\{format.pubmed\}/ && do {
+        #print STDERR "$progname: style file $infile already supports Pubmed; urlbst format.pubmed disabled\n(see generated .bst style: you may need to make edits near \$settings{addpubmed})\n";
+        $found{formatpubmed} = 1;
+        $settings{addpubmed} = 0;
+    };
+
+    /^ *FUNCTION *{output\.nonnull}/ && do {
+	print OUT "$mymarker\n";
+	print OUT "FUNCTION {output.nonnull.original}\n";
+        copy_block();
+	print_output_functions();
+	$found{outputnonnull} = 1;
+	next;
+    };
+
+    /FUNCTION *\{fin.entry\}/ && do {
+        # Rename fin.entry to fin.entry.original (wrapped below)
+        s/fin.entry/fin.entry.original/;
+        s/$/ $mymarker (renamed from fin.entry, so it can be wrapped below)/;
+        $found{finentry} = 1;
+        print OUT;
+        next;
+    };
+
+    /^ *FUNCTION *{format\.date}/ && do {
+	$found{formatdate} = 1;
+	print OUT;
+	next;
+    };
+
+    /^ *FUNCTION *{format\.title}/ && do {
+        # record that we found this
+	$found{formattitle} = 1;
+        print OUT;
+	next;
+    };
+
+    /^ *format\.b?title/ && do {
+        # interpolate a call to possibly.setup.inlinelink
+        print OUT "  title empty\$ 'skip\$ 'possibly.setup\.inlinelink if\$ $mymarker\n";
+        print OUT;
+        next;
+    };
+
+    /^ *format\.vol\.num\.pages/ && do {
+        # interpolate a call to possibly.setup.inlinelink
+        s/^( *)/$1possibly.setup.inlinelink /;
+        s/$/$mymarker/;
+        print OUT;
+        next;
+    };
+
+    /^ *FUNCTION *\{article\}/ && do {
+
+	print_missing_functions();
+	print_webpage_def();
+
+	print OUT;
+	$found{article} = 1;
+	next;
+    };
+
+    /FUNCTION *\{output.bibitem\}/ && do {
+        # Rename output.bibitem to output.bibitem.original (wrapped below)
+        s/{output.bibitem\}/\{output.bibitem.original\}/;
+        s/$/ $mymarker (renamed from output.bibitem, so it can be wrapped below)/;
+ 	$found{outputbibitem} = 1;
+        print OUT;
+        next;
+    };
+
+    print OUT;
+};
+
+if ($exitstatus == 0) {
+    # Skip this if we've already reported an error -- it'll only be confusing
+    foreach $k (keys %found) {
+        if ($found{$k} == 0) {
+            print STDERR "$progname: $infile: failed to find feature $k\n";
+        }
+    }
+}
+
+close (IN);
+close (OUT);
+
+exit $exitstatus;;
+
+
+
+
+
+
+sub print_output_functions {
+    print OUT "$mymarker...\n";
+
+    print OUT <<'EOD';
+% Minimal DOI parsing.
+% Given a DOI on the stack, check whether it starts with 'doiurl' or not.
+% In either case, leave on the stack first a DOI with, and then a DOI without, the URL prefix.
+FUNCTION {parse.doi}
+{
+  #1 doiurl text.length$ substring$
+  doiurl =
+    { doi
+      doi doiurl text.length$ #1 + #999 substring$ }
+    { doiurl doi *
+      doi }
+  if$
+}
+% The following three functions are for handling inlinelink.  They wrap
+% a block of text which is potentially output with write$ by multiple
+% other functions, so we don't know the content a priori.
+% They communicate between each other using the variables makeinlinelink
+% (which is true if a link should be made), and closeinlinelink (which holds
+% the string which should close any current link.  They can be called
+% at any time, but start.inlinelink will be a no-op unless something has
+% previously set makeinlinelink true, and the two ...end.inlinelink functions
+% will only do their stuff if start.inlinelink has previously set
+% closeinlinelink to be non-empty.
+% (thanks to 'ijvm' for suggested code here)
+FUNCTION {uand}
+{ 'skip$ { pop$ #0 } if$ } % 'and' (which isn't defined at this point in the file)
+FUNCTION {possibly.setup.inlinelink}
+{ makeinlinelink hrefform #0 > uand
+    { doi empty$ adddoi uand
+        { pubmed empty$ addpubmed uand
+            { eprint empty$ addeprints uand
+                { url empty$
+                    { "" }
+                    { url }
+                  if$ }
+                { eprinturl eprint * }
+              if$ }
+            { pubmedurl pubmed * }
+          if$ }
+%        { doiurl doi * }
+        { doi empty$
+            { "XXX" }
+            { doi parse.doi pop$ }
+          if$
+        }
+      if$
+      % an appropriately-formatted URL is now on the stack
+      hrefform #1 = % hypertex
+        { "\special {html:<a href=" quote$ * swap$ * quote$ * "> }{" * 'openinlinelink :=
+          "\special {html:</a>}" 'closeinlinelink := }
+        { "\href {" swap$ * "} {" * 'openinlinelink := % hrefform=#2 -- hyperref
+          % the space between "} {" matters: a URL of just the right length can cause "\% newline em"
+          "}" 'closeinlinelink := }
+      if$
+      #0 'makeinlinelink :=
+      }
+    'skip$
+  if$ % makeinlinelink
+}
+FUNCTION {add.inlinelink}
+{ openinlinelink empty$
+    'skip$
+    { openinlinelink swap$ * closeinlinelink *
+      "" 'openinlinelink :=
+      }
+  if$
+}
+EOD
+
+    # new.block is defined elsewhere
+
+    print OUT <<'EOD';
+FUNCTION {output.nonnull}
+{ % Save the thing we've been asked to output
+  's :=
+  % If the bracket-state is close.brackets, then add a close-bracket to
+  % what is currently at the top of the stack, and set bracket.state
+  % to outside.brackets
+  bracket.state close.brackets =
+    { "]" *
+      outside.brackets 'bracket.state :=
+    }
+    'skip$
+  if$
+  bracket.state outside.brackets =
+    { % We're outside all brackets -- this is the normal situation.
+      % Write out what's currently at the top of the stack, using the
+      % original output.nonnull function.
+      s
+      add.inlinelink
+      output.nonnull.original % invoke the original output.nonnull
+    }
+    { % Still in brackets.  Add open-bracket or (continuation) comma, add the
+      % new text (in s) to the top of the stack, and move to the close-brackets
+      % state, ready for next time (unless inbrackets resets it).  If we come
+      % into this branch, then output.state is carefully undisturbed.
+      bracket.state open.brackets =
+        { " [" * }
+        { ", " * } % bracket.state will be within.brackets
+      if$
+      s *
+      close.brackets 'bracket.state :=
+    }
+  if$
+}
+
+% Call this function just before adding something which should be presented in
+% brackets.  bracket.state is handled specially within output.nonnull.
+FUNCTION {inbrackets}
+{ bracket.state close.brackets =
+    { within.brackets 'bracket.state := } % reset the state: not open nor closed
+    { open.brackets 'bracket.state := }
+  if$
+}
+
+FUNCTION {format.lastchecked}
+{ lastchecked empty$
+    { "" }
+    { inbrackets citedstring lastchecked * }
+  if$
+}
+EOD
+    print OUT "$mymarkerend\n";
+}
+
+sub print_webpage_def {
+    print OUT "$mymarker...\n";
+
+    # Some of the functions below call new.block, so we need a dummy
+    # version, in the case where the style being edited doesn't supply
+    # that function.
+    if (! $found{newblock}) {
+        print OUT "FUNCTION {new.block} % dummy new.block function\n{\n  % empty\n}\n\n";
+        $found{newblock} = 1;
+    }
+
+    print OUT <<'EOD';
+% Functions for making hypertext links.
+% In all cases, the stack has (link-text href-url)
+%
+% make 'null' specials
+FUNCTION {make.href.null}
+{
+  pop$
+}
+% make hypertex specials
+FUNCTION {make.href.hypertex}
+{
+  "\special {html:<a href=" quote$ *
+  swap$ * quote$ * "> }" * swap$ *
+  "\special {html:</a>}" *
+}
+% make hyperref specials
+FUNCTION {make.href.hyperref}
+{
+  "\href {" swap$ * "} {\path{" * swap$ * "}}" *
+}
+FUNCTION {make.href}
+{ hrefform #2 =
+    'make.href.hyperref      % hrefform = 2
+    { hrefform #1 =
+        'make.href.hypertex  % hrefform = 1
+        'make.href.null      % hrefform = 0 (or anything else)
+      if$
+    }
+  if$
+}
+
+% If inlinelinks is true, then format.url should be a no-op, since it's
+% (a) redundant, and (b) could end up as a link-within-a-link.
+FUNCTION {format.url}
+{ inlinelinks #1 = url empty$ or
+   { "" }
+   { hrefform #1 =
+       { % special case -- add HyperTeX specials
+         urlintro "\url{" url * "}" * url make.href.hypertex * }
+       { urlintro "\url{" * url * "}" * }
+     if$
+   }
+  if$
+}
+EOD
+
+    $formateprintfunction = <<'EOD';
+FUNCTION {format.eprint}
+{ eprint empty$
+    { "" }
+    { eprintprefix eprint * eprinturl eprint * make.href }
+  if$
+}
+EOD
+    output_replacement_function($found{formateprint},
+                                'format.eprint',
+                                'addeprints',
+                                $formateprintfunction);
+
+    $formatdoifunction = <<'EOD';
+FUNCTION {format.doi}
+{ doi empty$
+    { "" }
+    { doi parse.doi % leaves "https://doi.org/DOI" DOI on the stack
+      's := 't :=
+      doiform #1 =
+        { "\doi{" s * "}" * }
+        { doiprefix s * t make.href }
+      if$
+    }
+  if$
+}
+EOD
+    output_replacement_function($found{formatdoi},
+                                'format.doi',
+                                'adddoi',
+                                $formatdoifunction);
+
+    $formatpubmedfunction = <<'EOD';
+FUNCTION {format.pubmed}
+{ pubmed empty$
+    { "" }
+    { pubmedprefix pubmed * pubmedurl pubmed * make.href }
+  if$
+}
+EOD
+    output_replacement_function($found{formatpubmed},
+                                'format.pubmed',
+                                'addpubmed',
+                                $formatpubmedfunction);
+
+    print OUT <<'EOD';
+% Output a URL.  We can't use the more normal idiom (something like
+% `format.url output'), because the `inbrackets' within
+% format.lastchecked applies to everything between calls to `output',
+% so that `format.url format.lastchecked * output' ends up with both
+% the URL and the lastchecked in brackets.
+FUNCTION {output.url}
+{ url empty$
+    'skip$
+    { new.block
+      format.url output
+      format.lastchecked output
+    }
+  if$
+}
+
+FUNCTION {output.web.refs}
+{
+  new.block
+  inlinelinks
+    'skip$ % links were inline -- don't repeat them
+    { % If the generated DOI will be the same as the URL,
+      % then don't print the URL (thanks to Joseph Wright
+      % for (the original version of) this code,
+      % at http://tex.stackexchange.com/questions/5660)
+      adddoi
+          doi empty$ { "X" } { doi parse.doi pop$ } if$ % DOI URL to be generated
+          url empty$ { "Y" } { url } if$          % the URL, or "Y" if empty
+          =                                       % are the strings equal?
+          and
+        'skip$
+        { output.url }
+      if$
+      addeprints eprint empty$ not and
+        { format.eprint output.nonnull }
+        'skip$
+      if$
+      adddoi doi empty$ not and
+        { format.doi output.nonnull }
+        'skip$
+      if$
+      addpubmed pubmed empty$ not and
+        { format.pubmed output.nonnull }
+        'skip$
+      if$
+    }
+  if$
+}
+
+% Wrapper for output.bibitem.original.
+% If the URL field is not empty, set makeinlinelink to be true,
+% so that an inline link will be started at the next opportunity
+FUNCTION {output.bibitem}
+{ outside.brackets 'bracket.state :=
+  output.bibitem.original
+  inlinelinks url empty$ not doi empty$ not or pubmed empty$ not or eprint empty$ not or and
+    { #1 'makeinlinelink := }
+    { #0 'makeinlinelink := }
+  if$
+}
+
+% Wrapper for fin.entry.original
+FUNCTION {fin.entry}
+{ output.web.refs  % urlbst
+  makeinlinelink       % ooops, it appears we didn't have a title for inlinelink
+    { possibly.setup.inlinelink % add some artificial link text here, as a fallback
+      linktextstring output.nonnull }
+    'skip$
+  if$
+  bracket.state close.brackets = % urlbst
+    { "]" * }
+    'skip$
+  if$
+  fin.entry.original
+}
+
+% Webpage entry type.
+% Title and url fields required;
+% author, note, year, month, and lastchecked fields optional
+% See references
+%   ISO 690-2 http://www.nlc-bnc.ca/iso/tc46sc9/standard/690-2e.htm
+%   http://www.classroom.net/classroom/CitingNetResources.html
+%   http://neal.ctstateu.edu/history/cite.html
+%   http://www.cas.usf.edu/english/walker/mla.html
+% for citation formats for web pages.
+FUNCTION {webpage}
+{ output.bibitem
+  author empty$
+    { editor empty$
+        'skip$  % author and editor both optional
+        { format.editors output.nonnull }
+      if$
+    }
+    { editor empty$
+        { format.authors output.nonnull }
+        { "can't use both author and editor fields in " cite$ * warning$ }
+      if$
+    }
+  if$
+  new.block
+  title empty$ 'skip$ 'possibly.setup.inlinelink if$
+  format.title "title" output.check
+  inbrackets onlinestring output
+  new.block
+  year empty$
+    'skip$
+    { format.date "year" output.check }
+  if$
+  % We don't need to output the URL details ('lastchecked' and 'url'),
+  % because fin.entry does that for us, using output.web.refs.  The only
+  % reason we would want to put them here is if we were to decide that
+  % they should go in front of the rather miscellaneous information in 'note'.
+  new.block
+  note output
+  fin.entry
+}
+EOD
+
+    print OUT "$mymarkerend\n\n\n";
+}
+
+
+sub output_replacement_function {
+    my $emit_function = $_[0];
+    my $function_name = $_[1];
+    my $disabling_variable = $_[2];
+    my $function_definition_string = $_[3];
+
+    if ($emit_function > 0) {
+        print OUT <<"EOD";
+%%% The style file $infile already supports $function_name,
+%%% but it might not do so in the same way as urlbst expects.
+%%% I've therefore left $infile 's function unchanged,
+%%% and disabled urlbst's version; proceed with some caution.
+EOD
+
+        print STDERR "$progname: WARNING: style file $infile already includes a $function_name function;\nyou may need to disable the urlbst version by setting \$settings{$disabling_variable} to zero.\nYou might want to edit the output file (search for $function_name).\n";
+
+        ($t = $function_definition_string) =~ s/\n/\n%%% /g;
+        print OUT "%%% " . $t . "$mymarker\n";
+    } else {
+        print OUT $function_definition_string;
+    }
+    print OUT "\n";
+}
+
+sub print_missing_functions {
+    # We've got to the bit of the file which handles the entry
+    # types, so write out the webpage entry handler.  This uses
+    # the format.date function, which which many but not all
+    # bst files have (for example, apalike doesn't).  So
+    # check that we either have found this function already, or
+    # add it.
+    if (! $found{formatdate}) {
+	if ($found{entrymonth}) {
+	    print OUT <<'EOD';
+FUNCTION {format.date}
+{ year empty$
+    { month empty$
+	{ "" }
+	{ "there's a month but no year in " cite$ * warning$
+	  month
+	}
+      if$
+    }
+    { month empty$
+	'year
+	{ month " " * year * }
+      if$
+    }
+  if$
+}
+EOD
+	} else {
+	    print OUT <<'EOD';
+FUNCTION {format.date}
+{ year empty$
+    'skip$
+    { %write$
+      "(" year * ")" *
+    }
+  if$
+}
+EOD
+  	}
+	$found{formatdate} = 1;
+    }
+
+    # If the style file didn't supply a format.title function, then supply
+    # one here (the {webpage} function requires it).
+    if (! $found{formattitle}) {
+	print OUT <<'EOD';
+FUNCTION {format.title}
+{ title empty$
+    { "" }
+    { title "t" change.case$ }
+  if$
+}
+EOD
+    $found{formattitle} = 1;
+    }
+}
+
+# Utility function: Keep track of open and close braces in the string argument.
+# Keep state in $bracematchtotal, return the current value.
+sub bracematcher {
+    my $s = shift;
+    $s =~ s/[^\{\}]//g;
+    #print "s=$s\n";
+    foreach my $c (split (//, $s)) {
+	$bracematchtotal += ($c eq '{' ? 1 : -1);
+    }
+    return $bracematchtotal;
+}
+
+# Utility function: use bracematcher to copy the complete block which starts
+# on or after the current line.
+sub copy_block {
+    $bracematchtotal = 0;
+    # copy any leading lines which don't have braces (presumably comments)
+    while (defined ($line = <IN>) && ($line !~ /{/)) {
+        print OUT $line;
+    }
+    while (defined ($line) && bracematcher($line) > 0) {
+        print OUT $line;
+        $line = <IN>;
+    }
+    print OUT "$line\n";	# print out terminating \} (assumed
+    				# alone on the line)
+}

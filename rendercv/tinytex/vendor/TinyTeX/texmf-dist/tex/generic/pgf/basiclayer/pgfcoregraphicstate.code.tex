@@ -1,0 +1,280 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcoregraphicstate.code.tex}
+
+% Globals
+
+\newdimen\pgflinewidth
+
+
+% Set the line width to #1.
+% 
+% #1 = new line width.
+% 
+% Example:
+%
+% \pgfsetlinewidth{3pt}
+
+\def\pgfsetlinewidth#1{%
+  \pgfmathsetlength\pgflinewidth{#1}%
+  \global\pgflinewidth=\pgflinewidth%
+  \pgfsys@setlinewidth{\the\pgflinewidth}%
+  \ignorespaces}
+
+
+% Set the inner line width to #1.
+% 
+% #1 = new inner line width.
+% 
+% Description:
+%
+% The inner line width is the width of a second line that is drawn on
+% top of the main stroked line. If the inner line width is 0pt, no
+% inner line is drawn. The main use of inner lines is for creating
+% "double" lines.
+%
+% Inner lines are not drawn when a path is used for clipping.
+%
+% The inner line width is local to the current TeX group, it is not
+% part of the graphic state.
+%
+% Example:
+%
+% \pgfsetinnerlinewidth{1pt}
+
+\def\pgfsetinnerlinewidth#1{%
+  \pgfmathsetlength\pgf@x{#1}%
+  \edef\pgfinnerlinewidth{\the\pgf@x}%
+}
+\def\pgfinnerlinewidth{0pt}
+
+
+% Set the inner line color to #1.
+%
+% #1 = color for the inner line
+%
+% Example:
+%
+% \pgfsetinnerlinecolor{green} % yikes!
+
+\def\pgfsetinnerstrokecolor#1{\def\pgfinnerstrokecolor{#1}}
+\def\pgfinnerstrokecolor{white}
+
+
+% Set the miter limit to #1.
+% 
+% #1 = new miter limit factor.
+% 
+% Example:
+%
+% \pgfsetmiterlimit{3}
+
+\def\pgfsetmiterlimit#1{%
+  \ifdim#1pt<1pt\pgferror{miter limit cannot be less than 1}\fi%
+  \pgfsys@setmiterlimit{#1}%
+  \ignorespaces}
+
+
+% Set the dash pattern to #1 with phase #2/
+% 
+% #1 = a row of numbers of length of ``on'' and ``off'' points.
+% #2 = a phase
+% 
+% Example:
+%
+% \pgfsetdash{}          {0pt} % solid line
+% \pgfsetdash{{.1cm}}    {0pt} % long dashes
+% \pgfsetdash{{1pt}{1ex}}{0pt} % dotted
+
+\def\pgfsetdash#1#2{%
+  \def\pgf@temp{}%
+  \def\pgf@next{\pgf@strip}%
+  \pgf@strip#1{pgf@stop}%
+  \pgfmathsetlength\pgf@x{#2}%
+  \pgfsys@setdash{\pgf@temp}{\the\pgf@x}%
+  \ignorespaces}
+
+\def\pgf@strip#1{%
+  \def\pgf@@temp{#1}%
+  \ifx\pgf@@temp\pgf@stop%
+    \let\pgf@next=\relax%
+  \else%
+    \pgfmathsetlength\pgf@x{#1}%
+    \ifx\pgf@temp\pgfutil@empty%
+      \edef\pgf@temp{\the\pgf@x}%
+    \else%
+      \edef\pgf@temp{\pgf@temp,\the\pgf@x}%
+    \fi%
+  \fi\pgf@next}
+
+\def\pgf@stop{pgf@stop}
+
+
+% Set color of strokes. This will overrule the normal color.
+% 
+% Example:
+%
+% \pgfsetstrokecolor{red}
+
+\def\pgfsetstrokecolor#1{%
+  \pgfutil@colorlet{pgfstrokecolor}{#1}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgfstrokecolor}}%
+  \expandafter\let\expandafter\pgf@temp\csname\string\color@pgfstrokecolor\endcsname
+  % for arrow tips:
+  \global\let\pgf@strokecolor@global=\pgf@temp
+  \expandafter\pgf@setstrokecolor\pgf@temp%
+}
+\def\pgf@setstrokecolor#1#2#3#4#5{%
+  \expandafter\ifx\csname pgfsys@color@#4@stroke\endcsname\relax%
+    \pgferror{Unsupported color model `#4'. Sorry}%
+  \else%
+    \edef\pgf@colmarshal{\expandafter\noexpand\csname pgfsys@color@#4@stroke\endcsname}%
+    \pgf@uncomma#5,,%
+    \pgf@colmarshal%
+  \fi}
+
+\def\pgf@uncomma#1,{%
+  \def\pgf@coltest{#1}%
+  \ifx\pgf@coltest\pgfutil@empty%
+    \let\pgf@colnext=\relax%
+  \else%
+    \expandafter\def\expandafter\pgf@colmarshal\expandafter{\pgf@colmarshal{#1}}%
+    \let\pgf@colnext=\pgf@uncomma%
+  \fi%
+  \pgf@colnext%  
+}
+
+
+% Set color of fills. This will overrule the normal color.
+% 
+% Example:
+%
+% \pgfsetfillcolor{gray}
+
+\def\pgfsetfillcolor#1{%
+  \pgfutil@colorlet{pgffillcolor}{#1}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgffillcolor}}%
+  \expandafter\let\expandafter\pgf@temp\csname\string\color@pgffillcolor\endcsname
+  % for arrow tips:
+  \global\let\pgf@fillcolor@global=\pgf@temp
+  \expandafter\pgf@setfillcolor\pgf@temp
+}
+\def\pgf@setfillcolor#1#2#3#4#5{%
+  \expandafter\ifx\csname pgfsys@color@#4@fill\endcsname\relax%
+    \pgferror{Unsupported color model `#4'. Sorry}%
+  \else%
+    \edef\pgf@colmarshal{\expandafter\noexpand\csname pgfsys@color@#4@fill\endcsname}%
+    \pgf@uncomma#5,,%
+    \pgf@colmarshal%
+  \fi}
+
+
+
+% Sets both the stroke and fill color.
+% 
+% Example:
+%
+% \pgfsetcolor{blue}
+
+\def\pgfsetcolor#1{%
+  \pgfutil@colorlet{pgfstrokecolor}{#1}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgfstrokecolor}}%
+  \expandafter\let\expandafter\pgf@temp\csname\string\color@pgfstrokecolor\endcsname
+  % for arrow tips:
+  \global\let\pgf@strokecolor@global=\pgf@temp
+  \global\let\pgf@fillcolor@global=\pgf@temp
+  \expandafter\pgf@setcolor\pgf@temp%
+}
+\def\pgf@setcolor#1#2#3#4#5{%
+  \expandafter\ifx\csname pgfsys@color@#4\endcsname\relax%
+    \pgferror{Unsupported color model `#4'. Sorry}%
+  \else%
+    \edef\pgf@colmarshal{\expandafter\noexpand\csname pgfsys@color@#4\endcsname}%
+    \pgf@uncomma#5,,%
+    \pgf@colmarshal%
+  \fi}
+
+% Code for ensuring the stroke/fill colors are correctly reset.
+\def\XC@bcolor{\pgfsys@color@reset}
+
+% Set a butt line cap.
+% 
+% Example:
+%
+% \pgfsetbuttcap
+
+\def\pgfsetbuttcap{\pgfsys@buttcap\ignorespaces}
+
+
+% Set a round line cap.
+% 
+% Example:
+%
+% \pgfsetroundcap
+
+\def\pgfsetroundcap{\pgfsys@roundcap\ignorespaces}
+
+
+% Set a rectangular line cap.
+% 
+% Example:
+%
+% \pgfsetrectcap
+
+\def\pgfsetrectcap{\pgfsys@rectcap\ignorespaces}
+
+
+% Set a miter line join.
+% 
+% Example:
+%
+% \pgfsetmiterjoin
+
+\def\pgfsetmiterjoin{\pgfsys@miterjoin\ignorespaces}
+
+
+% Set a bevel line join.
+% 
+% Example:
+%
+% \pgfsetbeveljoin
+
+\def\pgfsetbeveljoin{\pgfsys@beveljoin\ignorespaces}
+
+
+% Set a round line join.
+% 
+% Example:
+%
+% \pgfsetroundjoin
+
+\def\pgfsetroundjoin{\pgfsys@roundjoin\ignorespaces}
+
+
+% Sets the even-odd rule for filling and clipping.
+% 
+% Example:
+%
+% \pgfseteorule
+
+\def\pgfseteorule{\pgfsys@eoruletrue\ignorespaces}
+
+
+% Sets the non-zero winding number rule for filling and clipping.
+% 
+% Example:
+%
+% \pgfsetnonzerorule
+
+\def\pgfsetnonzerorule{\pgfsys@eorulefalse\ignorespaces}
+
+
+
+\endinput

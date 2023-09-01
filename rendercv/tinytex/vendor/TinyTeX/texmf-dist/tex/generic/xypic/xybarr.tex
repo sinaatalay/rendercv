@@ -1,0 +1,1016 @@
+%% xybarr.tex from $Id: xybarr.doc,v 1.3 2013/10/06 00:12:30 krisrose Exp $
+%%
+%% Xy-pic ``Barr Feature'' option.
+%% Copyright (c) 2001 Michael Barr <barr@barrs.org>
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%% http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is Michael Barr
+%%
+%% This work is derived from the file diagxy.tex and has
+%% documentation/tutorial file barrdoc.latex
+%%
+\ifx\xyloaded\undefined \input xy \fi
+\xyprovide{barr}{Barr's diagram feature}{2011-06-18}%
+ {Michael Barr}{barr@math.mcgill.ca}%
+ {Dept of Math and Stats,
+ McGill University,
+ 805 Sherbrooke Street West,
+ Montreal, Quebec H3A 0B9, Canada}
+\xyrequire{curve}
+\xyrequire{arrow}
+\xycatcodes 
+\def\dated#1{\def\thedate{#1}}%
+\dated{2011-06-18}%
+ \newdimen\xydashw@@
+ \xydashw@@\xydashw@
+ \multiply\xydashw@@ by 7
+ \divide\xydashw@@ by 4
+\setbox\zerodotbox@=\hbox{\dimen@=.5\xydashw@@
+ \kern-\dimen@ \vrule width\xydashw@@ height\dimen@ depth\dimen@}
+\wd\zerodotbox@=\z@ \ht\zerodotbox@=\z@ \dp\zerodotbox@=\z@
+\catcode`\@=12
+\newdir{ >}{{ }*!/-.9em/@{>}}%
+\newdir^{ (}{{ }*!/-.5em/@^{(}}%
+\newdir{< }{!/.9em/@{<}*{ }}%
+\newdir{) }{!/.9em/@^{)}*{ }}%
+\newdir{ (}{{ }*!/-.5em/@^{(}}%
+\newdir{d}{\object{.}}
+\newdir{into}{{ }*!/-.5em/@^{(}}%
+\newdimen\high%
+\newdimen\ul%
+\newcount\deltax%
+\newcount\deltay%
+\newcount\deltaX%
+\newcount\deltaXprime%
+\newcount\deltaY%
+\newcount\deltaYprime%
+\newdimen\wdth%
+\newcount\xend%
+\newcount\yend%
+\newcount\Xend%
+\newcount\Yend%
+\newcount\xpos%
+\newcount\ypos%
+\newcount\default \default=500%
+\newcount\defaultmargin \defaultmargin=150%
+\newcount\topw%
+\newcount\botw%
+\newcount\Xpos%
+\newcount\Ypos%
+\def\ratchet#1#2{\ifnum#1<#2\global #1=#2\fi}%
+\catcode`\@=11%
+\expandafter\ifx\csname @ifnextchar\endcsname\relax%
+\def\ifnextchar#1#2#3{\let\@tempe%
+#1\def\@tempa{#2}\def\@tempb{#3}\futurelet%
+ \@tempc\@ifnch}%
+\def\@ifnch{\ifx \@tempc \@sptoken \let\@tempd\@xifnch%
+ \else \ifx \@tempc \@tempe\let\@tempd\@tempa\else\let\@tempd\@tempb\fi%
+ \fi \@tempd}%
+\def\:{\let\@sptoken= } \:
+\def\:{\@xifnch} \expandafter\def\: {\futurelet\@tempc\@ifnch}%
+\else%
+\let\ifnextchar\@ifnextchar%
+\fi%
+\setbox0=\hbox{$x$}
+\newdimen\axis \axis=\fontdimen22\textfont2%
+\ul=.01em%
+\X@xbase =.01em%
+\Y@ybase =.01em%
+\def\scalefactor#1{\ul=#1\ul \X@xbase=#1\X@xbase \Y@ybase=#1\Y@ybase}%
+\catcode`\@=12%
+\def\fontscale#1{%
+\if#1h\relax%
+\font\xydashfont=xydash10 scaled \magstephalf%
+\font\xyatipfont=xyatip10 scaled \magstephalf%
+\font\xybtipfont=xybtip10 scaled \magstephalf%
+\font\xybsqlfont=xybsql10 scaled \magstephalf%
+\font\xycircfont=xycirc10 scaled \magstephalf%
+\else%
+\font\xydashfont=xydash10 scaled \magstep#1%
+\font\xyatipfont=xyatip10 scaled \magstep#1%
+\font\xybtipfont=xybtip10 scaled \magstep#1%
+\font\xybsqlfont=xybsql10 scaled \magstep#1%
+\font\xycircfont=xycirc10 scaled \magstep#1%
+\fi}%
+\def\bfig{\vcenter\bgroup\xy}%
+\def\efig{\endxy\egroup}%
+\def\car#1#2\nil{#1}%
+\def\morphism{\ifnextchar({\morphismp}{\morphismp(0,0)}}%
+\def\morphismp(#1){\ifnextchar|{\morphismpp(#1)}{\morphismpp(#1)|a|}}%
+\def\morphismpp(#1)|#2|{\ifnextchar/{\morphismppp(#1)|#2|}%
+ {\morphismppp(#1)|#2|/>/}}%
+\def\morphismppp(#1)|#2|/#3/{%
+ \ifnextchar<{\morphismpppp(#1)|#2|/#3/}%
+ {\morphismpppp(#1)|#2|/#3/<\default,0>}}%
+\def\morphismpppp(#1,#2)|#3|/#4/<#5,#6>[#7`#8;#9]{%
+\xend#1\advance \xend by #5%
+\yend#2\advance \yend by #6%
+\domorphism(#1,#2)|#3|/#4/<#5,#6>[{#7}`{#8};{#9}]}%
+\def\domorphism(#1,#2)|#3|/#4/<#5,#6>[#7`#8;#9]{%
+\def\next{\car#4.\nil}%
+\if@\next\relax%
+ \if#3l%
+ \ifnum #6>0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3m%
+ \setbox0\hbox{$#9$}%
+ \ifdim \wd0=0pt%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4 (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4|-*+<1pt,4pt>{\labelstyle#9}%
+ (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3r%
+ \ifnum #6<0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3a%
+ \ifnum #5>0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3b%
+ \ifnum #5<0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar#4 (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi\fi\fi\fi\fi%
+\else%
+ \if#3l%
+ \ifnum #6>0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3m%
+ \setbox0\hbox{$#9$}%
+ \ifdim \wd0=0pt%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}|-*+<1pt,4pt>{\labelstyle#9}%
+ (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3r%
+ \ifnum #6<0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3a%
+ \ifnum #5>0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else \if#3b%
+ \ifnum #5<0%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}^-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4}_-{#9} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi%
+ \else%
+ \POS(#1,#2)*+!!<0ex,\axis>{#7}\ar@{#4} (\xend,\yend)*+!!<0ex,\axis>{#8}%
+ \fi\fi\fi\fi\fi%
+\fi\ignorespaces}%
+\def\vect(#1,#2)/#3/<#4,#5>{%
+ \xend#1 \yend#2 \advance\xend by #4 \advance\yend by #5%
+ \POS(#1,#2)\ar#3 (\xend,\yend)}%
+\def\squarepppp(#1,#2)|#3|/#4`#5`#6`#7/<#8>[#9]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3##4|{%
+ \def\xa{##1}\def\xb{##2}\def\xc{##3}\def\xd{##4}\ignorespaces}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#8>%
+\def\next[##1`##2`##3`##4;##5`##6`##7`##8]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}\def\noded{##4}%
+ \def\labela{##5}\def\labelb{##6}\def\labelc{##7}\def\labeld{##8}\ignorespaces}%
+\next[#9]%
+\morphism(\xpos,\ypos)|\xd|/{#7}/<\deltax,0>[\nodec`\noded;\labeld]%
+\advance \ypos by \deltay%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<0,-\deltay>[\nodea`\nodec;\labelb]%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<\deltax,0>[\nodea`\nodeb;\labela]%
+ \advance \xpos by \deltax%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<0,-\deltay>[\nodeb`\noded;\labelc]%
+\ignorespaces}%
+\def\square{\ifnextchar({\squarep}{\squarep(0,0)}}%
+\def\squarep(#1){\ifnextchar|{\squarepp(#1)}{\squarepp(#1)|alrb|}}%
+\def\squarepp(#1)|#2|{\ifnextchar/{\squareppp(#1)|#2|}%
+ {\squareppp(#1)|#2|/>`>`>`>/}}%
+\def\squareppp(#1)|#2|/#3`#4`#5`#6/{%
+ \ifnextchar<{\squarepppp(#1)|#2|/#3`#4`#5`#6/}%
+ {\squarepppp(#1)|#2|/#3`#4`#5`#6/<\default,\default>}}%
+\def\diamondpppp(#1,#2)|#3|/#4`#5`#6`#7/<#8>[#9]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3##4|{%
+ \def\xa{##1}\def\xb{##2}\def\xc{##3}\def\xd{##4}\ignorespaces}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#8>%
+\def\next[##1`##2`##3`##4;##5`##6`##7`##8]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}\def\noded{##4}%
+ \def\labela{##5}\def\labelb{##6}\def\labelc{##7}%
+\def\labeld{##8}\ignorespaces}%
+\next[#9]%
+\advance\ypos\deltay
+\morphism(\xpos,\ypos)|\xc|/{#6}/<\deltax,-\deltay>[\nodeb`\noded;\labelc]%
+\advance\xpos \deltax
+\advance\xpos \deltax
+\morphism(\xpos,\ypos)|\xd|/{#7}/<-\deltax,-\deltay>[\nodec`\noded;\labeld]%
+\advance\ypos\deltay \advance\xpos -\deltax
+\morphism(\xpos,\ypos)|\xa|/{#4}/<-\deltax,-\deltay>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<\deltax,-\deltay>[\nodea`\nodec;\labelb]%
+}
+\def\Diamond{\ifnextchar({\diamondp}{\diamondp(0,0)}}%
+\def\diamondp(#1){\ifnextchar|{\diamondpp(#1)}{\diamondpp(#1)|lrlr|}}%
+\def\diamondpp(#1)|#2|{\ifnextchar/{\diamondppp(#1)|#2|}%
+ {\diamondppp(#1)|#2|/>`>`>`>/}}%
+\def\diamondppp(#1)|#2|/#3`#4`#5`#6/{%
+ \ifnextchar<{\diamondpppp(#1)|#2|/#3`#4`#5`#6/}%
+ {\diamondpppp(#1)|#2|/#3`#4`#5`#6/<400,400>}}%
+\def\ptrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<\deltax,0>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<0,-\deltay>[\nodea`\nodec;\labelb]%
+\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<-\deltax,-\deltay>[\nodeb`\nodec;\labelc]%
+\ignorespaces}%
+\def\qtrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<\deltax,0>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<\deltax,-\deltay>[\nodea`\nodec;\labelb]%
+\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<0,-\deltay>[\nodeb`\nodec;\labelc]%
+\ignorespaces}%
+\def\dtrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<\deltax,0>[\nodeb`\nodec;\labelc]%
+\advance\ypos by \deltay\advance \xpos by \deltax%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<-\deltax,-\deltay>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<0,-\deltay>[\nodea`\nodec;\labelb]%
+\ignorespaces}%
+\def\btrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<\deltax,0>[\nodeb`\nodec;\labelc]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<0,-\deltay>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<\deltax,-\deltay>[\nodea`\nodec;\labelb]%
+\ignorespaces}%
+\def\Atrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\multiply\deltax by 2%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<\deltax,0>[\nodeb`\nodec;\labelc]%
+\divide\deltax by 2%
+\advance\ypos by \deltay\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<-\deltax,-\deltay>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<\deltax,-\deltay>[\nodea`\nodec;\labelb]%
+\ignorespaces}%
+\def\Vtrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<\deltax,-\deltay>[\nodea`\nodec;\labelb]%
+\multiply\deltax by 2%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<\deltax,0>[\nodea`\nodeb;\labela]%
+\advance\xpos by \deltax \divide \deltax by 2%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<-\deltax,-\deltay>[\nodeb`\nodec;\labelc]%
+\ignorespaces}%
+\def\Ctrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\advance \ypos by \deltay%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<\deltax,-\deltay>[\nodeb`\nodec;\labelc]%
+\advance\ypos by \deltay \advance \xpos by \deltax%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<-\deltax,-\deltay>[\nodea`\nodeb;\labela]%
+\multiply\deltay by 2%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<0,-\deltay>[\nodea`\nodec;\labelb]%
+\ignorespaces}%
+\def\Dtrianglepppp(#1,#2)|#3|/#4`#5`#6/<#7>[#8]{%
+\xpos#1\ypos#2%
+\def\next|##1##2##3|{\def\xa{##1}\def\xb{##2}\def\xc{##3}}%
+\next|#3|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#7>%
+\def\next[##1`##2`##3;##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\labela{##4}\def\labelb{##5}\def\labelc{##6}}%
+\next[#8]%
+\advance\xpos by \deltax \advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xc|/{#6}/<-\deltax,-\deltay>[\nodeb`\nodec;\labelc]%
+\advance\xpos by -\deltax \advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xb|/{#5}/<\deltax,-\deltay>[\nodea`\nodeb;\labelb]%
+\multiply \deltay by 2%
+\morphism(\xpos,\ypos)|\xa|/{#4}/<0,-\deltay>[\nodea`\nodec;\labela]%
+\ignorespaces}%
+\def\ptriangle{\ifnextchar({\ptrianglep}{\ptrianglep(0,0)}}%
+\def\ptrianglep(#1){\ifnextchar|{\ptrianglepp(#1)}{\ptrianglepp(#1)|alr|}}%
+\def\ptrianglepp(#1)|#2|{\ifnextchar/{\ptriangleppp(#1)|#2|}%
+ {\ptriangleppp(#1)|#2|/>`>`>/}}%
+\def\ptriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\ptrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\ptrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\qtriangle{\ifnextchar({\qtrianglep}{\qtrianglep(0,0)}}%
+\def\qtrianglep(#1){\ifnextchar|{\qtrianglepp(#1)}{\qtrianglepp(#1)|alr|}}%
+\def\qtrianglepp(#1)|#2|{\ifnextchar/{\qtriangleppp(#1)|#2|}%
+ {\qtriangleppp(#1)|#2|/>`>`>/}}%
+\def\qtriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\qtrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\qtrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\dtriangle{\ifnextchar({\dtrianglep}{\dtrianglep(0,0)}}%
+\def\dtrianglep(#1){\ifnextchar|{\dtrianglepp(#1)}{\dtrianglepp(#1)|lrb|}}%
+\def\dtrianglepp(#1)|#2|{\ifnextchar/{\dtriangleppp(#1)|#2|}%
+ {\dtriangleppp(#1)|#2|/>`>`>/}}%
+\def\dtriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\dtrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\dtrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\btriangle{\ifnextchar({\btrianglep}{\btrianglep(0,0)}}%
+\def\btrianglep(#1){\ifnextchar|{\btrianglepp(#1)}{\btrianglepp(#1)|lrb|}}%
+\def\btrianglepp(#1)|#2|{\ifnextchar/{\btriangleppp(#1)|#2|}%
+ {\btriangleppp(#1)|#2|/>`>`>/}}%
+\def\btriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\btrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\btrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\Atriangle{\ifnextchar({\Atrianglep}{\Atrianglep(0,0)}}%
+\def\Atrianglep(#1){\ifnextchar|{\Atrianglepp(#1)}{\Atrianglepp(#1)|lrb|}}%
+\def\Atrianglepp(#1)|#2|{\ifnextchar/{\Atriangleppp(#1)|#2|}%
+ {\Atriangleppp(#1)|#2|/>`>`>/}}%
+\def\Atriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\Atrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\Atrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\Vtriangle{\ifnextchar({\Vtrianglep}{\Vtrianglep(0,0)}}%
+\def\Vtrianglep(#1){\ifnextchar|{\Vtrianglepp(#1)}{\Vtrianglepp(#1)|alb|}}%
+\def\Vtrianglepp(#1)|#2|{\ifnextchar/{\Vtriangleppp(#1)|#2|}%
+ {\Vtriangleppp(#1)|#2|/>`>`>/}}%
+\def\Vtriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\Vtrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\Vtrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\Ctriangle{\ifnextchar({\Ctrianglep}{\Ctrianglep(0,0)}}%
+\def\Ctrianglep(#1){\ifnextchar|{\Ctrianglepp(#1)}{\Ctrianglepp(#1)|arb|}}%
+\def\Ctrianglepp(#1)|#2|{\ifnextchar/{\Ctriangleppp(#1)|#2|}%
+ {\Ctriangleppp(#1)|#2|/>`>`>/}}%
+\def\Ctriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\Ctrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\Ctrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\Dtriangle{\ifnextchar({\Dtrianglep}{\Dtrianglep(0,0)}}%
+\def\Dtrianglep(#1){\ifnextchar|{\Dtrianglepp(#1)}{\Dtrianglepp(#1)|lab|}}%
+\def\Dtrianglepp(#1)|#2|{\ifnextchar/{\Dtriangleppp(#1)|#2|}%
+ {\Dtriangleppp(#1)|#2|/>`>`>/}}%
+\def\Dtriangleppp(#1)|#2|/#3`#4`#5/{%
+ \ifnextchar<{\Dtrianglepppp(#1)|#2|/#3`#4`#5/}%
+ {\Dtrianglepppp(#1)|#2|/#3`#4`#5/<\default,\default>}}%
+\def\Atrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<#8>[#9]{%
+\def\next(##1,##2){\xpos##1\ypos##2}%
+\next(#1)%
+\def\next|##1##2##3##4##5|{\def\xa{##1}\def\xb{##2}%
+\def\xc{##3}\def\xd{##4}\def\xe{##5}}%
+\next|#2|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#8>%
+\def\next[##1`##2`##3`##4;##5`##6`##7`##8`##9]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}\def\noded{##4}%
+ \def\labela{##5}\def\labelb{##6}\def\labelc{##7}\def\labeld{##8}\def\labele{##9}}%
+\next[#9]%
+\morphism(\xpos,\ypos)|\xd|/{#6}/<\deltax,0>[\nodeb`\nodec;\labeld]%
+\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xe|/{#7}/<\deltax,0>[\nodec`\noded;\labele]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xa|/{#3}/<-\deltax,-\deltay>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#4}/<0,-\deltay>[\nodea`\nodec;\labelb]%
+\morphism(\xpos,\ypos)|\xc|/{#5}/<\deltax,-\deltay>[\nodea`\noded;\labelc]%
+\ignorespaces}%
+\def\Vtrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<#8>[#9]{%
+\def\next(##1,##2){\xpos##1\ypos##2}%
+\next(#1)%
+\def\next|##1##2##3##4##5|{\def\xa{##1}\def\xb{##2}%
+\def\xc{##3}\def\xd{##4}\def\xe{##5}}%
+\next|#2|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#8>%
+\def\next[##1`##2`##3`##4;##5`##6`##7`##8`##9]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}\def\noded{##4}%
+ \def\labela{##5}\def\labelb{##6}\def\labelc{##7}\def\labeld{##8}\def\labele{##9}}%
+\next[#9]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xa|/{#3}/<\deltax,0>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xc|/{#5}/<\deltax,-\deltay>[\nodea`\noded;\labelc]%
+\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xb|/{#4}/<\deltax,0>[\nodeb`\nodec;\labelb]%
+\morphism(\xpos,\ypos)|\xd|/{#6}/<0,-\deltay>[\nodeb`\noded;\labeld]%
+\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xe|/{#7}/<-\deltax,-\deltay>[\nodec`\noded;\labele]%
+\ignorespaces}%
+\def\Ctrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<#8>[#9]{%
+\def\next(##1,##2){\xpos##1\ypos##2}%
+\next(#1)%
+\def\next|##1##2##3##4##5|{\def\xa{##1}\def\xb{##2}%
+\def\xc{##3}\def\xd{##4}\def\xe{##5}}%
+\next|#2|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#8>%
+\def\next[##1`##2`##3`##4;##5`##6`##7`##8`##9]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}\def\noded{##4}%
+ \def\labela{##5}\def\labelb{##6}\def\labelc{##7}\def\labeld{##8}\def\labele{##9}}%
+\next[#9]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xe|/{#7}/<0,-\deltay>[\nodec`\noded;\labele]%
+\advance\xpos by -\deltax%
+\morphism(\xpos,\ypos)|\xc|/{#5}/<\deltax,0>[\nodeb`\nodec;\labelc]%
+\morphism(\xpos,\ypos)|\xd|/{#6}/<\deltax,-\deltay>[\nodeb`\noded;\labeld]%
+\advance\ypos by \deltay%
+\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xa|/{#3}/<-\deltax,-\deltay>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#4}/<0,-\deltay>[\nodea`\nodec;\labelb]%
+\ignorespaces}%
+\def\Dtrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<#8>[#9]{%
+\def\next(##1,##2){\xpos##1\ypos##2}%
+\next(#1)%
+\def\next|##1##2##3##4##5|{\def\xa{##1}\def\xb{##2}%
+\def\xc{##3}\def\xd{##4}\def\xe{##5}}%
+\next|#2|%
+\def\next<##1,##2>{\deltax=##1\deltay=##2\ignorespaces}%
+\next<#8>%
+\def\next[##1`##2`##3`##4;##5`##6`##7`##8`##9]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}\def\noded{##4}%
+ \def\labela{##5}\def\labelb{##6}\def\labelc{##7}\def\labeld{##8}\def\labele{##9}}%
+\next[#9]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xc|/{#5}/<\deltax,0>[\nodeb`\nodec;\labelc]%
+\morphism(\xpos,\ypos)|\xd|/{#6}/<0,-\deltay>[\nodeb`\noded;\labeld]%
+\advance\ypos by \deltay%
+\morphism(\xpos,\ypos)|\xa|/{#3}/<0,-\deltay>[\nodea`\nodeb;\labela]%
+\morphism(\xpos,\ypos)|\xb|/{#4}/<\deltax,-\deltay>[\nodea`\nodec;\labelb]%
+\advance\ypos by -\deltay%
+\advance\xpos by \deltax%
+\morphism(\xpos,\ypos)|\xe|/{#7}/<-\deltax,-\deltay>[\nodec`\noded;\labele]%
+\ignorespaces}%
+\def\Atrianglepair{\ifnextchar({\Atrianglepairp}{\Atrianglepairp(0,0)}}%
+\def\Atrianglepairp(#1){\ifnextchar|{\Atrianglepairpp(#1)}%
+{\Atrianglepairpp(#1)|lmrbb|}}%
+\def\Atrianglepairpp(#1)|#2|{\ifnextchar/{\Atrianglepairppp(#1)|#2|}%
+ {\Atrianglepairppp(#1)|#2|/>`>`>`>`>/}}%
+\def\Atrianglepairppp(#1)|#2|/#3`#4`#5`#6`#7/{%
+ \ifnextchar<{\Atrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/}%
+ {\Atrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<\default,\default>}}%
+\def\Vtrianglepair{\ifnextchar({\Vtrianglepairp}{\Vtrianglepairp(0,0)}}%
+\def\Vtrianglepairp(#1){\ifnextchar|{\Vtrianglepairpp(#1)}%
+{\Vtrianglepairpp(#1)|aalmr|}}%
+\def\Vtrianglepairpp(#1)|#2|{\ifnextchar/{\Vtrianglepairppp(#1)|#2|}%
+ {\Vtrianglepairppp(#1)|#2|/>`>`>`>`>/}}%
+\def\Vtrianglepairppp(#1)|#2|/#3`#4`#5`#6`#7/{%
+ \ifnextchar<{\Vtrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/}%
+ {\Vtrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<\default,\default>}}%
+\def\Ctrianglepair{\ifnextchar({\Ctrianglepairp}{\Ctrianglepairp(0,0)}}%
+\def\Ctrianglepairp(#1){\ifnextchar|{\Ctrianglepairpp(#1)}%
+{\Ctrianglepairpp(#1)|lrmlr|}}%
+\def\Ctrianglepairpp(#1)|#2|{\ifnextchar/{\Ctrianglepairppp(#1)|#2|}%
+ {\Ctrianglepairppp(#1)|#2|/>`>`>`>`>/}}%
+\def\Ctrianglepairppp(#1)|#2|/#3`#4`#5`#6`#7/{%
+ \ifnextchar<{\Ctrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/}%
+ {\Ctrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<\default,\default>}}%
+\def\Dtrianglepair{\ifnextchar({\Dtrianglepairp}{\Dtrianglepairp(0,0)}}%
+\def\Dtrianglepairp(#1){\ifnextchar|{\Dtrianglepairpp(#1)}%
+{\Dtrianglepairpp(#1)|lrmlr|}}%
+\def\Dtrianglepairpp(#1)|#2|{\ifnextchar/{\Dtrianglepairppp(#1)|#2|}%
+ {\Dtrianglepairppp(#1)|#2|/>`>`>`>`>/}}%
+\def\Dtrianglepairppp(#1)|#2|/#3`#4`#5`#6`#7/{%
+ \ifnextchar<{\Dtrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/}%
+ {\Dtrianglepairpppp(#1)|#2|/#3`#4`#5`#6`#7/<\default,\default>}}%
+\def\pplace[#1](#2,#3)[#4]{\POS(#2,#3)*+!!<0ex,\axis>!#1{#4}\ignorespaces}%
+\def\cplace(#1,#2)[#3]{\POS(#1,#2)*+!!<0ex,\axis>{#3}\ignorespaces}%
+\def\place{\ifnextchar[{\pplace}{\cplace}}%
+\def\pullback#1]#2]{\square#1]\trident#2]\ignorespaces}%
+\def\tridentppp|#1#2#3|/#4`#5`#6/<#7,#8>[#9]{%
+\def\next[##1;##2`##3`##4]{\def\nodee{##1}\def\labele{##2}%
+ \def\labelf{##3}\def\labelg{##4}}%
+\next[#9]%
+\advance \xpos by -\deltax%
+\advance \xpos by -#7\advance \ypos by #8%
+\advance\deltax by #7%
+\morphism(\xpos,\ypos)|#1|/{#4}/<\deltax,-#8>[\nodee`\nodeb;\labele]%
+\advance\deltax by -#7%
+\morphism(\xpos,\ypos)|#2|/{#5}/<#7,-#8>[\nodee`\nodea;\labelf]%
+\advance\deltay by #8%
+\morphism(\xpos,\ypos)|#3|/{#6}/<#7,-\deltay>[\nodee`\nodec;\labelg]%
+\ignorespaces}%
+\def\trident{\ifnextchar|{\tridentp}{\tridentp|amb|}}%
+\def\tridentp|#1|{\ifnextchar/{\tridentpp|#1|}{\tridentpp|#1|/{>}`{>}`{>}/}}%
+\def\tridentpp|#1|/#2/{\ifnextchar<{\tridentppp|#1|/#2/}%
+ {\tridentppp|#1|/#2/<500,500>}}%
+\def\setmorphismwidth#1#2#3#4{%
+ \setbox0=\hbox{$#1{\labelstyle#3#3}#2$}#4=\wd0%
+ \divide #4 by 2 \divide #4 by \ul%
+ \advance #4 by 350 \ratchet{#4}{500}}%
+\def\setSquarewidth[#1`#2`#3`#4;#5`#6`#7`#8]{%
+ \setmorphismwidth{#1}{#2}{#5}{\topw}%
+ \setmorphismwidth{#3}{#4}{#8}{\botw}%
+\ratchet{\topw}{\botw}}%
+\def\Squarepppp(#1)|#2|/#3/<#4>[#5]{%
+ \setSquarewidth[#5]%
+ \squarepppp(#1)|#2|/#3/<\topw,#4>[#5]%
+\ignorespaces}%
+\def\Square{\ifnextchar({\Squarep}{\Squarep(0,0)}}%
+\def\Squarep(#1){\ifnextchar|{\Squarepp(#1)}{\Squarepp(#1)|alrb|}}%
+\def\Squarepp(#1)|#2|{\ifnextchar/{\Squareppp(#1)|#2|}%
+ {\Squareppp(#1)|#2|/>`>`>`>/}}%
+\def\Squareppp(#1)|#2|/#3`#4`#5`#6/{%
+ \ifnextchar<{\Squarepppp(#1)|#2|/#3`#4`#5`#6/}%
+ {\Squarepppp(#1)|#2|/#3`#4`#5`#6/<\default>}}%
+\def\hsquarespppp(#1,#2)|#3|/#4/<#5>[#6;#7]{%
+\Xpos=#1\Ypos=#2%
+\def\next|##1##2##3##4##5##6##7|{%
+ \def\Xa{##1}\def\Xb{##2}\def\Xc{##3}\def\Xd{##4}%
+ \def\Xe{##5}\def\Xf{##6}\def\Xg{##7}}%
+\next|#3|%
+\def\next<##1,##2,##3>{\deltaX=##1\deltaXprime=##2\deltaY=##3}%
+\next<#5>%
+\def\next[##1`##2`##3`##4`##5`##6]{%
+ \def\Nodea{##1}\def\Nodeb{##2}\def\Nodec{##3}%
+ \def\Noded{##4}\def\Nodee{##5}\def\Nodef{##6}}%
+\next[#6]%
+\def\next[##1`##2`##3`##4`##5`##6`##7]{%
+ \def\Labela{##1}\def\Labelb{##2}\def\Labelc{##3}\def\Labeld{##4}%
+ \def\Labele{##5}\def\Labelf{##6}\def\Labelg{##7}}%
+\next[#7]%
+\dohsquares/#4/}%
+\def\dohsquares/#1`#2`#3`#4`#5`#6`#7/{%
+\squarepppp(\Xpos,\Ypos)|\Xa\Xc\Xd\Xf|/#1`#3`#4`#6/<\deltaX,\deltaY>%
+ [\Nodea`\Nodeb`\Noded`\Nodee;\Labela`\Labelc`\Labeld`\Labelf]%
+ \advance \Xpos by \deltaX%
+\squarepppp(\Xpos,\Ypos)|\Xb\Xd\Xe\Xg|/#2``#5`#7/<\deltaXprime,\deltaY>%
+[\Nodeb`\Nodec`\Nodee`\Nodef;\Labelb``\Labele`\Labelg]%
+\ignorespaces}%
+\def\hsquares{\ifnextchar({\hsquaresp}{\hsquaresp(0,0)}}%
+\def\hsquaresp(#1){\ifnextchar|{\hsquarespp(#1)}{\hsquarespp%
+(#1)|aalmrbb|}}%
+\def\hsquarespp(#1)|#2|{\ifnextchar/{\hsquaresppp(#1)|#2|}%
+ {\hsquaresppp(#1)|#2|/>`>`>`>`>`>`>/}}%
+\def\hsquaresppp(#1)|#2|/#3/{%
+ \ifnextchar<{\hsquarespppp(#1)|#2|/#3/}%
+ {\hsquarespppp(#1)|#2|/#3/<\default,\default,\default>}}%
+\def\hSquarespppp(#1,#2)|#3|/#4/<#5>[#6;#7]{%
+\Xpos=#1\Ypos=#2%
+\def\next|##1##2##3##4##5##6##7|{%
+ \def\Xa{##1}\def\Xb{##2}\def\Xc{##3}\def\Xd{##4}%
+ \def\Xe{##5}\def\Xf{##6}\def\Xg{##7}}%
+\next|#3|%
+\deltaY=#5%
+\def\next[##1`##2`##3`##4`##5`##6]{%
+ \def\Nodea{##1}\def\Nodeb{##2}\def\Nodec{##3}%
+ \def\Noded{##4}\def\Nodee{##5}\def\Nodef{##6}}%
+\next[#6]%
+\def\next[##1`##2`##3`##4`##5`##6`##7]{%
+ \def\Labela{##1}\def\Labelb{##2}\def\Labelc{##3}\def\Labeld{##4}%
+ \def\Labele{##5}\def\Labelf{##6}\def\Labelg{##7}}%
+\next[#7]%
+\dohSquares/#4/}%
+\def\dohSquares/#1`#2`#3`#4`#5`#6`#7/{%
+\Squarepppp(\Xpos,\Ypos)|\Xa\Xc\Xd\Xf|/#1`#3`#4`#6/<\deltaY>%
+ [\Nodea`\Nodeb`\Noded`\Nodee;\Labela`\Labelc`\Labeld`\Labelf]%
+ \advance \Xpos by \topw%
+\Squarepppp(\Xpos,\Ypos)|\Xb\Xd\Xe\Xg|/#2``#5`#7/<\deltaY>%
+[\Nodeb`\Nodec`\Nodee`\Nodef;\Labelb``\Labele`\Labelg]%
+\ignorespaces}%
+\def\hSquares{\ifnextchar({\hSquaresp}{\hSquaresp(0,0)}}%
+\def\hSquaresp(#1){\ifnextchar|{\hSquarespp(#1)}{\hSquarespp%
+(#1)|aalmrbb|}}%
+\def\hSquarespp(#1)|#2|{\ifnextchar/{\hSquaresppp(#1)|#2|}%
+ {\hSquaresppp(#1)|#2|/>`>`>`>`>`>`>/}}%
+\def\hSquaresppp(#1)|#2|/#3/{%
+ \ifnextchar<{\hSquarespppp(#1)|#2|/#3/}%
+ {\hSquarespppp(#1)|#2|/#3/<\default>}}%
+\def\vsquarespppp(#1,#2)|#3|/#4/<#5>[#6;#7]{%
+\Xpos=#1\Ypos=#2%
+\def\next|##1##2##3##4##5##6##7|{%
+ \def\Xa{##1}\def\Xb{##2}\def\Xc{##3}\def\Xd{##4}%
+ \def\Xe{##5}\def\Xf{##6}\def\Xg{##7}}%
+\next|#3|%
+\def\next<##1,##2,##3>{\deltaX=##1\deltaY=##2\deltaYprime=##3}%
+\next<#5>%
+\def\next[##1`##2`##3`##4`##5`##6]{%
+ \def\Nodea{##1}\def\Nodeb{##2}\def\Nodec{##3}%
+ \def\Noded{##4}\def\Nodee{##5}\def\Nodef{##6}}%
+\next[#6]%
+\def\next[##1`##2`##3`##4`##5`##6`##7]{%
+ \def\Labela{##1}\def\Labelb{##2}\def\Labelc{##3}\def\Labeld{##4}%
+ \def\Labele{##5}\def\Labelf{##6}\def\Labelg{##7}}%
+\next[#7]%
+\dovsquares/#4/}%
+\def\dovsquares/#1`#2`#3`#4`#5`#6`#7/{%
+\squarepppp(\Xpos,\Ypos)|\Xd\Xe\Xf\Xg|/`#5`#6`#7/<\deltaX,\deltaYprime>%
+[\Nodec`\Noded`\Nodee`\Nodef;`\Labele`\Labelf`\Labelg]%
+ \advance\Ypos by \deltaYprime%
+\squarepppp(\Xpos,\Ypos)|\Xa\Xb\Xc\Xd|/#1`#2`#3`#4/<\deltaX,\deltaY>%
+ [\Nodea`\Nodeb`\Nodec`\Noded;\Labela`\Labelb`\Labelc`\Labeld]%
+\ignorespaces}%
+\def\vsquares{\ifnextchar({\vsquaresp}{\vsquaresp(0,0)}}%
+\def\vsquaresp(#1){\ifnextchar|{\vsquarespp(#1)}{\vsquarespp%
+(#1)|aalmrbb|}}%
+\def\vsquarespp(#1)|#2|{\ifnextchar/{\vsquaresppp(#1)|#2|}%
+ {\vsquaresppp(#1)|#2|/>`>`>`>`>`>`>/}}%
+\def\vsquaresppp(#1)|#2|/#3/{%
+ \ifnextchar<{\vsquarespppp(#1)|#2|/#3/}%
+ {\vsquarespppp(#1)|#2|/#3/<\default,\default,\default>}}%
+\def\vSquarespppp(#1,#2)|#3|/#4/<#5,#6>[#7;#8]{%
+\Xpos=#1\Ypos=#2%
+\def\next|##1##2##3##4##5##6##7|{%
+ \def\Xa{##1}\def\Xb{##2}\def\Xc{##3}\def\Xd{##4}%
+ \def\Xe{##5}\def\Xf{##6}\def\Xg{##7}}%
+\next|#3|%
+\deltaX=#5%
+\deltaY=#6%
+\def\next[##1`##2`##3`##4`##5`##6]{%
+ \def\Nodea{##1}\def\Nodeb{##2}\def\Nodec{##3}%
+ \def\Noded{##4}\def\Nodee{##5}\def\Nodef{##6}}%
+\next[#7]%
+\def\next[##1`##2`##3`##4`##5`##6`##7]{%
+ \def\Labela{##1}\def\Labelb{##2}\def\Labelc{##3}\def\Labeld{##4}%
+ \def\Labele{##5}\def\Labelf{##6}\def\Labelg{##7}}%
+\next[#8]%
+\dovSquares/#4/\ignorespaces}%
+\def\dovSquares/#1`#2`#3`#4`#5`#6`#7/{%
+\setmorphismwidth{\Nodea}{\Nodeb}{\Labela}{\topw}%
+\setmorphismwidth{\Nodec}{\Noded}{\Labeld}{\botw}%
+\ratchet{\topw}{\botw}%
+\setmorphismwidth{\Nodee}{\Nodef}{\Labelg}{\botw}%
+\ratchet{\topw}{\botw}%
+\square(\Xpos,\Ypos)|\Xd\Xe\Xf\Xg|/`#5`#6`#7/<\topw,\deltaY>%
+ [\Nodec`\Noded`\Nodee`\Nodef;`\Labele`\Labelf`\Labelg]%
+\advance \Ypos by \deltaY%
+\square(\Xpos,\Ypos)|\Xa\Xb\Xc\Xd|/#1`#2`#3`#4/<\topw,\deltaX>%
+ [\Nodea`\Nodeb`\Nodec`\Noded;\Labela`\Labelb`\Labelc`\Labeld]%
+}%
+\def\vSquares{\ifnextchar({\vSquaresp}{\vSquaresp(0,0)}}%
+\def\vSquaresp(#1){\ifnextchar|{\vSquarespp(#1)}{\vSquarespp%
+(#1)|alrmlrb|}}%
+\def\vSquarespp(#1)|#2|{\ifnextchar/{\vSquaresppp(#1)|#2|}%
+ {\vSquaresppp(#1)|#2|/>`>`>`>`>`>`>/}}%
+\def\vSquaresppp(#1)|#2|/#3/{%
+ \ifnextchar<{\vSquarespppp(#1)|#2|/#3/}%
+ {\vSquarespppp(#1)|#2|/#3/<\default,\default>}}%
+\def\osquarepppp(#1)|#2|/#3`#4`#5`#6/<#7>[#8]{\squarepppp%
+ (#1)|#2|/#3`#4`#5`#6/<#7>[#8]%
+ \let\Nodea\nodea\let\Nodeb\nodeb%
+\let\Nodec\nodec\let\Noded\noded\Xpos=\xpos\Ypos=\ypos%
+\deltaX=\deltax \deltaY=\deltay \isquare}%
+\def\cube{\ifnextchar({\osquarep}{\osquarep(0,0)}}%
+\def\osquarep(#1){\ifnextchar|{\osquarepp(#1)}{\osquarepp(#1)|alrb|}}%
+\def\osquarepp(#1)|#2|{\ifnextchar/{\osquareppp(#1)|#2|}%
+ {\osquareppp(#1)|#2|/>`>`>`>/}}%
+\def\osquareppp(#1)|#2|/#3`#4`#5`#6/{%
+ \ifnextchar<{\osquarepppp(#1)|#2|/#3`#4`#5`#6/}%
+ {\osquarepppp(#1)|#2|/#3`#4`#5`#6/<1500,1500>}}%
+\def\isquarepppp(#1)|#2|/#3`#4`#5`#6/<#7>[#8]{%
+ \squarepppp(#1)|#2|/#3`#4`#5`#6/<#7>[#8]%
+\ifnextchar|{\cubep}{\cubep|mmmm|}}%
+\def\cubep|#1|{\ifnextchar/{\cubepp|#1|}{\cubepp|#1|/>`>`>`>/}}%
+\def\isquare{\ifnextchar({\isquarep}{\isquarep(\default,\default)}}%
+\def\isquarep(#1){\ifnextchar|{\isquarepp(#1)}{\isquarepp(#1)|alrb|}}%
+\def\isquarepp(#1)|#2|{\ifnextchar/{\isquareppp(#1)|#2|}%
+ {\isquareppp(#1)|#2|/>`>`>`>/}}%
+\def\isquareppp(#1)|#2|/#3`#4`#5`#6/{%
+ \ifnextchar<{\isquarepppp(#1)|#2|/#3`#4`#5`#6/}%
+ {\isquarepppp(#1)|#2|/#3`#4`#5`#6/<500,500>}}%
+\def\cubepp|#1#2#3#4|/#5`#6`#7`#8/[#9]{%
+\def\next[##1`##2`##3`##4]{\gdef\Labela{##1}%
+\gdef\Labelb{##2}\gdef\Labelc{##3}\gdef\Labeld{##4}}\next[#9]%
+\xend\xpos \yend\ypos%
+\Xend\xend\advance\Xend by -\Xpos%
+\Yend\yend\advance\Yend by -\Ypos%
+\domorphism(\Xpos,\Ypos)|#2|/#6/<\Xend,\Yend>[\Nodeb`\nodeb;\Labelb]%
+\advance\Xpos by-\deltaX%
+\advance\xend by-\deltax%
+\Xend\xend\advance\Xend by -\Xpos%
+\domorphism(\Xpos,\Ypos)|#1|/#5/<\Xend,\Yend>[\Nodea`\nodea;\Labela]%
+\advance\Ypos by-\deltaY%
+\advance\yend by-\deltay%
+\Yend\yend\advance\Yend by -\Ypos%
+\domorphism(\Xpos,\Ypos)|#3|/#7/<\Xend,\Yend>[\Nodec`\nodec;\Labelc]%
+\advance\Xpos by\deltaX%
+\advance\xend by\deltax%
+\Xend\xend\advance\Xend by -\Xpos%
+\domorphism(\Xpos,\Ypos)|#4|/#8/<\Xend,\Yend>[\Noded`\noded;\Labeld]%
+\ignorespaces}%
+\def\setwdth#1#2{\setbox0\hbox{$\labelstyle#1$}\wdth=\wd0%
+\setbox0\hbox{$\labelstyle#2$}\ifnum\wdth<\wd0 \wdth=\wd0 \fi}%
+\def\topppp/#1/<#2>^#3_#4{\:%
+\ifnum#2=0%
+ \setwdth{#3}{#4}\deltax=\wdth \divide \deltax by \ul%
+ \advance \deltax by \defaultmargin \ratchet{\deltax}{100}%
+\else \deltax #2%
+\fi%
+\xy\ar@{#1}^{#3}_{#4}(\deltax,0) \endxy%
+\:}%
+\def\toppp/#1/<#2>^#3{\ifnextchar_{\topppp/#1/<#2>^{#3}}{\topppp/#1/<#2>^{#3}_{}}}%
+\def\topp/#1/<#2>{\ifnextchar^{\toppp/#1/<#2>}{\toppp/#1/<#2>^{}}}%
+\def\toop/#1/{\ifnextchar<{\topp/#1/}{\topp/#1/<0>}}%
+\def\to{\ifnextchar/{\toop}{\toop/>/}}%
+\def\mon{\to/ >->/}%
+\def\epi{\to/->>/}%
+\def\toleft{\to/<-/}%
+\def\monleft{\to/<-< /}%
+\def\epileft{\to/<<-/}%
+\def\rlimto{{%
+\font\xyatipfont=xyatip10 scaled 800
+\font\xybtipfont=xybtip10 scaled 800
+\raise 2pt\hbox{\,\xy\ar@{->}(100,0) \endxy}\,}}
+\def\llimto{{%
+\font\xyatipfont=xyatip10 scaled 800
+\font\xybtipfont=xybtip10 scaled 800
+\raise 2pt\hbox{\,\xy\ar@{<-}(100,0) \endxy}\,}}
+\def\twopppp/#1`#2/<#3>^#4_#5{\:%
+\ifnum0=#3%
+ \setwdth{#4}{#5}\deltax=\wdth \divide \deltax by \ul \advance \deltax%
+ by \defaultmargin \ratchet{\deltax}{200}%
+\else \deltax#3 \fi%
+\xy\ar@{#1}@<2.5pt>^{#4}(\deltax,0)%
+\ar@{#2}@<-2.5pt>_{#5}(\deltax,0)\endxy\:}%
+\def\twoppp/#1`#2/<#3>^#4{\ifnextchar_{\twopppp/#1`#2/<#3>^{#4}}%
+ {\twopppp/#1`#2/<#3>^{#4}_{}}}%
+\def\twopp/#1`#2/<#3>{\ifnextchar^{\twoppp/#1`#2/<#3>}{\twoppp/#1`#2/<#3>^{}}}%
+\def\twop/#1`#2/{\ifnextchar<{\twopp/#1`#2/}{\twopp/#1`#2/<0>}}%
+\def\two{\ifnextchar/{\twop}{\twop/>`>/}}%
+\def\twoleft{\two/<-`<-/}%
+\def\threeppppp/#1`#2`#3/<#4>^#5|#6_#7{\:%
+\ifnum0=#4%
+\setbox0\hbox{$\labelstyle#5$}\wdth=\wd0%
+\setbox0\hbox{$\labelstyle#6$}\ifnum\wdth<\wd0 \wdth=\wd0 \fi%
+\setbox0\hbox{$\labelstyle#7$}\ifnum\wdth<\wd0 \wdth=\wd0 \fi%
+\deltax=\wdth \divide \deltax by \ul \advance \deltax by%
+\defaultmargin \ratchet{\deltax}{300}%
+\else\deltax#4 \fi%
+ \xy \ifnum\wd0=0 \ar@{#2}(\deltax,0)%
+ \else \ar@{#2}|{#6}(\deltax,0)\fi%
+\ar@{#1}@<4.5pt>^{#5}(\deltax,0)%
+\ar@{#3}@<-4.5pt>_{#7}(\deltax,0)\endxy\:}%
+\def\threepppp/#1`#2`#3/<#4>^#5|#6{\ifnextchar_{\threeppppp%
+ /#1`#2`#3/<#4>^{#5}|{#6}}{\threeppppp/#1`#2`#3/<#4>^{#5}|{#6}_{}}}%
+\def\threeppp/#1`#2`#3/<#4>^#5{\ifnextchar|{\threepppp%
+ /#1`#2`#3/<#4>^{#5}}{\threepppp/#1`#2`#3/<#4>^{#5}|{}}}%
+\def\threepp/#1`#2`#3/<#4>{\ifnextchar^{\threeppp/#1`#2`#3/<#4>}%
+ {\threeppp/#1`#2`#3/<#4>^{}}}%
+\def\threep/#1`#2`#3/{\ifnextchar<{\threepp/#1`#2`#3/}%
+ {\threepp/#1`#2`#3/<0>}}%
+\def\three{\ifnextchar/{\threep}{\threep/>`>`>/}}%
+\def\twoar(#1,#2){{%
+ \scalefactor{0.1}%
+ \deltax#1\deltay#2%
+ \deltaX=\ifnum\deltax<0-\fi\deltax%
+ \deltaY=\ifnum\deltay<0-\fi\deltay%
+ \Xend\deltax \multiply \Xend by \deltax%
+ \Yend\deltay \multiply \Yend by \deltay%
+ \advance\Xend by \Yend \multiply \Xend by 3%
+ \ifnum \deltaX > \deltaY%
+ \multiply \deltaX by 3 \advance \deltaX by \deltaY%
+ \else%
+ \multiply \deltaY by 3 \advance \deltaX by \deltaY%
+ \fi%
+ \multiply\deltax by 500%
+ \multiply\deltay by 500%
+ \xpos\deltax \multiply \xpos by 3 \divide\xpos by \deltaX%
+ \Xpos\deltax \multiply \Xpos by \deltaX \divide \Xpos by \Xend%
+ \advance \xpos by \Xpos%
+ \ypos\deltay \multiply \ypos by 3 \divide\ypos by \deltaX%
+ \Ypos\deltay \multiply \Ypos by \deltaX \divide \Ypos by \Xend%
+ \advance \ypos by \Ypos%
+ \xy \ar@{=>}(\xpos,\ypos) \endxy%
+}\ignorespaces}%
+\def\iiixiiipppppp(#1,#2)|#3|/#4/<#5>#6<#7>[#8;#9]{%
+ \xpos#1\ypos#2\relax%
+ \def\next|##1##2##3##4##5##6##7|{\def\xa{##1}\def\xb{##2}%
+ \def\xc{##3}\def\xd{##4}\def\xe{##5}\def\xf{##6}\nextt|##7|}%
+ \def\nextt|##1##2##3##4##5##6|{\def\xg{##1}\def\xh{##2}%
+ \def\xi{##3}\def\xj{##4}\def\xk{##5}\def\xl{##6}}%
+ \next|#3|%
+ \def\next<##1,##2>{\deltax##1\deltay##2}%
+ \next<#5>%
+ \def\next<##1,##2>{\deltaX##1\deltaY##2}%
+ \next<#7>%
+ \def\next##1{\topw##1\relax%
+ \ifodd\topw \def\za{}\else\def\za{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zb{}\else\def\zb{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zc{}\else\def\zc{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zd{}\else\def\zd{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\ze{}\else\def\ze{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zf{}\else\def\zf{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zg{}\else\def\zg{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zh{}\else\def\zh{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zi{}\else\def\zi{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zj{}\else\def\zj{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zk{}\else\def\zk{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zl{}\else\def\zl{\relax}\fi}%
+ \next{#6}%
+ \def\next[##1`##2`##3`##4`##5`##6`##7`##8`##9]{%
+ \def\nodeA{##1}\def\nodeB{##2}\def\nodeC{##3}%
+ \def\nodeD{##4}\def\nodeE{##5}\def\nodeF{##6}%
+ \def\nodeG{##7}\def\nodeH{##8}\def\nodeI{##9}}%
+ \next[#8]%
+ \def\next[##1`##2`##3`##4`##5`##6`##7]{%
+ \def\labela{##1}\def\labelb{##2}\def\labelc{##3}%
+ \def\labeld{##4}\def\labele{##5}\def\labelf{##6}\nextt[##7]}%
+ \def\nextt[##1`##2`##3`##4`##5`##6]{%
+ \def\labelg{##1}\def\labelh{##2}\def\labeli{##3}%
+ \def\labelj{##4}\def\labelk{##5}\def\labell{##6}}%
+ \next[#9]%
+ \def\next/##1`##2`##3`##4`##5`##6`##7`##8/{%
+ \advance\ypos\deltay
+ \ifx\zf\empty \morphism(\xpos,\ypos)/<-/<-\deltaX,0>[\nodeD`0;]\fi
+ \morphism(\xpos,\ypos)|\xf|/{##6}/<\deltax,0>[\nodeD`\nodeE;\labelf]%
+ \advance \xpos\deltax
+ \morphism(\xpos,\ypos)|\xg|/{##7}/<\deltax,0>[\nodeE`\nodeF;\labelg]%
+ \ifx\zg\empty \advance\xpos \deltax
+ \morphism(\xpos,\ypos)<\deltaX,0>[\nodeF`0;]\fi
+ \xpos#1 \advance\ypos\deltay
+ \ifx\zd\empty \morphism(\xpos,\ypos)/<-/<-\deltaX,0>[\nodeA`0;]\fi
+ \ifx\za\empty \morphism(\xpos,\ypos)/<-/<0,\deltaY>[\nodeA`0;]\fi
+ \morphism(\xpos,\ypos)|\xa|/{##1}/<\deltax,0>[\nodeA`\nodeB;\labela]%
+ \morphism(\xpos,\ypos)|\xc|/{##3}/<0,-\deltay>[\nodeA`\nodeD;\labelc]%
+ \advance \xpos\deltax
+ \morphism(\xpos,\ypos)|\xb|/{##2}/<\deltax,0>[\nodeB`\nodeC;\labelb]%
+ \morphism(\xpos,\ypos)|\xd|/{##4}/<0,-\deltay>[\nodeB`\nodeE;\labeld]%
+ \ifx\zb\empty \morphism(\xpos,\ypos)/<-/<0,\deltaY>[\nodeB`0;]\fi
+ \advance\xpos\deltax
+ \morphism(\xpos,\ypos)|\xe|/{##5}/<0,-\deltay>[\nodeC`\nodeF;\labele]%
+ \ifx\zc\empty \morphism(\xpos,\ypos)/<-/<0,\deltaY>[\nodeC`0;]\fi
+ \ifx\ze\empty \morphism(\xpos,\ypos)<\deltaX,0>[\nodeC`0;]\fi
+ \nextt/##8/}%
+ \def\nextt/##1`##2`##3`##4`##5/{%
+ \xpos#1\ypos#2\relax%
+ \ifx\zh\empty \morphism(\xpos,\ypos)/<-/<-\deltaX,0>[\nodeG`0;]\fi
+ \ifx\zj\empty \morphism(\xpos,\ypos)<0,-\deltaY>[\nodeG`0;]\fi
+ \morphism(\xpos,\ypos)|\xk|/{##4}/<\deltax,0>[\nodeG`\nodeH;\labelk]%
+ \advance\xpos\deltax
+ \morphism(\xpos,\ypos)|\xl|/{##5}/<\deltax,0>[\nodeH`\nodeI;\labell]%
+ \ifx\zk\empty \morphism(\xpos,\ypos)<0,-\deltaY>[\nodeH`0;]\fi
+ \advance\xpos\deltax
+ \ifx\zi\empty \morphism(\xpos,\ypos)<\deltaX,0>[\nodeI`0;]\fi
+ \ifx\zl\empty \morphism(\xpos,\ypos)<0,-\deltaY>[\nodeI`0;]\fi
+ \xpos#1 \advance\ypos\deltay
+ \morphism(\xpos,\ypos)|\xh|/{##1}/<0,-\deltay>[\nodeD`\nodeG;\labelh]%
+ \advance \xpos\deltax
+ \morphism(\xpos,\ypos)|\xi|/{##2}/<0,-\deltay>[\nodeE`\nodeH;\labeli]%
+ \advance \xpos\deltax
+ \morphism(\xpos,\ypos)|\xj|/{##3}/<0,-\deltay>[\nodeF`\nodeI;\labelj]}%
+ \next/#4/\ignorespaces}%
+\def\iiixiii{\ifnextchar({\iiixiiip}{\iiixiiip(0,0)}}%
+\def\iiixiiip(#1){\ifnextchar|{\iiixiiipp(#1)}%
+ {\iiixiiipp(#1)|aalmrmmlmrbb|}}%
+\def\iiixiiipp(#1)|#2|{\ifnextchar/{\iiixiiippp(#1)|#2|}%
+ {\iiixiiippp(#1)|#2|/>`>`>`>`>`>`>`>`>`>`>`>/}}%
+\def\iiixiiippp(#1)|#2|/#3/{%
+ \ifnextchar<{\iiixiiipppp(#1)|#2|/#3/}%
+ {\iiixiiipppp(#1)|#2|/#3/<\default,\default>}}%
+\def\iiixiiipppp(#1)|#2|/#3/<#4>{\ifnextchar[{\iiixiiippppp(#1)|#2|/#3/%
+ <#4>0<0,0>}{\iiixiiippppp(#1)|#2|/#3/<#4>}}%
+\def\iiixiiippppp(#1)|#2|/#3/<#4>#5{\ifnextchar<%
+ {\iiixiiipppppp(#1)|#2|/#3/<#4>{#5}}%
+ {\iiixiiipppppp(#1)|#2|/#3/<#4>{#5}<400,400>}}%
+\def\iiixiipppppp(#1,#2)|#3|/#4/<#5>#6<#7>[#8;#9]{%
+ \xpos#1\ypos#2\relax%
+ \def\next|##1##2##3##4##5##6##7|{\def\xa{##1}\def\xb{##2}%
+ \def\xc{##3}\def\xd{##4}\def\xe{##5}\def\xf{##6}\def\xg{##7}}%
+ \next|#3|%
+ \def\next<##1,##2>{\deltax##1\deltay##2}%
+ \next<#5>%
+ \deltaX#7
+ \topw#6
+ \def\next{%
+ \ifodd\topw \def\za{}\else\def\za{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zb{}\else\def\zb{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zc{}\else\def\zc{\relax}\fi \divide\topw by 2
+ \ifodd\topw \def\zd{}\else\def\zd{\relax}\fi}%
+ \next%
+ \def\next[##1`##2`##3`##4`##5`##6]{%
+ \def\nodea{##1}\def\nodeb{##2}\def\nodec{##3}%
+ \def\noded{##4}\def\nodee{##5}\def\nodef{##6}}%
+ \next[#8]%
+ \def\next[##1`##2`##3`##4`##5`##6`##7]{%
+ \def\labela{##1}\def\labelb{##2}\def\labelc{##3}%
+ \def\labeld{##4}\def\labele{##5}\def\labelf{##6}\def\labelg{##7}}%
+ \next[#9]%
+ \def\next/##1`##2`##3`##4`##5`##6`##7/{%
+ {\ifx\zc\empty\advance\xpos -\deltaX
+\relax\morphism(\xpos,\ypos)<\deltaX,0>[0`\noded;]\fi}%
+ \morphism(\xpos,\ypos)|\xf|/##6/<\deltax,0>[\noded`\nodee;\labelf]%
+ \advance\xpos by \deltax%
+ \morphism(\xpos,\ypos)|\xg|/##7/<\deltax,0>[\nodee`\nodef;\labelg]%
+ {\ifx\zd\empty \advance\xpos by \deltax
+\relax \morphism(\xpos,\ypos)<\deltaX,0>[\nodef`0;]\fi}%
+ \advance\xpos by -\deltax \advance\ypos by \deltay
+ {\ifx\za\empty\advance \xpos by -\deltaX
+\relax\morphism(\xpos,\ypos)<\deltaX,0>[0`\nodea;]\fi}%
+ \morphism(\xpos,\ypos)|\xa|/##1/<\deltax,0>[\nodea`\nodeb;\labela]%
+ \morphism(\xpos,\ypos)|\xc|/##3/<0,-\deltay>[\nodea`\noded;\labelc]%
+ \advance\xpos by \deltax%
+ \morphism(\xpos,\ypos)|\xb|/##2/<\deltax,0>[\nodeb`\nodec;\labelb]%
+ \morphism(\xpos,\ypos)|\xd|/##4/<0,-\deltay>[\nodeb`\nodee;\labeld]%
+ \advance\xpos by \deltax%
+ \morphism(\xpos,\ypos)|\xe|/##5/<0,-\deltay>[\nodec`\nodef;\labele]%
+ \ifx\zb\empty\relax \morphism(\xpos,\ypos)<\deltaX,0>[\nodec`0;]\fi}%
+ \next/#4/\ignorespaces}%
+\def\iiixii{\ifnextchar({\iiixiip}{\iiixiip(0,0)}}%
+\def\iiixiip(#1){\ifnextchar|{\iiixiipp(#1)}%
+ {\iiixiipp(#1)|aalmrbb|}}%
+\def\iiixiipp(#1)|#2|{\ifnextchar/{\iiixiippp(#1)|#2|}%
+ {\iiixiippp(#1)|#2|/>`>`>`>`>`>`>/}}%
+\def\iiixiippp(#1)|#2|/#3/{%
+ \ifnextchar<{\iiixiipppp(#1)|#2|/#3/}%
+ {\iiixiipppp(#1)|#2|/#3/<\default,\default>}}%
+\def\iiixiipppp(#1)|#2|/#3/<#4>{\ifnextchar[{\iiixiippppp(#1)|#2|/#3/%
+ <#4>{0}<0>}{\iiixiippppp(#1)|#2|/#3/<#4>}}%
+\def\iiixiippppp(#1)|#2|/#3/<#4>#5{\ifnextchar<%
+ {\iiixiipppppp(#1)|#2|/#3/<#4>{#5}}%
+ {\iiixiipppppp(#1)|#2|/#3/<#4>{#5}<400>}}%
+\def\node#1(#2,#3)[#4]{%
+\expandafter\gdef\csname x@#1\endcsname{#2}%
+\expandafter\gdef\csname y@#1\endcsname{#3}%
+\expandafter\gdef\csname ob@#1\endcsname{#4}%
+\ignorespaces}%
+\newcount\xfinish%
+\newcount\yfinish%
+\def\arrow{\ifnextchar|{\arrowp}{\arrowp|a|}}%
+\def\arrowp|#1|{\ifnextchar/{\arrowpp|#1|}{\arrowpp|#1|/>/}}%
+\def\arrowpp|#1|/#2/[#3`#4;#5]{%
+\xfinish=\csname x@#4\endcsname%
+\yfinish=\csname y@#4\endcsname%
+\advance\xfinish by -\csname x@#3\endcsname%
+\advance\yfinish by -\csname y@#3\endcsname%
+\morphism(\csname x@#3\endcsname,\csname y@#3\endcsname)|#1|/{#2}/%
+<\xfinish,\yfinish>[\csname ob@#3\endcsname`\csname ob@#4\endcsname;#5]%
+}%
+\def\Loop(#1,#2)#3(#4,#5){\POS(#1,#2)*+!!<0ex,\axis>{#3}\ar@(#4,#5)}%
+\def\iloop#1(#2,#3){\xy\Loop(0,0)#1(#2,#3)\endxy}%
+\xyendinput

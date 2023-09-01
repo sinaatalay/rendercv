@@ -1,0 +1,96 @@
+% The basic correction for write-white fonts occurs in the definition
+%	font_setup.  This can be used to overwrite the write-black
+% 	definition in cmbase.mf
+%
+def white_setup =
+ if monospace: let adjust_fit=mono_adjust_fit;
+  def mfudged=fudged enddef;
+  mono_charic#:=body_height#*slant;
+  if mono_charic#<0: mono_charic#:=0; fi
+  mono_charwd#:=9u#; define_whole_pixels(mono_charwd);
+ else: let adjust_fit=normal_adjust_fit;
+  def mfudged= enddef; fi
+ if math_fitting: let math_fit=do_math_fit
+ else: let math_fit=ignore_math_fit fi;
+ define_pixels(u,width_adj,serif_fit,cap_serif_fit,jut,cap_jut,beak,
+  bar_height,dish,bracket,beak_jut,stem_corr,vair_corr,apex_corr);
+ define_blacker_pixels(notch_cut,cap_notch_cut);
+ forsuffixes $=notch_cut,cap_notch_cut: if $<3: $:=3; fi endfor
+ define_whole_pixels(letter_fit,fine,crisp,tiny);
+ define_whole_vertical_pixels(body_height,asc_height,
+  cap_height,fig_height,x_height,comma_depth,desc_depth,serif_drop);
+ define_whole_blacker_pixels(thin_join,hair,stem,curve,flare,
+  dot_size,cap_hair,cap_stem,cap_curve);
+ define_whole_vertical_blacker_pixels(vair,bar,slab,cap_bar,cap_band);
+ define_corrected_pixels(o,apex_o);
+ forsuffixes $=hair,stem,cap_stem:
+  fudged$.#:=fudge*$.#; fudged$:=hround(fudged$.#*hppp+blacker);
+  forever: exitif fudged$>.9fudge*$; fudged$:=fudged$+1; endfor endfor
+ rule_thickness:=ceiling(rule_thickness#*hppp);
+ heavy_rule_thickness:=ceiling(3rule_thickness#*hppp);
+ oo:=vround(.5o#*hppp*o_correction)+eps;
+ apex_oo:=vround(.5apex_o#*hppp*o_correction)+eps;
+ lowres_fix(stem,curve,flare) 1.3;
+ lowres_fix(stem,curve) 1.2;
+ lowres_fix(cap_stem,cap_curve) 1.2;
+ lowres_fix(hair,cap_hair) 1.2;
+ lowres_fix(cap_band,cap_bar,bar,slab) 1.2;
+ stem':=hround(stem-stem_corr); cap_stem':=hround(cap_stem-stem_corr);
+ vair':=vround(vair+vair_corr);
+ vstem:=vround .8[vair,stem]; cap_vstem:=vround .8[vair,cap_stem];
+ ess:=(ess#/stem#)*stem; cap_ess:=(cap_ess#/cap_stem#)*cap_stem;
+ dw:=(curve#-stem#)*hppp; bold:=curve#*hppp+blacker;
+ dh#:=.6designsize;
+ stem_shift#:=if serifs: 2stem_corr# else: 0 fi;
+ more_super:=max(superness,sqrt .77superness);
+ hein_super:=max(superness,sqrt .81225258superness); % that's $2^{-.3}$
+ clear_pen_memory;
+ if fine=0: fine:=1; fi
+ forsuffixes $=fine,crisp,tiny:
+%%% fine $ %%%% temporary formatting convention for MFT
+  if $>fudged.hair: $:=fudged.hair; fi
+  $.breadth:=$;
+  pickup if $=0: nullpen else: pencircle scaled $; $:=$-eps fi;
+  $.nib:=savepen; breadth_[$.nib]:=$;
+  forsuffixes $$=lft,rt,top,bot: shiftdef($.$$,$$ 0); endfor endfor
+%%% @ $ %%%% restore ordinary formatting for $
+ min_Vround:=max(fine.breadth,crisp.breadth,tiny.breadth,2); % "WRITE WHITE" ONLY!
+ if min_Vround<vround min_Vround: min_Vround:=vround min_Vround; fi
+ if flare<vround flare: flare:=vround flare; fi
+ forsuffixes $=vair,bar,slab,cap_bar,cap_band,vair',vstem,cap_vstem,bold:
+  if $<min_Vround: $:=min_Vround; fi endfor
+ pickup pencircle scaled rule_thickness; rule.nib:=savepen;
+ math_axis:=good.y(math_axis#*hppp);
+ pickup pencircle scaled if hefty:(.6[vair,fudged.hair]) else:fudged.hair fi;
+ light_rule.nib:=savepen;
+ pickup pencircle xscaled cap_curve yscaled cap_hair rotated 30;
+ cal.nib:=savepen;
+ pair cal.extension; cal.extension:=(.75cap_curve,0) rotated 30;
+ pickup pencircle xscaled cap_curve yscaled cap_hair rotated 70;
+ tilted.nib:=savepen;
+ pickup pencircle xscaled curve yscaled cap_hair rotated 70;
+ med_tilted.nib:=savepen;
+ pickup pencircle xscaled cap_stem yscaled cap_hair rotated 30;
+ med_cal.nib:=savepen;
+ pickup pencircle xscaled stem yscaled cap_hair rotated 30;
+ light_cal.nib:=savepen;
+ pickup pencircle xscaled(cap_curve+dw) yscaled cap_hair rotated 30;
+ heavy_cal.nib:=savepen;
+ bot_flourish_line:=-.5u-o;
+ pair bend; bend=(.5u,0);
+ pair flourish_change; flourish_change=(4u,.2asc_height);
+ join_radius:=u;
+ currenttransform:=identity slanted slant
+  yscaled aspect_ratio scaled granularity;
+ if currenttransform=identity: let t_=relax
+ else: def t_ = transformed currenttransform enddef fi;
+ numeric paren_depth#; .5[body_height#,-paren_depth#]=math_axis#;
+ numeric asc_depth#; .5[asc_height#,-asc_depth#]=math_axis#;
+ body_depth:=desc_depth+body_height-asc_height;
+ shrink_fit:=1+hround(2letter_fit#*hppp)-2letter_fit;
+ if not string mode: if mode<=smoke: shrink_fit:=0; fi fi
+forsuffixes $=thin_join,hair,curve,flare,dot_size,cap_hair,cap_curve,
+ vair,bar,slab,cap_bar,cap_band,stem',cap_stem',vair',fudged.hair,
+ fudged.stem,fudged.cap_stem: $:=max($,2); endfor % "WRITE WHITE" ONLY!
+ enddef;
+

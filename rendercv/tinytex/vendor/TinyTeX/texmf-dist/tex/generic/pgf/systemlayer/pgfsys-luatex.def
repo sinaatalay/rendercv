@@ -1,0 +1,401 @@
+% Copyright 2019 by Till Tantau
+% CMYK and grayscale shadings adaptation copyright 2019 by David Purton
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-luatex.def}
+
+\ifnum\luatexversion<95
+    \immediate\write-1{luatex driver of PGF: detected lua version \the\luatexversion; falling back to old pdftex driver^^J}%
+    \input pgfsys-pdftex.def
+    \expandafter\endinput
+\fi
+
+% Driver commands for pdf
+
+%
+% Load common pdf commands:
+%
+\input pgfsys-common-pdf.def
+
+%
+% pdftex-specific stuff:
+%
+\def\pgfsys@invoke#1{\pdfextension literal{#1}}
+
+% Synced hboxes
+\def\pgfsys@hboxsynced#1{%
+  {%
+    \pgfsys@beginscope%
+    \setbox\pgf@hbox=\hbox{%
+      \hskip\pgf@pt@x%
+      \raise\pgf@pt@y\hbox{%
+        \pgf@pt@x=0pt%
+        \pgf@pt@y=0pt%
+        \pgflowlevelsynccm%
+        \pgfsys@hbox#1}%
+      \hss%
+    }%
+    \wd\pgf@hbox=0pt%
+    \ht\pgf@hbox=0pt%
+    \dp\pgf@hbox=0pt%
+    \box\pgf@hbox%
+    \pgfsys@endscope%
+  }%
+}
+
+
+
+\def\pgfsys@imagesuffixlist{.pdf:.jpg:.jpeg:.png:}
+\def\pgfsys@defineimage{% width, height, page number
+  \ifx\pgf@imagewidth\pgfutil@empty\else\edef\pgf@imagewidth{ width \pgf@imagewidth }\fi%
+  \ifx\pgf@imageheight\pgfutil@empty\else\edef\pgf@imageheight{ height \pgf@imageheight }\fi%
+  \ifx\pgf@imagepage\pgfutil@empty\else\edef\pgf@imagepage{ page \pgf@imagepage }\fi%
+  \ifx\saveimageresource\@undefined% old version of lualatex
+    \ifx\pgf@imagepage\pgfutil@empty\else%
+      \pgfwarning{Page selection not supported. Ignoring page selection}%
+    \fi%
+    \setbox\pgfutil@tempboxa=\hbox{%
+      \pdfimage \pgf@imageheight \pgf@imagewidth {\pgf@filename}}%
+    \pdfform\pgfutil@tempboxa%
+    \edef\pgf@image{\noexpand\pdfrefform\the\pdflastform}%
+  \else% new version
+    {\saveimageresource \pgf@imageheight \pgf@imagewidth attr
+      {/Interpolate \pgf@imageinterpolate\space\pgf@imagemask} \pgf@imagepage
+      {\pgf@filename}}%
+    \edef\pgf@image{\noexpand\useimageresource\the\lastsavedimageresourceindex}%
+  \fi
+}%
+\def\pgfsys@definemask{%
+  \ifx\pgf@maskmatte\pgfutil@empty%
+  \else%
+    \edef\pgf@maskmatte{/Matte [\pgf@maskmatte]}%
+  \fi%
+  \edef\pgf@attr{{\pgf@maskmatte\space /Decode [1 0]}}%
+  \immediate\saveimageresource attr \pgf@attr {\pgf@filename}%
+  \edef\pgf@mask{/SMask \the\lastsavedimageresourceindex\space 0 R}%
+}
+\def\pgfsys@horishading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgfmathparse{#2}%
+    \setbox\pgfutil@tempboxa=\hbox dir TLT to\pgf@max{\vbox to\pgfmathresult pt{\vfil\pgfsys@invoke{/Sh sh}}\hfil}%
+    \pgf@process{\pgfpoint{\pgf@max}{#2}}%
+    \immediate\saveboxresource resources {%
+      /Shading << /Sh << /ShadingType 2
+      /ColorSpace \pgf@shading@device\space
+      /Domain [\pgf@pdfparseddomain]
+      /Coords [\pgf@doma\space0 \pgf@domb\space0]
+      /Function \pgf@pdfparsedfunction
+      /Extend [false false] >> >>}\pgfutil@tempboxa% <<
+    \xdef\pgfutil@tempa{\hbox{\noexpand\useboxresource\the\lastsavedboxresourceindex}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+\def\pgfsys@vertshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgfmathparse{#2}%
+    \setbox\pgfutil@tempboxa=\hbox dir TLT to\pgfmathresult pt{\vbox to\pgf@max{\vfil\pgfsys@invoke{/Sh sh}}\hfil}%
+    \pgf@process{\pgfpoint{#2}{\pgf@max}}%
+    \immediate\saveboxresource resources {%
+      /Shading << /Sh << /ShadingType 2
+      /ColorSpace \pgf@shading@device\space
+      /Domain [\pgf@pdfparseddomain]
+      /Coords [0 \pgf@doma\space0 \pgf@domb]
+      /Function \pgf@pdfparsedfunction
+      /Extend [false false] >> >>}\pgfutil@tempboxa% <<
+    \xdef\pgfutil@tempa{\hbox{\noexpand\useboxresource\the\lastsavedboxresourceindex}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+\def\pgfsys@radialshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \setbox\pgfutil@tempboxa=\hbox dir TLT to2\pgf@max{\vbox to2\pgf@max{\vfil\pgfsys@invoke{/Sh sh}}\hfil}%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgfpoint{\pgf@max}{\pgf@max}}%
+    \advance\pgf@xa by \pgf@x%
+    \advance\pgf@ya by \pgf@y%
+    \pgf@sys@bp@correct{\pgf@x}%
+    \pgf@sys@bp@correct{\pgf@y}%
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \immediate\saveboxresource resources {%
+      /Shading << /Sh << /ShadingType 3
+      /ColorSpace \pgf@shading@device\space
+      /Domain [\pgf@pdfparseddomain]
+      /Coords [\pgf@sys@tonumber{\pgf@xa} \pgf@sys@tonumber{\pgf@ya} \pgf@doma\space \pgf@sys@tonumber{\pgf@x} \pgf@sys@tonumber{\pgf@y} \pgf@domb]
+      /Function \pgf@pdfparsedfunction
+      /Extend [true false] >> >>}\pgfutil@tempboxa% <<
+    \xdef\pgfutil@tempa{\hbox{\noexpand\useboxresource\the\lastsavedboxresourceindex}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}%
+\def\pgfsys@functionalshading#1#2#3#4{%
+  {%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{#3}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    \setbox\pgfutil@tempboxa=\hbox dir TLT to\pgf@x{\vbox to\pgf@y{\vfil\pgfsys@invoke{/Sh sh}}\hfil}%
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \pgf@sys@bp@correct{\pgf@xb}%
+    \pgf@sys@bp@correct{\pgf@yb}%
+    \pgf@xc=-\pgf@xa%
+    \pgf@yc=-\pgf@ya%
+    % Now build the function
+    \pdfextension obj
+    stream
+    attr
+    {
+      /FunctionType 4
+      /Domain [\pgf@sys@tonumber{\pgf@xa}\space\pgf@sys@tonumber{\pgf@xb}\space\pgf@sys@tonumber{\pgf@ya}\space\pgf@sys@tonumber{\pgf@yb}]
+      /Range [\pgf@shading@functional@range]
+    }
+    {{#4}}%
+    \edef\pgf@temp@num{\the\numexpr\pdffeedback lastobj\relax}%
+    \saveboxresource resources {%
+      /Shading << /Sh << /ShadingType 1
+      /ColorSpace \pgf@shading@device\space
+      /Matrix [1 0 0 1 \pgf@sys@tonumber{\pgf@xc}\space\pgf@sys@tonumber{\pgf@yc}]
+      /Domain [\pgf@sys@tonumber{\pgf@xa}\space\pgf@sys@tonumber{\pgf@xb}\space\pgf@sys@tonumber{\pgf@ya}\space\pgf@sys@tonumber{\pgf@yb}]
+      /Function \pgf@temp@num\space 0 R
+      >> >>}\pgfutil@tempboxa% <<
+    \xdef\pgfutil@tempa{\hbox{%
+      \noexpand\useboxresource\the\lastsavedboxresourceindex%
+      \noexpand\pdfextension refobj \pgf@temp@num%
+    }}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+
+
+
+% Patterns
+
+\def\pgfsys@declarepattern#1#2#3#4#5#6#7{%
+  % Start building the pattern dictionary:
+  \pgf@xa=#2\relax%
+  \pgf@ya=#3\relax%
+  \pgf@xb=#4\relax%
+  \pgf@yb=#5\relax%
+  \pgf@xc=#6\relax%
+  \pgf@yc=#7\relax%
+  \pgf@sys@bp@correct\pgf@xa%
+  \pgf@sys@bp@correct\pgf@ya%
+  \pgf@sys@bp@correct\pgf@xb%
+  \pgf@sys@bp@correct\pgf@yb%
+  \pgf@sys@bp@correct\pgf@xc%
+  \pgf@sys@bp@correct\pgf@yc%
+  \pgfsys@@declarepattern{#1}%
+}
+
+\def\pgfsys@@declarepattern#1#2#3#4#5#6#7#8#9{%
+  \pgfutil@tempdima=#6\relax%
+  \pgfutil@tempdimb=#7\relax%
+  \pgf@sys@bp@correct\pgfutil@tempdima%
+  \pgf@sys@bp@correct\pgfutil@tempdimb%
+  % Now create the pattern object:
+  \immediate\pdfextension obj  stream
+  attr
+  {
+    /Type /Pattern
+    /PatternType 1
+    /PaintType \ifnum#9=0 2 \else 1 \fi
+    /TilingType 1
+    /BBox [\pgf@sys@tonumber\pgf@xa\space\pgf@sys@tonumber\pgf@ya\space\pgf@sys@tonumber\pgf@xb\space\pgf@sys@tonumber\pgf@yb]
+    /XStep \pgf@sys@tonumber\pgf@xc\space
+    /YStep \pgf@sys@tonumber\pgf@yc\space
+    /Matrix [#2\space#3\space#4\space#5\space\pgf@sys@tonumber\pgfutil@tempdima\space\pgf@sys@tonumber\pgfutil@tempdimb]
+    /Resources <</Pattern<<>>>> %<<
+  }
+  {#8}%
+  \pgfutil@addpdfresource@patterns{/pgfpat#1\space \the\numexpr\pdffeedback lastobj\relax\space 0 R}%
+}
+
+\def\pgfsys@setpatternuncolored#1#2#3#4{%
+  \pgfsysprotocol@literal{/pgfprgb cs #2 #3 #4 /pgfpat#1\space scn}%
+}
+
+\def\pgfsys@setpatterncolored#1{%
+  \pgfsysprotocol@literal{/Pattern cs /pgfpat#1\space scn}%
+}
+
+
+
+\def\pgfsys@papersize#1#2{\pageheight#2\relax\pagewidth#1\relax}
+
+\def\pgfsys@global@papersize#1#2{\global\pageheight#2\relax\global\pagewidth#1\relax}
+
+\ifx\paperheight\@undefined
+  \def\pgfsys@thepageheight{\pageheight}
+  \def\pgfsys@thepagewidth{\pagewidth}
+\fi
+
+
+%
+% Position tracking
+%
+\def\pgfsys@markposition#1{%
+  \savepos%
+  \edef\pgf@temp{#1}%
+  \expandafter\pgfutil@writetoaux\expandafter{%
+    \expandafter\noexpand\expandafter\pgfsyspdfmark\expandafter{\pgf@temp}{\the\lastxpos}{\the\lastypos}}%
+}
+
+\def\pgfsyspdfmark#1#2#3{%
+  \expandafter\gdef\csname pgf@sys@pdf@mark@pos@#1\endcsname{\pgfqpoint{#2sp}{#3sp}}%
+  \pgfutil@check@rerun{#1}{{#2}{#3}}%
+}
+
+\def\pgfsys@getposition#1#2{%
+  \edef\pgf@marshal{\let\noexpand#2=\expandafter\noexpand\csname pgf@sys@pdf@mark@pos@#1\endcsname}%
+  \pgf@marshal%
+}
+
+\def\pgf@sys@pdf@mark@pos@pgfpageorigin{\pgfqpoint{\hoffset}{\voffset}}
+
+
+%
+% Opacity masks
+%
+\def\pgfsys@fadingfrombox#1#2{%
+  {%
+    \pgf@sys@pdf@check@resources%
+    \pgf@x=-.5\wd#2%
+    \pgf@y=-.5\ht#2%
+    \advance\pgf@y by.5\dp#2%
+    \expandafter\xdef\csname pgfsmasktrans@#1\endcsname{%
+      \noexpand\pgftransformcm{1}{0}{0}{1}{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}%
+    \saveboxresource resources { \pgf@sys@pdf@possible@resources } #2%
+    \expandafter\xdef\csname pgfsmaskxform@#1\endcsname{\the\lastsavedboxresourceindex}%
+  }%
+}
+\def\pgfsys@usefading#1#2#3#4#5#6#7{%
+  \expandafter\ifx\csname pgfsmaskxform@#1\endcsname\relax%
+    \pgferror{Undefined fading '#1'}%
+  \else%
+    {%
+      \expandafter\ifx\csname pgfsmask@#1\endcsname\relax%
+        \pgf@sys@pdf@install@mask{#1}%
+      \fi%
+      \pgftransformreset%
+      \pgftransformcm{#2}{#3}{#4}{#5}{\pgfpoint{#6}{#7}}%
+      \csname pgfsmasktrans@#1\endcsname%
+      {%
+        \pgflowlevelsynccm%
+        \pgfsys@invoke{/pgfsmask\csname pgfsmask@#1\endcsname\space gs}%
+      }%
+      \pgftransforminvert%
+      \pgflowlevelsynccm%
+    }%
+  \fi
+}
+
+\def\pgf@sys@pdf@install@mask#1{%
+  \setbox\pgfutil@tempboxa=\hbox{\useboxresource\csname pgfsmaskxform@#1\endcsname}
+  \immediate\saveboxresource%
+    attr {
+    /Group
+    <<
+      /S /Transparency
+      /CS /DeviceGray
+    >>
+  }% <<
+  \pgfutil@tempboxa%
+  \pgfutil@addpdfresource@extgs{%
+    /pgfsmask\the\lastsavedboxresourceindex\space
+    <<
+      /SMask
+      <<
+        /S /Luminosity
+        /G \the\lastsavedboxresourceindex\space 0 R
+      >>
+    >> } %<<
+  \expandafter\xdef\csname pgfsmask@#1\endcsname{\the\lastsavedboxresourceindex}%
+}
+
+%
+% Transparency groups
+%
+\def\pgfsys@transparencygroupfrombox#1{%
+  \pgf@sys@pdf@check@resources%
+  \saveboxresource
+  attr { /Group << /S /Transparency
+    /I \ifpgfsys@transparency@group@isolated true \else false \fi
+    /K \ifpgfsys@transparency@group@knockout true \else false \fi >> } %<<
+  resources { \pgf@sys@pdf@possible@resources }
+  #1%
+  \setbox#1=\hbox{\useboxresource\lastsavedboxresourceindex}%
+}
+
+
+
+
+%
+% Resource management
+%
+
+\def\pgf@sys@setuppdfresources@plain{%
+  % This command will setup pdf resource in plain and in latex
+  % mode. ConTeXt has its own handler
+  % Page resources (they are kept in objects and only written at the
+  % very end)
+  \pdfextension obj  reserveobjnum \edef\pgf@sys@pdf@extgs@objnum{\the\numexpr\pdffeedback lastobj\relax}
+  \pdfextension obj  reserveobjnum \edef\pgf@sys@pdf@pattern@objnum{\the\numexpr\pdffeedback lastobj\relax}
+  \pdfextension obj  reserveobjnum \edef\pgf@sys@pdf@colrospaces@objnum{\the\numexpr\pdffeedback lastobj\relax}
+  \def\pgf@sys@pdf@possible@resources{%
+    /ColorSpace \pgf@sys@pdf@colrospaces@objnum\space 0 R
+    /Pattern    \pgf@sys@pdf@pattern@objnum\space 0 R
+    /ExtGState  \pgf@sys@pdf@extgs@objnum\space 0 R
+  }
+  \let\pgf@sys@pdf@check@resources=\relax%
+  \def\pgf@sys@pdf@install@pageresources{
+    {
+      \edef\temp{
+        \pgf@sys@pdf@possible@resources
+      }
+      \expandafter\global\expandafter\pdfvariable pageresources\expandafter{\temp}
+    }
+  }
+  \pgf@sys@pdf@install@pageresources
+  \expandafter\pgfutil@everybye\expandafter{%
+    \the\pgfutil@everybye%
+    \immediate \pdfextension obj  useobjnum \pgf@sys@pdf@extgs@objnum {<<\pgf@sys@pgf@resource@list@extgs>>}%<<
+    \immediate \pdfextension obj  useobjnum \pgf@sys@pdf@pattern@objnum {<<\pgf@sys@pgf@resource@list@patterns>>}%<<
+    \immediate \pdfextension obj  useobjnum \pgf@sys@pdf@colrospaces@objnum {<<\pgf@sys@pgf@resource@list@colorspaces>>}%<<
+  }
+  \let\pgf@sys@pgf@resource@list@extgs=\pgfutil@empty%
+  \let\pgf@sys@pgf@resource@list@patterns=\pgfutil@empty%
+  \let\pgf@sys@pgf@resource@list@colorspaces=\pgfutil@empty%
+  \def\pgf@sys@addpdfresource@extgs@plain##1{\xdef\pgf@sys@pgf@resource@list@extgs{\pgf@sys@pgf@resource@list@extgs\space##1}}
+  \def\pgf@sys@addpdfresource@patterns@plain##1{\xdef\pgf@sys@pgf@resource@list@patterns{\pgf@sys@pgf@resource@list@patterns\space##1}}
+  \def\pgf@sys@addpdfresource@colorspaces@plain##1{\xdef\pgf@sys@pgf@resource@list@colorspaces{\pgf@sys@pgf@resource@list@colorspaces\space##1}}
+}
+\pgfutil@setuppdfresources % possibly call the above
+
+\pgfutil@addpdfresource@colorspaces{ /pgfprgb [/Pattern /DeviceRGB] }
+
+\def\pgfsys@color@unstacked#1{%
+    \pdfextension literal{\csname\string\color@#1\endcsname}%
+}
+
+\endinput
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

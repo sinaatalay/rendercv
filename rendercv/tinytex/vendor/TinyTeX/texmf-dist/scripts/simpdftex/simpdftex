@@ -1,0 +1,671 @@
+#!/bin/sh
+# Script to do (la)tex->dvi->[ps->]pdf.
+# 
+# Created by Gerben Wierda, May 2001
+# Rewritten by Gerben Wierda, January 2002
+# Modified by Joachim Kock, May 2003
+# Modified by Gerben Wierda, April 2007
+# Modified by Bruno Voisin and Herbert Schulz, September 2018
+# Typos corrected by Karl Berry, October 2022.
+
+# COPYRIGHT Gerben Wierda 2001--2022
+# This file is free software. You are free to use this file in any way you like
+# However, if you change it you should note in this file that you did and who
+# you are, you also need to change the version string if you do. That way
+# I will not get support questions for software that is not entirely mine.
+
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
+# EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# This script assumes that there is a config.pdf somewhere that sets
+# the bitmap mode to something large but realistic (real mode) so that
+# unavailable pfb fonts will be included as bitmaps.
+
+# Version 1.0:	added the string above for identification purposes
+# Version 1.0a:	Cosmetic change: do not display dir of argv[0] all the time
+#		Added calledas variable to hold command basename
+# Version 1.1:	Use calledas instead of $0 which means the sed command
+#		for determining format below also works when there is no dir
+#		(run from dir where altpdftex resides, not very likely...)
+# Version 1.2:	Force the use of tex binaries from the same directory as
+#		this script
+# Version 1.3:  Added --echo-version option, placed argument check after
+#		switch, inside while to prevent subscript out of range error
+#		Added --tex-path to override directory where this script
+#		resides. Added --gs-path to override a new default gs
+#		directory /usr/local/bin. Also, force gs directory at the
+#		start of the path to repair for broken installations of
+#		TeX, gs and such
+# Version 1.4:	Moved path changes to just before calling gs so that only
+#		ps2pdf is affected
+# Version 1.5:	Removed some path-related redundancy from GS calling
+# Version 1.5a:	Missing ${extradviopts} from echo
+#		Added version to --help output
+#		Added wolfram.map
+# Version 1.6:	Fixed bug: --dviopts did not work because it did set
+#		the wrong variable
+#		Changed dviopts to dvipsopts (better name)
+# Version 1.7:	Added --distiller and --distiller-filter option
+#		Changed --gs-path to --distiller-path
+#		Changed distiller semantics
+#		Fixed bug --tex-path flag needed trailing '/'
+#		Some extra quoting to be more robust for whitespace
+#		in names, also internally
+# Version 1.8:	Added pstill and u-psbuild info to help
+# Version 1.9:	Removed textrace bbold font (textrace is broken)
+# Version 1.10:	Added amstex support
+#		Simplified different format support
+# Version 1.11:	Do not source ~/.{t}cshrc, use the environment 'as is'
+#		Version 1.11 says it is version 1.10!
+# Version 1.12: Added textrace bold font (textrace 0.48 is ok)
+# Version 1.13:	Changed success message at the end
+#		Echo version on by default
+#		Debug option
+# Version 1.13b:Date report on version was very out of date, removed
+
+# Version 2.0:	Rewritten in /bin/sh because (t)csh does not handle signals
+#		very well...
+#		This version works, but you need to send the SIGTERM to
+#		the process group (the negative PID) to get it to work
+# Version 2.1:	Small bug fixes
+# Version 2.2:	Fixed bug where argument without extension was interpreted
+#		as dvi file.
+#		Removed dependencies on smart sh versions
+# Version 2.3:	Removed map file knowledge (needs to be outside this script)
+#		beyond the standard map files
+# Version 2.4:	Added support for omega and lambda (use odvips)
+# Version 2.5:	Changed maxpk and maxpfb implementation to recent updmap
+# Version 2.6:	Use ps2pdf13 as the default distiller
+# Version 2.7:	Changed help
+# Version 2.8:	Checked into CVS.
+#		Added handling of outdir for TeX
+# Version 2.9:	Added auto-outdir flag
+# Version 2.10:	Changed --outdir behaviour to mimic TEXMFOUTPUT,
+#		removed --auto-outdir
+# Version 2.11:	Fixed typo
+# Version 2.12:	RCS changes, from now on, the version number is the RCS number
+#		These notes here will become a ChangeLog.
+# 2003/05/20	Joachim's modification: write first to a pdf file in tmp, 
+#		and only upon completion copy the file to its final
+#		destination.  This is done in order to minimise the time where
+#		the pdf file in current directory is in an unstable state,
+#		because a PDF viewer might be tracking the file, and 
+#		if it finds the pdf file in an intermediate state it will
+#		display a blank page until the new version is ready.
+# 2003/05/21	Joachim's modification used /bin/cp. Gerben made it truly
+#		atomic by using /bin/cp in combination with /bin/mv
+# 2003/11/23	Added support for passing flags to tex at the request of
+#		Dick Koch.
+# 2004/09/05	Bugfix: make it work better with directories with whitespace
+#		in their name
+# 2004/11/15	New calling mode: simpdftex format foo.tex
+#		e.g.:
+#			simpdftex latex foo.tex
+#		In the future, the old modes (altpdflatex and friends) through
+#		symlinks will disappear from my distribution, though they will
+#		still work.
+# 2007/05/07	Added dvipdfm support with compatibility with the patched version
+#		that is available on the net (simpdftex_dpmx)
+#		Changed version string to date-based string
+# 2007/08/09	Protected echo command against broken builtin versions by running
+#		/bin/echo explicitly. There may exist /bin/echo implementations
+#		that do not support -n and this script will have to be changed
+#		before it works on such a system.
+# 2018/09/19	Added --distilleropts optlist command line flag for 
+#		options to be added to the distiller application; 
+#		e.g. "-dCompatibilityLevel=1.5 -dNOSAFER".
+#		Removed uses of echo -n.
+# 2018/09/24    Added -dCompatibilityLevel=15 into the distillerprog definition
+#		and removed quotes around execution of ${distillerprog}
+#		so it can contain options.
+# 2022/10/12    Fix typos; no functional changes.
+# 
+# FEATURE: it seems -u +foo.map -u -foo.map does not work. So --extradvipsopts
+# cannot be used to remove a map from the standard list
+
+# BUG: Handling of file name extensions is not completely equivalent to TeX
+# i.e. foo.bar.bla gets you foo.bar.pdf not foo.bar.bla.pdf
+# Hint: Give all extensions explicitly on the command line
+
+version='20221012'
+calledas=`basename "$0"`
+if [ "${calledas}" = "simpdftex" ]
+then
+	argwithoutlead=`/bin/echo "$1"|sed 's/^--//'`
+	if [ "$1" != "" -a "$1" = "${argwithoutlead}" ]
+	then
+		formatname="$1"
+		shift
+		calledas="altpdf${formatname}"
+	fi
+fi
+argvbackup="$*"
+
+dviprogram="dvips" # Might be dvips, dvipdfm or dvipdfmx
+
+# maxpkdvipsopts: use only pfb's for real PS fonts, bitmaps are default for the others
+maxpkdvipsopts="-Ppk"
+# maxpfbdvipsopts: use as many pfb's as possible
+maxpfbdvipsopts="-Poutline"
+opt_dvipsopts=""
+
+# Defaults:
+# altpdftex --default is the default setting, it also works
+# when there is no config.pdf file
+extradvipsoptions=""
+dvipsoptions="$maxpfbdvipsopts"
+outputpostfix=".maxpfb"
+simplename="yes"
+keeppsfile="no"
+echoversion="yes"
+texpath=`dirname "$0"`
+# Default distiller is ps2pdf from /usr/local/bin in no filter mode
+# as the direct call to a filtering gs does not work yet for some reason
+#distillerpath=""
+#distillerprog="/usr/local/bin/gs -dCompatibility=1.3 -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=- -c save pop"
+#distillerfilter="yes"
+distillerpath="/usr/local/bin"
+#distillerprog="ps2pdf13"
+distillerprog="ps2pdf -dCompatibilityLevel=1.5"
+distillerfilter="no"
+unset outdir
+debug="no"
+dvipdfmoptions=""
+distilleroptions=""
+
+usage()
+{
+	cat <<_eof_help
+This is simpdftex, $version
+
+Usage: simpdftex formatname [--mode modestring]
+	[--dvipsopts dvipsoptstring] [--extradvipsopts dvipsoptstring] [--pdf]
+	[--default] [--maxpk] [--maxpfb] [--extendedname] [--no-echo-version]
+	[--tex-path dir] [--keep-psfile] [--distiller-path dir] [--debug]
+	[--distiller prog] [--distiller-filter prog] [--distilleropts opts]
+	[--help] [--outdir dir] [--extratexopts texoptsstring]
+	[--dvipdfmopts dvipdfmoptstring] tex-or-dvi-file
+
+simpdftex is a way to do pdf{e}{la}tex without having pdf{e}{la}tex. It needs a
+working TeX environment and one of three ways to turn  DVI file into PDF:
+	- dvips + a distiller like ghostscript
+	- dvipdfm
+	- dvipdfmx
+Since pdf{e}{la}tex cannot handle insertion of .eps graphics, simpdftex gives an
+alternative when using dvips mode. The output for both systems is comparable.
+
+simpdftex compiles the file with {La}TeX, processes the DVI file with dvips into
+PostScript and uses gs to produce pdf (with ps2pdf). Or it uses dvipdfm or
+dvipdfmx to turn the DVI file into PDF. There is finegrained control over the
+resulting filename and the options with which dvips produces the PostScript
+intermediary file.
+
+Dvips will call Metafont to produce bitmaps or include PostScript .pfb files
+depending on the flags. See below.
+
+The default setting is normal name, maximal use of pfb's, just like pdf{la}tex,
+in other words, "pdftex file.tex" and "altpdftex file.tex" both produce an
+output file file.pdf. For pdftex, output options are controlled by pdftex.cfg,
+for altpdftext by config.ps (unless --pdf is given).
+
+Arguments:
+	tex-or-dvi-file
+		If a .dvi file is given, skip the TeX process. Otherwise, TeX
+		the input file, dvips the resulting dvi file and ps2pdf the
+		resulting ps file
+	--mode
+		Tell simpdftex how to go from DVI to PDF. There are three modes:
+		- dvips
+		- dvipdfm
+		- dvipdfmx
+	--dpx
+		Compatibility flag with simpdftex_dpmx. Equal to --mode dvipdfmx
+	--dpm
+		Compatibility flag with simpdftex_dpmx. Equal to --mode dvipdfm
+	--help
+		Display this message and exit
+	--no-echo-version
+		Do not echo location and version of this script. Does not exit
+		so can be used to change info to the output of a real run
+	--debug
+		Add some debug output
+	--extendedname
+		Depending on the mode, adds intermediary extensions to the
+		output filename. If the mode is --pdf, .pdfmode is added. If
+		the mode is --maxpk, ,maxpk is added and if the mode is
+		--maxpfb, .maxpfb is added. Example:
+			tex-or-dvi-file-basename.maxpfb.pdf
+	--maxpk
+		Use Metafont bitmaps (pk files) when possible. Only real
+		PostScript fonts (like Times Roman) are included as
+		PostScript fonts. All other fonts are included as bitmaps
+		for the default printer resolution. This options produces
+		optimal results for the chosen printer.
+		For file contents (not name) equivalent to:
+		--dvipsopts "-Ppk"
+		Not yet functional for the other modes.
+	--maxpfb
+		Use PostScript pfb files whenever possible. This produces
+		optimal results for the screen.
+		For file contents (not name) equivalent to:
+		--dvipsopts "-Poutline"
+		If any font is included as TeX pk bitmap, it is rendered
+		at the default resolution.
+		Not yet functional for the other modes.
+	--pdf
+		Select .pdfmode extension for the output file name if
+		--extendedname has been set. Use printer definition
+		config.pdf. For file contents (not name) equivalent to
+		--dvipsopts "-Ppdf"
+		Note that the default config.pdf assumes resolution 8000
+		for bitmaps and bitmap generation fails at this resolution
+		because there exists no known mode for that resolution.
+	--default
+		Select no extension for the output file name, even if
+		--extendedfilename has been set. Use standard printer
+		definition config.ps. For file contents (not name) equivalent
+		to:
+		--dvipsopts "" --noextendedname
+	--dvipsopts
+		Give arbitrary arguments to dvips, e.g.
+		--dvipsopts "-M"
+		Sets extension for --extendedfilename to .custom. --dvipsopts
+		overrides other flags that set dvipsopts.
+	--extratexopts
+		Give extra arbitrary arguments to tex, e.g.
+		--extratexopts "--interaction=nonstopmode"
+		Sets extra options for the tex command that is used.
+	--extradvipsopts
+		Give extra arbitrary arguments to dvips, e.g.
+		--extradvipsopts "-M"
+		Sets extra options for dvips and does not set extension
+		or override other options. Options will be added to the end
+		of the options for dvips
+	--keep-psfile
+		After running dvips, copy the ps file over to the directory
+		where the tex file is, possibly overwriting a ps file
+		that is there. Use with caution, a ps file could be input
+		as well.
+	--tex-path
+		Give path of TeX binaries, use directory of this script
+		otherwise
+	--distiller prog
+		Use a distiller different from ps2pdf which is the default.
+		Argument must be an executable or executable script that
+		gets called with two arguments: input file (PS) and output
+		file (PDF). E.g.:
+		--distiller=/usr/local/alternate/bin/ps2pdf
+		--distiller=pstill
+		Using this flag sets the distiller filter mode to off
+		This flag only makes sense in dvips mode
+	--distiller-filter prog
+		Use a distiller executable or executable script which is
+		called with the PS input as standard input and which writes
+		the PDF output to standard output. E.g.:
+		--distiller-filter=u-psbuild
+		This flag only makes sense in dvips mode
+	--distilleropts optionlist
+		special options to pass to the distiller
+	--distiller-path
+		Give path needed by the distiller binary. This path is added
+		to the begin of you PATH environment before the distiller is
+		run. The reason is that for instance ps2pdf uses the path to
+		find gs and sets the path to something with /sw/bin at the
+		beginning.  Thus, installing gs from fink would make
+		/usr/local/bin/ps2pdf find another gs than intended. By giving
+		an empty path, the path is not changed before the distiller
+		program is run. The default is empty.
+		This flag only makes sense in dvips mode
+	--dvipdfmopts
+		Give arbitrary arguments to dvipdfm or dvipdfmx, e.g.
+		--dvipdfmopts "-c"
+		Sets extension for --extendedfilename to .custom. --dvipdfmopts
+		overrides other flags that set dvipdfmopts.
+	--outdir dir
+		Write files here *if* our current directory is unwritable. This
+		mimics the TEXMFOUTPUT environment variable of TeX, but
+		differently. The current dir becomes the value of --outdir and
+		the directory where the old current dir is added to TEXINPUTS.
+		This is more robust for reading and locating files.
+		You can also set TEXMFOUTPUT instead, but with a disadvantage:
+		you will be running TeXin the current dir. And you will not be
+		able to read files in the outdir unless you also adapt
+		TEXINPUTS.
+
+	The defaults for the distiller are
+		Path addition: "${distillerpath}"
+		Filter mode: "${distillerfilter}"
+		Program: "${distillerprog}"
+
+	Later flags override settings of earlier flags.
+_eof_help
+}
+
+while test $# -gt 0
+do
+	case $1 in
+	--help)
+		usage
+		exit 0;;
+	--dvipsopts)
+		shift
+		outputpostfix=".custom"
+		dvipsoptions="$1"
+		;;
+	--dvipdfmopts)
+		outputpostfix=".custom"
+		shift
+		dvipdfmoptions="$1"
+		;;
+        --dvipdfopts)	# Compatibility with simpdftex_dpmx
+		shift
+		dvipdfmoptions="$1"
+		;;
+	--extradvipsopts)
+		shift
+		extradvipsoptions="$1"
+		;;
+	--extratexopts)
+		shift
+		extratexoptions="$1"
+		;;
+	--tex-path)
+		shift
+		texpath="$1"
+		;;
+	--pdf)
+		outputpostfix=".pdfmode"
+		dvipsoptions="-P pdf"
+		;;
+	--default)
+		outputpostfix=""
+		dvipsoptions=""
+		# Use the default print option in config.ps
+		;;
+	--maxpk)
+		outputpostfix=".maxpk"
+		dvipsoptions="$maxpkdvipsopts"
+		;;
+	--maxpfb)
+		outputpostfix=".maxpbfb"
+		dvipsoptions="$maxpfbdvipsopts"
+		;;
+	--extendedname)
+		simplename="no"
+		;;
+	--keep-psfile)
+		keeppsfile="yes"
+		;;
+	--debug)
+		debug="yes"
+		;;
+	--distiller-path)
+		shift
+		distillerpath="$1"
+		;;
+	--distiller)
+		shift
+		distillerprog="$1"
+		distillerfilter="no"
+		;;
+	--distilleropts)
+		shift
+		distilleroptions="$1"
+		;;
+	--mode)
+		shift
+		if [ "$1" = "dvips" -o "$1" = "dvipdfm" -o "$1" = "dvipdfmx" ]
+		then
+			dviprogram="$1"
+		else
+			/bin/echo "Unknown mode $1"
+			exit 1
+		fi
+		;;
+	--outdir)
+		shift
+		export TEXINPUTS=`pwd`:`kpsewhich --expand-var '$TEXINPUTS'`
+		export TEXMFOUTPUT="$1"
+		outdir="$1/"
+		outdirset="yes"
+		cd "$1"
+		;;
+	--distiller-filter)
+		shift
+		distillerprog="$1"
+		distillerfilter="yes"
+		;;
+	--no-echo-version)
+		echoversion="no"
+		;;
+        --dpx)	# Compatibility with simpdftex_dpmx
+                dviprogram="dvipdfmx"
+                ;;
+        --dpm)	# Compatibility with simpdftex_dpmx
+                dviprogram="dvipdfm"
+                ;;
+	--*)
+		/bin/echo "Unknown option $1"
+		exit 1;;
+	"")
+		;;
+	*)
+		break;;
+	esac
+	shift
+done
+
+if [ "${echoversion}" = "yes" -a "${debug}" = "no" ]
+then
+	/bin/echo "### This is $0, Version ${version}"
+fi
+
+if [ "${debug}" = "yes" ]
+then
+	/bin/echo "##### This is $0, Version ${version}"
+	/bin/echo "##### Arguments: ${argvbackup}"
+fi
+
+run_dvipdfm()
+{
+	/bin/echo "### ${texpath}/${dviprogram} ${dvipdfmoptions} -o ${pdffile} ${dvifile}"
+	"${texpath}/${dviprogram}" ${dvipdfmoptions} -o "${pdffile}" "${dvifile}" || \
+		{ /bin/echo "### FAILED to generate ${pdffile} (${status})"; \
+		  exit 1; }
+}
+
+run_dvips()
+{
+	/bin/echo "### ${texpath}/${dviprogram} -R ${dvipsoptions} ${extradvipsoptions} -o ${psfile} ${dvifile}"
+	"${texpath}/${dviprogram}" -R ${dvipsoptions} ${extradvipsoptions} -o "${psfile}" "${dvifile}" || \
+		{ /bin/echo "### FAILED to generate ${psfile} (${status})"; \
+		  exit 1; }
+
+	if [ "${keeppsfile}" = "yes" ]; then
+		/bin/echo "### Saving intermediary ps file ${psfile} as ${savedpsfile}"
+		/bin/cp "${psfile}" "${savedpsfile}" || \
+			/bin/echo "### FAILED to save ${psfile} (${status})"
+	fi
+
+	if [ "${distillerpath}" != "" ]; then
+		PATH="${distillerpath}:${PATH}";export PATH
+		if [ "${debug}" = "yes" ]; then
+			/bin/echo "##### PATH set to ${PATH}"
+		fi
+	fi
+
+	if [ "${distillerfilter}" = "yes" ]; then
+		/bin/echo "### ${distillerprog} ${distilleroptions} <${psfile} >${pdffile}"
+		${distillerprog} ${distilleroptions} <"${psfile}" >"${pdffile}" || \
+			{ /bin/echo "### FAILED to generate ${pdffile} (${status})"
+			  exit 1; }
+	else
+		/bin/echo "### ${distillerprog} ${distilleroptions} ${psfile} ${pdffile}"
+		${distillerprog} ${distilleroptions} "${psfile}" "${pdffile}" || \
+			{ /bin/echo "### FAILED to generate ${pdffile} (${status})"
+			  exit 1; }
+	fi
+}
+
+cleanup()
+{
+	if [ "${tmpdir}" != "" -a "${debug}" = "no" ]
+	then
+		rm -rf "${tmpdir}"
+	fi
+}
+
+terminated()
+{
+	cleanup
+	exit 1;
+}
+
+trap 'terminated' 15
+
+main()
+{
+	if [ "${file}" = "" ]
+	then
+		/bin/echo "simpdftex Empty argument: tex-or-dvi-file-name"
+		exit 1
+	fi
+
+	# Argument handling
+
+	if [ "${simplename}" = "yes" ]
+	then
+		outputpostfix=""
+	fi
+
+	startwithdvi="no"
+	basename=`basename "${file}"`
+	nosuffixbasename=`/bin/echo ${basename}|sed 's/\.[^.]*$//'`
+	nodvisuffixbasename=`/bin/echo ${basename}|sed 's/\.[dD][vV][iI]$//'`
+	if [ "${nodvisuffixbasename}" = "${nosuffixbasename}" -a \
+		"${basename}" != "${nosuffixbasename}" ]
+	then
+		startwithdvi="yes"
+	fi
+
+	kpsefilename=`kpsewhich "${file}"`
+	slashdirname=`dirname "${kpsefilename}"`/
+
+	if [ ! -w "." ]
+	then
+		if [ "${TEXMFOUTPUT}" != "" ]
+		then
+			outdir="${TEXMFOUTPUT}/"
+			outdirset="yes"
+			if [ "${autoinput}" = "yes" ]
+			then
+				export TEXINPUTS=${TEXMFOUTPUT}:`kpsewhich --expand-var '$TEXINPUTS'`
+
+			fi
+		else
+			/bin/echo "### Cannot write in current directory and no redirect found. Bailing out..."
+			exit 1
+		fi
+	fi
+
+	# Assume the command is called altpdf* where the rest is the actual tex
+	# program to be run
+	texprogram=`/bin/echo ${calledas}|sed 's/altpdf//'`
+	if [ "${texprogram}" = "omega" -o "${texprogram}" = "lambda" ]
+	then
+		dvips="odvips"
+	else
+		dvips="dvips"
+	fi
+
+	# Handle temp dir (cleanup is called on signal)
+	tmpext=$$-`/bin/date +"%s"`
+	tmpdir="/tmp/altpdf${texprogram}.${tmpext}"
+	# Force removal of possible existing tmpdir
+	cleanup
+	# Make new version
+	mkdir "${tmpdir}"
+
+	if [ "${startwithdvi}" = "yes" ]
+	then
+		dvifile="${file}"
+	else
+		texfile="${file}"
+		dvifile="${outdir}${nosuffixbasename}.dvi"
+	fi
+
+	psfile="${tmpdir}/${nosuffixbasename}${outputpostfix}.ps"
+	savedpsfile="${outdir}${nosuffixbasename}.ps"
+	pdffile="${tmpdir}/${nosuffixbasename}${outputpostfix}.pdf"
+	savedpdffile="${outdir}${nosuffixbasename}${outputpostfix}.pdf"
+
+	if [ "${debug}" = "yes" ]
+	then
+		/bin/echo "##### TeX file: $texfile"
+		/bin/echo "##### DVI file: $dvifile"
+		if [ "${dviprogram}" = "dvips" ]
+		then
+			/bin/echo "##### PS file: $psfile"
+			/bin/echo "##### Saved PS file: $savedpsfile"
+		fi
+		/bin/echo "##### Created PDF file: $pdffile"
+		/bin/echo "##### Final PDF file: $savedpdffile"
+		/bin/echo "##### Environment:"
+		env | sed 's/^/##### /g'
+	fi
+
+	if [ "${startwithdvi}" = "yes" ]; then
+		/bin/echo "### Skipping ${texprogram} ${texfile} [dvi->pdf only]"
+	else
+		/bin/echo "### ${texpath}/${texprogram} ${texfile}"
+		"${texpath}/${texprogram}" ${extratexoptions} "${texfile}" || \
+			/bin/echo "### WARNING: TeX returned non zero exit status ${status}"
+	fi
+
+	case "${dviprogram}" in
+	"dvips")
+		run_dvips;;
+	"dvipdfm")
+		run_dvipdfm;;
+	"dvipdfmx")
+		run_dvipdfm;;
+	*)
+		/bin/echo "### ERROR: wrong dvipdf mode ${dviprogram}"
+	esac
+
+	/bin/echo "### Copying/moving pdf file ${pdffile} to ${savedpdffile}"
+	/bin/cp "${pdffile}" "${savedpdffile}.${tmpext}" || \
+		/bin/echo "### FAILED to copy ${pdffile} (${status})"
+	/bin/rm -f "${savedpdffile}"
+	/bin/mv "${savedpdffile}.${tmpext}" "${savedpdffile}" || \
+		/bin/echo "### FAILED to rename ${savedpdffile}.${tmpext} (${status})"
+
+	if [ "${startwithdvi}" = "yes" ]; then
+		if [ "${keeppsfile}" = "yes" ]; then
+			/bin/echo "### Successfully generated ${savedpdffile} and ${savedpsfile}"
+		else
+			/bin/echo "### Successfully generated ${savedpdffile}"
+		fi
+	else
+		if [ "${keeppsfile}" = "yes" ]; then
+			/bin/echo "### Successfully generated ${dvifile}, ${savedpdffile} and ${savedpsfile}"
+		else
+			/bin/echo "### Successfully generated ${dvifile} and ${savedpdffile}"
+		fi
+	fi
+
+	cleanup
+}
+
+for file in "$@"
+do
+	main
+done

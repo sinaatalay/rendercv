@@ -1,0 +1,223 @@
+\def \filedate    {2015/11/05}%
+\def \fileversion {v1.4.0}%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{xifthen}%
+  [\filedate \space \fileversion \space Extended ifthen features]
+
+% v1.4 Removed the etex package for compatibility reasons
+
+\RequirePackage{calc}
+\RequirePackage{ifthen}
+\RequirePackage{ifmtarg}
+
+% First of all, \TE@repl (ifthen) needs to be patched. (v1.2)
+%   (viz. \newtest{\superlogique}[1]{\(\NOT#1\AND\boolean{true}\)})
+%   Pointed out by MPG and Pierre Albar\`ede [19 Mar 2009]
+
+\def \TE@repl #1#2{%
+  \long \def \@tempc ##1#1##2{%
+    \def \@tempb{\@tempc}%
+    \begingroup % Thanks MPG
+      \toks@ {##2}%
+      \edef \@tempa {\the \toks@}% <- UF v1.3
+    \expandafter \endgroup
+    \ifx \@tempa \@tempb
+      \toks@ \expandafter {\the \toks@ ##1}%
+      \expandafter \@gobble
+    \else
+      \toks@ \expandafter {\the \toks@ ##1#2}%
+      \expandafter \@tempc
+    \fi
+    ##2%
+  }%
+  \toks@ \expandafter {\expandafter}%
+  \expandafter \@tempc \the \toks@ #1\@tempc
+}
+
+% \cnttest {<counter expression>} {<relation>} {<counter expression>}
+%
+\newcommand*{\TE@cnttest}[4]{%
+  \TE@throw
+  \noexpand \calc@assign@count{\@tempcnta}{\unexpanded{#1}}%
+  \noexpand \calc@assign@count{\@tempcntb}{\unexpanded{#3}}%
+  \noexpand \if \noexpand \TE@cnttest@ {#2}%
+  #4%
+}
+
+\newcommand*{\TE@cnttest@}[1]{%
+  \ifcsname TE@cnttest@@#1\endcsname
+    \csname TE@cnttest@@#1\expandafter\expandafter\expandafter \endcsname
+    \expandafter \@gobble
+  \else
+    \expandafter \@firstofone
+  \fi
+  {FF\PackageError{xifthen}{Not a valid comparison operator "#1"}%
+                         {Valid comparisons are <, =, >, <=, and =>.}}%
+}
+
+\@namedef{TE@cnttest@@<}{\ifnum \@tempcnta<\@tempcntb AA\else AB\fi}
+\@namedef{TE@cnttest@@>}{\ifnum \@tempcnta>\@tempcntb AA\else AB\fi}
+\@namedef{TE@cnttest@@=}{\ifnum \@tempcnta=\@tempcntb AA\else AB\fi}
+\@namedef{TE@cnttest@@<=}{%
+  \ifnum \@tempcnta<\@tempcntb AA\else
+    \ifnum \@tempcnta=\@tempcntb AA\else AB\fi
+  \fi
+}
+\@namedef{TE@cnttest@@>=}{%
+  \ifnum \@tempcnta>\@tempcntb AA\else
+    \ifnum \@tempcnta=\@tempcntb AA\else AB\fi
+  \fi
+}
+
+% \dimtest {<dimension expression>} {<relation>} {<dimension expression>}
+%
+\newcommand*{\TE@dimtest}[4]{%
+  \TE@throw
+  \noexpand \calc@assign@skip{\@tempskipa}{\unexpanded{#1}}%
+  \noexpand \calc@assign@skip{\@tempskipb}{\unexpanded{#3}}%
+  \noexpand \if \noexpand \TE@dimtest@ {#2}%
+  #4%
+}
+
+\newcommand*{\TE@dimtest@}[1]{%
+  \ifcsname TE@dimtest@@#1\endcsname
+    \csname TE@dimtest@@#1\expandafter\expandafter\expandafter \endcsname
+    \expandafter \@gobble
+  \else
+    \expandafter \@firstofone
+  \fi
+  {FF\PackageError{xifthen}{Not a valid comparison operator "#1"}%
+                         {Valid comparisons are <, =, >, <=, and =>.}}%
+}
+
+\@namedef{TE@dimtest@@<}{\ifdim \@tempskipa<\@tempskipb AA\else AB\fi}
+\@namedef{TE@dimtest@@>}{\ifdim \@tempskipa>\@tempskipb AA\else AB\fi}
+\@namedef{TE@dimtest@@=}{\ifdim \@tempskipa=\@tempskipb AA\else AB\fi}
+\@namedef{TE@dimtest@@<=}{%
+  \ifdim \@tempskipa<\@tempskipb AA\else
+    \ifdim \@tempskipa=\@tempskipb AA\else AB\fi
+  \fi
+}
+\@namedef{TE@dimtest@@>=}{%
+  \ifdim \@tempskipa>\@tempskipb AA\else
+    \ifdim \@tempskipa=\@tempskipb AA\else AB\fi
+  \fi
+}
+
+% \isnamedefined {<command name>}
+%
+\newcommand*{\TE@isnamedefined}[2]{%
+  \TE@throw
+  \noexpand \ifcsname #1\endcsname
+  #2%
+}
+
+% \isempty {<content>}
+%
+\newcommand*{\TE@isempty}[2]{%
+  \TE@throw
+  \noexpand \if FF\noexpand \@nameuse{fi}%
+  \noexpand \@ifmtarg{\unexpanded{#1}}{%
+    \noexpand \@nameuse{iftrue}%
+  }{%
+    \noexpand \@nameuse{iffalse}%
+  }%
+  #2%
+}
+
+% \isequivalentto {<command>} {<command>}
+%
+\newcommand*{\TE@isequivalentto}[3]{%
+  \TE@throw
+  \noexpand \ifx \noexpand #1\noexpand#2%
+  #3%
+}
+
+% \isin {<substring>} {<string>}
+%
+\newcommand*{\TE@isin}[3]{%
+  \TE@throw
+  \unexpanded {\in@{#1}{#2}}%
+  \noexpand \ifin@
+  #3%
+}
+
+% \endswith {<string>} {<substring>}
+%
+\newcommand*{\TE@endswith}[3]{%
+  \TE@throw
+  \unexpanded {\in@{#2\@nil}{#1\@nil}}%
+  \noexpand \ifin@
+  #3%
+}
+
+% \newtest <command> [<number>] {<definition>}
+%
+\newcommand*{\newtest}[1]{%
+  \@ifnextchar[{%
+    \@newtest{#1}%
+  }{%
+    \@newtest{#1}[0]%
+  }%
+}%
+
+\newcommand*{\@newtest}{}
+\def \@newtest #1[#2]#3{%
+  \toks@ = {\(#3\)}%
+  \TE@repl \or  \TE@or
+  \TE@repl \and \TE@and
+  \TE@repl \not \TE@neg
+  \TE@repl \OR  \TE@or
+  \TE@repl \AND \TE@and
+  \TE@repl \NOT \TE@neg
+  \edef \@tempa {%
+    \unexpanded{\newcommand*{#1}[{#2}]}{\the \toks@}%
+  }%
+  \@tempa
+}%
+
+\newcommand*{\TE@hook}{%
+  \let \isequivalentto = \TE@isequivalentto
+  \let \terminateswith = \TE@endswith % For compability reasons (deprecated)
+  \let \endswith       = \TE@endswith
+  \let \isnamedefined  = \TE@isnamedefined
+  \let \isempty        = \TE@isempty
+  \let \cnttest        = \TE@cnttest
+  \let \dimtest        = \TE@dimtest
+  \let \isin           = \TE@isin
+}
+
+\renewcommand{\ifthenelse}[1]{%
+  \toks@{#1}%
+  \TE@repl \or  \TE@or
+  \TE@repl \and \TE@and
+  \TE@repl \not \TE@neg
+  \TE@repl \OR  \TE@or
+  \TE@repl \AND \TE@and
+  \TE@repl \NOT \TE@neg
+  \begingroup
+    \let \protect = \@unexpandable@protect
+    \def \@setref ##1##2##3{\ifx ##1\relax \z@ \else \expandafter ##2##1\fi}%
+    \def \value ##1{\the \csname c@##1\endcsname}%
+    \let \equal = \TE@equal
+    \let \( = \TE@lparen
+    \let \) = \TE@rparen
+    \let \isodd = \TE@odd
+    \let \lengthtest = \TE@length
+    \let \isundefined = \TE@undef
+    \TE@hook
+    \begingroup
+      \let \@tempa = \relax
+      \let \@tempb = \relax
+      \xdef \@gtempa {\expandafter \TE@eval \the \toks@ \TE@endeval}%
+    \endgroup
+    \@gtempa
+    \expandafter \endgroup
+  \ifTE@val
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi
+}
+
+\endinput

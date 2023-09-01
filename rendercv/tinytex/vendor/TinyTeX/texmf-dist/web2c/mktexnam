@@ -1,0 +1,229 @@
+#!/bin/sh
+# maketexnam -- find PK and TFM names.
+# Primarily written by Thomas Esser, Karl Berry, and Olaf Weber.
+# Public domain.
+
+version='$Id: mktexnam 34656 2014-07-18 23:38:50Z karl $'
+
+# preferentially use subprograms from our own directory.
+mydir=`echo "$0" | sed 's,/[^/]*$,,'`
+mydir=`cd "$mydir" && pwd`
+PATH="$mydir:$PATH"; export PATH
+
+usage="Usage: $0 NAME [DPI MODE] [DESTDIR].
+  Output the PK, TFM, and MF names for a font NAME.
+
+Report bugs to: tex-k@tug.org
+TeX Live home page: <http://tug.org/texlive/>
+"
+mt_max_args=4
+
+# Common code for all scripts.
+: ${MT_TEXMFMAIN=`kpsewhich --expand-path='$TEXMFMAIN'`}
+: ${MT_MKTEX_OPT=`kpsewhich --format='web2c files' mktex.opt`}
+test -n "$MT_MKTEX_OPT" || MT_MKTEX_OPT="$MT_TEXMFMAIN/web2c/mktex.opt"
+if test ! -f "$MT_MKTEX_OPT"; then
+  echo "$0: Cannot find mktex.opt; check your installation." >&2
+  exit 1
+fi
+
+. "$MT_MKTEX_OPT"
+
+NAME=$1
+case $# in
+  1|2) DPI=$BDPI; DEST=$2;;
+  3|4) DPI=$2; MODE=$3; DEST=$4;;
+    *) help;;
+esac
+
+: ${MT_PKDESTDIR='$MT_DESTROOT/$MT_PKDESTREL'}
+: ${MT_TFMDESTDIR='$MT_DESTROOT/$MT_TFMDESTREL'}
+: ${MT_MFDESTDIR='$MT_DESTROOT/$MT_MFDESTREL'}
+: ${MT_PKBASE='$NAME.${DPI}pk'}
+: ${MT_TFMBASE='$NAME.tfm'}
+: ${MT_MFBASE='$NAME.mf'}
+: ${MT_DEFAULT_SUPPLIER=unknown}
+: ${MT_DEFAULT_TYPEFACE=unknown}
+: ${MT_DEFAULT_NAMEPART='$MT_SUPPLIER/$MT_TYPEFACE'}
+: ${MT_DEFAULT_PKDESTREL='pk/modeless/$MT_NAMEPART'}
+: ${MT_DEFAULT_TFMDESTREL='tfm/$MT_NAMEPART'}
+: ${MT_DEFAULT_MFDESTREL='source/$MT_NAMEPART'}
+: ${MT_DEFAULT_DESTROOT=$KPSE_DOT}
+
+# Find the font: test tfm first, then mf, then possible sauterized mf.
+fullname=`kpsewhich "$NAME.tfm" 2>/dev/null`
+test -z "$fullname" && fullname=`kpsewhich "$NAME.mf" 2>/dev/null`
+if test -z "$fullname"; then
+  rootname=`echo $NAME | sed 's/[0-9]*$//'`
+  fullname=`kpsewhich "b-$rootname.mf" 2>/dev/null`
+  # LH fonts get special treatment:
+  if test -z "$fullname"; then
+    case $rootname in
+      # Czech/Slovak fonts get special treatment:
+      cs*|lcsss*|icscsc*|icstt*|ilcsss*)
+           fullname=`kpsewhich cscode.mf`
+           ;;
+      # LH fonts get special treatment:
+      wn[bcdfirstuv]*|rx[bcdfiorstuvx][bcfhilmostx]|l[abcdhl][bcdfiorstuvx]*)
+           lhprefix=`echo $NAME | sed 's/^\(..\).*/\1/'`
+           fullname=`kpsewhich "${lhprefix}codes.mf" 2>/dev/null`;;
+      *)   fullname=`kpsewhich "$rootname.mf" 2>/dev/null`
+           ;;
+    esac
+  fi
+fi
+
+# After all this, do we _have_ a font?
+if test -z "$fullname"; then
+  : ${MT_DESTROOT="$MT_VARTEXFONTS"}
+else
+  # Normalize $fullname.
+  fullname=`echo "$fullname" | sed 's%//*%/%g'`
+  # See if $fullname comes from a standard location.
+  OIFS=$IFS;IFS=$SEP
+  set x `kpsewhich --expand-path='$TEXMF/fonts'"$SEP$MT_VARTEXFONTS"`
+  shift; IFS=$OIFS
+  for i
+  do
+    test -z "$i" && continue
+    case "$fullname" in
+      $i/*)
+         # We now have a preliminary value for the destination root.
+         : ${MT_DESTROOT="$i"}
+         # When we're done, relfmt contains one of these:
+         # "/source/$MT_NAMEPART/"
+         # "/$MT_NAMEPART/source/"
+         # while namepart contains the actual namepart.
+         relfmt=`echo "$fullname" | \
+           sed -e 's%^'"$i"'\(/.*/\)[^/]*$%\1%' \
+               -e 's%^/tfm/%/source/%' \
+               -e 's%/tfm/$%/source/%'`
+         namepart=`echo "$relfmt" | sed -e 's%/source/%/%'`
+         # See if namepart is empty.
+         if test "$namepart" != "/"; then
+           relfmt=`echo "$relfmt" | \
+             sed -e 's%'"$namepart"'%/$MT_NAMEPART/%'`
+         else
+           # Assume TDS.
+           relfmt='/source/$MT_NAMEPART/'
+           namepart=''
+         fi
+         # Determine supplier and typeface from namepart.  If there is
+         # only one part in the namepart, we take it to be the typeface.
+         MT_SUPPLIER=`echo $namepart | sed 's%^/\([^/]*\)/\(.*\)$%\1%'`
+         MT_TYPEFACE=`echo $namepart | sed 's%^/\([^/]*\)/\(.*\)$%\2%'`
+         if test -z "$MT_TYPEFACE"; then
+           MT_TYPEFACE="$MT_SUPPLIER";
+           MT_SUPPLIER=''
+         fi
+         # Phew.  Now we create the relative paths for pk, tfm and source.
+         : ${MT_NAMEPART='$MT_SUPPLIER/$MT_TYPEFACE'}
+         : ${MT_PKDESTREL=`echo "$relfmt" | sed 's%/source/%/pk/$MT_MODE/%'`}
+         : ${MT_TFMDESTREL=`echo "$relfmt" | sed 's%/source/%/tfm/%'`}
+         : ${MT_MFDESTREL=`echo "$relfmt"`}
+         break
+    esac
+  done
+fi
+
+# In case some variables remain unset.
+: ${MT_SUPPLIER=$MT_DEFAULT_SUPPLIER}
+: ${MT_TYPEFACE=$MT_DEFAULT_TYPEFACE}
+: ${MT_NAMEPART=$MT_DEFAULT_NAMEPART}
+: ${MT_PKDESTREL=$MT_DEFAULT_PKDESTREL}
+: ${MT_TFMDESTREL=$MT_DEFAULT_TFMDESTREL}
+: ${MT_MFDESTREL=$MT_DEFAULT_MFDESTREL}
+
+# We have found nothing, so force using the fontmaps as a last resort.
+# This also means mktexnam can be queried for advice on where to
+# place fonts.
+if test "x$MT_SUPPLIER" = xunknown \
+  || test "x$MT_TYPEFACE" = xunknown; then
+    MT_FEATURES="$MT_FEATURES:fontmaps"
+fi
+
+# Handle the options.
+test -n "$MT_MKTEXNAM_OPT" && . "$MT_MKTEXNAM_OPT"
+
+# Adjust MT_DESTROOT, if necessary.
+if test -n "${MT_DESTROOT}"; then
+  # We distinguish system trees from the rest.
+  systexmf="`kpsewhich --expand-path='{$SYSTEXMF}/fonts'`$SEP$MT_VARTEXFONTS"
+  case "$SEP$systexmf$SEP" in
+    *$SEP$MT_DESTROOT$SEP*) # A system tree.
+      # If the texmfvar option is set, use TEXMFVAR tree.
+      # Some additional uglyness handles the case where $TEXMFVAR exists
+      # but $TEXMFVAR/fonts doesn't (yet).
+      if test "x$USE_TEXMFVAR" = x1; then
+        : ${MT_TEXMFVAR=`kpsewhich --var-value=TEXMFVAR`}
+        MT_DESTROOT=$MT_TEXMFVAR/fonts
+        if test -z "$MT_TEXMFVAR"; then
+          # Path expansion of $TEXMFVAR was empty.
+          FALLBACK=1
+        elif test -d "$MT_DESTROOT"; then
+          # Do we have write access and permission?
+          kpseaccess -w "$MT_DESTROOT" || FALLBACK=1
+          test -w "$MT_DESTROOT" || FALLBACK=1
+        elif test -d "$MT_TEXMFVAR"; then
+          # De we have write access and permission?
+          kpseaccess -w "$MT_TEXMFVAR" || FALLBACK=1
+          test -w "$MT_TEXMFVAR" || FALLBACK=1
+        elif test -e "$MT_TEXMFVAR"; then
+          # TEXMFVAR defined and exists, but it is not a directory?
+          FALLBACK=1
+        else
+          # TEXMFVAR defined but does not exist, try to create it
+          MT_FEATURES=none "$MT_MKTEXDIR" "$MT_TEXMFVAR" || FALLBACK=1
+        fi
+      else
+        # Do we have write access and permission?
+        kpseaccess -w "$MT_DESTROOT" || FALLBACK=1
+        test -w "$MT_DESTROOT" || FALLBACK=1
+      fi
+      # Fall back on VARTEXFONTS if the varfonts option is set, or
+      # we cannot write in the given tree.
+      if test "x$USE_VARTEXFONTS" = x1 || test "x$FALLBACK" = x1; then
+        MT_DESTROOT=$MT_VARTEXFONTS
+      fi ;;
+    *) # A non-system tree.
+      # Do we have write access and permission?
+      kpseaccess -w "$MT_DESTROOT" || FALLBACK=1
+      test -w "$MT_DESTROOT" || FALLBACK=1
+      # If we cannot write fall back of defaults.
+      test "x$FALLBACK" = x1 && MT_DESTROOT=;;
+  esac
+fi
+
+if test -z "$MT_DESTROOT"; then
+  MT_DESTROOT=$MT_DEFAULT_DESTROOT
+  MT_PKDESTDIR=$MT_DEFAULT_DESTROOT
+  MT_TFMDESTDIR=$MT_DEFAULT_DESTROOT
+  MT_MFDESTDIR=$MT_DEFAULT_DESTROOT
+fi
+
+case "$DEST" in
+  "") ;;
+  /* | [A-z]:/*) # Absolute, explicit destdir => use it.
+      MT_PKDESTDIR=$DEST
+      MT_TFMDESTDIR=$DEST
+      MT_MFDESTDIR=$DEST
+      MT_NAMEPART=;;
+   *) # Relative destdir => append to the default.
+      MT_NAMEPART=$DEST;;
+esac
+
+eval MT_MODE=\"$MODE\"
+eval MT_NAMEPART=\"$MT_NAMEPART\"
+eval MT_DESTROOT=\"$MT_DESTROOT\"
+eval MT_PKDESTREL=\"$MT_PKDESTREL\"
+eval MT_TFMDESTREL=\"$MT_TFMDESTREL\"
+eval MT_MFDESTREL=\"$MT_MFDESTREL\"
+eval MT_PKDESTDIR=\"$MT_PKDESTDIR\"
+eval MT_TFMDESTDIR=\"$MT_TFMDESTDIR\"
+eval MT_MFDESTDIR=\"$MT_MFDESTDIR\"
+eval MT_PKNAME=\"$MT_PKDESTDIR/$MT_PKBASE\"
+eval MT_TFMNAME=\"$MT_TFMDESTDIR/$MT_TFMBASE\"
+eval MT_MFNAME=\"$MT_MFDESTDIR/$MT_MFBASE\"
+
+echo "$MT_PKNAME$SEP$MT_TFMNAME$SEP$MT_MFNAME" | sed 's%//*%/%g'
+

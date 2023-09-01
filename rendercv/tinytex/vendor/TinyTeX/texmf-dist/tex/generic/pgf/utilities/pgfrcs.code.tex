@@ -1,0 +1,153 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ifx\eTeXrevision\undefined%
+  \pgfutil@packageerror{PGF}{PGF requires etex in extended mode}{}%
+  \csname @@end\expandafter\endcsname\expandafter\end%
+\fi
+
+\ifnum\eTeXversion<2
+  \pgfutil@packageerror{PGF}{PGF requires etex version 2}{}%
+  \csname @@end\expandafter\endcsname\expandafter\end%
+\fi
+
+% The purpose of this file is to define the command
+% \ProvidesPackageRCS, which should be followed by an RCS id
+% string. This command will also be available in plain TeX, where it
+% prints out a message to the log.
+
+\pgfutil@IfFileExists{pgf.revision.tex}{\input pgf.revision.tex } {%
+    \def\pgfrevision{0.0}%
+    \def\pgfversion{0.0}%
+    \def\pgfversiondate{2014-07-01}%
+    \def\pgfrevisiondate{2014-07-01}%
+}
+
+\begingroup
+\catcode`\"=12
+\pgfutil@IfUndefined{directlua}{}{%
+    \directlua{pgf = {}; pgf.pgfversion = "\pgfversion"}%
+}%
+\endgroup
+
+% \def\pgftypesetversion{\oldstylenums{3}.\oldstylenums{0}.\oldstylenums{1}}
+% XXX : implement pretty-printing:
+% which is better? 'version' is something like 3.0.1 . revision is
+% 3.0.1-151-g62184b3 which might be better for instable builds
+%\let\pgftypesetversion=\pgfversion
+\let\pgftypesetversion=\pgfrevision
+
+
+\ifx\pgfrcsloaded\undefined
+\def\pgfrcsloaded{}
+
+\edef\pgfrcsatcode{\the\catcode`\@}
+\catcode`\@=11
+
+% not used in PGF, deprecated
+\def\ProvidesFileRCS{%
+    \let\pgfrcs@final=\ProvidesFileRCS@
+	\pgfrcs@parseinput
+}
+\def\ProvidesFileRCS@#1{%
+    \ProvidesFile{#1}[\pgfversiondate\space v\pgfversion\space(\pgfrevision)]%
+}
+
+\def\pgf@remove@ext#1.#2\relax{%
+    \def\pgfretval{#1}%
+}%
+
+\def\ProvidesPackageRCS{%
+	\let\pgfrcs@final=\ProvidesPackageRCS@
+	\pgfrcs@parseinput
+}
+\def\ProvidesPackageRCS@#1{%
+    \pgf@remove@ext#1.\relax
+    \edef\pgfrcs@marshal{{\pgfretval}[\pgfversiondate\space v\pgfversion\space(\pgfrevision)]}%
+    \expandafter\ProvidesPackage\pgfrcs@marshal
+}
+
+% not used in PGF, deprecated
+\def\ProvidesClassRCS{%
+	\let\pgfrcs@final=\ProvidesClassRCS@
+	\pgfrcs@parseinput
+}
+\def\ProvidesClassRCS@#1{%
+    \pgf@remove@ext#1.\relax
+    \edef\pgfrcs@marshal{{\pgfretval}[\pgfversiondate\space v\pgfversion\space(\pgfrevision)]}%
+    \expandafter\ProvidesClass\pgfrcs@marshal
+}
+
+\def\pgfrcs@parseinput@bracket{[}%
+\def\pgfrcs@parseinput@dollarsign{$}%
+
+\def\pgfrcs@parseinput#1{%
+	\def\pgfrcs@parseinput@{#1}%
+	\ifx\pgfrcs@parseinput@\pgfrcs@parseinput@bracket%
+		% still accept it if someone has written his own pgfrcs files with headers of sorts
+		% \ProvidesPackageRCS[v\pgfversion] $Header: /cvsroot/pgf/pgf/generic/pgf/basiclayer/pgfcore.code.tex,v 1.7 2010/04/11 07:09:19 username Exp $
+		\let\next=\pgfrcs@parseinput@opt
+	\else
+		\ifx\pgfrcs@parseinput@\pgfrcs@parseinput@dollarsign
+			% still accept it if someone has written his own pgfrcs files with headers of sorts
+			% \ProvidesPackageRCS $Header: /cvsroot/pgf/pgf/generic/pgf/basiclayer/pgfcore.code.tex,v 1.7 2010/04/11 07:09:19 username Exp $
+			\let\next\pgfrcs@parseinput@dollar
+		\else
+			% the new, normal pgf-way is \ProvidesPackageRCS{pgfcore.code.tex}
+			\def\next{\pgfrcs@final{#1}}%
+		\fi
+	\fi
+	\next
+}
+\def\pgfrcs@parseinput@opt#1] ${%
+	% just backwards compatibility -- ignore the information, but parse the input tokens:
+	\pgfrcs@parseinput@dollar
+}%
+\def\pgfrcs@parseinput@dollar#1${%
+	\pgf@parseid $#1$%
+	% we ignore pretty much everything except for the file name:
+	\edef\pgfrcs@parseinput@{\pgf@rcsfile.\pgf@rcssuffix}%
+	\expandafter\pgfrcs@final\expandafter{\pgfrcs@parseinput@}%
+}%
+% Get date and version from RCS Ids
+\def\pgf@parseid $#1: #2.#3,v #4 #5/#6/#7 #8${%
+  \pgf@parsercsfile$#2/$
+  \def\pgf@rcssuffix{#3}
+  \def\pgf@rcsrevision{#4}
+  \def\pgf@rcsdate{#5/#6/#7}
+}
+\def\pgf@parsercsfile$#1/#2${
+  \def\pgf@temp{#2}
+  \ifx\pgf@temp\pgfutil@empty
+    \def\pgf@rcsfile{#1}
+  \else
+    \pgf@parsercsfile$#2$
+  \fi}
+
+
+\ifx\ProvidesPackage\@undefined
+    % plain tex
+    \def\ProvidesPackage#1[#2]{\wlog{Loading package #1 version #2.}}
+\fi
+
+\ifx\ProvidesFile\@undefined
+    % plain tex
+    \def\ProvidesFile#1[#2]{\wlog{Loading file #1 version #2.}}
+\fi
+
+\ProvidesPackageRCS{pgfrcs.code.tex}
+
+\catcode`\@=\pgfrcsatcode
+
+\fi
+
+
+% Local Variables:
+% coding: undecided-unix
+% End:

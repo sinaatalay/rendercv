@@ -1,0 +1,1001 @@
+\NeedsTeXFormat{LaTeX2e}[2005/12/01]
+\ProvidesPackage{mathspec}
+  [2016/12/22 v0.2b LaTeX Package (Mathematics font selection for XeLaTeX)]
+
+%% Requirements:
+\RequirePackage{etoolbox}
+\RequirePackage{amstext}
+
+\RequirePackage{ifxetex}
+\RequireXeTeX
+\ifcsundef{XeTeXglyphbounds}
+  {\PackageError{mathspec}
+     {mathspec requires a more recent version of XeTeX}
+     {Your current vesion of XeTeX is \the\XeTeXversion\XeTeXrevision.\MessageBreak
+      Update your version of XeTeX to at least 0.9995.}}
+  {\relax}
+
+%% Booleans are created automatically on demand.
+\newcommand\eu@booltrue[1]{\providebool{#1}\booltrue{#1}}
+\newcommand\eu@gbooltrue[1]{\providebool{#1}\global\booltrue{#1}}
+\newcommand\eu@boolfalse[1]{\providebool{#1}\boolfalse{#1}}
+\newcommand\eu@ifbool[1]{\providebool{#1}\ifbool{#1}}
+
+%% Some extras:
+%%   \eu@ifbooltrue{<bool>}{<true>}
+%%   \eu@ifboolfalse{<bool>}{<false>}
+%%   \eu@ifsomebooltrue{<bool_1>,...,<bool_n>}{<true>}
+%%                                              (if <bool_i> is true for some i)
+%%   \eu@ifnumis{x}{x_1,...,x_n}{<true>}{<false>} (if x = x_i for some i)
+%%   \eu@ifnumin{x}{a,b}{<true>}{<false>}         (if a ≤ x ≤ b)
+\newcommand\eu@ifbooltrue[2]{\eu@ifbool{#1}{#2}{\relax}}
+\newcommand\eu@ifboolfalse[2]{\eu@ifbool{#1}{\relax}{#2}}
+\newcommand\eu@ifsomebooltrue[1]{%
+  \eu@boolfalse{temp}%
+  \def\do##1{\eu@ifbooltrue{##1}{\eu@booltrue{temp}}}%
+  \docsvlist{#1}%
+  \eu@ifbooltrue{temp}}
+\newcommand\eu@ifnumis[2]{%
+  \providebool{temp}%
+  \boolfalse{temp}%
+  \def\do##1{\ifnumcomp{#1}{=}{##1}{\booltrue{temp}}{\relax}}%
+  \docsvlist{#2}%
+  \ifbool{temp}}
+\newcommand\eu@ifnumin[2]{\@eu@ifnumin{#1}#2\@nil}
+\def\@eu@ifnumin #1#2,#3\@nil{%
+  \providebool{temp}%
+  \booltrue{temp}%
+  \ifnumcomp{#1}{<}{#2}{\boolfalse{temp}}{\relax}%
+  \ifnumcomp{#3}{<}{#1}{\boolfalse{temp}}{\relax}%
+  \ifbool{temp}}
+
+%% Options:
+\DeclareOption{normalskips}
+  {\PackageWarning{mathspec}
+     {Package option `normalskips' is deprecated}}
+\def\eu@zf@math{no-math}
+\DeclareOption{math}{\def\eu@zf@math{math}}
+\DeclareOption{no-math}{\relax}
+\DeclareOption{MnSymbol}{\eu@booltrue{MnSymbol}}
+\DeclareOption*{\PassOptionsToPackage{\CurrentOption}{fontspec}}
+\ProcessOptions\relax
+
+%% Requires packages:
+%%   fontspec, xkeyval, mathstyle, etoolbox and maybe MnSymbol
+\RequirePackage[\eu@zf@math]{fontspec}[2008/08/09]
+\RequirePackage{xkeyval}
+\eu@ifbooltrue{MnSymbol}{\RequirePackage{MnSymbol}}
+
+\providecommand\currentmathstyle{\relax}
+
+%% @-namespace fontspec variable:
+\ExplSyntaxOn
+\def\eu@enc{\g_fontspec_encoding_tl}
+\ExplSyntaxOff
+%% This is needed to transition to the TU encoding instead of EU1 (WSPR)
+
+%% Deprecated commands in fontspec:
+\ExplSyntaxOn
+\tl_set:Nn \zf@enc { \g_fontspec_encoding_tl }
+\cs_set:Npn \zf@fontspec #1 #2
+ {
+  \fontspec_select:nn {#1} {#2}
+  \tl_set:Nn \zf@family { \l_fontspec_family_tl }
+  \tl_set:Nn \zf@basefont { \l_fontspec_font }
+ }
+\ExplSyntaxOff
+%% These are still defined in fontspec at time of writing but maybe be removed in the future. (WSPR)
+
+%% Define the undefined Greek letters. Include all variant forms (same as normal
+%% forms if variant forms are unavailable). Latin F for digamma is better than
+%% nothing. If Digamma is available, then Capital and Lowercase the are same.
+\DeclareMathSymbol{\Alpha}{\mathalpha}{operators}{"41}
+\DeclareMathSymbol{\Beta}{\mathalpha}{operators}{"42}
+\DeclareMathSymbol{\Epsilon}{\mathalpha}{operators}{"45}
+\DeclareMathSymbol{\Zeta}{\mathalpha}{operators}{"5A}
+\DeclareMathSymbol{\Eta}{\mathalpha}{operators}{"48}
+\DeclareMathSymbol{\Iota}{\mathalpha}{operators}{"49}
+\DeclareMathSymbol{\Kappa}{\mathalpha}{operators}{"4B}
+\DeclareMathSymbol{\Mu}{\mathalpha}{operators}{"4D}
+\DeclareMathSymbol{\Nu}{\mathalpha}{operators}{"4E}
+\DeclareMathSymbol{\Omicron}{\mathalpha}{operators}{"4F}
+\DeclareMathSymbol{\Rho}{\mathalpha}{operators}{"50}
+\DeclareMathSymbol{\Tau}{\mathalpha}{operators}{"54}
+\DeclareMathSymbol{\Chi}{\mathalpha}{operators}{"58}
+\DeclareMathSymbol{\omicron}{\mathord}{letters}{"6F}
+\let\varbeta\beta
+\ifdef{\varkappa}{\relax}
+  {\let\varkappa\kappa}
+\ifdef{\varTheta}{\let\eu@cm@varTheta\varTheta}
+  {\relax}
+\let\varTheta\Theta
+\ifdef{\digamma}{\let\Digamma\digamma}
+  {\DeclareMathSymbol{\Digamma}{\mathalpha}{operators}{"46}
+   \DeclareMathSymbol{\digamma}{\mathord}{letters}{"46}}
+
+%% Preserve old definitions of all Greek letters. \eu@cm@alpha etc.
+\def\do#1{\csletcs{eu@cm@#1}{#1}}
+\docsvlist{
+  Alpha,Beta,Gamma,Delta,Epsilon,Zeta,Eta,Theta,Iota,Kappa,Lambda,Mu,Nu,
+  Xi,Omicron,Pi,Rho,Sigma,Tau,Upsilon,Phi,Chi,Psi,Omega,Digamma,alpha,
+  beta,gamma,delta,epsilon,zeta,eta,theta,iota,kappa,lambda,mu,nu,xi,
+  omicron,pi,rho,varsigma,sigma,tau,upsilon,phi,chi,psi,omega,digamma,
+  varTheta,varbeta,varepsilon,vartheta,varkappa,varpi,varrho,varphi}
+%% varTheta is done separately because amsmath defines it differently.
+
+%% Can define/redefine any command using the syntax of
+%% \newcommand/\renewcommand without error. Some helpers.
+\newcommand\ernewcommand[1]{\ifdef{#1}{\renewcommand{#1}}{\newcommand{#1}}}
+\providecommand\expanded[1]{\edef\@tempa{#1}\@tempa}
+\newcommand\eu@setkeys[3][]{
+  \ifblank{#1}{\relax}{\presetkeys[eu]{#2}{#1}{}}
+  \expanded{\noexpand\setkeys*[eu]{#2}{\expandonce#3\@empty}}}
+\newcommand\eu@fontspec[2]{
+  \expanded{\noexpand\zf@fontspec{\expandonce#1\@empty}{\expandonce#2\@empty}}}
+
+%% Deprecated commands.
+%%   \+:              Use \"..." or " instead.
+%%   \plaindigits:    Digits are no longer selected automatically from either
+%%                    the Latin or the Greek mathematics font. Instead, they
+%%                    must explicitely be stated. If you want plain digits, just
+%%                    don't say you want digits.
+%5   \normalvarforms: Now called \normalisevarforms
+%%   \varforms:       Now called \exchangeforms
+%% Eventually, documents that use these will compile with error.
+\newcommand\+{
+  \PackageWarning{mathspec}
+    {\protect\+\space is deprecated, recommend to use\MessageBreak\protect\"..."
+     or "}
+  \eu@plus}
+\newcommand\setsansfonts{
+  \PackageWarning{mathspec}
+    {\protect\setsansfonts\space is deprecated, recommend to use \protect
+     \setallsansfonts.}
+  \setallsansfonts}
+\@onlypreamble\setsansfonts
+\newcommand\setmonofonts{
+  \PackageWarning{mathspec}
+    {\protect\setmonofonts\space is deprecated, recommend to use \protect
+     \setallmonofonts.}
+  \setallsansfonts}
+\@onlypreamble\setmonofonts
+\newcommand\plaindigits{
+  \PackageWarning{mathspec}{\protect\plaindigits\space is deprecated}}
+\@onlypreamble\plaindigits
+\newcommand\normalvarforms{
+  \PackageWarning{mathspec}
+    {\protect\normalvarforms\space is deprecated, recommend to use 
+     \protect\normalisevarforms\space or \protect\normalizevarforms}
+  \normalisevarforms}
+\@onlypreamble\normalvarforms
+\newcommand\varforms{
+  \PackageWarning{mathspec}
+    {\protect\varforms\space is deprecated, recommend to use
+     \protect\exchangeforms}
+  \exchangeforms}
+\@onlypreamble\varforms
+
+%% I don't want this clogging up my sty file. It will be gone eventually.
+\def\@ifnext#1#2#3{%
+  \let\@tempd=#1%
+  \def\@tempa{#2}%
+  \def\@tempb{#3}%
+  \futurelet\@tempc\@ifnexta}
+\def\@ifnexta{%
+  \ifx\@tempc\@tempd%
+  \let\@tempb\@tempa%
+  \fi\@tempb}
+\def\eu@DeclareRobustCommand{\@star@or@long\eu@declare@robustcommand}
+\def\eu@declare@robustcommand#1{%
+  \ifx#1\@undefined\else\ifx#1\relax\else
+    \@latex@info{Redefining \string#1}%
+  \fi\fi
+  \edef\reserved@a{\string#1}%
+  \def\reserved@b{#1}%
+  \edef\reserved@b{\expandafter\strip@prefix\meaning\reserved@b}%
+  \edef#1{%
+    \ifx\reserved@a\reserved@b
+      \noexpand\x@protect
+      \noexpand#1%
+    \fi
+    \noexpand\protect
+    \expandafter\noexpand\csname\expandafter\@gobble\string#1\endcsname}%
+  \let\@ifdefinable\@rc@ifdefinable
+  \expandafter\eu@new@command\csname\expandafter\@gobble\string#1\endcsname}
+\def\eu@new@command#1{\eu@@testopt{\eu@@newcommand#1}0}
+\def\eu@@newcommand#1[#2]{\@ifnext[{\@xargdef#1[#2]}{\@argdef#1[#2]}}
+\long\def\eu@@testopt#1#2{\@ifnext[{#1}{#1[{#2}]}}
+\eu@DeclareRobustCommand\eu@plus[1][]{}
+
+%% The main user command (comes in two spellings)
+%%   \setmathsfont(<sets>)[<shapes, font features>]{<font name>}
+%%   \setmathfont(<sets>)[<shapes, font features>]{<font name>}
+%%
+%%     <set> is a CSV list of any of: Special, Latin, Greek, Digits, Symbols. If
+%%         (<set>) is omitted, then (Special) is assumed. Special is provided to
+%%         hook to some external code (e.g. potentially unicode-math). That is,
+%%         for mathspec purposes, (<sets>) is mandatory. Omit it so that it
+%%         behaves like a different command. See below.
+%%     <shapes> is the keyval list of font shapes for the subset of <set>.
+%%         Valid keys are: Uppercase, Lowercase, Arabic.
+%%         Valid values are: Regular, Italic, Plain.
+%%     <font features>, <font name> follow directly from fontspec.
+\providecommand\setmathsfont{\eu@setmathsfont}
+\let\setmathfont\setmathsfont
+\newcommand\eu@setmathsfont{
+  \@ifnextchar(
+    {\@eu@setmathsfont}
+    {\@eu@setmathsfont(Special)}}
+\def\@eu@setmathsfont(#1){
+  \edef\eu@setmathsfont@Set{#1}
+  \@@eu@setmathsfont}
+\newcommand\@@eu@setmathsfont[2][]{
+  \@for\i@for:=\eu@setmathsfont@Set\do
+    {\csname eu@ScopeSet@\i@for\endcsname[#1]{#2}}}
+
+%% The FIRST branch \setmathsfont(Special)
+%%   Predefine this command before mathspec is loaded (or redefine it) to get
+%%
+%%       \setmathsfont[<font features>]{<font name>}
+%%
+%%   to do something else.
+%%
+%% Essentially, \setmathsfont(<sets>)[<font features>]{<font name>} is a mathspec
+%% command, but \setmathsfont[<font features>]{<font name>} is an external
+%% command.
+\providecommand\eu@ScopeSet@Special[2][]{\relax}
+
+%% The SECOND branch \setmathsfont(Digits)
+\newcommand\eu@ScopeSet@Digits[2][]{
+  \eu@setkeys[Arabic=Regular]{Digits}{#1}
+  \eu@fontspec{\XKV@rm}{#2}
+ \ifcase\eu@DigitsArabic@@value %% If Digits Regular
+    \ernewcommand\eu@DigitsArabic@symfont{Digits:m:n}
+    \let\eu@Digitsmathsfont\zf@family
+    \eu@booltrue{Digits}
+  \or %% If Digits Italic
+    \ernewcommand\eu@DigitsArabic@symfont{Digits:m:it}
+    \let\eu@Digitsmathsfont\zf@family
+    \eu@booltrue{Digits}
+  \or %% If Digits Plain
+    \eu@boolfalse{Digits}
+  \fi
+  \eu@ifsomebooltrue{Digits}
+    {\DeclareSymbolFont{Digits:m:n}{\eu@enc}{\eu@Digitsmathsfont}{m}{n}}
+  \eu@ifbooltrue{Digits}
+    {\fontfamily\eu@Digitsmathsfont\selectfont
+     \DeclareMathSymbol{0}{\mathord}{\eu@DigitsArabic@symfont}{`0}
+     \DeclareMathSymbol{1}{\mathord}{\eu@DigitsArabic@symfont}{`1}
+     \DeclareMathSymbol{2}{\mathord}{\eu@DigitsArabic@symfont}{`2}
+     \DeclareMathSymbol{3}{\mathord}{\eu@DigitsArabic@symfont}{`3}
+     \DeclareMathSymbol{4}{\mathord}{\eu@DigitsArabic@symfont}{`4}
+     \DeclareMathSymbol{5}{\mathord}{\eu@DigitsArabic@symfont}{`5}
+     \DeclareMathSymbol{6}{\mathord}{\eu@DigitsArabic@symfont}{`6}
+     \DeclareMathSymbol{7}{\mathord}{\eu@DigitsArabic@symfont}{`7}
+     \DeclareMathSymbol{8}{\mathord}{\eu@DigitsArabic@symfont}{`8}
+     \DeclareMathSymbol{9}{\mathord}{\eu@DigitsArabic@symfont}{`9}}}
+
+%% The THIRD branch \setmathsfont(Latin)
+\newcommand\eu@ScopeSet@Latin[2][]{
+  \eu@setkeys[Uppercase=Italic,Lowercase=Italic]{Latin}{#1}
+  \eu@fontspec{\XKV@rm}{#2}
+  \ifcase\eu@LatinUppercase@@value %% If Latin Uppercase Regular
+    \ernewcommand\eu@LatinUppercase@symfont{Latin:m:n}
+    \let\eu@Latinmathsfont\zf@family
+    \eu@booltrue{LatinUppercase}
+  \or %% If Latin Uppercase Italic 
+    \ernewcommand\eu@LatinUppercase@symfont{Latin:m:it}
+    \let\eu@Latinmathsfont\zf@family
+    \eu@booltrue{LatinUppercase}
+  \or %% If Latin Uppercase Plain
+    \eu@boolfalse{LatinUppercase}
+  \fi
+  \ifcase\eu@LatinLowercase@@value %% If Latin Lowercase Regular
+    \ernewcommand\eu@LatinLowercase@symfont{Latin:m:n}
+    \let\eu@Latinmathsfont\zf@family
+    \eu@booltrue{LatinLowercase}
+  \or %% If Latin Lowercase Italic
+    \ernewcommand\eu@LatinLowercase@symfont{Latin:m:it}
+    \let\eu@Latinmathsfont\zf@family
+    \eu@booltrue{LatinLowercase}
+  \or %% If Latin Lowercase Plain
+    \eu@boolfalse{LatinLowercase}
+  \fi
+  \eu@ifsomebooltrue{LatinUppercase,LatinLowercase}
+    {\DeclareSymbolFont{Latin:m:n}{\eu@enc}{\eu@Latinmathsfont}{m}{n}
+     \DeclareSymbolFont{Latin:m:it}{\eu@enc}{\eu@Latinmathsfont}{m}{it}}
+  \eu@ifbooltrue{LatinUppercase}
+    {\fontfamily\eu@Latinmathsfont\selectfont
+     \DeclareMathSymbol{A}{\mathalpha}{\eu@LatinUppercase@symfont}{`A}
+     \DeclareMathSymbol{B}{\mathalpha}{\eu@LatinUppercase@symfont}{`B}
+     \DeclareMathSymbol{C}{\mathalpha}{\eu@LatinUppercase@symfont}{`C}
+     \DeclareMathSymbol{D}{\mathalpha}{\eu@LatinUppercase@symfont}{`D}
+     \DeclareMathSymbol{E}{\mathalpha}{\eu@LatinUppercase@symfont}{`E}
+     \DeclareMathSymbol{F}{\mathalpha}{\eu@LatinUppercase@symfont}{`F}
+     \DeclareMathSymbol{G}{\mathalpha}{\eu@LatinUppercase@symfont}{`G}
+     \DeclareMathSymbol{H}{\mathalpha}{\eu@LatinUppercase@symfont}{`H}
+     \DeclareMathSymbol{I}{\mathalpha}{\eu@LatinUppercase@symfont}{`I}
+     \DeclareMathSymbol{J}{\mathalpha}{\eu@LatinUppercase@symfont}{`J}
+     \DeclareMathSymbol{K}{\mathalpha}{\eu@LatinUppercase@symfont}{`K}
+     \DeclareMathSymbol{L}{\mathalpha}{\eu@LatinUppercase@symfont}{`L}
+     \DeclareMathSymbol{M}{\mathalpha}{\eu@LatinUppercase@symfont}{`M}
+     \DeclareMathSymbol{N}{\mathalpha}{\eu@LatinUppercase@symfont}{`N}
+     \DeclareMathSymbol{O}{\mathalpha}{\eu@LatinUppercase@symfont}{`O}
+     \DeclareMathSymbol{P}{\mathalpha}{\eu@LatinUppercase@symfont}{`P}
+     \DeclareMathSymbol{Q}{\mathalpha}{\eu@LatinUppercase@symfont}{`Q}
+     \DeclareMathSymbol{R}{\mathalpha}{\eu@LatinUppercase@symfont}{`R}
+     \DeclareMathSymbol{S}{\mathalpha}{\eu@LatinUppercase@symfont}{`S}
+     \DeclareMathSymbol{T}{\mathalpha}{\eu@LatinUppercase@symfont}{`T}
+     \DeclareMathSymbol{U}{\mathalpha}{\eu@LatinUppercase@symfont}{`U}
+     \DeclareMathSymbol{V}{\mathalpha}{\eu@LatinUppercase@symfont}{`V}
+     \DeclareMathSymbol{W}{\mathalpha}{\eu@LatinUppercase@symfont}{`W}
+     \DeclareMathSymbol{X}{\mathalpha}{\eu@LatinUppercase@symfont}{`X}
+     \DeclareMathSymbol{Y}{\mathalpha}{\eu@LatinUppercase@symfont}{`Y}
+     \DeclareMathSymbol{Z}{\mathalpha}{\eu@LatinUppercase@symfont}{`Z}}
+  \eu@ifbooltrue{LatinLowercase}
+    {\fontfamily\eu@Latinmathsfont\selectfont
+     \DeclareMathSymbol{a}{\mathalpha}{\eu@LatinLowercase@symfont}{`a}
+     \DeclareMathSymbol{b}{\mathalpha}{\eu@LatinLowercase@symfont}{`b}
+     \DeclareMathSymbol{c}{\mathalpha}{\eu@LatinLowercase@symfont}{`c}
+     \DeclareMathSymbol{d}{\mathalpha}{\eu@LatinLowercase@symfont}{`d}
+     \DeclareMathSymbol{e}{\mathalpha}{\eu@LatinLowercase@symfont}{`e}
+     \DeclareMathSymbol{f}{\mathalpha}{\eu@LatinLowercase@symfont}{`f}
+     \DeclareMathSymbol{g}{\mathalpha}{\eu@LatinLowercase@symfont}{`g}
+     \DeclareMathSymbol{h}{\mathalpha}{\eu@LatinLowercase@symfont}{`h}
+     \DeclareMathSymbol{i}{\mathalpha}{\eu@LatinLowercase@symfont}{`i}
+     \DeclareMathSymbol{j}{\mathalpha}{\eu@LatinLowercase@symfont}{`j}
+     \DeclareMathSymbol{k}{\mathalpha}{\eu@LatinLowercase@symfont}{`k}
+     \DeclareMathSymbol{l}{\mathalpha}{\eu@LatinLowercase@symfont}{`l}
+     \DeclareMathSymbol{m}{\mathalpha}{\eu@LatinLowercase@symfont}{`m}
+     \DeclareMathSymbol{n}{\mathalpha}{\eu@LatinLowercase@symfont}{`n}
+     \DeclareMathSymbol{o}{\mathalpha}{\eu@LatinLowercase@symfont}{`o}
+     \DeclareMathSymbol{p}{\mathalpha}{\eu@LatinLowercase@symfont}{`p}
+     \DeclareMathSymbol{q}{\mathalpha}{\eu@LatinLowercase@symfont}{`q}
+     \DeclareMathSymbol{r}{\mathalpha}{\eu@LatinLowercase@symfont}{`r}
+     \DeclareMathSymbol{s}{\mathalpha}{\eu@LatinLowercase@symfont}{`s}
+     \DeclareMathSymbol{t}{\mathalpha}{\eu@LatinLowercase@symfont}{`t}
+     \DeclareMathSymbol{u}{\mathalpha}{\eu@LatinLowercase@symfont}{`u}
+     \DeclareMathSymbol{v}{\mathalpha}{\eu@LatinLowercase@symfont}{`v}
+     \DeclareMathSymbol{w}{\mathalpha}{\eu@LatinLowercase@symfont}{`w}
+     \DeclareMathSymbol{x}{\mathalpha}{\eu@LatinLowercase@symfont}{`x}
+     \DeclareMathSymbol{y}{\mathalpha}{\eu@LatinLowercase@symfont}{`y}
+     \DeclareMathSymbol{z}{\mathalpha}{\eu@LatinLowercase@symfont}{`z}}}
+
+%% The FOURTH branch \setmathsfont(Greek)
+\newcommand\eu@ScopeSet@Greek[2][]{
+  \eu@setkeys[Uppercase=Regular,Lowercase=Italic]{Greek}{#1}
+  \eu@fontspec{\XKV@rm}{#2}
+  \ifcase\eu@GreekUppercase@@value %% If Greek Uppercase Regular
+    \ernewcommand\eu@GreekUppercase@symfont{Greek:m:n}
+    \let\eu@Greekmathsfont\zf@family
+    \eu@booltrue{GreekUppercase}
+  \or %% If Greek Uppercase Italic 
+    \ernewcommand\eu@GreekUppercase@symfont{Greek:m:it}
+    \let\eu@Greekmathsfont\zf@family
+    \eu@booltrue{GreekUppercase}
+  \or %% If Greek Uppercase Plain
+    \eu@boolfalse{GreekUppercase}
+  \fi
+  \ifcase\eu@GreekLowercase@@value %% If Greek Lowercase Regular
+    \ernewcommand\eu@GreekLowercase@symfont{Greek:m:n}
+    \let\eu@Greekmathsfont\zf@family
+    \eu@booltrue{GreekLowercase}
+  \or %% If Greek Lowercase Italic
+    \ernewcommand\eu@GreekLowercase@symfont{Greek:m:it}
+    \let\eu@Greekmathsfont\zf@family
+    \eu@booltrue{GreekLowercase}
+  \or %% If Greek Lowercase Plain
+    \eu@boolfalse{GreekLowercase}
+  \fi
+  \eu@ifsomebooltrue{GreekUppercase,GreekLowercase}
+    {\DeclareSymbolFont{Greek:m:n}{\eu@enc}{\eu@Greekmathsfont}{m}{n}
+     \DeclareSymbolFont{Greek:m:it}{\eu@enc}{\eu@Greekmathsfont}{m}{it}}
+  \eu@ifbooltrue{GreekUppercase}
+    {\fontfamily\eu@Greekmathsfont\selectfont
+     \XeTeXDeclareMathSymbol{Α}{\mathalpha}{\eu@GreekUppercase@symfont}{`Α}[\Alpha]
+     \XeTeXDeclareMathSymbol{Β}{\mathalpha}{\eu@GreekUppercase@symfont}{`Β}[\Beta]
+     \XeTeXDeclareMathSymbol{Γ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Γ}[\Gamma]
+     \XeTeXDeclareMathSymbol{Δ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Δ}[\Delta]
+     \XeTeXDeclareMathSymbol{Ε}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ε}[\Epsilon]
+     \XeTeXDeclareMathSymbol{Ζ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ζ}[\Zeta]
+     \XeTeXDeclareMathSymbol{Η}{\mathalpha}{\eu@GreekUppercase@symfont}{`Η}[\Eta]
+     \XeTeXDeclareMathSymbol{Θ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Θ}[\Theta]
+     \XeTeXDeclareMathSymbol{Ι}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ι}[\Iota]
+     \XeTeXDeclareMathSymbol{Κ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Κ}[\Kappa]
+     \XeTeXDeclareMathSymbol{Λ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Λ}[\Lambda]
+     \XeTeXDeclareMathSymbol{Μ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Μ}[\Mu]
+     \XeTeXDeclareMathSymbol{Ν}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ν}[\Nu]
+     \XeTeXDeclareMathSymbol{Ξ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ξ}[\Xi]
+     \XeTeXDeclareMathSymbol{Ο}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ο}[\Omicron]
+     \XeTeXDeclareMathSymbol{Π}{\mathalpha}{\eu@GreekUppercase@symfont}{`Π}[\Pi]
+     \XeTeXDeclareMathSymbol{Ρ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ρ}[\Rho]
+     \XeTeXDeclareMathSymbol{Σ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Σ}[\Sigma]
+     \XeTeXDeclareMathSymbol{Τ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Τ}[\Tau]
+     \XeTeXDeclareMathSymbol{Υ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Υ}[\Upsilon]
+     \XeTeXDeclareMathSymbol{Φ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Φ}[\Phi]
+     \XeTeXDeclareMathSymbol{Χ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Χ}[\Chi]
+     \XeTeXDeclareMathSymbol{Ψ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ψ}[\Psi]
+     \XeTeXDeclareMathSymbol{Ω}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ω}[\Omega]
+     \XeTeXDeclareMathSymbol{Ϝ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Ϝ}[\Digamma]
+     \XeTeXDeclareMathSymbol{ϴ}{\mathalpha}{\eu@GreekUppercase@symfont}{`ϴ}[\varTheta]
+     \eu@fixgreekcs{Α}{Alpha}
+     \eu@fixgreekcs{Β}{Beta}
+     \eu@fixgreekcs{Γ}{Gamma}
+     \eu@fixgreekcs{Δ}{Delta}
+     \eu@fixgreekcs{Ε}{Epsilon}
+     \eu@fixgreekcs{Ζ}{Zeta}
+     \eu@fixgreekcs{Η}{Eta}
+     \eu@fixgreekcs{Θ}{Theta}
+     \eu@fixgreekcs{Ι}{Iota}
+     \eu@fixgreekcs{Κ}{Kappa}
+     \eu@fixgreekcs{Λ}{Lambda}
+     \eu@fixgreekcs{Μ}{Mu}
+     \eu@fixgreekcs{Ν}{Nu}
+     \eu@fixgreekcs{Ξ}{Xi}
+     \eu@fixgreekcs{Ο}{Omicron}
+     \eu@fixgreekcs{Π}{Pi}
+     \eu@fixgreekcs{Ρ}{Rho}
+     \eu@fixgreekcs{Σ}{Sigma}
+     \eu@fixgreekcs{Τ}{Tau}
+     \eu@fixgreekcs{Υ}{Upsilon}
+     \eu@fixgreekcs{Φ}{Phi}
+     \eu@fixgreekcs{Χ}{Chi}
+     \eu@fixgreekcs{Ψ}{Psi}
+     \eu@fixgreekcs{Ω}{Omega}
+     \eu@fixgreekcs{Ϝ}{Digamma}
+     \eu@fixgreekcs{ϴ}{varTheta}}
+  \eu@ifbooltrue{GreekLowercase}
+    {\fontfamily\eu@Greekmathsfont\selectfont
+     \XeTeXDeclareMathSymbol{α}{\mathalpha}{\eu@GreekLowercase@symfont}{`α}[\alpha]
+     \XeTeXDeclareMathSymbol{β}{\mathalpha}{\eu@GreekLowercase@symfont}{`β}[\beta]
+     \XeTeXDeclareMathSymbol{γ}{\mathalpha}{\eu@GreekLowercase@symfont}{`γ}[\gamma]
+     \XeTeXDeclareMathSymbol{δ}{\mathalpha}{\eu@GreekLowercase@symfont}{`δ}[\delta]
+     \XeTeXDeclareMathSymbol{ε}{\mathalpha}{\eu@GreekLowercase@symfont}{`ε}[\epsilon]
+     \XeTeXDeclareMathSymbol{ζ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ζ}[\zeta]
+     \XeTeXDeclareMathSymbol{η}{\mathalpha}{\eu@GreekLowercase@symfont}{`η}[\eta]
+     \XeTeXDeclareMathSymbol{θ}{\mathalpha}{\eu@GreekLowercase@symfont}{`θ}[\theta]
+     \XeTeXDeclareMathSymbol{ι}{\mathalpha}{\eu@GreekLowercase@symfont}{`ι}[\iota]
+     \XeTeXDeclareMathSymbol{κ}{\mathalpha}{\eu@GreekLowercase@symfont}{`κ}[\kappa]
+     \XeTeXDeclareMathSymbol{λ}{\mathalpha}{\eu@GreekLowercase@symfont}{`λ}[\lambda]
+     \XeTeXDeclareMathSymbol{μ}{\mathalpha}{\eu@GreekLowercase@symfont}{`μ}[\mu]
+     \XeTeXDeclareMathSymbol{ν}{\mathalpha}{\eu@GreekLowercase@symfont}{`ν}[\nu]
+     \XeTeXDeclareMathSymbol{ξ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ξ}[\xi]
+     \XeTeXDeclareMathSymbol{ο}{\mathalpha}{\eu@GreekLowercase@symfont}{`ο}[\omicron]
+     \XeTeXDeclareMathSymbol{π}{\mathalpha}{\eu@GreekLowercase@symfont}{`π}[\pi]
+     \XeTeXDeclareMathSymbol{ρ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ρ}[\rho]
+     \XeTeXDeclareMathSymbol{ς}{\mathalpha}{\eu@GreekLowercase@symfont}{`ς}[\varsigma]
+     \XeTeXDeclareMathSymbol{σ}{\mathalpha}{\eu@GreekLowercase@symfont}{`σ}[\sigma]
+     \XeTeXDeclareMathSymbol{τ}{\mathalpha}{\eu@GreekLowercase@symfont}{`τ}[\tau]
+     \XeTeXDeclareMathSymbol{υ}{\mathalpha}{\eu@GreekLowercase@symfont}{`υ}[\upsilon]
+     \XeTeXDeclareMathSymbol{φ}{\mathalpha}{\eu@GreekLowercase@symfont}{`φ}[\phi]
+     \XeTeXDeclareMathSymbol{χ}{\mathalpha}{\eu@GreekLowercase@symfont}{`χ}[\chi]
+     \XeTeXDeclareMathSymbol{ψ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ψ}[\psi]
+     \XeTeXDeclareMathSymbol{ω}{\mathalpha}{\eu@GreekLowercase@symfont}{`ω}[\omega]
+     \XeTeXDeclareMathSymbol{ϝ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϝ}[\digamma]
+     \XeTeXDeclareMathSymbol{ϐ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϐ}[\varbeta]
+     \XeTeXDeclareMathSymbol{ϵ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϵ}[\varepsilon]
+     \XeTeXDeclareMathSymbol{ϑ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϑ}[\vartheta]
+     \XeTeXDeclareMathSymbol{ϰ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϰ}[\varkappa]
+     \XeTeXDeclareMathSymbol{ϖ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϖ}[\varpi]
+     \XeTeXDeclareMathSymbol{ϱ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϱ}[\varrho]
+     \XeTeXDeclareMathSymbol{ϕ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϕ}[\varphi]
+     \eu@fixgreekcs{α}{alpha}
+     \eu@fixgreekcs{β}{beta}
+     \eu@fixgreekcs{γ}{gamma}
+     \eu@fixgreekcs{δ}{delta}
+     \eu@fixgreekcs{ε}{epsilon}
+     \eu@fixgreekcs{ζ}{zeta}
+     \eu@fixgreekcs{η}{eta}
+     \eu@fixgreekcs{θ}{theta}
+     \eu@fixgreekcs{ι}{iota}
+     \eu@fixgreekcs{κ}{kappa}
+     \eu@fixgreekcs{λ}{lambda}
+     \eu@fixgreekcs{μ}{mu}
+     \eu@fixgreekcs{ν}{nu}
+     \eu@fixgreekcs{ξ}{xi}
+     \eu@fixgreekcs{ο}{omicron}
+     \eu@fixgreekcs{π}{pi}
+     \eu@fixgreekcs{ρ}{rho}
+     \eu@fixgreekcs{ς}{varsigma}
+     \eu@fixgreekcs{σ}{sigma}
+     \eu@fixgreekcs{τ}{tau}
+     \eu@fixgreekcs{υ}{upsilon}
+     \eu@fixgreekcs{φ}{phi}
+     \eu@fixgreekcs{χ}{chi}
+     \eu@fixgreekcs{ψ}{psi}
+     \eu@fixgreekcs{ω}{omega}
+     \eu@fixgreekcs{ϝ}{digamma}
+     \eu@fixgreekcs{ϐ}{varbeta}
+     \eu@fixgreekcs{ϵ}{varepsilon}
+     \eu@fixgreekcs{ϑ}{vartheta}
+     \eu@fixgreekcs{ϰ}{varkappa}
+     \eu@fixgreekcs{ϖ}{varpi}
+     \eu@fixgreekcs{ϱ}{varrho}
+     \eu@fixgreekcs{ϕ}{varphi}}}
+\newcommand\eu@fixgreekcs[2]{
+  \ifcsequal{#2}{eu@cm@#2}
+    {\relax}
+    {\expandafter\def\csname #2\endcsname{{"#1}}}}
+
+%% The FIFTH branch \setmathsfont(Symbols)
+%% The symbols are not for now.
+%% \newcommand\eu@ScopeSet@Symbols[2][]{
+%%   \eu@fontspec{#1}{#2}
+%%   \def\eu@Symbols@symfont{Symbols:m:n}
+%%   \let\eu@Symbolsmathsfont\zf@family
+%%   \eu@booltrue{Symbols}}
+%%
+%% The FIFTH branch (REDEFINED) \setmathsfont(Symbols)
+\newcommand\eu@ScopeSet@Symbols[2][]{\eu@boolfalse{Symbols}}
+
+%% Just so we know, by "all variant forms" I mean:
+%%   varbeta     varpi       cursive beta    "omega" style pi
+%%   varepsilon  varrho      lunate epsilon  rho with tail hooked under
+%%   vartheta    varphi      cursive theta   cursive phi (or orthotic phi)
+%%   varkappa    varTheta    cursive kappa   Theta with horizontal bar connected
+%%
+%% Note that varsigma is not included in this list (varsigma is not a variant
+%% form, it is a final form).
+
+%% Some authors might prefer the normal and variant forms to be exchanged. For
+%% example, I prefer \phi to print the orthotic phi and \varphi the cursive phi,
+%% contrary to many text fonts.
+%%
+%% \exchangeforms{<list>}
+%%     <list> is a CSV list of any of:
+%%         beta, epsilon, theta, kappa, pi, rho, phi, Theta
+\newcommand\exchangeforms[1]{
+  \AtBeginDocument{
+    \@for\i@for:=#1\do{\eu@booltrue{exchange\i@for forms}}
+    \eu@ifbooltrue{GreekLowercase}
+      {\eu@ifbooltrue{exchangebetaforms}
+         {\XeTeXDeclareMathSymbol{β}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϐ}[\beta]
+          \XeTeXDeclareMathSymbol{ϐ}{\mathalpha}{\eu@GreekLowercase@symfont}{`β}[\varbeta]}
+       \eu@ifbooltrue{exchangeepsilonforms}
+         {\XeTeXDeclareMathSymbol{ε}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϵ}[\epsilon]
+          \XeTeXDeclareMathSymbol{ϵ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ε}[\varepsilon]}
+       \eu@ifbooltrue{exchangethetaforms}
+         {\XeTeXDeclareMathSymbol{θ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϑ}[\theta]
+          \XeTeXDeclareMathSymbol{ϑ}{\mathalpha}{\eu@GreekLowercase@symfont}{`θ}[\vartheta]}
+       \eu@ifbooltrue{exchangekappaforms}
+         {\XeTeXDeclareMathSymbol{κ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϰ}[\kappa]
+          \XeTeXDeclareMathSymbol{ϰ}{\mathalpha}{\eu@GreekLowercase@symfont}{`κ}[\varkappa]}
+       \eu@ifbooltrue{exchangepiforms}
+         {\XeTeXDeclareMathSymbol{π}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϖ}[\pi]
+          \XeTeXDeclareMathSymbol{ϖ}{\mathalpha}{\eu@GreekLowercase@symfont}{`π}[\varpi]}
+       \eu@ifbooltrue{exchangerhoforms}
+         {\XeTeXDeclareMathSymbol{ρ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϱ}[\rho]
+          \XeTeXDeclareMathSymbol{ϱ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ρ}[\varrho]}
+       \eu@ifbooltrue{exchangephiforms}
+         {\XeTeXDeclareMathSymbol{φ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ϕ}[\phi]
+          \XeTeXDeclareMathSymbol{ϕ}{\mathalpha}{\eu@GreekLowercase@symfont}{`φ}[\varphi]}}
+    \eu@ifbooltrue{GreekUppercase}
+      {\eu@ifbooltrue{exhangeThetaforms}
+        {\XeTeXDeclareMathSymbol{Θ}{\mathalpha}{\eu@GreekUppercase@symfont}{`ϴ}[\Theta]
+         \XeTeXDeclareMathSymbol{ϴ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Θ}[\varTheta]}}}}
+\@onlypreamble\exchangeforms
+
+%% Some text fonts do not contain all variant forms. For those that don't,
+%% after defining the Greek mathematics font, the ‘absent’ variant forms will
+%% still be typeset in Computer Modern (usually).
+%%
+%% \normalisevarforms[<list>]
+%% \normalizevarforms[<list>]
+%%     <list> is a CSV list of any of:
+%%         beta, epsilon, theta, kappa, pi, rho, phi, Theta
+%%
+%% This command makes the listed variant forms of Greek symbols equivalent to
+%% their normal forms, but only if they do not already exist in the font. For
+%% example, if \varbeta and \eu@cm@varbeta are equivalent, then
+%% \XeTeXDeclareMathSymbol failed to assign \varbeta to ϐ because ϐ does not
+%% exist in the font.
+\newcommand\normalisevarforms[1][beta,epsilon,theta,kappa,pi,rho,phi,Theta]{
+  \AtBeginDocument{
+    \@for\i@for:=#1\do{\eu@booltrue{normalisevar\i@for}}
+    \eu@ifbooltrue{GreekLowercase}
+      {\eu@ifbooltrue{normalisevarbeta}
+        {\ifx\varbeta\eu@cm@varbeta
+           \XeTeXDeclareMathSymbol{ϐ}{\mathalpha}{\eu@GreekLowercase@symfont}{`β}
+           \let\varbeta\beta
+         \fi}
+      \eu@ifbooltrue{normalisevarepsilon}
+        {\ifx\varepsilon\eu@cm@varepsilon
+           \XeTeXDeclareMathSymbol{ϵ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ε}
+           \let\varepsilon\epsilon
+         \fi}
+      \eu@ifbooltrue{normalisevartheta}
+        {\ifx\vartheta\eu@cm@vartheta
+           \XeTeXDeclareMathSymbol{ϑ}{\mathalpha}{\eu@GreekLowercase@symfont}{`θ}
+           \let\vartheta\theta
+         \fi}
+      \eu@ifbooltrue{normalisevarkappa}
+        {\ifx\varkappa\eu@cm@varkappa
+           \XeTeXDeclareMathSymbol{ϰ}{\mathalpha}{\eu@GreekLowercase@symfont}{`κ}
+           \let\varkappa\kappa
+         \fi}
+      \eu@ifbooltrue{normalisevarpi}
+        {\ifx\varpi\eu@cm@varpi
+           \XeTeXDeclareMathSymbol{ϖ}{\mathalpha}{\eu@GreekLowercase@symfont}{`π}
+           \let\varpi\pi
+         \fi}
+      \eu@ifbooltrue{normalisevarrho}
+        {\ifx\varrho\eu@cm@varrho
+           \XeTeXDeclareMathSymbol{ϱ}{\mathalpha}{\eu@GreekLowercase@symfont}{`ρ}
+           \let\varrho\rho
+         \fi}
+      \eu@ifbooltrue{normalisevarphi}
+        {\ifx\varphi\eu@cm@varphi
+           \XeTeXDeclareMathSymbol{ϕ}{\mathalpha}{\eu@GreekLowercase@symfont}{`φ}
+           \let\varphi\phi
+         \fi}}
+    \eu@ifbooltrue{GreekUppercase}{
+      \eu@ifbooltrue{normalisevarTheta}
+        {\ifx\varTheta\eu@cm@varTheta
+           \XeTeXDeclareMathSymbol{ϴ}{\mathalpha}{\eu@GreekUppercase@symfont}{`Θ}
+           \let\varTheta\Theta
+         \fi}}}}
+\@onlypreamble\normalisevarforms
+\let\normalizevarforms\normalisevarforms
+\@onlypreamble\normalizevarforms
+
+%% xkeyval things
+\define@choicekey[eu]
+  {Digits}{Arabic}[\eu@DigitsArabic@value\eu@DigitsArabic@@value]
+  {Regular,Italic,Plain}[Regular]{\relax}
+\define@choicekey[eu]
+  {Latin}{Uppercase}[\eu@LatinUppercase@value\eu@LatinUppercase@@value]
+  {Regular,Italic,Plain}[Italic]{\relax}
+\define@choicekey[eu]
+  {Latin}{Lowercase}[\eu@LatinLowercase@value\eu@LatinLowercase@@value]
+  {Regular,Italic,Plain}[Italic]{\relax}
+\define@choicekey[eu]
+  {Greek}{Uppercase}[\eu@GreekUppercase@value\eu@GreekUppercase@@value]
+  {Regular,Italic,Plain}[Regular]{\relax}
+\define@choicekey[eu]
+  {Greek}{Lowercase}[\eu@GreekLowercase@value\eu@GreekLowercase@@value]
+  {Regular,Italic,Plain}[Italic]{\relax}
+
+%% Also say Digits has Uppercase and Lowercase keys, and Latin and Greek both
+%% have Arabic key. So that if a superfluous key is accidently sent through the
+%% wrong command (possible with \setallmainfonts), then it doesn't blow up.
+\define@key[eu]{Digits}{Uppercase}{\relax}
+\define@key[eu]{Digits}{Lowercase}{\relax}
+\define@key[eu]{Latin}{Arabic}{\relax}
+\define@key[eu]{Greek}{Arabic}{\relax}
+
+%% I hope Will doesn't mind if I patch fontspec. Why? Because these keys are
+%% accidently sent through fontspec (e.g. \setallmainfonts does \setmainfont,
+%% which is a fontspec command). So I allow fontspec to understand them, but do
+%% nothing.
+\define@key[zf]{options}{Arabic}{\relax}
+\define@key[zf]{options}{Uppercase}{\relax}
+\define@key[zf]{options}{Lowercase}{\relax}
+
+%% Fonts have metrics suitable for text, not for mathematics. Need to kern each
+%% letter individually. Previous version took a trial and error approach with
+%% \+[<size>] where <size> was determined by trial and error. Now, there is a
+%% XeTeX primitive \XeTeXglyphbounds which is used to automatically calculate
+%% the required mkern.
+%%
+%% Some register definitions. \three@digits takes a number and, if it is less
+%% than 100, inserts leading zeroes so that it has three digits.
+\muskipdef\muskip@\z@
+\muskipdef\muskip@i\@ne
+\dimendef\dimen@iv 4\relax
+\newcounter{eu@}
+\newcounter{eu@i}
+\providecommand\three@digits[1]{\ifnum#1<100 0\ifnum#1<10 0\fi\fi\number#1}
+
+%% \setminwhitespace{<number>}
+%%     Sets the minimum gap between adjacent characters in mathematics.
+%%     <number> is in units of mmu (1/1000 mu). So 1 em = 18000 mmu.
+%% \eu@minwhitespace is the minimum white space. It's default value is 500
+%% which corresponds to 0.5 mu or 1/36 em.
+\newcommand\setminwhitespace[1][500]{\def\eu@minwhitespace{#1}}
+\setminwhitespace
+
+%% \eu@mkern operates over some adjacent character tokens
+%% \@eu@mkern operates over individual character tokens
+%%
+%% Unless I've missed something, it is really, really hard to get information
+%% about the font that a mathematics symbol is typeset in, so I devised a series
+%% of tests in text mode (\text!) (otherwise the received information will be
+%% rubbish, related to the text font outside the mathematics). It would be
+%% neater if I do it inside a box that's not printed, instead of an empty
+%% \text. The \@eu@mkern algorithm to calculate the mkern might be neater if I
+%% use e-TeX's \numexpr and \glueexpr. Maybe \gluetomu might be useful? What I
+%% have here already ought to be sufficient but perhaps inefficient. I think
+%% optical sizes follow through automatically because \text inherits the
+%% surrounding size, is that right?
+\newcommand\eu@mkern[1]{%
+  \@tfor\i@tfor:=#1\do{\expandafter\@eu@mkern\i@tfor}}
+\def\eu@get@familyseriesshape#1:#2:#3\@nil{%
+    \expandafter\fontfamily\csname eu@#1mathsfont\endcsname\selectfont
+    \ifstrequal{#2}{m}{\mdseries}{\relax}%
+    \ifstrequal{#2}{bx}{\bfseries}{\relax}%
+    \ifstrequal{#3}{n}{\upshape}{\relax}%
+    \ifstrequal{#3}{it}{\itshape}{\relax}}
+\def\eu@get@familyseriesshape#1:#2:#3\@nil{%
+  \def\eu@family{#1}%
+  \def\eu@series{#2}%
+  \def\eu@shape{#3}}
+\newcounter{mkern}
+\newcommand\@eu@mkern[1]{%
+    \setcounter{mkern}{-1}%
+    \eu@boolfalse{domkern}%
+    \eu@ifnumin{`#1}{`0,`9}{\setcounter{mkern}{0}}{\relax}%
+    \eu@ifnumin{`#1}{`A,`Z}{\setcounter{mkern}{1}}{\relax}%
+    \eu@ifnumin{`#1}{`a,`z}{\setcounter{mkern}{2}}{\relax}%
+    \eu@ifnumin{`#1}{`Α,`Ω}{\setcounter{mkern}{3}}{\relax}%
+    \eu@ifnumin{`#1}{`α,`ω}{\setcounter{mkern}{4}}{\relax}%
+    \eu@ifnumis{`#1}{`Ϝ,`ϴ}{\setcounter{mkern}{3}}{\relax}%
+    \eu@ifnumis{`#1}{`ϐ,`ϑ,`ϕ,`ϖ,`ϝ,`ϰ,`ϱ,`ϵ}{\setcounter{mkern}{4}}{\relax}%
+    \text{%
+      \ifnum\the\c@mkern>\m@ne
+        \eu@gbooltrue{domkern}%
+      \fi
+      \ifcase\the\c@mkern\relax % If Digits (0)
+        \ifdef{\eu@DigitsArabic@symfont}%
+          {\expandafter\eu@get@familyseriesshape\eu@DigitsArabic@symfont\@nil}%
+          {\global\boolfalse{domkern}}%
+      \or                       % If Latin Uppercase (1)
+        \ifdef{\eu@LatinUppercase@symfont}%
+          {\expandafter\eu@get@familyseriesshape\eu@LatinUppercase@symfont\@nil}%
+          {\global\boolfalse{domkern}}%
+      \or                       % If Latin Lowercase (2)
+        \ifdef{\eu@LatinLowercase@symfont}%
+          {\expandafter\eu@get@familyseriesshape\eu@LatinLowercase@symfont\@nil}%
+          {\global\boolfalse{domkern}}%
+      \or                       % If Greek Uppercase (3)
+        \ifdef{\eu@GreekUppercase@symfont}%
+          {\expandafter\eu@get@familyseriesshape\eu@GreekUppercase@symfont\@nil}%
+          {\global\boolfalse{domkern}}%
+      \or                       % If Greek Lowercase (4)
+        \ifdef{\eu@GreekLowercase@symfont}%
+          {\expandafter\eu@get@familyseriesshape\eu@GreekLowercase@symfont\@nil}%
+          {\global\boolfalse{domkern}}%
+      \fi
+      \ifdef{\eu@family}%
+        {\expandafter\fontfamily\csname eu@\eu@family mathsfont\endcsname\selectfont}%
+        {\relax}%
+      \ifdef{\eu@series}%
+        {\expandafter\ifstrequal\expandafter{\eu@series}{m}%
+           {\mdseries}%
+           {\relax}%
+         \expandafter\ifstrequal\expandafter{\eu@series}{bx}%
+           {\bfseries}%
+           {\relax}}%
+        {\relax}%
+      \ifdef{\eu@shape}%
+        {\expandafter\ifstrequal\expandafter{\eu@shape}{n}%
+           {\upshape}%
+           {\relax}%
+         \expandafter\ifstrequal\expandafter{\eu@shape}{it}%
+           {\itshape}%
+           {\relax}}%
+        {\relax}%
+      \global\dimen@\XeTeXglyphbounds\@ne\the\XeTeXcharglyph`#1\relax
+      \global\dimen@iv\XeTeXglyphbounds\thr@@\the\XeTeXcharglyph`#1}
+    \dimen@ii 1em
+    \c@eu@\dimen@
+    \c@eu@i\dimen@ii
+    \multiply\c@eu@ 3000\relax
+    \divide\c@eu@i 6\relax
+    \divide\c@eu@\c@eu@i
+    \c@eu@i\c@eu@
+    \ifnum\number\c@eu@ <\eu@minwhitespace
+      \c@eu@\eu@minwhitespace
+    \fi
+    \advance\c@eu@ -\c@eu@i
+    \c@eu@i\c@eu@
+    \divide\c@eu@i\@m
+    \edef\eu@mkern@left{\number\c@eu@i}
+    \multiply\c@eu@i\@m
+    \advance\c@eu@ -\c@eu@i
+    \edef\eu@mkern@left{\eu@mkern@left.\three@digits{\number\c@eu@}mu}
+    \dimen@\dimen@iv
+    \dimen@ii 1em
+    \c@eu@\dimen@
+    \c@eu@i\dimen@ii
+    \multiply\c@eu@ 3000\relax
+    \divide\c@eu@i 6\relax
+    \divide\c@eu@\c@eu@i
+    \c@eu@i\c@eu@
+    \ifnum\number\c@eu@ <\eu@minwhitespace
+      \c@eu@\eu@minwhitespace
+    \fi
+    \advance\c@eu@ -\c@eu@i
+    \c@eu@i\c@eu@
+    \divide\c@eu@i\@m
+    \edef\eu@mkern@right{\number\c@eu@i}
+    \multiply\c@eu@i\@m
+    \advance\c@eu@ -\c@eu@i
+    \edef\eu@mkern@right{\eu@mkern@right.\three@digits{\number\c@eu@}mu}
+    \eu@ifbool{domkern}
+      {\mkern\eu@mkern@left#1\mkern\eu@mkern@right}
+      {#1}}
+
+%% Redefine \" and " in maths mode only. Umlaut and quote definitions remain
+%% in effect in text mode.
+%%
+%%   "       put the " before a character, e.g $"f$, and the character is
+%%           printed with kerns on either side.
+%%   \"..."  Surround a series of adjacent characters, e.g. $\"abcde"$ is
+%%           equivalent to $"a"b"c"d"e$.
+%% Note that the tokens that " and \" operate on MUST be characters because
+%% they are sent through the XeTeX primitive \XeTeXcharglyph as in:
+%% 
+%%   \XeTeXglyphbounds n \the\XeTeXcharglyph`#1
+%%
+%% where n = 1,2,3,4 and #1 is the character (If #1 is not a character, then
+%% \XeTeXcharglyph`#1 doesn't make sense). Higher level tests are needed to
+%% avoid this problem.
+\let\eu@original@quote="
+\let\eu@original@csquote=\"
+\mathcode`\"="8000
+\newcommand\eu@active@quote{%
+  \ifmmode
+    \expandafter\eu@new@quote
+  \else
+    \expandafter\eu@original@quote
+  \fi}
+\newcommand\eu@active@csquote{%
+  \ifmmode
+    \expandafter\eu@new@csquote
+  \else
+    \expandafter\eu@original@csquote
+  \fi}
+\begingroup
+  \catcode`\"=\active
+  \global\let"=\eu@active@quote
+\endgroup
+\let\"=\eu@active@csquote
+\newcommand\eu@new@quote[1]{\eu@mkern{#1}}
+\def\eu@new@csquote#1"{\eu@mkern{#1}}
+
+%% Redefine LaTeX 2e kernel macros to do Unicode characters too. Add optional
+%% fifth argument. This is a list of control sequences which will be let equal
+%% to the symbol if the symbol exists in the font. If the symbol does not exist
+%% in the font, then the fifth argument is ignored.
+%%
+%% e.g. \XeTeXDeclareMathSymbol{≠}{\mathrel}{font}{"2260}[\neq\ne]
+\def\XeTeXDeclareMathSymbol#1#2#3#4{%
+  \expandafter\in@\csname sym#3\expandafter\endcsname
+    \expandafter{\group@list}%
+  \ifin@
+    \begingroup
+      \if\relax\noexpand#1% is command?
+        \edef\reserved@a{\noexpand\in@{\string\mathchar}{\meaning#1}}%
+        \reserved@a
+        \ifin@
+          \expandafter\XeTeXset@mathsymbol
+            \csname sym#3\endcsname#1#2{#4}%
+          \@font@info{Redeclaring math symbol \string#1}%
+        \else
+          \expandafter\ifx
+          \csname\expandafter\@gobble\string#1\endcsname
+          \relax
+          \expandafter\XeTeXset@mathsymbol
+            \csname sym#3\endcsname#1#2{#4}%
+          \else
+            \@latex@error{Command `\string#1' already defined}\@eha
+          \fi
+        \fi
+      \else
+        \expandafter\XeTeXset@mathchar
+          \csname sym#3\endcsname#1#2{#4}%
+      \fi
+    \endgroup
+    \def\XeTeXDeclareMathSymbol@symbol{#1}%
+    \def\XeTeXDeclareMathSymbol@slot{#4}%
+    \expandafter\XeTeXDeclareMathSymbol@option
+  \else
+    \@latex@error{Symbol font `#3' is not defined}\@eha
+    \expandafter\@gobbleoarg
+  \fi}
+\@onlypreamble\XeTeXDeclareMathSymbol
+\def\XeTeXset@mathchar#1#2#3#4{%
+  \global\XeTeXmathcode`#2="\mathchar@type#3#1#4\relax}
+\@onlypreamble\XeTeXset@mathchar
+\def\XeTeXset@mathsymbol#1#2#3#4{%
+  \global\XeTeXmathchardef#2"\mathchar@type#3#1#4\relax}
+\@onlypreamble\XeTeXset@mathsymbol
+\newcommand\@gobbleoarg[1][]{}
+\newcommand\XeTeXDeclareMathSymbol@option[1][]{%
+  \ifnum\the\XeTeXcharglyph\XeTeXDeclareMathSymbol@slot>\z@
+    \@tfor\i@tfor #1:=\do%
+      {\expandafter\edef\i@tfor{\expandonce\XeTeXDeclareMathSymbol@symbol}}%
+  \fi}
+
+%% Some shorthands, so the same information isn't typed out more than once
+%%
+%% \setallmainfonts(<sets>)[<shapes, font features>]{<font name>}
+%% \setprimaryfont[<shapes, font features>]{<font name>}
+%% \setallsansfonts[<shapes, font features>]{<font name>}
+%% \setallmonofonts[<shapes, font features>]{<font name>}
+\newcommand\setallmainfonts{
+  \@ifnextchar(
+    {\eu@setallmainfonts}
+    {\eu@setallmainfonts(Digits,Latin,Greek)}}
+\def\eu@setallmainfonts(#1){
+  \edef\eu@setmathsfont@Set{#1}
+  \@eu@setallmainfonts}
+\newcommand\@eu@setallmainfonts[2][]{
+  \setmainfont[#1]{#2}
+  \setmathsfont(\eu@setmathsfont@Set)[#1]{#2}
+  \setmathrm[#1]{#2}}
+\newcommand\setprimaryfont{\setallmainfonts(Digits,Latin)}
+\newcommand\setallsansfonts[2][]{
+  \setsansfont[#1]{#2}
+  \setmathsf[#1]{#2}}
+\newcommand\setallmonofonts[2][]{
+  \setmonofont[#1]{#2}
+  \setmathtt[#1]{#2}}
+
+%% Set the particular mathematics alphabets
+\ernewcommand\setmathrm[2][]{
+  \zf@fontspec{#1}{#2}
+  \let\eu@mathrm\zf@family
+  \DeclareMathAlphabet{\mathrm}{\eu@enc}{\eu@mathrm}{m}{n}
+  \SetMathAlphabet{\mathrm}{bold}{\eu@enc}{\eu@mathrm}{bx}{n}
+  \DeclareMathAlphabet{\mathit}{\eu@enc}{\eu@mathrm}{m}{it}
+  \DeclareMathAlphabet{\mathbf}{\eu@enc}{\eu@mathrm}{bx}{n}
+  \SetMathAlphabet{\mathit}{bold}{\eu@enc}{\eu@mathrm}{bx}{it}
+  \DeclareSymbolFont{Operators:m:n}{\eu@enc}{\eu@mathrm}{m}{n}
+  \def\operator@font{\expandafter\mathgroup\csname symOperators:m:n\endcsname}}
+\ernewcommand\setmathcal[2][]{
+  \zf@fontspec{#1}{#2}
+  \let\eu@mathcal\zf@family
+  \DeclareMathAlphabet{\mathcal}{\eu@enc}{\eu@mathcal}{m}{n}}
+\ernewcommand\setmathsf[2][]{
+  \zf@fontspec{#1}{#2}
+  \let\eu@mathsf\zf@family
+  \DeclareMathAlphabet{\mathsf}{\eu@enc}{\eu@mathsf}{m}{n}
+  \SetMathAlphabet{\mathsf}{bold}{\eu@enc}{\eu@mathsf}{bx}{n}}
+\ernewcommand\setmathtt[2][]{
+  \zf@fontspec{#1}{#2}
+  \let\eu@mathtt\zf@family
+  \DeclareMathAlphabet{\mathtt}{\eu@enc}{\eu@mathtt}{m}{n}}
+\ernewcommand\setmathfrak[2][]{
+  \zf@fontspec{#1}{#2}
+  \let\eu@mathfrak\zf@family
+  \DeclareMathAlphabet{\mathfrak}{\eu@enc}{\eu@mathfrak}{m}{n}}
+\ernewcommand\setmathbb[2][]{
+  \zf@fontspec{#1}{#2}
+  \let\eu@mathbb\zf@family
+  \DeclareMathAlphabet{\mathbb}{\eu@enc}{\eu@mathbb}{m}{n}}
+
+%% If amsmath is loaded, it must be loaded before mathspec. Checking for its
+%% existence \AtBeginDocument is too late because the damage is already done
+%% (It attempted to define \varTheta when mathspec already defined it). Or
+%% should I delay the definition of \varTheta until \AtBeginDocument?
+\let\original@RequirePackage\RequirePackage
+\renewcommand\RequirePackage[2][]{
+  \ifstrequal{#2}{amsmath}
+    {\PackageError{mathspec}
+       {`amsmath' must be loaded earlier than `mathspec'}
+       {Edit the document so that `amsmath' is required earlier than `mathspec'.}}
+    {\relax}
+  \original@RequirePackage[#1]{#2}}
+\@onlypreamble\RequirePackage
+\let\usepackage\RequirePackage
+\@onlypreamble\usepackage
+
+%% Any font changes that mathspec has done are reset by LaTeX 2ε at
+%% \begin{document} using \process@table.
+
+\endinput
+
+%% © Andrew Gilbert Moschou 2009
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in:
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all recent distributions of LaTeX.
+%% 
+%% This work has the LPPL maintenance status ‘maintained’.
+%% The Current Maintainer of this work is Andrew Gilbert Moschou.
+%% This work consists of the files mathspec.sty and mathspec.tex.
+

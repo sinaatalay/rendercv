@@ -1,0 +1,330 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+%
+% This file provides basic macros for converting between bases.
+%
+% Version 1.4142135 8/11/2008
+
+% Base conversion operations for the parser.
+%
+\pgfmathdeclarefunction{bin}{1}{%
+    \begingroup%
+        \afterassignment\pgfmath@gobbletilpgfmath@%
+        \c@pgfmath@counta=#1\relax\pgfmath@%
+        \expandafter\pgfmathbasetobase\expandafter\pgfmathresult\expandafter{\the\c@pgfmath@counta}{10}{2}%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup%
+}
+\pgfmathdeclarefunction{hex}{1}{%
+    \begingroup%
+        \afterassignment\pgfmath@gobbletilpgfmath@%
+        \c@pgfmath@counta=#1\relax\pgfmath@%
+        \expandafter\pgfmathbasetobase\expandafter\pgfmathresult\expandafter{\the\c@pgfmath@counta}{10}{16}%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup%
+}
+
+\pgfmathdeclarefunction{Hex}{1}{%
+    \begingroup%
+        \afterassignment\pgfmath@gobbletilpgfmath@%
+        \c@pgfmath@counta=#1\relax\pgfmath@%
+        \expandafter\pgfmathbasetoBase\expandafter\pgfmathresult\expandafter{\the\c@pgfmath@counta}{10}{16}%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup%
+}
+
+\pgfmathdeclarefunction{oct}{1}{%
+    \begingroup%
+        \afterassignment\pgfmath@gobbletilpgfmath@%
+        \c@pgfmath@counta=#1\relax\pgfmath@%
+        \expandafter\pgfmathbasetobase\expandafter\pgfmathresult\expandafter{\the\c@pgfmath@counta}{10}{8}%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup%
+}
+
+% Additional macros:
+
+% \pgfmathbasetodec
+%
+% Convert a representation of an integer from
+% the specified base to base 10.
+%
+% #1 - a macro to store the result.
+% #2 - the representation of a number (i.e. not a register)
+% #3 - the current base.
+%
+% e.g.
+%
+% \pgfmathbasetodec\mynumber{10111}{2}
+%
+% \mynumber <- 23
+%
+\def\pgfmathbasetodec#1#2#3{%
+    \pgfmath@checknumber{#2}%
+    \pgfmath@checkbase{#3}%
+    \def\pgfmath@base{#3}%
+    \def\pgfmath@base@macro{#1}%
+    \c@pgfmath@counta=1\relax%
+    \let\pgfmath@reversed=\pgfmath@empty%
+    \expandafter\pgfmathbasetodec@#2\pgfmath@base@stop}
+
+\def\pgfmathbasetodec@#1{%
+    \ifx#1\pgfmath@base@stop%
+        \c@pgfmath@countb=0%
+        \divide\c@pgfmath@counta by\pgfmath@base\relax%
+        \expandafter\pgfmathbasetodec@@%
+    \else%
+        \edef\pgfmath@reversed{\pgfmath@reversed#1}%
+        \expandafter\multiply\expandafter\c@pgfmath@counta\pgfmath@base\relax%
+        \expandafter\pgfmathbasetodec@%
+    \fi}
+
+\def\pgfmathbasetodec@@{\expandafter\pgfmathbasetodec@@@\pgfmath@reversed\pgfmathbasetodec}
+
+\def\pgfmathbasetodec@@@#1{%
+    \ifx\pgfmathbasetodec#1\relax%
+        \expandafter\edef\pgfmath@base@macro{\the\c@pgfmath@countb}%
+        \let\pgfmath@next=\pgfmathbasetodec@@@@%
+    \else%
+        \chardef\pgfmath@charnum`#1\relax%
+        \c@pgfmath@countc=\pgfmath@charnum\relax%
+        \ifnum\c@pgfmath@countc>96\relax%
+            \advance\c@pgfmath@countc by-87\relax%
+        \else
+            \ifnum\c@pgfmath@countc>64\relax%
+                \advance\c@pgfmath@countc by-55\relax%
+            \else
+                \advance\c@pgfmath@countc by-48\relax%
+            \fi%
+        \fi%
+        \ifnum\c@pgfmath@countc<\pgfmath@base\relax%
+            \multiply\c@pgfmath@countc by\c@pgfmath@counta%
+            \advance\c@pgfmath@countb by\c@pgfmath@countc%
+            \divide\c@pgfmath@counta by\pgfmath@base\relax%
+            \let\pgfmath@next\pgfmathbasetodec@@@%
+        \else
+            \pgfmath@error{Digit `#1' invalid for base \pgfmath@base}{}%
+            \let\pgfmath@next=\relax%
+        \fi%
+    \fi%
+    \pgfmath@next}
+\def\pgfmathbasetodec@@@@{%
+    \expandafter\pgfmath@ensurenumberlength\expandafter{\pgfmath@base@macro}%
+}
+
+% \pgfmathdectobase
+%
+% Convert a representation of an integer from
+% base 10 to the specified base. Letters for bases
+% greater than 10 are in lowercase.
+%
+% #1 - a macro to store the result.
+% #2 - a number in base 10 (in a macro, not a register)
+% #3 - the required base.
+%
+% e.g.
+%
+% \pgfmathdectobase\mynumber{127}{16}
+%
+% \mynumber <- 7f
+%
+\def\pgfmathdectobase#1#2#3{%
+    \pgfmath@checknumber{#2}%
+    \pgfmath@checkbase{#3}%
+    \c@pgfmath@counta=#2\relax%
+    \let#1=\pgfmath@empty%
+    \pgfmathloop
+        \ifnum\c@pgfmath@counta>0\relax%
+            \c@pgfmath@countb=\c@pgfmath@counta%
+            \divide\c@pgfmath@countb by#3\relax%
+            \multiply\c@pgfmath@countb by-#3\relax%
+            \advance\c@pgfmath@countb by\c@pgfmath@counta%
+            \edef#1{\csname pgfmath@lowercase digit@\the\c@pgfmath@countb\endcsname#1}%
+            \divide\c@pgfmath@counta by#3\relax%
+    \repeatpgfmathloop%
+    \pgfmath@ensurenumberlength{#1}}
+
+% \pgfmathdectoBase
+%
+% Convert a representation of an integer from
+% base 10 to the specified base. Letters for bases
+% greater than 10 are in uppercase.
+%
+% #1 - a macro to store the result.
+% #2 - a number in base 10 (in a macro, not a register)
+% #3 - the required base.
+%
+% e.g.
+%
+% \pgfmathdectoBase\mynumber{127}{16}
+%
+% \mynumber <- 7F
+%
+\def\pgfmathdectoBase#1#2#3{%
+    \pgfmath@checkbase{#3}%
+    \pgfmath@checknumber{#2}%
+    \c@pgfmath@counta=#2\relax%
+    \let#1=\pgfmath@empty%
+    \pgfmathloop
+        \ifnum\c@pgfmath@counta>0\relax%
+            \c@pgfmath@countb=\c@pgfmath@counta%
+            \divide\c@pgfmath@countb by#3\relax%
+            \multiply\c@pgfmath@countb by-#3\relax%
+            \advance\c@pgfmath@countb by\c@pgfmath@counta%
+            \edef#1{\csname pgfmath@uppercase digit@\the\c@pgfmath@countb\endcsname#1}%
+            \divide\c@pgfmath@counta by#3\relax%
+    \repeatpgfmathloop%
+    \pgfmath@ensurenumberlength{#1}}
+
+\def\pgfmath@base@digits@create{%
+    \def\pgfmath@base@digit@style{lowercase digit}%
+    \c@pgfmath@counta=0\relax%
+    \pgfmath@base@digits@create@0123456789abcdefghijklmnopqrstuvwxyz\pgfmath@base@digits@create%
+    \def\pgfmath@base@digit@style{uppercase digit}%
+    \c@pgfmath@counta=0\relax%
+    \pgfmath@base@digits@create@0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ\pgfmath@base@digits@create}
+
+\def\pgfmath@base@digits@create@#1{%
+    \ifx\pgfmath@base@digits@create#1\relax%
+    \else%
+        \expandafter\pgfmath@def\expandafter{\pgfmath@base@digit@style}{\the\c@pgfmath@counta}{#1}%
+        \advance\c@pgfmath@counta by1\relax%
+        \expandafter\pgfmath@base@digits@create@%
+    \fi}
+\pgfmath@base@digits@create
+
+% \pgfmathbasetobase
+%
+% Convert a representation of an integer from
+% between the specified bases. Letters for target
+% bases greater than 10 are in uppercase.
+%
+% #1 - a macro to store the result.
+% #2 - a number (in a macro, not a register)
+% #3 - the source base.
+% #4 - the target base.
+%
+% e.g.
+%
+% \pgfmathbasetobase\mynumber{4321}{5}{9}
+%
+% \mynumber <- 721
+%
+\def\pgfmathbasetobase#1#2#3#4{%
+    \pgfmathbasetodec{\pgfmath@base@temp}{#2}{#3}%
+    \pgfmathdectobase{#1}{\pgfmath@base@temp}{#4}%
+}
+
+% \pgfmathbasetobase
+%
+% Convert a representation of an integer from
+% between the specified bases. Letters for target
+% bases greater than 10 are in uppercase.
+%
+% #1 - a macro to store the result.
+% #2 - a number (in a macro, not a register)
+% #3 - the source base.
+% #4 - the target base.
+%
+% e.g.
+%
+% \pgfmathbasetobase\mynumber{1234}{5}{12}
+%
+% \mynumber <- 142
+%
+\def\pgfmathbasetoBase#1#2#3#4{%
+    \pgfmathbasetodec{\pgfmath@base@temp}{#2}{#3}%
+    \pgfmathdectoBase{#1}{\pgfmath@base@temp}{#4}%
+}
+
+\def\pgfmath@checkbase#1{%
+    \ifnum#1<2\relax%
+        \pgfmath@error{Cannot process numbers in base `#1'.}{}%
+    \else%
+        \ifnum#1>36\relax%
+            \pgfmath@error{Cannot process numbers in base `#1'.}{}%
+        \fi%
+    \fi}
+
+\def\pgfmath@checknumber#1{%
+    \expandafter\pgfmath@checknumber@#1\pgfmath@}
+\def\pgfmath@checknumber@#1#2\pgfmath@{%
+    \ifx#1-%
+        \pgfmath@error{Cannot process negative numbers.}{}%
+    \fi}
+
+% \pgfmath@ensurenumberlength
+%
+% Internal macro for making a representation of a number have
+% a specific length, byte prefixing zeros to the number.
+%
+% #1 - a macro containing a representation of an integer.
+% #2 - the number of digits to ensure.
+%
+% e.g.
+%
+% \foo <- 7FF
+%
+% \pgfmathsetnumberlength{8}%
+% \pgfmath@ensurenumberlength\foo
+%
+% \foo <- 000007FF
+%
+\def\pgfmath@ensurenumberlength#1{%
+    \def\pgfmath@base@tempa{#1}%
+    \expandafter\c@pgfmath@counta\pgfmath@basenumberlength\relax%
+    \expandafter\pgfmath@ensurenumberlength@#1\pgfmath@ensurenumberlength}
+\def\pgfmath@ensurenumberlength@#1{%
+    \ifx\pgfmath@ensurenumberlength#1\relax%
+        \expandafter\pgfmath@ensurenumberlength@@%
+    \else%
+        \advance\c@pgfmath@counta by-1\relax%
+        \expandafter\pgfmath@ensurenumberlength@
+    \fi}
+
+\def\pgfmath@ensurenumberlength@@{%
+    \edef\pgfmath@base@tempb{\pgfmath@base@tempa}%
+    \pgfmath@ensurenumberlength@@@}
+\def\pgfmath@ensurenumberlength@@@{%
+    \ifnum\c@pgfmath@counta>0\relax%
+        \advance\c@pgfmath@counta by-1\relax%
+        \edef\pgfmath@base@tempb{0\pgfmath@base@tempb}%
+        \expandafter\pgfmath@ensurenumberlength@@@%
+    \fi%
+    \expandafter\edef\pgfmath@base@tempa{\pgfmath@base@tempb}}
+
+\def\pgfmathsetbasenumberlength#1{\def\pgfmath@basenumberlength{#1}}
+\pgfmathsetbasenumberlength{1}%
+
+% \pgfmathtodigitlist\marg{macro}\marg{number}}
+%
+%    This command converts \meta{number} into a comma-separated
+%    list of digits and stores the result in \meta{macro}.
+%    The \marg{number} is \emph{not} parsed before processing.
+%
+\def\pgfmathtodigitlist#1#2{%
+    \def\pgfmath@temp{#1}%
+    \let\pgfmath@digitlist=\pgfutil@empty%
+    \edef\pgfmath@@tmp{#2}%
+    \expandafter\pgfmath@todigitlist\pgfmath@@tmp @%
+}
+\def\pgfmath@base@atchar{@}
+\def\pgfmath@todigitlist#1{%
+    \def\pgfmath@digit{#1}%
+    \ifx\pgfmath@digit\pgfmath@base@atchar%
+        \expandafter\let\pgfmath@temp=\pgfmath@digitlist%
+    \else%
+        \ifx\pgfmath@digitlist\pgfutil@empty%
+            \edef\pgfmath@digitlist{#1}%
+        \else%
+            \edef\pgfmath@digitlist{\pgfmath@digitlist,#1}%
+        \fi%
+        \expandafter\pgfmath@todigitlist%
+    \fi%
+}

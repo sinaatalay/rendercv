@@ -1,0 +1,70 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsysprotocol.code.tex}
+
+
+
+% This package provides the pgf system protocol layer. Protocolling is
+% used to record a bunch of graphic operations so that they can be
+% reused quickly at a later point.
+%
+% Basically, all ``recordable'' \pgfsys@xxxx commands call
+% \pgfsysprotocol@protocol for their protocolable literal
+% specials. The literal text will either be stored in the current
+% protocol. At a later point (actually, normally this happens
+% immediately afterwards), the accumulated protocolled text is invoked
+% using pgfsys@invokeprotocol.
+
+
+
+\let\pgfsysprotocol@currentprotocol=\pgfutil@empty
+\newif\ifpgfsysprotocol@buffered
+
+
+% Add to the protocol buffered
+\def\pgfsysprotocol@literalbuffered#1{%
+  \edef\pgfsysprotocol@temp{{#1\space}}%
+  \expandafter\pgfutil@g@addto@macro\expandafter\pgfsysprotocol@currentprotocol\pgfsysprotocol@temp%
+}
+
+% Add to the protocol
+\def\pgfsysprotocol@literal#1{%
+  \pgfsysprotocol@literalbuffered{#1}%
+  \ifpgfsysprotocol@buffered%
+  \else%
+    \pgfsysprotocol@flushcurrentprotocol%
+  \fi%
+}
+
+% Getting and setting the current protocol
+\def\pgfsysprotocol@getcurrentprotocol#1{%
+  \let#1=\pgfsysprotocol@currentprotocol%
+}
+
+\def\pgfsysprotocol@setcurrentprotocol#1{%
+  \global\let\pgfsysprotocol@currentprotocol=#1%
+}
+
+
+% Invoking the current protocol
+\def\pgfsysprotocol@invokecurrentprotocol{%
+  \ifx\pgfsysprotocol@currentprotocol\pgfutil@empty%
+  \else%
+    \expandafter\pgfsys@invoke\expandafter{\pgfsysprotocol@currentprotocol}%
+  \fi%
+}
+
+\def\pgfsysprotocol@flushcurrentprotocol{%
+  \pgfsysprotocol@invokecurrentprotocol%
+  \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+}
+
+
+\endinput

@@ -1,0 +1,431 @@
+% tipabase.mf: TIPA miscellaneous macros
+% Copyright 1996-2003 FUKUI Rei
+%
+% This program may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.2
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.2 or later is part of all distributions of LaTeX 
+% version 1999/12/01 or later.
+%
+% This program consists of all files listed in Manifest.txt.
+%
+% Version 1.2 2003/01/01
+%
+% This file is based on:
+%   Computer Modern font series by D. E. Knuth and
+%   TSIPA by KOBAYASHI Hajime, FUKUI Rei and SHIRAKAWA Shun.
+%
+% N.B. This file is an addition to cmbase.mf, not a replacement.
+%
+
+if unknown cmbase:
+  errmessage "`cmbase' should have been read before `tipabase'"; fi
+
+tipabase:=1; % when |tipabase| is known, this file has been input
+
+boolean Times_Compat;
+
+let _font_setup = font_setup;
+
+def font_setup =
+  _font_setup;
+  vu#:=u#; hair_rule#:=hair#;
+  diacritic#:=.2[vair#,stem#]; % breadth of some diacritics
+  diacr#:=diacritic#;
+  define_whole_vertical_pixels(vu);
+  define_whole_blacker_pixels(diacritic,diacr);
+  forsuffixes $=diacritic:
+    $.breadth:=$;
+    pickup if $=0: nullpen else: pencircle scaled $; $:=$-eps fi;
+    $.nib:=savepen; breadth_[$.nib]:=$;
+    forsuffixes $$=lft,rt,top,bot: shiftdef($.$$,$$ 0); endfor endfor
+  hair_rule:=ceiling(hair_rule#*hppp);
+  pickup pencircle scaled hair_rule; hair_rule.nib:=savepen;
+  enddef;
+
+boolean debug; debug:=false;
+
+let _endchar = endchar;
+
+def endchar =
+  _endchar; if debug: stop_here; fi enddef;
+
+def sc_compress(suffix $)(expr rate_fix) = % for small caps
+ $.#:=$.# * ((rate_fix[x_height#,cap_height#])/cap_height#); enddef;
+
+def smallcap_setup =
+ forsuffixes $=save_var_list: old.$.#:=$.#; endfor
+ forsuffixes $= u, letter_fit: $.#:=sc.$.#; endfor
+ sc_compress(flare,.7);
+ sc_compress(cap_jut,.1);
+ sc_compress(beak_jut,.1);
+ sc_compress(beak,0);
+ sc_compress(slab,.4);
+ sc_compress(cap_bar,.8);
+ sc_compress(o,.1);
+ sc_compress(apex_o,0);
+ font_setup; enddef;
+
+def save_var_list =
+ u, letter_fit, flare, cap_jut, beak_jut, beak, slab, cap_bar,
+  o, apex_o enddef;
+
+def restore_normal_setup =
+ forsuffixes $=save_var_list: $.#:=old.$.#; endfor
+ font_setup; enddef;
+
+def turn_picture =
+ _center_h:=hround(.5charwd*hppp+.5slant*charht*hppp);
+ _center_v:=vround(.5charht*hppp);
+ currentpicture:=currentpicture
+  rotatedabout((_center_h,_center_v),180); enddef;
+
+def turn_picture_lower =
+ _center_h:=hround(.5charwd*hppp+.5slant*charht*hppp);
+ _center_v:=vround(.5x_height#*hppp);
+ currentpicture:=currentpicture
+  rotatedabout((_center_h,_center_v),180); enddef;
+
+def comMA(suffix $,@)(expr dot_size,jut,depth) =
+ pickup fine.nib; pos$(dot_size,90);
+ if square_dots: pos$'(dot_size,0); z$'=z$; dot($',$);  % squarish dot
+  comma_join_:=max(fine.breadth,floor .7dot_size);
+  comma_bot_:=max(fine.breadth,floor .5dot_size);
+  pos@0(comma_join_,0); pos@1(comma_join_,0);
+  pos@2(comma_bot_,0); y@0=y$; y@1=y$l; y@2=y@1-depth;
+  x@0l=x@1l=x$'l; lft x@2l=good.x(x$+eps);
+  filldraw stroke z@0e--z@1e..z@2e;  % tail
+ else: pos@1(vair,90); pos@2(vair,180); pos@3(vair,225); % 96/02/10 fkr
+  z@1r=z$r; lft x@2r=hround(x$-.5dot_size-jut)-2eps; x@3=x$+.5u;
+  y@2=1/3[y@1,y@3]; bot y@3r=vround(y$-.5dot_size-depth);
+  y_:=ypart((z@1{right}...z@2{down}...z@3)
+   intersectiontimes (z$l{right}..{left}z$r)); if y_<0: y_:=1; fi
+  filldraw z$r{left}..subpath (0,y_) of (z$l{right}..{left}z$r)--cycle; % dot
+  filldraw stroke z@1e{left}...z@2e{down}...z@3e; fi  % tail
+ penlabels(@1,@2,@3); enddef;
+
+def hook_out_bot(suffix $,$$,$$$) % used in ``Viby I'' and ``Viby Y''
+ suffix modifier= % x$ and x$$$ (only) are known
+ pos$(stem,0); pos$$(vair,90);
+ x$$$:=hround(x$$$+.5hair-eps)-.5hair; pos$$$(hair,180);
+ y$=1/4x_height-d; bot y$$l=-oo-d; y$$$=1/3x_height-d;
+ if skewed.modifier: x$$=x$+1.25u;
+  filldraw stroke z$e{-u,-x_height}...z$$e{right}...{up}z$$$e;  % hook
+ else: x$$=x$+1.5u;
+  filldraw stroke z$e{down}...z$$e{right}
+   ...{x$$$-(x$+2.5u),x_height}z$$$e; fi enddef;  % hook
+
+def hbar(suffix $, $$)(expr loffset, roffset, ypos) =
+ pickup if serifs: tiny.nib; else: fine.nib fi;
+ lft x$r = loffset; rt x$$r = roffset;
+ top y$r = top y$$r = vround(ypos);
+ pos$(bar,90); pos$$(bar,90);
+ filldraw stroke z$e--z$$e;
+ penlabels($, $$); enddef;
+
+def left_tail(suffix $, $$, @, @@)(expr stem_br, x_offset) =
+ if serifs: pickup tiny.nib;
+  pos$.a(stem_br,0); z$=z$.a;
+  x$$=x$.a; bot y$$=-1/3d; pos$$(stem_br,0);
+  pos@(vair,-90); pos@@(hair,-180); pos@@'(flare,-180);
+  x@=.5[x$$,x@@r]; bot y@r=-d-oo; y@@-.5flare=-.88d;
+  z@@r=z@@'r; lft x@@'r= x_offset; 
+  numeric xx;
+  (xx,y@r)=whatever[z@l,z$$l]; x@r:=max(xx,.5[x@@r,x@]);
+  filldraw stroke z$.a e--z$$e{down}...z@e{left}; bulb(@,@@,@@'); % arc and bulb
+ else: pickup fine.nib;
+  pos$.a(stem_br,0); z$=z$.a;
+  x$$=x$.a; bot y$$=-1/3d; pos$$(stem_br,0);
+  pos@(vair,-90); x@=.5[x$$,x@@r]; bot y@r=-d-o;
+  pos@@(.6[vair,flare],-110); lft x@@r=x_offset;
+  y@@r=good.y -5/6d; y@@l:=good.y y@@l;
+  filldraw stroke z$.a e--z$$e & super_arc.e($$,@)
+   & term.e(@,@@,left,.9,4); fi
+ enddef;
+
+def right_tail(suffix $, $$, @, @@)(expr stem_br, x_offset, y_end,
+ x_rate, y_rate) =
+ if serifs: pickup tiny.nib;
+  pos$.a(stem_br,180); z$=z$.a;
+  x$$=x$.a; bot y$$=-y_rate*d; pos$$(stem_br,180);
+  pos@(vair,270); pos@@(hair,360); pos@@'(flare,360);
+  x@=x_rate[x$$,x@@r]; bot y@r=-d-oo; y@@-.5flare=-y_end*d;
+  z@@r=z@@'r; rt x@@'r= x_offset; 
+  numeric xx;
+  (xx,y@r)=whatever[z@l,z$$l]; x@r:=min(xx,.5[x@,x@@r]);
+  filldraw stroke z$.a e--z$$e{down}...z@e{right}; bulb(@,@@,@@');%arc and bulb
+ else: pickup fine.nib;
+  pos$.a(stem_br,180); z$=z$.a;
+  x$$=x$.a; bot y$$=-y_rate*d; pos$$(stem_br,180);
+  pos@(vair,270); x@=x_rate[x$$,x@@r]; bot y@r=-d-o;
+  pos@@(.6[vair,flare],290); rt x@@r=x_offset;
+  y@@r=good.y(-y_end*d); y@@l:=good.y y@@l;
+  filldraw stroke z$.a e--z$$e & super_arc.e($$,@)
+   & term.e(@,@@,right,.9,4); fi
+ enddef;
+
+def hooktop(suffix $, $$, @, @@)(expr stem_br, x_offset, height,
+ y_end, x_rate, y_rate) =
+ if serifs: pickup tiny.nib;
+  pos$.a(stem_br,180); z$=z$.a;
+  x$$=x$.a; top y$$=y_rate[y$.a,height]; pos$$(stem_br,180);
+  pos@(vair,90); pos@@(hair,0); pos@@'(flare,0);
+  x@=x_rate[x$$,x@@r]; top y@r=height+oo; y@@+.5flare=y_end[y$.a,height];
+  z@@r=z@@'r; rt x@@'r= x_offset; 
+  numeric xx;
+  (xx,y@r)=whatever[z@l,z$$l]; x@r:=min(xx,.5[x@,x@@r]);
+  filldraw stroke z$.a e--z$$e{up}...z@e{right}; bulb(@,@@,@@'); % arc and bulb
+ else: pickup fine.nib;
+  pos$.a(stem_br,180); z$=z$.a;
+  x$$=x$.a; top y$$=y_rate[y$.a,height]; pos$$(stem_br,180);
+  pos@(vair,90); x@=x_rate[x$$,x@@r]; top y@r=height+o;
+  pos@@(.6[vair,flare],70); rt x@@r=x_offset;
+  y@@r=good.y y_end[y$.a,height]; y@@l:=good.y y@@l;
+  filldraw stroke z$.a e--z$$e & super_arc.e($$,@)
+   & term.e(@,@@,right,.9,4); fi
+ enddef;
+
+def c_stroke(expr Width) =
+ numeric BH; BH=if Times_Compat:.5613h else: bar_height fi;
+ pickup fine.nib; pos2(vair',90); pos4(vair',270);
+ x2=x4=.5(Width+u); top y2r=vround(h+1.5oo); bot y4r=-oo;
+ pos3(curve,180); lft x3r=hround max(.6u,1.35u-.5curve); y3=.5h;
+ if serifs: pos1(hair,0); pos0(flare,0);
+  y1=min(BH+.5flare+2vair'+2,.9[BH,h]-.5flare);
+  rt x1r=hround(Width-.7u); bulb(2,1,0);  % bulb
+  pos5(hair,0); rt x5r=hround(Width-.5u);
+  y5=max(good.y(.5BH-.9),y4l+vair');
+  (x,y4l)=whatever[z4r,z5l]; x4l:=min(x,x4l+.5u);
+  filldraw stroke pulled_super_arc.e(2,3)(.7superpull)
+   & pulled_super_arc.e(3,4)(.5superpull)
+   ..tension .9 and 1..{x5-x4,5(y5-y4)}z5e;  % arc and lower terminal
+ else: pos1(4/7[vair',flare],80);
+  rt x1r=hround(Width-.6u); top y1r=vround .82[BH,top y2r];
+  filldraw stroke term.e(2,1,right,.8,4);  % upper terminal
+  pos5(.6[vair',flare],275); rt x5r=hround(Width-.5u);
+  y5r=good.y(y5r+1/3BH-y5); y5l:=good.y y5l; x5l:=good.x x5l;
+  forsuffixes e=l,r: path p.e; p.e=z4e{right}..tension .9 and 1..z5e;
+   if angle direction 1 of p.e>75:
+    p.e:=z4e{right}..tension atleast.9 and 1..{dir 75}z5e; fi endfor
+  filldraw stroke pulled_super_arc.e(2,3)(.7superpull)
+   & pulled_super_arc.e(3,4)(.5superpull) & p.e; fi  % arc and lower terminal
+ enddef;
+
+def d_stroke(expr Topserif, Botserif, bot_y) =
+ pickup tiny.nib; pos1(stem',0); pos2(stem,0);
+ pos0'(stem',0); pos0(stem,0); z0r=z0'r; x0'=x1; x0=x2;
+ rt x1r=hround(w-side_gap+.5stem'); top y1=h;
+ numeric edge; edge=lft x2l;
+ pickup fine.nib; pos3(if hefty:thin_join else: hair fi,0);
+ pos4(vair,90); pos5(curve,180); pos6(vair,270); penpos7(x3r-x3l,360);
+ lft x3l=min(lft x3l-(rt x3r-tiny.rt x2r),1/3[lft x2,edge]);
+ y3=1/8[bar_height,x_height];
+ x4l=.5(w-serif_fit)-.3u; top y4r=x_height+oo;
+ lft x5r=hround max(1.35u-.5curve,.6u); y5=.5x_height;
+ x6l=x4l-.2u; bot y6r=-oo;
+ x7=x3; y7=min(y3,y6+y4-y3+.6vair);
+ (x,y4r)=whatever[z3l,z4l]; x4r:=max(x,.5[x5r,x4]);
+ (x',y6r)=whatever[z7l,z6l]; x6r:=max(x',.5[x5r,x6]);
+ filldraw stroke z3e{up}...pulled_arc.e(4,5)
+  & pulled_arc.e(5,6)...{up}z7e; % bowl
+ y0=ypart(((edge,h)--(edge,0))intersectionpoint(z3l{up}...{left}z4l));
+ pickup tiny.nib; numeric lower_serif_drop;
+ lower_serif_drop = if Times_Compat: serif_drop else: min(oo,serif_drop) fi;
+ bot y2=if Botserif: if serifs:-min(oo,serif_drop) else: 0 fi; else: bot_y; fi
+ if Topserif: filldraw stroke z1e--z0'e--z0e--z2e;  % stem
+ else: filldraw stroke z0e--z2e; fi % stem
+ if serifs: if Topserif: sloped_serif.l(1,0',a,1/3,jut,serif_drop); fi % upper serif
+  if Botserif: sloped_serif.r(2,0,b,1/3,jut,lower_serif_drop); fi fi % lower serif
+ enddef;
+
+def epsilon_stroke(expr reverse,mid_jut) = % derived from `3' of cm
+ numeric top_thickness,mid_thickness,bot_thickness,mid_thickness';
+ top_thickness=max(fine.breadth,vround(slab-2vair_corr));
+ mid_thickness=max(fine.breadth,vround 2/3vair);
+ bot_thickness=max(fine.breadth,vround(slab-vair_corr));
+ mid_thickness'=max(hround .6fine.breadth,
+  hround .35[curve,cap_curve]-stem_corr);
+ pickup fine.nib; pos2(top_thickness,90);
+ pos4(vair,-90); pos5(vair,-90); pos6(mid_thickness,90);
+ pos8(bot_thickness,-90); top y2r=h+o; bot y8r=-o;
+ if reverse=true: pos3(mid_thickness',0); pos7(mid_thickness',0);
+  rt x3r=hround(w-u); rt x7r=hround(w-.75u);
+  x2=x6=x8=.5[1.5u,x7]; lft x5=min(hround mid_jut,lft x6)-eps;
+  z4=z5+whatever*(150u,h);
+ else: pos3(mid_thickness',180); pos7(mid_thickness',180);
+  lft x3r=hround(u); lft x7r=hround(.75u);
+  x2=x6=x8=.5[x7,w-1.5u]; rt x5=max(hround(w-mid_jut),w-rt x6)+eps;
+  z4=z5+whatever*(-150u,h); fi
+ x4=1/3[x5,x3l]; y3=.5[top y4l,bot y2l]; y7=.5[bot y6l,top y8l];
+ top y5l=vround(.54h+.5vair); y5r=y6l;
+ filldraw stroke pulled_super_arc.e(2,3)(.5superpull)
+  & z3e{down}...z4e---z5e;  % upper bowl
+ filldraw z5r--z6l--z6r--z5l---cycle;  % middle tip
+ filldraw stroke pulled_super_arc.e(6,7)(.5superpull)
+  & pulled_super_arc.e(7,8)(.5superpull);  % lower bowl
+ enddef;
+
+def yogh_stroke(expr xmid,xmidrate,xoffset,Comb,Notail) = % derived from `z' of cm
+ numeric arm_thickness[],z_stem,stem[];
+ stem1=fudged.stem-4stem_corr;
+ if hefty: arm_thickness1=stem1; arm_thickness2=stem1;
+  z_stem=fudged.hair;
+ else: arm_thickness1=stem1; arm_thickness2=stem1; z_stem=fudged.hair; fi
+ if arm_thickness1<tiny.breadth: arm_thickness1:=tiny.breadth; fi
+ pickup tiny.nib; rt x1r=rt x2r=hround(w-.8u); 
+ lft x3l=lft x4l=hround(xmidrate[xmid, w-.8u]-.25hair); 
+ top y1=h; y2=min(y1,h-2/3arm_thickness1);
+ bot y4=.3[0,h]; y3=max(y4,2/3arm_thickness2);
+ numeric alpha;
+ alpha=diag_ratio(1,z_stem-tiny,y2-y3,x2r-x3l-slant*(y2-y3));
+ penpos1(alpha*(z_stem-tiny),0); penpos2(alpha*(z_stem-tiny),0);
+ penpos3(alpha*(z_stem-tiny),0); penpos4(alpha*(z_stem-tiny),0);
+ pair delta; delta=penoffset z3-z2 of currentpen;
+ fill top lft z1l--z2l+delta---z3l+delta..lft z3l---lft z4l..bot z4l
+  ---bot rt z4r--z3r-delta---z2r-delta..rt z2r---rt z1r..top z1r
+  ---cycle;  % diagonal
+ pickup crisp.nib; pos5(arm_thickness1,90); pos6(hair,180);
+ top y5r=h; x5=x1;
+ lft x6r=if Comb: hround xmid; else: hround xoffset; fi
+ y6=if Comb: y5l; else: good.y(y5l-beak/1.8)-eps; fi
+ arm(5,6,a',beak_darkness,if Comb: 0 else: -.4beak_jut fi); % upper arm and beak
+ pickup tiny.nib;
+ pos12(stem,angle(z2-z3)); x12l=x3l; bot y12l=bot y3l;
+ pos7(curve,0); pos8(vair,-90);
+ rt x7r=hround(w-.75u+.1curve); y7=.48[bot y12l,top y8l];
+ x8=hround(if Times_Compat: .5[xoffset,w-.8u]-.25u else: .5[xoffset,w-.8u] fi);
+ bot y8r=-d-oo;
+ filldraw stroke pulled_arc.e(12,7) & pulled_arc.e(7,8);  % bowl
+ if Notail: else:
+  if serifs: pos10(flare,-180); pos9(cap_hair,-180);
+   lft x10r=hround(xoffset if Times_Compat: -.5u fi);
+   y10=if Comb: -.45d; else: -.35d; fi
+   bulb(8,9,10);  % lower bulb
+  else: pickup fine.nib; pos8'(vair,-90); z8'=z8;
+   pos9(.6[vair',flare],-110);
+   lft x9r=hround xoffset; top y9l=vround -.3d;
+   y9r:=good.y y9r-eps; x9l:=good.x x9l;
+   filldraw stroke term.e(8',9,left,1,4); fi  % lower terminal
+  fi enddef;
+
+def full_circ_stroke(suffix $,$$) =
+  filldraw circ_stroke z$e--z$$e;
+  filldraw circ_stroke z$$e--z$e;
+  enddef;
+
+% added on 2001/11/22 fkr
+vardef inverted_sloped_serif.r(suffix $,$$,@)(expr darkness,jut,drop) =
+ pickup crisp.nib; pos@2(slab,90);
+ rt x@0=tiny.rt x$r; lft x@1=tiny.lft x$l; top y@1=tiny.top y$l;
+ rt x@2=rt x@0+jut; y@2r=y@1-drop;
+ y@0=max(y@2l-bracket,y$$)-eps;
+if drop>0: erase fill z@1--top z@1
+  --(x@2r,top y@1)--z@2r--cycle; fi % erase excess at bottom
+ filldraw z@1--z@2r--z@2l{left}
+  ...darkness[(x@0,y@2l),.5[z@2l,z@0] ]{z@0-z@2l}
+  ...{down}z@0--(x@1,y@0)--cycle;  % sloped serif
+ labels(@0,@1,@2); enddef;
+
+% moved from tipagerm.mf on 2001/11/22 fkr
+vardef varm(suffix $,$$,@)(expr darkness,jut)=
+ y@0=good.y(y$$r-jut); x@0=x$r;
+ x@1=x$l; z@1=z$$l+whatever*(z$$r-z@0); z@2=.5[z$l,z@1];
+ filldraw z$$l{z@1-z$$l}...darkness[z@1,.5[z@2,z$$l]]...z@2
+  ---z$l--z$r--z@0--z$$r--cycle;
+ penlabels(@0,@1,@2); enddef;
+
+% front_hook and bulbvar added on 2001/12/06 fkr
+
+def front_hook(suffix $, $$, @, @@)(expr stem_br, stem_angle,
+ x_offset, y_offset, x_end, x_rate, y_rate) =
+ if serifs: pickup tiny.nib;
+  pos$(stem_br,stem_angle); pos$$(stem_br,stem_angle);
+  y$=y$$; x$$=x_rate[x@,x$];
+  pos@(vair,180); pos@@(hair,270); pos@@'(flare,270); % anomoulous but ...
+  y@=y_rate[y@@r,y$$]; lft x@r=hround(x_offset);
+  x@@-.5flare=x_end[x@,x$];
+  z@@r=z@@'r; bot y@@'r=y_offset; 
+  filldraw stroke z$e--z$$e{left}...z@e{down}; bulbvar(@,@@,@@');%arc and bulb
+ else: pickup fine.nib;
+  pos$(stem_br,stem_angle); pos$$(stem_br,stem_angle);
+  y$=y$$; x$$=x_rate[x@,x$];
+  pos@(vair,180); pos@@(.6[vair,flare],220);
+  y@=y_rate[y$$r,y@@]; lft x@r=hround(x_offset);
+  x@@-.5vair=x_end[x@,x$]; bot y@@r=y_offset;
+  filldraw stroke z$e--z$$e & super_arc.e($$,@)
+   & term.e(@,@@,down,.9,4); fi
+ enddef;
+
+def bulbvar(suffix $,$$,$$$) =
+ z$$$r=z$$r;
+ path_.l:=z$l{0,y$$r-y$r}...{x$$r-x$r,0}z$$l;
+ filldraw path_.l--z$$r{x$r-x$$r,0}...{0,y$r-y$$r}z$r--cycle; % link
+ path_.r:=z$$$l{x$r-x$$r,0}..z$$$r{x$$r-x$r,0}; % near-circle
+ filldraw subpath(0,xpart(path_.r intersectiontimes path_.l)) of path_.r
+  --z$$r{x$$r-x$r,0}..cycle; % bulb
+ enddef;
+
+def turned_h_stroke(suffix $,@,@@,$$) =
+ penpos$$(x@@r-x@@l,0); x$$=x@@; top y$$=h;
+ y@@=x_height-1/3[bar_height,x_height];
+ penpos$''(x$r-x$l,0); x$''=x$; y$''=x_height-1/8[bar_height,x_height];
+ filldraw stroke z$''e--z$e;  % thicken the lower left stem
+ penpos@0(min(rt x$r-lft x$l,thin_join)-fine,180); pickup fine.nib;
+ lft x@0r=tiny.lft x$l; y@0=y$'';
+ pos@1(vair,90); pos@@'(x@@r-x@@l+tiny,0); z@@'=z@@;
+ x@1=.5[lft x@0r,lft x@@'l]; bot y@1l=-oo;
+ (x@,y@1r)=whatever[z@1l,z@0r]; x@1r:=x@;
+ filldraw stroke z@0e{down}...{left}z@1e
+  &{{interim superness:=hein_super; super_arc.e(@1,@@')}};  % arch
+ pickup tiny.nib; filldraw stroke z@@e--z$$e;  % right stem
+ labels(@0); penlabels(@1); enddef;
+
+def raised_h_stroke(suffix $,@,@@,$$) =
+ penpos$$(x@@r-x@@l,0); x$$=x@@; y$$=.45bar_height;
+ y@@=1/3[bar_height,x_height];
+ penpos$''(x$r-x$l,0); x$''=x$; y$''=1/8[bar_height,x_height];
+ filldraw stroke z$''e--z$e;  % thicken the lower left stem
+ penpos@0(min(rt x$r-lft x$l,thin_join)-fine,180); pickup fine.nib;
+ rt x@0l=tiny.rt x$r; y@0=y$'';
+ pos@1(vair,90); pos@@'(x@@r-x@@l+tiny,0); z@@'=z@@;
+ x@1=.5[rt x@0l,rt x@@'r]; top y@1r=x_height+oo;
+ (x@,y@1l)=whatever[z@1r,z@0l]; x@1l:=x@;
+ filldraw stroke z@0e{up}...{right}z@1e
+  &{{interim superness:=hein_super; super_arc.e(@1,@@')}};  % arch
+ pickup tiny.nib; filldraw stroke z@@e--z$$e;  % right stem
+ labels(@0); penlabels(@1); enddef;
+
+vardef turned_special_diag_end(suffix $$,$,@,@@) = % for top middle of turned w
+ if x@l<=x$: diag_end($$r,$r,1,1,@l,@@l)
+ else: z0=whatever[z$$l,z$l]=whatever[z@l,z@@l];
+  diag_end($$r,$r,1,1,$l,0)--z0 fi enddef;
+
+def CT(expr $, @) = % Computer modern or Times Roman?
+ if Times_Compat: @ else: $ fi enddef;
+
+% Redefinition for Times_Compat.
+def f_stroke(suffix $,$$,@,left_serif,right_serif)(expr left_jut,right_jut)=
+ pickup tiny.nib; bot y$=0;
+ penpos@0(x$r-x$l,0); x@0l=x$l; top y@0=x_height;
+ filldraw stroke z$e--z@0e;  % stem
+ pickup fine.nib; pos@0'(x$r-x$l-(hround stem_corr)+tiny,180);
+ y@0'=y@0; lft x@0'r=tiny.lft x$l;
+ penpos@1(x@0'l-x@0'r,180); x@1=x@0';
+ y@1+.5vair=if Times_Compat:.33 else:.5 fi[x_height,h];
+ pos@2(vair,90); top y@2r=h+oo;
+ if serifs: x@2=.6[x@1,x$$r]; (x@,y@2r)=whatever[z@2l,z@1l];
+  x@2r:=min(x@,.5[x@2,x$$r]); pos@3(hair,0); bulb(@2,@3,$$);  % bulb
+  filldraw stroke z@0'e--z@1e & super_arc.e(@1,@2);  % arc
+  dish_serif($,@0,left_serif,1/3,left_jut,right_serif,1/3,right_jut); % serif
+ else: x@2=.6[x@1,x$$]; y@1l:=1/3[y@1l,y@2l];
+  filldraw stroke z@0'e--z@1e & super_arc.e(@1,@2)
+   & term.e(@2,$$,right,.9,4); fi  % arc and terminal
+ penlabels(@0,@1,@2); enddef;
+
+def thin_hair = if hair# > 1.5u#: hround(.6hair) else: hair fi enddef;
+
+def side_gap = if Times_Compat: 2.4u else: 2.5u fi enddef;
+
+% end of tipabase.mf

@@ -1,0 +1,64 @@
+% Makes a listing of one or more files
+% Extended to allow the Latin-1 accented characters in UTF-8 encoding
+% Typical usage:
+% tex list-latin *.txt \\end
+
+\def\grabfile#1 {\setbox0=\lastbox\endgraf\doit{#1}}
+\everypar{\grabfile}
+
+\font\filenamefont= cmtt8 scaled\magstep3
+\font\headlinefont= cmr8
+\font\listingfont= cmtex10
+\font\ttfont= cmtt10
+\font\syttfont= cmsytt10
+\font\eoffont= cmti8
+
+\def\today{\ifcase\month\or
+  January\or February\or March\or April\or May\or June\or
+  July\or August\or September\or October\or November\or December\fi
+  \space\number\day, \number\year}
+\newcount\m \newcount\n
+\n=\time \divide\n 60 \m=-\n \multiply\m 60 \advance\m \time
+\def\hours{\twodigits\n\twodigits\m}
+\def\twodigits#1{\ifnum #1<10 0\fi \number#1}
+
+\newlinechar=`@
+\message{@\today\space at \hours}
+
+\raggedbottom
+\nopagenumbers
+
+\newcount\n
+\catcode`\^^c3=\active
+\def\missing{{\syttfont\char15}}
+\def^^c3#1{\n=`#1\advance\n by-128
+  {\ttfont\ifcase\n 
+  \`A\or\'A\or\^A\or\~A\or\"A\or\AA\or\AE\or\c C\or
+  \`E\or\'E\or\^E\or\"E\or\`I\or\'I\or\^I\or\"I\or
+  \missing\or\~N\or\`O\or\'O\or\^O\or\~O\or\"O\or{\syttfont\char2}\or
+  \O\or\`U\or\'U\or\^U\or\"U\or\'Y\or\missing\or\ss\or
+  \`a\or\'a\or\^a\or\~a\or\"a\or\aa\or\ae\or\c c\or
+  \`e\or\'e\or\^e\or\"e\or\`\i\or\'\i\or\^\i\or\"\i\or
+  \missing\or\~n\or\`o\or\'o\or\^o\or\~o\or\"o\or{\syttfont\char4}\or
+  \o\or\`u\or\'u\or\^u\or\"u\or\'y\or\missing\or\"y\fi}}
+
+\chardef\other=12
+\def\doit#1{\message{@Listing #1@}
+  \begingroup \everypar{} \frenchspacing
+  \headline{\filenamefont#1\quad\headlinefont \today\ at \hours
+      \hfill Page \folio}
+  \def\do##1{\catcode`##1=\other}\dospecials
+  \catcode127=\other \catcode9=\other \catcode12=\other
+  \parindent 0pt \parfillskip=0pt plus 1fil minus 1in
+  \everypar{\hangindent 1in} \rightskip=0pt plus 2in
+  \def\par{\ifvmode\penalty-500\medskip\else\endgraf\fi}
+  \listingfont \obeylines \obeyspaces \global\pageno=1
+  \input #1 {\eoffont(end of\/ file)}\endgraf\vfill\eject\endgroup}
+{\obeyspaces\global\let =\ }
+\catcode`\_=\other % allow _ in file names
+
+% A tab (^^I) prints as lowercase gamma.
+% Character ^^M could be made visible, with a bit of work;
+% at present, it's indistinguishable from newline (^^J).
+
+% You can get up to 103 characters on a line without an overfull box.

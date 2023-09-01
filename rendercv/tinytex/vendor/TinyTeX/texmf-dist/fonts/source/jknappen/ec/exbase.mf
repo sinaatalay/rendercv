@@ -1,0 +1,1341 @@
+% exbase.mf
+%
+% (c) Copyright 1995, 1996, 1997 J"org Knappen
+% (c) Copyright 1990, 1992 Norbert Schwarz
+%
+% This file is part of ecfonts version 1.0
+%
+% Please read the files 00readme.txt, 00inst.txt, 00error.txt, and
+% copyrite.txt for further information
+%
+% You find some documentation in ecdoc.tex (needs LaTeX2e)
+%
+% Content:
+%
+%   The base file needed for generation of the EC fonts
+
+exbase:=1; % if |exbase| is known, this file has been input
+
+ec_maj_version:=1; ec_min_version:=0; % version identification
+
+def version_check(expr e,f)=
+ if    e=ec_maj_version: 
+   if  f=ec_min_version: 
+     message " Ok";
+   elseif: f>ec_min_version: 
+     message "ec font warning: Obsolete base";
+   elseif: f<ec_min_version: 
+     message "ec font warning: File from old release found";
+   fi
+ elseif: e>ec_maj_version: 
+   message "ec font warning: Obsolete base";
+ elseif: e<ec_maj_version: 
+   message "ec font warning: File from old release found";
+ fi
+enddef;
+
+let stop_eventually=relax;
+
+% The following checks require, that |bye| is an |inner| command.
+% This is usually set by |local.mf| or |modes.mf|, however we cannot
+% rely on this feature, therefore we do it here again.
+
+inner bye;
+
+% Check for existence of |boundarychar| 
+if unknown boundarychar:
+ message "You are using out-of-date METAFONT 1.*,";
+ message "please update to METFONT 2.718 or newer.";
+ let stop_eventually=bye;
+fi
+
+% Check for old version of |plain.mf| (2.0 or older)
+if known begingroup killtext whatever endgroup:
+  relax;
+else:
+  message "You are using plain.mf 2.0 or older";
+  message "please update to plain.mf 2.71 or newer";
+  let stop_eventually=bye;
+fi
+
+% Check for |cmbase|
+if known cmbase:
+  message "You are using METAFONT with cmbase preloaded,";
+  message "please use only plain METAFONT to generate the ec fonts.";
+  let stop_eventually=bye;
+fi
+
+stop_eventually;
+
+boolean slitex; slitex := false; % |true| simulates behaviour of |sroman|
+boolean one_serif; one_serif:=true; % |false| suppresses base serif on `1'
+boolean classic_serif;  classic_serif := false;
+boolean suppress_i_dot; suppress_i_dot :=false;
+boolean hach_sharp; hach_sharp:=false;
+boolean classic_sharp_s; classic_sharp_s:=false; % Chooses shape of sharp s
+boolean true_mono; true_mono:=false; % |true| forces ligatures to monowidth
+boolean knuthian_ae; knuthian_ae:=false; % |true| reproduces cm italic \ae
+boolean fancy_thorn; fancy_thorn:=false; % |true| produces \th with fancier bulb
+boolean is_small_cap; is_small_cap:=false;
+tracingstats:=1; % Print statistics at the end of run
+
+let ecchar=\; % `|ecchar|' should precede each character
+let generate=input; % `|generate|' should follow the parameters
+
+autorounding:=0; smoothing:=0; % we do our own rounding
+def autorounded = interim autorounding:=2 enddef;
+
+newinternal slant,fudge,math_spread,superness,superpull,beak_darkness;
+boolean square_dots,hefty,serifs,
+ monospace,variant_g,low_asterisk,math_fitting;
+
+boolean dark,dark.dark,skewed,skewed.skewed; % for fast option testing
+dark=skewed=false; dark.dark=skewed.skewed=true;
+
+vardef Vround primary y = y_:=vround y;
+ if y_<min_Vround: min_Vround else: y_ fi enddef;
+newinternal y_,min_Vround;
+
+vardef serif(suffix $,$$,@)  % serif at |z$| for stroke from |z$$|
+  (expr darkness,jut) suffix modifier =
+ pickup crisp.nib; numeric bracket_height; pair downward;
+ bracket_height=if dark.modifier: 1.5 fi\\ bracket;
+ if y$<y$$: y@2=min(y$+bracket_height,y$$);
+  top y@1-slab=bot y@0+eps=tiny.bot y$; downward=z$-z$$;
+  if y@1>y@2: y@2:=y@1; fi
+ else: y@2=max(y$-bracket_height,y$$);
+  bot y@1+slab=top y@0-eps=tiny.top y$; downward=z$$-z$;
+  if y@1<y@2: y@2:=y@1; fi fi
+ y@3=y@2; z@3=whatever[z$,z$$];
+ if jut<0: z@2+penoffset downward of currentpen =
+   z$l+penoffset downward of pen_[tiny.nib]+whatever*downward;
+  lft x@0=lft x@1=tiny.lft x$l+jut;
+  if x@3<x@2+eps: x@3:=x@2+eps; fi
+ else: z@2-penoffset downward of currentpen =
+   z$r-penoffset downward of pen_[tiny.nib]+whatever*downward;
+   rt x@0=rt x@1=tiny.rt x$r+jut;
+   if x@3>x@2-eps: x@3:=x@2-eps; fi fi
+ pair corner; ypart corner=y@1; corner=z@2+whatever*downward;
+ filldraw z@2{z$-z$$}
+  ...darkness[corner,.5[z@1,z@2] ]{z@1-z@2}
+  ...{jut,0}z@1--z@0--(x$,y@0)--z@3--cycle; % the serif
+ labels (@1,@2); enddef;
+
+def dish_serif(suffix $,$$,@)(expr left_darkness,left_jut)
+  (suffix @@)(expr right_darkness,right_jut) suffix modifier =
+ serif($,$$,@,left_darkness,-left_jut) modifier;
+ serif($,$$,@@,right_darkness,right_jut) modifier;
+ if dish>0: pickup tiny.nib; numeric dish_out,dish_in;
+  if y$<y$$: dish_out=bot y$; dish_in=dish_out+dish; let rev_=reverse;
+  else: dish_out=top y$; dish_in=dish_out-dish; let rev_=relax; fi
+  erase fill rev_
+   ((x@1,dish_out)..(x$,dish_in){right}..(x@@1,dish_out)--cycle);
+ fi enddef;
+
+def nodish_serif(suffix $,$$,@)(expr left_darkness,left_jut)
+  (suffix @@)(expr right_darkness,right_jut) suffix modifier =
+ serif($,$$,@,left_darkness,-left_jut) modifier;
+ serif($,$$,@@,right_darkness,right_jut) modifier; enddef;
+
+vardef sloped_serif.l(suffix $,$$,@)(expr darkness,jut,drop) =
+ pickup crisp.nib; pos@2(slab,90);
+ lft x@0=tiny.lft x$l; rt x@1=tiny.rt x$r; top y@1=tiny.top y$r;
+ lft x@2=lft x@0-jut; y@2r=y@1-drop;
+ y@0=max(y@2l-bracket,y$$)-eps;
+ if drop>0: erase fill z@1--top z@1
+   --(x@2r,top y@1)--z@2r--cycle; fi % erase excess at top
+ filldraw z@1--z@2r--z@2l{right}
+  ...darkness[(x@0,y@2l),.5[z@2l,z@0] ]{z@0-z@2l}
+  ...{down}z@0--(x@1,y@0)--cycle;  % sloped serif
+ labels(@0,@1,@2); enddef;
+
+vardef sloped_serif.r(suffix $,$$,@)(expr darkness,jut,drop) =
+ pickup crisp.nib; pos@2(slab,-90);
+ rt x@0=tiny.rt x$r; lft x@1=tiny.lft x$l; bot y@1=tiny.bot y$l;
+ rt x@2=rt x@0+jut; y@2r=y@1+drop;
+ y@0=min(y@2l+bracket,y$$)+eps;
+if drop>0: erase fill z@1--bot z@1
+  --(x@2r,bot y@1)--z@2r--cycle; fi % erase excess at bottom
+ filldraw z@1--z@2r--z@2l{left}
+  ...darkness[(x@0,y@2l),.5[z@2l,z@0] ]{z@0-z@2l}
+  ...{up}z@0--(x@1,y@0)--cycle;  % sloped serif
+ labels(@0,@1,@2); enddef;
+
+vardef term.l(suffix $,$$)(expr d,t,s)= % ``robust'' sans-serif terminal
+ path p_; p_=z$l{d}..tension t..z$$l;
+ pair d_; d_=(x$$l-x$l,s*(y$$l-y$l));
+ if (abs angle direction 1 of p_ < abs angle d_)<>(x$l<x$$l):
+  p_:=z$l{d}..tension atleast t..{d_}z$$l; fi
+ p_ enddef;
+vardef term.r(suffix $,$$)(expr d,t,s)=
+ path p_; p_=z$r{d}..tension t..z$$r;
+ pair d_; d_=(x$$r-x$r,s*(y$$r-y$r));
+ if (abs angle direction 1 of p_ < abs angle d_)<>(x$r<x$$r):
+  p_:=z$r{d}..tension atleast t..{d_}z$$r; fi
+ p_ enddef;
+def rterm=reverse term enddef;
+
+vardef arm(suffix $,$$,@)(expr darkness,jut) =  % arm from |z$| to |z$$|
+ x@0=good.x(x$$r-jut); y@0=y$r;
+ if serifs: y@1=y$l; z@1=z$$l+whatever*(z$$r-z@0);
+  z@2=.5[z$l,z@1];
+  filldraw z$$l{z@1-z$$l}...darkness[z@1,.5[z@2,z$$l] ]...z@2
+   ---z$l--z$r--z@0--z$$r--cycle; % arm and beak
+ else: filldraw z$l--z$r--z@0--z$$r--cycle; fi  % sans-serif arm
+ penlabels(@0,@1,@2); enddef;
+
+def bulb(suffix $,$$,$$$) =
+ z$$$r=z$$r;
+ path_.l:=z$l{x$$r-x$r,0}...{0,y$$r-y$r}z$$l;
+ filldraw path_.l--z$$r{0,y$r-y$$r}...{x$r-x$$r,0}z$r--cycle; % link
+ path_.r:=z$$$l{0,y$r-y$$r}..z$$$r{0,y$$r-y$r}; % near-circle
+ filldraw subpath(0,xpart(path_.r intersectiontimes path_.l)) of path_.r
+  --z$$r{0,y$$r-y$r}..cycle; % bulb
+ enddef;
+
+def v_bulb(suffix $,$$)= % |pos$| is known
+ y$$+.5curve=x_height+oo; x$$+.5curve=w-u;
+ numeric theta; theta=angle(4(x$-x$$),y$-y$$); pos$$(curve,theta+90);
+ filldraw z$$l{dir theta}..tension atleast 1 and 1..{down}z$l
+  --z$r{up}...{-dir theta}z$$r..cycle;  % bulb
+ enddef;
+
+def dot(suffix $,$$) =
+ filldraw if square_dots: (x$l,y$$l)--(x$r,y$$l)
+   --(x$r,y$$r)--(x$l,y$$r)--cycle  % squarish dot
+  else: z$l...z$$l...z$r...z$$r...cycle  fi % roundish dot
+ enddef;
+
+def comma(suffix $,@)(expr dot_size,jut,depth) =
+ pickup fine.nib; pos$(dot_size,90);
+ if square_dots: pos$'(dot_size,0); z$'=z$; dot($',$);  % squarish dot
+  comma_join_:=max(fine.breadth,floor .7dot_size);
+  comma_bot_:=max(fine.breadth,floor .5dot_size);
+  pos@0(comma_join_,0); pos@1(comma_join_,0);
+  pos@2(comma_bot_,0); y@0=y$; y@1=y$l; y@2=y@1-depth;
+  x@0r=x@1r=x$'r; rt x@2r=good.x(x$-eps);
+  filldraw stroke z@0e--z@1e..z@2e;  % tail
+ else: pos@1(vair,90); pos@2(vair,0); pos@3(vair,-45);
+  z@1r=z$r; rt x@2r=hround(x$+.5dot_size+jut)+2eps; x@3=x$-.5u;
+  y@2=1/3[y@1,y@3]; bot y@3r=vround(y$-.5dot_size-depth);
+  y_:=ypart((z@1{right}...z@2{down}...z@3)
+   intersectiontimes (z$l{right}..{left}z$r)); if y_<0: y_:=1; fi
+  filldraw z$r{left}..subpath (0,y_) of (z$l{right}..{left}z$r)--cycle; % dot
+  filldraw stroke z@1e{right}...z@2e{down}...z@3e; fi  % tail
+ penlabels(@1,@2,@3); enddef;
+
+def ammoc(suffix $,@)(expr dot_size,jut,depth) = % reversed comma
+ pickup fine.nib; pos$(dot_size,90);
+ if square_dots: pos$'(dot_size,0); z$'=z$; dot($',$);  % squarish dot
+  comma_join_:=max(fine.breadth,floor .7dot_size);
+  comma_top_:=max(fine.breadth,floor .5dot_size);
+  pos@0(comma_join_,0); pos@1(comma_join_,0);
+  pos@2(comma_top_,0); y@0=y$; y@1=y$r; y@2=y@1+depth;
+  x@0l=x@1l=x$'l; lft x@2l=good.x(x$+eps);
+  filldraw stroke z@0e--z@1e..z@2e;  % tail
+ else: pos@1(vair,90); pos@2(vair,0); pos@3(vair,-45);
+  z@1l=z$l; lft x@2l=hround(x$-.5dot_size-jut)-2eps; x@3=x$+.5u;
+  y@2=1/3[y@1,y@3]; top y@3l=vround(y$+.5dot_size+depth);
+  y_:=ypart((z@1{left}...z@2{up}...z@3)
+   intersectiontimes (z$r{left}..{right}z$l)); if y_<0: y_:=1; fi
+  filldraw z$l{right}..subpath (0,y_) of (z$r{left}..{right}z$l)--cycle; % dot
+  filldraw stroke z@1e{left}...z@2e{up}...z@3e; fi  % tail
+ penlabels(@1,@2,@3); enddef;
+
+%%% @ from to %%%% temporary formatting change
+vardef diag_in(suffix from,$)(expr sharpness)(suffix $$) =
+ pickup tiny.nib; save from_x,y_;
+ if y.from>y$: bot else: top fi\\ y_=y$;
+ (from_x,y_)=whatever[z.from,z$];
+ sharpness[z$,(from_x,y_)]{z$-z.from}
+  ...{z$$-z$}z$+sharpness*length(z$-(from_x,y_))*unitvector(z$$-z$) enddef;
+
+vardef diag_out(suffix $)(expr sharpness)(suffix $$,to) =
+ pickup tiny.nib; save to_x,y_;
+ if y.to>y$: bot else: top fi\\ y_=y$;
+ (to_x,y_)=whatever[z$$,z.to];
+ z$$-sharpness*length(z$$-(to_x,y_))*unitvector(z$$-z$){z$$-z$}
+  ...{z.to-z$$}sharpness[z$$,(to_x,y_)] enddef;
+
+vardef diag_end(suffix from,$)(expr sharpness_in,sharpness_out)(suffix $$,to)=
+ save from_x,to_x,y_,x_,xx_;
+ if y.from>y$: tiny.bot else: tiny.top fi\\ y_=y$; % we assume that |y$=y$$|
+ (from_x,y_)=whatever[z.from,z$]; (to_x,y_)=whatever[z$$,z.to];
+ if x$$>x$: x_=x$+sharpness_in*length(z$-(from_x,y_));
+  xx_=x$$-sharpness_out*length(z$$-(to_x,y_));
+  if xx_<x_: xx_:=x_:=.5[xx_,x_]; fi
+ else: x_=x$-sharpness_in*length(z$-(from_x,y_));
+  xx_=x$$+sharpness_out*length(z$$-(to_x,y_));
+  if xx_>x_: xx_:=x_:=.5[xx_,x_]; fi fi
+ sharpness_in[z$,(from_x,y_)]{z$-z.from}
+  ...{z$$-z$}(x_,y$)..(xx_,y$){z$$-z$}
+  ...{z.to-z$$}sharpness_out[z$$,(to_x,y_)] enddef;
+%%% at from to %%%% restore normal formatting
+
+vardef special_diag_end(suffix $$,$,@,@@) = % for top middle of w's
+ if x@r<=x$r: diag_end($$r,$r,1,1,@l,@@l)
+ else: z0=whatever[z$$l,z$l]=whatever[z@l,z@@l];
+  diag_end($$r,$r,1,1,$l,0)--z0 fi enddef;
+
+def prime_points_inside(suffix $,$$) =
+ theta_:=angle(z$r-z$l);
+ penpos$'(whatever,theta_);
+ if y$$>y$: z$'=(0,pen_top) rotated theta_ + whatever[z$l,z$r];
+  theta_:=angle(z$$-z$)-90;
+ else: z$'=(0,pen_bot) rotated theta_ + whatever[z$l,z$r];
+  theta_:=angle(z$$-z$)+90; fi
+ z$'l+(pen_lft,0) rotated theta_=z$l+whatever*(z$-z$$);
+ z$'r+(pen_rt,0) rotated theta_=z$r+whatever*(z$-z$$);
+ enddef;
+
+def ellipse_set(suffix $,@,@@,$$) = % given |z$,x@,z$$|, find |y@| and |z@@|
+% such that the path |z${x@-x$,0}..z@{0,y@-y$}..{z$$-z@@}z@@|
+% is consistent with an ellipse
+% and such that the line |z@@--z$$| has a given |slope|
+ alpha_:=slope*(x@-x$); beta_:=y$$-y$-slope*(x$$-x$);
+ gamma_:=alpha_/beta_;
+ y@-y$=.5(beta_-alpha_*gamma_);
+ x@@-x$=-2gamma_*(x@-x$)/(1+gamma_*gamma_);
+ y@@-y$$=slope*(x@@-x$$) enddef;
+
+vardef diag_ratio(expr a,b,y,c) = % assuming that $a>\vert b/y\vert$,
+% compute the value $\alpha=(x\6{++}y)/y$ such that $ax+b\alpha=c$
+ numeric a_,b_; b_=b/y; a_=a*a-b_*b_;
+ (a*(c++y*sqrt a_)-b_*c)/a_/y enddef;
+
+def f_stroke(suffix $,$$,@,left_serif,right_serif)(expr left_jut,right_jut)=
+ pickup tiny.nib; bot y$=0;
+ penpos@0(x$r-x$l,0); x@0l=x$l; top y@0=x_height;
+ filldraw stroke z$e--z@0e;  % stem
+ pickup fine.nib; pos@0'(x$r-x$l-(hround stem_corr)+tiny,180);
+ y@0'=y@0; lft x@0'r=tiny.lft x$l;
+ penpos@1(x@0'l-x@0'r,180); x@1=x@0'; y@1+.5vair=.5[x_height,h];
+ pos@2(vair,90); top y@2r=h+oo;
+ if serifs: x@2=.6[x@1,x$$r]; (x@,y@2r)=whatever[z@2l,z@1l];
+  x@2r:=min(x@,.5[x@2,x$$r]); pos@3(hair,0); bulb(@2,@3,$$);  % bulb
+  filldraw stroke z@0'e--z@1e & super_arc.e(@1,@2);  % arc
+  dish_serif($,@0,left_serif,1/3,left_jut,right_serif,1/3,right_jut); % serif
+ else: x@2=.6[x@1,x$$]; y@1l:=1/3[y@1l,y@2l];
+  filldraw stroke z@0'e--z@1e & super_arc.e(@1,@2)
+   & term.e(@2,$$,right,.9,4); fi  % arc and terminal
+ penlabels(@0,@1,@2); enddef;
+
+def h_stroke(suffix $,@,@@,$$) =
+ penpos$$(x@@r-x@@l,0); x$$=x@@; bot y$$=0;
+ y@@=1/3[bar_height,x_height];
+ penpos$''(x$r-x$l,0); x$''=x$; y$''=1/8[bar_height,x_height];
+ filldraw stroke z$''e--z$e;  % thicken the lower left stem
+ penpos@0(min(rt x$r-lft x$l,thin_join)-fine,180); pickup fine.nib;
+ rt x@0l=tiny.rt x$r; y@0=y$'';
+ pos@1(vair,90); pos@@'(x@@r-x@@l+tiny,0); z@@'=z@@;
+ x@1=.5[rt x@0l,rt x@@'r]; top y@1r=x_height+oo;
+ (x@,y@1l)=whatever[z@1r,z@0l]; x@1l:=x@;
+ filldraw stroke z@0e{up}...{right}z@1e
+  &{{interim superness:=hein_super; super_arc.e(@1,@@')}};  % arch
+ pickup tiny.nib; filldraw stroke z@@e--z$$e;  % right stem
+ labels(@0); penlabels(@1); enddef;
+
+def hook_out(suffix $,$$,$$$)suffix modifier= % |x$| and |x$$$| (only) are known
+ pos$(stem,0); pos$$(vair,90);
+ x$$$:=hround(x$$$+.5hair-eps)-.5hair; pos$$$(hair,180);
+ y$=1/4x_height; bot y$$l=-oo; y$$$=1/3x_height;
+ if skewed.modifier: x$$=x$+1.25u;
+  filldraw stroke z$e{-u,-x_height}...z$$e{right}...{up}z$$$e;  % hook
+ else: x$$=x$+1.5u;
+  filldraw stroke z$e{down}...z$$e{right}
+   ...{x$$$-(x$+2.5u),x_height}z$$$e; fi enddef;  % hook
+
+def empty_hook_out(suffix $,$$,$$$)suffix modifier= % |x$| and |x$$$| (only) are known
+ pos$(stem,0); pos$$(vair,90);
+ x$$$:=hround(x$$$+.5hair-eps)-.5hair; pos$$$(hair,180);
+ y$=1/4x_height; bot y$$l=-oo; y$$$=1/3x_height;
+ if skewed.modifier: x$$=x$+1.25u;
+%  filldraw stroke z$e{-u,-x_height}...z$$e{right}...{up}z$$$e;  % hook
+ else: x$$=x$+1.5u;
+%  filldraw stroke z$e{down}...z$$e{right}
+%   ...{x$$$-(x$+2.5u),x_height}z$$$e;
+fi enddef;  % empty_hook_out
+
+def hook_in(suffix $,$$,$$$)suffix modifier= % |x$| and |x$$$| (only) are known
+ x$:=hround(x$-.5hair)+.5hair; pos$(hair,180);
+ pos$$(vair,90); pos$$$(stem,0);
+ y$=2/3x_height; top y$$r=x_height+oo; y$$$=3/4x_height;
+ if skewed.modifier: x$$=x$$$-1.25u;
+  filldraw stroke z$e{up}...z$$e{right}...{-u,-x_height}z$$$e;  % hook
+ else: x$$=x$$$-1.5u;
+  filldraw stroke z$e{x$$$-2.5u-x$,x_height}
+   ...z$$e{right}...{down}z$$$e; fi enddef;  % hook
+
+def ital_arch(suffix $,$$,$$$) = % |z$| and |z$$$| (only) are known
+ pos$'(hair,180); z$'=z$;
+ pos$$(vair,90); pos$$$(stem,0);
+ {{interim superness := more_super; x$$=.6[x$,x$$$];
+ top y$$r=x_height+oo; y$$$=.65x_height;
+ filldraw stroke z$'e{up}...super_arc.e($$,$$$);}} enddef;  % stroke
+
+def compute_spread(expr normal_spread,big_spread)=
+ spread#:=math_spread[normal_spread,big_spread];
+ spread:=ceiling(spread#*hppp)+eps; enddef;
+
+def v_center(expr h_sharp) =
+ .5h_sharp+math_axis#, .5h_sharp-math_axis# enddef;
+
+def circle_points =
+ x4=x8=.5[x2,x6]; x1=x3=superness[x4,x2]; x5=x7=superness[x4,x6];
+ y2=y6=.5[y4,y8]; y1=y7=superness[y2,y8]; y3=y5=superness[y2,y4];
+ enddef;
+def draw_circle =
+ draw z8{right}...z1{z2-z8}...z2{down}...z3{z4-z2}...z4{left}
+  ...z5{z6-z4}...z6{up}...z7{z8-z6}...cycle enddef;
+
+def left_paren(expr min_breadth, max_breadth) =
+ pickup fine.nib; pos1(hround min_breadth,0);
+ pos2(hround max_breadth,0); pos3(hround min_breadth,0);
+ rt x1r=rt x3r=hround(w-1.25u+.5min_breadth); lft x2l=hround 1.25u;
+ top y1=h; y2=.5[y1,y3]; bot y3=1-d;
+ filldraw stroke z1e{3(x2e-x1e),y2-y1}...z2e
+  ...{3(x3e-x2e),y3-y2}z3e;  % arc
+ penlabels(1,2,3); enddef;
+
+def right_paren(expr min_breadth, max_breadth) =
+ pickup fine.nib; pos1(hround min_breadth,0);
+ pos2(hround max_breadth,0); pos3(hround min_breadth,0);
+ lft x1l=lft x3l=hround(1.25u-.5min_breadth); rt x2r=hround(w-1.25u);
+ top y1=h; y2=.5[y1,y3]; bot y3=1-d;
+ filldraw stroke z1e{3(x2e-x1e),y2-y1}...z2e
+  ...{3(x3e-x2e),y3-y2}z3e;  % arc
+ penlabels(1,2,3); enddef;
+
+def left_bracket(expr breadth,do_top,do_bot) =
+ pickup crisp.nib;
+ numeric thickness; thickness=hround breadth;
+ pos1(thickness,0); pos2(thickness,0);
+ top y1=h; bot y2=1-d; lft x1l=lft x2l=hround(2.5u-.5thickness);
+ filldraw stroke z1e--z2e;  % stem
+ pos3(thickness,90); pos4(thickness,90);
+ pos5(thickness,90); pos6(thickness,90);
+ x3=x5=x1l; rt x4=rt x6=hround(w-.75u+.5thickness);
+ y3r=y4r=y1; y5l=y6l=y2;
+ if do_top: filldraw stroke z3e--z4e; fi  % upper bar
+ if do_bot: filldraw stroke z5e--z6e; fi  % lower bar
+ penlabels(1,2,3,4,5,6); enddef;
+
+def right_bracket(expr breadth,do_top,do_bot) =
+ pickup crisp.nib;
+ numeric thickness; thickness=hround breadth;
+ pos1(thickness,0); pos2(thickness,0);
+ top y1=h; bot y2=1-d; rt x1r=rt x2r=hround(w-2.5u+.5thickness);
+ filldraw stroke z1e--z2e;  % stem
+ pos3(thickness,90); pos4(thickness,90);
+ pos5(thickness,90); pos6(thickness,90);
+ x3=x5=x1r; lft x4=lft x6=hround(.75u-.5thickness);
+ y3r=y4r=y1; y5l=y6l=y2;
+ if do_top: filldraw stroke z3e--z4e; fi  % upper bar
+ if do_bot: filldraw stroke z5e--z6e; fi  % lower bar
+ penlabels(1,2,3,4,5,6); enddef;
+
+def left_curly(expr min_breadth, max_breadth) =
+ pickup fine.nib;
+ forsuffixes $=1,1',4,4',7,7': pos$(hround min_breadth,0); endfor
+ forsuffixes $=2,3,5,6: pos$(hround max_breadth,0); endfor
+ x2=x3=x5=x6; x1=x1'=x7=x7'=w-x4=w-x4';
+ lft x4l=hround(1.5u-.5min_breadth); lft x2l=hround(.5w-.5max_breadth);
+ top y1=h; bot y7=1-d; .5[y4,y4']=.5[y1,y7]=.5[y2,y6]=.5[y3,y5];
+ y1-y2=y3-y4=(y1-y4)/4;
+ y1-y1'=y4-y4'=y7'-y7=vround(min_breadth-fine);
+ filldraw z1l{3(x2l-x1l),y2-y1}...z2l---z3l...{3(x4l-x3l),y4-y3}z4l
+  --z4'l{3(x5l-x4l),y5-y4'}...z5l---z6l...{3(x7l-x6l),y7-y6}z7l
+  --z7r--z7'r{3(x6r-x7r),y6-y7'}...z6r---z5r
+  ...{3(x4r-x5r),.5[y4,y4']-y5}.5[z4r,z4'r]{3(x3r-x4r),y3-.5[y4,y4']}
+  ...z3r---z2r...{3(x1r-x2r),y1'-y2}z1'r--z1r--cycle;  % stroke
+ penlabels(1,2,3,4,5,6,7); enddef;
+
+def right_curly(expr min_breadth, max_breadth) =
+ pickup fine.nib;
+ forsuffixes $=1,1',4,4',7,7': pos$(hround min_breadth,0); endfor
+ forsuffixes $=2,3,5,6: pos$(hround max_breadth,0); endfor
+ x2=x3=x5=x6; x1=x1'=x7=x7'=w-x4=w-x4';
+ lft x1l=hround(1.5u-.5min_breadth); lft x2l=hround(.5w-.5max_breadth);
+ top y1=h; bot y7=1-d; .5[y4,y4']=.5[y1,y7]=.5[y2,y6]=.5[y3,y5];
+ y1-y2=y3-y4=(y1-y4)/4;
+ y1-y1'=y4-y4'=y7'-y7=vround(min_breadth-fine);
+ filldraw z1r{3(x2r-x1r),y2-y1}...z2r---z3r...{3(x4r-x3r),y4-y3}z4r
+  --z4'r{3(x5r-x4r),y5-y4'}...z5r---z6r...{3(x7r-x6r),y7-y6}z7r
+  --z7l--z7'l{3(x6l-x7l),y6-y7'}...z6l---z5l
+  ...{3(x4l-x5l),.5[y4,y4']-y5}.5[z4l,z4'l]{3(x3l-x4l),y3-.5[y4,y4']}
+  ...z3l---z2l...{3(x1l-x2l),y1'-y2}z1'l--z1l--cycle;  % stroke
+ penlabels(1,2,3,4,5,6,7); enddef;
+
+def left_angle(expr breadth) =
+ pickup pencircle scaled breadth;
+ x1=x3=good.x(w-u)+eps; lft x2=hround u-eps;
+ top y1=h+eps; .5[y1,y3]=y2=good.y .5[-d+eps,h];
+ draw z1--z2--z3;  % diagonals
+ labels(1,2,3); enddef;
+
+def right_angle(expr breadth) =
+ pickup pencircle scaled breadth;
+ x1=x3=good.x u-eps; rt x2=hround(w-u)+eps;
+ top y1=h+eps; .5[y1,y3]=y2=good.y .5[-d+eps,h];
+ draw z1--z2--z3;  % diagonals
+ labels(1,2,3); enddef;
+
+def beginarithchar(expr c) = % ensure consistent dimensions for $+$, $-$, etc.
+ if monospace: beginchar(c,14u#,27/7u#+math_axis#,27/7u#-math_axis#);
+ else: beginchar(c,14u#,6u#+math_axis#,6u#-math_axis#); fi
+ italcorr math_axis#*slant-.5u#;
+ adjust_fit(0,0); enddef;
+
+def center_on(expr x) = if not monospace: % change width for symmetric fit
+ r:=r+2x-w; w:=2x; fi enddef;
+
+def super_crescent(suffix i,j,k) =
+ draw z.i{x.j-x.i,0}
+ ... (.8[x.i,x.j],.8[y.j,y.i]){z.j-z.i}
+ ... z.j{0,y.k-y.i}
+ ... (.8[x.k,x.j],.8[y.j,y.k]){z.k-z.j}
+ ... z.k{x.k-x.j,0} enddef;
+
+newinternal l,r,shrink_fit; % adjustments to spacing
+
+def do_expansion(expr expansion_factor) =
+ forsuffixes $=u,jut,cap_jut,beak_jut,apex_corr:
+   $:=$.#*expansion_factor*hppp; endfor
+enddef;
+
+def normal_adjust_fit(expr left_adjustment,right_adjustment) =
+ numeric charwd_in; charwd_in=charwd;
+ l:=-hround(left_adjustment*hppp)-letter_fit;
+ interim xoffset:=-l;
+ charwd:=charwd+2letter_fit#+left_adjustment+right_adjustment;
+ r:=l+hround(charwd*hppp)-shrink_fit;
+ w:=r-hround(right_adjustment*hppp)-letter_fit;
+ do_expansion(w/(charwd_in*hppp));
+ enddef;
+
+def mono_adjust_fit(expr left_adjustment,right_adjustment) =
+ numeric charwd_in; charwd_in=charwd;
+ numeric expansion_factor;
+ mono_charwd#=2letter_fit#
+   +expansion_factor*(charwd+left_adjustment+right_adjustment);
+ l:=-hround(left_adjustment*expansion_factor*hppp)-letter_fit;
+ interim xoffset:=-l;
+ r:=l+mono_charwd-shrink_fit;
+ w:=r-hround(right_adjustment*expansion_factor*hppp)-letter_fit;
+ charwd:=mono_charwd#; charic:=mono_charic#;
+ do_expansion(w/(charwd_in*hppp));
+ enddef;
+
+extra_endchar:=extra_endchar&"r:=r+shrink_fit;w:=r-l;";
+
+def ignore_math_fit(expr left_adjustment,right_adjustment) = enddef;
+def do_math_fit(expr left_adjustment,right_adjustment) =
+ l:=l-hround(left_adjustment*hppp); interim xoffset:=-l;
+ charwd:=charwd+left_adjustment+right_adjustment;
+ r:=l+hround(charwd*hppp)-shrink_fit;
+ charic:=charic-right_adjustment;
+ if charic<0: charic:=0; fi enddef;
+def zero_width = charwd:=0; r:=l-shrink_fit enddef;
+def change_width = if not monospace: % change width by $\pm1$
+ if r+shrink_fit-l=floor(charwd*hppp): w:=w+1; r:=r+1;
+ else: w:=w-1; r:=r-1; fi fi enddef;
+def padded expr del_sharp =
+ charht:=charht+del_sharp; chardp:=chardp+del_sharp enddef;
+
+def font_setup =
+ if monospace: let adjust_fit=mono_adjust_fit;
+  if true_mono: let normal_adjust_fit=mono_adjust_fit; fi
+  def mfudged=fudged enddef;
+  mono_charic#:=body_height#*slant;
+  if mono_charic#<0: mono_charic#:=0; fi
+  mono_charwd#:=9u#; define_whole_pixels(mono_charwd);
+ else: let adjust_fit=normal_adjust_fit;
+  def mfudged= enddef; fi
+ if math_fitting: let math_fit=do_math_fit
+ else: let math_fit=ignore_math_fit fi;
+ define_pixels(u,width_adj,serif_fit,cap_serif_fit,jut,cap_jut,beak,
+  bar_height,dish,bracket,beak_jut,stem_corr,vair_corr,apex_corr);
+ define_blacker_pixels(notch_cut,cap_notch_cut);
+ forsuffixes $=notch_cut,cap_notch_cut: if $<3: $:=3; fi endfor
+ define_whole_pixels(letter_fit,fine,crisp,tiny);
+ define_whole_vertical_pixels(body_height,asc_height,
+  cap_height,acc_height,fig_height,x_height,comma_depth,desc_depth,serif_drop);
+ define_whole_blacker_pixels(thin_join,hair,stem,curve,flare,
+  dot_size,cap_hair,cap_stem,cap_curve);
+ define_whole_vertical_blacker_pixels(vair,bar,slab,cap_bar,cap_band);
+ define_corrected_pixels(o,apex_o);
+ forsuffixes $=hair,stem,cap_stem:
+  fudged$.#:=fudge*$.#; fudged$:=hround(fudged$.#*hppp+blacker);
+  forever: exitif fudged$>.9fudge*$; fudged$:=fudged$+1; endfor endfor
+ rule_thickness:=ceiling(rule_thickness#*hppp);
+ heavy_rule_thickness:=ceiling(3rule_thickness#*hppp);
+ oo:=vround(.5o#*hppp*o_correction)+eps;
+ apex_oo:=vround(.5apex_o#*hppp*o_correction)+eps;
+ lowres_fix(stem,curve,flare) 1.3;
+ lowres_fix(stem,curve) 1.2;
+ lowres_fix(cap_stem,cap_curve) 1.2;
+ lowres_fix(hair,cap_hair) 1.2;
+ lowres_fix(cap_band,cap_bar,bar,slab) 1.2;
+ stem':=hround(stem-stem_corr); cap_stem':=hround(cap_stem-stem_corr);
+ vair':=vround(vair+vair_corr);
+ vstem:=vround .8[vair,stem]; cap_vstem:=vround .8[vair,cap_stem];
+ ess:=(ess#/stem#)*stem; cap_ess:=(cap_ess#/cap_stem#)*cap_stem;
+ dw:=(curve#-stem#)*hppp; bold:=curve#*hppp+blacker;
+ dh#:=.6designsize;
+ stem_shift#:=if serifs: 2stem_corr# else: 0 fi;
+ more_super:=max(superness,sqrt .77superness);
+ hein_super:=max(superness,sqrt .81225258superness); % that's $2^{-.3}$
+ clear_pen_memory;
+ if fine=0: fine:=1; fi
+ forsuffixes $=fine,crisp,tiny:
+%%% fine $ %%%% temporary formatting convention for MFT
+  if $>fudged.hair: $:=fudged.hair; fi
+  $.breadth:=$;
+  pickup if $=0: nullpen else: pencircle scaled $; $:=$-eps fi;
+  $.nib:=savepen; breadth_[$.nib]:=$;
+  forsuffixes $$=lft,rt,top,bot: shiftdef($.$$,$$ 0); endfor endfor
+%%% @ $ %%%% restore ordinary formatting for $
+ min_Vround:=max(fine.breadth,crisp.breadth,tiny.breadth);
+ if min_Vround<vround min_Vround: min_Vround:=vround min_Vround; fi
+ if flare<vround flare: flare:=vround flare; fi
+ forsuffixes $=vair,bar,slab,cap_bar,cap_band,vair',vstem,cap_vstem,bold:
+  if $<min_Vround: $:=min_Vround; fi endfor
+ pickup pencircle scaled min(hair,vair); extra_rule.nib :=savepen;
+ pickup pencircle scaled rule_thickness; rule.nib:=savepen;
+ math_axis:=good.y(math_axis#*hppp);
+ pickup pencircle scaled if hefty:(.6[vair,fudged.hair]) else:fudged.hair fi;
+ light_rule.nib:=savepen;
+ currenttransform:=identity slanted slant
+  yscaled aspect_ratio scaled granularity;
+ if currenttransform=identity: let t_=relax
+ else: def t_ = transformed currenttransform enddef fi;
+ numeric paren_depth#; .5[body_height#,-paren_depth#]=math_axis#;
+ numeric asc_depth#; .5[asc_height#,-asc_depth#]=math_axis#;
+ body_depth:=desc_depth+body_height-asc_height;
+ shrink_fit:=1+hround(2letter_fit#*hppp)-2letter_fit;
+ if not string mode: if mode<=smoke: shrink_fit:=0; fi fi
+ enddef;
+
+def shiftdef(suffix $)(expr delta) =
+ vardef $ primary x = x+delta enddef enddef;
+
+def makebox(text rule) =
+ for y=0,(cap_height+acc_height),
+       asc_height,body_height,x_height,bar_height,-desc_depth,-body_depth:
+  rule((l,y)t_,(r,y)t_); endfor % horizontals
+
+ for y=-3.5pt,8.5pt,(x_height+acc_height):
+   rule((l-4pt,y)t_,(l-2pt,y)t_); endfor
+ for x=l,r:   rule((x,-body_depth)t_,(x,body_height)t_); endfor % verticals
+ for x=u*(1+floor(l/u)) step u until r-1:
+  rule((x,-body_depth)t_,(x,body_height)t_); endfor % more verticals
+
+ for x=0.5w:
+   rule((x,-body_depth-1pt)t_,(x,-body_depth-1.5pt)t_);
+   rule((x,cap_height+acc_height+1pt)t_,(x,cap_height+acc_height+1.5pt)t_);
+ endfor
+ if charic<>0:
+  rule((r+charic*pt,h.o_),(r+charic*pt,.5h.o_)); fi % italic correction
+ enddef;
+def maketicks(text rule) =
+ for y=0,h.o_,-d.o_:
+  rule((l,y),(l+10,y)); rule((r-10,y),(r,y)); endfor % horizontals
+ for x=l,r:
+  rule((x,10-d.o_),(x,-d.o_)); rule((x,h.o_-10),(x,h.o_)); endfor % verticals
+ if charic<>0:
+  rule((r+charic*pt,h.o_-10),(r+charic*pt,h.o_)); fi % italic correction
+ enddef;
+rulepen:=pensquare;
+
+vardef stroke text t =
+ forsuffixes e = l,r: path_.e:=t; endfor
+ if cycle path_.l:
+  errmessage "Beware: `stroke' isn't intended for cycles"; fi
+ path_.l -- reverse path_.r -- cycle enddef;
+
+vardef circ_stroke text t =
+ forsuffixes e = l,r: path_.e:=t; endfor
+ if cycle path_.l:
+  errmessage "Beware: `stroke' isn't intended for cycles"; fi
+ path_.l -- reverse path_.r .. cycle enddef;
+
+vardef super_arc.r(suffix $,$$) = % outside of super-ellipse
+ pair center,corner;
+ if y$=y$r: center=(x$$r,y$r); corner=(x$r,y$$r);
+ else: center=(x$r,y$$r); corner=(x$$r,y$r); fi
+ z$.r{corner-z$.r}...superness[center,corner]{z$$.r-z$.r}
+  ...{z$$.r-corner}z$$.r enddef;
+
+vardef super_arc.l(suffix $,$$) = % inside of super-ellipse
+ pair center,corner;
+ if y$=y$r: center=(x$$l,y$l); corner=(x$l,y$$l);
+ else: center=(x$l,y$$l); corner=(x$$l,y$l); fi
+ z$l{corner-z$l}...superness[center,corner]{z$$l-z$l}
+  ...{z$$l-corner}z$$l enddef;
+
+vardef pulled_super_arc.r(suffix $,$$)(expr superpull) =
+ pair center,corner;
+ if y$=y$r: center=(x$$r,y$r); corner=(x$r,y$$r);
+ else: center=(x$r,y$$r); corner=(x$$r,y$r); fi
+ z$r{corner-z$r}...superness[center,corner]{z$$r-z$r}
+  ...{z$$r-corner}z$$r enddef;
+
+vardef pulled_super_arc.l(suffix $,$$)(expr superpull) =
+ pair center,corner,outer_point;
+ if y$=y$r: center=(x$$l,y$l); corner=(x$l,y$$l);
+  outer_point=superness[(x$$r,y$r),(x$r,y$$r)];
+ else: center=(x$l,y$$l); corner=(x$$l,y$l);
+  outer_point=superness[(x$r,y$$r),(x$$r,y$r)]; fi
+ z$l{corner-z$l}
+  ...superpull[superness[center,corner],outer_point]{z$$l-z$l}
+  ...{z$$l-corner}z$$l enddef;
+
+vardef pulled_arc@#(suffix $,$$) =
+ pulled_super_arc@#($,$$)(superpull) enddef;
+
+vardef serif_arc(suffix $,$$) =
+ z${x$$-x$,0}...(.75[x$,x$$],.25[y$,y$$]){z$$-z$}...{0,y$$-y$}z$$ enddef;
+
+vardef penpos@#(expr b,d) =
+ if known b: if b<=0:
+   errmessage "bad penpos (width is negative)"; fi fi
+ (x@#r-x@#l,y@#r-y@#l)=(b,0) rotated d;
+ x@#=.5(x@#l+x@#r); y@#=.5(y@#l+y@#r) enddef;
+
+newinternal currentbreadth;
+vardef pos@#(expr b,d) =
+ if known b: if b<=currentbreadth:
+ errmessage "bad pos (breadth of current pen wider than pos width)"; fi fi
+ (x@#r-x@#l,y@#r-y@#l)=(b-currentbreadth,0) rotated d;
+ x@#=.5(x@#l+x@#r); y@#=.5(y@#l+y@#r) enddef;
+def numeric_pickup_ primary q =
+ currentpen:=pen_[q];
+ pen_lft:=pen_lft_[q];  pen_rt:=pen_rt_[q];
+ pen_top:=pen_top_[q];  pen_bot:=pen_bot_[q];
+ currentpen_path:=pen_path_[q];
+ if known breadth_[q]: currentbreadth:=breadth_[q]; fi enddef;
+
+vardef ic# = charic enddef;
+vardef h# = charht enddef;
+vardef w# = charwd enddef;
+vardef d# = chardp enddef;
+
+let {{=begingroup; let }}=endgroup;
+def .... = .. tension atleast .9 .. enddef;
+def less_tense = save ...; let ...=.... enddef;
+def ?? = hide(showvariable x,y) enddef;
+
+let semi_ =;; let colon_ = :; let endchar_ = endchar;
+def iff expr b = if b:let next_=use_it else:let next_=lose_it fi; next_ enddef;
+def use_it = let : = restore_colon; enddef;
+def restore_colon = let : = colon_; enddef;
+def lose_it = let endchar=fi; inner ecchar; let ;=fix_ semi_ if false enddef;
+def fix_=let ;=semi_; let endchar=endchar_; outer ecchar; enddef;
+def always_iff = let : = endgroup; killboolean enddef;
+def killboolean text t = use_it enddef;
+outer ecchar;
+
+%%% fine hi higher
+% |higher| is a counterpart to |lower| (see the file excsc.mf),
+% |hi| facilitates using higher values (which are reference points in
+% the floating world of CM fonts)
+def hi = if is_small_cap: higher fi\\ enddef;
+
+%
+%  special routines for accenting
+%
+vardef uppercase_hat
+    (expr x_center,y_move,hat_zero,hat_one,hat_two,hat_three,hat_four) =
+if serifs:
+ pickup crisp.nib;
+ pos[hat_two](.5[vair,curve],90);
+ top y[hat_two]r=cap_accent_height+oo;
+ x[hat_two]=good.x x_center; %  optically centered
+ x[hat_one]=good.x x[hat_two]-2.25u if monospace: /expansion_factor fi ;
+ x[hat_three]=2x[hat_two]-x[hat_one];
+% |accent_gap| is defined by the acute accent, it is known when needed
+ y[hat_one]=y[hat_three] = accent_gap + cap_height;
+ pos[hat_one](hair,angle(z[hat_two]-z[hat_one])+90);
+ pos[hat_three](hair,angle(z[hat_three]-z[hat_two])+90);
+ filldraw stroke z[hat_one]e--z[hat_two]e--z[hat_three]e;  % diagonals
+else:
+ pickup fine.nib;
+ pos[hat_one](vair,0);
+ pos[hat_three](vair,0);
+ pos[hat_two](stem,0);
+ top y[hat_two]=cap_accent_height+oo;
+ x[hat_two]=good.x x_center; %  optically centered
+ x[hat_one]=good.x x[hat_two]-2.25u if monospace: /expansion_factor fi ;
+ x[hat_three]=2x[hat_two]-x[hat_one];
+% |accent_gap| is defined by the acute accent, it is known when needed
+ bot y[hat_one]=bot y[hat_three]=.5accent_gap + cap_height;
+ z[hat_zero]=whatever[z[hat_one]r,z[hat_two]r]=
+    whatever[z[hat_two]l,z[hat_three]l];
+ y[hat_four]l=y[hat_four]r=y[hat_two];
+ x[hat_four]l=good.x .2[x[hat_two]l,x[hat_two]];
+ x[hat_four]r=w-x[hat_four]l;
+ filldraw z[hat_four]l--z[hat_one]l--z[hat_one]r--
+    z[hat_zero]--z[hat_three]l--
+    z[hat_three]r--z[hat_four]r--cycle; fi  % diagonals
+enddef;
+%
+vardef lowercase_hat
+    (expr x_center,y_move,hat_zero,hat_one,hat_two,hat_three,hat_four) =
+if serifs:
+ pickup crisp.nib;
+ pos[hat_two](.5[vair,curve],90);
+ top y[hat_two]r=h+y_move;
+ x[hat_two]=good.x x_center; %  optically centered
+ x[hat_one]=good.x x[hat_two]-2.25u if monospace: /expansion_factor fi ;
+ x[hat_three]=2x[hat_two]-x[hat_one];
+ y[hat_one]=y[hat_three] =
+     max(y[hat_two]-0.5(min(asc_height,2x_height)-x_height),
+         1/6[x_height,h]);
+ pos[hat_one](hair,angle(z[hat_two]-z[hat_one])+90);
+ pos[hat_three](hair,angle(z[hat_three]-z[hat_two])+90);
+ filldraw stroke z[hat_one]e--z[hat_two]e--z[hat_three]e;  % diagonals
+else:
+ pickup fine.nib;
+ pos[hat_one](vair,0);
+ pos[hat_three](vair,0);
+ pos[hat_two](stem,0);
+ top y[hat_two]=h+y_move;
+ x[hat_two]=good.x x_center; %  optically centered
+ x[hat_one]=good.x x[hat_two]-2.25u if monospace: /expansion_factor fi ;
+ x[hat_three]=2x[hat_two]-x[hat_one];
+ bot y[hat_one]=bot y[hat_three]=vround (2/3[h,x_height]-eps);
+     % same slope as in the acute accent
+ z[hat_zero]=whatever[z[hat_one]r,z[hat_two]r]=
+    whatever[z[hat_two]l,z[hat_three]l];
+ y[hat_four]l=y[hat_four]r=y[hat_two];
+ x[hat_four]l=good.x .2[x[hat_two]l,x[hat_two]];
+ x[hat_four]r=w-x[hat_four]l;
+ filldraw z[hat_four]l--z[hat_one]l--z[hat_one]r--
+    z[hat_zero]--z[hat_three]l--
+    z[hat_three]r--z[hat_four]r--cycle; fi  % diagonals
+enddef;
+%
+%
+vardef lowercase_tilde(expr x_move,y_move,tilde_one,tilde_two,tilde_three,
+     tilde_four,tilde_five)=
+h':=min(asc_height,10/7x_height+.5dot_size);
+if serifs: numeric theta;
+ theta=angle(1/6(
+    6u if monospace: /expansion_factor fi-vair),
+      1/4(h'-x_height));
+ pickup crisp.nib;
+ numeric mid_width; mid_width=.4[vair,stem];
+ pos[tilde_one](vair,theta+90);
+ pos[tilde_two](vair,theta+90);
+ pos[tilde_three](vair,theta+90);
+ pos[tilde_four](vair,theta+90);
+ z[tilde_two]-z[tilde_one]=
+    z[tilde_four]-z[tilde_three]=(mid_width-crisp)*dir theta;
+ lft x[tilde_one]r=hround(x_move+0.5w-3u if monospace: /expansion_factor fi);
+ rt x[tilde_four]l=hround(x_move+0.5w+3u if monospace: /expansion_factor fi);
+ top y[tilde_four]r=h';
+ pair delta;
+ ypart delta=3(y[tilde_three]l-y[tilde_one]l);
+ delta=whatever*dir theta;
+ bot y[tilde_one]l=vround(bot y[tilde_one]l+
+    min(2/3[x_height,h'],y[tilde_three]l-.25vair)-top y[tilde_one]r);
+ filldraw z[tilde_one]l..
+   controls(z[tilde_one]l+
+    delta)and(z[tilde_three]l-delta)..z[tilde_three]l..z[tilde_four]l
+  --z[tilde_four]r..
+     controls(z[tilde_four]r-delta)and(z[tilde_two]r+delta)..
+     z[tilde_two]r..z[tilde_one]r--cycle;  % stroke
+else:
+ pickup fine.nib;
+ pos[tilde_one](vair,180);
+ pos[tilde_two](vair,90);
+ pos[tilde_three](.5[vair,slab],90);
+ pos[tilde_four](vair,90);
+ pos[tilde_five](vair,180);
+ lft x[tilde_one]r=hround (x_move + 0.5w-3u);
+ rt x[tilde_five]l=hround (x_move + 0.5w+3u);
+ x[tilde_two]-x[tilde_one]=
+    x[tilde_three]-x[tilde_two]=
+    x[tilde_four]-x[tilde_three]=x[tilde_five]-x[tilde_four];
+ bot y[tilde_one]=bot y[tilde_four]l=y_move+vround(.75[x_height,h]-vair);
+ top y[tilde_two]r=top y[tilde_five]=h+y_move;
+ y[tilde_three]=.5[y[tilde_two],y[tilde_four]];
+ filldraw stroke
+   z[tilde_one]e{up}...
+     z[tilde_two]e{right}..
+     z[tilde_three]e..
+     {right}z[tilde_four]e...{up}z[tilde_five]e; fi % stroke
+enddef;
+
+%
+vardef uppercase_tilde(expr x_move,y_move,tilde_one,tilde_two,tilde_three,
+     tilde_four,tilde_five)=
+if serifs: numeric theta;
+ theta=angle(1/8(7u if monospace: /expansion_factor fi-vair),1/4acc_height);
+ pickup crisp.nib;
+ numeric mid_width; mid_width=.4[vair,stem];
+ pos[tilde_one](vair,theta+90);
+ pos[tilde_two](vair,theta+90);
+ pos[tilde_three](vair,theta+90);
+ pos[tilde_four](vair,theta+90);
+ z[tilde_two]-z[tilde_one]=
+    z[tilde_four]-z[tilde_three]=(mid_width-crisp)*dir theta;
+ lft x[tilde_one]r=hround(x_move+0.5w-3.5u if monospace: /expansion_factor fi);
+ rt x[tilde_four]l=hround(x_move+0.5w+3.5u if monospace: /expansion_factor fi);
+ top y[tilde_four]r=h;
+% |accent_gap| is defined by the acute accent, it is known when needed
+% bot y[tilde_one]l=accent_gap+cap_height;
+ bot y[tilde_one]l=vround(bot y[tilde_one]l
+    +min(2/3[cap_height,cap_accent_height],y[tilde_three]l-.25vair)
+    -top y[tilde_one]r);
+ pair delta;
+ ypart delta=3(y[tilde_three]l-y[tilde_one]l);
+ delta=whatever*dir theta;
+ filldraw z[tilde_one]l..
+   controls(z[tilde_one]l+
+    delta)and(z[tilde_three]l-delta)..z[tilde_three]l..z[tilde_four]l
+  --z[tilde_four]r..
+     controls(z[tilde_four]r-delta)and(z[tilde_two]r+delta)..
+     z[tilde_two]r..z[tilde_one]r--cycle;  % stroke
+else:
+ pickup fine.nib;
+ pos[tilde_one](vair,180);
+ pos[tilde_two](vair,90);
+ pos[tilde_three](.5[vair,slab],90);
+ pos[tilde_four](vair,90);
+ pos[tilde_five](vair,180);
+ lft x[tilde_one]r=w-rt x[tilde_five]l=hround 1.5u+0.5(w-9u);
+ x[tilde_two]-x[tilde_one]=
+    x[tilde_three]-x[tilde_two]=
+    x[tilde_four]-x[tilde_three]=x[tilde_five]-x[tilde_four];
+% |accent_gap| is defined by the acute accent, it is known when needed
+ bot y[tilde_one]=bot y[tilde_four]l=cap_height+.5accent_gap;
+ top y[tilde_two]r=top y[tilde_five]=h;
+ y[tilde_three]=.5[y[tilde_two],y[tilde_four]];
+ filldraw stroke
+   z[tilde_one]e{up}...
+     z[tilde_two]e{right}..
+     z[tilde_three]e..
+     {right}z[tilde_four]e...{up}z[tilde_five]e; fi % stroke
+enddef;
+%
+%
+%
+vardef lowercase_umlaut(expr x_move,y_move,umlaut_one,umlaut_two,
+   umlaut_three,umlaut_four) =
+pickup tiny.nib;
+pos[umlaut_one](udot_diam,0);
+pos[umlaut_two](udot_diam,90);
+x[umlaut_one]=x[umlaut_two]=x_move+.5w-1.75u if monospace:/expansion_factor fi ;
+top y[umlaut_two]r=lc_trema_height;
+y[umlaut_one]=y_move+.5[y[umlaut_two]l,y[umlaut_two]r];
+dot([umlaut_one],[umlaut_two]);  % left dot
+pos[umlaut_three](udot_diam,0);
+penpos[umlaut_four](y[umlaut_two]r-y[umlaut_two]l,90);
+y[umlaut_three]=y[umlaut_four]=y[umlaut_one];
+x[umlaut_three]=x[umlaut_four]=x[umlaut_one]
+     +3.5u if monospace: /expansion_factor fi ;
+dot([umlaut_three],[umlaut_four]);  % right dot
+enddef;
+%
+vardef uppercase_umlaut(expr x_move,y_move,umlaut_one,umlaut_two,
+   umlaut_three,umlaut_four) =
+pickup tiny.nib;
+pos[umlaut_one](udot_diam,0);
+pos[umlaut_two](udot_diam,90);
+x[umlaut_one]=x[umlaut_two]=x_move+.5w-1.75u if monospace:/expansion_factor fi ;
+top y[umlaut_two]r=vround(cap_height+dot_height#*hppp);
+y[umlaut_one]=y_move+.5[y[umlaut_two]l,y[umlaut_two]r];
+dot([umlaut_one],[umlaut_two]);  % left dot
+pos[umlaut_three](udot_diam,0);
+penpos[umlaut_four](y[umlaut_two]r-y[umlaut_two]l,90);
+y[umlaut_three]=y[umlaut_four]=y[umlaut_one];
+x[umlaut_three]=x[umlaut_four]=x[umlaut_one]
+     +3.5u if monospace: /expansion_factor fi ;
+dot([umlaut_three],[umlaut_four]);  % right dot
+enddef;
+%
+%
+vardef lowercase_circle(expr
+       x_center,y_bottom,circ_one,circ_two,circ_three,circ_four)=
+numeric circ_hair,circ_vair;
+circ_hair=hround min(hair,u if monospace: /expansion_factor fi +.5);
+circ_vair=vround min(vair,(h-x_height)/6+.5);
+penpos[circ_one](circ_vair,90); penpos[circ_three](circ_vair,-90);
+penpos[circ_two](circ_hair,180); penpos[circ_four](circ_hair,0);
+x[circ_one]=x[circ_three]=x_center; %
+x[circ_two]r=hround(x[circ_one]-1.5u-.5circ_hair);
+x[circ_four]r=hround(x[circ_one]+1.5u+.5circ_hair);
+y[circ_one]r=h+apex_o;
+y[circ_two]=y[circ_four]=.5[y[circ_one],y[circ_three]];
+y[circ_three]l=vround y_bottom; % (1/3[x_height,h]+apex_o);
+penstroke pulled_arc.e([circ_one],[circ_two])
+ & pulled_arc.e([circ_two],[circ_three])
+ & pulled_arc.e([circ_three],[circ_four])
+ & pulled_arc.e([circ_four],[circ_one]) & cycle;  % bowl
+enddef;
+%
+vardef uppercase_circle(expr
+       x_center,y_bottom,circ_one,circ_two,circ_three,circ_four)=
+numeric circ_hair,circ_vair;
+circ_hair=hround min(hair,u if monospace: /expansion_factor fi +.5);
+circ_vair=vround vair; % min(vair,(h-x_height)/6+.5);
+penpos[circ_one](circ_vair,90); penpos[circ_three](circ_vair,-90);
+penpos[circ_two](circ_hair,180); penpos[circ_four](circ_hair,0);
+x[circ_one]=x[circ_three]=x_center; % .5w;
+x[circ_two]r
+    = hround(x[circ_one]-1.5u if monospace: /expansion_factor fi -.5circ_hair);
+x[circ_four]r
+    = hround(x[circ_one]+1.5u if monospace: /expansion_factor fi +.5circ_hair);
+y[circ_one]r=cap_height + acc_height+apex_o;
+y[circ_two]=y[circ_four]=.5[y[circ_one],y[circ_three]];
+y[circ_three]l=vround y_bottom; % (1/3[x_height,h]+apex_o);
+penstroke pulled_arc.e([circ_one],[circ_two])
+ & pulled_arc.e([circ_two],[circ_three])
+ & pulled_arc.e([circ_three],[circ_four])
+ & pulled_arc.e([circ_four],[circ_one]) & cycle;  % bowl
+enddef;
+%
+%
+vardef lowercase_cedilla (expr x_center,y_move,
+   cedi_one,cedi_two,cedi_three,cedi_four,cedi_five) =
+x[cedi_one]=x_center; % .5w+.5u;
+if serifs:
+ pickup crisp.nib;
+ pos[cedi_one](stem,0);
+ pos[cedi_two](stem,0);
+ pos[cedi_three](vair,90);
+ pos[cedi_four](stem,0);
+ pos[cedi_five](vair,-90);
+ x[cedi_one]=x[cedi_two];
+ z[cedi_three]l=z[cedi_two]l;
+ x[cedi_four]=x[cedi_two]+1.5u;
+ x[cedi_five]=x[cedi_three]-1.5u;
+ bot y[cedi_one]=0;
+ bot y[cedi_two]=-vround 2/7d-o;
+ y[cedi_four]=.5[y[cedi_three],y[cedi_five]];
+ bot y[cedi_five]=-d-o;
+ filldraw stroke z[cedi_one]e--z[cedi_two]e;  % stem
+ filldraw stroke z[cedi_three]e{right}...
+   z[cedi_four]e{down}...{left}z[cedi_five]e;  % hook
+else: pickup fine.nib; pos[cedi_one](vair,0); top y[cedi_one]=-o-2;
+ pos[cedi_two](.5[vair,stem],0);
+ bot y[cedi_two]=-d-o; x[cedi_two]=x[cedi_one]-1.25u;
+ filldraw stroke z[cedi_one]e--z[cedi_two]e; fi  % diagonal
+enddef;
+%
+vardef uppercase_cedilla(expr x_center,y_move,
+  cedi_one,cedi_two,cedi_three,cedi_four,cedi_five) =
+x[cedi_one]=x_center;;
+if serifs:
+ pickup crisp.nib;
+ pos[cedi_one](stem,0);
+ pos[cedi_two](stem,0);
+ pos[cedi_three](vair,90);
+ pos[cedi_four](stem,0);
+ pos[cedi_five](vair,-90);
+ x[cedi_one]=x[cedi_two];
+ z[cedi_three]l=z[cedi_two]l;
+ x[cedi_four]=x[cedi_two]+1.5u if monospace: /expansion_factor fi;
+ x[cedi_five]=x[cedi_three]-1.5u if monospace: /expansion_factor fi;
+ top y[cedi_one]=y_move;
+ bot y[cedi_two]=-vround 2/7d-o;
+ y[cedi_four]=.5[y[cedi_three],y[cedi_five]];
+ bot y[cedi_five]=-d-o;
+ filldraw stroke z[cedi_one]e--z[cedi_two]e;  % stem
+ filldraw stroke z[cedi_three]e{right}...
+   z[cedi_four]e{down}...{left}z[cedi_five]e;  % hook
+else: pickup fine.nib; pos[cedi_one](vair,0);
+ top y[cedi_one]=-o-2;
+ pos[cedi_two](.5[vair,stem],0);
+ bot y[cedi_two]=-d-o; x[cedi_two] =
+    x[cedi_one]-1.25u if monospace: /expansion_factor fi;
+ filldraw stroke z[cedi_one]e--z[cedi_two]e; fi  % diagonal
+enddef;
+%
+%
+vardef lowercase_breve(expr x_center,y_move,breve_one,breve_two,breve_three)=
+pickup crisp.nib; pos[breve_one](vair,-180);
+pos[breve_three](vair,0);
+top y[breve_one]=top y[breve_three]=h;
+x[breve_two]=x_center;
+lft x[breve_one]r=hround(x[breve_two]-2.5u
+   if monospace: /expansion_factor fi -0.5vair);
+rt x[breve_three]r=hround(x[breve_two]+2.5u
+   if monospace: /expansion_factor fi +0.5vair);
+numeric mid_thickness; mid_thickness=vround 1/3[vair,stem];
+pos[breve_two](mid_thickness,-90);
+bot y[breve_two]r=
+   vround max(x_height+o+tiny,1/3[x_height,h]+o-.5mid_thickness);
+filldraw stroke z[breve_one]e{down}...
+         z[breve_two]e{right}...{up}z[breve_three]e;  % stroke
+enddef;
+%
+vardef uppercase_breve (expr x_center,y_move,breve_one,
+   breve_two,breve_three)=
+pickup crisp.nib; pos[breve_one](vair,-180);
+pos[breve_three](vair,0);
+top y[breve_one]=top y[breve_three]=cap_height + acc_height;
+x[breve_two]=hround x_center;
+x[breve_two]-rt x[breve_one]l
+  =(lft x[breve_three]l)-x[breve_two]
+  =hround (2.5u if monospace: /expansion_factor fi -.5vair);
+numeric mid_thickness;
+mid_thickness=vround min(1/3[vair,stem],.5acc_height);
+pos[breve_two](mid_thickness,-90);
+% |accent_gap| is defined by the acute accent, it is known when needed
+bot y[breve_two]r=cap_height + if hefty: .5 fi accent_gap;
+filldraw stroke z[breve_one]e{down}...z[breve_two]e{right}...
+     {up}z[breve_three]e;  % stroke
+enddef;
+
+%
+vardef lowercase_ogonek(expr x_move,y_move,ogon_one,ogon_two,ogon_three) =
+x[ogon_one]r=x_move;
+ pickup crisp.nib;
+ pos[ogon_one](
+ if currentbreadth<0.9vair: 0.9vair else: currentbreadth+eps fi,-60);
+ pos[ogon_two](stem,0);
+ pos[ogon_three](vair,145);
+ x[ogon_two]=x[ogon_one]-2.5u if monospace: / expansion_factor fi ;
+ x[ogon_three]=x[ogon_one]+0.5u if monospace: / expansion_factor fi ;
+ bot y[ogon_one]r = y_move;
+ bot y[ogon_three]=0.5(-d-o)+y_move;  %0.4
+ bot y[ogon_two]=0.5(-d-o)+y_move;
+ filldraw stroke z[ogon_one]e{dir 225}...
+   z[ogon_two]e{dir -110}...{dir 60}z[ogon_three]e;  % hook
+enddef;
+
+% ---------------------------------------------------------------------------
+%                   MACROS FOR PROCESSING CHARS TWICE:
+%             PASS 1: COLLECTING TFM (SHARP) INFORMATION
+%             PASS 2: CREATING THE GLYPH
+% ---------------------------------------------------------------------------
+%%% define_pixels prepare_pen
+%%% beginchar beginchar_twice
+%%% endfor repeat_once
+
+% A special provision is necessary if one uses |modes.mf|:
+% This file assumes, that one never wants to use more than one mode
+% in the same font, but we will do so.
+%
+% Make sure, that you never input |modes.mf| after this file, otherwise
+% unpleasant surprises wait for you.
+
+def clear_mode_guards =
+  forsuffixes $=proofing,fontmaking,tracingtitles,pixels_per_inch,
+    blacker,fillin,o_correction,blacker_min,aspect_ratio:
+      numeric mode_guard_$;
+  endfor
+enddef;
+
+let ori_draw:=draw;
+let ori_fill:=fill;
+let ori_filldraw:=filldraw;
+let ori_erase:=erase;
+let ori_penstroke:=penstroke;
+let ori_special:=special;
+let ori_numspecial:=numspecial;
+
+mode_def canonical_sharp_mode = % nearly |proof| mode
+ proofing:=0;                   % no, we aren't making full proofs
+ fontmaking:=0;                 % yes, we are making a font
+ tracingtitles:=0;              % don't show titles online
+ pixels_per_inch:=2601.72;      % that's 36 pixels per pt
+ blacker:=0;                    % no additional blackness
+ blacker_min:=0;                % no write_white provision
+ fillin:=0;                     % no compensation for fillin
+ o_correction:=1;               % no reduction in overshoot
+enddef;
+
+def beginchar_twice(expr c,w_sharp,h_sharp,d_sharp) =
+ begingroup
+  if string mode: string prev_mode; prev_mode:=mode;
+  else: numeric prev_mode; prev_mode:=mode;
+  fi
+  for sharp_calc_:=1,whatever:
+%  |sharp_calc| is checked in |corrital|, |mark_height|, and |put_accent|
+   sharp_calc:=sharp_calc_;
+   if known sharp_calc: % carry out ``sharp'' calculations
+    begingroup save mode,mag; mode:=canonical_sharp_mode; 
+    clear_mode_guards; mode_setup; font_setup; pseudo_setup;
+    if is_small_cap: % excerpt from |font_setup|
+      define_pixels(higher.u,higher.bar_height);
+      define_corrected_pixels(higher.o);
+      define_whole_pixels(higher.letter_fit);
+      define_whole_vertical_pixels(higher.x_height,higher.body_height);
+      define_whole_blacker_pixels(higher.stem);
+    fi
+    endgroup;
+    def draw expr e=enddef;
+    let fill:=draw;
+    let filldraw:=draw;
+    let erase:=killtext; % |killtext| was absent from earlier versions of plain
+    let penstroke:=killtext;
+    def special primary t = enddef;
+    def numspecial primary t = enddef;
+    charwd:=w_sharp; charht:=h_sharp; chardp:=d_sharp; charic:=0;
+   else: % carry out ``discrete'' calculations
+    mode:=prev_mode; 
+    clear_mode_guards; mode_setup; font_setup; pseudo_setup;
+    if is_small_cap: % excerpt from |font_setup|
+      define_pixels(higher.u,higher.bar_height);
+      define_corrected_pixels(higher.o);
+      define_whole_pixels(higher.letter_fit);
+      define_whole_vertical_pixels(higher.x_height,higher.body_height);
+      define_whole_blacker_pixels(higher.stem);
+    fi
+    let draw:=ori_draw;
+    let fill:=ori_fill;
+    let filldraw:=ori_filldraw;
+    let erase:=ori_erase;
+    let penstroke:=ori_penstroke;
+    let special:=ori_special;
+    let numspecial:=ori_numspecial;
+    charwd:=w_sharp;
+   fi
+   charcode:=if known c: byte c else: 0 fi;
+   w:=hround(w_sharp*hppp); h:=vround(h_sharp*hppp); d:=vround(d_sharp*hppp);
+   clearxy; clearit; clearpen; scantokens extra_beginchar;
+enddef;
+
+let repeat_once = endfor;
+
+% ---------------------------------------------------------------------------
+%
+%
+%
+% some extra font parameters
+%
+def font_cap_height expr x = fontdimen 8: x enddef;
+def font_asc_height expr x = fontdimen 9: x enddef;
+def font_acc_cap_height expr x = fontdimen 10: x enddef;
+def font_desc_depth expr x = fontdimen 11: x enddef;
+def font_max_height expr x = fontdimen 12: x enddef;
+def font_max_depth  expr x = fontdimen 13: x enddef;
+def font_digit_width expr x = fontdimen 14: x enddef;
+def font_cap_stem expr x = fontdimen 15: x enddef;
+def font_baselineskip  expr x = fontdimen 16: x enddef;
+
+
+
+%
+%      XXXXXXX       The following routines generate the parameter
+%      X     X       sets by extrapolation
+%      X     X
+%      X     X
+%      X     X
+%   XXXX     XXXX
+%    X         X
+%     X       X
+%      X     X
+%       X   X
+%        X X
+%         X
+%
+%
+%                     needed variables
+%
+
+vardef simple_gendef@#(text aa)(text t)=
+ string s[];
+ s1:="";
+ s2:=str @#;
+ index:=1;
+ forsuffixes $=t: ydata[index]:=$ if s1<>s2: *@# fi;
+                 index:=index+1;
+ endfor;
+ if numpoints>(index-1): errmessage "Missing parameter"; message str aa; fi;
+ if numpoints<(index-1): errmessage "Too many parameters"; message str aa; fi;
+ aa:=ydata[merke];
+ if gencheck: message str aa fi;
+enddef;
+
+vardef extended_gendef@#(text aa)(text t)=
+ string s[];
+ s1:="";
+ s2:=str @#;
+ index:=1;
+ forsuffixes $=t: ydata[index]:=$ if s1<>s2: *@# fi;
+                 index:=index+1;
+ endfor;
+ if numpoints>(index-1): errmessage "Missing parameter"; message str aa; fi;
+ if numpoints<(index-1): errmessage "Too many parameters"; message str aa; fi;
+ if gensize>basedata[numpoints]:
+   numeric hilf [];
+   hilf[1]:=(ydata[numpoints]-ydata[numpoints-1])/(basedata[numpoints]-basedata[numpoints-1]);
+   hilf[2]:=(ydata[numpoints]-ydata[numpoints-2])/(basedata[numpoints]-basedata[numpoints-2]);
+   hilf[3]:=ydata[numpoints]-hilf1*basedata[numpoints];
+   hilf[4]:=ydata[numpoints]-hilf2*basedata[numpoints];
+   spy:=(hilf[1]*gensize+hilf[3])/2+(hilf[2]*gensize+hilf[4])/2;
+   aa:=spy;
+ else:
+ for index = 1 upto numpoints-1:
+    interval[index]:=basedata[index+1]-basedata[index];
+ endfor;
+ for index=1 upto numpoints:
+    spline[1][index]:=ydata[index];
+ endfor;
+ for index=2 upto numpoints-1:
+    alpha[index]:=3*((spline[1][index+1]*interval[index-1])%
+                   -(spline[1][index]*(basedata[index+1]-basedata[index-1]))%
+                   +(spline[1][index-1]*interval[index]))%
+                   /(interval[index-1]*interval[index]);
+ endfor;
+ spl[1]:=0;
+ spmu[1]:=0;
+ spz[1]:=0;
+ for index=2 upto numpoints-1:
+    spl[index]:=2*(basedata[index+1]-basedata[index-1])%
+                 -interval[index-1]*spmu[index-1];
+    spmu[index]:=interval[index]/spl[index];
+    spz[index]:=(alpha[index]-interval[index-1]*spz[index-1])/spl[index];
+ endfor;
+ spline[3][numpoints]:=0;
+ for index=numpoints-1 downto 1:
+    spline[3][index]:=spz[index]-spmu[index]*spline[3][index+1];
+ endfor;
+ for index=numpoints -1 downto 1:
+    spline[2][index]:=(spline[1][index+1]-spline[1][index])/interval[index]%
+             -interval[index]*(spline[3][index+1]*spline[3][index])/3;
+    spline[4][index]:=(spline[3][index+1]-spline[3][index])/(3*interval[index]);
+ endfor;
+ location:=1;
+ for term=1 upto numpoints-1:
+    if gensize > basedata[term]: location:=term; fi
+ endfor;
+ spx:=gensize-basedata[location];
+ spy:=((spline[4][location]*spx+spline[3][location])*spx+spline[2][location])*spx+spline[1][location];
+ aa:=spy; fi;
+ if gencheck: message str aa fi;
+enddef;
+
+vardef basedef(text t)=
+ boolean basevalue; boolean gencheck;
+ numeric index; numeric ergbnis; numeric location; numeric term;
+ numeric numpoints; numeric spx; numeric spy;
+ numeric basedata[]; numeric interval[]; numeric alpha[];
+ numeric spl[]; numeric spmu[]; numeric spz[];
+ numeric ydata[]; numeric spline[][];
+ basevalue:=false; gencheck:=false;
+ index:=1;
+ forsuffixes $=t: basedata[index]:=$;
+                 if $=gensize: basevalue:=true; merke:=index; fi;
+                 index:=index+1;
+ endfor;
+ numpoints:=index-1;
+ if numpoints<3: errmessage "Not enough reference points"; fi
+ if basevalue: def gendef=simple_gendef enddef; else:
+               def gendef=extended_gendef enddef; fi
+enddef;
+
+def clear_extra_memory= % Release ressources hold by the extrapolation routine
+ numeric index; numeric ergbnis; numeric location; numeric term;
+ numeric numpoints; numeric spx; numeric spy;
+ numeric basedata[]; numeric interval[]; numeric alpha[];
+ numeric spl[]; numeric spmu[]; numeric spz[];
+ numeric ydata[]; numeric spline[][];
+ numeric hilf []; string s[];
+enddef;
+
+endinput;

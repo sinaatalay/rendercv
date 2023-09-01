@@ -1,0 +1,267 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+% Declare a function for the parser.
+%
+% #1 - the name of the function.
+% #2 - arity (or ... for variable arguments).
+% #3 - the code for the function.
+%
+% Use \pgfmathdeclarefunction* to force a redefinition if the function exists already.
+\def\pgfmathdeclarefunction{\pgfmath@ifnextchar*\pgfmathdeclarefunction@force\pgfmathdeclarefunction@check}
+\def\pgfmathdeclarefunction@check#1{%
+    \expandafter\ifx\csname pgfmath@function@#1\endcsname\relax\else%
+        \pgfmath@error{The function `#1' already exists}{}%
+    \fi%
+    \pgfmath@declarefunction{#1}%
+}
+\def\pgfmathdeclarefunction@force*{\pgfmath@declarefunction}%
+
+\def\pgfmathredeclarefunction#1#2{%
+    \expandafter\ifx\csname pgfmath@function@#1\endcsname\relax%
+        \pgfmath@error{The function `#1' does not exist}{}%
+    \else%
+    % was: \pgfmath@namedef{pgfmath#1@}{#2}% TT
+    \edef\pgf@marshal{\noexpand\pgfmathdeclarefunction*{#1}{\csname    pgfmath@operation@#1@arity\endcsname}}%
+    \pgf@marshal{#2}%
+    \fi%
+}
+
+\def\pgfmath@declarefunction#1#2{%
+    \pgfmath@namedef{pgfmath@function@#1}{#1}%
+    \pgfmath@namedef{pgfmath@operation@#1@type}{function}%
+    \pgfmath@namedef{pgfmath@operation@#1@arity}{#2}%
+    \pgfmath@namedef{pgfmath@operation@#1@infix}{#1}%
+    \pgfmath@namedef{pgfmath@operation@#1@precedence}{1000}%
+    \expandafter\ifx\csname pgfmath@operation@#1@arity\endcsname\pgfmath@dots%
+        \pgfmath@namedef{pgfmath@operation@#1@arity}{1}%
+    \else%
+        \ifnum\csname pgfmath@operation@#1@arity\endcsname>9\relax%
+                \pgfmath@namedef{pgfmath@operation@#1@arity}{1}%
+        \fi%
+    \fi%
+    \edef\pgfmath@marshal{%
+        \noexpand\pgfmath@@declarefunction%
+        {\expandafter\noexpand\csname pgfmath#1\endcsname}%
+        {\expandafter\noexpand\csname pgfmath#1@\endcsname}%
+        {\csname pgfmath@operation@#1@arity\endcsname}%
+    }%
+    \pgfkeysvalueof{/pgf/declare function/execute at begin function}%
+    \pgfmath@marshal%
+}
+
+% #1 - \pgfmath<name>.
+% #2 - \pgfmath<name>@.
+% #3 - arity.
+% #4 - code for function <name>.
+%
+\def\pgfmath@@declarefunction#1#2#3#4{% Function of arity 0 - 9.
+    \pgfkeysvalueof{/pgf/declare function/execute at end function}%
+    \ifcase#3\relax%
+        \def#1{#2}%
+        \def\pgfmath@@head{\def#2}%
+    \or
+        \def#1##1{\pgfmathparse{##1}\expandafter#2\expandafter{\pgfmathresult}}%
+        \def\pgfmath@@head{\def#2####1}%
+    \else%
+        \pgfmath@toks={}%
+        \pgfmathloop%
+        \ifnum\pgfmathcounter>#3\relax%
+        \else%
+            \expandafter\pgfmath@addto@toks\expandafter{\pgfmath@char@hash}%
+            \expandafter\pgfmath@addto@toks\expandafter{\pgfmathcounter}%
+        \repeatpgfmathloop%
+        \edef\pgfmath@head{\noexpand\def\noexpand#1\the\pgfmath@toks}%
+        \edef\pgfmath@@head{\noexpand\def\noexpand#2\the\pgfmath@toks}%
+        \pgfmath@toks={}%
+        \def\pgfmath@arguments{}%
+        \pgfmathloop%
+        \ifnum\pgfmathcounter>#3\relax%
+        \else%
+            \pgfmath@addto@toks{\pgfmathparse}%
+            \expandafter\expandafter\expandafter\pgfmath@addto@toks%
+                \expandafter\expandafter\expandafter{\expandafter\expandafter\expandafter%
+                    {\expandafter\pgfmath@char@hash\pgfmathcounter}}%
+            \pgfmath@addto@toks{\let}%
+            \expandafter\pgfmath@addto@toks\expandafter{%
+                \csname pgfmath@argument@\pgfmathcounter\endcsname=\pgfmathresult}%
+            \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter%
+                \pgfmath@arguments\expandafter\expandafter\expandafter{\expandafter%
+                    \pgfmath@arguments\expandafter{\csname pgfmath@argument@\pgfmathcounter\endcsname}}%
+        \repeatpgfmathloop%
+        \expandafter\pgfmath@addto@toks\expandafter{\expandafter#2\pgfmath@arguments}%
+        \edef\pgfmath@body{{\the\pgfmath@toks}}%
+        \expandafter\pgfmath@head\pgfmath@body%
+    \fi%
+    \pgfmath@@head{#4}%
+}
+
+\def\pgfmath@addto@toks#1{%
+    \edef\pgfmath@toks@expanded{\the\pgfmath@toks}%
+    \expandafter\pgfmath@toks\expandafter{\pgfmath@toks@expanded#1}}
+
+% Key for declaring local functions.
+%
+\pgfkeys{%
+    /pgf/declare function/.code={%
+        \pgfmath@local@functions#1@=@;%
+    },
+    /pgf/declare function/execute at begin function/.initial={},
+    /pgf/declare function/execute at end function/.initial={},
+    /pgf/declare function/ignore spaces/.is choice,
+    /pgf/declare function/ignore spaces/.default=true,
+    /pgf/declare function/ignore spaces/true/.style={%
+        /pgf/declare function/execute at begin function={%
+            \begingroup
+            \catcode`\^^I=9\relax
+            \catcode`\ =9\relax
+            \catcode`\~=10\relax
+            \endlinechar=`\ \relax
+        },
+        /pgf/declare function/execute at end function={%
+            \endgroup
+        },
+    },
+    /pgf/declare function/ignore spaces/false/.style={%
+        /pgf/declare function/execute at begin function={},
+        /pgf/declare function/execute at end function={},
+    },
+}
+
+\def\pgfmath@local@gobbleone#1{}
+\def\pgfmath@local@at{@}%
+
+\def\pgfmath@local@functions{%
+    \pgfutil@ifnextchar x{\pgfmath@local@@functions}{\pgfmath@local@@functions}%
+}
+
+\def\pgfmath@local@@functions#1=#2;{%
+    \def\pgfmath@local@temp{#1}%
+    \ifx\pgfmath@local@temp\pgfmath@local@at%
+        \let\pgfmath@local@next=\relax%
+    \else%
+        \pgfmath@local@function#1=#2;%
+        \let\pgfmath@local@next=\pgfmath@local@functions%
+    \fi%
+    \pgfmath@local@next%
+}
+
+\def\pgfmath@local@function{%
+    \let\pgfmath@local@name=\pgfutil@empty%
+    \let\pgfmath@local@args=\pgfutil@empty%
+    \let\pgfmath@local@body=\pgfutil@empty%
+    \pgfmath@local@@function}
+
+\def\pgfmath@local@@function#1{%
+    \if#1=%
+        \let\pgfmath@local@next=\pgfmath@local@function@body%
+    \else%
+        \if#1(%
+            \let\pgfmath@local@next=\pgfmath@local@function@args%
+        \else%
+            \expandafter\def\expandafter\pgfmath@local@name\expandafter{\pgfmath@local@name#1}%
+            \let\pgfmath@local@next=\pgfmath@local@@function%
+        \fi%
+    \fi%
+    \pgfmath@local@next%
+}
+
+\def\pgfmath@local@function@args#1){%
+    \def\pgfmath@local@args{#1}%
+    \pgfmath@local@@function}
+
+\def\pgfmath@local@function@body#1;{%
+    \def\pgfmath@local@body{#1}%
+    \begingroup%
+        \c@pgf@counta=0\relax%
+        \ifx\pgfmath@local@args\pgfmath@empty%
+            \expandafter\pgfmath@toks\expandafter=\expandafter{\pgfmath@local@body}%
+        \else%
+            \pgfmath@toks={}%
+            \expandafter\pgfmath@local@function@@body\pgfmath@local@args,,%
+        \fi%
+        \xdef\pgfmath@local@temp{%
+            \noexpand\pgfmathnotifynewdeclarefunction{\pgfmath@local@name}{\the\c@pgf@counta}%
+                {\the\pgfmath@toks}%
+        }%
+    \endgroup%
+    \pgfmath@local@temp%
+}
+
+% #1: the name
+% #2: the number of arguments <n>
+% #3: a math expression containing '#1', '#2', ... ,'#'<n>
+% This callback is overwritten by pgflibraryluamath.
+\def\pgfmathnotifynewdeclarefunction#1#2#3{%
+    \pgfmathdeclarefunction{#1}{#2}{\pgfmathparse{#3}}%
+}%
+
+\def\pgfmath@local@function@@body#1,{%
+    \def\pgfmath@local@test{#1}%
+    \ifx\pgfmath@local@test\pgfutil@empty%
+        \let\pgfmath@local@next=\relax%
+    \else%
+        \edef\pgfmath@local@var@string{@\expandafter\pgfmath@local@gobbleone\string#1}%
+        \advance\c@pgf@counta by1\relax%
+        \expandafter\expandafter\expandafter\pgfmath@toks\expandafter\expandafter\expandafter=%
+            \expandafter\expandafter\expandafter{\expandafter\pgfmath@char@hash\the\c@pgf@counta}%
+        \edef#1{\the\pgfmath@toks}%
+        \pgfmath@toks={}%
+        \expandafter\pgfmath@local@function@@@body\pgfmath@local@body @%
+        \edef\pgfmath@local@body{\the\pgfmath@toks}%
+        \let\pgfmath@local@next=\pgfmath@local@function@@body%
+    \fi%
+    \pgfmath@local@next%
+}
+
+\def\pgfmath@local@function@@@body{%
+    \pgfutil@ifnextchar\bgroup{\pgfmath@local@function@@@body@bgroup}%
+        {\pgfmath@local@function@@@body@nobgroup}}%
+
+\def\pgfmath@local@function@@@body@bgroup#1{%
+    \begingroup%
+        \pgfmath@toks={}%
+        \pgfmath@local@function@@@body#1 @%
+        \xdef\pgfmath@local@temp{{\the\pgfmath@toks}}%
+    \endgroup%
+    \expandafter\pgfmath@addto@toks\expandafter{\pgfmath@local@temp}%
+    \pgfmath@local@function@@@body%
+}
+
+\def\pgfmath@local@function@@@body@nobgroup#1{%
+    \ifx#1@%
+        \let\pgfmath@local@next=\relax%
+    \else%
+        \let\pgfmath@local@next=\pgfmath@local@function@@@body%
+        \edef\pgfmath@local@var@@string{@\expandafter\pgfmath@local@gobbleone\string#1}%
+        \ifx\pgfmath@local@var@@string\pgfmath@local@var@string%
+            \expandafter\pgfmath@addto@toks\expandafter{#1}%
+        \else%
+            \edef\pgfmath@local@temp{\the\pgfmath@toks}%
+            \pgfmath@toks={#1}%
+            \edef\pgfmath@local@@temp{\the\pgfmath@toks}%
+            \expandafter\pgfmath@toks\expandafter=\expandafter{\pgfmath@local@temp}%
+            \expandafter\pgfmath@addto@toks\expandafter{\pgfmath@local@@temp}%
+        \fi%
+    \fi%
+    \pgfmath@local@next%
+}
+
+% Allows to define 'x' as some \TeX command '#2'.
+\def\pgfmathdeclarepseudoconstant#1#2{%
+    \pgfmathdeclarefunction*{#1}{0}{#2}%
+}%
+% Redefines a pseudo constant '#1'.
+\def\pgfmathredeclarepseudoconstant#1#2{%
+    \pgfmathredeclarefunction{#1}{#2}%
+}%
+
+% Local Variables:
+% tab-width: 2
+% End:

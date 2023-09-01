@@ -1,0 +1,118 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarypositioning.code.tex}
+
+
+\tikzset{above/.code=\tikz@lib@place@handle@{#1}{south}{0}{1}{north}{1}}%
+\tikzset{above left/.code=\tikz@lib@place@handle@{#1}{south east}{-1}{1}{north west}{0.707106781}}%
+\tikzset{above right/.code=\tikz@lib@place@handle@{#1}{south west}{1}{1}{north east}{0.707106781}}%
+\tikzset{base left/.code =\tikz@lib@place@handle@{#1}{base east}{-1}{0}{base west}{1}}%
+\tikzset{base right/.code=\tikz@lib@place@handle@{#1}{base west}{1}{0}{base east}{1}}%
+\tikzset{below/.code=\tikz@lib@place@handle@{#1}{north}{0}{-1}{south}{1}}%
+\tikzset{below left/.code=\tikz@lib@place@handle@{#1}{north east}{-1}{-1}{south west}{0.707106781}}%
+\tikzset{below right/.code=\tikz@lib@place@handle@{#1}{north west}{1}{-1}{south east}{0.707106781}}%
+\tikzset{left/.code =\tikz@lib@place@handle@{#1}{east}{-1}{0}{west}{1}}%
+\tikzset{mid left/.code =\tikz@lib@place@handle@{#1}{mid east}{-1}{0}{mid west}{1}}%
+\tikzset{mid right/.code=\tikz@lib@place@handle@{#1}{mid west}{1}{0}{mid east}{1}}%
+\tikzset{right/.code=\tikz@lib@place@handle@{#1}{west}{1}{0}{east}{1}}%
+
+\newif\iftikz@lib@ignore@size
+
+% Hook into resets:
+\pgfutil@g@addto@macro\tikz@node@reset@hook{\tikz@addtransform{\tikz@lib@pos@call}\let\tikz@lib@pos@call=\relax}%
+
+\tikzset{on grid/.is if=tikz@lib@ignore@size}%
+
+\tikzset{node distance=1cm and 1cm}%
+
+\def\tikz@lib@place@handle@#1#2#3#4#5#6{%
+  \def\tikz@anchor{#2}%
+  \let\tikz@do@auto@anchor=\relax%
+  \edef\tikz@temp{#1}%
+  \def\tikz@lib@place@single@factor{#6}%
+  \expandafter\tikz@lib@place@handle@@\expandafter{\tikz@temp}{#3}{#4}{#5}%
+}%
+\def\tikz@lib@place@handle@@#1#2#3#4{%
+  \pgfutil@in@{of }{#1}%
+  \ifpgfutil@in@%
+    \tikz@lib@place@of#1\tikz@stop{#4}%
+  \else%
+    \edef\tikz@lib@place@nums{#1}%
+  \fi%
+  \ifx\tikz@lib@place@nums\pgfutil@empty%
+    % Ok, nothing to do, we have set the anchor and we are happy...
+  \else%
+    \expandafter\tikz@lib@place@parse@nums\expandafter{\tikz@lib@place@nums}%
+    \pgf@x=#2\pgf@x%
+    \pgf@y=#3\pgf@y%
+    \edef\tikz@lib@pos@call{\noexpand\pgftransformshift{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}%
+  \fi%
+}%
+
+\def\tikz@lib@place@parse@nums#1{%
+  \pgfutil@in@{and}{#1}%
+  \ifpgfutil@in@%
+    \tikz@lib@place@parse@nums@#1\tikz@stop%
+  \else%
+    \tikz@lib@place@parse@nums@#1and#1\tikz@stop%
+    \pgf@x=\tikz@lib@place@single@factor\pgf@x%
+    \pgf@y=\tikz@lib@place@single@factor\pgf@y%
+  \fi
+}%
+\def\tikz@lib@place@parse@nums@#1and#2\tikz@stop{%
+  \pgfmathparse{#2}%
+  \ifpgfmathunitsdeclared%
+    \pgf@xa=\pgfmathresult pt%
+    \pgf@ya=0pt%
+  \else%
+    \let\tikz@lib@temp=\pgfmathresult%
+    \pgf@process{\pgfpointxy{\tikz@lib@temp}{0}}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+  \fi%
+  \pgfmathparse{#1}%
+  \ifpgfmathunitsdeclared%
+    \advance\pgf@ya by\pgfmathresult pt%
+  \else%
+    \let\tikz@lib@temp=\pgfmathresult%
+    \pgf@process{\pgfpointxy{0}{\tikz@lib@temp}}%
+    \advance\pgf@xa by\pgf@x%
+    \advance\pgf@ya by\pgf@y%
+  \fi%
+  \pgf@x=\pgf@xa%
+  \pgf@y=\pgf@ya%
+}%
+
+\def\tikz@lib@place@of#1of #2\tikz@stop#3{%
+  \def\tikz@temp{#1}%
+  \ifx\tikz@temp\pgfutil@empty%
+    \tikz@lib@place@of@{\tikz@node@distance}{#2}{#3}%
+  \else%
+    \tikz@lib@place@of@{#1}{#2}{#3}%
+  \fi%
+}%
+\def\tikz@lib@place@of@#1#2#3{%
+  \tikz@scan@one@point\tikz@lib@place@remember(#2)%
+  \iftikz@shapeborder%
+    % Ok, this is relative to a border.
+    \iftikz@lib@ignore@size%
+      \edef\tikz@node@at{\noexpand\pgfpointanchor{\tikz@shapeborder@name}{center}}%
+      \def\tikz@anchor{center}%
+    \else%
+      \edef\tikz@node@at{\noexpand\pgfpointanchor{\tikz@shapeborder@name}{#3}}%
+    \fi%
+  \fi%
+  \edef\tikz@lib@place@nums{#1}%
+}%
+\def\tikz@lib@place@remember#1{\def\tikz@node@at{#1}}%
+
+
+
+\endinput

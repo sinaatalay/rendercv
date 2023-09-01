@@ -1,0 +1,697 @@
+% Copyright 2019 by Till Tantau
+% Copyright 2019 by Jonathan P. Spratte
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmoduleparser.code.tex}
+
+%
+% This file defines commands for defining a letter-by-letter parser
+% based on a dfa. The idea is inspired by the pgf module parser, but extends it
+% and eventually replaced it.
+%
+
+% options
+\long\def\pgfparserset#1%
+  {%
+    \pgfqkeys{/pgfparser}{#1}%
+  }
+\pgfparserset
+  {%
+    ,silent/.is if=\pgfparser@ifname{every parser silent}%
+    ,status/.is if=\pgfparser@ifname{pgfparser status}%
+  }
+
+% logic helpers
+\long\def\pgfparser@fi@Bn\fi#1{\fi}
+\long\def\pgfparser@fi@Bg\fi#1#2{\fi}
+\long\def\pgfparser@fi@BTb\fi#1#2#3{\fi#2}
+\long\def\pgfparser@fi@BTc\fi#1#2#3{\fi#3}
+
+% opt arg parsing
+\long\def\pgfparserifmark#1%
+  {%
+    \ifx\pgfparser@mark#1%
+      \pgfparser@fi@BTb
+    \fi
+    \pgfutil@secondoftwo
+  }
+\pgfutil@protected\long\def\pgfparser@oarg@oarg#1%
+  {%
+    \pgfutil@ifnextchar[{\pgfparser@oarg@oarg@{#1}}{#1{\pgfparser@mark}}%
+  }
+\long\def\pgfparser@oarg@oarg@#1[#2]%
+  {%
+    #1{#2}%
+  }
+\pgfutil@protected\long\def\pgfparser@oarg@Oarg#1#2%
+  {%
+    \pgfutil@ifnextchar[{\pgfparser@oarg@oarg@{#2}}{#2{#1}}%
+  }
+\pgfutil@protected\long\def\pgfparser@oarg@darg#1#2#3%
+  {%
+    \long\def\pgfparser@oarg@darg@##1#1##2#2{##1{##2}}%
+    \pgfutil@ifnextchar#1{\pgfparser@oarg@darg@{#3}}{#3{\pgfparser@mark}}%
+  }
+\pgfutil@protected\long\def\pgfparser@oarg@Darg#1#2#3#4%
+  {%
+    \long\def\pgfparser@oarg@darg@##1#1##2#2{##1{##2}}%
+    \pgfutil@ifnextchar#1{\pgfparser@oarg@darg@{#4}}{#4{#3}}%
+  }
+\pgfutil@protected\long\def\pgfparser@oarg@targ@#1%
+  {%
+    \def\pgfparser@oarg@targ@next{#1}%
+    \afterassignment\pgfparser@oarg@targ@next
+    \let\pgfparser@ignored@token=%
+  }
+\pgfutil@protected\long\def\pgfparser@oarg@targ#1#2%
+  {%
+    \pgfutil@ifnextchar#1%
+      {\pgfparser@oarg@targ@{#2{\pgfparser@mark}}}{#2{\pgfparser@stop}}%
+  }
+
+% status messages
+\pgfutil@protected\def\pgfparser@msg#1%
+  {%
+    \immediate\write0{(pgfparser) #1}%
+  }
+\pgfutil@protected\def\pgfparser@status@start#1%
+  {%
+    \pgfparser@if{pgfparser status}{\pgfparser@msg{parser '#1' started}}{}%
+  }
+\pgfutil@protected\def\pgfparser@status@state#1%
+  {%
+    \pgfparser@if{pgfparser status}
+      {\pgfparser@msg{|= switched to state '#1'}}
+      {}%
+  }
+\pgfutil@protected\def\pgfparser@status@rule
+  {%
+    \pgfparser@if{pgfparser status}
+      {\pgfparser@msg{| \space|= rule '\meaning\pgfparsertoken' executed}}
+      {}%
+  }
+\pgfutil@protected\def\pgfparser@status@rule@all
+  {%
+    \pgfparser@if{pgfparser status}
+      {%
+        \pgfparser@msg
+          {| \space|= (all) rule '\meaning\pgfparsertoken' executed}%
+      }
+      {}%
+  }
+\pgfutil@protected\def\pgfparser@status@rule@undefined
+  {%
+    \pgfparser@if{pgfparser status}
+      {%
+        \pgfparser@msg
+          {| \space|= unknown for '\meaning\pgfparsertoken' executed}%
+      }
+      {}%
+  }
+\pgfutil@protected\def\pgfparser@status@rule@undefined@all
+  {%
+    \pgfparser@if{pgfparser status}
+      {%
+        \pgfparser@msg
+          {| \space|= (all) unknown for '\meaning\pgfparsertoken' executed}%
+      }
+      {}%
+  }
+
+% macros for string comparison
+\begingroup
+\lccode`\P=`\P   \lccode`\G=`\G   \lccode`\F=`\F
+\lccode`\:=`\X   \lccode`\;=`\r   \lccode`\A=`\-
+\lowercase
+  {%
+    \endgroup
+    \def\pgfparser@mark{APGFparse;:mark-}%
+    \def\pgfparser@stop{APGFparse;:stop-}%
+  }%
+\def\pgfparser@final{final}
+\def\pgfparser@noarg{noarg}
+\def\pgfparser@blankspace{blank space}
+
+% counters
+\newcount\pgfparserdef@arg@count
+
+% shortcuts for special names
+\def\pgfparser@name#1%
+  {%
+    pgfparser #1%
+  }
+\def\pgfparser@rule#1%
+  {%
+    \pgfparser@current\space #1\space \meaning\pgfparsertoken
+  }
+\def\pgfparser@type#1%
+  {%
+    \pgfparser@rule{#1} type%
+  }
+\def\pgfparser@code#1%
+  {%
+    \pgfparser@rule{#1} code%
+  }
+\def\pgfparser@undefined#1%
+  {%
+    \pgfparser@current\space #1\space unknown%
+  }
+\def\pgfparser@ifname#1%
+  {%
+    pgfparserconditional #1%
+  }
+
+% conditionals
+\def\pgfparser@if#1%
+  {%
+    \pgfutil@ifundefined{if\pgfparser@ifname{#1}}
+      {%
+        \pgferror{Undefined conditional '#1'. Falling back to false}%
+        \iffalse
+      }
+      {\csname if\pgfparser@ifname{#1}\endcsname}%
+      \pgfparser@fi@BTb
+    \fi
+    \pgfutil@secondoftwo
+  }
+\def\pgfparser@newif#1%
+  {%
+    \csname newif\expandafter\endcsname
+    \csname if\pgfparser@ifname{#1}\endcsname
+  }
+\pgfparser@newif{every parser silent}
+\pgfparser@newif{pgfparserdef abort}
+\pgfparser@newif{pgfparser status}
+
+% pgfparserdef
+\pgfutil@protected\def\pgfparserdef#1#2%
+  {%
+    \def\pgfparserdef@twoargs{{#1}{#2}}%
+    \pgfparserdef@a
+  }
+\pgfutil@protected\def\pgfparserdef@a
+  {%
+    \futurelet\pgfparserdef@arg\pgfparserdef@b
+  }
+\def\pgfparserdef@b
+  {%
+    \ifx\pgfparserdef@arg\pgfutil@sptoken
+      % will also gobble the \pgfparserdef@c after \fi
+      \pgfparserdef@gobble@space
+    \fi
+    \pgfparserdef@c
+  }
+\pgfutil@protected\def\pgfparserdef@gobble@space\fi#1%
+  {%
+    \fi
+    \afterassignment\pgfparserdef@a
+    \let\pgfparser@ignored@token= % space after = to get spaces, too
+  }
+\pgfutil@protected\def\pgfparserdef@c#1%
+  {%
+    \ifx\pgfparserdef@arg\bgroup
+      \pgfparser@fi@BTb
+    \fi
+    \pgfutil@secondoftwo
+    {%
+      \def\pgfparserdef@arg{#1}%
+      \ifx\pgfparser@blankspace\pgfparserdef@arg
+        \pgfparser@fi@BTb
+      \fi
+      \pgfutil@secondoftwo
+      {\expandafter\pgfparserdef@d\pgfparserdef@twoargs{blank space \space}}
+      {\expandafter\pgfparserdef@d\pgfparserdef@twoargs{#1}}%
+    }
+    {%
+      \expandafter\pgfparserdef@d\pgfparserdef@twoargs
+        {\meaning\pgfparserdef@arg}%
+    }%
+  }
+\long\def\pgfparserdef@d#1#2#3%
+  {%
+    \pgfparser@oarg@Oarg{}{\pgfparserdef@e{#1}{#2}{#3}}%
+  }
+\pgfutil@protected\long\def\pgfparserdef@e#1#2#3#4#5%
+  {%
+    \pgfparser@initiate@parser{#1}%
+    \csname\pgfparser@ifname{pgfparserdef abort}false\endcsname
+    % check how many arguments are used, also parses whether the argument string
+    % is valid
+    \pgfparserdef@arg@count=0
+    \pgfparserdef@argcount#4\pgfparser@mark
+    \ifnum\pgfparserdef@arg@count>9
+      \pgferror
+        {%
+          Too many arguments for parser rule. A maximum of 9 parameters is
+          supported.%
+        }%
+      \csname\pgfparser@ifname{pgfparserdef abort}true\endcsname
+    \fi
+    % define what the code does
+    \pgfparser@if{pgfparserdef abort}{}
+      {%
+        % use a macro as flag that there is a rule for the specified state and
+        % hold information how to parse it
+        \ifnum\pgfparserdef@arg@count=0
+          \pgfutil@namedef{\pgfparser@name{#1} #2 #3 type}{noarg}%
+          \pgfutil@namedef{\pgfparser@name{#1} #2 #3 code}%
+            {#5\pgfparser@getnexttoken}%
+        \else
+          \pgfutil@namedef{\pgfparser@name{#1} #2 #3 type}{#4}%
+          \expandafter\pgfparserdef@argstring@def\the\pgfparserdef@arg@count
+          \pgfutil@namedef{\pgfparser@name{#1} #2 #3 code\expandafter}%
+            \pgfparserdef@argstring##1##2##3##4##5##6##7##8##9%
+            {#5\pgfparser@getnexttoken}%
+        \fi
+      }%
+  }
+\def\pgfparserdef@argstring@def#1%
+  {%
+    \def\pgfparserdef@argstring##1#1##2##{##1#1}%
+  }
+\def\pgfparserdef@argcount#1%
+  {%
+    \ifx\pgfparser@mark#1%
+      \pgfparser@fi@Bg
+    \fi
+    \pgfutil@firstofone
+    {%
+      \pgfutil@IfUndefined{pgfparserdef@argcount@#1}
+        {%
+          \pgferror{Unknown argument type '#1'. Aborting rule definition}%
+          \pgfparserdef@argcount@abort
+        }
+        {\csname pgfparserdef@argcount@#1\endcsname}%
+    }%
+  }
+\pgfutil@protected\long\def\pgfparserdef@argcount@abort#1\pgfparser@mark
+  {%
+    \csname\pgfparser@ifname{pgfparserdef abort}true\endcsname
+  }
+\def\pgfparserdef@argcount@m
+  {%
+    \advance\pgfparserdef@arg@count1
+    \pgfparserdef@argcount
+  }
+\let\pgfparserdef@argcount@o\pgfparserdef@argcount@m
+\def\pgfparserdef@argcount@O#1%
+  {%
+    \advance\pgfparserdef@arg@count1
+    \pgfparserdef@argcount
+  }
+\let\pgfparserdef@argcount@r\pgfparserdef@argcount@O
+\let\pgfparserdef@argcount@t\pgfparserdef@argcount@O
+\def\pgfparserdef@argcount@d#1#2%
+  {%
+    \advance\pgfparserdef@arg@count1
+    \pgfparserdef@argcount
+  }
+\def\pgfparserdef@argcount@D#1#2#3%
+  {%
+    \advance\pgfparserdef@arg@count1
+    \pgfparserdef@argcount
+  }
+
+\pgfutil@protected\def\pgfparser@initiate@parser#1%
+  {%
+    % if that is the first rule for the parser
+    \pgfutil@IfUndefined{if\pgfparser@ifname{#1 silent}}%
+      {%
+        % define space to be a no-op
+        \pgfutil@namedef
+          {\pgfparser@name{#1} all blank space \space\space type}{noarg}%
+        \pgfutil@namedef
+          {\pgfparser@name{#1} all blank space \space\space code}%
+          {\pgfparser@getnexttoken}%
+        % define a new conditional whether the parser silently ignores unknown
+        % tokens
+        \pgfparser@newif{#1 silent}%
+        \pgfparserset
+          {%
+            #1/silent/.is if=\pgfparser@ifname{#1 silent}%
+          }%
+      }
+      {}%
+  }
+
+% pgfparserlet
+\pgfutil@protected\def\pgfparserlet#1#2%
+  {%
+    \def\pgfparserlet@parser@a{#1}%
+    \def\pgfparserlet@state@a{#2}%
+    \pgfparserlet@a
+  }
+\pgfutil@protected\def\pgfparserlet@a
+  {%
+    \futurelet\pgfparserlet@arga\pgfparserlet@b
+  }
+\def\pgfparserlet@b
+  {%
+    \ifx\pgfparserlet@arga\pgfutil@sptoken
+      % will also gobble the \pgfparserlet@c after \fi
+      \pgfparserlet@gobble@space\pgfparserlet@a
+    \fi
+    \pgfparserlet@c
+  }
+\pgfutil@protected\def\pgfparserlet@gobble@space#1\fi#2%
+  {%
+    \fi
+    \afterassignment#1%
+    \let\pgfparser@ignored@token= % space after = to get spaces, too
+  }
+\pgfutil@protected\def\pgfparserlet@c#1%
+  {%
+    \ifx\pgfparserlet@arga\bgroup
+      \pgfparser@fi@BTb
+    \fi
+    \pgfutil@secondoftwo
+    {%
+      \def\pgfparserlet@arga{#1}%
+      \ifx\pgfparser@blankspace\pgfparserlet@arga
+        \def\pgfparserlet@arga{blank space \space}%
+      \fi
+    }
+    {\edef\pgfparserlet@arga{\meaning\pgfparserlet@arga}}%
+    \pgfparser@oarg@oarg\pgfparserlet@d
+  }
+\pgfutil@protected\def\pgfparserlet@d#1%
+  {%
+    \pgfparserifmark{#1}
+      {%
+        \let\pgfparserlet@parser@b\pgfparserlet@parser@a
+        \let\pgfparserlet@state@b\pgfparserlet@state@a
+        \pgfparserlet@f
+      }
+      {\pgfparser@oarg@oarg{\pgfparserlet@e{#1}}}%
+  }
+\pgfutil@protected\def\pgfparserlet@e#1#2%
+  {%
+    \pgfparserifmark{#2}
+      {%
+        \let\pgfparserlet@parser@b\pgfparserlet@parser@a
+        \def\pgfparserlet@state@b{#1}%
+      }
+      {%
+        \def\pgfparserlet@parser@b{#1}%
+        \def\pgfparserlet@state@b{#2}%
+      }
+    \pgfparserlet@f
+  }
+\pgfutil@protected\def\pgfparserlet@f
+  {%
+    \futurelet\pgfparserlet@argb\pgfparserlet@g
+  }
+\def\pgfparserlet@g
+  {%
+    \ifx\pgfparserlet@argb\pgfutil@sptoken
+      % will also gobble the \pgfparserlet@h after \fi
+      \pgfparserlet@gobble@space\pgfparserlet@f
+    \fi
+    \pgfparserlet@h
+  }
+\pgfutil@protected\def\pgfparserlet@h#1%
+  {%
+    \ifx\pgfparserlet@argb\bgroup
+      \pgfparser@fi@BTb
+    \fi
+    \pgfutil@secondoftwo
+    {%
+      \def\pgfparserlet@argb{#1}%
+      \ifx\pgfparser@blankspace\pgfparserlet@argb
+        \def\pgfparserlet@argb{blank space \space}%
+      \fi
+    }
+    {\edef\pgfparserlet@argb{\meaning\pgfparserlet@argb}}%
+    \pgfparserlet@i
+      \pgfparserlet@parser@a
+      \pgfparserlet@state@a
+      \pgfparserlet@arga
+      \pgfparserlet@parser@b
+      \pgfparserlet@state@b
+      \pgfparserlet@argb
+  }
+\def\pgfparserlet@i#1#2#3#4#5#6%
+  {%
+    \pgfutil@IfUndefined{\pgfparser@name{#4} #5 #6 type}
+      {%
+        \pgferror
+          {%
+            There is no rule defined for parser '#4' in state '#5' for '#6'.
+            Aborting \string\pgfparserlet
+          }%
+      }
+      {%
+        \pgfparser@initiate@parser{#1}%
+        \pgfparserlet@let{#1}{#2}{#3}{#4}{#5}{#6}{type}%
+        \pgfparserlet@let{#1}{#2}{#3}{#4}{#5}{#6}{code}%
+      }%
+  }
+\def\pgfparserlet@let#1#2#3#4#5#6#7%
+  {%
+    \expandafter\let\csname\pgfparser@name{#1} #2 #3 #7\expandafter\endcsname
+                    \csname\pgfparser@name{#4} #5 #6 #7\endcsname
+  }
+
+\pgfutil@protected\long\def\pgfparserdefunknown#1#2#3%
+  {%
+    \pgfparser@initiate@parser{#1}%
+    \pgfutil@namedef{\pgfparser@name{#1} #2 unknown}{#3}%
+  }
+\pgfutil@protected\long\def\pgfparserdeffinal#1#2%
+  {%
+    \pgfutil@namedef{\pgfparser@name{#1} final action}{#2}%
+  }
+\pgfutil@protected\def\pgfparserswitch#1%
+  {%
+    \pgfparser@status@state{#1}%
+    \def\pgfparserstate{#1}%
+  }
+\pgfutil@protected\def\pgfparserparse#1%
+  {%
+    \pgfutil@IfUndefined{if\pgfparser@ifname{#1 silent}}
+      {\pgferror{No parser named '#1' defined}}
+      {%
+        \edef\pgfparser@current{\pgfparser@name{#1}}%
+        \def\pgfparser@usersname{#1}%
+        \pgfparser@status@start{#1}%
+        \pgfparserswitch{initial}%
+        \pgfparser@getnexttoken
+      }%
+  }
+% get next token
+\pgfutil@protected\def\pgfparser@getnexttoken
+  {%
+    \ifx\pgfparserstate\pgfparser@final
+      \pgfparser@fi@BTb
+    \fi
+    \pgfutil@secondoftwo
+    {%
+      \pgfutil@IfUndefined{\pgfparser@current\space final action}
+        {}
+        {\csname \pgfparser@current\space final action\endcsname}%
+    }
+    {\futurelet\pgfparsertoken\pgfparser@getnexttoken@a}%
+  }
+\pgfutil@protected\def\pgfparser@getnexttoken@a
+  {%
+    % check the problematic categories based on the meaning of the token
+    \edef\pgfparser@tokencategory{\pgfparser@extractmeaning\pgfparsertoken}%
+    \pgfparser@getnexttoken@ifcategory\pgfparser@category@i\bgroup
+      {%
+        \pgfparser@getnexttoken@ifcategory\pgfparser@category@ii\egroup
+          {%
+            \pgfparser@getnexttoken@ifcategory\pgfparser@category@x{ }%
+              {%
+                \pgfparser@getnexttoken@ifcategory\pgfparser@category@vi{####}%
+                  {\pgfparser@getnexttoken@defchar}%
+              }%
+          }%
+      }%
+  }
+\begingroup
+\def\pgfparser@extractmeaning#1%
+  {%
+    \endgroup
+    \def\pgfparser@extractmeaning##1%
+      {\expandafter\pgfparser@extractmeaning@\meaning##1#1#1\pgfparser@mark}%
+    \def\pgfparser@extractmeaning@##1#1##2#1##3\pgfparser@mark{##1#1##2}%
+  }
+\catcode`\ =12\pgfparser@extractmeaning{ } % ends the group
+\edef\pgfparser@category@i{\pgfparser@extractmeaning\bgroup}
+\edef\pgfparser@category@ii{\pgfparser@extractmeaning\egroup}
+\edef\pgfparser@category@vi{\pgfparser@extractmeaning#}
+\edef\pgfparser@category@x{\pgfparser@extractmeaning\pgfutil@sptoken}
+\pgfutil@protected\def\pgfparser@getnexttoken@ifcategory#1#2%
+  {%
+    \ifx\pgfparser@tokencategory#1%
+      \def\pgfparserletter{#2}%
+      \pgfparser@getnexttoken@gobble
+    \fi
+    \pgfutil@firstofone
+  }
+\pgfutil@protected\def\pgfparser@getnexttoken@gobble\fi#1#2%
+  {%
+    \fi
+    \afterassignment\pgfparser@getnexttoken@b
+    \let\pgfparser@ignored@token= % gobble should gobble a space
+  }
+\pgfutil@protected\long\def\pgfparser@getnexttoken@defchar#1%
+  {%
+    \def\pgfparserletter{#1}%
+    \pgfparser@getnexttoken@b
+  }
+\pgfutil@protected\def\pgfparser@getnexttoken@b
+  {%
+    \pgfutil@IfUndefined{\pgfparser@type{\pgfparserstate}}
+      {%
+        \pgfutil@IfUndefined{\pgfparser@type{all}}
+          {%
+            \pgfparser@if{every parser silent}{}
+              {%
+                \pgfparser@if{\pgfparser@usersname\space silent}{}
+                  {%
+                    \pgferror
+                      {%
+                        No rule for parser '\pgfparser@usersname' in state
+                        '\pgfparserstate' for '\meaning\pgfparsertoken'.
+                        Ignoring token%
+                      }%
+                  }%
+              }%
+            \pgfutil@IfUndefined{\pgfparser@undefined{\pgfparserstate}}
+              {%
+                \pgfutil@IfUndefined{\pgfparser@undefined{all}}
+                  {}
+                  {%
+                    \pgfparser@status@rule@undefined@all
+                    \csname\pgfparser@undefined{all}\endcsname
+                  }%
+              }
+              {%
+                \pgfparser@status@rule@undefined
+                \csname\pgfparser@undefined{\pgfparserstate}\endcsname
+              }%
+            \pgfparser@getnexttoken
+          }
+          {%
+            \pgfparser@status@rule@all
+            \pgfparser@handle{all}%
+          }%
+      }
+      {%
+        \pgfparser@status@rule
+        \pgfparser@handle{\pgfparserstate}%
+      }%
+  }
+
+% handle arguments
+\pgfutil@protected\def\pgfparser@handle#1%
+  {%
+    \expandafter\ifx\csname\pgfparser@type{#1}\endcsname\pgfparser@noarg
+      \pgfparser@fi@BTb
+    \fi
+    \pgfutil@secondoftwo
+    {\csname\pgfparser@code{#1}\endcsname}
+    {\pgfparser@handle@args{#1}}%
+  }
+\pgfutil@protected\def\pgfparser@handle@args#1%
+  {%
+    \def\pgfparser@stateorall{#1}%
+    \expandafter\expandafter\expandafter\pgfparser@handle@args@a
+    \csname\pgfparser@type{#1}\endcsname\pgfparser@mark\pgfparser@stop
+  }
+\def\pgfparser@handle@args@a
+  {%
+    \pgfparser@handle@args@b{}%
+  }
+\pgfutil@protected\long\def\pgfparser@handle@args@b#1#2#3\pgfparser@stop
+  {%
+    \pgfparserifmark{#2}
+      {\csname\pgfparser@code{\pgfparser@stateorall}\endcsname#1}
+      {%
+        \pgfutil@IfUndefined{pgfparser@handle@args@#2}
+          {\pgferror{Unknown argument type '#2'}}
+          {\csname pgfparser@handle@args@#2\endcsname{#1}{#3}}%
+      }%
+  }
+\long\def\pgfparser@handle@args@c#1#2%
+  {%
+    \pgfparserifmark{#2}
+      {\csname\pgfparser@code{\pgfparser@stateorall}\endcsname#1}
+      {\pgfparser@handle@args@b{#1}#2\pgfparser@stop}%
+  }
+\long\def\pgfparser@handle@args@m#1#2#3%
+  {%
+    \pgfparser@handle@args@c{#1{#3}}{#2}%
+  }
+\pgfutil@protected\long\def\pgfparser@handle@args@o#1#2%
+  {%
+    \pgfparser@oarg@oarg{\pgfparser@handle@args@m{#1}{#2}}%
+  }
+\long\def\pgfparser@handle@args@O#1#2%
+  {%
+    \pgfparser@handle@args@O@{#1}#2\pgfparser@stop
+  }
+\pgfutil@protected\long\def\pgfparser@handle@args@O@#1#2#3\pgfparser@stop
+  {%
+    \pgfparser@oarg@Oarg{#2}{\pgfparser@handle@args@m{#1}{#3}}%
+  }
+\long\def\pgfparser@handle@args@d#1#2%
+  {%
+    \pgfparser@handle@args@d@{#1}#2\pgfparser@stop
+  }
+\pgfutil@protected\long\def\pgfparser@handle@args@d@#1#2#3#4\pgfparser@stop
+  {%
+    \pgfparser@oarg@darg{#2}{#3}{\pgfparser@handle@args@m{#1}{#4}}%
+  }
+\long\def\pgfparser@handle@args@D#1#2%
+  {%
+    \pgfparser@handle@args@D@{#1}#2\pgfparser@stop
+  }
+\pgfutil@protected\long\def\pgfparser@handle@args@D@#1#2#3#4#5\pgfparser@stop
+  {%
+    \pgfparser@oarg@Darg{#2}{#3}{#4}{\pgfparser@handle@args@m{#1}{#5}}%
+  }
+\long\def\pgfparser@handle@args@r#1#2%
+  {%
+    \pgfparser@handle@args@r@a{#1}#2\pgfparser@stop
+  }
+\pgfutil@protected\long\def\pgfparser@handle@args@r@a#1#2#3\pgfparser@stop
+  {%
+    \def\pgfparser@handle@args@r@b##1#2%
+      {\pgfparser@handle@args@c{#1{##1}}{#3}}%
+    \pgfparser@handle@args@r@b
+  }
+\long\def\pgfparser@handle@args@t#1#2%
+  {%
+    \pgfparser@handle@args@t@{#1}#2\pgfparser@stop
+  }
+\pgfutil@protected\long\def\pgfparser@handle@args@t@#1#2#3\pgfparser@stop
+  {%
+    \pgfparser@oarg@targ{#2}{\pgfparser@handle@args@m{#1}{#3}}%
+  }
+
+\pgfutil@protected\long\def\pgfparserreinsert#1%
+  {%
+    \ifx\pgfparser@getnexttoken#1%
+      \pgfparser@fi@BTb
+    \fi
+    \@secondoftwo
+    {\expandafter\pgfparser@getnexttoken\pgfparserletter}
+    {%
+      \pgferror
+        {%
+          Misuse of \string\pgfparserreinsert\space detected. You should only
+          use it at the the end of an action code%
+        }%
+      #1%
+    }%
+  }
+
+\endinput

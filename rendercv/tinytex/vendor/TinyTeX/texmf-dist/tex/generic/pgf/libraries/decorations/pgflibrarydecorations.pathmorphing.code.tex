@@ -1,0 +1,294 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgfmodule{decorations}%
+
+
+%
+% These decorations "morph" paths. That means that the
+% original characteristic of the path is kept and the number of
+% subpaths remains the same -- only, the lines are slightly offset or
+% changed by the decoration. For instance a line might be turned into
+% a squiggly line or a snaking line or a bumping line.
+%
+
+
+%
+%
+% Kind 1: Path morphing straight line decorations
+%
+%
+
+
+% zigzag decoration.
+%
+\pgfdeclaredecoration{zigzag}{up from center}{%
+  \state{up from center}[width=+.5\pgfdecorationsegmentlength, next state=big down]
+  {
+    \pgfpathlineto{\pgfqpoint{.25\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+  }%
+  \state{big down}[switch if less than=+.5\pgfdecorationsegmentlength to center finish,
+                   width=+.5\pgfdecorationsegmentlength,
+                   next state=big up]
+  {
+    \pgfpathlineto{\pgfqpoint{.25\pgfdecorationsegmentlength}{-\pgfdecorationsegmentamplitude}}
+  }%
+  \state{big up}[switch if less than=+.5\pgfdecorationsegmentlength to center finish,
+                 width=+.5\pgfdecorationsegmentlength,
+                 next state=big down]
+  {
+    \pgfpathlineto{\pgfqpoint{.25\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+  }%
+  \state{center finish}[width=0pt, next state=final]{
+    \pgfpathlineto{\pgfpointorigin}
+  }%
+  \state{final}
+  {
+    \pgfpathlineto{\pgfpointdecoratedpathlast}
+  }%
+}%
+
+
+
+
+% saw decoration
+%
+% Parameters: \pgfdecorationsegmentamplitude, \pgfdecorationsegmentlength
+
+\pgfdeclaredecoration{saw}{initial}
+{%
+  \state{initial}[auto end on length=+\pgfdecorationsegmentlength,
+                  auto corner on length=+\pgfdecorationsegmentlength,
+                  width=+\pgfdecorationsegmentlength]
+  {
+    \pgfpathlineto{\pgfqpoint{\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+    \pgfpathlineto{\pgfqpoint{\pgfdecorationsegmentlength}{0pt}}
+  }%
+  \state{final}
+  {}%
+}%
+
+
+
+
+% random steps decoration
+%
+% A decoration that consists of random steps heading towards the target
+%
+% Parameters: \pgfdecorationsegmentamplitude, \pgfdecorationsegmentlength
+
+\pgfdeclaredecoration{random steps}{start}
+{%
+  \state{start}[width=+0pt,next state=step,persistent precomputation=\pgfdecoratepathhascornerstrue]{}%
+  \state{step}[auto end on length=1.5\pgfdecorationsegmentlength,
+               auto corner on length=1.5\pgfdecorationsegmentlength,
+               width=+\pgfdecorationsegmentlength]
+  {
+    \pgfpathlineto{
+      \pgfpointadd
+      {\pgfpoint{\pgfdecorationsegmentlength}{0pt}}
+      {\pgfpoint{rand*\pgfdecorationsegmentamplitude}{rand*\pgfdecorationsegmentamplitude}}
+    }
+  }%
+  \state{final}
+  {}%
+}%
+
+
+
+% Meta-decoration line zigzag
+
+\pgfdeclaremetadecoration{straight zigzag}{line to}{%
+  \state{line to}[width=\pgfmetadecorationsegmentlength, next state=zigzag]
+  {
+    \decoration{curveto}
+  }%
+  \state{zigzag}[width=\pgfmetadecorationsegmentlength, next state=line to]
+  {
+    \decoration{zigzag}
+  }%
+  \state{final}
+  {
+    \decoration{curveto}
+  }%
+}%
+
+
+
+
+
+%
+%
+% Kind 2: Path morphing curved decorations
+%
+%
+
+
+
+% bent decoration
+%
+% A decoration that looks like someone bent the line a bit.
+%
+% Parameters: \pgfdecorationsegmentamplitude, \pgfdecorationsegmentaspect
+
+\pgfdeclaredecoration{bent}{bent}
+{%
+  \state{bent}[width=+\pgfdecoratedinputsegmentremainingdistance]
+  {
+    \pgfpathcurveto
+    {\pgfqpoint{\pgfdecorationsegmentaspect\pgfdecoratedinputsegmentremainingdistance}{\pgfdecorationsegmentamplitude}}
+    {\pgfpointadd{\pgfqpoint{\pgfdecoratedinputsegmentremainingdistance}{0pt}}
+       {\pgfqpoint{-\pgfdecorationsegmentaspect\pgfdecoratedinputsegmentremainingdistance}{\pgfdecorationsegmentamplitude}}}
+    {\pgfqpoint{\pgfdecoratedinputsegmentremainingdistance}{0pt}}
+  }%
+  \state{final}
+  {}%
+}%
+
+
+
+% decoration snake
+%
+% This decoration produces a hopefully optically pleasing squiggly snake.
+%
+% Parameters: \pgfdecorationsegmentamplitude, \pgfdecorationsegmentlength
+
+\pgfdeclaredecoration{snake}{initial}
+{%
+  \state{initial}[switch if less than=+.625\pgfdecorationsegmentlength to final,
+                  width=+.3125\pgfdecorationsegmentlength,
+                  next state=down]
+  {
+    \pgfpathcurveto
+    {\pgfqpoint{.125\pgfdecorationsegmentlength}{0pt}}
+    {\pgfqpoint{.1875\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+    {\pgfqpoint{.3125\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+  }%
+  \state{down}[switch if less than=+.8125\pgfdecorationsegmentlength to end down,
+               width=+.5\pgfdecorationsegmentlength,
+               next state=up]
+  {
+    \pgfpathcosine{\pgfqpoint{.25\pgfdecorationsegmentlength}{-1\pgfdecorationsegmentamplitude}}
+    \pgfpathsine{\pgfqpoint{.25\pgfdecorationsegmentlength}{-1\pgfdecorationsegmentamplitude}}
+  }%
+  \state{up}[switch if less than=+.8125\pgfdecorationsegmentlength to end up,
+             width=+.5\pgfdecorationsegmentlength,
+             next state=down]
+  {
+    \pgfpathcosine{\pgfqpoint{.25\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+    \pgfpathsine{\pgfqpoint{.25\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+  }%
+  \state{end down}[width=+.3125\pgfdecorationsegmentlength,
+                   next state=final]
+  {
+    \pgfpathcurveto
+    {\pgfqpoint{.125\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+    {\pgfqpoint{.1875\pgfdecorationsegmentlength}{0pt}}
+    {\pgfqpoint{.3125\pgfdecorationsegmentlength}{0pt}}
+  }%
+  \state{end up}[width=+.3125\pgfdecorationsegmentlength,
+                 next state=final]
+  {
+    \pgfpathcurveto
+    {\pgfqpoint{.125\pgfdecorationsegmentlength}{-\pgfdecorationsegmentamplitude}}
+    {\pgfqpoint{.1875\pgfdecorationsegmentlength}{0pt}}
+    {\pgfqpoint{.3125\pgfdecorationsegmentlength}{0pt}}
+  }%
+  \state{final}
+  {
+    \pgfpathlineto{\pgfpointdecoratedpathlast}
+  }%
+}%
+
+
+% coil decoration
+%
+% Parameters: \pgfdecorationsegmentamplitude, \pgfdecorationsegmentlength,
+
+\pgfdeclaredecoration{coil}{coil}
+{%
+  \state{coil}[switch if less than=%
+    1.5\pgfdecorationsegmentlength+%
+    \pgfdecorationsegmentaspect\pgfdecorationsegmentamplitude+%
+    \pgfdecorationsegmentaspect\pgfdecorationsegmentamplitude to last,
+               width=+\pgfdecorationsegmentlength]
+  {
+    \pgfpathcurveto
+    {\pgfpoint@oncoil{0    }{ 0.555}{1}}
+    {\pgfpoint@oncoil{0.445}{ 1    }{2}}
+    {\pgfpoint@oncoil{1    }{ 1    }{3}}
+    \pgfpathcurveto
+    {\pgfpoint@oncoil{1.555}{ 1    }{4}}
+    {\pgfpoint@oncoil{2    }{ 0.555}{5}}
+    {\pgfpoint@oncoil{2    }{ 0    }{6}}
+    \pgfpathcurveto
+    {\pgfpoint@oncoil{2    }{-0.555}{7}}
+    {\pgfpoint@oncoil{1.555}{-1    }{8}}
+    {\pgfpoint@oncoil{1    }{-1    }{9}}
+    \pgfpathcurveto
+    {\pgfpoint@oncoil{0.445}{-1    }{10}}
+    {\pgfpoint@oncoil{0    }{-0.555}{11}}
+    {\pgfpoint@oncoil{0    }{ 0    }{12}}
+  }%
+  \state{last}[width=.5\pgfdecorationsegmentlength+%
+    \pgfdecorationsegmentaspect\pgfdecorationsegmentamplitude+%
+    \pgfdecorationsegmentaspect\pgfdecorationsegmentamplitude,next state=final]
+  {
+    \pgfpathcurveto
+    {\pgfpoint@oncoil{0    }{ 0.555}{1}}
+    {\pgfpoint@oncoil{0.445}{ 1    }{2}}
+    {\pgfpoint@oncoil{1    }{ 1    }{3}}
+    \pgfpathcurveto
+    {\pgfpoint@oncoil{1.555}{ 1    }{4}}
+    {\pgfpoint@oncoil{2    }{ 0.555}{5}}
+    {\pgfpoint@oncoil{2    }{ 0    }{6}}
+  }%
+  \state{final}
+  {
+    \pgfpathlineto{\pgfpointdecoratedpathlast}
+  }%
+}%
+
+\def\pgfpoint@oncoil#1#2#3{%
+  \pgf@x=#1\pgfdecorationsegmentamplitude%
+  \pgf@x=\pgfdecorationsegmentaspect\pgf@x%
+  \pgf@y=#2\pgfdecorationsegmentamplitude%
+  \pgf@xa=0.083333333333\pgfdecorationsegmentlength%
+  \advance\pgf@x by#3\pgf@xa%
+}%
+
+
+% bumps decoration
+%
+% Parameters: \pgfdecorationsegmentamplitude, \pgfdecorationsegmentlength
+
+\pgfdeclaredecoration{bumps}{initial}
+{%
+  \state{initial}[auto end on length=+.51\pgfdecorationsegmentlength,
+                  auto corner on length=+.51\pgfdecorationsegmentlength,
+                  width=+.5\pgfdecorationsegmentlength]
+  {
+    \pgfpathcurveto
+    {\pgfqpoint{0pt}{.555\pgfdecorationsegmentamplitude}}
+    {\pgfqpoint{0.11125\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+    {\pgfqpoint{.25\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+    \pgfpathcurveto
+    {\pgfqpoint{.38875\pgfdecorationsegmentlength}{\pgfdecorationsegmentamplitude}}
+    {\pgfqpoint{.5\pgfdecorationsegmentlength}{.5\pgfdecorationsegmentamplitude}}
+    {\pgfqpoint{.5\pgfdecorationsegmentlength}{0\pgfdecorationsegmentamplitude}}
+  }%
+  \state{final}
+  {
+    \pgfpathlineto{\pgfpointdecoratedpathlast}
+  }%
+}%
+
+
+
+\endinput

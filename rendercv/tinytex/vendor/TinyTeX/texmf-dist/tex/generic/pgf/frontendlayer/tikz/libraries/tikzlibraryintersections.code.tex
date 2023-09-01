@@ -1,0 +1,148 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Free Documentation License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgflibrary{intersections}%
+
+% FIXME : the 'name path global' is not reset properly - and some
+% following 'name path' will append to it rather that reset it.
+
+\pgfkeys{%
+  /tikz/name path global/.code={%
+    % reset any "old" variables inherited from some other path
+    % - we do not accidentally want to append to an old path with the
+    % same name (or if someone provided the option twice)...
+    \expandafter\global\expandafter\let\csname tikz@intersect@path@name@#1\endcsname=\relax
+    \tikz@key@name@path{#1}{\gdef}%
+  },
+  /tikz/name path local/.code={%
+    \pgfkeys{/tikz/name path={#1}}%
+  },
+  /tikz/name path/.code={%
+    % hm. Do we need this "reset old option" as in 'name path global'
+    % for this case as well?
+    \tikz@key@name@path{#1}{\def}%
+  },
+}%
+
+% #1: the name to assign.
+% #2: one of '\def' or '\gdef'.
+\def\tikz@key@name@path#1#2{%
+    \tikz@addmode{%
+      \pgfsyssoftpath@getcurrentpath\tikz@intersect@temppath@round%
+      \pgfprocessround\tikz@intersect@temppath@round\tikz@intersect@temppath%
+      \ifx\tikz@intersect@namedpaths\pgfutil@empty%
+      \else%
+        \tikz@intersect@namedpaths%
+      \fi%
+      \tikz@intersect@addto@path@names{#1}{#2}%
+    }%
+}%
+
+% #1: the name to assign.
+% #2: one of '\def' or '\gdef'.
+\def\tikz@intersect@addto@path@names#1#2{%
+  \edef\tikz@marshal{#2\expandafter\noexpand\csname tikz@intersect@path@name@#1\endcsname}%
+  \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\tikz@marshal%
+    \expandafter\expandafter\expandafter{\expandafter\tikz@marshal\expandafter{\tikz@intersect@temppath}}%
+  \expandafter\pgfutil@g@addto@macro\expandafter\tikz@intersect@namedpaths\expandafter{\tikz@marshal}%
+}%
+
+% at the end of evey \path command ...
+\let\tikz@finish@orig=\tikz@finish
+\def\tikz@finish{%
+  \tikz@finish@orig%
+  \tikz@intersect@finish%
+}%
+
+% ... make the named path variables available
+\def\tikz@intersect@finish{%
+  \tikz@intersect@namedpaths%
+}%
+
+\let\tikz@intersect@namedpaths=\pgfutil@empty
+\let\tikz@intersect@path@a=\pgfutil@empty
+\let\tikz@intersect@path@b=\pgfutil@empty
+\let\tikz@intersect@name=\pgfutil@empty
+\let\tikz@intersect@total=\pgfutil@empty
+
+\tikzset{
+  every scope/.append style={
+    execute at begin scope={\let\tikz@intersect@namedpaths@outside\tikz@intersect@namedpaths},
+    execute at end scope={\global\let\tikz@intersect@namedpaths\tikz@intersect@namedpaths@outside},
+  },
+  name intersections/.code={%
+    \tikzset{/tikz/intersection/.cd,
+      by=,
+      #1}%
+    \pgfutil@ifundefined{tikz@intersect@path@name@\tikz@intersect@path@a}{%
+      \tikzerror{I do not know the path named `\tikz@intersect@path@a'. Perhaps you misspelt it}}%
+    {\pgfutil@ifundefined{tikz@intersect@path@name@\tikz@intersect@path@b}{%
+        \tikzerror{I do not know the path named `\tikz@intersect@path@b'. Perhaps you misspelt it}}%
+      {%
+        \pgfintersectionofpaths%
+        {%
+          \expandafter\pgfsetpath\csname tikz@intersect@path@name@\tikz@intersect@path@a\endcsname%
+        }%
+        {%
+          \expandafter\pgfsetpath\csname tikz@intersect@path@name@\tikz@intersect@path@b\endcsname%
+        }%
+        \ifx\tikz@intersect@total\pgfutil@empty%
+        \else%
+          \expandafter\let\tikz@intersect@total=\pgfintersectionsolutions%
+        \fi%
+        \ifx\tikz@intersect@name\pgfutil@empty%
+          \def\tikz@intersect@@name{intersection}%
+        \else%
+          \let\tikz@intersect@@name=\tikz@intersect@name%
+        \fi%
+        \pgfmathloop%
+        \ifnum\pgfmathcounter>\pgfintersectionsolutions\relax%
+        \else%
+          \path[reset cm]\pgfextra{\pgftransformshift{\pgfpointintersectionsolution{\pgfmathcounter}}}%
+            coordinate (\tikz@intersect@@name-\pgfmathcounter);
+        \repeatpgfmathloop%
+        \ifx\tikz@intersect@by\pgfutil@empty%
+        \else%
+          \foreach\tikz@intersect@name[count=\tikz@intersection@count] in \tikz@intersect@by%
+          {\expandafter\tikz@intersect@name@parse\tikz@intersect@name\pgf@stop}%
+        \fi%
+      }%
+    }%
+  },%
+  intersection/.cd,
+  of/.code=\tikz@intersect@path@names@parse#1\tikz@stop,%
+  name/.store in=\tikz@intersect@name,
+  total/.store in=\tikz@intersect@total,
+  by/.store in=\tikz@intersect@by,
+  sort by/.code=\edef\tikz@intersect@sort@by{#1}\tikz@intersect@check@sort@by%
+}%
+
+
+\def\tikz@intersect@check@sort@by{%
+    \ifx\tikz@intersect@sort@by\tikz@intersect@path@a%
+        \pgfintersectionsortbyfirstpath%
+    \else%
+        \ifx\tikz@intersect@sort@by\tikz@intersect@path@b%
+            \pgfintersectionsortbysecondpath%
+        \else%
+            \pgf@intersect@sortfalse%
+        \fi%
+    \fi%
+}%
+\def\tikz@intersect@path@names@parse#1 and #2\tikz@stop{%
+  \def\tikz@intersect@path@a{#1}%
+  \def\tikz@intersect@path@b{#2}%
+}%
+
+\def\tikz@intersect@name@parse{\pgfutil@ifnextchar[\tikz@intersect@name@parse@opt{\tikz@intersect@name@parse@opt[]}}%}
+\def\tikz@intersect@name@parse@opt[#1]#2\pgf@stop{%
+  \coordinate [#1] (#2) at (\tikz@intersect@@name-\tikz@intersection@count);
+}%
+
+\endinput

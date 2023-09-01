@@ -1,0 +1,284 @@
+#!/bin/sh
+# original mktexpk -- make a new PK font, because one wasn't found.
+# 
+# (If you change or delete the word `original' on the previous line,
+# installation won't write this script over yours.)
+# 
+# Originally written by Thomas Esser, Karl Berry, and Olaf Weber.
+# Public domain.
+
+version='$Id: mktexpk 53602 2020-01-30 22:18:33Z karl $'
+progname=`echo $0 | sed 's%.*/%%'`
+
+# preferentially use subprograms from our own directory.
+mydir=`echo "$0" | sed 's,/[^/]*$,,'`
+mydir=`cd "$mydir" && pwd`
+PATH="$mydir:$PATH"; export PATH
+
+usage="Usage: $progname [OPTIONS] NAME [REDIRECT],
+  Create a PK font.
+
+--dpi DPI           use resolution DPI.
+--bdpi BDPI         use base resolution BDPI.
+--mag MAG           use magnification MAG.
+--mfmode MODE       use MODE as the METAFONT mode.
+--destdir DESTDIR   write fonts in DESTDIR.
+
+Try to create a bitmap PK file for NAME at resolution DPI, with an
+assumed device base resolution of BDPI, and a Metafont \`mag' of
+MAG. Use MODE for the METAFONT mode.  Use DESTDIR for the root of where
+to install into, either the absolute directory name to use (if it starts
+with a /) or relative to the default DESTDIR (if not). REDIRECT, if
+supplied, is a string of the form '>&n', where n is the number of the
+file descriptor which is to receive, instead of stdout, the name of the
+newly created pk file.
+
+If you expected the font to be available as an outline, and thus this
+script does not work and should not have been called, most likely the
+font's .tfm name is missing from the relevant map file (i.e.,
+psfonts.map for dvips-syntax programs, pdftex.map for pdftex-syntax
+programs).  These map files are typically maintained using updmap; q.v.
+
+For step-by-step instructions on making new fonts known to TeX, see
+https://tug.org/fonts/fontinstall.html.
+
+Report bugs to: tex-k@tug.org
+TeX Live home page: <https://tug.org/texlive/>
+"
+
+# Handle non-positional options, except for --version/--help
+while test $# -gt 0; do
+  case "$1" in
+    --destdir) shift; DEST="$1"; shift ;;
+    --destdir=*) DEST=`echo "$1" | sed 's/--destdir=//'`; shift ;;
+    --dpi) shift; DPI="$1"; shift ;;
+    --dpi=*) DPI=`echo "$1" | sed 's/--dpi=//'`; shift ;;
+    --bdpi) shift; BDPI="$1"; shift ;;
+    --bdpi=*) BDPI=`echo "$1" | sed 's/--bdpi=//'`; shift ;;
+    --mfmode) shift; test "x$1" != "x/" && MODE="$1"; shift ;;
+    --mfmode=*) test "x$1" != "x--mfmode/" \
+                && MODE=`echo "$1" | sed 's/--mfmode=//'`; shift ;;
+    --mag) shift; MAG="$1"; shift;;
+    --mag=*) MAG=`echo "$1" | sed '/s--mag=//'`; shift;;
+    --version|-version) break ;;
+    --help|-help) break ;;
+    *) break ;;
+  esac
+done
+
+if test "x$2" != x; then
+  tail="`echo \"x$2\" | sed 's/^x>&//' | grep '^[0-9]*$'`"
+  if test -z "$tail"; then
+    echo "$progname: argument '$2' ignored - bad file number" >&2
+  elif test "$tail" != 1; then
+      eval 'exec 1>&$tail'
+  fi
+fi
+
+mt_max_args=2
+
+# Common code for all scripts.
+: ${MT_TEXMFMAIN=`kpsewhich --expand-path='$TEXMFMAIN'`}
+: ${MT_MKTEX_OPT=`kpsewhich --format='web2c files' mktex.opt`}
+test -n "$MT_MKTEX_OPT" || MT_MKTEX_OPT="$MT_TEXMFMAIN/web2c/mktex.opt"
+if test ! -f "$MT_MKTEX_OPT"; then
+  echo "$progname: Cannot find mktex.opt; check your installation." >&2
+  exit 1
+fi
+
+. "$MT_MKTEX_OPT"
+
+# Where do potential driver files belong?
+case "$MT_FEATURES" in
+  *nomfdrivers*)
+     : ${MT_MFDESTDIR=`pwd`}
+     export MT_MFDESTDIR;;
+esac
+
+# Since we want to pass the generated filename and only that filename
+# back to the caller on standard output, we do some redirections so
+# regular echo's will end up on stderr, and do an echo >$STDOUT at the end.
+# Then the contents of $STDOUT will be echoed to stdout by a trap.
+
+# start of redirection stdout -> stderr, stdin <- /dev/null
+(
+
+NAME=$1
+
+if kpsewhich $NAME.mf >/dev/null 2>&1 || mktexmf $NAME >/dev/null 2>&1; then
+  # determine the progname of metafont to use; prefer mf-nowin.
+  if (mf-nowin --version) >/dev/null 2>&1; then
+    MF="mf-nowin -progname=mf"
+  else
+    MF=mf
+  fi
+
+  # Check that $BDPI and $MODE are consistent; if not, ignore the mode and
+  # hope we can correctly guess it from bdpi.  (People like to specify the
+  # resolution on the command line, not the mode so much.)
+  if test -n "$MODE"; then
+    mf_bdpi=`$MF \
+'\mode:='$MODE';mode_setup;message"BDPI= "&decimal round pixels_per_inch;end.'\
+             </dev/null \
+             | awk '/DPI=/ {print $2}'`
+    if test "x$mf_bdpi" != x$BDPI; then
+      echo "$progname: Mismatched mode $MODE and resolution $BDPI; ignoring mode." >&2
+      MODE=
+    fi
+  fi
+
+  # If an explicit mode is not supplied, try to guess. You can get a
+  # list of extant modes from ftp://ftp.tug.org/tex/modes.mf.
+  if test -z "$MODE" || test "x$MODE" = xdefault; then
+    case "$BDPI" in
+      85) MODE=sun;;
+     100) MODE=nextscrn;;
+     180) MODE=toshiba;;
+     300) MODE=cx;;
+     360) MODE=epstylus;;
+     400) MODE=nexthi;;
+     600) MODE=ljfour;;
+     720) MODE=epscszz;;
+    1200) MODE=ultre;;
+    1270) MODE=linoone;;
+    8000) MODE=dpdfezzz;;
+       *) echo "$progname: Can't guess mode for $BDPI dpi devices." >&2
+          echo "$progname: Use a config file or option to specify the mode; see:" >&2
+          echo "$progname: https://tug.org/texinfohtml/kpathsea.html#Unable-to-generate-fonts" >&2
+          exit 1
+    esac
+  fi
+
+  # Run Metafont. Always use plain Metafont, since reading cmbase.mf
+  # does not noticeably slow things down.
+  cmd="$MF \mode:=$MODE; mag:=$MAG; nonstopmode; input $NAME"
+else
+  MODE=modeless
+  # ps_to_pk is set in mktex.opt
+  case $ps_to_pk in
+    gsftopk)
+      if $ps_to_pk -t "$NAME"; then
+        cmd="$ps_to_pk $NAME $DPI"
+      fi;;
+    ps2pk)
+      # grep for the font in $PSMAPFILE.  These are base font names, such as
+      # rpplr (the original) or pplr0 (an interim step) or pplr8r (current).
+      : ${PSMAPFILE=`kpsewhich --format=map psfonts.map ps2pk.map`}
+      pattern="^$NAME"'([ 	]|$)' 
+      psline=`egrep "$pattern" $PSMAPFILE | tail -1`
+      if test -n "$psline"; then
+        set x `echo "$psline" | sed 's%[<["]%%g'`
+        shift; shift; shift;
+        encoding=; psname=; slant=; extend=
+        while test ! -z "$1"; do
+          case "$1" in
+            *.enc)       encoding="-e $1";;
+            *.pf[ab])    psname="$1";;
+            *SlantFont)  slant="-S $lastopt";;
+            *ExtendFont) extend="-E $lastopt";;
+          esac
+          lastopt="$1"
+          shift
+        done
+        # Guessing the name of the type1 font file as fallback:
+        ANAME=`echo $NAME | sed 's/8r$/8a/'`
+        for i in $NAME.pfa $NAME.pfb $ANAME.pfa $ANAME.pfb; do
+          if kpsewhich $i >/dev/null 2>&1; then
+            psname=$i
+            break
+          fi
+        done
+
+        if [ -n "$psname" ]; then
+          cmd="ps2pk -v -X$DPI -R$BDPI $slant $extend $encoding $psname $NAME.${DPI}pk"
+        else
+          if gsftopk -t "$NAME"; then
+            echo "$progname: cannot find $NAME.pfa or $NAME.pfb. Trying gsftopk." >&2
+            cmd="gsftopk $NAME $DPI"
+          fi
+        fi
+      fi;;
+  esac
+
+  # unsupported by $ps_to_pk, try other conversions:
+  if test -z "$cmd"; then
+    if (ttf2pk -t -q $NAME) >/dev/null 2>&1; then
+      cmd="ttf2pk -q $NAME $DPI"
+    elif (hbf2gf -t -q $NAME) >/dev/null 2>&1; then
+      cmd="hbf2gf -q -p $NAME $DPI"
+    else
+      echo "$progname: don't know how to create bitmap font for $NAME." >&2
+      echo "$progname: perhaps $NAME is missing from the map file." >&2
+      exit 1
+    fi
+  fi
+fi
+
+OIFS=$IFS; IFS=$SEP
+set x `"$MT_MKTEXNAM" $NAME $DPI $MODE $DEST`; shift
+IFS=$OIFS
+
+PKDEST="$1"
+PKDESTDIR=`echo "$PKDEST" | sed 's%/[^/][^/]*$%%'` # can't rely on dirname
+PKNAME=`basename "$PKDEST"`
+GFNAME=$NAME.${DPI}gf
+
+if test -r "$PKDESTDIR/$PKNAME"; then
+  echo "$progname: $PKDESTDIR/$PKNAME already exists." >&2
+  echo "$PKDESTDIR/$PKNAME" >$STDOUT
+  "$MT_MKTEXUPD" "$PKDESTDIR" $PKNAME
+  exit 0
+fi
+
+"$MT_MKTEXDIR" "$PKDESTDIR"
+if test ! -d "$PKDESTDIR"; then
+  echo "$progname: $MT_MKTEXDIR $PKDESTDIR failed." >&2
+  exit 1
+fi
+
+echo "$progname: Running $cmd"
+$cmd </dev/null || {
+  # Don't abort if only "Strange path", "bad pos" or "angle(0,0)"
+  # errors occurr.
+  grep '^!' $NAME.log | sort >$$.errs 2>/dev/null
+  grep '^! Strange path' $$.errs >$$.strange 2>/dev/null
+  grep '^! bad pos.' $$.errs >$$.badpos 2>/dev/null
+  grep '^! angle(0,0) is taken as zero.' $$.errs >$$.angle 2>/dev/null
+  cat $$.badpos $$.strange $$.angle | sort > $$.errs_accept
+  if cmp $$.errs $$.errs_accept >/dev/null 2>&1; then
+    test -s $$.strange >/dev/null 2>&1 \
+      && echo "$progname: warning: \`$cmd' caused strange path errors." >&2
+    test -s $$.badpos >/dev/null 2>&1 \
+      && echo "$progname: warning: \`$cmd' caused bad pos errors." >&2
+    test -s $$.angle >/dev/null 2>&1 \
+      && echo "$progname: warning: \`$cmd' caused angle(0,0) errors." >&2
+  else
+    echo "$progname: \`$cmd' failed." >&2
+    test -s $NAME.log && mv -f $NAME.log "$KPSE_DOT"
+    exit 1;
+  fi
+}
+
+test -r $GFNAME && { gftopk ./$GFNAME $PKNAME || exit 1; }
+test ! -f $PKNAME && test -f $NAME.${DPI}pk && mv $NAME.${DPI}pk $PKNAME
+if test ! -s $PKNAME; then
+  echo "$progname: \`$cmd' failed to make $PKNAME." >&2
+  exit 1
+fi
+
+# Install the PK file carefully, since others may be working simultaneously.
+# Use cp when mv fails, since DOS will fail mv for deeply-nested directories.
+mv $PKNAME "$PKDESTDIR/pk$$.tmp" 2>/dev/null \
+  || cp $PKNAME "$PKDESTDIR/pk$$.tmp" || exit 1
+cd "$PKDESTDIR" || exit 1
+chmod `kpsestat -xst,go-w .` pk$$.tmp
+test -r $PKNAME || mv pk$$.tmp $PKNAME || exit 1
+
+# Update ls-R if necessary.
+"$MT_MKTEXUPD" "$PKDESTDIR" $PKNAME
+
+# If this line (or an equivalent) is not present, dvipsk/xdvik/dviljk
+# will think mktexpk failed.  Any other output to stdout will also lose.
+echo "$PKDESTDIR/$PKNAME" >$STDOUT
+echo "$progname: $PKDESTDIR/$PKNAME: successfully generated." >&2
+) 1>&2 </dev/null

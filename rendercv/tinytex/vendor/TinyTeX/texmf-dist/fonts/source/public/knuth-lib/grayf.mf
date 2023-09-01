@@ -1,0 +1,82 @@
+% More-or-less general gray font generator
+% See Appendix H of The METAFONTbook for how to use it
+
+forsuffixes m = mag,rep:
+ if unknown m: m := 1;
+ elseif (m<1) or (m<>floor m):
+  errmessage "Sorry, " & str m & " must be a positive integer";
+  m := 1; fi endfor
+
+mg := mag; mag := 1; mode_setup;
+if mg>1: hppp := hppp*mg; vppp := vppp*mg;
+ extra_endchar:=
+  "if charcode>0:currentpicture:=currentpicture scaled mg;fi;"
+  & extra_endchar; fi;
+
+if picture pix_picture: rep := 1;
+ cull pix_picture keeping (1,infinity);
+else: for z=(0,2),(1,0),(2,3),(3,1):
+  fill unitsquare shifted z; endfor
+ if not boolean lightweight: addto currentpicture also
+  currentpicture rotated 90 xscaled -1; fi
+ if unknown scale: scale := max(1,round(pixels_per_inch/300)); fi
+ pix_wd := pix_ht := 4scale;
+ if rep>1: picture pix;
+   currentpicture := currentpicture shifted-(1,1); pix := currentpicture;
+   for r=1 upto rep-1: addto currentpicture also pix shifted(4r,0); endfor
+   cullit; pix := currentpicture;
+   for r=1 upto rep-1: addto currentpicture also pix shifted(0,4r); endfor
+   unfill unitsquare xscaled 4rep yscaled 2 shifted-(1,1);
+   unfill unitsquare yscaled 4rep xscaled 2 shifted-(1,1); cullit; fi
+ picture pix_picture; pix_picture := currentpicture scaled scale;
+ pix_wd := pix_ht := 4scale*rep; fi
+
+def # = *72.27/pixels_per_inch enddef;
+if unknown dotsize: dotsize := 2.5pix_wd/rep; fi
+
+beginchar(0,1.2dotsize#,1.2dotsize#,0);
+fill fullcircle scaled dotsize scaled mg; endchar;
+
+numeric a[]; newinternal b,k;
+def next_binary =
+ k := 0; forever: if k>b: a[incr b] := 0; fi
+  exitif a[k]=0; a[k] := 0; k := k+1; endfor
+ a[k] := 1 enddef;
+def next_special_binary =
+ if a[0]=1: for k=0 upto b: a[k] := 0; endfor a[incr b]
+ else: k := 0; forever: exitif a[incr k]=1; endfor
+  a[k-1] fi := 1 enddef;
+
+def make_char =
+ clearit; next_binary;
+ for k=0 upto b: if a[k]=1:
+  addto currentpicture also pix_picture shifted(0,-k*pix_ht); fi endfor
+ charcode := charcode+1; chardp := b*charht;
+ scantokens extra_endchar; shipout currentpicture enddef;
+
+charwd := pix_wd#; charht := pix_ht#; chardx := pix_wd*mg;
+b := -1;
+
+if boolean large_pixels:
+ for k=1 upto 7: make_char; charlist k:k+120; endfor
+ charcode := 120; b := -1;
+ addto pix_picture also pix_picture shifted (chardx,0);
+ charwd := 2charwd; chardx := 2chardx;
+ for k=1 upto 7: make_char; endfor
+else: for k=1 upto 63: make_char; endfor
+ let next_binary = next_special_binary;
+ for k=64 upto 120: make_char; endfor
+ for k=121,122: charcode := k;
+  addto currentpicture also currentpicture shifted (chardx,0);
+  charwd := 2charwd; chardx := 2chardx;
+  scantokens extra_endchar; shipout currentpicture; endfor
+ charlist 120:121:122; fi
+
+font_coding_scheme "GFGRAY";
+font_size 8(pix_wd#);
+font_normal_space pix_wd#;
+font_x_height pix_ht#;
+font_quad pix_wd#;
+fontdimen 8: if known rulethickness: rulethickness
+ else: pix_wd#/(2rep) fi;
+bye.

@@ -1,0 +1,1308 @@
+% !TeX encoding = UTF-8
+% Ce fichier contient le code de l'extension "xstring"
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                    %
+\def\xstringname               {xstring}                             %
+\def\xstringversion              {1.86}                              %
+%                                                                    %
+\def\xstringdate              {2023/08/22}                           %
+%                                                                    %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                    %
+% Author     : Christian Tellechea                                   %
+% Status     : Maintained                                            %
+% Maintainer : Christian Tellechea                                   %
+% Email      : unbonpetit@netc.fr                                    %
+% Package URL: https://www.ctan.org/pkg/xstring                      %
+% Copyright  : Christian Tellechea 2008-2023                         %
+% Licence    : Released under the LaTeX Project Public License v1.3c %
+%              or later, see http://www.latex-project.org/lppl.txt   %
+% Files      : 1) xstring.tex                                        %
+%              2) xstring.sty                                        %
+%              3) xstring-fr.tex                                     %
+%              4) xstring-fr.pdf                                     %
+%              5) xstring-en.tex                                     %
+%              6) xstring-en.pdf                                     %
+%              7) README                                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifdefined\usepackage\else
+	\immediate\write-1 {Package: xstring \xstringdate\space v\xstringversion\space String manipulations (CT)}%
+\fi
+
+\edef\restorexstringcatcode{\catcode\number`\_ =\number\catcode`\_\relax}
+\catcode`\_=11
+
+\newcount\xs_counta
+\newcount\xs_countb% compteurs utilisés par xstring
+\long\def\xs_execfirst#1#2{#1}
+\long\def\xs_execsecond#1#2{#2}
+\long\def\xs_gobarg#1{}
+\expandafter\def\expandafter\xs_gobspace\space{}
+\def\xs_deftok#1#2{\let#1= #2\relax}\xs_deftok\xs_sptoken{ }
+\long\def\xs_ifnxttok#1#2#3{\xs_deftok\xs_toksmatch{#1}\def\__truecode{#2}\def\__falsecode{#3}\xs_ifnxttok_a}
+\def\xs_ifnxttok_a{\futurelet\__futurtok\xs_ifnxttok_b}
+\def\xs_ifnxttok_b{%
+	\xs_ifx{\__futurtok\xs_sptoken}
+		{\afterassignment\xs_ifnxttok_a\let\__futurtok= }
+		{\xs_ifx{\__futurtok\xs_toksmatch}\__truecode\__falsecode}%
+}
+\def\xs_ifstar#1{\xs_ifnxttok*{\xs_execfirst{#1}}}
+\long\def\xs_testopt#1#2{\xs_ifnxttok[{#1}{#1[{#2}]}}
+\long\def\xs_exparg#1#2{\expandafter\xs_exparg_a\expandafter{#2}{#1}}%
+\long\def\xs_exparg_a#1#2{#2{#1}}
+\long\def\xs_exptwoargs#1#2#3{\xs_exparg{\xs_exparg{#1}{#2}}{#3}}
+\long\def\xs_eearg#1#2{\xs_exparg{\xs_exparg{#1}}{#2}}
+\long\def\xs_edefaddtomacro#1#2{\edef#1{\unexpanded\expandafter{#1}#2}}
+\long\def\xs_addtomacro#1#2{\xs_exparg{\def#1}{#1#2}}
+\long\def\xs_eaddtomacro#1#2{\xs_exparg{\xs_addtomacro#1}{#2}}
+\long\def\xs_eeaddtomacro#1#2{\xs_exparg{\xs_eaddtomacro#1}{#2}}
+\long\def\xs_endgroup_eaddtomacro#1#2{\xs_exparg{\endgroup\xs_addtomacro#1}{#2}}
+\long\def\xs_beforespace#1 #2\_nil{#1}
+\long\def\xs_afterspace#1 #2\_nil{#2}
+\long\def\xs_gobtonil#1\_nil{}
+\long\def\xs_gobtobrace#1#{}
+\long\def\xs_ifx#1{\ifx#1\expandafter\xs_execfirst\else\expandafter\xs_execsecond\fi}
+\def\xs_ifnum#1{\ifnum#1\expandafter\xs_execfirst\else\expandafter\xs_execsecond\fi}
+\long\def\xs_ifemptyarg#1{\expandafter\xs_ifx\expandafter{\expandafter\relax\detokenize{#1}\relax}}
+\long\def\xs_ifemptymacro#1{\xs_ifx{#1\empty}}
+\let\xs_ifempty\xs_ifemptyarg
+
+\def\xs_toks_toverb{% lit 1 argument et le transforme en verb
+	\begingroup
+		\def\do##1{\catcode`##112 }%
+		\dospecials
+		\obeyspaces
+		\xs_read_verb
+}
+
+\def\setverbdelim#1{% définit quel est le délimiteur de verb
+	\xs_exparg\xs_ifemptyarg{\xs_gobarg#1}%
+		{}
+		{\errmessage{Package xstring Warning: verb delimiter "\detokenize{#1}" is not a single token}}%
+	\def\xs_read_verb##1#1##2#1{\endgroup\xs_assign_verb{##2}}% on appelle l'exécution de fin
+}
+
+% Assigne l'argument entre délimiteur verb dans la sc #1
+\def\verbtocs#1{%
+	\def\xs_assign_verb##1{\def#1{##1}}%
+	\xs_toks_toverb
+}
+
+\begingroup
+	\catcode0 3 \gdef\xs_twozeroschars{^^00}%
+	\catcode0 7 \xdef\xs_twozeroschars{\xs_twozeroschars^^00}%
+\endgroup
+
+\edef\xs_reserved_A{\long\def\noexpand\xs_assigntokenizeresult##1\xs_twozeroschars}
+\xs_reserved_A#2{\endgroup\xs_exparg{\def#2}{\xs_gobarg#1}}
+
+\def\tokenize#1#2{%
+	\begingroup
+		\xs_def\xs_reserved_A{#2}% on développe en accord avec \fullexpandarg ou \noexpandarg
+		\everyeof\expandafter{\xs_twozeroschars#1}%
+		\endlinechar-1
+		\expandafter\xs_assigntokenizeresult\scantokens\expandafter{\expandafter\relax\xs_reserved_A}% on fait l'assignation
+}%
+
+\long\def\xs_assign_xstringresult#1#2{\xs_ifemptyarg{#2}{#1}{\def#2{#1}}}
+
+\def\xs_ldef{\long\def}
+\def\xs_ledef{\long\edef}
+
+\def\normalexpandarg{%
+	\let\xs_def\xs_ldef% on définit \xs_call avec \def
+	\def\xs_expand##1{\unexpanded\expandafter{##1}}%
+}
+\let\noexpandarg\normalexpandarg% synonyme
+
+\def\expandarg{%
+	\let\xs_def\xs_ldef% on définit \xs_call avec \def
+	\def\xs_expand##1{\unexpanded\expandafter\expandafter\expandafter{##1}}%
+}
+
+\def\fullexpandarg{%
+	\let\xs_def\xs_ledef% on définit\xs_call avec \edef
+	\def\xs_expand##1{##1}% et on neutralise \xs_expand
+}
+
+\def\saveexpandmode{\let\xs_saved_def\xs_defarg\let\xs_saved_expand\xs_expand}
+\def\restoreexpandmode{\let\xs_defarg\xs_saved_def\let\xs_expand\xs_saved_expand}
+
+% Macro interne renvoyant #2 si son argument commence par une accolade ouvrante "{"
+% et #3 sinon (Ulrich Diez sur comp.text.tex)
+\long\def\xs_ifbeginwithbrace#1{%
+	\csname xs_exec%
+		\expandafter\xs_gobarg\string{%
+		\expandafter\xs_gobarg\expandafter{\expandafter{\string#1}%
+		\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\xs_execfirst
+		\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\xs_gobarg
+		\expandafter\expandafter\expandafter\xs_gobarg
+		\expandafter\expandafter\expandafter{\expandafter\string\expandafter}\string}%
+		\expandafter\xs_gobarg\string}%
+		\xs_execsecond{first}{second}%
+	\endcsname
+}
+
+% Cette macro interne prend la 1ere unité syntaxique de #1 et assigne le résultat à #2
+\long\def\xs_returnfirstsyntaxunit#1#2{%
+	\let\xs_toks\relax
+	\xs_ifemptyarg{#1}
+		{\let#2\empty
+		}
+		{\xs_eearg\xs_ifemptyarg{\expandafter\xs_beforespace\detokenize{#1} \_nil}% #1 commence par un espace ?
+			{\def#2{ }}
+			{\xs_ifbeginwithbrace{#1}
+				{\def\xs_groupfound{\xs_exparg{\def#2}{\expandafter{#2}}\xs_gobtonil}% on met #2 dans des accolades et on finit
+				\let\xs_toks\bgroup
+				\afterassignment\xs_groupfound
+				\def#2%
+				}
+				{\long\def\xs_assignfirstarg##1##2\_nil{\def#2{##1}}%
+				\xs_assignfirstarg
+				}%
+			#1\_nil
+			}%
+		}%
+}
+
+\long\def\xs_removefirstsyntaxunit#1#2{%
+	\xs_ifemptyarg{#1}
+		{\let#2\empty
+		}
+		{\xs_eearg\xs_ifemptyarg{\expandafter\xs_beforespace\detokenize{#1} \_nil}% #1 commence par un espace ?
+			{\xs_exparg\xs_ifbeginwithbrace{\xs_gobspace#1}
+				{\xs_exparg{\def#2}{\xs_gobtobrace#1}}%
+				{\xs_exparg{\def#2}{\xs_afterspace#1\_nil}}%
+			}%
+			{\xs_exparg{\def#2}{\xs_gobarg#1}}%
+		}%
+}
+
+% Cette macro interne est utilisée dans les macros étoilées pour :
+% 1) développer l'argument selon qu'on a choisit \fullexpandarg
+%    ou \normalexpandarg, et ceci à l'aide de la macro \xs_def
+% 2) Ensuite, on détokenize ce développement de façon n'avoir plus que
+%    des catcodes de 10 pour les espaces et 12 pour le reste.
+\long\def\xs_expand_and_detokenize#1#2{%
+	\long\def#1{#2}%
+	\expandafter\edef\expandafter#1\expandafter{\xs_expand#1}% on développe #2 selon le mode de développement
+	\long\edef#1{\detokenize\expandafter{#1}}% puis on détokenize et on assigne à #1
+}
+
+\long\def\xs_expand_and_assign#1#2{\xs_def#1{#2}}% on développe #2 selon \fullexpandarg ou \normalexpandarg
+
+\def\xs_arglist{0########1########2########3########4########5########6########7########8########9}
+
+% \xs_assign_args{3} met dans la sc \xs_myarg les tokens "####1####2####3"
+\def\xs_assign_args#1{\def\xs_assign_args_i0##1#1##2\_nil{\def\xs_myarg{##1#1}}\expandafter\xs_assign_args_i\xs_arglist\_nil}
+
+% \xs_assign_opt_args{3} met dans la sc \xs_myarg les tokens "[####1]####2####3####4"
+\def\xs_assign_opt_args#1{\xs_exparg\xs_assign_opt_args_i{\number\numexpr#1+1}}
+\def\xs_assign_opt_args_i#1{\def\xs_assign_opt_args_ii0##11##2#1##3\_nil{\def\xs_myarg{[##11]##2#1}}\expandafter\xs_assign_opt_args_ii\xs_arglist\_nil}
+
+% \xs_assign_one_arg{3} met dans la sc \xs_myarg les tokens "####3"
+\def\xs_assign_one_arg#1{\xs_exparg\xs_assign_one_arg_i{\number\numexpr#1-1}{#1}}
+\def\xs_assign_one_arg_i#1#2{\def\xs_assign_one_arg_ii##1#1##2#2##3\_nil{\def\xs_myarg{##2#2}}\expandafter\xs_assign_one_arg_ii\xs_arglist\_nil}
+
+% #1 : numéro du 1er argument; #2 : nombre de lignes; #3 argument optionnel; #4 : dernier numéro de l'argument devant être détokenisé si étoile
+\def\xs_buildlines#1#2#3#4{%
+	\let\xs_newlines\empty
+	\let\xs_newargs\empty
+	\def\xs_buildlines_i##1{%
+		\xs_exparg\xs_assign_one_arg{\number\numexpr##1+#1-1}%
+		\edef\xs_reserved_B{\noexpand\xs_expand\csname xs_arg_\romannumeral\numexpr##1\endcsname}%
+		\xs_ifnum{##1=1 }% si c'est le premier argument
+			{\xs_ifemptyarg{#3}%
+				{\xs_eaddtomacro\xs_newargs{\expandafter{\xs_reserved_B}}%
+				\edef\xs_reserved_B{\ifnum##1>#4 xs_def\else xs_assign\fi}%
+				}% et s'il y a un argument optionnel alors, on met des crochets
+				{\xs_eaddtomacro\xs_newargs{\expandafter[\xs_reserved_B]}%
+				\def\xs_reserved_B{xs_def}% ne pas détokéniser l'argument optionnel grace au \xs_def
+				}%
+			}
+			{\xs_eaddtomacro\xs_newargs{\expandafter{\xs_reserved_B}}%
+			\edef\xs_reserved_B{\ifnum##1>#4 xs_def\else xs_assign\fi}%
+			}%
+		\edef\xs_newlines{\unexpanded\expandafter{\xs_newlines}\expandafter\noexpand\csname\xs_reserved_B\endcsname\expandafter\noexpand\csname xs_arg_\romannumeral\numexpr##1\endcsname{\xs_myarg}}%
+		\xs_ifnum{##1<#2 }
+			{\xs_exparg\xs_buildlines_i{\number\numexpr##1+1}}
+			{}%
+	}%
+	\xs_buildlines_i1%
+}
+
+\def\xs_newmacro{%
+	\xs_ifstar
+		{\let\xs_reserved_D\empty\xs_newmacro_}
+		{\let\xs_reserved_D\relax\xs_newmacro_0}%
+}
+
+% #1 : dernier numéro de l'argument devant être détokenisé
+% #2 : nom de la macro publique
+% #3 : argument optionnel (vide si pas d'arg optionnel)
+% #4 : nombre d'arguments obligatoires
+% #5 : utilisation de testopt (1 si oui, 0 si non)
+% #6 : code de la macro
+\def\xs_newmacro_#1#2#3#4#5{%
+	\edef\xs_reserved_A{xs_\expandafter\xs_gobarg\string#2}%
+	\edef\xs_reserved_C{\expandafter\noexpand\csname\xs_reserved_A _\ifx\empty#3\empty _\fi\endcsname}%
+	\edef\xs_reserved_B{%
+		\long
+		\ifx\empty\xs_reserved_D
+			\def\noexpand#2{\noexpand\xs_ifstar
+				{\let\noexpand\xs_assign\noexpand\xs_expand_and_detokenize\expandafter\noexpand\xs_reserved_C}%
+				{\let\noexpand\xs_assign\noexpand\xs_expand_and_assign\expandafter\noexpand\xs_reserved_C}%
+			}%
+		\else
+			\def\noexpand#2{\let\noexpand\xs_assign\noexpand\xs_expand_and_assign\expandafter\noexpand\xs_reserved_C}%
+		\fi
+		\ifx\empty#3\empty
+		\else
+			\def\expandafter\noexpand\xs_reserved_C{%
+				\noexpand\xs_testopt{\expandafter\noexpand\csname\xs_reserved_A __\endcsname}{\ifx\xs_def\xs_ledef#3\else\unexpanded{#3}\fi}}%
+		\fi
+	}%
+	% Que fait \xs_reserved_B ? Il définit :
+	% si #3 est vide : \NOM{\xs_ifstar{\let\xs_assign\xs_expand_and_detokenize\xs_NOM__}{\let\xs_assign\xs_expand_and_assign\xs_NOM__}}
+	% si #3 existe   : \NOM{\xs_ifstar{\let\xs_assign\xs_expand_and_detokenize\xs_NOM_}{\let\xs_assign\xs_expand_and_assign\xs_NOM_}}
+	%                  \xs_NOM_{\xs_testopt{\xs_NOM__}{#3}}}
+	\xs_reserved_B
+	\ifx\empty#3\empty
+		\xs_buildlines1{#4}{#3}{#1}%
+		\xs_assign_args{#4}%
+	\else
+		\xs_exparg{\xs_buildlines1}{\number\numexpr#4+1}{#3}{#1}%
+		\xs_assign_opt_args{#4}%
+	\fi
+	\edef\xs_reserved_B{\def\expandafter\noexpand\csname\xs_reserved_A __\endcsname\xs_myarg}%
+	\edef\xs_reserved_C{\unexpanded\expandafter{\xs_newlines}\edef\noexpand\xs_call}%
+	\edef\xs_reserved_D{\noexpand\noexpand\expandafter\noexpand\csname\xs_reserved_A\endcsname\unexpanded\expandafter{\xs_newargs}}%
+	\ifnum#5=1 \edef\xs_reserved_D{\noexpand\noexpand\noexpand\xs_testopt{\unexpanded\expandafter{\xs_reserved_D}}{}}\fi
+	\xs_edefaddtomacro\xs_reserved_C{{\unexpanded\expandafter{\xs_reserved_D}}\noexpand\xs_call}%
+	\xs_edefaddtomacro\xs_reserved_B{{\unexpanded\expandafter{\xs_reserved_C}}}%
+	% Que fait \xs_reserved_B ? Il définit par exemple pour 3 arguments obligatoires et 1 facultatif :
+	%    \def\xs_NOM__[##2]##3##4##5{%
+	%          \xs_def\xs_arg_i{##2}\xs_assign\xs_arg_ii{##3}\xs_assign\xs_arg_iii{##4}\xs_asign\xs_arg_iv{##5}%
+	% si #5=0: \edef\xs_call{\noexpand\xs_NOM[\xs_expand\xs_arg_i]{\xs_expand\xs_arg_ii}{\xs_expand\xs_arg_iii}{\xs_expand\xs_arg_iv}}%
+	% si #5=1: \edef\xs_call{\noexpand\xs_testopt{\noexpand\xs_NOM[\xs_expand\xs_arg_i]{\xs_expand\xs_arg_i}{\xs_expand\xs_arg_ii}{\xs_expand\xs_arg_iii}{\xs_expand\xs_arg_iv}}{}}%
+	%          \xs_call}
+	\long\xs_reserved_B
+	\edef\xs_reserved_B{%
+		\def\expandafter\noexpand\csname\xs_reserved_A\endcsname
+			\xs_myarg\ifnum#5=1 [\unexpanded{##}\number\numexpr\ifx\empty#3\empty#4+1\else#4+2\fi]\fi
+	}%
+	% Que fait \xs_reserved_B ? Il définit par exemple pour 3 arguments obligatoires et 1 facultatif :
+	%    \def \xs_NOM[##2]##3##4##5[##6]{#6}
+	\long\xs_reserved_B
+}
+
+% macro générique qui lit \xs_reserved_C us par us
+% 3 sous-routines sont appelées à des moments clé :
+% \xs_atendofgroup      (un groupe se finit, appel récursif)
+% \xs_atbegingroup      (un groupe vient d'être ouvert)
+% \xs_atnextsyntaxunit  (la future US n'est pas un groupe)
+\def\xs_read_reserved_C{%
+	\xs_ifemptymacro\xs_reserved_C
+		{\xs_ifnum{\xs_nestlevel=0 }
+			{}
+			{\xs_atendofgroup
+			\xs_read_reserved_C
+			}%
+		}
+		{\xs_exparg\xs_returnfirstsyntaxunit{\xs_reserved_C}\xs_reserved_A
+		\xs_exparg\xs_removefirstsyntaxunit{\xs_reserved_C}\xs_reserved_C
+		\xs_exploregroups
+		\xs_ifx{\bgroup\xs_toks}
+			{\advance\xs_counta1
+			\begingroup
+				\expandafter\def\expandafter\xs_reserved_C\xs_reserved_A
+				\xs_calc_grouIP
+				\def\xs_nestlevel{1}%
+				\xs_counta0
+				\xs_atbegingroup
+			}
+			{\advance\xs_countb1
+			\xs_atnextsyntaxunit
+			}%
+		\xs_read_reserved_C
+		}%
+}
+
+% macro générique qui lit \xs_reserved_D en procédant à des tests avec \IfBeginWith
+% 1 sous-routine est appelée :
+% \xs_atoccurfound      (une occurrence a été trouvée)
+\def\xs_read_reserved_D{%
+	\xs_ifemptymacro\xs_reserved_D
+		{\xs_ifnum{\xs_nestlevel=0 }
+			{}
+			{\edef\__temp{%
+				\endgroup
+				\noexpand\xs_countb=\number\xs_countb\relax
+				\unexpanded{\xs_addtomacro\xs_reserved_C}{{\unexpanded\expandafter{\xs_reserved_C}}}%
+				}%
+			\__temp
+			\xs_read_reserved_D
+			}%
+		}%
+		{\xs_exptwoargs\xs_IfBeginWith_i\xs_reserved_D\xs_reserved_E
+			{\advance\xs_countb1
+			\let\xs_reserved_D\xs_reserved_A
+			\xs_atoccurfound
+			}%
+			{\xs_exparg\xs_returnfirstsyntaxunit{\xs_reserved_D}\xs_reserved_A
+			\xs_exparg\xs_removefirstsyntaxunit{\xs_reserved_D}\xs_reserved_D
+			\xs_exploregroups
+			\xs_ifx{\bgroup\xs_toks}
+				{\advance\xs_counta1
+				\begingroup
+					\expandafter\def\expandafter\xs_reserved_D\xs_reserved_A
+					\xs_calc_grouIP
+					\let\xs_reserved_C\empty
+					\def\xs_nestlevel{1}%
+					\xs_counta0
+				}
+				{\xs_eaddtomacro\xs_reserved_C{\xs_reserved_A}%
+				}%
+			}%
+		\xs_read_reserved_D
+		}%
+}
+
+\xs_newmacro\StrRemoveBraces{}{1}{1}{%
+	\def\xs_reserved_C{#1}%
+	\let\xs_reserved_B\empty
+	\def\xs_nestlevel{0}%
+	\xs_StrRemoveBraces_i
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_B}{#2}%
+}
+
+\def\xs_StrRemoveBraces_i{%
+	\xs_ifemptymacro\xs_reserved_C
+		{\xs_ifnum{\xs_nestlevel=0 }
+			{}
+			{\xs_endgroup_eaddtomacro\xs_reserved_B\xs_reserved_B
+			\xs_StrRemoveBraces_i
+			}%
+		}
+		{\xs_exparg\xs_returnfirstsyntaxunit{\xs_reserved_C}\xs_reserved_A
+		\xs_exparg\xs_removefirstsyntaxunit{\xs_reserved_C}\xs_reserved_C
+		\xs_ifx{\bgroup\xs_toks}
+			{\xs_ifx{\xs_exploregroups\relax}% on explore les groupes ?
+				{\begingroup
+					\expandafter\def\expandafter\xs_reserved_C\xs_reserved_A
+					\def\xs_nestlevel{1}%
+					\let\xs_reserved_B\empty
+				}
+				{\expandafter\xs_addtomacro\expandafter\xs_reserved_B\xs_reserved_A
+				}%
+			}
+			{\xs_eaddtomacro\xs_reserved_B{\xs_reserved_A}%
+			}%
+		\xs_StrRemoveBraces_i
+		}%
+}
+
+% \xs_cutafteroccur coupe l'argument #1 après la #3ème occurrence de #2
+% \xs_reserved_C : contient ce qui se trouve avant cette occurrence
+% \xs_reserved_D : contient ce qui se trouve avant cette occurrence y compris cette occurrence
+% \xs_reserved_E : contient ce qui se trouve après l'occurrence
+% si l'occurrence n'existe pas ou qu'un des arguments est vide, toutes les chaines renvoyées sont vides
+\long\def\xs_cutafteroccur#1#2#3{%
+	\xs_ifnum{#3<1 }
+		{\let\xs_reserved_C\empty\let\xs_reserved_E\empty\gdef\groupID{}}
+		{\xs_cutafteroccur_i{#1}{#2}{#3}}%
+}
+	
+\long\def\xs_cutafteroccur_i#1#2#3{%
+	\def\xs_reserved_D{#1}\let\xs_reserved_C\empty\def\xs_reserved_E{#2}%
+	\xs_countb0 \xs_counta0 \gdef\groupID{0}\def\xs_nestlevel{0}%
+	\def\xs_atoccurfound{%
+		\xs_ifnum{\xs_countb=\numexpr(#3)\relax}
+			{\edef\__temp{%
+				\def\noexpand\xs_reserved_C{\unexpanded\expandafter{\xs_reserved_C}}%
+				\def\noexpand\xs_reserved_D{\unexpanded\expandafter{\xs_reserved_D}}%
+				\noexpand\xs_countb=\number\xs_countb\relax
+				}%
+			\expandafter\xs_exitallgroups\__temp
+			\xs_gobarg% mange l'appel récursif \xs_read_reserved_D dans \xs_read_reserved_D
+			}
+			{\xs_eaddtomacro\xs_reserved_C{\xs_reserved_E}%
+			}%
+	}%
+	\xs_read_reserved_D
+	\xs_ifnum{\xs_countb=\numexpr(#3)\relax}% occurrence trouvée ?
+		{\let\xs_reserved_E\xs_reserved_D
+		\xs_exparg{\def\xs_reserved_D}{\xs_reserved_C#2}%
+		}
+		{\let\xs_reserved_C\empty
+		\let\xs_reserved_E\empty
+		\gdef\groupID{}%
+		}%
+}
+
+\xs_newmacro*3\IfSubStr{1}{2}{0}{%
+	\xs_cutafteroccur{#2}{#3}{#1}%
+	\expandafter\expandafter\expandafter\unless\xs_ifemptymacro\xs_reserved_D
+}
+
+\xs_newmacro*2\IfBeginWith{}{2}{0}{%
+	\xs_ifemptyarg{#2}%
+		{\xs_execsecond}
+		{\xs_IfBeginWith_i{#1}{#2}}%
+}
+
+\long\def\xs_IfBeginWith_i#1#2{%
+	\xs_ifemptyarg{#2}%
+		{\xs_execfirst% #2 est vide, tous les tests sont passés avec succès : on renvoie #3
+		}
+		{\xs_ifemptyarg{#1}%
+			{\xs_execsecond% #1 est vide, c'est que #2 est + long que #1 : on renvoie #4
+			}
+			{\xs_returnfirstsyntaxunit{#2}\xs_reserved_B
+			\xs_returnfirstsyntaxunit{#1}\xs_reserved_A
+			\xs_ifx{\xs_reserved_A\xs_reserved_B}% il y a égalité...
+				{\xs_removefirstsyntaxunit{#2}\xs_reserved_B
+				\xs_removefirstsyntaxunit{#1}\xs_reserved_A% on enlève les 1ere unités syntaxiques
+				\xs_exptwoargs\xs_IfBeginWith_i\xs_reserved_A\xs_reserved_B
+				}
+				{\xs_execsecond
+				}%
+			}%
+		}%
+}
+
+\xs_newmacro*2\IfEndWith{}{2}{0}{%
+	\xs_ifemptyarg{#2}%
+		{\xs_execsecond
+		}
+		{\xs_StrCount{#1}{#2}[\xs_reserved_A]%
+		\xs_ifnum{\xs_reserved_A=0 }
+			{\xs_execsecond}
+			{\xs_ifemptymacro\xs_reserved_C}%
+		}%
+}
+
+\xs_newmacro*4\IfSubStrBefore{1,1}{3}{0}{\xs_IfSubStrBefore_i[#1]{#2}{#3}{#4}}
+
+\def\xs_IfSubStrBefore_i[#1,#2]#3#4#5{%
+	\def\xs_reserved_C{#3}%
+	\xs_ifx{\xs_exploregroups\relax}% si on explore les groupes
+		{\let\xs_reserved_B\empty
+		\def\xs_nestlevel{0}%
+		\xs_StrRemoveBraces_i% on retire les accolades
+		\let\xs_reserved_C\xs_reserved_B
+		}
+		{}%
+	\xs_exparg\xs_cutafteroccur\xs_reserved_C{#5}{#2}%
+	\xs_exparg\xs_cutafteroccur\xs_reserved_C{#4}{#1}%
+	\gdef\groupID{}%
+	\expandafter\expandafter\expandafter\unless\xs_ifemptymacro\xs_reserved_D% bugfix 1.86, c'est \xs_reserved_D et non pas \xs_reserved_C !
+}
+
+\xs_newmacro*4\IfSubStrBehind{1,1}{3}{0}{\xs_IfSubStrBehind_i[#1]{#2}{#3}{#4}}
+\long\def\xs_IfSubStrBehind_i[#1,#2]#3#4#5{\xs_IfSubStrBefore_i[#2,#1]{#3}{#5}{#4}}
+
+\def\xs_errnumber{X}
+\def\xs_testifzero#1{% teste si #1 est constitué de 0
+	\xs_testifzero_a#1\relax
+}
+\def\xs_testifzero_a#1{%
+	\xs_ifx{\relax#1}
+		{%
+		\def\remain_part{0}%
+		\xs_execfirst
+		}
+		{%
+		\xs_ifx{0#1}
+			{%
+			\xs_testifzero_a
+			}
+			{%
+			\xs_testifzero_b#1%
+			}%
+		}%
+}
+\def\xs_testifzero_b#1\relax{%
+	\def\remain_part{#1}%
+	\xs_execsecond
+}
+\xs_newmacro\IfDecimal{}{1}{0}{%
+	\def\integerpart{0}\def\xs_intpartlen{0}%
+	\def\decimalpart{0}\def\xs_decpartlen{0}%
+	\let\xs_decimalsep\empty
+	\let\afterdecimal\empty
+	\expandafter\xs_parsesigns\expandafter{\expandafter}\detokenize\expandafter{\expanded{#1}}\relax
+}
+\def\xs_parsesigns#1#2{% #1= signes lus #2=caractère en cours
+	\xs_ifx{\relax#2}
+		{%
+		\let\afterdecimal\xs_errnumber
+		\xs_execsecond
+		}
+		{%
+		\xs_ifnum{\xs_ifx{+#2}10\xs_ifx{-#2}10>0 }
+			{%
+			\xs_parsesigns{#1#2}%
+			}
+			{%
+			\edef\xs_sgnpart{\ifnum#11=-1 -\fi}%
+			\let\integerpart\empty
+			\xs_parseintpart0#2%
+			}%
+		}%
+}
+\def\xs_parseintpart#1#2{% #1=nombre de caractères lus  #2=caractère en cours
+	\xs_ifx{\relax#2}
+		{%
+		\def\xs_intpartlen{#1}%
+		\xs_ifnum{#1>0 }
+			{%
+			\edef\integerpart{\xs_sgnpart\integerpart}%
+			\xs_execfirst
+			}
+			{%
+			\let\afterdecimal\xs_errnumber
+			\xs_execsecond
+			}%
+		}
+		{%
+		\xs_ifdigit{#2}
+			{%
+			\edef\integerpart{\integerpart#2}%
+			\expandafter\xs_parseintpart\expandafter{\number\numexpr#1+1}%
+			}
+			{%
+			\def\xs_intpartlen{#1}%
+			\xs_ifnum{\xs_ifx{.#2}10\xs_ifx{,#2}10>0 }
+				{%
+				\def\xs_decimalsep{#2}%
+				\expandafter\xs_testifzero\expandafter{\integerpart}
+					{\def\integerpart{0}}
+					{\edef\integerpart{\xs_sgnpart\remain_part}}%
+				\let\decimalpart\empty
+				\xs_parsedecpart0%
+				}
+				{%
+				\xs_gobtoendnumber#2%
+				}%
+			}%
+		}%
+}
+\def\xs_parsedecpart#1#2{% #1=nombre de caractères lus  #2=caractère en cours
+	\xs_ifx{\relax#2}
+		{%
+		\def\xs_decpartlen{#1}%
+		\xs_ifnum{#1>0 }
+			{%
+			\expandafter\xs_testifzero\expandafter{\decimalpart}
+				{%
+				\def\decimalpart{0}%
+				}
+				{}%
+			\xs_execfirst
+			}
+			{%
+			\def\decimalpart{0}\def\xs_decpartlen{0}%
+			\let\afterdecimal\xs_errnumber
+			\xs_execsecond
+			}%
+		}
+		{%
+		\xs_ifdigit{#2}
+			{%
+			\edef\decimalpart{\decimalpart#2}%
+			\expandafter\xs_parsedecpart\expandafter{\number\numexpr#1+1}%
+			}
+			{%
+			\expandafter\xs_testifzero\expandafter{\decimalpart}
+				{%
+				\def\decimalpart{0}%
+				}
+				{}%
+			\xs_gobtoendnumber#2%
+			}%
+		}%
+}
+\def\xs_gobtoendnumber#1\relax{\def\afterdecimal{#1}\xs_execsecond}
+\def\xs_ifdigit#1{%
+	\xs_ifnum{\ifnum`#1<`0 0\else1\fi \ifnum`#1>`9 0\else1\fi=11 }
+}
+\xs_newmacro\IfInteger{}{1}{0}{%
+	\IfDecimal{#1}
+		{%
+		\xs_ifnum{\decimalpart=0 }
+			{%
+			\let\afterinteger\empty
+			\xs_execfirst
+			}
+			{%
+			\edef\afterinteger{\xs_decimalsep\decimalpart}%
+			\xs_execsecond
+			}%
+		}
+		{%
+		\xs_ifnum{\xs_ifx{\xs_decimalsep\empty}01\xs_ifx{\afterdecimal\xs_errnumber}10=11 }
+			{%
+			\let\afterinteger\xs_decimalsep
+			}
+			{%
+			\edef\afterinteger{\xs_decimalsep\afterdecimal}%
+			}%
+		\xs_execsecond
+		}
+}
+
+% test d'égalité sur des chaines (et des chaines contenant des nombres)
+\long\def\xs_IfStrEqFalse_i#1#2{\let\xs_reserved_A\xs_execsecond}
+\long\def\xs_IfStrEqFalse_ii#1#2{% renvoie vrai si les 2 arg sont décimaux et s'ils sont égaux, faux sinon
+	\xs_IfDecimal{#1}%
+		{\xs_IfDecimal{#2}%
+			{\ifdim#1pt=#2pt
+				\let\xs_reserved_A\xs_execfirst
+			\else
+				\let\xs_reserved_A\xs_execsecond
+			\fi% les 2 sont décimaux : on fait le test
+			}%
+			{\let\xs_reserved_A\xs_execsecond}% un seul est décimal
+		}%
+		{\let\xs_reserved_A\xs_execsecond}% #1 n'est pas décimal
+}
+
+\long\def\xs_TestEqual#1#2{% teste si les 2 arguments sont égaux
+	\def\xs_reserved_A{#1}\def\xs_reserved_B{#2}%
+	\xs_ifx{\xs_reserved_A\xs_reserved_B}
+		{\let\xs_reserved_A\xs_execfirst}% égalité parfaite des 2 chaines
+		{\xs_reserved_D{#1}{#2}}%
+	\xs_reserved_A
+}
+
+\xs_newmacro*2\IfStrEq{}{2}{0}{% teste si les deux chaines sont égales
+	\let\xs_reserved_D\xs_IfStrEqFalse_i
+	\xs_TestEqual{#1}{#2}%
+}
+
+\xs_newmacro*2\IfEq{}{2}{0}{% teste si les 2 arguments (chaine ou nombre) sont égaux
+	\let\xs_reserved_D\xs_IfStrEqFalse_ii
+	\xs_TestEqual{#1}{#2}%
+}
+
+\def\IfStrEqCase{%
+	\xs_ifstar
+		{\xs_IfStringCase{\IfStrEq*}}%
+		{\xs_IfStringCase\IfStrEq}%
+}
+
+\def\IfEqCase{%
+	\xs_ifstar
+		{\xs_IfStringCase{\IfEq*}}%
+		{\xs_IfStringCase\IfEq}%
+}
+
+\long\def\xs_IfStringCase#1#2#3{% #1=macro avec ou sans étoile  #2=argument à tester  #3=liste des {<cas>}{code>}
+	\long\def\xs_testcase##1##2##3\_nil{% lit les 2 premieres unités syntaxiques dans ##1 et ##2. Les autres dans ##3
+		#1{#2}{##1}% compare
+			{\xs_testopt{\xs_IfStringCase_ii{##2}}{}}% le test est positif, on exécute le code correspondant et on mange l'argument optionnel ## BUGfix dans 1.82
+			{\xs_ifemptyarg{##3}%
+				{\xs_testopt{\xs_IfStringCase_i}{}}% s'il n'y a plus de cas, on exécute le code <autres cas> ## BUGfix dans 1.82
+				{\xs_testcase##3\_nil}% sinon, on recommence avec ce qui reste
+			}%
+	}%
+	\xs_testcase#3\_nil
+}
+
+\long\def\xs_IfStringCase_i[#1]{#1}
+\long\def\xs_IfStringCase_ii#1[#2]{#1}
+
+% Renvoie ce qui est à gauche de l'occurence n°#1 de la sous chaine #3 dans la chaine #2
+\xs_newmacro*3\StrBefore{1}{2}{1}{%
+	\xs_cutafteroccur{#2}{#3}{#1}%
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_C}{#4}%
+}
+
+% Renvoie ce qui est à droite de l'occurence n°#1 de la sous chaine #3 dans la chaine #2
+\xs_newmacro*3\StrBehind{1}{2}{1}{%
+	\xs_cutafteroccur{#2}{#3}{#1}%
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_E}{#4}%
+}
+
+% Renvoie ce qui est strictement compris entre les occurrences n°#1 et n°#2
+% des chaines #4 et #5 dans la chaine #3
+\xs_newmacro*4\StrBetween{1,1}{3}{1}{\xs_StrBetween_i[#1]{#2}{#3}{#4}[#5]}
+\long\def\xs_StrBetween_i[#1,#2]#3#4#5[#6]{%
+	\begingroup
+		\noexploregroups
+		\xs_cutafteroccur{#3}{#5}{#2}%
+		\xs_exparg\xs_cutafteroccur{\xs_reserved_C}{#4}{#1}%
+		\expandafter
+	\endgroup
+	\expandafter\xs_assign_xstringresult\expandafter{\xs_reserved_E}{#6}%
+	\gdef\groupID{}%
+}
+
+\def\exploregroups{\let\xs_exploregroups\relax}
+\def\noexploregroups{\def\xs_exploregroups{\let\xs_toks\relax}}
+\def\saveexploremode{\let\xs_saveexploremode\xs_exploregroups}
+\def\restoreexploremode{\let\xs_exploregroups\xs_saveexploremode}
+
+% Remplace les #1 premières occurences de la chaine #3
+% par la chaine #4 dans la chaine #2
+\xs_newmacro\StrSubstitute{0}{3}{1}{%
+	\def\xs_reserved_D{#2}\let\xs_reserved_C\empty\def\xs_reserved_E{#3}%
+	\xs_countb0 \xs_counta0 \gdef\groupID{0}\def\xs_nestlevel{0}%
+	\def\xs_atoccurfound{%
+		\xs_ifnum{#1<1 }
+			{\def\xs_reserved_A{#4}}
+			{\xs_ifnum{\xs_countb>#1 }
+				{\def\xs_reserved_A{#3}}
+				{\def\xs_reserved_A{#4}}%
+			}%
+		\xs_eaddtomacro\xs_reserved_C{\xs_reserved_A}%
+	}%
+	\xs_ifemptyarg{#3}%
+		{\xs_exparg\xs_assign_xstringresult{\xs_reserved_D}{#5}%
+		}
+		{\xs_read_reserved_D
+		\xs_exparg\xs_assign_xstringresult{\xs_reserved_C}{#5}%
+		}%
+}
+
+% Supprime les #1 premières occurrences de #3 dans #2
+\xs_newmacro\StrDel{0}{2}{1}{\xs_StrSubstitute[#1]{#2}{#3}{}[#4]}
+
+\def\xs_exitallgroups{\ifnum\xs_nestlevel>0 \endgroup\expandafter\xs_exitallgroups\fi}
+
+% Compte combien d'unités syntaxiques contient la chaine #1 ?
+\xs_newmacro\StrLen{}{1}{1}{%
+	\def\xs_reserved_C{#1}\xs_countb0 \def\xs_nestlevel{0}\gdef\groupID{0}%
+	\let\xs_atbegingroup\relax
+	\def\xs_atendofgroup{\expandafter\endgroup\expandafter\xs_countb\number\xs_countb\relax}%
+	\let\xs_atnextsyntaxunit\relax
+	\xs_read_reserved_C
+	\xs_exparg\xs_assign_xstringresult{\number\xs_countb}{#2}%
+}
+
+% Macro interne fermant autant de groupes que nécessaire pour trouver une unité syntaxique derrière
+\def\xs_continuetonext{%
+	\xs_ifemptymacro\xs_reserved_C
+		{\ifnum\xs_nestlevel>0
+			\xs_endgroup_eaddtomacro\xs_reserved_B{\expandafter{\xs_reserved_B}}% on concatène
+			\expandafter\xs_continuetonext% on recommence
+		\fi}
+		{}%
+}%
+
+\def\xs_calc_grouIP{%
+	\begingroup\def\xs_reserved_A{0}%
+	\xs_ifx{\xs_reserved_A\groupID}% si on arrive du groupe de niveau 0
+		{\endgroup\xdef\groupID{\number\xs_counta}}% on met simplement le niveau
+		{\endgroup\xs_eearg{\gdef\groupID}{\expandafter\groupID\expandafter,\number\xs_counta}}%
+}
+
+% Cette macro coupe la chaine #1 après l'unité syntaxique n°#2
+\def\StrSplit{%
+	\xs_ifstar
+		{\let\xs_reserved_E\xs_continuetonext\StrSplit_i}%
+		{\let\xs_reserved_E\relax\StrSplit_i}%
+}
+
+\xs_newmacro\StrSplit_i{}{2}{0}{\xs_StrSplit_ii{#2}{#1}\xs_StrSplit_iii}
+
+% Cette macro interne coupe la chaine #2 après l'unité syntaxique n°#1
+% Le début est assigné dans \xs_reserved_B et la fin dans \xs_reserved_C
+\long\def\xs_StrSplit_ii#1#2{%
+	\let\xs_reserved_B\empty\def\xs_reserved_C{#2}\def\xs_reserved_D{#1}\gdef\groupID{}%
+	\ifnum#1>0
+		\xs_countb0 \xs_counta0 \gdef\groupID{0}\def\xs_nestlevel{0}%
+		\def\xs_atendofgroup{%
+			\edef\__temp{%
+				\endgroup
+				\noexpand\xs_countb=\number\xs_countb\relax
+				\unexpanded{\xs_addtomacro\xs_reserved_B}{{\unexpanded\expandafter{\xs_reserved_B}}}%
+				}%
+			\__temp
+		}%
+		\def\xs_atbegingroup{\let\xs_reserved_B\empty}%
+		\def\xs_atnextsyntaxunit{%
+			\xs_eaddtomacro\xs_reserved_B{\xs_reserved_A}%
+			\xs_ifnum{\xs_countb=\xs_reserved_D\relax}
+				{\ifx\xs_reserved_C\empty\xs_reserved_E\fi
+				\edef\__temp{\def\noexpand\xs_reserved_B{\unexpanded\expandafter{\xs_reserved_B}}\def\noexpand\xs_reserved_C{\unexpanded\expandafter{\xs_reserved_C}}}%
+				\expandafter\xs_exitallgroups\__temp
+				\xs_gobarg% mange l'appel récursif \xs_read_reserved_C dans \xs_read_reserved_C
+				}
+				{}%
+		}%
+		\xs_read_reserved_C
+	\fi
+}
+
+\def\xs_StrSplit_iii#1#2{\let#1\xs_reserved_B\let#2\xs_reserved_C}
+
+% StrCut[n]{<texte>}{<motif>}\macroA\macroB
+% \macroA reçoit ce qui se trouve avant la n ème occurrence <motif> dans <texte>
+% \macroB reçoit ce qui est après cette n ème occurrence
+\xs_newmacro*3\StrCut{1}{2}{0}{%
+	\xs_ifemptyarg{#3}%
+		{\gdef\groupID{}\let\xs_reserved_C\empty\let\xs_reserved_E\empty
+		}
+		{\xs_ifnum{#1<1 }
+			{\xs_StrCut_ii{#2}{#3}1}
+			{\xs_StrCut_ii{#2}{#3}{#1}}%
+		}%
+	\xs_StrCut_iii
+}
+
+\long\def\xs_StrCut_ii#1#2#3{%
+	\let\xs_reserved_C\empty\def\xs_reserved_D{#1}\def\xs_reserved_E{#2}%
+	\xs_countb0 \xs_counta0 \gdef\groupID{0}\def\xs_nestlevel{0}%
+	\def\xs_atoccurfound{%
+		\xs_ifnum{\xs_countb=\numexpr(#3)\relax}
+			{\edef\__temp{%
+				\def\noexpand\xs_reserved_C{\unexpanded\expandafter{\xs_reserved_C}}%
+				\def\noexpand\xs_reserved_D{\unexpanded\expandafter{\xs_reserved_D}}%
+				\noexpand\xs_countb=\number\xs_countb\relax
+				}%
+			\expandafter\xs_exitallgroups\__temp
+			\xs_gobarg% stoppe la récursivité dans \xs_read_reserved_D
+			}
+			{\xs_eaddtomacro\xs_reserved_C{\xs_reserved_E}%
+			}%
+	}%
+	\xs_read_reserved_D
+	\let\xs_reserved_E\xs_reserved_D
+	\xs_exparg{\def\xs_reserved_D}{\xs_reserved_C#2}%
+}
+
+\long\def\xs_StrCut_iii#1#2{\let#1\xs_reserved_C\let#2\xs_reserved_E}
+
+% De la chaine #1, renvoie ce qui se trouve entre les positions
+%  #2 et #3, unités syntaxiques aux positions compris !
+\xs_newmacro\StrMid{}{3}{1}{%
+	\begingroup
+		\noexploregroups
+		\let\xs_reserved_E\relax
+		\xs_StrSplit_ii{#3}{#1}%
+		\edef\xs_reserved_C{\number\numexpr#2-1}%
+		\let\xs_reserved_E\relax
+		\xs_exptwoargs\xs_StrSplit_ii\xs_reserved_C\xs_reserved_B
+	\expandafter\endgroup
+	\expandafter\xs_assign_xstringresult\expandafter{\xs_reserved_C}{#4}%
+	\gdef\groupID{}%
+}
+
+% supprime #2 unités syntaxiques à gauche dans la chaine #1
+\xs_newmacro\StrGobbleLeft{}{2}{1}{%
+	\let\xs_reserved_E\relax
+	\xs_StrSplit_ii{#2}{#1}%
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_C}{#3}%
+}
+
+% extrait de #1 la chaine à gauche de longueur #2
+\xs_newmacro\StrLeft{}{2}{1}{%
+	\let\xs_reserved_E\relax
+	\xs_StrSplit_ii{#2}{#1}%
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_B}{#3}%
+}
+
+% supprime #2 unités syntaxiques à droite dans la chaine #1
+\xs_newmacro\StrGobbleRight{}{2}{1}{%
+	\xs_StrLen{#1}[\xs_reserved_D]%
+	\let\xs_reserved_E\relax
+	\xs_exparg\xs_StrSplit_ii{\number\numexpr\xs_reserved_D-#2}{#1}%
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_B}{#3}%
+}
+
+% renvoie #2 unités syntaxiques à la droite de la chaine #1
+\xs_newmacro\StrRight{}{2}{1}{%
+	\xs_StrLen{#1}[\xs_reserved_D]%
+	\let\xs_reserved_E\relax
+	\xs_exparg\xs_StrSplit_ii{\number\numexpr\xs_reserved_D-#2}{#1}%
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_C}{#3}%
+}
+
+\xs_newmacro\StrChar{}{2}{1}{%
+	\let\xs_reserved_B\empty\def\xs_reserved_C{#1}\def\xs_reserved_D{#2}%
+	\ifnum#2>0
+		\def\groupID{0}\def\xs_nestlevel{0}\xs_counta0 \xs_countb0
+		\let\xs_atbegingroup\relax
+		\def\xs_atendofgroup{\expandafter\endgroup\expandafter\xs_countb\number\xs_countb\relax}%
+		\def\xs_atnextsyntaxunit{%
+			\ifnum\xs_countb=\xs_reserved_D% la n ième US est atteinte ?
+				\edef\__temp{\def\noexpand\xs_reserved_B{\unexpanded\expandafter{\xs_reserved_A}}}% on capture l'US en cours qui est celle cherchée
+				\expandafter\xs_exitallgroups\__temp
+				\expandafter\xs_gobarg% stoppe la récursivité dans \xs_read_reserved_C
+			\fi
+		}%
+		\xs_read_reserved_C
+	\fi
+	\xs_ifemptymacro\xs_reserved_B
+		{\gdef\groupID{}}
+		{}%
+	\xs_exparg\xs_assign_xstringresult{\xs_reserved_B}{#3}%
+}
+
+% Combien de fois compte t-on #2 dans #1 ?
+\xs_newmacro\StrCount{}{2}{1}{%
+	\def\xs_reserved_D{#1}\def\xs_reserved_E{#2}\let\xs_reserved_C\empty
+	\xs_ifemptyarg{#2}%
+		{\xs_assign_xstringresult{0}{#3}%
+		}
+		{\xs_countb0 \xs_counta0 \gdef\groupID{0}\def\xs_nestlevel{0}%
+		\def\xs_atoccurfound{\let\xs_reserved_C\empty\xs_read_reserved_D}%
+		\xs_read_reserved_D
+		\xs_exparg\xs_assign_xstringresult{\number\xs_countb}{#3}%
+		}%
+}
+
+% renvoie la position de l'occurrence #1 de la sous chaine #3 dans la chaine #2
+\xs_newmacro\StrPosition{1}{2}{1}{%
+	\xs_cutafteroccur{#2}{#3}{#1}%
+	\let\xs_reserved_E\groupID
+	\xs_ifx{\xs_reserved_C\xs_reserved_D}
+		{\xs_assign_xstringresult{0}{#4}%
+		\let\xs_reserved_E\empty
+		}
+		{\xs_exparg\xs_StrLen{\xs_reserved_C}[\xs_reserved_C]%
+		\xs_exparg\xs_assign_xstringresult{\number\numexpr\xs_reserved_C+1}{#4}%
+		}%
+	\global\let\groupID\xs_reserved_E
+}
+
+\def\comparestrict{\def\xs_comparecoeff{1}}
+\def\comparenormal{\def\xs_comparecoeff{0}}
+\def\savecomparemode{\let\xs_saved_comparecoeff\xs_comparecoeff}
+\def\restorecomparemode{\let\xs_comparecoeff\xs_saved_comparecoeff}
+
+% Compare les deux arguments #1 et #2
+% Renvoie 0 s'ils sont égaux et renvoie la
+% position de la premiere unité syntaxiques différente sinon
+\xs_newmacro*2\StrCompare{}{2}{1}{%
+	\def\xs_reserved_A{#1}%
+	\def\xs_reserved_B{#2}%
+	\xs_ifx{\xs_reserved_B\xs_reserved_A}
+		{\xs_assign_xstringresult{0}{#3}}
+		{\xs_StrCompare_i{#1}{#2}{#3}}%
+}
+
+\long\def\xs_StrCompare_i#1#2#3{%
+	\def\xs_StrCompare_iii##1{%
+		\let\xs_reserved_A\empty
+		\xs_ifemptymacro\xs_reserved_C
+			{\edef\xs_reserved_A{*\xs_comparecoeff}}%
+			{\xs_ifemptymacro\xs_reserved_D
+				{\edef\xs_reserved_A{*\xs_comparecoeff}}
+				{}%
+			}%
+		\def\xs_next{\xs_exparg\xs_assign_xstringresult{\number\numexpr##1\xs_reserved_A\relax}{#3}}%
+	}%
+	\def\xs_StrCompare_ii##1{% ##1 est la position
+		\xs_exparg\xs_returnfirstsyntaxunit{\xs_reserved_C}\xs_reserved_A
+		\xs_exparg\xs_returnfirstsyntaxunit{\xs_reserved_D}\xs_reserved_B
+		\xs_ifx{\xs_reserved_B\xs_reserved_A}
+			{\xs_ifemptymacro\xs_reserved_A
+				{\xs_StrCompare_iii{##1}% les 2 unités syntaxiques sont égales, on renvoie la position
+				}
+				{\def\xs_next{\xs_exparg\xs_StrCompare_ii{\number\numexpr##1+1}}% les 2 unités syntaxiques sont égales et non vides, on recommence
+				\xs_exparg\xs_removefirstsyntaxunit{\xs_reserved_C}\xs_reserved_C
+				\xs_exparg\xs_removefirstsyntaxunit{\xs_reserved_D}\xs_reserved_D
+				}%
+			}% les 2 unités syntaxiques sont différentes : on renvoie la position
+			{\xs_StrCompare_iii{##1}%
+			}%
+		\xs_next
+	}%
+	\def\xs_reserved_C{#1}\def\xs_reserved_D{#2}%
+	\xs_StrCompare_ii1%
+}
+
+\xs_newmacro\StrFindGroup{}{2}{1}{%
+	\def\xs_reserved_A{#2}\def\xs_reserved_B{0}%
+	\xs_ifx{\xs_reserved_A\xs_reserved_B}
+		{\xs_assign_xstringresult{{#1}}{#3}}
+		{\xs_StrFindGroup_i{#1}{#2}[#3]}%
+}
+
+\long\def\xs_StrFindGroup_i#1#2[#3]{%
+	\def\xs_StrFindGroup_ii{%
+		\xs_ifemptymacro\xs_reserved_C
+			{\xs_assign_xstringresult{}{#3}% s'il ne reste plus rien, on renvoie vide
+			}
+			{\xs_exparg\xs_returnfirstsyntaxunit{\xs_reserved_C}\xs_reserved_D
+			\xs_ifx{\bgroup\xs_toks}% si la 1ère unité syntaxique est un groupe explicite
+				{\advance\xs_countb1 % on augmente le compteur
+				\xs_ifnum{\xs_countb=\xs_reserved_A\relax}% on est au groupe cherché lors de la profondeur courante ?
+					{\xs_ifx{\empty\xs_reserved_B}% on est à la profondeur maximale ?
+						{\xs_exparg\xs_assign_xstringresult{\xs_reserved_D}{#3}}% on renvoie ce groupe
+						{\xs_exparg{\expandafter\xs_StrFindGroup_i\xs_reserved_D}{\xs_reserved_B}[#3]}% on recommence avec ce groupe et les profondeurs de recherche restantes
+					}
+					{\xs_exparg\xs_removefirstsyntaxunit{\xs_reserved_C}\xs_reserved_C
+					\xs_StrFindGroup_ii
+					}%
+				}
+				{\xs_exparg\xs_removefirstsyntaxunit{\xs_reserved_C}\xs_reserved_C
+				\xs_StrFindGroup_ii
+				}%
+			}%
+	}%
+	\xs_extractgroupnumber{#2}\xs_reserved_A\xs_reserved_B
+	\xs_countb0
+	\xs_ifnum{\xs_reserved_A>0 }
+		{\def\xs_reserved_C{#1}}
+		{\let\xs_reserved_C\empty}%
+	\xs_StrFindGroup_ii
+}
+
+\def\xs_extractgroupnumber#1#2#3{%
+	\def\xs_extractgroupnumber_i##1,##2\_nil{\def#2{##1}\def#3{##2}}%
+	\xs_extractgroupnumber_i#1,\_nil
+	\ifx\empty#3\else\xs_extractgroupnumber_i#1\_nil\fi
+}
+
+\def\expandingroups{\let\xs_expandingroups\exploregroups}
+
+\def\noexpandingroups{\let\xs_expandingroups\noexploregroups}
+
+\def\StrExpand{\xs_testopt{\xs_StrExpand}{1}}
+\long\def\xs_StrExpand[#1]#2#3{%
+	\begingroup
+		\xs_expandingroups
+		\xs_ifnum{#1>0 }
+			{\xs_counta#1 \xs_countb0 \gdef\groupID{0}\def\xs_nestlevel{0}%
+			\def\xs_atendofgroup{\xs_endgroup_eaddtomacro\xs_reserved_B{\expandafter{\xs_reserved_B}}}%
+			\def\xs_atbegingroup{\let\xs_reserved_B\empty}%
+			\def\xs_atnextsyntaxunit{\xs_eeaddtomacro\xs_reserved_B{\xs_reserved_A}}%
+			\def\xs_reserved_C{#2}%
+			\xs_StrExpand_i{#1}% Appel de la macro récursive
+			}
+			{\def\xs_reserved_B{#2}%
+			}% <-- bugfix 1.85
+		\expandafter
+	\endgroup
+	\expandafter\def\expandafter#3\expandafter{\xs_reserved_B}%
+	\gdef\groupID{}%
+}
+
+\long\def\xs_StrExpand_i#1{%
+	\xs_ifnum{#1>0 }
+		{\let\xs_reserved_B\empty
+		\xs_read_reserved_C
+		\let\xs_reserved_C\xs_reserved_B
+		\def\xs_reserved_A{\xs_exparg\xs_StrExpand_i{\number\numexpr#1-1}}%
+		}
+		{\let\xs_reserved_A\relax
+		}% <-- bugfix 1.85
+	\xs_reserved_A
+}
+
+\def\scancs{\xs_testopt{\xs_scancs}{1}}
+\long\def\xs_scancs[#1]#2#3{%
+	\xs_StrExpand[#1]{#3}{#2}%
+	\edef#2{\detokenize\expandafter{#2}}%
+}
+
+\restorexstringcatcode
+
+\setverbdelim{|}%
+\fullexpandarg\saveexpandmode
+\comparenormal\savecomparemode
+\noexploregroups\saveexploremode
+\expandingroups
+
+\endinput
+
+                        H I S T O R I Q U E
+------------------------------------------------------------------------------
+v1.0    4/7/2008 : - Package achevé.
+        7/7/2008 : - Package publié sur CTAN.
+------------------------------------------------------------------------------
+v1.1    15/8/2008
+   - Le package ne nécessite plus LaTeX et est désormais utilisable sous
+     Plain eTeX.
+   - Ajout des macros \IfInteger et \IfDecimal.
+     Pour cette dernière, la partie entière et la partie décimale sont
+     récupérables dans les compteurs \integerpart et \decimalpart. Ce
+     qu'il reste après qu'un caractère non attendu soit rencontré est
+     dispo dans \xs_remainafterdecimal
+   - Correction d'un bug dans \tokenize :
+        suppression de l'expansion avec \normalexpandarg pour éviter le bug
+        avec les lettres accentuées dans l'exemple : \tokenize\aa{éù}
+   - Amélioration du code de la plupart des macros.
+   - écriture d'une routine \xs_newmacro définissant les  macros.
+   - Suppression de tous les compteurs grace à \numexpr.
+   - Nouvelles fonctionnalités internes dans :
+      \IfSubStr
+        ajout des chaines se trouvant avant et après l'occurrence testée
+        dans les sc \xs_behind_IfSubStr et \xs_before_IfSubStr
+      \StrCount
+        a) ajout de ce qui se trouve après la dernière occurrence dans la
+           sc \xs_StrCount_afterlastocccur
+        b) la macro ne dépend plus d'aucune autre
+------------------------------------------------------------------------------
+v1.2    23/8/2008
+   - Amélioration du code de \StrMid \StrGobbleLeft, \StrLeft,
+     \StrGobbleRight et \StrRight à l'aide de la nouvelle macro
+     \xs_StrSplit_i
+   - Nouveau test \IfStrEq qui compare 2 chaines
+   - Nouveau test \IfEq qui compare 2 chaines (ou 2 nombres si les 2 chaines
+     contiennent un nombre)
+   - Correction d'un bug dans \xs_formatnumber. La macro n'envisageait pas le
+     cas où son argument était vide ce qui faiasait planter
+     \IfDecimal{}{V}{F} et \IfInteger{}{V}{F}
+------------------------------------------------------------------------------
+v1.3    21/9/2008
+  - Amélioration du code, mise en place de récursivités terminales dans
+    toutes les macros récursives, simplification de \xs_TestEqual en
+    utilisant \ifx
+  - Nouvelles macros \IfStrEqCase et \IfEqCase
+      Teste si une chaîne est égale à plusieurs chaines données et
+      exécute un code spécifique
+  - Création de la macro publique \StrSplit
+      Coupe la chaine en 2 à une position donnée
+  - Nouvelle macro \StrCompare
+      Compare 2 chaînes et renvoie la position du 1er caractère différent.
+      Renvoie 0 si elles sont égales.
+------------------------------------------------------------------------------
+v1.3a   29/9/2008
+  - Correction d'un bug : \expandafter#1
+    dans les macros \IfSubStrBefore et \StrBetween qui buggue si #1 est un
+    nombre > 9 !
+  - Ré écriture de \xs_returnfirstsyntaxunit et \xs_gobarg qui
+    deviennent purement développables.
+  - Ré écriture de \StrLen
+  - Nouvelle macro interne \xs_cutafteroccur
+      Coupe la chaine après la nième occurrence d'une sous chaine.
+  - Code amélioré de \StrMid, \StrLeft, \StrGobbleLeft, \StrRight,
+    \StrGobbleRight grace à \xs_cutafteroccur
+------------------------------------------------------------------------------
+v1.4   4/11/2008
+  - xstring traite ses arguments par unité syntaxique, et donc toutes les
+    macros internes ont été ré-écrites à cette fin.
+  - Le manuel a été ré-écrit, rendu plus clair et mieux structuré.
+  - Nouvelle fonctionnalité : \expandarg
+      le 1er lexème de chaque argument est 1-développé avant que la
+      macro ne soit appelée. Si un argument comporte plus qu'1 lexème,
+      il faut passer par \scancs*[1] pour 1-développer toutes les unités
+      syntaxiques.
+  - Correction de 2 erreurs dans le manuel anglais :  0 est la valeur par
+    défaut dans \StrSubstitute et \StrDel
+  - Cohérence dans les nom des séquences de contrôles temporaires qui
+    sont désormais : \xs_reserved_A à \xs_reserved_E
+------------------------------------------------------------------------------
+v1.4a  12/11/2008
+  - Correction d'un bug dans \xs_StrSplit dans le cas où l'argument
+     numérique est <1 : la 1ere coupure doit être vide et le seconde doit
+     être égale à l'argument.
+------------------------------------------------------------------------------
+v1.4b  16/11/2008
+  - Correction de 2 bugs dans \xs_returnfirstsyntaxunit
+------------------------------------------------------------------------------
+v1.5   31/12/2008
+  - Nouvelles fonctionnalités dans la recherche de groupes par un
+    identificateur caractérisant leur imbrication. Implémentation de :
+      1) \StrFindGroup
+      2) \groupID
+  - Ajout des nouvelles macros génériques \xs_read_reserved_C et
+    \xs_read_reserved_D
+  - Correction d'un bug dans \StrSplit : \StrSplit{{a}bc}{1}[\truc] faisait
+    que \truc contenait «a{a}».
+  - Correction d'un bug dans \xs_newmacro : l'argument optionnel était
+    détokénisé à tort dans les macros étoilées.
+  - Dans \xs_newmacro, on doit choisir le numéro du dernier argument devant
+    être détokénisé dans le cas d'une macro étoilée (sachant que
+     l'argument optionnel ne l'est jamais)
+------------------------------------------------------------------------------
+v1.5a  09/2/2009
+  - Nouvelle macro \StrExpand, sensible au mode d'exploration. La macro est
+    indépendante du mode d'exploration et dispose de ses propres commandes
+    d'exploration : \expandingroups et \noexpandingroups
+  - Ré-écriture de \scancs, qui devient triviale puisque dépendant de
+    \StrExpand. Il n'y a plus de version étoilée et désormais, \scancs
+    est sensible au mode d'exploration.
+  - Correction d'un bug dans \IfInteger : \IfInteger{2.0}{V}{F} affichait F
+  - Correction de bugs : mettre \let\xs_reserved_E\relax avant d'appeler
+    \xs_StrSplit_i
+  - Suppression des messages d'erreur, de warning et d'info. xstring devient
+    donc silencieux ;)
+  - Passage de 3 à 2 compteurs
+  - Le manuel est désormais plus coloré, en espérant qu'il sera un peu
+    plus agréable à lire !
+------------------------------------------------------------------------------
+v1.5b  13/3/2009
+  - Modification d'un grand nombre de macros de telle sorte que vraiment
+    n'importe quel code peut désormais être placé dans les arguments des
+    macros (comme par exemple des \if, \ifx ou autre, même sans leur \fi, ce
+    qui n'était pas possible jusqu'alors)
+------------------------------------------------------------------------------
+v1.5c  05/6/2009
+  - Correction d'un bug dans \IfBeginWith : il faut appeler
+    \xs_returnfirstsyntaxunit pour l'argument #2 puis pour l'argument #1 et
+    non pas l'inverse pour que \xs_toks reflète ce qui se trouve dans #1
+  - Correction d'un bug dans \xs_returnfirstsyntaxunit au cas où #1 commence
+    par un espace : mettre \xs_toks à 0
+  - Correction d'un bug dans \xs_returnfirstsyntaxunit :
+    \xs_returnfirstsyntaxunit{{}}\truc
+    faisait que \truc se développait en un espace.
+  - Correction d'un bug dans \xs_removefirstsyntaxunit où le cas
+    \xs_removefirstsyntaxunit{ {b}}\truc
+    donnait \truc se développant en «b» au lieu de «{b}».
+------------------------------------------------------------------------------
+v1.5d  28/3/2010
+  - Correction d'un bug dans \IfInteger : \afterinteger ne donnait pas le
+    bon résultat. Par exemple avec 1.23 il renvoyait {} au lieu de {.23}
+  - \xs_formatnumber ne detokenize plus ses arguments (que m'est-il passé
+    par la tête pour que je code un truc comme ca ?), et donc
+    \afterinteger et \xs_afterdecimal ont des tokens ayant le bon
+    catcode
+------------------------------------------------------------------------------
+v1.6  24/10/2012
+  - Correction d'un bug dans \xs_cutafteroccur au cas où #3<1
+  - \IfDecimal ne \detokenize plus l'argument.
+  - Nouvelle version de \tokenize qui enlevait les accolades si son argument
+    était entre accolades
+  - Nouvelle macro \StrCut
+  - \xs_cutafteroccur_i ne produit plus d'espace indésirable si #3 était
+    évalué par \numexpr
+------------------------------------------------------------------------------
+v1.7  13/1/2013
+  - Correction d'un manque de rigueur dans les assignations concernant
+    \groupID : elles sont toutes globales désormais
+  - Les macros de xstring sont \long
+------------------------------------------------------------------------------
+v1.7a 28/2/2013
+  - Correction d'un espace parasite dans \xs_removefirstsyntaxunit
+------------------------------------------------------------------------------
+v1.7b 29/7/2013
+  - La date contenue dans \xstringdate est désormais conforme
+------------------------------------------------------------------------------
+v1.7c 13/10/2013
+  - les macros impliquées dans \IfStrCase et \IfStrEqCase sont désormais \long
+------------------------------------------------------------------------------
+v1.8  07/12/2018
+  - affectations globales supprimées (sauf pour \groupID) afin de ne pas
+    surcharger la pile de sauvegarde
+  - nettoyage du code, corrections de lourdeurs et maladresses
+------------------------------------------------------------------------------
+v1.81 09/12/2018
+  - bug dans \IfInteger et \IfDecimal, la macro \xs_afterdecimal est indéfinie
+    et doit être remplacée par \afterdecimal
+------------------------------------------------------------------------------
+v1.82 01/02/2019
+  - \xs_testopt n'est pas longue et provoque un bug dans \xs_IfStrCase et
+    \xs_IfStrCase lorsque #1 contient \par : \xs_testopt reste courte et
+    \xs_IfStringCase a été modifiée pour que cela fonctionne.
+    ------------------------------------------------------------------------------
+v1.83 06/02/2019
+  - mauvaise approche et mauvais fix dans la v1.82 : \xs_testopt devient
+    longue, pas le choix (et donc aussi \xs_ifnxttok)
+------------------------------------------------------------------------------
+v1.84 21/07/2021
+  - encodage du fichier xstring.tex en UTF-8
+  ------------------------------------------------------------------------------
+v1.85 14/01/2023
+    - 2 espaces parasites corrigés
+------------------------------------------------------------------------------
+v1.86 20/08/2023
+    - correction d'un bug dans \xs_IfSubStrBefore_i (signalé par Abbas Shams)
+    - les tests \IfDecimal et \IfInteger ne sont plus limités par le nombre de
+      chiffres de leurs parties décimale ou entière

@@ -1,0 +1,831 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%      File: langsci-gb4e.sty
+%%    Author: Language Science Press (http://langsci-press.org)
+%%      Date: 2022-10-21
+%%   Purpose: This file contains an adapted version of the gb4e package
+%%            for typetting linguistic examples. It also includes
+%%            adapted versions of the cgloss and jambox packages
+%%  Language: LaTeX
+%%   Licence: The LaTeX Project Public License, Version 1.3c
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ProvidesPackage{langsci-gb4e}[2022/10/21]
+
+\usepackage{etoolbox}
+
+\newtoggle{cgloss}
+\toggletrue{cgloss}
+\newtoggle{jambox}
+\toggletrue{jambox}
+\newtoggle{gb4eLowerPenalty}
+\DeclareOption{nocgloss}{\togglefalse{cgloss}}
+\DeclareOption{nojambox}{\togglefalse{jambox}}
+\DeclareOption{lowerpenalty}{\toggletrue{gb4eLowerPenalty}}
+\DeclareOption*{\PackageWarning{langsci-gb4e}{Unknown option ‘\CurrentOption’}}
+\ProcessOptions\relax
+
+% \def\gbVersion{4e}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+%  Format of examples: %
+%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{exe} or \exbegin
+% <examples>                           (arab.)
+% \begin{xlist} or \xlist
+% <subexamples>                        (1st embedding, alph.)
+% \begin{xlisti} or \xlisti
+% <subsubexamples>                     (2st embedding, rom.)
+% \end{xlisti}  or \endxlisti
+% <more examples>
+% \end{xlist} or \endxlist
+% <still more examples>
+% \end{exe} or \exend
+%
+% Other sublist-styles: xlistA (Alph.), xlistI (Rom.), xlistn (arab)
+%
+% \ex                               (produces Number)
+% \ex <sentence>                    (numbered example)
+% \ex[jdgmt]{sentence}              (numbered example with judgement)
+%
+% \exi{ident}                      (produces identifier)
+% \exi{ident} <sentence>           (example numbered with identifier)
+% \exi{ident}[jdgmt]{sentence}     (dito with judgement)
+%                      (\exr, \exp and \sn are defined in terms of \exi)
+%
+% \exr{label}                       (produces cross-referenced Num.)
+% \exr{label} <sentence>            (cross-referenced example)
+% \exr{label}[jdgmt]{sentence}      (cross-referenced example with judgement)
+%
+% \exp{label}                       (same as
+% \exp{label} <sentence>                     \exr but
+% \exp{label}[jdgmt]{sentence}                        with prime)
+%
+% \sn <sentence>                    (unnumbered example)
+% \sn[jdgmt]{sentence}              (unnumbered example with judgement)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% For my own lazyness (HANDLE WITH CARE---this works only
+%                                 in boringly normal cases.... ):
+%
+% \ea                works like \begin{exe}\ex or \begin{xlist}\ex,
+%                            depending on context
+% \z                 works like \end{exe} or \end{xlist}, dep on context
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%CGLOSS META
+% Modified version of cgloss4e.sty.  Hacked and renamed cgloss.sty
+% by Alexis Dimitriadis (alexis@babel.ling.upenn.edu). Integrated into
+% langsci-gb4e.sty by Sebastian Nordhoff
+% EnD CGLOSS META
+
+
+
+% \@ifundefined{new@fontshape}{\def\reset@font{}\let\mathrm\rm\let\mathit\mit}{} %%deprecate this
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                      %%
+%        Font Specifications                                           %%
+%                                                                      %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Define commands for fonts to be used:
+%
+% 1) regular
+% a. example line
+\newcommand{\exfont}{\normalsize\upshape}
+% b. glossing line
+\newcommand{\glossfont}{\normalsize\upshape}
+% c. translation font
+\newcommand{\transfont}{\normalsize\upshape}
+% d. example number
+\newcommand{\exnrfont}{\exfont\upshape}
+%
+% 2) in footnote
+% a. example line
+\newcommand{\fnexfont}{\footnotesize\upshape}
+% b. glossing line
+\newcommand{\fnglossfont}{\footnotesize\upshape}
+% c. translation font
+\newcommand{\fntransfont}{\footnotesize\upshape}
+% d. example number
+\newcommand{\fnexnrfont}{\fnexfont\upshape}
+
+\newcommand{\examplesroman}{
+  \let\eachwordone=\upshape
+  \exfont{\upshape}
+}
+\newcommand{\examplesitalics}{
+  \let\eachwordone=\itshape
+  \exfont{\itshape}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                     %%
+%%  Macros for examples, roughly following Linguistic Inquiry style.   %%
+%%                                                                     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\qlist{\begin{list}{\Alph{xnum}.}{\usecounter{xnum}%
+\setlength{\rightmargin}{\leftmargin}}}
+\def\endqlist{\end{list}}
+
+\newif\if@noftnote\@noftnotetrue
+\newif\if@xrec\@xrecfalse
+\@definecounter{fnx}
+
+% set a flag that we are in footnotes now and change the size of example fonts
+\let\oldFootnotetext\@footnotetext
+
+\renewcommand\@footnotetext[1]{%
+   \@noftnotefalse\setcounter{fnx}{0}%
+\begingroup%
+\let\exfont\fnexfont%
+\let\glossfont\fnglossfont%
+\let\transfont\fntransfont%
+\let\exnrfont\fnexnrfont%
+ 	\oldFootnotetext{#1}%
+\endgroup%
+\@noftnotetrue}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                   %%
+%% 			counters				     %%
+%%                                                                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% start counters with 1
+\newcount\@xnumdepth \@xnumdepth = 0
+
+% define four levels of indentation
+\@definecounter{xnumi}
+\@definecounter{xnumii}
+\@definecounter{xnumiii}
+\@definecounter{xnumiv}
+
+
+% use (1) on page, but (i) in footnotes
+\def\thexnumi
+{\if@noftnote%
+\@arabic\@xsi{xnumi}%
+\else%
+\@roman\@xsi{xnumi}%
+\fi%
+}
+\def\thexnumii{\@xsii{xnumii}}
+\def\thexnumiii{\@xsiii{xnumiii}}
+\def\thexnumiv{\@xsiv{xnumiv}}
+\def\p@xnumii{\thexnumi%
+\if@noftnote%
+\else%
+.%
+\fi}
+\def\p@xnumiii{\thexnumi\thexnumii-}
+\def\p@xnumiv{\thexnumi\thexnumii-\thexnumiii-}
+
+\def\xs@default#1{\csname @@xs#1\endcsname}
+\def\@@xsi{\let\@xsi\arabic}
+\def\@@xsii{\let\@xsii\alph}
+\def\@@xsiii{\let\@xsiii\roman}
+\def\@@xsiv{\let\@xsi\arabic}
+
+\@definecounter{rxnumi}
+\@definecounter{rxnumii}
+\@definecounter{rxnumiii}
+\@definecounter{rxnumiv}
+
+\def\save@counters{%
+\setcounter{rxnumi}{\value{xnumi}}%
+\setcounter{rxnumii}{\value{xnumii}}%
+\setcounter{rxnumiii}{\value{xnumiii}}%
+\setcounter{rxnumiv}{\value{xnumiv}}}%
+
+\def\reset@counters{%
+\setcounter{xnumi}{\value{rxnumi}}%
+\setcounter{xnumii}{\value{rxnumii}}%
+\setcounter{xnumiii}{\value{rxnumiii}}%
+\setcounter{xnumiv}{\value{rxnumiv}}}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                   %%
+%% 			widths			                     %%
+%%                                                                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Control the width of example identifiers
+\def\exewidth#1{\def\@exwidth{#1}}
+
+\newcommand{\twodigitexamples}{\exewidth{(23)}}
+\newcommand{\threedigitexamples}{\exewidth{(234)}}
+\newcommand{\fourdigitexamples}{\exewidth{(2345)}}
+
+\def\gblabelsep#1{\def\@gblabelsep{#1}}
+\gblabelsep{1em}
+
+\def\subexsep#1{\def\@subexsep{#1}}
+\subexsep{1.5ex}
+
+% set initial sizes of example number and judgement sizes
+\exewidth{\exnrfont (35)}
+
+% how much should examples in footnotes be indented?
+\newlength{\footexindent}
+\setlength{\footexindent}{0pt}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                   %%
+%% 			example lists				     %%
+%%                                                                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\exe{%
+    %\ifnum\value{equation}>9 \exewidth{(23)}\else\fi%
+    %inserted by LangSci, for large example numbers
+    \ifnum\value{equation}>998 \exewidth{(1235)}\else\ifnum\value{equation}>98 \exewidth{(235)}\fi\fi%
+    \@ifnextchar [{\@exe}{\@exe[\@exwidth]}}
+
+\def\@exe[#1]{\ifnum \@xnumdepth >0%
+                 \if@xrec\@exrecwarn\fi%
+                 \if@noftnote\@exrecwarn\fi%
+                 \@xnumdepth0\@listdepth0\@xrectrue%
+                 \save@counters%
+              \fi%
+                 \advance\@xnumdepth \@ne \@@xsi%
+                 \if@noftnote%
+                        \begin{list}{(\thexnumi)}%
+                        {\usecounter{xnumi}\@subex{#1}{\@gblabelsep}{0em}%
+                        \setcounter{xnumi}{\value{equation}}}%
+                        \iftoggle{gb4eLowerPenalty}{\@itempenalty-1000}{}
+                 \else%
+                        \begin{list}{(\roman{xnumi})}%
+                        {\usecounter{xnumi}\@subex{(iiv)}{\@gblabelsep}{\footexindent}%
+                        \setcounter{xnumi}{\value{fnx}}}%
+                        \iftoggle{gb4eLowerPenalty}{\@itempenalty-1000}{}
+                 \fi}
+
+
+\def\endexe{\if@noftnote\setcounter{equation}{\value{xnumi}}%
+                   \else\setcounter{fnx}{\value{xnumi}}%
+                        \reset@counters\@xrecfalse\fi\end{list}}
+
+\def\@exrecwarn{\typeout{*** Recursion on "exe"---your
+                example numbering will probably be screwed up!}}
+
+\def\xlist{\@ifnextchar [{\@xlist{}}{\@xlist{}[iv.]}}
+\def\xlista{\@ifnextchar [{\@xlist{\alph}}{\@xlist{\alph}[m.]}}
+\def\xlistabr{\@ifnextchar [{\@xlist{(\alph)}}{\@xlist{(\alph)}[m.]}}
+\def\xlisti{\@ifnextchar [{\@xlist{\roman}}{\@xlist{\roman}[iv.]}}
+\def\xlistn{\@ifnextchar [{\@xlist{\arabic}}{\@xlist{\arabic}[9.]}}
+\def\xlistA{\@ifnextchar [{\@xlist{\Alph}}{\@xlist{\Alph}[M.]}}
+\def\xlistI{\@ifnextchar [{\@xlist{\Roman}}{\@xlist{\Roman}[IV.]}}
+
+\def\endxlist{\end{list}}
+\def\endxlista{\end{list}}
+\def\endxlistabr{\end{list}}
+\def\endxlistn{\end{list}}
+\def\endxlistA{\end{list}}
+\def\endxlistI{\end{list}}
+\def\endxlisti{\end{list}}
+
+
+
+
+%%% a generic sublist-styler
+\def\@xlist#1[#2]{\ifnum \@xnumdepth >3 \@toodeep\else%
+    \advance\@xnumdepth \@ne%
+    \edef\@xnumctr{xnum\romannumeral\the\@xnumdepth}%
+    \def\@bla{#1}
+    \ifx\@bla\empty\xs@default{\romannumeral\the\@xnumdepth}\else%
+      \expandafter\let\csname @xs\romannumeral\the\@xnumdepth\endcsname#1\fi
+    \begin{list}{\csname the\@xnumctr\endcsname.}%
+                {\usecounter{\@xnumctr}\@subex{#2}{\@subexsep}{0em}}\fi}
+
+%% Added third argument to be able to add some more space to leftmargin
+%% for footnotes that have bigger indentation.
+%% St. M�. 07.01.2007
+\def\@subex#1#2#3{\settowidth{\labelwidth}{#1}\itemindent\z@\labelsep#2%
+         \ifnum\the\@xnumdepth=1%
+           \topsep 7\p@ plus2\p@ minus3\p@\itemsep3\p@ plus2\p@\else%
+           \topsep1.5\p@ plus\p@\itemsep1.5\p@ plus\p@\fi%
+         \parsep\p@ plus.5\p@ minus.5\p@%
+         \leftmargin\labelwidth\advance\leftmargin#2\advance\leftmargin#3\relax}
+
+%%% the example-items
+\def\ex{\@ifnextchar [{\@ex}{\item}}
+\def\@ex[#1]#2{\item\@exj[#1]{#2}}
+\def\@exj[#1]#2{\@exjbg{#1} #2 \end{list}}
+\def\exi#1{\item[#1]\@ifnextchar [{\@exj}{}}
+\def\judgewidth#1{\def\@jwidth{#1}}
+\judgewidth{??}
+\judgewidth{*} % if wider judgements are needed, enlarge within papers
+\def\@exjbg#1{\begin{list}{#1}{\@subex{\@jwidth}{.5ex}{0em}}\item}
+\def\exr#1{\exi{{(\ref{#1})}}}
+\def\exp#1{\exi{{(\ref{#1}$'$)}}}
+\def\sn{\exi{}}
+
+
+\def\ex{\@ifnextchar [{\exnrfont\@ex}{\exnrfont\item\exfont}}
+\def\@ex[#1]#2{\item\@exj[#1]{\exfont#2}}
+
+\def\@exjbg#1{\begin{list}{{\exnrfont#1}}{\@subex{\@jwidth}{.5ex}{0em}}\item}
+\def\exi#1{\item[{\exnrfont#1}]\@ifnextchar [{\exnrfont\@exj}{}}
+
+\def\ea{\ifnum\@xnumdepth=0\begin{exe}\else\begin{xlist}[iv.]\fi\raggedright\ex}
+\def\eal{\begin{exe}\exnrfont\ex\begin{xlist}[iv.]\raggedright}
+\def\eas{\ifnum\@xnumdepth=0\begin{exe}[(34)]\else\begin{xlist}[iv.]\fi\ex\begin{tabular}[t]{@{}p{\linewidth}@{}}}
+
+% allow hyphenation and justification
+\def\eanoraggedright{\ifnum\@xnumdepth=0\begin{exe}\else\begin{xlist}[iv.]\fi\ex}
+\def\ealnoraggedright{\begin{exe}\exnrfont\ex\begin{xlist}[iv.]}
+
+
+
+\def\z{\ifnum\@xnumdepth=1\end{exe}\else\end{xlist}\fi}
+\def\zl{\end{xlist}\end{exe}}
+\def\zs{\end{tabular}\ifnum\@xnumdepth=1\end{exe}\else\end{xlist}\fi}
+\def\zllast{\end{xlist}\end{exe}\removelastskip}
+
+% Control vertical space for examples in footnotes
+\def\zlast{\z\vspace{-\baselineskip}}
+\def\eafirst{\vspace{-1.5\baselineskip}\ea}
+
+%%%%%% control the alignment of exampleno. and (picture-)example
+%%%%%%         (by Lex Holt <lex@cogsci.ed.ac.uk>).
+\def\attop#1{\leavevmode\vtop{\strut\vskip-\baselineskip\vbox{#1}}}
+\def\atcenter#1{$\vcenter{#1}$}
+%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                   %%
+%%      several examples in one line                                 %%
+%%                                                                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\xbox}[2]{\noindent\parbox[t]{#1}{#2}\noindent}
+\newcommand{\nobreakbox}[1]{\xbox{\linewidth}{#1}}
+\newcommand{\xref}[1]{(\ref{#1})}
+\newcommand{\xxref}[2]{(\ref{#1}--\ref{#2})}
+
+
+\iftoggle{cgloss}{
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                   %%
+%%     CGLOSS starts here                                            %%
+%%                                                                   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\let\@gsingle=1
+\def\singlegloss{\let\@gsingle=1}
+\def\nosinglegloss{\let\@gsingle=0}
+\@ifundefined{new@fontshape}%
+   {\def\@selfnt{\ifx\@currsize\normalsize\@normalsize\else\@currsize\fi}}
+   {\def\@selfnt{\selectfont}}
+
+\def\gll%                  % Introduces 2-line text-and-gloss.
+   {\raggedright%
+     \bgroup %\begin{flushleft}
+     \ifx\@gsingle1%
+	 \def\baselinestretch{1}\@selfnt\fi
+    \bgroup
+    \twosent
+}
+
+\def\glll%                  % Introduces 3-line text-and-gloss.
+   {\bgroup %\begin{flushleft}
+     \ifx\@gsingle1%
+	\def\baselinestretch{1}\@selfnt\fi
+    \bgroup
+    \threesent
+}
+
+
+\def\gllll%                  % Introduces 4-line text-and-gloss.
+   {\bgroup %\begin{flushleft}
+     \ifx\@gsingle1%
+	\def\baselinestretch{1}\@selfnt\fi
+    \bgroup
+    \foursent
+}
+
+
+\def\glllll%                  % Introduces 5-line text-and-gloss.
+   {\bgroup %\begin{flushleft}
+     \ifx\@gsingle1%
+	\def\baselinestretch{1}\@selfnt\fi
+    \bgroup
+    \fivesent
+}
+
+
+\def\gllllll%                  % Introduces 6-line text-and-gloss.
+   {\bgroup %\begin{flushleft}
+     \ifx\@gsingle1%
+	\def\baselinestretch{1}\@selfnt\fi
+    \bgroup
+    \sixsent
+}
+
+
+\def\glllllll%                  % Introduces 7-line text-and-gloss.
+   {\bgroup %\begin{flushleft}
+     \ifx\@gsingle1%
+	\def\baselinestretch{1}\@selfnt\fi
+    \bgroup
+    \sevensent
+}
+
+
+\def\gllllllll%                  % Introduces 8-line text-and-gloss.
+   {\bgroup %\begin{flushleft}
+     \ifx\@gsingle1%
+	\def\baselinestretch{1}\@selfnt\fi
+    \bgroup
+    \eightsent
+}
+
+
+\newlength{\gltoffset}
+\setlength{\gltoffset}{.17\baselineskip}
+\newcommand{\nogltOffset}{\setlength{\gltoffset}{0pt}}
+\newcommand{\resetgltOffset}{\setlength{\gltoffset}{.17\baselineskip}}
+\def\glt{\ifhmode\\*[\gltoffset]\else\nobreak\vskip\gltoffset\nobreak\fi\transfont}
+
+
+% Introduces a translation
+\let\trans\glt
+
+% \def\gln{\relax}
+%       % Ends the gloss environment.
+
+% The following TeX code is adapted, with permission, from:
+% gloss.tex: Macros for vertically aligning words in consecutive sentences.
+% Version: 1.0  release: 26 November 1990
+% Copyright (c) 1991 Marcel R. van der Goot (marcel@cs.caltech.edu).
+
+\newbox\lineone % boxes with words from first line
+\newbox\linetwo
+\newbox\linethree
+\newbox\linefour
+\newbox\linefive
+\newbox\linesix
+\newbox\lineseven
+\newbox\lineeight
+\newbox\wordone % a word from the first line (hbox)
+\newbox\wordtwo
+\newbox\wordthree
+\newbox\wordfour
+\newbox\wordfive
+\newbox\wordsix
+\newbox\wordseven
+\newbox\wordeight
+\newbox\gline % the constructed double line (hbox)
+\newskip\glossglue % extra glue between glossed pairs or tuples
+\glossglue = 0pt plus 2pt minus 1pt % allow stretch/shrink between words
+%\glossglue = 5pt plus 2pt minus 1pt % allow stretch/shrink between words
+\newif\ifnotdone
+
+\@ifundefined{eachwordone}{\let\eachwordone=\upshape}{\relax}
+\@ifundefined{eachwordtwo}{\let\eachwordtwo=\upshape}{\relax}
+\@ifundefined{eachwordthree}{\let\eachwordthree=\upshape}{\relax}
+\@ifundefined{eachwordfour}{\let\eachwordfour=\upshape}{\relax}
+\@ifundefined{eachwordfive}{\let\eachwordfive=\upshape}{\relax}
+\@ifundefined{eachwordsix}{\let\eachwordsix=\upshape}{\relax}
+\@ifundefined{eachwordseven}{\let\eachwordseven=\upshape}{\relax}
+\@ifundefined{eachwordeight}{\let\eachwordeight=\upshape}{\relax}
+
+\def\lastword#1#2#3% #1 = \each, #2 = line box, #3 = word box
+   {\setbox#2=\vbox{\unvbox#2%
+                    \global\setbox#3=\lastbox
+                   }%
+    \ifvoid#3\global\setbox#3=\hbox{#1\strut{} }\fi
+        % extra space following \strut in case #1 needs a space
+   }
+
+\def\testdone
+   {\ifdim\ht\lineone=0pt
+         \ifdim\ht\linetwo=0pt \notdonefalse % tricky space after pt
+         \else\notdonetrue
+         \fi
+    \else\notdonetrue
+    \fi
+   }
+
+\gdef\getwords(#1,#2)#3 #4\\% #1=linebox, #2=\each, #3=1st word, #4=remainder
+   {\setbox#1=\vbox{\hbox{#2\strut#3{} }% adds space, the {} is needed for CJK otherwise the space
+                                        % would be ignored
+                    \unvbox#1%
+                   }%
+    \def\more{#4}%
+    \ifx\more\empty\let\more=\donewords
+    \else\let\more=\getwords
+    \fi
+    \more(#1,#2)#4\\%
+   }
+
+\gdef\donewords(#1,#2)\\{}%
+
+\gdef\twosent#1\\ #2\\{% #1 = first line, #2 = second line
+    \getwords(\lineone,\eachwordone)#1 \\%
+    \getwords(\linetwo,\eachwordtwo)#2 \\%
+    \loop\lastword{\eachwordone}{\lineone}{\wordone}%
+         \lastword{\eachwordtwo}{\linetwo}{\wordtwo}%
+         \global\setbox\gline=\hbox{\unhbox\gline
+                                    \hskip\glossglue
+                                    \vtop{\box\wordone   % vtop was vbox
+                                          \nointerlineskip
+                                          \box\wordtwo
+                                         }%
+                                   }%
+         \testdone
+         \ifnotdone
+    \repeat
+    \egroup % matches \bgroup in \gloss
+   \gl@stop}
+
+\gdef\threesent#1\\ #2\\ #3\\{% #1 = first line, #2 = second line, #3 = third
+    \getwords(\lineone,\eachwordone)#1 \\%
+    \getwords(\linetwo,\eachwordtwo)#2 \\%
+    \getwords(\linethree,\eachwordthree)#3 \\%
+    \loop\lastword{\eachwordone}{\lineone}{\wordone}%
+         \lastword{\eachwordtwo}{\linetwo}{\wordtwo}%
+         \lastword{\eachwordthree}{\linethree}{\wordthree}%
+         \global\setbox\gline=\hbox{\unhbox\gline
+                                    \hskip\glossglue
+                                    \vtop{\box\wordone   % vtop was vbox
+                                          \nointerlineskip
+                                          \box\wordtwo
+                                          \nointerlineskip
+                                          \box\wordthree
+                                         }%
+                                   }%
+         \testdone
+         \ifnotdone
+    \repeat
+    \egroup % matches \bgroup in \gloss
+   \gl@stop}
+
+
+
+\gdef\foursent#1\\ #2\\ #3\\ #4\\{% #1 = first line, #2 = second line, #3 = third etc
+    \getwords(\lineone,\eachwordone)#1 \\%
+    \getwords(\linetwo,\eachwordtwo)#2 \\%
+    \getwords(\linethree,\eachwordthree)#3 \\%
+    \getwords(\linefour,\eachwordfour)#4 \\%
+    \loop\lastword{\eachwordone}{\lineone}{\wordone}%
+         \lastword{\eachwordtwo}{\linetwo}{\wordtwo}%
+         \lastword{\eachwordthree}{\linethree}{\wordthree}%
+         \lastword{\eachwordfour}{\linefour}{\wordfour}%
+         \global\setbox\gline=\hbox{\unhbox\gline
+                                    \hskip\glossglue
+                                    \vtop{\box\wordone   % vtop was vbox
+                                          \nointerlineskip
+                                          \box\wordtwo
+                                          \nointerlineskip
+                                          \box\wordthree
+                                          \nointerlineskip
+                                          \box\wordfour
+                                         }%
+                                   }%
+         \testdone
+         \ifnotdone
+    \repeat
+    \egroup % matches \bgroup in \gloss
+   \gl@stop}
+
+
+
+\gdef\fivesent#1\\ #2\\ #3\\ #4\\ #5\\{% #1 = first line, #2 = second line, #3 = third etc
+    \getwords(\lineone,\eachwordone)#1 \\%
+    \getwords(\linetwo,\eachwordtwo)#2 \\%
+    \getwords(\linethree,\eachwordthree)#3 \\%
+    \getwords(\linefour,\eachwordfour)#4 \\%
+    \getwords(\linefive,\eachwordfive)#5 \\%
+    \loop\lastword{\eachwordone}{\lineone}{\wordone}%
+         \lastword{\eachwordtwo}{\linetwo}{\wordtwo}%
+         \lastword{\eachwordthree}{\linethree}{\wordthree}%
+         \lastword{\eachwordfour}{\linefour}{\wordfour}%
+         \lastword{\eachwordfive}{\linefive}{\wordfive}%
+         \global\setbox\gline=\hbox{\unhbox\gline
+                                    \hskip\glossglue
+                                    \vtop{\box\wordone   % vtop was vbox
+                                          \nointerlineskip
+                                          \box\wordtwo
+                                          \nointerlineskip
+                                          \box\wordthree
+                                          \nointerlineskip
+                                          \box\wordfour
+                                          \nointerlineskip
+                                          \box\wordfive
+                                         }%
+                                   }%
+         \testdone
+         \ifnotdone
+    \repeat
+    \egroup % matches \bgroup in \gloss
+   \gl@stop}
+
+
+
+\gdef\sixsent#1\\ #2\\ #3\\ #4\\ #5\\ #6\\{% #1 = first line, #2 = second line, #3 = third etc
+    \getwords(\lineone,\eachwordone)#1 \\%
+    \getwords(\linetwo,\eachwordtwo)#2 \\%
+    \getwords(\linethree,\eachwordthree)#3 \\%
+    \getwords(\linefour,\eachwordfour)#4 \\%
+    \getwords(\linefive,\eachwordfive)#5 \\%
+    \getwords(\linesix,\eachwordsix)#6 \\%
+    \loop\lastword{\eachwordone}{\lineone}{\wordone}%
+         \lastword{\eachwordtwo}{\linetwo}{\wordtwo}%
+         \lastword{\eachwordthree}{\linethree}{\wordthree}%
+         \lastword{\eachwordfour}{\linefour}{\wordfour}%
+         \lastword{\eachwordfive}{\linefive}{\wordfive}%
+         \lastword{\eachwordsix}{\linesix}{\wordsix}%
+         \global\setbox\gline=\hbox{\unhbox\gline
+                                    \hskip\glossglue
+                                    \vtop{\box\wordone   % vtop was vbox
+                                          \nointerlineskip
+                                          \box\wordtwo
+                                          \nointerlineskip
+                                          \box\wordthree
+                                          \nointerlineskip
+                                          \box\wordfour
+                                          \nointerlineskip
+                                          \box\wordfive
+                                          \nointerlineskip
+                                          \box\wordsix
+                                         }%
+                                   }%
+         \testdone
+         \ifnotdone
+    \repeat
+    \egroup % matches \bgroup in \gloss
+   \gl@stop}
+
+
+
+\gdef\sevensent#1\\ #2\\ #3\\ #4\\ #5\\ #6\\ #7\\{% #1 = first line, #2 = second line, #3 = third etc
+    \getwords(\lineone,\eachwordone)#1 \\%
+    \getwords(\linetwo,\eachwordtwo)#2 \\%
+    \getwords(\linethree,\eachwordthree)#3 \\%
+    \getwords(\linefour,\eachwordfour)#4 \\%
+    \getwords(\linefive,\eachwordfive)#5 \\%
+    \getwords(\linesix,\eachwordsix)#6 \\%
+    \getwords(\lineseven,\eachwordseven)#7 \\%
+    \loop\lastword{\eachwordone}{\lineone}{\wordone}%
+         \lastword{\eachwordtwo}{\linetwo}{\wordtwo}%
+         \lastword{\eachwordthree}{\linethree}{\wordthree}%
+         \lastword{\eachwordfour}{\linefour}{\wordfour}%
+         \lastword{\eachwordfive}{\linefive}{\wordfive}%
+         \lastword{\eachwordsix}{\linesix}{\wordsix}%
+         \lastword{\eachwordseven}{\lineseven}{\wordseven}%
+         \global\setbox\gline=\hbox{\unhbox\gline
+                                    \hskip\glossglue
+                                    \vtop{\box\wordone   % vtop was vbox
+                                          \nointerlineskip
+                                          \box\wordtwo
+                                          \nointerlineskip
+                                          \box\wordthree
+                                          \nointerlineskip
+                                          \box\wordfour
+                                          \nointerlineskip
+                                          \box\wordfive
+                                          \nointerlineskip
+                                          \box\wordsix
+                                          \nointerlineskip
+                                          \box\wordseven
+                                         }%
+                                   }%
+         \testdone
+         \ifnotdone
+    \repeat
+    \egroup % matches \bgroup in \gloss
+   \gl@stop}
+
+
+
+\gdef\eightsent#1\\ #2\\ #3\\ #4\\ #5\\ #6\\ #7\\ #8\\{% #1 = first line, #2 = second line, #3 = third etc
+    \getwords(\lineone,\eachwordone)#1 \\%
+    \getwords(\linetwo,\eachwordtwo)#2 \\%
+    \getwords(\linethree,\eachwordthree)#3 \\%
+    \getwords(\linefour,\eachwordfour)#4 \\%
+    \getwords(\linefive,\eachwordfive)#5 \\%
+    \getwords(\linesix,\eachwordsix)#6 \\%
+    \getwords(\lineseven,\eachwordseven)#7 \\%
+    \getwords(\lineeight,\eachwordeight)#8 \\%
+    \loop\lastword{\eachwordone}{\lineone}{\wordone}%
+         \lastword{\eachwordtwo}{\linetwo}{\wordtwo}%
+         \lastword{\eachwordthree}{\linethree}{\wordthree}%
+         \lastword{\eachwordfour}{\linefour}{\wordfour}%
+         \lastword{\eachwordfive}{\linefive}{\wordfive}%
+         \lastword{\eachwordsix}{\linesix}{\wordsix}%
+         \lastword{\eachwordseven}{\lineseven}{\wordseven}%
+         \lastword{\eachwordeight}{\lineeight}{\wordeight}%
+         \global\setbox\gline=\hbox{\unhbox\gline
+                                    \hskip\glossglue
+                                    \vtop{\box\wordone   % vtop was vbox
+                                          \nointerlineskip
+                                          \box\wordtwo
+                                          \nointerlineskip
+                                          \box\wordthree
+                                          \nointerlineskip
+                                          \box\wordfour
+                                          \nointerlineskip
+                                          \box\wordfive
+                                          \nointerlineskip
+                                          \box\wordsix
+                                          \nointerlineskip
+                                          \box\wordseven
+                                          \nointerlineskip
+                                          \box\wordeight
+                                         }%
+                                   }%
+         \testdone
+         \ifnotdone
+    \repeat
+    \egroup % matches \bgroup in \gloss
+   \gl@stop}
+
+%\def\gl@stop{{\hskip -\glossglue}\unhbox\gline\end{flushleft}}
+
+% \leavevmode puts us back in horizontal mode, so that a \\ will work
+\def\gl@stop{{\hskip -\glossglue}\unhbox\gline\leavevmode \egroup}
+}{} %end toggle cgloss
+
+\iftoggle{jambox}{
+%BeGIN Jambox
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Alexis Dimitriadis
+%
+% This is version 0.3 (informal release, Nov. 2003).
+%
+% Line up material a fixed distance from the right margin.  For annotating
+% example sentences, usually with a short note in parentheses.
+% May overflow to the left or right, or line up on the next line as necessary.
+%
+% \jambox[width]{text}	Align 'text' starting 'width' distance from the
+%			right margin (default \the\jamwidth).
+% \jam(something)	Align a note delimited by parentheses (which are
+%			retained).  No optional argument.
+% \jambox*{text}        Set \jamwidth to the width of 'text', then align it.
+%			(\jamwidth stays set for the rest of the environment).
+%
+% Notes:
+%
+% Distance from the right margin can be set to an explicit amount, or to the
+% width of some piece of text, as follows:
+%
+% \jamwidth=2in\relax      Or
+% \settowidth\jamwidth {(``annotation'')}
+%
+% \jamwidth is locally scoped, so it can be set globally or inside an example
+% environment.
+%
+% BUG: Not compatible with ragged-right mode.
+%
+% Incompatibilities: Not useful with the vanilla cgloss4e.sty, which ends
+% glossed lines prematurely.
+% I do have a suitably modified file, cgloss.sty. With it you can do the
+% following:
+% \gll To kimeno. \\
+%      the text \\ \jambox{(Greek)}
+% \trans `The text.'
+
+
+\newdimen\jamwidth \jamwidth=2in
+\def\jambox{\@ifnextchar[{\@jambox}
+	       {\@ifnextchar*{\@jamsetbox}{\@jambox[\the\jamwidth]}}}
+
+% Set width AND display the argument.
+% The star is read and ignored; the argument #1 is boxed, used to set
+% \jamwidth, then passed to \@jambox (which also puts it in \@tempboxa!)
+%
+\def\@jamsetbox*#1{\setbox\@tempboxa\hbox{#1}\jamwidth=\wd\@tempboxa
+  \@jambox[\the\jamwidth]{\box\@tempboxa}}
+
+\def\@jambox[#1]#2{{\setbox\@tempboxa\hbox {#2}%
+  \ifdim \wd\@tempboxa<#1\relax % if label fits in the alloted space:
+    \@tempdima=#1\relax \advance\@tempdima by-\wd\@tempboxa % remaining \hspace
+    \unskip\nobreak\hfill\penalty250 % break line here if necessary
+    \hskip 1.2em minus 1.2em 	  % used when the line extends past the margin
+    \hbox{}\nobreak\hfill\box\@tempboxa\nobreak
+    \hskip\@tempdima minus \@tempdima\hbox{}%
+  \else  % the label is too wide: just right-align it
+    \hfill\penalty50\hbox{}\nobreak\hfill\box\@tempboxa
+  \fi
+  % suppress closing glue:
+  \parfillskip=0pt \finalhyphendemerits=0 \par}}
+% The penalty enables a break, taken only if the line cannot fit.
+% The \hbox{} ensures the next line does not begin with \hfill, which would
+% be discarded if initial.
+% (\vadjust inserts an empty element at the beginning of the next line, so
+% that COULD be used instead of \hbox{}).
+% Algorithm adapted from The TeXBook.
+%
+% The closing \par could be a problem if there is a \parskip...
+}{}
+\endinput

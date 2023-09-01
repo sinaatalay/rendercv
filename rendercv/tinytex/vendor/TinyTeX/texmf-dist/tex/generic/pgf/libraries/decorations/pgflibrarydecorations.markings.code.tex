@@ -1,0 +1,179 @@
+% Copyright 2018 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgfmodule{decorations}%
+
+
+% A marking decoration is used to add markings (which are just pgf
+% scopes, essentially) at certain positions of a path.
+
+\pgfkeys{
+  /pgf/decoration/reset marks/.code=\let\pgf@lib@dec@mark@marks\pgfutil@empty,
+  /pgf/decoration/mark/.code=\pgf@lib@dec@parsemark#1\pgf@lib@dec@stop,
+}%
+
+\let\pgf@lib@dec@mark@marks=\pgfutil@empty
+
+\def\pgf@lib@dec@parsemark{\pgfutil@ifnextchar b{\pgf@lib@dec@parsebetween}{\pgf@lib@dec@parseat}}%
+\def\pgf@lib@dec@parseat at position#1with#2\pgf@lib@dec@stop{%
+  \expandafter\def\expandafter\pgf@lib@dec@mark@marks\expandafter{\pgf@lib@dec@mark@marks%
+    \pgf@lib@dec@domark{#1}{#2}%
+  }%
+}%
+\def\pgf@lib@dec@parsebetween between positions#1and#2step#3with#4\pgf@lib@dec@stop{%
+  \expandafter\def\expandafter\pgf@lib@dec@mark@marks\expandafter{\pgf@lib@dec@mark@marks%
+    \pgf@lib@dec@dobetweenmark{#1}{#2}{#3}{#4}%
+  }%
+}%
+
+\def\pgf@lib@dec@arrowhead#1#2{%
+  \pgftransformxscale{#1}
+  \pgfarrowdraw{#2}%
+}%
+
+\def\pgf@lib@dec@doarrowhead#1{%
+  \pgf@lib@dec@arrowhead{1}{#1}%
+}%
+\def\pgf@lib@dec@doarrowheadrev#1{%
+  \pgf@lib@dec@arrowhead{-1}{#1}%
+}%
+
+
+\pgfdeclaredecoration{markings}{init}
+{%
+  \state{init}
+  [
+    width=0pt,
+    persistent precomputation={%
+      \pgfkeys{/pgf/decoration/mark info/sequence number/.initial=0}%
+      \pgfkeys{/pgf/decoration/mark info/distance from start/.initial=}%
+    },
+    next state=pre
+  ]
+  {}%
+
+  \state{pre}
+  [
+    width=0pt,
+    persistent precomputation={%
+      \def\pgf@lib@dec@computed@width{0pt}%
+      \pgf@lib@dec@mark@marks\pgf@lib@dec@mark@last%
+      \let\arrow=\pgf@lib@dec@doarrowhead%
+      \let\arrowreversed=\pgf@lib@dec@doarrowheadrev%
+    },
+    next state=skipper
+  ]
+  {}%
+
+  \state{skipper}[width=\pgf@lib@dec@computed@width-\pgfdecoratedcompleteddistance-1sp,
+                  next state=\pgf@lib@dec@next@state]{}%
+
+  \state{main}
+  [
+    width=1sp,
+    next state=pre,
+    persistent precomputation={%
+      \pgfutil@tempcnta=\pgfkeysvalueof{/pgf/decoration/mark info/sequence number}\relax%
+      \advance\pgfutil@tempcnta by1\relax%
+      \pgfkeys{/pgf/decoration/mark info/sequence number/.expanded=\the\pgfutil@tempcnta}%
+      \pgfkeys{/pgf/decoration/mark info/distance from start/.expanded=\pgf@lib@dec@computed@width}%
+    }%
+  ]
+  {%
+    \pgfinterruptpath%
+      \pgfscope%
+        \let\pgf@lib@dec@mark@marks=\pgfutil@empty%
+        \pgfslopedattimefalse
+        \pgf@lib@dec@computed@action%
+      \endpgfscope%
+    \endpgfinterruptpath%
+    \ifx\pgf@lib@mark@node\pgfutil@empty%
+    \else%
+      \pgf@lib@mark@connect@node%
+    \fi%
+  }%
+
+  \state{final}[width=\pgfdecoratedremainingdistance]{
+    \ifx\pgf@lib@mark@node\pgfutil@empty%
+      \pgfpathmoveto{\pgfpointdecoratedpathlast}
+    \else%
+      \pgfpathlineto{\pgfpointdecoratedpathlast}
+    \fi%
+  }%
+}%
+
+\def\pgf@lib@dec@domark#1#2#3\pgf@lib@dec@mark@last{%
+  \def\pgf@lib@dec@mark@marks{#3}%
+  \pgf@lib@dec@parsenum{#1}%
+  \def\pgf@lib@dec@computed@action{#2}%
+  \def\pgf@lib@dec@next@state{main}%
+}%
+
+
+\def\pgf@lib@dec@dobetweenmark#1#2#3#4#5\pgf@lib@dec@mark@last{%
+  \pgf@lib@dec@parsenum{#1}%
+  \let\pgf@lib@dec@mark@start=\pgf@lib@dec@computed@width%
+  \pgf@lib@dec@parsenum{#2}%
+  \let\pgf@lib@dec@mark@end=\pgf@lib@dec@computed@width%
+  \ifdim\pgf@lib@dec@mark@end<\pgf@lib@dec@mark@start\relax%
+    % Skip!
+    #5\pgf@lib@dec@mark@last%
+  \else%
+    %
+    \pgf@lib@dec@parsenum{#3}%
+    \pgfmathparse{\pgf@lib@dec@mark@start+\pgf@lib@dec@computed@width}%
+    % Update entry in mark list
+    \edef\pgf@temp{\noexpand\pgf@lib@dec@dobetweenmark{\pgfmathresult pt}{\pgf@lib@dec@mark@end}{\pgf@lib@dec@computed@width}}%
+    \expandafter\def\expandafter\pgf@lib@dec@mark@marks\expandafter{\pgf@temp{#4}#5}%
+    \let\pgf@lib@dec@computed@width\pgf@lib@dec@mark@start%
+    \def\pgf@lib@dec@computed@action{#4}%
+    \def\pgf@lib@dec@next@state{main}%
+  \fi%
+}%
+
+
+\def\pgf@lib@dec@parsenum#1{%
+  \pgfmathparse{#1}%
+  \ifpgfmathunitsdeclared%
+    \ifdim\pgfmathresult pt<0pt\relax%
+      \pgfmathparse{\pgfdecoratedpathlength\pgfmathresult pt}%
+    \else%
+      \pgfmathparse{\pgfmathresult pt}%
+    \fi%
+  \else%
+    \ifdim\pgfmathresult pt<0pt\relax%
+      \pgfmathparse{\pgfdecoratedpathlength\pgfmathresult*\pgfdecoratedpathlength}%
+    \else%
+      \pgfmathparse{\pgfmathresult*\pgfdecoratedpathlength}%
+    \fi%
+  \fi%
+  \edef\pgf@lib@dec@computed@width{\pgfmathresult pt}%
+}%
+
+\def\pgf@lib@dec@mark@last{%
+  \def\pgf@lib@dec@next@state{final}%
+}%
+
+
+%
+% If you set the mark connection node inside a mark picture, the
+% output path will contain a line to this node
+%
+
+\pgfkeys{/pgf/decoration/mark connection node/.store in=\pgf@lib@mark@node,
+  /pgf/decoration/mark connection node=}%
+\def\pgf@lib@mark@connect@node{%
+  % Line to "left" end of the node
+  \pgfpathlineto{\pgfpointshapeborder{\pgf@lib@mark@node}{\pgfqpoint{-1pt}{0pt}}}
+  % Move to "right" end of the node
+  \pgfpathmoveto{\pgfpointshapeborder{\pgf@lib@mark@node}{\pgfqpoint{1pt}{0pt}}}
+}%
+
+
+\endinput

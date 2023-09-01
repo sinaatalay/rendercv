@@ -1,0 +1,595 @@
+% This is the plain METAFONT base that's described in The METAFONTbook.
+% N.B.: Please change "base_version" whenever this file is modified!
+% And don't modify the file unless you change its name:
+%       Everybody's "plain.mf" file should be the same, worldwide.
+
+% Unlimited copying and redistribution of this file are permitted as long
+% as this file is not modified. Modifications are permitted, but only if
+% the resulting file is not named plain.mf.
+
+string base_name, base_version; base_name="plain"; base_version="2.71";
+
+message "Preloading the plain base, version "&base_version&": preliminaries,";
+
+delimiters ();  % this makes parentheses behave like parentheses
+def upto = step 1 until enddef; % syntactic sugar
+def downto = step -1 until enddef;
+def exitunless expr c = exitif not c enddef;
+let relax = \;  % ignore the word `relax', as in TeX
+let \\ = \; % double relaxation is like single
+def ]] = ] ] enddef; % right brackets should be loners
+def -- = {curl 1}..{curl 1} enddef;
+def --- = .. tension infinity .. enddef;
+def ... = .. tension atleast 1 .. enddef;
+
+def gobble primary g = enddef; def killtext text t = enddef;
+primarydef g gobbled gg = enddef;
+def hide(text t) = exitif numeric begingroup t;endgroup; enddef;
+def ??? = hide(interim showstopping:=1; showdependencies) enddef;
+def stop expr s = message s; gobble readstring enddef;
+
+smoothing:=1; autorounding:=2;  % this adjusts curves to the raster
+turningcheck:=2;                % this will warn about a "strange path"
+granularity:=1;                 % this says that pixels are pixels
+
+def interact = % sets up to make "show" commands stop
+ hide(showstopping:=1; tracingonline:=1) enddef;
+
+def loggingall =        % puts tracing info into the log
+ tracingcommands:=3; tracingedges:=2; tracingtitles:=1; tracingequations:=1;
+ tracingcapsules:=1; tracingspecs:=1; tracingpens:=1; tracingchoices:=1;
+ tracingstats:=1; tracingoutput:=1; tracingmacros:=1; tracingrestores:=1;
+ enddef;
+
+def tracingall =        % turns on every form of tracing
+ tracingonline:=1; showstopping:=1; loggingall enddef;
+
+def tracingnone =       % turns off every form of tracing
+ tracingcommands:=0; tracingonline:=0; showstopping:=0;
+ tracingedges:=0; tracingtitles:=0; tracingequations:=0;
+ tracingcapsules:=0; tracingspecs:=0; tracingpens:=0; tracingchoices:=0;
+ tracingstats:=0; tracingoutput:=0; tracingmacros:=0; tracingrestores:=0;
+ enddef;
+
+message " basic constants and mathematical macros,";
+
+% numeric constants
+newinternal eps,epsilon,infinity,_;
+eps := .00049;    % this is a pretty small positive number
+epsilon := 1/256/256;   % but this is the smallest
+infinity := 4095.99998;    % and this is the largest
+_ := -1; % internal constant to make macros unreadable but shorter
+
+% pair constants
+pair right,left,up,down,origin;
+origin=(0,0); up=-down=(0,1); right=-left=(1,0);
+
+% path constants
+path quartercircle,halfcircle,fullcircle,unitsquare;
+quartercircle=(right{up}..(right+up)/sqrt2..up{left}) scaled .5;
+halfcircle=quartercircle & quartercircle rotated 90;
+fullcircle=halfcircle & halfcircle rotated 180 & cycle;
+unitsquare=(0,0)--(1,0)--(1,1)--(0,1)--cycle;
+
+% transform constants
+transform identity;
+for z=origin,right,up: z transformed identity = z; endfor
+
+% picture constants
+picture blankpicture,unitpixel;
+blankpicture=nullpicture; % `display blankpicture...'
+unitpixel=nullpicture; addto unitpixel contour unitsquare;
+
+% string constants
+string ditto; ditto = char 34; % ASCII double-quote mark
+
+% pen constants
+def capsule_def(suffix s) primary u = def s = u enddef enddef;
+capsule_def(pensquare) makepen(unitsquare shifted -(.5,.5));
+capsule_def(penrazor) makepen((-.5,0)--(.5,0)--cycle);
+pen penspeck; penspeck=pensquare scaled eps;
+
+% nullary operators
+vardef whatever = save ?; ? enddef;
+
+% unary operators
+let abs = length;
+
+vardef round primary u =
+ if numeric u: floor(u+.5)
+ elseif pair u: (hround xpart u, vround ypart u)
+ else: u fi enddef;
+
+vardef hround primary x = floor(x+.5) enddef;
+vardef vround primary y = floor(y.o_+.5)_o_ enddef;
+
+vardef ceiling primary x = -floor(-x) enddef;
+
+vardef byte primary s =
+ if string s: ASCII fi s enddef;
+
+vardef dir primary d = right rotated d enddef;
+
+vardef unitvector primary z = z/abs z enddef;
+
+vardef inverse primary T =
+ transform T_; T_ transformed T = identity; T_ enddef;
+
+vardef counterclockwise primary c =
+ if turningcheck>0:
+  interim autorounding:=0;
+  if turningnumber c <= 0: reverse fi fi c enddef;
+
+vardef tensepath expr r =
+ for k=0 upto length r - 1: point k of r --- endfor
+ if cycle r: cycle else: point infinity of r fi enddef;
+
+% binary operators
+
+primarydef x mod y = (x-y*floor(x/y)) enddef;
+primarydef x div y = floor(x/y) enddef;
+primarydef w dotprod z = (xpart w * xpart z + ypart w * ypart z) enddef;
+
+primarydef x**y = if y=2: x*x else: takepower y of x fi enddef;
+def takepower expr y of x =
+ if x>0: mexp(y*mlog x)
+ elseif (x=0) and (y>0): 0
+ else: 1
+  if y=floor y:
+   if y>=0: for n=1 upto y: *x endfor
+   else: for n=_ downto y: /x endfor
+   fi
+  else: hide(errmessage "Undefined power: " & decimal x&"**"&decimal y)
+  fi fi enddef;
+
+vardef direction expr t of p =
+ postcontrol t of p - precontrol t of p enddef;
+
+vardef directionpoint expr z of p =
+ a_:=directiontime z of p;
+ if a_<0: errmessage("The direction doesn't occur"); fi
+ point a_ of p enddef;
+
+secondarydef p intersectionpoint q =
+ begingroup save x_,y_; (x_,y_)=p intersectiontimes q;
+ if x_<0: errmessage("The paths don't intersect"); origin
+ else: .5[point x_ of p, point y_ of q] fi endgroup
+enddef;
+
+tertiarydef p softjoin q =
+ begingroup c_:=fullcircle scaled 2join_radius shifted point 0 of q;
+ a_:=ypart(c_ intersectiontimes p); b_:=ypart(c_ intersectiontimes q);
+ if a_<0:point 0 of p{direction 0 of p} else: subpath(0,a_) of p fi
+  ... if b_<0:{direction infinity of q}point infinity of q
+   else: subpath(b_,infinity) of q fi endgroup enddef;
+newinternal join_radius,a_,b_; path c_;
+
+% special operators
+vardef incr suffix $ = $:=$+1; $ enddef;
+vardef decr suffix $ = $:=$-1; $ enddef;
+
+def reflectedabout(expr w,z) =    % reflects about the line w..z
+ transformed
+  begingroup transform T_;
+  w transformed T_ = w;  z transformed T_ = z;
+  xxpart T_ = -yypart T_; xypart T_ = yxpart T_; % T_ is a reflection
+  T_ endgroup enddef;
+
+def rotatedaround(expr z, d) =    % rotates d degrees around z
+ shifted -z rotated d shifted z enddef;
+let rotatedabout = rotatedaround;   % for roundabout people
+
+vardef min(expr u)(text t) = % t is a list of numerics, pairs, or strings
+ save u_; setu_ u; for uu = t: if uu<u_: u_:=uu; fi endfor
+ u_ enddef;
+
+vardef max(expr u)(text t) = % t is a list of numerics, pairs, or strings
+ save u_; setu_ u; for uu = t: if uu>u_: u_:=uu; fi endfor
+ u_ enddef;
+
+def setu_ primary u =
+ if pair u: pair u_ elseif string u: string u_ fi;
+ u_=u enddef;
+
+def flex(text t) =           % t is a list of pairs
+ hide(n_:=0; for z=t: z_[incr n_]:=z; endfor
+  dz_:=z_[n_]-z_1)
+ z_1 for k=2 upto n_-1: ...z_[k]{dz_} endfor ...z_[n_] enddef;
+newinternal n_; pair z_[],dz_;
+
+def superellipse(expr r,t,l,b,s)=
+ r{up}...(s[xpart t,xpart r],s[ypart r,ypart t]){t-r}...
+ t{left}...(s[xpart t,xpart l],s[ypart l,ypart t]){l-t}...
+ l{down}...(s[xpart b,xpart l],s[ypart l,ypart b]){b-l}...
+ b{right}...(s[xpart b,xpart r],s[ypart r,ypart b]){r-b}...cycle enddef;
+
+vardef interpath(expr a,p,q) =
+ for t=0 upto length p-1: a[point t of p, point t of q]
+  ..controls a[postcontrol t of p, postcontrol t of q]
+   and a[precontrol t+1 of p, precontrol t+1 of q] .. endfor
+ if cycle p: cycle
+ else: a[point infinity of p, point infinity of q] fi enddef;
+
+vardef solve@#(expr true_x,false_x)= % @#(true_x)=true, @#(false_x)=false
+ tx_:=true_x; fx_:=false_x;
+ forever: x_:=.5[tx_,fx_]; exitif abs(tx_-fx_)<=tolerance;
+ if @#(x_): tx_ else: fx_ fi :=x_; endfor
+ x_ enddef; % now x_ is near where @# changes from true to false
+newinternal tolerance, tx_,fx_,x_; tolerance:=.1;
+
+message " macros for converting from device-independent units to pixels,";
+
+def fix_units = % define the conversion factors, given pixels_per_inch
+ mm:=pixels_per_inch/25.4;      cm:=pixels_per_inch/2.54;
+ pt:=pixels_per_inch/72.27;     pc:=pixels_per_inch/6.0225;
+ dd:=1238/1157pt;               cc:=12dd;
+ bp:=pixels_per_inch/72;        in:=pixels_per_inch;
+ hppp:=pt;                      % horizontal pixels per point
+ vppp:=aspect_ratio*hppp;       % vertical pixels per point
+ enddef;
+
+mm#=2.84528;      pt#=1;        dd#=1.07001;      bp#=1.00375;
+cm#=28.45276;     pc#=12;       cc#=12.84010;     in#=72.27;
+
+newinternal pixels_per_inch;       % the given resolution
+newinternal blacker, o_correction; % device-oriented corrections
+
+def define_pixels(text t) =
+ forsuffixes $=t: $:=$.#*hppp; endfor enddef;
+def define_whole_pixels(text t) =
+ forsuffixes $=t: $:=hround($.#*hppp); endfor enddef;
+def define_whole_vertical_pixels(text t) =
+ forsuffixes $=t: $:=vround($.#*hppp); endfor enddef;
+def define_good_x_pixels(text t) =
+ forsuffixes $=t: $:=good.x($.#*hppp); endfor enddef;
+def define_good_y_pixels(text t) =
+ forsuffixes $=t: $:=good.y($.#*hppp); endfor enddef;
+def define_blacker_pixels(text t) =
+ forsuffixes $=t: $:=$.#*hppp+blacker; endfor enddef;
+def define_whole_blacker_pixels(text t) =
+ forsuffixes $=t: $:=hround($.#*hppp+blacker);
+  if $<=0: $:=1; fi endfor enddef;
+def define_whole_vertical_blacker_pixels(text t) =
+ forsuffixes $=t: $:=vround($.#*hppp+blacker);
+  if $<=0: $:=1_o_; fi endfor enddef;
+def define_corrected_pixels(text t) =
+ forsuffixes $=t: $:=vround($.#*hppp*o_correction)+eps; endfor enddef;
+def define_horizontal_corrected_pixels(text t) =
+ forsuffixes $=t: $:=hround($.#*hppp*o_correction)+eps; endfor enddef;
+
+def lowres_fix(text t) expr ratio =
+ begingroup save min,max,first;
+ forsuffixes $=t: if unknown min: min=max=first=$; min#=max#=$.#;
+  elseif $.#<min#: min:=$; min#:=$.#;
+  elseif $.#>max#: max:=$; max#:=$.#; fi endfor
+ if max/min>ratio*max#/min#: forsuffixes $=t: $:=first; endfor fi
+ endgroup enddef;
+
+message " macros and tables for various modes of operation,";
+
+def mode_setup =
+ warningcheck:=0;
+ if unknown mode: mode=proof; fi
+ numeric aspect_ratio; transform currenttransform;
+ scantokens if string mode:("input "&mode) else: mode_name[mode] fi;
+ if unknown mag: mag=1; fi
+ if unknown aspect_ratio: aspect_ratio=1; fi
+ displaying:=proofing;
+ pixels_per_inch:=pixels_per_inch*mag;
+ if aspect_ratio=1: let o_=\; let _o_=\
+ else: def o_=*aspect_ratio enddef; def _o_=/aspect_ratio enddef fi;
+ fix_units;
+ scantokens extra_setup; % the user's special last-minute adjustments
+ currenttransform:=
+  if unknown currenttransform: identity else: currenttransform fi
+   yscaled aspect_ratio;
+ clearit;
+ pickup pencircle scaled (.4pt+blacker);
+ warningcheck:=1; enddef;
+def smode = string mode; mode enddef;
+string extra_setup, mode_name[];
+extra_setup="";          % usually there's nothing special to do
+newinternal displaying;  % if positive, endchar will `showit'
+
+vardef magstep primary m = mexp(46.67432m) enddef;
+
+def mode_def suffix $ =
+ $:=incr number_of_modes;
+ mode_name[$]:=str$ & "_";
+ expandafter quote def scantokens mode_name[$] enddef;
+newinternal number_of_modes;
+
+% proof mode: for initial design of characters
+mode_def proof =
+ proofing:=2;                   % yes, we're making full proofs
+ fontmaking:=0;                 % no, we're not making a font
+ tracingtitles:=1;              % yes, show titles online
+ pixels_per_inch:=2601.72;      % that's 36 pixels per pt
+ blacker:=0;                    % no additional blackness
+ fillin:=0;                     % no compensation for fillin
+ o_correction:=1;               % no reduction in overshoot
+ enddef;
+
+% smoke mode: for label-free proofs to mount on the wall
+mode_def smoke =
+ proof_;                        % same as proof mode, except:
+ proofing:=1;                   % yes, we're making unlabeled proofs
+ extra_setup:=extra_setup&"grayfont black"; % with solid black pixels
+ let makebox=maketicks;         % make the boxes less obtrusive
+ enddef;
+
+% lowres mode: for certain devices that print 200 pixels per inch
+mode_def lowres =
+ proofing:=0;                   % no, we're not making proofs
+ fontmaking:=1;                 % yes, we are making a font
+ tracingtitles:=0;              % no, don't show titles at all
+ pixels_per_inch:=200;          % that's the meaning of lowres
+ blacker:=.65;                  % make pens a bit blacker
+ fillin:=.2;                    % compensate for diagonal fillin
+ o_correction:=.4;              % but don't overshoot as much
+ enddef;
+
+localfont:=lowres;      % the mode most commonly used to make fonts
+
+% It is customary to input another file to supplement the PLAIN base.
+% This supplementary file adds analogous modes, corresponding to
+% local output devices, and it redefines `localfont' as appropriate.
+% The values of screen_rows and screen_cols should also be updated.
+% The auxiliary file should set base_version:=base_version&"/localname".
+% Remember that the present file PLAIN.MF should not be changed;
+% all local changes should be confined to a separate file.
+
+message " macros for drawing and filling,";
+
+pen currentpen;
+path currentpen_path;
+picture currentpicture;
+transform currenttransform;
+def t_ = transformed currenttransform enddef;
+
+def fill expr c = addto_currentpicture contour c.t_ enddef;
+def addto_currentpicture = addto currentpicture enddef;
+def draw expr p =
+ addto_currentpicture doublepath p.t_ withpen currentpen enddef;
+def filldraw expr c = fill counterclockwise c withpen currentpen enddef;
+def drawdot expr z = if unknown currentpen_path: def_pen_path_ fi
+ addto_currentpicture contour
+  currentpen_path shifted (z.t_) withpen penspeck enddef;
+def def_pen_path_ =
+ hide(currentpen_path=tensepath makepath currentpen) enddef;
+
+def unfill expr c = fill c withweight _ enddef;
+def undraw expr p = draw p withweight _ enddef;
+def unfilldraw expr c = filldraw c withweight _ enddef;
+def undrawdot expr z = drawdot z withweight _ enddef;
+def erase text t = begingroup interim default_wt_:=_;
+ cullit; t withweight _; cullit; endgroup enddef;
+newinternal default_wt_; default_wt_:=1;
+
+def cutdraw expr p = % caution: you may need autorounding=0
+ cutoff(point 0 of p, 180+angle direction 0 of p);
+ cutoff(point infinity of p, angle direction infinity of p);
+ culldraw p enddef;
+def culldraw expr p = addto pic_ doublepath p.t_ withpen currentpen;
+ cull pic_ dropping(-infinity,0) withweight default_wt_;
+ addto_currentpicture also pic_; pic_:=nullpicture; killtext enddef;
+vardef cutoff(expr z,theta) =
+ interim autorounding := 0; interim smoothing := 0;
+ addto pic_ doublepath z.t_ withpen currentpen;
+ addto pic_ contour
+  (cut_ scaled (1+max(-pen_lft,pen_rt,pen_top,-pen_bot))
+   rotated theta shifted z)t_;
+ cull pic_ keeping (2,2) withweight -default_wt_;
+ addto currentpicture also pic_;
+ pic_:=nullpicture enddef;
+picture pic_; pic_:=nullpicture;
+path cut_; cut_ = ((0,_)--(1,_)--(1,1)--(0,1)--cycle) scaled 1.42;
+
+def pickup secondary q =
+ if numeric q: numeric_pickup_ else: pen_pickup_ fi q enddef;
+def numeric_pickup_ primary q =
+ if unknown pen_[q]: errmessage "Unknown pen"; clearpen
+ else: currentpen:=pen_[q];
+  pen_lft:=pen_lft_[q];
+  pen_rt:=pen_rt_[q];
+  pen_top:=pen_top_[q];
+  pen_bot:=pen_bot_[q];
+  currentpen_path:=pen_path_[q] fi; enddef;
+def pen_pickup_ primary q =
+  currentpen:=q yscaled aspect_ratio;
+  pen_lft:=xpart penoffset down of currentpen;
+  pen_rt:=xpart penoffset up of currentpen;
+  pen_top:=(ypart penoffset left of currentpen)_o_;
+  pen_bot:=(ypart penoffset right of currentpen)_o_;
+  path currentpen_path; enddef;
+newinternal pen_lft,pen_rt,pen_top,pen_bot,pen_count_;
+
+vardef savepen = pen_[incr pen_count_]=currentpen;
+ pen_lft_[pen_count_]=pen_lft;
+ pen_rt_[pen_count_]=pen_rt;
+ pen_top_[pen_count_]=pen_top;
+ pen_bot_[pen_count_]=pen_bot;
+ pen_path_[pen_count_]=currentpen_path;
+ pen_count_ enddef;
+
+def clearpen = currentpen:=nullpen;
+ pen_lft:=pen_rt:=pen_top:=pen_bot:=0;
+ path currentpen_path;
+ enddef;
+def clear_pen_memory =
+ pen_count_:=0;
+ numeric pen_lft_[],pen_rt_[],pen_top_[],pen_bot_[];
+ pen currentpen,pen_[];
+ path currentpen_path, pen_path_[];
+ enddef;
+
+vardef lft primary x = x + if pair x: (pen_lft,0) else: pen_lft fi enddef;
+vardef rt primary x = x + if pair x: (pen_rt,0) else: pen_rt fi enddef;
+vardef top primary y = y + if pair y: (0,pen_top) else: pen_top fi enddef;
+vardef bot primary y = y + if pair y: (0,pen_bot) else: pen_bot fi enddef;
+vardef good.x primary x = hround(x+pen_lft)-pen_lft enddef;
+vardef good.y primary y = vround(y+pen_top)-pen_top enddef;
+vardef good.lft primary z = save z_; pair z_;
+  (z_+(pen_lft,0))t_=round((z+(pen_lft,0))t_); z_ enddef;
+vardef good.rt primary z = save z_; pair z_;
+  (z_+(pen_rt,0))t_=round((z+(pen_rt,0))t_); z_ enddef;
+vardef good.top primary z = save z_; pair z_;
+  (z_+(0,pen_top))t_=round((z+(0,pen_top))t_); z_ enddef;
+vardef good.bot primary z = save z_; pair z_;
+  (z_+(0,pen_bot))t_=round((z+(0,pen_bot))t_); z_ enddef;
+
+vardef penpos@#(expr b,d) =
+ (x@#r-x@#l,y@#r-y@#l)=(b,0) rotated d;
+ x@#=.5(x@#l+x@#r); y@#=.5(y@#l+y@#r) enddef;
+
+def penstroke text t =
+ forsuffixes e = l,r: path_.e:=t; endfor
+ if cycle path_.l: cyclestroke_
+ else: fill path_.l -- reverse path_.r -- cycle fi enddef;
+def cyclestroke_ =
+ begingroup interim turningcheck:=0;
+ addto pic_ contour path_.l.t_ withweight 1;
+ addto pic_ contour path_.r.t_ withweight _;
+ cull pic_ dropping origin withweight default_wt_;
+ addto_currentpicture also pic_;
+ pic_:=nullpicture endgroup enddef;
+path path_.l,path_.r;
+
+message " macros for proof labels and rules,";
+
+vardef makelabel@#(expr s,z) = % puts string s at point z
+ if known z: special lcode_@# & s;
+  numspecial xpart(z.t_); numspecial ypart(z.t_) fi enddef;
+string lcode_,lcode_.top,lcode_.lft,lcode_.rt,lcode_.bot,
+  lcode_.top.nodot,lcode_.lft.nodot,lcode_.rt.nodot,lcode_.bot.nodot;
+lcode_.top=" 1"; lcode_.lft=" 2"; lcode_.rt=" 3"; lcode_.bot=" 4";
+lcode_=" 0"; % change to " /" to avoid listing in overflow column
+lcode_.top.nodot=" 5"; lcode_.lft.nodot=" 6";
+lcode_.rt.nodot=" 7"; lcode_.bot.nodot=" 8";
+
+vardef labels@#(text t) =
+ if proofing>1: forsuffixes $=t:
+  makelabel@#(str$,z$); endfor
+ fi enddef;
+vardef penlabels@#(text t) =
+ if proofing>1: forsuffixes $$=l,,r: forsuffixes $=t:
+  makelabel@#(str$.$$,z$.$$); endfor endfor
+ fi enddef;
+
+def range expr x = numtok[x] enddef;
+def numtok suffix x=x enddef;
+tertiarydef m thru n =
+ m for x=m+1 step 1 until n: , numtok[x] endfor enddef;
+
+def proofrule(expr w,z) =
+ special "rule"; numspecial xpart w; numspecial ypart w;
+ numspecial xpart z; numspecial ypart z enddef;
+def screenrule(expr w,z) =
+ addto currentpicture doublepath w--z withpen rulepen enddef;
+pen rulepen; rulepen = pensquare scaled 2;
+
+def makegrid(text xlist,ylist) =
+ xmin_ := min(xlist); xmax_ := max(xlist);
+ ymin_ := min(ylist); ymax_ := max(ylist);
+ for x=xlist: proofrule((x,ymin_), (x,ymax_)); endfor
+ for y=ylist: proofrule((xmin_,y), (xmax_,y)); endfor
+ enddef;
+
+vardef titlefont suffix $ = special "titlefont "&str$ enddef;
+vardef labelfont suffix $ = special "labelfont "&str$ enddef;
+vardef grayfont suffix $ = special "grayfont "&str$ enddef;
+vardef slantfont suffix $ = special "slantfont "&str$ enddef;
+def proofoffset primary z = % shifts proof output by z
+ special "offset"; numspecial xpart z; numspecial ypart z enddef;
+vardef proofrulethickness expr x =
+ special "rulethickness"; numspecial x enddef;
+
+message " macros for character and font administration,";
+
+def beginchar(expr c,w_sharp,h_sharp,d_sharp) =
+ begingroup
+ charcode:=if known c: byte c else: 0 fi;
+ charwd:=w_sharp;      charht:=h_sharp;       chardp:=d_sharp;
+ w:=hround(charwd*hppp); h:=vround(charht*hppp); d:=vround(chardp*hppp);
+ charic:=0; clearxy; clearit; clearpen; scantokens extra_beginchar;
+ enddef;
+
+def italcorr expr x_sharp = if x_sharp>0: charic:=x_sharp fi enddef;
+
+def change_width =
+ w:=w if w>charwd*hppp:- else:+ fi 1 enddef;
+
+def endchar =
+ scantokens extra_endchar;
+ if proofing>0: makebox(proofrule); fi
+ chardx:=w;     % desired width of the character in pixels
+ shipit;
+ if displaying>0: makebox(screenrule); showit; fi
+ endgroup enddef;
+
+string extra_beginchar, extra_endchar;
+extra_beginchar=extra_endchar="";
+
+def makebox(text r) =
+ for y=0,h.o_,-d.o_: r((0,y),(w,y)); endfor % horizontals
+ for x=0,w:   r((x,-d.o_),(x,h.o_)); endfor % verticals
+ if charic<>0: r((w+charic*hppp,h.o_),(w+charic*hppp,.5h.o_)); fi
+ enddef;
+
+def maketicks(text r) =
+ for y=0,h.o_,-d.o_: r((0,y),(10,y)); r((w-10,y),(w,y)); endfor
+ for x=0,w: r((x,10-d.o_),(x,-d.o_)); r((x,h.o_-10),(x,h.o_)); endfor
+ if charic<>0: r((w+charic*hppp,h.o_-10),(w+charic*hppp,h.o_)); fi
+ enddef;
+
+def font_size expr x = designsize:=x enddef;
+def font_slant expr x = fontdimen 1: x enddef;
+def font_normal_space expr x = fontdimen 2: x enddef;
+def font_normal_stretch expr x = fontdimen 3: x enddef;
+def font_normal_shrink expr x = fontdimen 4: x enddef;
+def font_x_height expr x = fontdimen 5: x enddef;
+def font_quad expr x = fontdimen 6: x enddef;
+def font_extra_space expr x = fontdimen 7: x enddef;
+
+def font_identifier expr x = font_identifier_:=x enddef;
+def font_coding_scheme expr x = font_coding_scheme_:=x enddef;
+string font_identifier_, font_coding_scheme_;
+font_identifier_=font_coding_scheme_="UNSPECIFIED";
+
+message "and a few last-minute items.";
+
+vardef z@#=(x@#,y@#) enddef;
+
+newinternal screen_rows, screen_cols, currentwindow;
+screen_rows:=400;     % these values should be corrected,
+screen_cols:=500;     % by reading in a separate file after PLAIN.MF
+
+def openit = openwindow currentwindow
+ from origin to (screen_rows,screen_cols) at (-50,300) enddef;
+def showit = openit; let showit=showit_; showit enddef; % first time only
+def showit_ = display currentpicture inwindow currentwindow enddef;
+
+def clearxy = save x,y enddef;
+def clearit = currentpicture:=nullpicture enddef;
+def shipit = shipout currentpicture enddef;
+def cullit = cull currentpicture dropping (-infinity,0) enddef;
+
+def screenchars =     % endchar should `showit'
+ extra_endchar:=extra_endchar&"showit;" enddef;
+def screenstrokes =   % every stroke should `showit'
+ def addto_currentpicture text t=
+  addto currentpicture t; showit enddef; enddef;
+def imagerules =      % a box should be part of the character image
+ extra_beginchar:=extra_beginchar & "makebox(screenrule);" enddef;
+def gfcorners =       % `maketicks' should send rules to the GF file
+ extra_setup:=extra_setup & "let makebox=maketicks;proofing:=1;" enddef;
+def nodisplays =      % endchar shouldn't `showit'
+ extra_setup:=extra_setup & "displaying:=0;" enddef;
+def notransforms =    % currenttransform should not be used
+ let t_ = \ enddef;
+
+let bye = end; outer end,bye;
+
+clear_pen_memory;     % initialize the `savepen' mechanism
+mode_setup;           % establish proof mode as the default
+numeric mode,mag;     % but leave mode and mag undefined

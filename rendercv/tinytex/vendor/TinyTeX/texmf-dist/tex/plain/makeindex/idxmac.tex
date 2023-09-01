@@ -1,0 +1,200 @@
+% 
+% idxmac.tex
+%
+% Most of the code in this file are excerpts from latex.tex and manmac.tex.
+% The actual style of the index environment \beginindex ... \endindex
+% at the end of this file is left empty.
+%
+% 
+\def\makeatletter{\catcode`\@=11\relax}
+\def\makeatother{\catcode`\@=12\relax}
+\makeatletter
+\newif\if@filesw \@fileswtrue
+\newif\if@nobreak \@nobreakfalse 
+\def\@makeother#1{\catcode`#112\relax}
+\def\newwrite{\alloc@7\write\chardef\sixt@@n}
+\newwrite\@unused
+\def\typeout#1{{\let\protect\string\immediate\write\@unused{#1}}}
+
+%          ****************************************
+%          *          PAGE NUMBERING              *
+%          ****************************************
+%
+% Page numbers are produced by a page counter, used just like any other
+% counter.  The only difference is that \c@page contains the number of
+% the next page to be output (the one currently being produced), rather
+% than one minus it.  Thus, it is normally initialized to 1 rather than
+% 0.  \c@page is defined to be \count0, rather than a count assigned by
+% \newcount.
+% 
+% The user sets the pagenumber style with the \pagenumbering{FOO}
+% command, which sets the page counter to 1 and defines \thepage to be
+% \FOO.  For example, \pagenumbering{roman} causes pages to be numbered
+% i, ii, etc.  
+
+% Numbering commands for definitions of \theCOUNTER and \list arguments.
+% \fnsymbol produces the standard footnoting symbols: asterisk, dagger, etc.
+% They can be used only in math mode.
+
+\def\arabic#1{\@arabic{\@nameuse{c@#1}}} 
+\def\roman#1{\@roman{\@nameuse{c@#1}}}  
+\def\Roman#1{\@Roman{\@nameuse{c@#1}}}  
+\def\alph#1{\@alph{\@nameuse{c@#1}}}   
+\def\Alph#1{\@Alph{\@nameuse{c@#1}}}   
+\def\fnsymbol#1{\@fnsymbol{\@nameuse{c@#1}}}
+
+\def\@arabic#1{\ifnum #1>0 \number #1\fi}
+\def\@roman#1{\romannumeral #1}
+\def\@Roman#1{\expandafter\uppercase\expandafter{\romannumeral #1}}
+\def\@alph#1{\ifcase#1\or a\or b\or c\or d\else\@ialph{#1}\fi}
+\def\@ialph#1{\ifcase#1\or \or \or \or \or e\or f\or g\or h\or i\or j\or
+   k\or l\or m\or n\or o\or p\or q\or r\or s\or t\or u\or v\or w\or x\or y\or
+   z\else\@ctrerr\fi}
+\def\@Alph#1{\ifcase#1\or A\or B\or C\or D\else\@Ialph{#1}\fi}
+\def\@Ialph#1{\ifcase#1\or \or \or \or \or E\or F\or G\or H\or I\or J\or
+   K\or L\or M\or N\or O\or P\or Q\or R\or S\or T\or U\or V\or W\or X\or Y\or
+   Z\else\@ctrerr\fi}
+\def\@fnsymbol#1{\ifcase#1\or *\or \dagger\or \ddagger\or 
+   \mathchar "278\or \mathchar "27B\or \|\or **\or \dagger\dagger
+   \or \ddagger\ddagger \else\@ctrerr\fi\relax}
+
+\countdef\c@page=0 \c@page=1
+\def\cl@page{}
+\def\pagenumbering#1{\global\c@page \@ne \gdef\thepage{\csname @#1\endcsname
+   \c@page}}
+\pagenumbering{arabic}
+
+% \@bsphack ... \@esphack
+%     used by macros such as \index and \begin{@float} ... \end{@float}
+%     that want to be invisible -- i.e.,
+%     not leave any extra space when used in the middle of text.  Such
+%     a macro should begin with \@bsphack and end with \@esphack
+%     The macro in question should not create any text, nor change the
+%     mode.
+%
+% \@bsphack ==
+%  BEGIN
+%    \dimen\@savsk := \lastskip
+%    if  hmode  then  \@savsf := \spacefactor  fi
+%  END
+%
+% \@esphack ==
+%  BEGIN
+%    if  hmode
+%      then  \spacefactor := \@savsf
+%            if \dimen\@savsk > 0pt  then  \ignorespaces  
+%                                          \global\ignoretrue   fi
+%    fi
+%  END
+%
+
+\newdimen\@savsk
+\newcount\@savsf
+
+\def\@bsphack{\@savsk\lastskip 
+    \ifhmode\@savsf\spacefactor\fi}
+
+\def\@esphack{\relax\ifhmode\spacefactor\@savsf
+     {}\ifdim \@savsk >\z@ \global\ignoretrue \ignorespaces 
+  \fi \fi}
+
+% The command \@sanitize changes the catcode of all special characters
+% except for braces to 'other'.  It can be used for commands like
+% \index that want to write their arguments verbatim.  Needless to
+% say, this command should only be executed within a group, or chaos
+% will ensue.
+
+\def\@sanitize{\@makeother\ \@makeother\\\@makeother\$\@makeother\&%
+\@makeother\#\@makeother\^\@makeother\^^K\@makeother\_\@makeother\^^A%
+\@makeother\%\@makeother\~}
+
+%       ****************************************
+%       *            INDEX COMMANDS            *
+%       ****************************************
+%
+% \makeindex ==
+%   BEGIN
+%    if \@filesw = T
+%      then  open file \jobname.IDX as \indexfile
+%             \index ==  BEGIN \@bsphack 
+%                              \begingroup
+%                                  re-\catcode special characters to 'other'
+%                                  \wrindex
+%    fi
+%   END  
+%
+%  \wrindex{ITEM} ==
+%    BEGIN
+%        write of {\indexentry{ITEM}{page number}}
+%      \endgroup
+%      \@esphack
+%    END
+
+%  INITIALIZATION:
+%
+%  \index == BEGIN \@bsphack 
+%                  \begingroup
+%                     re-\catcode special characters (in case '%' there)
+%                     \index
+%            END
+%              
+%  \index{ITEM} == BEGIN \endgroup \@esphack END
+%
+\def\makeindex{\if@filesw \newwrite\@indexfile
+  \immediate\openout\@indexfile=\jobname.idx
+  \def\index{\@bsphack\begingroup\@sanitize\@wrindex\@indexfile}
+  \typeout{Writing index file \jobname.idx }\fi}
+
+\def\@wrindex#1#2{\let\thepage\relax
+   \xdef\gtempa{\write#1{\string
+      \indexentry{#2}{\thepage}}}\endgroup\gtempa
+   \if@nobreak \ifvmode\@nobreak\fi\fi\@esphack}
+
+\def\index{\@bsphack\begingroup\@sanitize\@index}
+\def\@index#1{\endgroup\@esphack}
+
+\def\makeglossary{\if@@filesw \newwrite\@glossaryfile
+  \immediate\openout\@glossaryfile=\jobname.glo
+  \def\glossary{\@bsphack\begingroup\@sanitize\@wrindex\@glossaryfile}\typeout
+  {Writing glossary file \jobname.glo }\fi}
+
+\def\glossary{\@bsphack\begingroup\@sanitize\index}
+
+\newdimen\pagewidth
+\pagewidth=\hsize
+\newbox\partialpage
+\def\begindoublecolumns{\begingroup
+  \output={\global\setbox\partialpage=\vbox{\unvbox255\bigskip}}\eject
+  \output={\doublecolumnout} \hsize=14pc \vsize=89pc
+  \let\item\@idxitem}
+\def\enddoublecolumns{\output={\balancecolumns}\eject
+  \endgroup \pagegoal=\vsize}
+\def\doublecolumnout{\splittopskip=\topskip \splitmaxdepth=\maxdepth
+  \dimen@=44pc \advance\dimen@ by-\ht\partialpage
+  \setbox0=\vsplit255 to\dimen@ \setbox2=\vsplit255 to\dimen@
+  \onepageout\pagesofar
+  \unvbox255 \penalty\outputpenalty}
+\def\pagesofar{\unvbox\partialpage
+  \wd0=\hsize \wd2=\hsize \hbox to\pagewidth{\box0\hfil\box2}}
+\def\balancecolumns{\setbox0=\vbox{\unvbox255} \dimen@=\ht0
+  \advance\dimen@ by\topskip \advance\dimen@ by-\baselineskip
+  \divide\dimen@ by2 \splittopskip=\topskip
+  {\vbadness=10000 \loop \global\setbox3=\copy0
+    \global\setbox1=\vsplit3 to\dimen@
+    \ifdim\ht3>\dimen@ \global\advance\dimen@ by1pt \repeat}
+  \setbox0=\vbox to\dimen@{\unvbox1}
+  \setbox2=\vbox to\dimen@{\unvbox3}
+  \pagesofar}
+
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hskip 20pt}
+\def\subsubitem{\par\hangindent 40pt \hskip 30pt}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+\def\beginindex{\begingroup\let\item\@idxitem
+% Output opening routines go here
+}
+\def\endindex{
+% Output closing routines go here.
+\endgroup}
+\makeatother

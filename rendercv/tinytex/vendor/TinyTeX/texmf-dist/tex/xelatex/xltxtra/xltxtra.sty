@@ -1,0 +1,185 @@
+%%
+%% This is file `xltxtra.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xltxtra.dtx  (with options: `package')
+%%   ____________________________
+%%   The XLTXTRA package
+%%   (C) 2006-2017 Will Robertson
+%%   License information appended
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% THE XLTXTRA PACKAGE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% Copyright (C) 2006-2018 by Will Robertson <wspr81@gmail.com>
+%%
+%% Distributable under the LaTeX Project Public License,
+%% version 1.3c or higher (your choice). The latest version of
+%% this license is at: http://www.latex-project.org/lppl.txt
+%%
+%% This work is "maintained" (as per LPPL maintenance status)
+%% by Will Robertson.
+%%
+%% This work consists of the files xltxtra.dtx and xltxtra.ins,
+%%           and the derived files xltxtra.sty and xltxtra.pdf.
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ProvidesPackage{xltxtra}
+  [2018/12/31 v0.7 Improvements for the "XeLaTeX" format]
+\RequirePackage{ifluatex}
+\ifluatex
+  \PackageWarningNoLine {xltxtra} {^^J
+    XLTXTRA IS TO BE USED ONLY UNDER XETEX.
+    LOAD FONTSPEC DIRECTLY, INSTEAD.^^J
+    ABORTING LOADING%
+  }
+  \RequirePackage{fontspec}
+  \expandafter \endinput
+\fi
+\RequirePackage{ifxetex}
+\RequireXeTeX
+\RequirePackage{fontspec}
+\RequirePackage{realscripts}
+\newif\if@xxt@nosscript@
+\newif\if@xxt@nologos@
+\DeclareOption{no-sscript}{\@xxt@nosscript@true}
+\DeclareOption{no-logos}{\@xxt@nologos@true}
+\ProcessOptions*
+\RequirePackage{metalogo}
+\if@xxt@nologos@
+  \let\TeX\original@TeX
+  \let\LaTeX\original@LaTeX
+  \let\LaTeXe\original@LaTeXe
+\fi
+\if@xxt@nosscript@
+  \DeclareRobustCommand*\textsubscript{%
+    \@ifstar{\realsubscript}{\fakesubscript}}
+  \DeclareRobustCommand*\textsuperscript{%
+    \@ifstar{\realsuperscript}{\fakesuperscript}}
+\fi
+\ExplSyntaxOn
+\newcommand*\vfrac[2]{
+  \fontspec_if_fontspec_font:TF
+  {
+    \fontspec_if_opentype:TF
+    {
+      {\addfontfeature{VerticalPosition=Numerator}#1}
+       \textfractionsolidus
+      {\addfontfeature{VerticalPosition=Denominator}#2}
+    }
+    {
+      {\addfontfeature{VerticalPosition=Superior}#1}
+       \textfractionsolidus
+      {\addfontfeature{VerticalPosition=Inferior}#2}
+    }
+  }
+  {
+    \PackageError {xltxtra}
+      { \string\vfrac\space~can~only~be~used~with~fontspec~fonts }
+      { Nothing~more~to~tell. }
+  }
+}
+\ExplSyntaxOff
+\newcommand\namedglyph[1]{%
+  \@tempcnta=\XeTeXglyphindex "#1"\relax
+  \ifnum\@tempcnta>0
+    \XeTeXglyph\@tempcnta
+  \else
+    \xxt@namedglyph@fallback{#1}%
+  \fi}
+\newcommand\xxt@namedglyph@fallback[1]{[#1]}
+\ExplSyntaxOn
+\seq_new:N \l__xetex_showhyphens_seq
+\box_new:N \l__xetex_show_hyphens_wrapping_box
+\box_new:N \l__xetex_show_hyphens_temp_box
+\box_new:N \l__xetex_show_hyphens_final_box
+\box_new:N \g__xetex_show_hyphens_word_box
+
+\cs_new_protected:Npn \xetex_show_hyphens:n #1
+ {
+  \box_clear:N \l__xetex_show_hyphens_final_box
+  % split the input into items
+  \seq_set_split:Nnn \l__xetex_showhyphens_seq { ~ } { #1 }
+  % hyphenate all items
+  \seq_map_function:NN \l__xetex_showhyphens_seq \xetex_hyphenate_word:n
+  % set a box to the maximum dimension to force a Underfull \hbox warning
+  \hbox_set_to_wd:Nnn \l__xetex_show_hyphens_final_box { \c_max_dim }
+   {
+    \hbox_unpack_clear:N \l__xetex_show_hyphens_final_box
+   }
+ }
+
+\cs_new_protected:Npn \xetex_hyphenate_word:n #1
+ {
+  \vbox_set:Nn \l__xetex_show_hyphens_wrapping_box
+   {% build a paragraph with the word with a very narrow line width
+    \dim_set:Nn \hsize { 1sp }
+    % disregard spurious messages
+    \hbadness = 10000\relax
+    \dim_set:Nn \hfuzz { \c_max_dim }
+    % clear possible values of \everypar and other parameters
+    \everypar={}
+    \skip_set:Nn \leftskip { 0pt }
+    \skip_set_eq:NN \rightskip \leftskip
+    % skip the first step
+    \pretolerance = -1\relax
+    % avoid the indentation and add a skip to allow hyphenation
+    \noindent
+    \skip_horizontal:n { 0pt }
+    #1
+    \par
+    \hbox_gset:Nn \g__xetex_show_hyphens_word_box {}
+    % start a recursion to dismantle the paragraph just built
+    \xetex_show_hyphens_split:
+    % the result is put into \g__xetex_show_hyphens_word_box
+   }
+   % add the box to the final container
+   \hbox_set:Nn \l__xetex_show_hyphens_final_box
+    {
+     \hbox_unpack_clear:N \l__xetex_show_hyphens_final_box
+     \hbox_unpack_clear:N \g__xetex_show_hyphens_word_box
+    }
+ }
+
+\cs_new_protected:Npn \xetex_show_hyphens_split:
+ {
+  \unskip % remove the interline glue
+  \unpenalty % remove possible penalties
+  % get the last line
+  \box_set_to_last:N \l__xetex_show_hyphens_temp_box
+  \box_if_empty:NF \l__xetex_show_hyphens_temp_box
+   {% if there is a last line unpack it into a container
+    \hbox_gset:Nn \g__xetex_show_hyphens_word_box
+     {% the order is last to first
+      \hbox_unpack_clear:N \l__xetex_show_hyphens_temp_box
+      \unskip\unskip % remove spaces
+      \hbox_unpack_clear:N \g__xetex_show_hyphens_word_box
+     }
+    % restart the recursion
+    \xetex_show_hyphens_split:
+   }
+ }
+
+\cs_set_eq:NN \showhyphens \xetex_show_hyphens:n
+\ExplSyntaxOff
+%% 
+%% THE XLTXTRA PACKAGE
+%% 
+%% Copyright (C) 2006-2018 by Will Robertson <wspr81@gmail.com>
+%% 
+%% Distributable under the LaTeX Project Public License,
+%% version 1.3c or higher (your choice). The latest version of
+%% this license is at: http://www.latex-project.org/lppl.txt
+%% 
+%% This work is "maintained" (as per LPPL maintenance status)
+%% by Will Robertson.
+%% 
+%% This work consists of the files xltxtra.dtx and xltxtra.ins,
+%%           and the derived files xltxtra.sty and xltxtra.pdf.
+%% 
+%% 
+%%
+%% End of file `xltxtra.sty'.

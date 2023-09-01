@@ -1,0 +1,1015 @@
+% Copyright 2019 by Christian Feuersaenger
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+%
+% This file contains additions to pgfkeys.code.tex (loaded
+% automatically at the end of pgfkeys.code.tex)
+%
+% Improvements:
+%
+% - option filtering
+%   you provide
+%     - a boolean predicate
+%     - a "filter handler" which will be invoked for non-matching options,
+%     - a key=value list as usual.
+%   The filter sets only matching options and invokes the handler for
+%   unmatching ones.
+%
+% - Fast family support as in xkeyval.
+%   - A key like /my tree/my option  can be associated with /my family
+%   - You can efficiently set keys which belong to a set of "active"
+%     families.
+%  Remaining options can be collected into a macro.
+
+% WARNING:
+% this file overwrites
+% \pgfkeys@addpath
+% \pgfkeys@nevermind
+%
+% all other features are 'additive'
+
+
+% these implementations will be switched dynamically with their
+% filtered versions (in \pgfkeys@install@filter@and@invoke)
+\let\pgfkeys@orig@case@one=\pgfkeys@case@one
+\let\pgfkeys@orig@@set=\pgfkeys@@set
+\let\pgfkeys@orig@@qset=\pgfkeys@@qset
+\let\pgfkeys@orig@try=\pgfkeys@try
+\let\pgfkeys@orig@unknown=\pgfkeys@unknown
+
+\newif\ifpgfkeysfilteringisactive
+\newif\ifpgfkeysfiltercontinue
+\let\pgfkeys@key@predicate=\pgfkeys@empty
+\let\pgfkeys@filtered@handler=\pgfkeys@empty
+\newtoks\pgfkeys@tmptoks
+
+% Performs 'filtered' key settings.
+%
+% For every option for which the path prefixing has already been done,
+% the current key filter predicate will be invoked. If the predicate
+% returns true, pgfkeys will process this key in the normal manner.
+% If not, a key filter handler will be invoked.
+%
+% The *predicate* and *handler* semantics are as follows:
+% PRECONDITION:
+%         1. The variables
+%             \pgfkeyscurrentkey (full path including name)
+%             \pgfkeyscurrentkeyRAW (the current key as it has been
+%                                    found in the key=value list
+%                                    without path modification)
+%             \pgfkeyscurrentvalue
+%             are all set. If the current key is a handler variable,
+%                 \pgfkeyscurrentname
+%             and
+%                 \pgfkeyscurrentpath
+%             are also set.
+%         2. The type of option has already been checked, that means
+%             case (1) whether '.@cmd' exists
+%             case (2) whether the key as such has its value
+%             case (3) it is a handler like '.code', '.cd' or whatever.
+%             case (0) it is unknown.
+%             The actual case number (0-3) will be provided as contents
+%             of the macro
+%                 \pgfkeyscasenumber.
+%             It is always a one-character token, so it may be compared
+%             with both, \ifnum or \if.
+%             Please note that unknown options will be processed with
+%             the usual '.unknown' handlers unless the key filter takes
+%             control over unknown options as well.
+%
+% POSTCONDITION:
+%         the predicate sets
+%             \pgfkeysfiltercontinuetrue
+%         or
+%             \pgfkeysfiltercontinuefalse
+%         (the boolean \ifpgfkeysfiltercontinue).
+% Depending on this 'if', option processing will be continued or
+% skipped.
+%
+% The handler can do anything with the option, for example collect
+% unmatched ones.
+%
+% ATTENTION: \pgfkeysfiltered can't be nested (yet). Use the
+% \pgfkeyspredicateAND if you need multiple predicates at once.
+% Nesting would produce unexpected results because the current filter
+% state can't be stored/restored without TeX-groups, therefor it is
+% disabled.
+%
+% ATTENTION: you can't filter error messages.
+%
+% REMARK: In case (3), the macros \pgfkeyscurrentpath and
+% \pgfkeyscurrentname have already been computed, you do not need to
+% invoke \pgfkeyssplitpath. In any other case, neither path nor name
+% are required for the options processing - if you need them for
+% predicates/handlers, you need to compute them by hand.
+%
+%
+% Example:
+%   \def\unmatched{}
+%   \pgfkeys{/pgf/key filters/is descendant of/.install key filter=/my group}
+%   \pgfkeys{/pgf/key filter handlers/append filtered to/.install key filter handler=\unmatched}
+%   \pgfkeysfiltered%
+%       {/my group/option 1=value 1,/tikz/option 2=value 2}
+% ->
+%  will set '/my group/option 1' as usual, but '/tikz/option 2' will not
+%  be set. Instead, it will be appended to '\unmatched' such that
+%  \unmatched = {/tikz/option 2=value2}
+%  after the operation.
+%
+% Arguments:
+% #1:  key-value list.
+\def\pgfkeysfiltered{%
+    % produce
+    % '{<default path>}'
+    % each expanded exactly one time into the register:
+    \expandafter\pgfkeysfiltered@@install\expandafter{\pgfkeysdefaultpath}%
+}
+
+% #1: old value of default path.
+% #2: key-value-list.
+\long\def\pgfkeysfiltered@@install#1#2{%
+    \pgfkeys@install@filter@and@invoke{%
+        \let\pgfkeysdefaultpath\pgfkeys@root%
+        \pgfkeys@parse#2,\pgfkeys@mainstop%
+        \def\pgfkeysdefaultpath{#1}%
+    }%
+}
+
+% Assuming that macro #1 contains a key=value list, this command
+% performs an \pgfkeysalso command for the content of macro #1.
+%
+% It can be used in conjunction with
+%   - \pgfkeysfiltered and
+%   - \pgfkeysappendfilterednamestomacro:
+% the first pass fill only process options matching the filter, then,
+% a \pgfkeysalsofrom can be used at a later time to set the remaining
+% options.
+%
+% Example:
+% \pgfkeys{/my group/.cd,/utils/exec=\pgfkeysalsofrom\filtered}
+\long\def\pgfkeysalsofrom#1{%
+    \expandafter\pgfkeysalso\expandafter{#1}%
+}
+
+% The same as \pgfkeysalsofrom, but it invokes \pgfkeysalsofiltered.
+\long\def\pgfkeysalsofilteredfrom#1{%
+    \expandafter\pgfkeysalsofiltered\expandafter{#1}%
+}
+
+% #1 = options
+\long\def\pgfkeysalsofiltered#1{%
+    \pgfkeys@install@filter@and@invoke{\pgfkeysalso{#1}}%
+}%
+
+% The same like \pgfkeysfiltered, but with quick search path setting.
+%
+% #1: default path
+% #2: key-value-pairs
+\long\def\pgfqkeysfiltered#1{%
+    \expandafter\pgfqkeysfiltered@@install\expandafter{\pgfkeysdefaultpath}{#1}%
+}
+
+% #1: old value of default path.
+% #2: default path
+% #3: key-value-list.
+\long\def\pgfqkeysfiltered@@install#1#2#3{%
+    \pgfkeys@install@filter@and@invoke{%
+        \def\pgfkeysdefaultpath{#2/}\pgfkeys@parse#3,\pgfkeys@mainstop\def\pgfkeysdefaultpath{#1}%
+    }%
+}
+
+% Family management
+%
+% The family code provides the following features:
+% 1. every key can be associated with 0 or 1 'family'.
+% 2. Families are a loose association which are independent of the key
+% hierarchy.
+%   For example, /my tree/key1  can belong to family /tikz.
+%
+% 3. It is possible to "activate" or "deactivate" single families.
+%    Furthermore, it is possible to set only keys which belong to
+%    active families (using \pgfkeysfiltered).
+% 4. Runtime complexities:
+%    If you have N options and you only want to process K active
+%    families, the runtime is O( N + K ):
+%      - activate every family O(K)
+%      - use \pgfkeyshasactivefamily as filter predicate O(N)
+%      - deactivate every family O(K)
+
+
+% Activates family #1.
+%
+% #1 maybe a macro.
+\def\pgfkeysactivatefamily#1{%
+    \pgfkeysiffamilydefined
+        {#1}%
+        {\csname pgfk@#1/familyactivetrue\endcsname}%
+        {\pgfkeysvalueof{/errors/family unknown/.@cmd}{#1}\pgfeov}%
+%\message{[ACTIVATING FAMILY #1]}%
+}
+
+% Deactivates family #1.
+%
+% #1 maybe a macro.
+\def\pgfkeysdeactivatefamily#1{%
+    \pgfkeysiffamilydefined
+        {#1}%
+        {\csname pgfk@#1/familyactivefalse\endcsname}%
+        {\pgfkeysvalueof{/errors/family unknown/.@cmd}{#1}\pgfeov}%
+%\message{[DEACTIVATING FAMILY #1]}%
+}
+
+% Activates all families in the comma separated list #1.
+%
+% It will also generate code for deactivation of all those families
+% into the command #2.
+%
+% #1: a comma-separated list of fully qualified family names.
+% #2: a command which will be filled with a deactivate-all command.
+\def\pgfkeysactivatefamilies#1#2{%
+    \pgfkeyssavekeyfilterstateto\pgfkeys@cur@state
+    \expandafter\pgfkeysactivatefamilies@impl\expandafter{\pgfkeys@cur@state}{#1}{#2}%
+}
+% #1: commands needed to restore the old filtering state
+% #2: family name list
+% #3: macro name for de-activate command
+\def\pgfkeysactivatefamilies@impl#1#2#3{%
+    \pgfkeysinstallkeyfilter{/pgf/key filters/false}{}%
+    \let#3=\pgfkeys@empty%
+    \def\pgfkeys@filtered@handler{\pgfkeys@family@activate@handler{#3}}%
+    \pgfkeysalsofiltered{#2}%
+    #1%
+}
+
+\def\pgfkeys@family@activate@handler#1{%
+    \pgfkeysactivatefamily{\pgfkeyscurrentkey}%
+    % produce
+    %   <old list> '\pgfkeysdeactivatefamily{' <current key> '}'
+    \pgfkeys@tmptoks=\expandafter\expandafter\expandafter{\expandafter#1\expandafter\pgfkeysdeactivatefamily\expandafter{\pgfkeyscurrentkey}}%
+    \edef#1{\the\pgfkeys@tmptoks}%
+}
+
+% If for testing whether a family exists.
+%
+% #1 = fully qualified family name
+% #2 = if-case
+% #3 = else-case
+%
+% Description:
+%
+% If the family exists, #2 will be executed. Otherwise, #3 will be
+% called.
+\long\def\pgfkeysiffamilydefined#1#2#3{\ifcsname ifpgfk@#1/familyactive\endcsname#2\else#3\fi}
+
+% Sets the TeX boolean
+%   \ifpgfkeysfiltercontinue := ( family #1 is active )
+%
+% Argument:
+% #1 the family name. Maybe a macro.
+\def\pgfkeysisfamilyactive#1{%
+    \pgfkeysiffamilydefined{#1}{%
+        \expandafter\let\expandafter\ifpgfkeysfiltercontinue\csname ifpgfk@#1/familyactive\endcsname
+    }{%
+        \pgfkeysvalueof{/errors/family unknown/.@cmd}{#1}\pgfeov%
+        \expandafter\expandafter\expandafter\let\csname ifpgfkeysfiltercontinue\endcsname\csname iffalse\endcsname
+    }%
+}%
+
+% Retrieve the family of full key #1 into macro #2.
+%
+% Will set the TeX boolean \ifpgfkeyssuccess to whether the full key
+% really has a family.
+%
+% The family for any key is stored in the sub-key #1/family.
+%
+% Parameters:
+% #1:  the full key name for which the family is requested. Maybe a
+%      macro.
+% #2:  a macro name which will be filled with the result.
+\def\pgfkeysgetfamily#1#2{%
+    \pgfkeysifdefined{#1/family}{\pgfkeysgetvalue{#1/family}{#2}\pgfkeyssuccesstrue}{\pgfkeyssuccessfalse}%
+}
+
+% Equivalent to \pgfkeys{#1/.belongs to family=#2}
+\def\pgfkeyssetfamily#1#2{%
+    \pgfkeysiffamilydefined{#2}{%
+        \pgfkeyssetvalue{#1/family}{#2}%
+    }{%
+        \pgfkeysalso{/errors/family unknown={#2}}%
+    }%
+}%
+
+
+% Sets \ifpgfkeysfiltercontinue to true iff the current key belongs to
+% the /errors tree.
+\long\def\pgfkeys@cur@is@descendant@of@errors{%
+    \expandafter\pgfkeys@cur@is@descendant@of@errors@impl\pgfkeyscurrentkey/errors\pgf@@eov
+}%
+\long\def\pgfkeys@cur@is@descendant@of@errors@impl#1/errors#2\pgf@@eov{%
+    \def\pgfkeyspred@TMP{#1}%
+    \ifx\pgfkeyspred@TMP\pgfkeys@empty
+%\message{[SPECIAL CHECK] '\pgfkeyscurrentkey' is descendant of '/errors': TRUE.}%
+        \pgfkeysfiltercontinuetrue
+    \else
+%\message{[SPECIAL CHECK] '\pgfkeyscurrentkey' is descendant of '/errors': FALSE.}%
+        \pgfkeysfiltercontinuefalse
+    \fi
+}%
+
+% \pgfkeysinterruptkeyfilter
+% ...
+% \endpgfkeysinterruptkeyfilter
+% temporarily interrupts key filtering and enables it in
+% \endpgfkeysinterruptkeyfilter.
+%
+% If key filtering it not active, this has no effect at all.
+%
+% REMARK:
+% \pgfkeysinterruptkeyfilter...\endpgfkeysinterruptkeyfilter does NOT
+% introduce a \TeX-group.
+\def\pgfkeysinterruptkeyfilter{%
+    \ifpgfkeysfilteringisactive
+        \let\pgfkeys@case@one=\pgfkeys@orig@case@one
+        \let\pgfkeys@try=\pgfkeys@orig@try
+        \let\pgfkeys@unknown=\pgfkeys@orig@unknown
+    \fi
+}
+
+\def\endpgfkeysinterruptkeyfilter{%
+    \ifpgfkeysfilteringisactive
+        \let\pgfkeys@case@one=\pgfkeys@case@one@filtered
+        \let\pgfkeys@try=\pgfkeys@try@filtered
+        \let\pgfkeys@unknown=\pgfkeys@unknown@filtered
+    \fi
+}
+
+% Activates families #1, calls \pgfkeysfiltered and deactivates the
+% families afterwards.
+%
+% REMARK: you need to install a family-based key filter predicate
+% manually to benefit from the activated families!
+%
+% #1: comma separated family list
+% #2: key-value pairs
+%
+% @see \pgfkeysactivatefamiliesandfilteroptions
+\def\pgfkeysactivatefamiliesandfilteroptions#1#2{%
+    \pgfkeysactivatefamilies{#1}{\pgfkeys@family@deactivation}%
+    \pgfkeysfiltered{#2}%
+    \pgfkeys@family@deactivation
+}
+
+% The "quick" variant of \pgfkeysactivatefamiliesandfilteroptions: it
+% also assigns a default path.
+%
+% #1: comma separated family list
+% #2: default path
+% #3: key-value pairs
+\def\pgfqkeysactivatefamiliesandfilteroptions#1#2#3{%
+    \pgfkeysactivatefamilies{#1}{\pgfkeys@family@deactivation}%
+    \pgfqkeysfiltered{#2}{#3}%
+    \pgfkeys@family@deactivation
+}
+
+% Public version of split path:
+\def\pgfkeyssplitpath{\pgfkeys@split@path}%
+
+
+% The same as \pgfkeysactivatefamiliesandfilteroptions but just for
+% ONE family.
+%
+% #1: family (maybe a macro)
+% #2: key-value pairs
+\def\pgfkeysactivatesinglefamilyandfilteroptions#1#2{%
+    \pgfkeysactivatefamily{#1}%
+    \pgfkeysfiltered{#2}%
+    \pgfkeysdeactivatefamily{#1}%
+}
+
+% The "quick" variant of \pgfkeysactivatesinglefamilyandfilteroptions
+%
+% #1: family (maybe a macro)
+% #2: default path
+% #3: key-value pairs
+\def\pgfqkeysactivatesinglefamilyandfilteroptions#1#2#3{%
+    \pgfkeysactivatefamily{#1}%
+    \pgfqkeysfiltered{#2}{#3}%
+    \pgfkeysdeactivatefamily{#1}%
+}
+
+% Installs the key filter '#1' with argument '#2'.
+% This is equivalent to
+%    \pgfkeys{#1/.install key filter=#2}
+%
+% The current values of the key filter handler is stored into the public
+% macros
+% \pgfkeyscurrentkeyfilter
+% and
+% \pgfkeyscurrentkeyfilterargs
+%
+% #1: a full key name; may be a macro
+% #2: optional arguments for the key. If the key expects more than one
+% argument, supply '{{first}{second}}'
+\def\pgfkeysinstallkeyfilter#1#2{%
+    \pgfkeysifdefined{#1/.@cmd}{%
+        \edef\pgfkeyscurrentkeyfilter{#1}%
+        \def\pgfkeyscurrentkeyfilterargs{#2}%
+        \pgfkeysgetvalue{#1/.@cmd}{\pgfkeys@key@predicate@}%
+        \def\pgfkeys@key@predicate{\pgfkeys@key@predicate@#2\pgfeov}%
+    }{%
+        \pgfkeysvalueof{/errors/no such key filter/.@cmd}{#1}{#2}\pgfeov%
+    }%
+}
+
+% Installs the key filter handler '#1' with argument '#2'.
+% This is equivalent to
+%    \pgfkeys{#1/.install key filter handler=#2}
+%
+% The current values of the key filter handler is stored into the public
+% macros
+% \pgfkeyscurrentkeyfilterhandler
+% and
+% \pgfkeyscurrentkeyfilterhandlerargs
+%
+% #1: a full key name; may be a macro
+% #2: optional arguments for the handler. If the handler expects more than one
+% argument, supply '{{first}{second}}'
+\def\pgfkeysinstallkeyfilterhandler#1#2{%
+    \pgfkeysifdefined{#1/.@cmd}{%
+        \edef\pgfkeyscurrentkeyfilterhandler{#1}%
+        \def\pgfkeyscurrentkeyfilterhandlerargs{#2}%
+        \pgfkeysgetvalue{#1/.@cmd}{\pgfkeys@filtered@handler@}%
+        \def\pgfkeys@filtered@handler{\pgfkeys@filtered@handler@#2\pgfeov}%
+    }{%
+        \pgfkeysvalueof{/errors/no such key filter handler/.@cmd}{#1}{#2}\pgfeov%
+    }%
+}
+
+% Creates a macro which contains commands to re-activate the current
+% key filter and key filter handler. It can be used to temporarily
+% switch the key filter.
+\def\pgfkeyssavekeyfilterstateto#1{%
+    % produce the string
+    % \pgfkeysinstallkeyfilter{...}{...}
+    % \pgfkeysinstallkeyfilterhandler{...}{...}
+    % where each argument is expanded once
+    % FIXME: Do the same with less overhead!
+    \pgfkeys@tmptoks={\pgfkeysinstallkeyfilter}%
+    \pgfkeys@tmptoks=\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgfkeys@tmptoks\expandafter{\pgfkeyscurrentkeyfilter}}%
+    \pgfkeys@tmptoks=\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgfkeys@tmptoks\expandafter{\pgfkeyscurrentkeyfilterargs}\pgfkeysinstallkeyfilterhandler}%
+    \pgfkeys@tmptoks=\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgfkeys@tmptoks\expandafter{\pgfkeyscurrentkeyfilterhandler}}%
+    \pgfkeys@tmptoks=\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgfkeys@tmptoks\expandafter{\pgfkeyscurrentkeyfilterhandlerargs}}%
+    \edef#1{%
+        \the\pgfkeys@tmptoks
+    }%
+}
+
+
+\pgfkeys{%
+    /errors/family unknown/.code=\pgfkeys@error{%
+        Sorry, I do not know family '#1' and can't work with any assoicated family handling. Perhaps you misspelled it?},
+    /errors/no such key filter/.code 2 args=\pgfkeys@error{Sorry, there is no such key filter '#1'.},
+    /errors/no such key filter handler/.code 2 args=\pgfkeys@error{Sorry, there is no such key filter handler '#1'.},
+    % HANDLERS:
+    %
+    % .is family should
+    %  1. '.cd' into the families' path,
+    %  2. define booleans to activate/deactive the family
+    %     (see \pgfkeysisfamilyactive)
+    %  3. make sure that \pgfkeyshasactivefamily returns true for
+    %     the family itself.
+    /handlers/.is family/.append code={%
+        %\newif is an \outer macro in plain tex, so this here is not portable:
+        %\expandafter\newif\csname if\pgfkeyscurrentpath/familyactive\endcsname
+        \edef\pgfkeyspred@TMP{pgfk@\pgfkeyscurrentpath/familyactive}%
+        \expandafter\pgfkeys@non@outer@newif\expandafter{\pgfkeyspred@TMP}%
+        \edef\pgfkeyspred@TMP{\pgfkeyscurrentpath/.belongs to family=\pgfkeyscurrentpath}%
+        \expandafter\pgfkeysalso\expandafter{\pgfkeyspred@TMP}%
+    },%
+    /handlers/.activate family/.code=\pgfkeysactivatefamily{\pgfkeyscurrentpath},
+    /handlers/.deactivate family/.code=\pgfkeysdeactivatefamily{\pgfkeyscurrentpath},
+    /handlers/.belongs to family/.code={\pgfkeyssetfamily{\pgfkeyscurrentpath}{#1}},%
+    %
+    %
+    % An addition to the '.try' and '.retry' handlers:
+    %
+    % It is the same as '.retry', but if the option is still unknown, the
+    % usual handlers for unknown keys will be invoked.
+    /handlers/.lastretry/.code={%
+        \ifpgfkeyssuccess\else
+            \pgfkeys@try
+            \ifpgfkeyssuccess\else
+                \pgfkeys@split@path%
+                \pgfkeys@unknown
+            \fi
+        \fi
+    },
+    %
+    %
+    /handlers/.install key filter/.code={%
+        \pgfkeysinstallkeyfilter{\pgfkeyscurrentpath}{#1}%
+    },%
+    /handlers/.install key filter handler/.code={%
+        \pgfkeysinstallkeyfilterhandler{\pgfkeyscurrentpath}{#1}%
+    },%
+    %
+    %
+    % KEY FILTER HANDLERS:
+    %
+    /pgf/key filter handlers/append filtered to/.code={%
+        % Produce
+        %  <orig key> '={' <value> '}'
+        % where both, the key and the value are expanded just ONCE:
+        \pgfkeys@tmptoks=\expandafter\expandafter\expandafter{\expandafter\pgfkeyscurrentkeyRAW\expandafter=\expandafter{\pgfkeyscurrentvalue}}%
+        \ifx#1\pgfkeys@empty
+        \else
+            % Produce <old list> ','  <orig key> '={' <value> '}'
+            \pgfkeys@tmptoks=\expandafter\expandafter\expandafter{\expandafter#1\expandafter,\the\pgfkeys@tmptoks}%
+        \fi
+        \edef#1{\the\pgfkeys@tmptoks}%
+    },%
+    /pgf/key filter handlers/ignore/.code={},
+    /pgf/key filter handlers/ignore/.install key filter handler,
+    /pgf/key filter handlers/log/.code={%
+        \pgf@typeout{LOG: the option '\pgfkeyscurrentkey' (was originally '\pgfkeyscurrentkeyRAW') (case \pgfkeyscasenumber) has not been processed due to pgfkeysfiltered.}%
+    },
+    %
+    %
+    % KEY FILTER PREDICATES:
+    %
+    % Returns true if the currently processed key belongs to an active family.
+    % A family is active if it has been activated before.
+    /pgf/key filters/active families/.code={%
+        \if\pgfkeyscasenumber0%
+            % unknown options shall be processed with the
+            % unknown-handlers.
+            \pgfkeysfiltercontinuetrue
+        \else
+            \if\pgfkeyscasenumber3%
+                \pgfkeysgetfamily\pgfkeyscurrentpath\pgfkeyspred@TMP
+            \else
+                \pgfkeysgetfamily\pgfkeyscurrentkey\pgfkeyspred@TMP
+            \fi
+            \ifpgfkeyssuccess
+                \pgfkeysisfamilyactive{\pgfkeyspred@TMP}%
+            \else% Ok, it does not belong to any family.
+                \pgfkeysfiltercontinuefalse
+            \fi
+        \fi
+    },%
+    %
+    %
+    %
+    % This filter works as follows:
+    % 1. if the current key belongs to a family:
+    %    return whether its family is active,
+    % 2. if the current key does NOT belong to a family:
+    %    return the result of criterion '#1',
+    % 3. the current key is unknown:
+    %    return the result of criterion '#2'.
+    %
+    % Arguments:
+    % #1: the predicate which will be invoked in case 2.
+    %     It will be invoked with the current case number as argument.
+    % #2: the predicate which will be invoked in case 3 with
+    %     the current case number as argument.
+    /pgf/key filters/active families or no family/.code 2 args={%
+        \if\pgfkeyscasenumber0%
+            \pgfkeysevalkeyfilterwith{#2}%
+        \else
+            \if\pgfkeyscasenumber3%
+                \pgfkeysgetfamily\pgfkeyscurrentpath\pgfkeyspred@TMP
+            \else
+                \pgfkeysgetfamily\pgfkeyscurrentkey\pgfkeyspred@TMP
+            \fi
+            \ifpgfkeyssuccess
+                \pgfkeysisfamilyactive{\pgfkeyspred@TMP}%
+            \else% Ok, it does not belong to any family.
+                \pgfkeysevalkeyfilterwith{#1}%
+            \fi
+        \fi
+    },
+    /pgf/key filters/active families or no family DEBUG/.code 2 args={%
+        \if\pgfkeyscasenumber0%
+            \pgf@typeout{[pgfkeyshasactivefamilyornofamily(\pgfkeyscurrentkey, \pgfkeyscasenumber) invoking unknown handler '#2']}%
+            \pgfkeysevalkeyfilterwith{#2}%
+        \else
+            \if\pgfkeyscasenumber3%
+                \pgfkeysgetfamily\pgfkeyscurrentpath\pgfkeyspred@TMP
+            \else
+                \pgfkeysgetfamily\pgfkeyscurrentkey\pgfkeyspred@TMP
+            \fi
+            \ifpgfkeyssuccess
+                \pgfkeysisfamilyactive{\pgfkeyspred@TMP}%
+                \ifpgfkeysfiltercontinue
+                    \pgf@typeout{[pgfkeyshasactivefamilyornofamily(\pgfkeyscurrentkey, \pgfkeyscasenumber) family is ACTIVE]}%
+                \else
+                    \pgf@typeout{[pgfkeyshasactivefamilyornofamily(\pgfkeyscurrentkey, \pgfkeyscasenumber) family is NOT active.]}%
+                \fi
+            \else% Ok, it does not belong to any family.
+                \pgf@typeout{[pgfkeyshasactivefamilyornofamily(\pgfkeyscurrentkey, \pgfkeyscasenumber) invoking has-no-family-handler '#1']}%
+                \pgfkeysevalkeyfilterwith{#1}%
+            \fi
+        \fi
+    },
+    %
+    % A (faster) shortcut for
+    % /pgf/key filters/active families or no family=
+    %   {/pgf/keys filters/false}
+    %   {/pgf/keys filters/false}
+    /pgf/key filters/active families and known/.code={%
+        \if\pgfkeyscasenumber0%
+            \pgfkeysfiltercontinuefalse
+        \else
+            \if\pgfkeyscasenumber3%
+                \pgfkeysgetfamily\pgfkeyscurrentpath\pgfkeyspred@TMP
+            \else
+                \pgfkeysgetfamily\pgfkeyscurrentkey\pgfkeyspred@TMP
+            \fi
+            \ifpgfkeyssuccess
+                \pgfkeysisfamilyactive{\pgfkeyspred@TMP}%
+            \else% Ok, it does not belong to any family.
+                \pgfkeysfiltercontinuefalse
+            \fi
+        \fi
+    },
+    % A (faster) shortcut for
+    % /pgf/key filters/active families or no family=
+    %   {/pgf/key filters/is descendant of=#1}% for keys without family
+    %   {/pgf/keys filters/false}
+    /pgf/key filters/active families or descendants of/.code={%
+        \if\pgfkeyscasenumber0%
+            \pgfkeysfiltercontinuefalse
+        \else
+            \if\pgfkeyscasenumber3%
+                \pgfkeysgetfamily\pgfkeyscurrentpath\pgfkeyspred@TMP
+            \else
+                \pgfkeysgetfamily\pgfkeyscurrentkey\pgfkeyspred@TMP
+            \fi
+            \ifpgfkeyssuccess
+                \pgfkeysisfamilyactive{\pgfkeyspred@TMP}%
+            \else% Ok, it does not belong to any family.
+                % the 'is descendant of' implementation has been
+                % COPY PASTED here:
+                %
+                % string prefix comparison:
+                \def\pgfkeysisdescendantof@impl##1#1##2\pgf@@eov{%
+                    \def\pgfkeyspred@TMP{##1}%
+                    \ifx\pgfkeyspred@TMP\pgfkeys@empty
+                        \pgfkeysfiltercontinuetrue
+                    \else
+                        \pgfkeysfiltercontinuefalse
+                    \fi
+                }%
+                \expandafter\pgfkeysisdescendantof@impl\pgfkeyscurrentkey#1\pgf@@eov
+            \fi
+        \fi
+    },
+    %
+    % Processes only options which are children of #1.
+    % Example:
+    %   is descendant of/.install key filter=/foo
+    % will be true for
+    %   /foo/bar/x=y
+    %   /foo/.cd
+    %   /foo/bar/.style=...
+    % but not for
+    %   /bar/foo/...
+    /pgf/key filters/is descendant of/.code={%
+        \if\pgfkeyscasenumber0%
+%\message{'\pgfkeyscurrentkey' (case \pgfkeyscasenumber) is UNKNOWN. Calling unknown handler.}%
+            % unknown options shall be processed with the
+            % unknown-handlers.
+            \pgfkeysfiltercontinuetrue
+        \else
+            % string prefix comparison:
+            % [ note : this has been COPY-PASTED to
+            %   |active families or descendants of| ]
+            \def\pgfkeysisdescendantof@impl##1#1##2\pgf@@eov{%
+                \def\pgfkeyspred@TMP{##1}%
+                \ifx\pgfkeyspred@TMP\pgfkeys@empty
+%\message{'\pgfkeyscurrentkey' (case \pgfkeyscasenumber) is descendant of '#1': TRUE.}%
+                    \pgfkeysfiltercontinuetrue
+                \else
+%\message{'\pgfkeyscurrentkey' (case \pgfkeyscasenumber) is descendant of '#1': FALSE.}%
+                    \pgfkeysfiltercontinuefalse
+                \fi
+            }%
+            \expandafter\pgfkeysisdescendantof@impl\pgfkeyscurrentkey#1\pgf@@eov
+        \fi
+    },%
+    %
+    %
+    %
+    % Returns true if the currently processed full key equals #2.
+    /pgf/key filters/equals/.code={%
+        \if\pgfkeyscasenumber0%
+            % Unknown option:
+            \pgfkeysfiltercontinuetrue
+        \else
+            \def\pgfkeyspred@TMP{#1}%
+            \ifx\pgfkeyscurrentkey\pgfkeyspred@TMP
+                \pgfkeysfiltercontinuetrue
+            \else
+                \pgfkeysfiltercontinuefalse
+            \fi
+        \fi
+    },%
+    %
+    %
+    % Argument #1 can be any other (evaluated) filter predicate, its logical return
+    % value will be inverted.
+    % Example:
+    %   not/.install key filter={is descendant of=/tikz}
+    % will install a key filter which evaluates 'is descendant of' with argument
+    % '/tikz' and returns the logical negation of the result.
+    %
+    /pgf/key filters/not/.code={%
+        \pgfkeysevalkeyfilterwith{#1}%
+        \ifpgfkeysfiltercontinue
+            \pgfkeysfiltercontinuefalse
+        \else
+            \pgfkeysfiltercontinuetrue
+        \fi
+    },%
+    /pgf/key filters/and/.code 2 args={%
+        \pgfkeysevalkeyfilterwith{#1}%
+        \ifpgfkeysfiltercontinue
+            \pgfkeysevalkeyfilterwith{#2}%
+        \fi
+    },%
+    /pgf/key filters/or/.code 2 args={%
+        \pgfkeysevalkeyfilterwith{#1}%
+        \ifpgfkeysfiltercontinue
+        \else
+            \pgfkeysevalkeyfilterwith{#2}%
+        \fi
+    },%
+    /pgf/key filters/true/.code={\pgfkeysfiltercontinuetrue},%
+    /pgf/key filters/true/.install key filter,
+    /pgf/key filters/false/.code={%
+        \pgfkeysfiltercontinuefalse
+    },%
+    %
+    % Returns false if the current key is unknown, which avoids calling
+    % the unknown handlers.
+    /pgf/key filters/defined/.code={%
+        \if\pgfkeyscasenumber0%
+            \pgfkeysfiltercontinuefalse
+        \else
+            \pgfkeysfiltercontinuetrue
+        \fi
+    },
+}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Private IMPLEMENTATION
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% This command does THE SAME work as \pgfkeys@case@one,
+% but it applies filtering whenever it identified the type of an
+% option.
+\def\pgfkeys@case@one@filtered{%
+    \pgfkeys@cur@is@descendant@of@errors
+    \ifpgfkeysfiltercontinue
+        \pgfkeys@orig@case@one
+    \else
+        \pgfkeysfiltercontinuetrue
+        \pgfkeysifdefined{\pgfkeyscurrentkey/.@cmd}{%
+            % CASE ONE: a command option
+            \def\pgfkeyscasenumber{1}%
+            \pgfkeys@key@predicate%
+            \ifpgfkeysfiltercontinue
+%\message{PROCESSING KEY \pgfkeyscurrentkey!}%
+                \pgfkeysgetvalue{\pgfkeyscurrentkey/.@cmd}{\pgfkeys@code}%
+                \expandafter\pgfkeys@code\pgfkeyscurrentvalue\pgfeov
+            \else
+%\message{FILTERED OUT  KEY \pgfkeyscurrentkey!}%
+                \pgfkeys@filtered@handler%
+            \fi
+        }{%
+            % CASE TWO: a normal value option
+            \pgfkeysifdefined{\pgfkeyscurrentkey}{%
+                \def\pgfkeyscasenumber{2}%
+                \pgfkeys@key@predicate%
+                \ifpgfkeysfiltercontinue
+%\message{PROCESSING KEY \pgfkeyscurrentkey!}%
+                    \pgfkeys@case@two@extern
+                \else
+%\message{FILTERED OUT  KEY \pgfkeyscurrentkey!}%
+                    \pgfkeys@filtered@handler%
+                \fi
+            }{%
+                \pgfkeys@split@path
+                % CASE THREE: a handler
+                \pgfkeysifdefined{/handlers/\pgfkeyscurrentname/.@cmd}{%
+                    \pgfkeys@ifexecutehandler{%
+                        \def\pgfkeyscasenumber{3}%
+                        \pgfkeys@key@predicate%
+                        \ifpgfkeysfiltercontinue
+%\message{PROCESSING KEY \pgfkeyscurrentkey!}%
+                            \pgfkeysgetvalue{/handlers/\pgfkeyscurrentname/.@cmd}{\pgfkeys@code}%
+                            \expandafter\pgfkeys@code\pgfkeyscurrentvalue\pgfeov
+                        \else
+%\message{FILTERED OUT  KEY \pgfkeyscurrentkey!}%
+                            \pgfkeys@filtered@handler%
+                        \fi
+                    }{%
+                        \pgfkeys@unknown
+                    }%
+                }{%
+                    \pgfkeys@unknown
+                }%
+            }%
+        }%
+    \fi
+}%
+
+\def\pgfkeys@unknown@filtered{%
+    % CASE ZERO: an unknown option.
+    \def\pgfkeyscasenumber{0}%
+    \pgfkeys@key@predicate%
+    \ifpgfkeysfiltercontinue
+%\message{PROCESSING  KEY \pgfkeyscurrentkey!}%
+        % start normal 'unknown' handlers:
+        \pgfkeys@orig@unknown
+    \else
+%\message{FILTERED OUT  KEY \pgfkeyscurrentkey!}%
+        \pgfkeys@filtered@handler%
+    \fi
+}
+
+% Does the same as \pgfkeys@try, but it also invokes the key filters.
+\def\pgfkeys@try@filtered{%
+    \ifpgfkeysfiltercontinue
+        \pgfkeys@orig@try
+    \else
+        \pgfkeysfiltercontinuetrue
+        \edef\pgfkeyscurrentkey{\pgfkeyscurrentpath}% make sure that \pgfkeys@code doesn't know about 'try'. Important for .is choice
+        \ifx\pgfkeyscurrentvalue\pgfkeysnovalue@text% Hmm... no value
+            \pgfkeysifdefined{\pgfkeyscurrentpath/.@def}%
+            {\pgfkeysgetvalue{\pgfkeyscurrentpath/.@def}{\pgfkeyscurrentvalue}}
+            {}% no default, so leave it
+        \fi%
+        \pgfkeysifdefined{\pgfkeyscurrentpath/.@cmd}%
+        {%
+            % CASE ONE: a command option
+            \def\pgfkeyscasenumber{1}%
+            \pgfkeys@key@predicate%
+            \ifpgfkeysfiltercontinue
+                \pgfkeysgetvalue{\pgfkeyscurrentkey/.@cmd}{\pgfkeys@code}%
+                \expandafter\pgfkeys@code\pgfkeyscurrentvalue\pgfeov%
+            \else
+                \pgfkeys@filtered@handler%
+            \fi
+            \pgfkeyssuccesstrue%
+        }%
+        {%
+            \pgfkeysifdefined{\pgfkeyscurrentpath}%
+            {% CASE TWO: a normal value option
+                \def\pgfkeyscasenumber{2}%
+                \pgfkeys@key@predicate%
+                \ifpgfkeysfiltercontinue
+                    \ifx\pgfkeyscurrentvalue\pgfkeysnovalue@text%
+                        \pgfkeysvalueof{\pgfkeyscurrentpath}%
+                    \else%
+                        \pgfkeyslet{\pgfkeyscurrentpath}\pgfkeyscurrentvalue%
+                    \fi%
+                \else
+                    \pgfkeys@filtered@handler%
+                \fi
+                \pgfkeyssuccesstrue%
+            }%
+            {%
+                \pgfkeys@split@path%
+                \pgfkeysifdefined{/handlers/\pgfkeyscurrentname/.@cmd}{%
+                    % CASE THREE: a handled key
+                    %
+                    % in the standard configuration, this check here is redundant
+                    % because pgfkeys@ifexecutehandler === true.
+                    % It is only interesting for 'handle only existing'.
+                    \pgfkeys@ifexecutehandler{%
+                        \def\pgfkeyscasenumber{3}%
+                        \pgfkeys@key@predicate%
+                        \ifpgfkeysfiltercontinue
+%\message{PROCESSING KEY \pgfkeyscurrentkey!}%
+                            \pgfkeysgetvalue{/handlers/\pgfkeyscurrentname/.@cmd}{\pgfkeys@code}%
+                            \expandafter\pgfkeys@code\pgfkeyscurrentvalue\pgfeov
+                        \else
+%\message{FILTERED OUT  KEY \pgfkeyscurrentkey!}%
+                            \pgfkeys@filtered@handler%
+                        \fi
+                        \pgfkeyssuccesstrue%
+                    }{%
+                        \pgfkeyssuccessfalse
+                    }%
+                }{%
+                    \pgfkeyssuccessfalse
+                }%
+            }%
+        }%
+    \fi
+}
+
+
+% #1 the code to invoke after init and before cleanup
+\long\def\pgfkeys@install@filter@and@invoke#1{%
+    \ifpgfkeysfilteringisactive
+        \pgfkeys@error{Sorry, nested calls to key filtering routines are not allowed. (reason: It is not possible to properly restore the previous filtering state after returning from the nested call)}%
+    \fi
+    \pgfkeysfilteringisactivetrue
+    \let\pgfkeys@case@one=\pgfkeys@case@one@filtered
+    \let\pgfkeys@try=\pgfkeys@try@filtered
+    \let\pgfkeys@unknown=\pgfkeys@unknown@filtered
+    #1%
+    \let\pgfkeys@case@one=\pgfkeys@orig@case@one
+    \let\pgfkeys@try=\pgfkeys@orig@try
+    \let\pgfkeys@unknown=\pgfkeys@orig@unknown
+    \pgfkeysfilteringisactivefalse
+}
+
+
+%--------------------------------------------------
+% \def\pgfkeys@eval@key@filter@subroutine@case@one{%
+%     \pgfkeysifdefined{\pgfkeyscurrentkey/.@cmd}{%
+%         \pgfkeysgetvalue{\pgfkeyscurrentkey/.@cmd}{\pgfkeys@code}%
+%         \let\pgfkeyspred@TMP=\pgfkeyscurrentvalue
+%         \pgfkeys@eval@key@filter@subroutine@restorestate
+%         \expandafter\pgfkeys@code\pgfkeyspred@TMP\pgfeov
+%     }{%
+%         \pgfkeysvalueof{/errors/no such key filter/.@cmd}\pgfkeyscurrentkey\pgfkeyscurrentvalue\pgfeov%
+%     }%
+% }
+% % THIS VERSION IS TOO SLOW. See below.
+% \def\pgfkeysevalkeyfilterwith#1{%
+%     \edef\pgfkeys@eval@key@filter@subroutine@restorestate{%
+%         \noexpand\def\noexpand\pgfkeyscurrentkey{\pgfkeyscurrentkey}%
+%         \noexpand\def\noexpand\pgfkeyscurrentkeyRAW{\pgfkeyscurrentkeyRAW}%
+%         \noexpand\def\noexpand\pgfkeyscurrentname{\pgfkeyscurrentname}%
+%         \noexpand\def\noexpand\pgfkeyscurrentvalue{\pgfkeyscurrentvalue}%
+%         \noexpand\pgfkeys@pathtoks={\pgfkeyscurrentpath}%
+%     }%
+%     \pgfkeysinterruptkeyfilter
+%     \let\pgfkeys@case@one=\pgfkeys@eval@key@filter@subroutine@case@one
+%     \pgfkeysalso{#1}%
+%     \endpgfkeysinterruptkeyfilter% this here also restored \pgfkeys@case@one.
+%     \pgfkeys@eval@key@filter@subroutine@restorestate
+% }%
+%--------------------------------------------------
+
+
+% Evaluates a key filter '#1'. Example:
+% \pgfkeysevalkeyfilterwith{/pgf/key filters/equals=/tikz}
+%
+% \pgfkeysevalkeyfilterwith works only if key filtering is
+% active.
+%
+% The argument '#1' MUST be a FULL KEY.
+%
+% The implementation employs a subset of the \pgfkeysalso code.
+\long\def\pgfkeysevalkeyfilterwith#1{%
+    \pgfkeys@eval@key@filter@subroutine@unpack#1=\pgfkeysnovalue=\pgfkeys@stop
+}%
+\long\def\pgfkeys@eval@key@filter@subroutine@unpack#1=#2=#3\pgfkeys@stop{%
+    \pgfkeys@spdef\pgfkeyspred@TMP{#1}%
+    \edef\pgfkeyspred@TMP{\pgfkeyspred@TMP}%
+    \pgfkeys@spdef\pgfkeyspred@TMPB{#2}% TMPB=value
+    \ifx\pgfkeyspred@TMPB\pgfkeysnovalue@text% Hmm... no value
+        \pgfkeysifdefined{\pgfkeyspred@TMP/.@def}%
+        {\pgfkeysgetvalue{\pgfkeyspred@TMP/.@def}{\pgfkeyspred@TMPB}}
+        {}% no default, so leave it
+    \fi%
+    \ifx\pgfkeyspred@TMPB\pgfkeysvaluerequired%
+        \pgfkeysvalueof{/errors/value required/.@cmd}\pgfkeyspred@TMP\pgfkeyspred@TMPB\pgfeov%
+    \else%
+        \pgfkeysifdefined{\pgfkeyspred@TMP/.@cmd}{%
+            \pgfkeysgetvalue{\pgfkeyspred@TMP/.@cmd}{\pgfkeys@code}%
+            \expandafter\pgfkeys@code\pgfkeyspred@TMPB\pgfeov
+        }{%
+            \pgfkeysvalueof{/errors/no such key filter/.@cmd}\pgfkeyspred@TMP\pgfkeyspred@TMPB\pgfeov%
+        }%
+    \fi%
+}
+
+
+\def\pgfkeys@non@outer@newif@#1#2{%
+    \expandafter\edef\csname #2true\endcsname{\noexpand\let\noexpand#1=\noexpand\iftrue}%
+    \expandafter\edef\csname #2false\endcsname{\noexpand\let\noexpand#1=\noexpand\iffalse}%
+    \csname #2false\endcsname
+}%
+
+% For latex and context, this here has the same effect as a \newif
+% applied to 'if#1'. For plain tex, it has also the same effect, but
+% it is not an \outer macro as the plain-tex \newif.
+\def\pgfkeys@non@outer@newif#1{%
+    \expandafter\pgfkeys@non@outer@newif@\csname if#1\endcsname{#1}%
+}
+\endinput

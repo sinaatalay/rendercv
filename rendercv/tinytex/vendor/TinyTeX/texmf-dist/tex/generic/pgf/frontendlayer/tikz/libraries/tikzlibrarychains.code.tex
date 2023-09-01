@@ -1,0 +1,214 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarychains.code.tex}
+
+\usetikzlibrary{positioning}%
+
+\tikzset{start chain/.default=,
+         start chain/.code={%
+    \tikz@lib@chain@parse{#1}%
+    \ifx\tikz@lib@chain@name\pgfutil@empty%
+      \def\tikz@lib@chain@name{chain}%
+    \fi%
+    \ifx\tikz@lib@chain@direction\relax%
+      \let\tikz@lib@chain@direction=\tikz@lib@chain@default@direction%
+    \fi%
+    \expandafter\ifx\csname tikz@lib@chain@active@\tikz@lib@chain@name\endcsname\relax%
+      \expandafter\let\csname tikz@lib@chain@active@\tikz@lib@chain@name\endcsname=\pgfutil@empty% does not matter
+      \expandafter\global\expandafter\let\csname tikz@lib@chain@exists@\tikz@lib@chain@name\endcsname=\pgfutil@empty% does not matter
+      % Setup chain parameters
+      \expandafter\gdef\csname tikz@lib@chain@count@\tikz@lib@chain@name\endcsname{0}%
+      \expandafter\global\expandafter\let\csname tikz@lib@chain@dir@\tikz@lib@chain@name\endcsname\tikz@lib@chain@direction%
+      \let\tikz@lib@current@chain=\tikz@lib@chain@name%
+      \let\chainin=\tikz@lib@chainin%
+    \else%
+      \tikzerror{Chain ``\tikz@lib@chain@name'' is already active}%
+    \fi%
+  },
+  continue chain/.default=,
+  continue chain/.code={%
+    \tikz@lib@chain@parse{#1}%
+    \ifx\tikz@lib@chain@name\pgfutil@empty%
+      \let\tikz@lib@chain@name\tikz@lib@current@chain%
+    \fi%
+    \expandafter\ifx\csname tikz@lib@chain@exists@\tikz@lib@chain@name\endcsname\relax%
+      \tikzerror{Unknown chain ``#1''}%
+    \else%
+      \let\tikz@lib@current@chain=\tikz@lib@chain@name%
+      \expandafter\let\csname tikz@lib@chain@active@\tikz@lib@chain@name\endcsname=\pgfutil@empty% does not matter
+      \ifx\tikz@lib@chain@direction\relax%
+        % Just restart...
+      \else%
+        % Setup chain parameters
+        \expandafter\global\expandafter\let\csname tikz@lib@chain@dir@\tikz@lib@chain@name\endcsname\tikz@lib@chain@direction%
+      \fi%
+    \fi%
+  },
+  join/.code=\tikz@lib@parse@join{#1},
+  join/.default={}%
+}%
+
+\def\tikz@lib@chain@parse#1{%
+  \pgfutil@in@{going }{#1}%
+  \ifpgfutil@in@%
+    \tikz@lib@chain@going#1\pgf@stop%
+  \else%
+    \pgfutil@in@{placed }{#1}%
+    \ifpgfutil@in@%
+      \tikz@lib@chain@positioning#1\pgf@stop%
+    \else%
+      \def\tikz@lib@chain@name{#1}%
+      \let\tikz@lib@chain@direction\relax%
+    \fi%
+  \fi%
+}%
+
+\def\tikz@lib@chain@going#1going #2\pgf@stop{%
+  \def\tikz@lib@chain@name{#1}%
+  \ifx\tikz@lib@chain@name\pgfutil@empty%
+  \else%
+    \tikz@lib@chain@strip#1\pgf@stop%%
+  \fi%
+  \tikz@lib@chain@is@goingtrue%
+  \def\tikz@lib@chain@direction{%
+    \ifx\tikzchainprevious\pgfutil@empty%
+    \else%
+      \tikz@lib@chain@place{#2}%
+    \fi%
+  }%
+}%
+
+\def\tikz@lib@chain@positioning#1placed #2\pgf@stop{%
+  \def\tikz@lib@chain@name{#1}%
+  \ifx\tikz@lib@chain@name\pgfutil@empty%
+  \else%
+    \tikz@lib@chain@strip#1\pgf@stop%%
+  \fi%
+  \tikz@lib@chain@is@goingfalse%
+  \def\tikz@lib@chain@direction{\tikz@lib@chain@place{#2}}%
+}%
+\newif\iftikz@lib@chain@is@going
+
+
+\tikzset{/tikz/chain default direction/.code=%
+  {%
+    \tikz@lib@chain@parse{#1}%
+    \let\tikz@lib@chain@default@direction=\tikz@lib@chain@direction%
+  },%
+  /tikz/chain default direction=going right
+}%
+
+\def\tikz@lib@current@chain{chain}%
+
+\pgfutil@g@addto@macro\tikz@node@reset@hook{\let\tikz@lib@chain@caller=\relax}%
+\pgfutil@g@addto@macro\tikz@node@begin@hook{\tikz@lib@chain@caller}%
+
+\tikzset{
+  on chain/.default=,
+  on chain/.code=\tikz@lib@on@chain{#1}%
+}%
+\def\tikz@lib@on@chain#1{%
+  \tikz@lib@chain@parse{#1}%
+  \ifx\tikz@lib@chain@name\pgfutil@empty%
+    \let\tikz@lib@chain@name\tikz@lib@current@chain%
+  \fi%
+  \expandafter\ifx\csname tikz@lib@chain@exists@\tikz@lib@chain@name\endcsname\relax%
+    \tikzerror{Unknown chain ``\tikz@lib@chain@name''}%
+  \else%
+    \c@pgf@counta\csname tikz@lib@chain@count@\tikz@lib@chain@name\endcsname\relax%
+    \ifnum\c@pgf@counta=0\relax%
+      \global\let\tikzchainprevious=\pgfutil@empty%
+    \else
+      \xdef\tikzchainprevious{\tikz@lib@chain@name-\the\c@pgf@counta}%
+    \fi%
+    \advance\c@pgf@counta by1\relax%
+    \xdef\tikzchaincount{\the\c@pgf@counta}%
+    \ifx\tikz@lib@chain@direction\relax%
+      \csname tikz@lib@chain@dir@\tikz@lib@chain@name\endcsname% use default
+    \else%
+      \tikz@lib@chain@direction%
+    \fi%
+    \edef\tikz@lib@chain@caller{\noexpand\tikz@lib@chain@last@found{\tikz@lib@chain@name}}%
+  \fi%
+}%
+\def\tikz@lib@chain@last@found#1{%
+  % Increase the count and set name, if necessary.
+  \c@pgf@counta\csname tikz@lib@chain@count@#1\endcsname\relax%
+  \advance\c@pgf@counta by1\relax%
+  \xdef\tikzchaincurrent{#1-\the\c@pgf@counta}%
+  \expandafter\xdef\csname tikz@lib@chain@count@#1\endcsname{\the\c@pgf@counta}%
+  \ifnum\c@pgf@counta=1\relax%
+    \tikzset{alias/.expanded={#1-begin}} % Define pseudostart
+  \fi%
+  \tikzset{alias/.expanded={#1-end}} % Define pseudostart
+  \tikzset{alias/.expanded={#1-\the\c@pgf@counta}} % Define pseudostart
+  \tikz@lib@chain@direction%
+  \tikzset{every on chain/.try}%
+}%
+
+
+\def\tikz@lib@chain@place#1{%
+  \pgfutil@in@{=}{#1}%
+  \ifpgfutil@in@%
+    \tikzset{#1}%
+  \else%
+    \tikzset{#1=of \tikzchainprevious}%
+  \fi%
+}%
+
+\def\tikz@lib@chain@strip#1 \pgf@stop{%
+  \def\tikz@lib@chain@name{#1}%
+}%
+
+\def\tikz@lib@parse@join#1{%
+  \def\tikz@temp{#1}%
+  \ifx\tikz@temp\pgfutil@empty%
+    \tikz@lib@parse@join@by by \pgf@stop%
+  \else%
+    \pgfutil@in@{with }{#1}%
+    \ifpgfutil@in@%
+      \pgfutil@in@{by }{#1}%
+      \ifpgfutil@in@%
+        \tikz@lib@parse@join@with@by#1\pgf@stop%
+      \else%
+        \tikz@lib@parse@join@with@by#1 by \pgf@stop%
+      \fi%
+    \else%
+      \tikz@lib@parse@join@by#1\pgf@stop%
+    \fi%
+  \fi%
+}%
+\def\tikz@lib@parse@join@with@by with #1 by #2\pgf@stop{%
+  \tikzset{after node path={(#1)edge[every join,#2](\tikzchaincurrent)}}%
+}%
+\def\tikz@lib@parse@join@by by #1\pgf@stop{%
+  \tikzset{after node path={\ifx\tikzchainprevious\pgfutil@empty\else (\tikzchainprevious)edge[every join,#1](\tikzchaincurrent)\fi}}%
+}%
+\tikzset{every join/.style=}%
+
+
+\def\tikz@lib@chainin#1(#2){\pgfutil@ifnextchar[{\tikz@lib@chainin@{#2}}{\tikz@lib@chainin@{#2}[]}}%]%
+\def\tikz@lib@chainin@#1[#2]{\path[late options={name=#1,on chain,every chain in/.try,#2}]}%
+
+
+%
+% Branches
+%
+
+\tikzset{start branch/.code={%
+    % save last node on current chain:
+    \let\tikz@lib@save@current\tikz@lib@current@chain%
+    \pgfkeysalso{/tikz/start chain/.expand once=\tikz@lib@current@chain/#1}%
+    \path[late options={name=\tikz@lib@save@current-end,on chain}];%
+  }%
+}%
+\tikzset{continue branch/.style={continue chain/.expand once=\tikz@lib@current@chain/#1}}%
+
+\endinput

@@ -1,0 +1,376 @@
+%
+%  U L E M . S T Y       [2019-11-18]
+%
+%  The ulem package provides various types of underlining that can stretch
+%  between words and be broken across lines in LaTeX or plain TeX.
+%  In LaTeX ulem replaces italics with underlining in \em-phasized text.
+%  It is most suitable for simple text such as {\em ibid.} or \emph{\LaTeX:
+%  A Document Preparation System} that may need to be underlined in a
+%  manuscript submitted for publication.  A declaration of \normalem (or 
+%  the \usepackage option "normalem") restores the normal \em behavior.
+%
+%  Full instructions appear in ulem.ltx (ulem.pdf).  In summary:
+%
+%    \uline{important}   underlined text
+%    \uuline{urgent}     double-underlined text
+%    \uwave{boat}        wavy underline
+%    \sout{wrong}        line drawn through word
+%    \xout{removed}      marked over with //////.
+%    \dashuline{dashing} dash underline
+%    \dotuline{dotty}    dotted underline
+%
+%    {\em phasized\/}  | In LaTeX, by default, these are underlined; use
+%    \emph{asized}     | \normalem or [normalem] to restore italics
+%    \useunder{\uwave}{\bf}{\textbf}
+%                        use wavy underline in place of bold face
+%    Use \markoverwith for defining new types of underlining.
+%
+%  Copyright (c) 1989-2011 by Donald Arseneau (Vancouver, Canada; asnd@triumf.ca)
+%
+%  This software may be freely transmitted, reproduced, or modified for any
+%  purpose provided that this copyright notice is left intact.  
+%  (Small excerpts may be taken and used without any restriction.)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Defend against multiple loading.
+\expandafter \ifx \csname UL@box\endcsname \relax \else 
+ \immediate\write16{ulem.sty refuses to load twice. }\endinput \fi
+
+%  Set catcode of @ in case it isn't a "letter" already
+\chardef\ULthickness\catcode\string`\@ % hold catcode temporarily
+\catcode\string`\@=11
+
+% \UL@protected = \protected, if available, else \relax
+
+\begingroup
+\global\expandafter\let\expandafter\UL@protected\csname protected\endcsname
+\endgroup
+
+\UL@protected\def\uline{\relax \ifmmode\expandafter\underline 
+           \else \bgroup\expandafter\ULset\fi}
+
+\newbox\UL@box
+\newbox\UL@hyphenbox
+\newskip\UL@skip
+\newtoks\UL@hook
+\newdimen\UL@height \UL@height=\maxdimen % flags being unused
+\newcount\UL@pe
+
+\UL@protected\def\UL@end *{\relax\relax}% something harmless but unique
+
+%   For regular underlines, set the depth based on the font, or retain
+%   the preset value, then start underlining.
+\def\ULset{\UL@setULdepth
+  \def\UL@leadtype{\leaders \hrule \@height\UL@height \@depth\ULdepth}%
+  \ifmmode \ULdepth-4\p@ \fi
+  \UL@height-\ULdepth \advance\UL@height\ULthickness \ULon}
+
+% Automatically set \ULdepth if it is to be automatic (flagged by \maxdimen)
+\def\UL@setULdepth{\relax
+  \ifdim\ULdepth=\maxdimen  % Set depth based on font, if not set already
+   \setbox\UL@box\hbox{{(j}}\ULdepth\dp\UL@box\advance\ULdepth.4\p@
+   % use setbox to support plain TeX
+ \fi}
+
+%   \ULon simply calls \UL@on (possibly \UL@on=\UL@onin) for text mode, but
+%   \UL@onmath if it is math mode.
+\def\ULon{\ifmmode \expandafter\UL@onmath\else \expandafter\UL@on\fi}
+
+%   \UL@on sets the engine of underline running, and tells it
+%   where to stop.  #1 = the relevant text.
+\long\def\UL@on#1{\leavevmode\UL@ender \let\UL@on\UL@onin 
+  \everymath{\UL@hrest}\everyvbox{\UL@hrest}\let\hskip\UL@hskip
+  \let\\\UL@cr \let\-\UL@dischyp \let\newline\UL@newline \let\ \UL@space
+  \def\hfil{\hskip\z@ plus1fil\relax}\def\hfill{\hskip\z@ plus1fill\relax}%
+  \def\hss{\hskip\z@ plus1filminus1fil\relax}\let\penalty\UL@penalty
+  \the\UL@hook
+  \UL@word\@empty#1\xdef\UL@spfactor{\the\spacefactor} \UL@end * }
+
+%   This is what \ULon does when it appears nested in an inner place.
+\long\def\UL@onin#1{\leavevmode\UL@ender % when nested, do multiple underlining
+  \ifdim\ULdepth=\maxdimen\else
+   \UL@height\ULthickness \advance\ULdepth\thr@@\UL@height \advance\UL@height-\ULdepth
+  \fi
+  \setbox\UL@box\hbox{{#1}}%
+  \let\UL@start\relax\UL@putbox\egroup}
+% \UL@putbox is disabled in inner mode, so re-enable it by changing \UL@start
+% \UL@hrest is implicit due to \everyhbox.  Double braces for \hbox are in
+% lieu of \color@begin(end)group.
+
+%   This is what \ULon does in math mode.
+\def\UL@onmath#1{\UL@ender\mathord{\UL@hrest\mathop{\kern\z@#1}\limits\sb
+  {\UL@leadtype\LA@hskip\p@ plus1fill}}\egroup}
+
+\def\UL@unegroup{}
+\gdef\UL@ender{}
+% end-brace matching hack for when command is used as a font declaration:
+\def\UL@swender{\ifnum`{=\z@\fi\aftergroup}\gdef\UL@ender{}}
+
+% must expand to nothing outside the ifs for syntactical spaces to work.
+% the \expandafters get rid of the \@empty inserted at the beg. of word
+\long\def\UL@word#1 {\expandafter\UL@start#1 %
+  \expandafter\ifx\expandafter\UL@end#1\egroup\egroup
+   \unskip \unskip \unskip % remove extra leader at end
+   \spacefactor\UL@spfactor \let\UL@word\egroup
+  \else % not finished
+   \ifmmode\else \ifdim\lastskip=\z@\else % allow syntactical spaces
+     \global\UL@skip\lastskip \unskip
+     \UL@stop \UL@leaders
+   \fi\fi
+  \fi \UL@word\@empty}% \@empty preserves braces in param
+
+% \UL@start: start of each chunk. It gives two levels of grouping.
+% Each chunk is ended by \UL@stop.  Local intermissions go like
+% \UL@stop...\UL@start.
+\def\UL@start{\setbox\UL@box\hbox\bgroup\everyhbox{\UL@hrest}%
+% the following are to cope with stops (\ ,\- etc) within extra braces
+  \let\UL@start\@empty \def\UL@unegroup{\bgroup\bgroup}\let\UL@leadtype\@empty
+  \bgroup \kern-3sp\kern3sp % kerns so I can test for beginning of list
+  \if@ignore \global\@ignorefalse \ignorespaces \fi}
+
+\def\UL@stop{\global\UL@pe\lastpenalty \unpenalty % penalty in \UL@pe
+  \ifnum\lastkern=\thr@@ \egroup\egroup % Nothing in hbox...but make sure:
+    \ifdim\wd\UL@box=\z@ \else \UL@putbox \fi % something in box so print it
+  \else  \egroup\egroup \UL@putbox % something in box so print it
+  \fi \ifnum\UL@pe=\z@ \else \LA@penalty\UL@pe \fi % use penalty from inside box
+  \UL@unegroup}
+% notice that a box with only a penalty in it is discarded, but the penalty
+% is still used!  This is so a series of discardable glues and penalties
+% behaves properly.
+
+\def\UL@putbox{\ifx\UL@start\@empty \else % not inner
+   \vrule\@width\z@ \LA@penalty\@M
+    {\UL@skip\wd\UL@box \UL@leaders \kern-\UL@skip}%
+    \box\UL@box 
+  \fi}
+
+%  With interword leaders, give some overlap to avoid gaps caused by
+%  round-off errors in the printing program.  Needs \unskip \unskip \unskip
+%  above.  This version overlaps 1/300 inch, which looks good at high
+%  resolution, and will still work down to ~150 dpi.  Change the value
+%  of \UL@pixel if necessary.
+
+\newdimen\UL@pixel \UL@pixel=1in \divide\UL@pixel 300
+
+\def\UL@leaders{{\LA@hskip-\UL@pixel \advance\UL@skip\tw@\UL@pixel
+   \UL@leadtype\LA@hskip\UL@skip  \LA@hskip-\UL@pixel}}
+
+% restore some things for inside math or \mbox
+\def\UL@hrest{\let\ \LA@space \let\-\@empty \let\penalty\LA@penalty}
+
+\let\LA@space\ %
+\UL@protected\def\UL@space{\LA@space \global\UL@skip\lastskip \unskip \UL@reskip}% 
+
+% Hyphenation is done by explicit \discretionary.  The overlapping melds
+% with the running overlap because it *is* part of the running overlap:
+% The word fragment is extended by the width of the hyphenation which is
+% then overlapped by leaders.  The discretionary may occupy this space
+% if a break occurs; otherwise the next syllable gets doubly-overlapped
+% (in registration) for a distance of the hyphen's width.
+\UL@protected\def\UL@dischyp{\global\setbox\UL@hyphenbox\hbox
+   {\ifnum \hyphenchar\font<\z@ \string-\else \char\hyphenchar\font \fi}%
+   \kern\wd\UL@hyphenbox \LA@penalty\@M 
+   \UL@stop \kern-\wd\UL@hyphenbox
+   \discretionary{\box\UL@hyphenbox}{}{}\UL@start}
+
+\let\LA@penalty\penalty
+\UL@protected\def\UL@penalty{\relax\ifhmode \afterassignment\UL@@penalty\count@
+  \else\LA@penalty\fi}
+\def\UL@@penalty{\LA@penalty \ifnum\count@=\z@
+  \@ne \else \count@ \fi % zero penalty => no penalty, so use 1 instead.
+  \UL@stop \UL@start}
+
+% The test  \ifx\ \LA@space \else  means we are neither in math mode nor an
+% \mbox, so it is safe to stop the current \UL@box.  \ , \- , and \penalty
+% (= \linebreak or \nolinebreak) are common enough that they are restored
+% directly (by \UL@hrest); \\, \newline, \hskip (= \hspace) are rare enough
+% that the test is incorporated in their UL versions. This adds processing
+% when they're used, but saves processing in \UL@hrest called by \everymath
+% \everyvbox and \everyhbox.
+
+\let\LA@hskip\hskip
+\UL@protected\def\UL@hskip{\ifx\ \LA@space \LA@hskip \else
+  \afterassignment\UL@reskip \global\UL@skip \fi}
+
+\def\UL@reskip{\UL@stop \UL@leaders \UL@start}
+
+% Redefine \\ and \newline so the vertical space from \\[ ] is not lost
+% and so the \hfil is not underlined!  \\ and \newline do nothing if inside
+% inner braces.
+
+\UL@protected\def\UL@cr{\unskip \ifx\ \LA@space \let\UL@vad\@gobble
+  \else \UL@stop \unskip\unskip\unskip \let\UL@vad\vadjust \fi
+  \@ifstar{\UL@vad{\LA@penalty\@M}\UL@cra}\UL@cra}
+\def\UL@cra{\@ifnextchar[\UL@crb\UL@newline}
+\def\UL@crb[#1]{\UL@vad{\vskip#1}\UL@newline}
+
+\UL@protected\def\UL@newline{\ifx\UL@start\@empty % (\UL@cr may have \UL@stop-ed already)
+  \unskip \ifx\ \LA@space \else \UL@stop \unskip\unskip\unskip \fi\fi 
+  \LA@hskip \z@\@plus.0001fil\LA@penalty -\@M \UL@start}
+
+% That concludes the basic underlining.  To put various other objects
+% (characters) under (or over) text we need to define \markoverwith
+% to set the overlay material in a box, and use leaders of that box for
+% overlaying the text.  Here, the meaning of \UL@pixel is changed so
+% that  `pixel' size = box size.  Note that we generally need \leaders
+% (not \cleaders) for text, because an underline will be a patchwork 
+% of small \leaders, and the characters must stay in registration.
+% However, we "hook" the leaders command so specific applications can
+% reassign it (\let\ULleaders\xleaders or \let\ULleaders\cleaders).
+%
+\newbox\ULC@box
+\let\ULleaders\leaders
+
+\UL@protected\def\markoverwith#1{\leavevmode
+   \setbox\ULC@box\hbox{{#1}}\UL@pixel.5\wd\ULC@box
+   \ifmmode \setbox\ULC@box\hbox{\raise1.4ex\box\ULC@box}%
+    \dp\ULC@box-1.4ex\ht\ULC@box\z@ \def\UL@leadtype{\cleaders\copy\ULC@box}%
+   \else
+    \def\UL@leadtype{\ULleaders\copy\ULC@box}%
+   \fi}
+
+% Now define various special underlines.  All the definitions go like
+% \def \command {\bgroup \markoverwith{something} \ULon}
+
+% For drawing a wavey underline instead of a straight one the command
+% is \uwave (under-wave) which uses the wiggle from 6-pt lasy font:
+
+\UL@protected\def\uwave{\leavevmode \bgroup 
+  \ifdim \ULdepth=\maxdimen \ULdepth 3.5\p@
+  \else \advance\ULdepth2\p@ 
+  \fi \markoverwith{\lower\ULdepth\hbox{\sixly \char58}}\ULon}
+\font\sixly=lasy6 % does not re-load if already loaded, so no memory drain.
+
+% To draw a double underline under text, use \uuline{text}
+
+\UL@protected\def\uuline{\leavevmode \bgroup
+ \UL@setULdepth
+ \ifx\UL@on\UL@onin \advance\ULdepth2.8\p@\fi
+ \markoverwith{\lower\ULdepth\hbox
+   {\kern-.03em\vbox{\hrule width.2em\kern1\p@\hrule}\kern-.03em}}%
+ \ULon}
+
+% To draw a line through text instead of under it (strike out) do
+% `under'-line with negative depth.  Note that this one uses a real
+% line, not characters, so there is no \markoverwith.
+
+\UL@protected\def\sout{\leavevmode \bgroup \ULdepth=-.55ex \ULset}
+
+% To mark //// over text instead of underlining (x-out)
+%
+\UL@protected\def\xout{\leavevmode \bgroup
+  \markoverwith{\hbox to.35em{\hss/\hss}}\ULon}
+
+\UL@protected\def\dotuline{\leavevmode \bgroup 
+  \UL@setULdepth
+  \ifx\UL@on\UL@onin \advance\ULdepth2\p@\fi
+  \markoverwith{\begingroup
+     %\advance\ULdepth0.08ex 
+     \lower\ULdepth\hbox{\kern.06em .\kern.04em}%
+     \endgroup}%
+  \ULon}
+
+\UL@protected\def\dashuline{\leavevmode \bgroup 
+  \UL@setULdepth
+  \ifx\UL@on\UL@onin \advance\ULdepth2\p@\fi
+  \markoverwith{\kern.13em
+  \vtop{\kern\ULdepth \hrule width .3em}%
+  \kern.13em}\ULon}
+
+% A command to declare that an underline command should be used in 
+% place of a particular font selection:
+% \useunder {underline_command}{font_declaration}{font_command}
+% e.g.: \useunder{\uuline}{\bfseries}{\textbf}
+%       \useunder{\uwave}{\bf}{}
+
+\UL@protected\def\useunder#1#2#3{\relax
+  \ifx\relax#2\relax\else % declaration command given
+    \UL@protected\def#2{\def\@tempa{#1}\global\let\UL@ender\UL@swender
+    \expandafter\@tempa\expandafter{\ifnum\z@=\string`}\fi}%
+  \fi
+  \ifx\relax#3\relax\else % argumentative command
+    \UL@protected\def#3{#1}%
+  \fi}
+
+\expandafter\ifx \csname @ifundefined\endcsname \relax
+
+% Allow plain TeX to use ulem.sty:
+  \def\@height{height}
+  \def\@depth{depth}
+  \def\@width{width}
+  \def\@empty{}
+  \long\def\@gobble#1{}
+  \long\def\@firstoftwo#1#2{#1}%
+  \long\def\@secondoftwo#1#2{#2}%
+% Do non-outer \newif with no visible \if's or \fi's when skipping
+  \csname newif\expandafter\endcsname \csname if@ignore\endcsname
+
+\else
+
+  \let\LA@em\em   \let\LA@emph\emph
+  \expandafter\let\expandafter\LA@Pem \csname em \endcsname
+  \expandafter\let\expandafter\LA@Pemph \csname emph \endcsname
+  \def\ULforem{\useunder{\uline}{\em}{\emph}}
+  \def\normalem{\let\em\LA@em \let\emph\LA@emph
+    \expandafter\let\csname em \endcsname\LA@Pem
+    \expandafter\let\csname emph \endcsname\LA@Pemph}
+  \ULforem  %  default is to use underlining for \em,
+
+\fi
+
+% Process LaTeX \package options; plain TeX skips this section
+
+\expandafter\ifx\csname ProvidesPackage\endcsname \relax \else
+  \ProvidesPackage{ulem}[2019/11/18]
+  \DeclareOption{normalem}{\normalem}
+  \DeclareOption{ULforem}{\ULforem}
+  \DeclareOption{normalbf}{}
+  \DeclareOption{UWforbf}{\useunder{\uwave}{\bf}{\textbf}}
+  \ProcessOptions
+%
+  \newcommand\UL@marpar[2][\ULmp@opt@arg]{\gdef\ULmp@opt@arg{#2}%
+   \ifx\ \LA@space \@latexerr{Marginpar lost}%
+   \else \UL@stop \LA@marginpar[#1]{#2}\UL@start \fi}
+%
+  \AtBeginDocument{\let\LA@marginpar\marginpar}%
+%
+  \addto@hook\UL@hook{\let\marginpar\UL@marpar}
+\fi
+
+\catcode`@=\ULthickness % Scratch meaning: restore catcode of @ 
+
+\def\ULthickness{.4pt}% can change this with \renewcommand
+\newdimen\ULdepth  \ULdepth=\maxdimen
+%  "maxdimen" depth causes the depth to be set according to the font.  You
+%  can change \ULdepth for a permanent setting or a special effect (\sout).
+
+\endinput
+
+
+%  Previous bug-finders: Esther Hu (\hfill in plain); Lones Smith (\tt\-);
+%  Steve Anderson (\ooalign accents); Thanassi Protopapas ( { in tables).
+%  The bug finders' fee is now $0.00; it will double for each new bug found.
+%  Version (identified by year)
+%  1994:
+%  Many changes! Notably: LaTeX2e options and \emph. Nesting works (somewhat).
+%  Behavior with inner braces is more consistent (not stripped).  \useunder.
+%  Better underwave (using lasy6). Special underlines are not commented out.
+%  patch 1995:  fix \UL@swender to work in {tabular}; make hyphenation join
+%  well; crude math support; eliminate \@clb
+%  1996: use "\csname ProvidesPackage\endcsname", tidying.
+%  1997: fix \\ when LaTeX changed; remove extra overlap in putbox.
+%  2000: hook (and marginpar)
+%  2004: Fix spacing in \uwave and \xout. \ULleaders hook.
+%  2009: Accept \par in argument (\long)
+%  2010: Include \dotuline and \dashuline, typeset documentation, add \UL@setULdepth
+%  2011: Change \dimen@ to \UL@height
+%  2012: Removed \let\par garbage
+%  2017: Remove \makerobust
+%  2019: Handle \ULdepth better. Some tweaks.
+%
+%  Send problem reports to asnd@triumf.ca
+%
+% test integrity:
+% brackets:  round, square, curly, angle:   () [] {} <>
+% backslash, slash, vertical, at, dollar, and: \ / | @ $ &
+% hat, grave, acute (apostrophe), quote, tilde, under:   ^ ` ' " ~ _

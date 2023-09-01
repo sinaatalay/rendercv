@@ -1,0 +1,172 @@
+% Copyright 2019 by Till Tantau
+% CMYK and grayscale shadings adaptation copyright 2019 by David Purton
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-common-pdf-via-dvi.def}
+
+% Common driver commands for all drivers that produce pdf via the
+% detour of a dvi file
+
+% For unique object name:
+\newcount\pgfsys@objnum\pgfsys@objnum\@ne
+
+% Hboxes
+
+\def\pgfsys@beginpurepicture{\special{pdf: content q}}
+
+
+\def\pgfsys@imagesuffixlist{.pdf:.jpg:.jpeg:.png:}
+\def\pgfsys@horishading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@process{\pgfpoint{\pgf@max}{#2}}%
+    \edef\@temp{\noexpand\pgfutil@insertatbegincurrentpage{\special{pdf: beginxobj @pgfshade\the\pgfsys@objnum\space width \the\pgf@max\space height \the\pgf@y}}}\@temp%
+    \edef\@temp{\noexpand\pgfutil@insertatbegincurrentpage{\special{pdf: put @resources <<
+      /Shading << /Sh << /ShadingType 2
+      /ColorSpace \pgf@shading@device\space
+      /Domain [\pgf@pdfparseddomain]
+      /Coords [\pgf@doma\space0 \pgf@domb\space0]
+      /Function \pgf@pdfparsedfunction
+      /Extend [false false] >> >> >>}}}\@temp% <<
+      \pgfutil@insertatbegincurrentpage{\special{pdf: content /Sh sh}%
+      \special{pdf: endxobj}}%
+    \xdef\pgfutil@tempa{%
+      \hbox to\the\pgf@max{\vbox to#2{\vfil\special{pdf: usexobj @pgfshade\the\pgfsys@objnum}}\hfil}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+  \global\advance\pgfsys@objnum\@ne
+}
+\def\pgfsys@vertshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@process{\pgfpoint{\pgf@max}{#2}}%
+    \edef\@temp{\noexpand\pgfutil@insertatbegincurrentpage{\special{pdf: beginxobj @pgfshade\the\pgfsys@objnum\space width \the\pgf@y\space height \the\pgf@max\space}}}\@temp%
+    \edef\@temp{\noexpand\pgfutil@insertatbegincurrentpage{\special{pdf: put @resources <<
+      /Shading << /Sh << /ShadingType 2
+      /ColorSpace \pgf@shading@device\space
+      /Domain [\pgf@pdfparseddomain]
+      /Coords [0 \pgf@doma\space0 \pgf@domb]
+      /Function \pgf@pdfparsedfunction
+      /Extend [false false] >> >> >>}}}\@temp% <<
+      \pgfutil@insertatbegincurrentpage{\special{pdf: content /Sh sh}%
+      \special{pdf: endxobj}}%
+    \xdef\pgfutil@tempa{%
+      \hbox to#2{\vbox to\the\pgf@max{\vfil\special{pdf: usexobj @pgfshade\the\pgfsys@objnum}}\hfil}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+  \global\advance\pgfsys@objnum\@ne
+}
+\def\pgfsys@radialshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgfpoint{\pgf@max}{\pgf@max}}%
+    \advance\pgf@xa by \pgf@x\relax%
+    \advance\pgf@ya by \pgf@y\relax%
+    \pgf@sys@bp@correct{\pgf@x}%
+    \pgf@sys@bp@correct{\pgf@y}%
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \pgfutil@tempdima=2\pgf@max\relax%
+    \edef\@temp{\noexpand\pgfutil@insertatbegincurrentpage{\special{pdf: beginxobj @pgfshade\the\pgfsys@objnum\space width \the\pgfutil@tempdima\space height \the\pgfutil@tempdima}}}\@temp%
+    \edef\@temp{\noexpand\pgfutil@insertatbegincurrentpage{\special{pdf: put @resources <<
+      /Shading << /Sh << /ShadingType 3
+      /ColorSpace \pgf@shading@device\space
+      /Domain [\pgf@pdfparseddomain]
+      /Coords [\pgf@sys@tonumber{\pgf@xa} \pgf@sys@tonumber{\pgf@ya} \pgf@doma\space \pgf@sys@tonumber{\pgf@x} \pgf@sys@tonumber{\pgf@y} \pgf@domb]
+      /Function \pgf@pdfparsedfunction
+      /Extend [true false] >> >> >>}}}\@temp% <<
+      \pgfutil@insertatbegincurrentpage{\special{pdf: content /Sh sh}%
+      \special{pdf: endxobj}}%
+    \xdef\pgfutil@tempa{%
+      \hbox to\the\pgfutil@tempdima{\vbox to\the\pgfutil@tempdima{\vfil\special{pdf: usexobj @pgfshade\the\pgfsys@objnum}}\hfil}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+  \global\advance\pgfsys@objnum\@ne
+}%
+
+\def\pgf@sys@pdf@dvi@tracker{
+  \def\pgfsys@markposition##1{%
+    \pdfsavepos%
+    \edef\pgf@temp{##1}%
+    \expandafter\write\expandafter\pgfutil@auxout\expandafter{%
+      \expandafter\noexpand\expandafter\pgfsyspdfmark\expandafter{\pgf@temp}{\the\pdflastxpos}{\the\pdflastypos}}%
+  }
+  \def\pgfsyspdfmark##1##2##3{%
+    \expandafter\gdef\csname pgf@sys@pdf@mark@pos@##1\endcsname{\pgfqpoint{##2sp}{##3sp}}%
+  }
+  \def\pgfsys@getposition##1##2{%
+    \edef\pgf@marshal{\let\noexpand##2=\expandafter\noexpand\csname pgf@sys@pdf@mark@pos@##1\endcsname}%
+    \pgf@marshal%
+  }
+  \def\pgf@sys@pdf@mark@pos@pgfpageorigin{\pgfpointorigin}
+}
+
+
+
+%
+% Resource management
+%
+
+\newif\ifpgf@sys@pdf@colorspaces@exists
+\newif\ifpgf@sys@pdf@patterns@exists
+\newif\ifpgf@sys@pdf@extgs@exists
+\newif\ifpgf@sys@pdf@colorspaces@created
+\newif\ifpgf@sys@pdf@patterns@created
+\newif\ifpgf@sys@pdf@extgs@created
+\newif\ifpgf@sys@pdf@any@resources
+
+\def\pgf@sys@setuppdfresources@plain{%
+  % This command will setup pdf resource in plain and in latex
+  % mode. ConTeXt has its own handler
+  \pgfutil@insertatbegineverypage{%
+    \pgf@sys@pdf@any@resourcesfalse%
+    \ifpgf@sys@pdf@extgs@exists%
+      \pgf@sys@pdf@any@resourcestrue%
+      \ifpgf@sys@pdf@extgs@created \else \special{pdf: obj @pgfextgs <<>>} \global\pgf@sys@pdf@extgs@createdtrue \fi% <<
+    \fi%
+    \ifpgf@sys@pdf@colorspaces@exists%
+      \pgf@sys@pdf@any@resourcestrue%
+      \ifpgf@sys@pdf@colorspaces@created \else \special{pdf: obj @pgfcolorspaces <<>>} \global\pgf@sys@pdf@colorspaces@createdtrue \fi% <<
+    \fi%
+    \ifpgf@sys@pdf@patterns@exists%
+      \pgf@sys@pdf@any@resourcestrue%
+      \ifpgf@sys@pdf@patterns@created \else \special{pdf: obj @pgfpatterns <<>>} \global\pgf@sys@pdf@patterns@createdtrue \fi% <<
+    \fi%
+    \ifpgf@sys@pdf@any@resources%
+      \special{pdf: put @resources <<
+        \ifpgf@sys@pdf@extgs@exists /ExtGState @pgfextgs \fi
+        \ifpgf@sys@pdf@patterns@exists /Pattern @pgfpattern \fi
+        \ifpgf@sys@pdf@colorspaces@exists /ColorSpace @pgfcolorspaces \fi
+        >>}% <<
+    \fi%
+  }
+  \def\pgf@sys@addpdfresource@extgs@plain##1{%
+    \global\pgf@sys@pdf@extgs@existstrue%
+    \pgfutil@insertatbegincurrentpage{\special{pdf: put @pgfextgs << ##1 >>}}% <<
+  }
+  \def\pgf@sys@addpdfresource@colorspaces@plain##1{%
+    \global\pgf@sys@pdf@colorspaces@existstrue%
+    \pgfutil@insertatbegincurrentpage{\special{pdf: put @pgfcolorspaces << ##1 >>}}% <<
+  }
+  \def\pgf@sys@addpdfresource@patterns@plain##1{%
+    \global\pgf@sys@pdf@patterns@existstrue%
+    \pgfutil@insertatbegincurrentpage{\special{pdf: put @pgfpatterns << ##1 >>}}% <<
+  }
+}
+\pgfutil@setuppdfresources % possibly call the above
+
+
+\endinput
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

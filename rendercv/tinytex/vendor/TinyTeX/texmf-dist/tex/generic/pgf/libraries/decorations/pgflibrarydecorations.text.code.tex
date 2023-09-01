@@ -1,0 +1,357 @@
+% Copyright 2018 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgfmodule{decorations}%
+
+
+% Options for text decorations
+
+\pgfkeys{
+    /pgf/decoration/.cd,
+    text/.store in=\pgfdecorationtext,%
+    text color/.store in=\pgf@lib@decorationtextcolor,%
+    text format delimiters/.code={\expandafter\pgfsetdecoratetextformatdelimiters#1},
+    text align/.code={\pgfkeys{/pgf/decoration/text align/.cd,#1}},
+        text align/.cd,
+        align/.initial=left,
+        left/.style={/pgf/decoration/text align/align=left},
+        right/.style={/pgf/decoration/text align/align=right},
+        center/.style={/pgf/decoration/text align/align=center},
+        left indent/.initial=0pt,
+        right indent/.initial=0pt,
+        fit to path/.is if=pgf@lib@dec@text@fit,
+        fit to path stretching spaces/.default=true,
+        fit to path stretching spaces/.code={%
+            \csname pgf@lib@dec@text@fit#1\endcsname%
+            \csname pgf@lib@dec@text@stretch@spaces#1\endcsname%
+        }%
+}%
+
+\newif\ifpgf@lib@dec@text@scan@space
+\newif\ifpgf@lib@dec@text@stretch@spaces
+\newif\ifpgf@lib@dec@text@fit
+
+\def\pgf@lib@decorationtextcolor{black}%
+
+\def\pgf@lib@dec@text@left@text{left}%
+\def\pgf@lib@dec@text@right@text{right}%
+\def\pgf@lib@dec@text@right@center{center}%
+
+% Decorates a path with a text. The path is removed during this
+% process
+
+\pgfdeclaredecoration{text along path}{initial}{%
+    \state{initial}[
+        width=+0pt, next state=left indent,
+        persistent precomputation={%
+            \edef\pgf@lib@dec@text@indent@left{\pgfkeysvalueof{/pgf/decoration/text align/left indent}}%
+            \edef\pgf@lib@dec@text@indent@right{\pgfkeysvalueof{/pgf/decoration/text align/right indent}}%
+            \edef\pgf@lib@dec@text@align{\pgfkeysvalueof{/pgf/decoration/text align/align}}%
+            \pgfdecoratedremainingdistance=\pgfdecoratedpathlength%
+        \advance\pgfdecoratedremainingdistance by-\pgf@lib@dec@text@indent@right\relax%
+        \edef\pgfdecoratedpathlength{\the\pgfdecoratedremainingdistance}%
+        \pgf@lib@dec@text@getwidth%
+        \pgf@x=\pgf@lib@dec@text@width\relax%
+        \pgf@y=\pgfdecoratedremainingdistance%
+        \ifpgf@lib@dec@text@fit%
+            \advance\pgf@y by-\pgf@lib@dec@text@indent@left\relax%
+            \advance\pgf@y by-\pgf@x%
+            \ifpgf@lib@dec@text@stretch@spaces%
+                \def\pgf@lib@dec@text@character@shift{0pt}%
+                \divide\pgf@y by\pgf@lib@dec@space@count\relax%
+                \edef\pgf@lib@dec@text@space@shift{\the\pgf@y}%
+            \else%
+                \c@pgf@counta=\pgf@lib@dec@character@count\relax%
+                \advance\c@pgf@counta by-1\relax%
+                \divide\pgf@y by\c@pgf@counta\relax%
+                \edef\pgf@lib@dec@text@character@shift{\the\pgf@y}%
+                \def\pgf@lib@dec@text@space@shift{0pt}%
+            \fi%
+            \ifdim\pgf@y<0pt\relax%
+                \pgf@lib@dec@text@fitfalse%
+                \pgf@lib@dec@text@stretch@spacesfalse%
+                \def\pgf@lib@dec@text@character@shift{0pt}%
+                \def\pgf@lib@dec@text@space@shift{0pt}%
+            \fi%
+        \else%
+            \def\pgf@lib@dec@text@character@shift{0pt}%
+            \def\pgf@lib@dec@text@space@shift{0pt}%
+                \ifx\pgf@lib@dec@text@align\pgf@lib@dec@text@left@text%
+                \else%
+                    \ifx\pgf@lib@dec@text@align\pgf@lib@dec@text@right@text%
+                        \advance\pgf@y by-\pgf@x%
+                        \edef\pgf@lib@dec@text@indent@left{\the\pgf@y}%
+                    \else%
+                        \advance\pgf@y by-\pgf@x%
+                        \advance\pgf@y by-\pgf@lib@dec@text@indent@left\relax%
+                        \pgf@y=0.5\pgf@y%
+                        \advance\pgf@y by\pgf@lib@dec@text@indent@left\relax%
+                        \edef\pgf@lib@dec@text@indent@left{\the\pgf@y}%
+                    \fi%
+                \fi%
+        \fi%
+        \let\pgfdecorationrestoftext=\pgfdecorationtext%
+    }]{}%
+\state{left indent}[width=+\pgf@lib@dec@text@indent@left, next state=scan]{}%
+%
+\state{scan}[
+    width=+0pt,
+    next state=before typeset,
+    persistent precomputation={
+        \pgf@lib@dec@text@scanchar%
+        \ifvoid\pgf@lib@dec@text@box%
+            \setbox\pgf@lib@dec@text@box\hbox{}%
+            \wd\pgf@lib@dec@text@box16383pt\relax%
+        \fi%
+}]{}%
+%
+\state{before typeset}[width=+.5\wd\pgf@lib@dec@text@box, next state=typeset]{}%
+%
+\state{typeset}[width=+0pt, next state=after typeset]
+{%
+  \pgftransformxshift{+-.5\wd\pgf@lib@dec@text@box}%
+  \setbox\pgf@hbox\hbox{\copy\pgf@lib@dec@text@box}%
+  \pgfqboxsynced\pgf@hbox%
+}%
+\state{after typeset}[width=+.5\wd\pgf@lib@dec@text@box, next state=shift,
+    persistent precomputation={%
+    \ifpgf@lib@dec@text@fit%
+        \ifpgf@lib@dec@text@stretch@spaces%
+            \ifpgf@lib@dec@text@scan@space%
+                \let\pgf@lib@dec@text@shift=\pgf@lib@dec@text@space@shift%
+            \else%
+                \def\pgf@lib@dec@text@shift{0pt}%
+            \fi%
+        \else%
+            \let\pgf@lib@dec@text@shift=\pgf@lib@dec@text@character@shift%
+          \fi%
+        \else%
+            \def\pgf@lib@dec@text@shift{0pt}%
+      \fi%
+  }]{}%
+\state{shift}[width=+\pgf@lib@dec@text@shift, next state=scan]{}%
+\state{final}{}%
+}%
+
+
+% \pgfsetdecoratetextformatdelimiters
+%
+% Set the delimiters for formatting in the text decoration.
+% NB: Catcodes for delimiters should be 11 or 12.
+%
+% Examples:
+%
+% \pgfsetdecoratetextformatdelimiters{|}{}% 2nd argument can be empty.
+%
+% \def\pgfdecoratetext{A big |\color{red}|red|| apple.}
+%
+% \pgfsetdecoratetextformatdelimiters{[}{]}
+%
+% \def\pgfdecoratetext{The [\it]very[+\color{green}]green[] sprouts.}
+%
+\def\pgfsetdecoratetextformatdelimiters#1#2{%
+    \def\pgf@lib@dec@text@formatchar{#1}%
+    \def\pgf@test{#2}%
+    \ifx\pgf@test\pgfutil@empty%
+        \def\pgf@lib@dec@text@collectformat##1#1{%
+        \pgf@lib@dec@text@@collectformat##1\pgf@stop}%
+    \else%
+        \def\pgf@lib@dec@text@collectformat##1#2{%
+            \pgf@lib@dec@text@@collectformat##1\pgf@stop}%
+    \fi%
+}%
+
+\pgfsetdecoratetextformatdelimiters{|}{}%
+
+\newbox\pgf@lib@dec@text@box
+\newif\ifpgf@lib@decorate@textmathmode
+
+\let\pgfdecorationtext=\pgfutil@empty
+\let\pgfdecorationrestoftext=\pgfutil@empty%
+\let\pgf@lib@dec@text@format=\pgfutil@empty
+
+\def\pgf@lib@dec@text@scanchar{%
+    \pgf@lib@dec@text@scan@spacefalse%
+    \ifx\pgfdecorationrestoftext\pgfutil@empty%
+        \let\pgf@lib@dec@text@char\pgfutil@empty%
+        \setbox\pgf@lib@dec@text@box\box\pgfutil@voidb@x%
+        \let\pgf@next\relax%
+    \else\ifx\pgfdecorationrestoftext\pgf@lib@dec@mathshift%
+        \ifpgf@lib@decorate@textmathmode%
+          \pgf@lib@decorate@textmathmodefalse%
+        \fi%
+        \let\pgf@lib@dec@text@char\pgfutil@empty%
+        \setbox\pgf@lib@dec@text@box\box\pgfutil@voidb@x%
+        \let\pgf@next\relax%
+    \else
+        \let\pgf@next\pgf@lib@dec@text@@scanchar%
+    \fi\fi%
+    \pgf@next}%
+
+\def\pgf@lib@dec@text@@scanchar{%
+    \expandafter\pgf@lib@dec@text@@@scanchar\pgfdecorationrestoftext\pgf@stop}%
+
+\def\pgf@lib@dec@text@@@scanchar{%
+    \futurelet\pgf@lib@dec@lettoken%
+    \pgf@lib@dec@text@@@@scanchar}%
+
+\def\pgf@lib@dec@text@@@@scanchar{%
+    \ifx\pgf@lib@dec@lettoken\pgfutil@sptoken%
+        \let\pgf@next\pgf@lib@dec@text@insertspace%
+    \else%
+        \let\pgf@next\pgf@lib@dec@text@@@@@scanchar%
+    \fi%
+    \pgf@next}%
+
+\def\pgf@lib@dec@text@@@@@scanchar{%
+    \pgfutil@ifnextchar\bgroup{\pgf@lib@dec@text@collectgroup}%
+        {\pgf@lib@dec@text@@@@@@scanchar}}%
+
+\def\pgf@lib@dec@text@collectgroup#1{%
+    \def\pgf@lib@dec@text@char{#1}%
+    \pgf@lib@dec@text@collectrestoftext}%
+
+\def\pgf@lib@dec@text@@@@@@scanchar#1{%
+    \ifx#1\pgf@stop%
+        \pgf@lib@dec@text@box\box\pgfutil@voidb@x%
+        \let\pgf@next\pgf@lib@dec@text@endoftext%
+    \else%
+        \def\pgf@lib@dec@text@char{#1}%
+        \ifx#1\space%
+            \let\pgf@next\pgf@lib@dec@text@collectrestoftext%
+        \else%
+            \ifx#1\ %
+                \let\pgf@next\pgf@lib@dec@text@collectrestoftext%
+            \else%
+                \ifx\pgf@lib@dec@text@char\pgf@lib@dec@text@formatchar%
+                    \let\pgf@next\pgf@lib@dec@text@collectformat%
+                \else%
+                    \expandafter\ifcat\noexpand#1\relax%
+                        \let\pgf@next\pgf@lib@dec@text@expandcs%
+                    \else%
+                        \ifnum\catcode`#1=3\relax%
+                            \ifpgf@lib@decorate@textmathmode%
+                                \pgf@lib@decorate@textmathmodefalse%
+                            \else%
+                                \pgf@lib@decorate@textmathmodetrue%
+                            \fi%
+                            \let\pgf@next\pgf@lib@dec@text@@@scanchar%
+                        \else%
+                            \let\pgf@next\pgf@lib@dec@text@collectrestoftext%
+                        \fi%
+                    \fi%
+                \fi%
+            \fi%
+        \fi%
+    \fi%
+    \pgf@next%
+}%
+
+\def\pgf@lib@dec@text@@collectformat{%
+    \pgfutil@ifnextchar+{\pgf@lib@dec@text@addtoformat}{\pgf@lib@dec@text@setformat}}%
+
+\def\pgf@lib@dec@text@setformat#1\pgf@stop{%
+    \def\pgf@lib@dec@text@format{#1}%
+    \pgf@lib@dec@text@@@scanchar%
+}%
+
+\def\pgf@lib@dec@text@addtoformat+#1\pgf@stop{%
+    \expandafter\def\expandafter\pgf@lib@dec@text@format\expandafter{\pgf@lib@dec@text@format#1}%
+    \pgf@lib@dec@text@@@scanchar%
+}%
+
+\def\pgf@lib@dec@text@insertspace{%
+    \pgf@lib@dec@text@scan@spacetrue%
+    \pgfutil@ifnextchar\bgroup{\pgf@lib@dec@text@@insertspacegrp}%
+        {\pgf@lib@dec@text@@insertspace}}%
+
+\def\pgf@lib@dec@text@@insertspacegrp#1{%
+    \pgf@lib@dec@text@@@@@@scanchar\space{#1}}%
+
+\def\pgf@lib@dec@text@@insertspace#1{%
+    \pgf@lib@dec@text@@@@@@scanchar\space#1}%
+
+\def\pgf@lib@dec@text@expandcs{%
+    \expandafter\expandafter\expandafter\pgf@lib@dec@text@@@@@scanchar%
+        \pgf@lib@dec@text@char}%
+
+\def\pgf@lib@dec@text@endoftext{%
+    \let\pgfdecorationrestoftext\pgfutil@empty%
+    \let\pgf@lib@dec@text@char\pgfutil@empty%
+}%
+\def\pgf@lib@dec@text@collectrestoftext{%
+    \pgf@lib@dec@text@dobox%
+    \futurelet\pgf@lib@dec@text@lettoken%
+    \pgf@lib@dec@text@@collectrestoftext}%
+
+\def\pgf@lib@dec@text@@collectrestoftext{%
+    \ifx\bgroup\pgf@lib@dec@text@lettoken%
+        \let\pgf@next\pgf@lib@dec@text@@@collectrestoftextgrp%
+    \else%
+        \let\pgf@next\pgf@lib@dec@text@@@collectrestoftext%
+    \fi%
+    \pgf@next}%
+
+\def\pgf@lib@dec@text@@@collectrestoftextgrp#1#2\pgf@stop{\def\pgfdecorationrestoftext{{#1}#2}%
+}%
+
+\def\pgf@lib@dec@text@@@collectrestoftext#1\pgf@stop{\def\pgfdecorationrestoftext{#1}}%
+
+{%
+    \catcode`\$3 %
+    \gdef\pgf@lib@dec@mathshift{$}%
+    \catcode`\$9 $% For editors with annoying syntax highlighting.
+}%
+
+\def\pgf@lib@dec@text@dobox{%
+    \setbox\pgf@lib@dec@text@box\hbox{%
+        \pgfinterruptpicture%
+        \begingroup%
+            \pgfsetcolor{\pgf@lib@decorationtextcolor}%
+            \ifpgf@lib@decorate@textmathmode\pgf@lib@dec@mathshift\fi%
+                \pgf@lib@dec@text@format\relax%
+                \pgf@lib@dec@text@char%
+            \ifpgf@lib@decorate@textmathmode\pgf@lib@dec@mathshift\fi%
+        \endgroup%
+        \endpgfinterruptpicture%
+    }%
+}%
+
+\def\pgf@lib@dec@text@getwidth{%
+    \begingroup%
+        \let\c@pgf@lib@dec@characters=\c@pgf@counta%
+        \let\c@pgf@lib@dec@spaces=\c@pgf@countb%
+        \let\pgfdecorationrestoftext=\pgfdecorationtext%
+        \c@pgf@lib@dec@spaces=0\relax%
+        \c@pgf@lib@dec@characters=0\relax%
+        \pgfmathloop%
+            \pgf@lib@dec@text@scanchar%
+            \ifvoid\pgf@lib@dec@text@box%
+            \else%
+                \setbox\pgf@hbox=\hbox{{%
+                    \unhbox\pgf@hbox%
+                    \unhbox\pgf@lib@dec@text@box%
+                }}%
+                \advance\c@pgf@lib@dec@characters by1\relax%
+                \ifpgf@lib@dec@text@scan@space%
+                    \advance\c@pgf@lib@dec@spaces by1\relax%
+                \fi%
+        \repeatpgfmathloop%
+        \global\pgf@x=\the\wd\pgf@hbox%
+        \xdef\pgf@lib@dec@temp{\the\c@pgf@lib@dec@characters}%
+        \xdef\pgf@lib@dec@@temp{\the\c@pgf@lib@dec@spaces}%
+    \endgroup%
+    \edef\pgf@lib@dec@text@width{\the\pgf@x}%
+    \let\pgf@lib@dec@character@count=\pgf@lib@dec@temp%
+    \let\pgf@lib@dec@space@count=\pgf@lib@dec@@temp%
+}%
+
+
+
+\endinput

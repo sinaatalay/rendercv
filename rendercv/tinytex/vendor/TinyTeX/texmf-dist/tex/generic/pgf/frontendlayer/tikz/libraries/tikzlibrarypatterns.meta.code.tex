@@ -1,0 +1,98 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgflibrary{patterns.meta}%
+
+\tikzset{%
+  pattern color/.code=\edef\tikz@pattern@color{#1},
+  pattern/.code={%
+  \edef\tikz@temp{#1}%
+  \ifx\tikz@temp\tikz@nonetext%
+    \tikz@addmode{\tikz@mode@fillfalse}%
+  \else%
+    \ifx\tikz@temp\pgfutil@empty%
+    \else%
+      \tikz@addoption{\pgfsetfillpattern{#1}{\tikz@pattern@color}}%
+      \def\tikz@pattern{#1}%
+    \fi%
+    \tikz@addmode{\tikz@mode@filltrue}%
+  \fi%
+  }
+}%
+
+\def\tikz@pattern@color{black}%
+\def\tikz@pattern{}%
+
+\tikzset{patterns/.cd,
+  .unknown/.code={%
+    \let\tikz@pat@key=\pgfkeyscurrentname%
+    \pgfkeys{/pgf/patterns/\tikz@pat@key/.try={#1}}%
+  },
+  bottom left/.style={/pgf/patterns/bottom left={\tikz@scan@one@point\pgf@pat@process#1}},
+  top right/.style={/pgf/patterns/top right={\tikz@scan@one@point\pgf@pat@process#1}},
+  bounding box/.style args={#1(#2)#3and#4(#5)#6}{%
+    /tikz/patterns/bottom left={(#2)},
+    /tikz/patterns/top right={#4(#5)},
+  },
+  tile size/.style={/pgf/patterns/tile size={\tikz@scan@one@point\pgf@pat@process#1}},
+  tile transformation/.style={/pgf/patterns/tile transformation={%
+      \let\tikz@transform=\relax\pgfkeys{/tikz/.cd,#1}}%
+  },
+  infer tile bounding box/.code={
+    \def\pgf@pat@codeafter{%
+      \xdef\tikz@pat@installbb{%
+        \noexpand\pgfkeys{/tikz/patterns/bounding box={%
+        (\the\pgf@picminx-#1,\the\pgf@picminy-#1) and
+        (\the\pgf@picmaxx+#1,\the\pgf@picmaxy+#1)
+      },
+      /tikz/patterns/tile size={%
+        (\the\pgf@picmaxx-\the\pgf@picminx,
+          \the\pgf@picmaxy-\the\pgf@picminy)}}}%
+    }%
+    \let\pgf@pat@declarepost=\tikz@pat@installbb%
+  },
+  infer tile bounding box/.default=0pt,
+}%
+
+\def\tikzdeclarepattern#1{%
+   \begingroup%
+     \def\pgf@pat@codebefore{%
+        \let\tikz@transform=\relax%
+        \pgftransformreset% <- Hmm?
+        \tikz@declarepattern@install%
+        \ifnum\pgf@pat@type=0\relax%
+          \let\pgfsetstrokecolor=\pgfutil@gobble%
+          \let\pgfsetfillcolor=\pgfutil@gobble%
+        \fi%
+        \def\tikz@fig{\tikzerror{You cannot use `\string\node' inside a pattern}}%
+        \def\tikz@edge@plain{\tikzerror{You cannot use `edge' inside a pattern}}%
+        \def\tikz@to{\tikzerror{You cannot use `to' paths inside a pattern}}%
+        \tikzset{pattern/.code={\tikzerror{You cannot nest patterns}},
+          pattern color/.style={pattern}}%
+     }%
+     \pgfdeclarepattern{/tikz/patterns/.cd,#1}%
+   \endgroup%
+ }%
+
+\def\tikz@declarepattern@install{%
+  \let\tikz@compat@color@set=\tikz@compat@color@set@insidepatttern%
+  \tikz@installcommands%
+}%
+
+\let\tikz@compat@color@set@orig=\tikz@compat@color@set
+\def\tikz@compat@color@set@insidepatttern#1{%
+  \tikz@compat@color@set@orig{#1}%
+  \pgfsetfillcolor{#1}\pgfsetstrokecolor{#1}%
+}%
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

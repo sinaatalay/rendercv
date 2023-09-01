@@ -1,0 +1,81 @@
+% Copyright 2018 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgflibrary{lindenmayersystems}%
+
+\def\tikz@@lsystem-system{%
+    \pgfutil@ifnextchar[{\tikz@lsystem@options}{\tikz@lsystem@options[]}}%
+
+\def\tikz@lsystem indenmayer system{%
+    \pgfutil@ifnextchar[{\tikz@lsystem@options}{\tikz@lsystem@options[]}}%
+
+\def\tikz@lsystem@options[#1]{%
+    \tikzset{#1}%
+    \ifx\tikz@lsystem@rules\pgfutil@empty%
+    \else%
+        \tikz@lsystem@declare%
+        \def\tikz@lsystem@name{tikz@temp}%
+    \fi%
+    \ifx\tikz@lsystem@anchor\pgfutil@empty%
+        \pgfpathmoveto{\pgfqpoint{\tikz@lastxsaved}{\tikz@lastysaved}}%
+        \pgflindenmayersystem{\tikz@lsystem@name}{\tikz@lsystem@axiom}{\tikz@lsystem@order}%
+    \else%
+        \pgfextract@process\tikz@lsystem@pos{\pgfqpoint{\tikz@lastxsaved}{\tikz@lastysaved}}%
+        \setbox\pgfnodeparttextbox=\hbox{%
+            \pgfinterruptpicture%
+            \pgfpicture%
+                \pgfpathmoveto{\pgfpointorigin}%
+                \pgflindenmayersystem{\tikz@lsystem@name}{\tikz@lsystem@axiom}{\tikz@lsystem@order}%
+                \begingroup%
+                    \tikz@finish%
+            \endpgfpicture%
+            \endpgfinterruptpicture%
+        }%
+        {%
+            \pgftransformshift{\tikz@lsystem@pos}%
+            \tikzset{inner sep=0pt, outer sep=0pt, minimum size=0pt}%
+            \pgfmultipartnode{rectangle}{\tikz@lsystem@anchor}{lindenmayer system}{\pgfusepath{discard}}%
+        }%
+    \fi%
+    \tikz@scan@next@command}%
+
+\tikzset{%
+    lindenmayer system/.style={/pgf/lindenmayer system/.cd, #1,/tikz/.cd},
+    l-system/.style={lindenmayer system={#1}},
+}%
+\pgfkeys{/pgf/lindenmayer system/.cd,
+    name/.code=\edef\tikz@lsystem@name{#1}\let\tikz@lsystem@rules=\pgfutil@empty,%
+    axiom/.store in=\tikz@lsystem@axiom,%
+    order/.store in=\tikz@lsystem@order,
+    .unknown/.code={%
+        \pgfutil@ifundefined{pgf@lsystem@\pgfkeyscurrentname}{%
+            \pgfkeys{/errors/unknown key={/pgf/lindenmayer system/\pgfkeyscurrentname}{#1}}%
+            \let\tikz@lsystem@name=\pgfutil@empty%
+        }%
+        {\edef\tikz@lsystem@name{\pgfkeyscurrentname}}
+    },%
+    anchor/.store in=\tikz@lsystem@anchor,%
+    rule set/.store in=\tikz@lsystem@rules
+}%
+\let\tikz@lsystem@anchor=\pgfutil@empty%
+\let\tikz@lsystem@rules=\pgfutil@empty%
+
+\def\tikz@lsystem@declare{%
+    \expandafter\let\csname pgf@lsystem@tikz@temp\endcsname=\relax%
+    \pgfdeclarelindenmayersystem{tikz@temp}{%
+        \expandafter\tikz@lsystem@parse@rules\tikz@lsystem@rules,\tikz@stop,%
+    }%
+}%
+\def\tikz@lsystem@parse@rules#1,{%
+    \ifx#1\tikz@stop%
+    \else%
+        \rule{#1}%
+        \expandafter\tikz@lsystem@parse@rules%
+    \fi%
+}%

@@ -1,0 +1,422 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%      File: langscibook.cls
+%%    Author: Language Science Press (http://langsci-press.org)
+%%      Date: 2019-03-06 13:12 UTC
+%%   Purpose: An implementation of the Unified Style Sheet for Linguistics bibliographies (https://www.linguisticsociety.org/resource/unified-style-sheet). 
+%%  This work is based on the styles provided by Semantics \& Pragmatics 
+%%  Language: LaTeX
+%%  Copyright 2017- Language Science Press
+%%  Licence: This work may be distributed and/or modified under the
+%%  conditions of the LaTeX Project Public License, either version 1.3
+%%  of this license or (at your option) any later version.
+%%  The latest version of this license is in
+%%    http://www.latex-project.org/lppl.txt
+%%  and version 1.3 or later is part of all distributions of LaTeX
+%%  version 2005/12/01 or later.
+%%% This work has the LPPL maintenance status `maintained'.
+%%% The Current Maintainer of this work is Sebastian Nordhoff.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ProvidesFile{langsci-unified.cbx}
+
+% For backward compatibility: choose labeldate or labeldateparts depending on the biblatex version
+\@ifpackagelater{biblatex}{2016/09/09}
+{%
+  \ExecuteBibliographyOptions{labeldateparts} % as of biblatex 3.5 (2016/09/10)
+}
+{%
+  \ExecuteBibliographyOptions{labeldate}
+}%
+
+\ExecuteBibliographyOptions{uniquename=minfull,uniquelist=minyear,autocite=inline}
+
+% disabled sortcites option, since it was sorting by name, instead of
+% year, and we often want to keep citations in the order chosen by the
+% author
+\newbool{cbx:parens}
+
+\newbibmacro*{cite:init}{%
+  \ifnumless{\value{multicitecount}}{2}
+    {\global\boolfalse{cbx:parens}%
+     \global\undef\cbx@lasthash
+     \global\undef\cbx@lastyear}
+    {\iffieldundef{prenote}
+       {}
+       {\global\undef\cbx@lasthash
+        \global\undef\cbx@lastyear}}}
+
+\newbibmacro*{cite:reinit}{%
+  \global\undef\cbx@lasthash
+  \global\undef\cbx@lastyear}
+
+\newbibmacro*{labelyearrepeat}{%
+  \ifthenelse{\iffieldequals{labelyear}{\cbx@lastyear}\AND
+              \(\value{multicitecount}=0\OR\iffieldundef{postnote}\)}
+    {\setunit{\addcomma}%
+     \usebibmacro{cite:extradate}}
+    {\setunit{\compcitedelim}%
+     \usebibmacro{cite:labelyear+extradate}%
+     \savefield{labelyear}{\cbx@lastyear}}}
+
+\newbibmacro*{cite}{% Based on cite bib macro from authoryear-comp.cbx
+  \iffieldundef{shorthand}
+    {\ifthenelse{\ifnameundef{labelname}\OR\iffieldundef{labelyear}}
+       {\printtext[bibhyperref]{% Include labelname in hyperlink
+          \DeclareFieldAlias{bibhyperref}{default}% Prevent nested hyperlinks
+          \usebibmacro{cite:label}%
+          \setunit{\addspace}%
+          \usebibmacro{cite:labelyear+extradate}}%
+          \usebibmacro{cite:reinit}}
+       {\iffieldequals{namehash}{\cbx@lasthash}
+          {\usebibmacro{labelyearrepeat}}
+          {\printtext[bibhyperref]{% Include labelname in hyperlink
+             \DeclareFieldAlias{bibhyperref}{default}% Prevent nested hyperlinks
+             \printnames{labelname}%
+             \setunit{\nameyeardelim}%
+             \usebibmacro{cite:labelyear+extradate}}%
+             \savefield{namehash}{\cbx@lasthash}%
+             \savefield{labelyear}{\cbx@lastyear}}}}
+    {\usebibmacro{cite:shorthand}%
+     \usebibmacro{cite:reinit}}%
+  \setunit{\multicitedelim}}
+
+\newbibmacro*{citeyear}{%
+  \iffieldundef{shorthand}
+    {\iffieldundef{labelyear}
+       {\usebibmacro{cite:label}%
+        \usebibmacro{cite:reinit}}
+       {\iffieldequals{namehash}{\cbx@lasthash}
+          {\usebibmacro{labelyearrepeat}}
+          {\usebibmacro{cite:labelyear+extradate}%
+           \savefield{namehash}{\cbx@lasthash}%
+           \savefield{labelyear}{\cbx@lastyear}}}}
+    {\usebibmacro{cite:shorthand}%
+     \usebibmacro{cite:reinit}}%
+  \setunit{\multicitedelim}}
+
+\newbibmacro*{textcite}{% Based on textcite bib macro from authoryear-comp.cbx
+  \iffieldequals{namehash}{\cbx@lasthash}
+    {\iffieldundef{shorthand}
+       {\usebibmacro{labelyearrepeat}}
+       {\setunit{\compcitedelim}%
+        \usebibmacro{cite:shorthand}%
+        \global\undef\cbx@lastyear}}
+    {\ifnameundef{labelname}
+       {\printtext[bibhyperref]{% Include labelname in hyperlink
+          \DeclareFieldAlias{bibhyperref}{default}% Prevent nested hyperlinks
+          \iffieldundef{shorthand}
+            {\usebibmacro{cite:label}%
+             \setunit{%
+               \global\booltrue{cbx:parens}%
+               \addspace\bibopenparen}%
+             \ifnumequal{\value{citecount}}{1}
+               {\usebibmacro{prenote}}
+               {}%
+             \usebibmacro{cite:labelyear+extradate}}
+            {\usebibmacro{cite:shorthand}}%
+          \ifthenelse{\iffieldundef{postnote}\AND
+                      \(\value{multicitetotal}=0\AND\value{citetotal}=1\)}
+            {\bibcloseparen% Include closing parenthesis in hyperlink
+             \global\boolfalse{cbx:parens}}
+            {}}}
+       {\printtext[bibhyperref]{% Include labelname in hyperlink
+          \DeclareFieldAlias{bibhyperref}{default}% Prevent nested hyperlinks
+          \printnames{labelname}%
+          \setunit{%
+            \global\booltrue{cbx:parens}%
+            \addspace\bibopenparen}%
+          \ifnumequal{\value{citecount}}{1}
+            {\usebibmacro{prenote}}
+            {}%
+          \iffieldundef{shorthand}
+            {\iffieldundef{labelyear}
+               {\usebibmacro{cite:label}}
+               {\usebibmacro{cite:labelyear+extradate}}%
+             \savefield{labelyear}{\cbx@lastyear}}
+            {\usebibmacro{cite:shorthand}%
+             \global\undef\cbx@lastyear}%
+          \ifthenelse{\iffieldundef{postnote}\AND
+                      \(\value{multicitetotal}=0\AND\value{citetotal}=1\)}
+            {\bibcloseparen% Include closing parenthesis in hyperlink
+             \global\boolfalse{cbx:parens}}
+            {}}%
+          \savefield{namehash}{\cbx@lasthash}}}%
+  \setunit{%
+    \ifbool{cbx:parens}
+      {\bibcloseparen\global\boolfalse{cbx:parens}}
+      {}%
+    \multicitedelim}}
+
+\newbibmacro*{posscite}{% Based on textcite bib macro above
+  \iffieldequals{namehash}{\cbx@lasthash}
+    {\iffieldundef{shorthand}
+       {\usebibmacro{labelyearrepeat}}
+       {\setunit{\compcitedelim}%
+        \usebibmacro{cite:shorthand}%
+        \global\undef\cbx@lastyear}}
+    {\ifnameundef{labelname}
+       {\printtext[bibhyperref]{% Include labelname in hyperlink
+          \DeclareFieldAlias{bibhyperref}{default}% Prevent nested hyperlinks
+          \iffieldundef{shorthand}
+            {\usebibmacro{cite:label}%
+             \setunit{%
+               \global\booltrue{cbx:parens}%
+               \addspace\bibopenparen}%
+             \ifnumequal{\value{citecount}}{1}
+               {\usebibmacro{prenote}}
+               {}%
+             \usebibmacro{cite:labelyear+extradate}}
+            {\usebibmacro{cite:shorthand}}%
+          \ifthenelse{\iffieldundef{postnote}\AND
+                      \(\value{multicitetotal}=0\AND\value{citetotal}=1\)}
+            {\bibcloseparen% Include closing parenthesis in hyperlink
+             \global\boolfalse{cbx:parens}}
+            {}}}
+       {\printtext[bibhyperref]{% Include labelname in hyperlink
+          \DeclareFieldAlias{bibhyperref}{default}% Prevent nested hyperlinks
+          \printnames{labelname}'s%
+          \setunit{%
+            \global\booltrue{cbx:parens}%
+            \addspace\bibopenparen}%
+          \ifnumequal{\value{citecount}}{1}
+            {\usebibmacro{prenote}}
+            {}%
+          \iffieldundef{shorthand}
+            {\iffieldundef{labelyear}
+               {\usebibmacro{cite:label}}
+               {\usebibmacro{cite:labelyear+extradate}}%
+             \savefield{labelyear}{\cbx@lastyear}}
+            {\usebibmacro{cite:shorthand}%
+             \global\undef\cbx@lastyear}%
+          \ifthenelse{\iffieldundef{postnote}\AND
+                      \(\value{multicitetotal}=0\AND\value{citetotal}=1\)}
+            {\bibcloseparen% Include closing parenthesis in hyperlink
+             \global\boolfalse{cbx:parens}}
+            {}}%
+          \savefield{namehash}{\cbx@lasthash}}}%
+  \setunit{%
+    \ifbool{cbx:parens}
+      {\bibcloseparen\global\boolfalse{cbx:parens}}
+      {}%
+    \multicitedelim}}
+
+\newbibmacro*{cite:shorthand}{%
+  \printtext[bibhyperref]{\printfield{shorthand}}}
+
+\newbibmacro*{cite:label}{%
+  \iffieldundef{label}
+    {\printtext[bibhyperref]{\printfield[citetitle]{labeltitle}}}
+    {\printtext[bibhyperref]{\printfield{label}}}}
+
+\newbibmacro*{cite:labelyear+extradate}{%
+  \iffieldundef{labelyear}
+    {}
+    {\printtext[bibhyperref]{\printlabeldateextra}}}
+
+\newbibmacro*{cite:extradate}{%
+  \iffieldundef{extradate}
+    {}
+    {\printtext[bibhyperref]{\printfield{extradate}}}}
+
+\newbibmacro*{textcite:postnote}{%
+  \usebibmacro{postnote}%
+  \ifthenelse{\value{multicitecount}=\value{multicitetotal}}
+    {\setunit{}%
+     \printtext{%
+       \ifbool{cbx:parens}
+         {\bibcloseparen\global\boolfalse{cbx:parens}}
+         {}}}
+    {\setunit{%
+       \ifbool{cbx:parens}
+         {\bibcloseparen\global\boolfalse{cbx:parens}}
+         {}%
+       \multicitedelim}}}
+
+\DeclareCiteCommand{\cite}
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand*{\cite}
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{citeyear}}
+  {}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\parencite}[\mkbibparens]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand*{\parencite}[\mkbibparens]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{citeyear}}
+  {}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\footcite}[\mkbibfootnote]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\footcitetext}[\mkbibfootnotetext]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\smartcite}[\iffootnote\mkbibparens\mkbibfootnote]
+  {\usebibmacro{cite:init}%
+   \usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{cite}}
+  {}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\textcite}
+  {\usebibmacro{cite:init}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{textcite}}
+  {}
+  {\usebibmacro{textcite:postnote}}
+  
+% "This volume" citation commands
+\DeclareCiteCommand{\citetv}
+  {\usebibmacro{prenote}}
+  {\ifciteindex
+     {\indexnames{labelname}}
+     {}%
+   \printtext[bibhyperref]{\printnames{labelname}\addspace\printfield{year}}}
+  {\multicitedelim}
+  {\printtext[bibhyperref]{\usebibmacro{postnote}\addspace[this volume]}}
+  
+\DeclareCiteCommand{\textcitetv}
+  {\usebibmacro{prenote}}
+  {\ifciteindex
+     {\indexnames{labelname}}
+     {}%
+   \printtext[bibhyperref]{\printnames{labelname}\addspace\bibopenparen\printfield{year}}}
+  {\multicitedelim}
+  {\printtext[bibhyperref]{\usebibmacro{postnote}\addspace[this volume]\bibcloseparen}}
+  
+\DeclareCiteCommand{\parencitetv}
+  {\usebibmacro{prenote}}
+  {\ifciteindex
+     {\indexnames{labelname}}
+     {}%
+   \printtext[bibhyperref]{\bibopenparen\printnames{labelname}\addspace\printfield{year}}}
+  {\multicitedelim}
+  {\printtext[bibhyperref]{\usebibmacro{postnote}\addspace[this volume]\bibcloseparen}}
+  
+% A cite command to produce the full reference in the footer of the landing page of 
+% a paper in an edited volume
+
+\DeclareCiteCommand{\fullciteFooter}
+  {\defcounter{maxnames}{\blx@maxbibnames}%
+    \usebibmacro{prenote}}
+  {\usedriver
+     {\DeclareNameAlias{sortname}{default}}
+     {\thefield{entrytype}}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+  
+\DeclareCiteCommand{\fullciteImprint}
+  {\defcounter{maxnames}{\blx@maxbibnames}%
+    \usebibmacro{prenote}%
+    \DeclarePunctuationPairs{colon}{*}}
+  {\usedriver
+     {\DeclareNameAlias{sortname}{default}}
+     {\thefield{entrytype}}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}\adddot}
+  
+\DeclareCiteCommand{\CiteFullAuthorList}
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}%
+   \defcounter{maxnames}{\blx@maxbibnames}%
+   \usebibmacro{prenote}}
+  {\DeclareNameAlias{labelname}{first-last}%%
+   \printnames{labelname}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareMultiCiteCommand{\cites}{\cite}{\setunit{\multicitedelim}}
+\DeclareMultiCiteCommand{\parencites}[\mkbibparens]{\parencite}{\setunit{\multicitedelim}}
+\DeclareMultiCiteCommand{\footcites}[\mkbibfootnote]{\footcite}{\setunit{\multicitedelim}}
+\DeclareMultiCiteCommand{\footcitetexts}[\mkbibfootnotetext]{\footcitetext}{\setunit{\multicitedelim}}
+\DeclareMultiCiteCommand{\smartcites}[\iffootnote\mkbibparens\mkbibfootnote]{\smartcite}
+                                     {\setunit{\multicitedelim}}
+\DeclareMultiCiteCommand{\textcites}{\textcite}{}
+
+\DeclareCiteCommand{\citeauthor}
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}%
+   \usebibmacro{prenote}}
+  {\ifciteindex
+     {\indexnames{labelname}}
+     {}%
+   \printtext[bibhyperref]{\printnames{labelname}}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\citeyear}
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}%
+   \usebibmacro{prenote}}
+  {\printtext[bibhyperref]{\iffieldundef{year}{\printfield{labelyear}}{\printfield{year}}\printfield{extradate}}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\citeyearpar}[\mkbibparens]
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}%
+   \usebibmacro{prenote}}
+  {\printtext[bibhyperref]{\iffieldundef{year}{\printfield{labelyear}}{\printfield{year}}\printfield{extradate}}}
+  {\multicitedelim}
+  {\usebibmacro{postnote}}
+
+\DeclareCiteCommand{\posscitet}
+  {\usebibmacro{cite:init}}
+  {\usebibmacro{citeindex}%
+   \usebibmacro{posscite}}
+  {}
+  {\usebibmacro{textcite:postnote}}
+
+\DeclareCiteCommand{\posscitealt}
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}}
+  {\printtext[bibhyperref]{\printnames{labelname}'s \iffieldundef{year}{\printfield{labelyear}}{\printfield{year}}\printfield{extradate}}}
+  {}
+  {}
+
+\DeclareCiteCommand{\possciteauthor}
+  {\boolfalse{citetracker}%
+   \boolfalse{pagetracker}}
+  {\printtext[bibhyperref]{\printnames{labelname}'s}}
+  {}
+  {}
+
+% These commands govern the punctuation between parts of citations, such as 
+% between author and year, year and pages, or multiple citations.
+\renewcommand*{\nameyeardelim}{\addspace}
+\renewcommand*{\postnotedelim}{\addcolon\space}
+\DeclareFieldFormat{postnote}{#1}
+\DeclareFieldFormat{multipostnote}{#1}
+\renewcommand{\multicitedelim}{\addcomma\space}%
+\renewcommand{\compcitedelim}{\multicitedelim}
+
+\endinput

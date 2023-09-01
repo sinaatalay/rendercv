@@ -1,0 +1,771 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcorescopes.code.tex}
+
+% Globals
+
+\newbox\pgfpic
+\newbox\pgf@hbox
+
+\newbox\pgf@layerbox@main
+
+\newcount\pgf@picture@serial@count
+
+
+
+% This if decides whether the position of pictures on the page is
+% protocolled or not. Normally,
+% this is switched off as it works only with certain drivers and it
+% causes external files to be written. When switched on, the position
+% of pgfpictures are protocolled and can be referenced using
+% \pgfsys@getposition{XXX} where XXX is the value of \pgfpictureid
+% inside the picture.
+\newif\ifpgfrememberpicturepositiononpage
+
+
+
+
+% Scopes
+
+
+% Pgf scope environment. All changes of the graphic state are local to
+% the scope.
+%
+% Example:
+%
+% \begin{pgfscope}
+%    \pgfsetlinewidth{3pt}
+%    \pgfline{\pgfxy(0,0)}{\pgfxy(3,3)}
+% \end{pgfscope}
+
+\def\pgfscope{%
+  \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+  \pgfsys@beginscope%
+    \pgf@resetpathsizes%
+    \edef\pgfscope@linewidth{\the\pgflinewidth}%
+    \let\pgfscope@stroke@color=\pgf@strokecolor@global%
+    \let\pgfscope@fill@color=\pgf@fillcolor@global%
+    \begingroup}
+\def\endpgfscope{%
+    \endgroup%
+    \global\pgflinewidth=\pgfscope@linewidth%
+    \global\let\pgf@strokecolor@global=\pgfscope@stroke@color%
+    \global\let\pgf@fillcolor@global=\pgfscope@fill@color%
+  \pgfsys@endscope}
+
+
+
+
+% Quickly insert a box can contain normal TeX text at the origin.
+%
+% #1 = box of width/height and depth 0pt
+%
+% Example:
+%
+% \pgfqbox{\mybox}
+
+\def\pgfqbox#1{%
+  \pgfsys@hbox#1%
+}
+
+
+% Insert a box that can contain normal TeX text at the origin, but
+% with the current coordinate transformation matrix synced with the
+% low-level transformation matrix.
+%
+% #1 = box of width/height and depth 0pt
+%
+% In essence, this command does the same as if you first said
+% \pgflowlevelsynccm and then \pgfqbox. However, pgf will use a
+% ``TeX-translation'' for the translation part of the transformation
+% cm. This will ensure that hyperlinks ``survive'' at least
+% translations.
+%
+% Example:
+%
+% \pgfqboxsynced{\mybox}
+
+\def\pgfqboxsynced#1{%
+  \pgfsys@hboxsynced#1%
+}
+
+
+% Puts some text in a box and inserts it with the current
+% transformations applied.
+%
+% #1 = List of optional positioning. Possible values are ``left'', ``right'',
+%      ``top'', ``bottom'' and ``base''.
+% #2 = TeX text. May contain verbatims.
+%
+% Example:
+%
+% \pgftransformshift{\pgfpoint{1cm}{0cm}}
+% \pgftext{Hello World!}
+
+\def\pgftext{\pgfutil@ifnextchar[\pgf@text{\pgf@text[]}}%
+\def\pgf@text[#1]{%
+  \def\pgf@text@options{#1}%
+  \pgf@maketext\pgf@after@text}
+\def\pgf@after@text{%
+  {%
+  \def\pgf@text@hshift{center}%
+  \def\pgf@text@vshift{center}%
+  \expandafter\pgf@text@setkeys\expandafter{\pgf@text@options}%
+  \csname pgf@halign\pgf@text@hshift\endcsname%
+  \csname pgf@valign\pgf@text@vshift\endcsname%
+  %
+  \pgfapproximatenonlineartransformation%
+  % Protocol sizes:
+  \pgf@process{\pgfpointtransformed{\pgfqpoint{0pt}{\dp\pgf@hbox}}}%
+  \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+  \pgf@process{\pgfpointtransformed{\pgfqpoint{\wd\pgf@hbox}{\dp\pgf@hbox}}}%
+  \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+  \pgf@process{\pgfpointtransformed{\pgfqpoint{0pt}{\ht\pgf@hbox}}}%
+  \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+  \pgf@process{\pgfpointtransformed{\pgfqpoint{\wd\pgf@hbox}{\ht\pgf@hbox}}}%
+  \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+  \pgfqboxsynced{\pgf@hbox}%
+  }%
+}
+\def\pgf@text@setkeys{\pgfqkeys{/pgf/text}}%
+
+\pgfkeys{/pgf/text/left/.code=\def\pgf@text@hshift{left}}
+\pgfkeys{/pgf/text/center/.code=}
+\pgfkeys{/pgf/text/right/.code=\def\pgf@text@hshift{right}}
+\pgfkeys{/pgf/text/top/.code=\def\pgf@text@vshift{top}}
+\pgfkeys{/pgf/text/bottom/.code=\def\pgf@text@vshift{bottom}}
+\pgfkeys{/pgf/text/base/.code=\def\pgf@text@vshift{base}}
+\pgfkeys{/pgf/text/at/.cd,.code=\pgftransformshift{#1},.value required}
+\pgfkeys{/pgf/text/x/.cd,.code=\pgftransformxshift{#1},.value required}
+\pgfkeys{/pgf/text/y/.cd,.code=\pgftransformyshift{#1},.value required}
+\pgfkeys{/pgf/text/rotate/.cd,.code=\pgftransformrotate{#1},.value required}
+
+\def\pgf@halignleft{}% do nothing
+\def\pgf@haligncenter{\pgftransformxshift{+-.5\wd\pgf@hbox}}
+\def\pgf@halignright{\pgftransformxshift{+-\wd\pgf@hbox}}%
+\def\pgf@valignbase{}% do nothing
+\def\pgf@valignbottom{\pgftransformyshift{+\dp\pgf@hbox}}%
+\def\pgf@valigncenter{\pgftransformyshift{+.5\dp\pgf@hbox}\pgftransformyshift{+-.5\ht\pgf@hbox}}%
+\def\pgf@valigntop{\pgftransformyshift{+-\ht\pgf@hbox}}%
+
+
+% Internal function for creating a hbox.
+\def\pgf@maketext#1{%
+  \def\pgf@@maketextafter{#1}%
+  \setbox\pgf@hbox=\hbox\bgroup%
+    \pgfinterruptpicture%
+      \bgroup%
+        \aftergroup\pgf@collectresetcolor%
+        \let\next=%
+}
+\def\pgf@collectresetcolor{%
+  \pgfutil@ifnextchar\reset@color%
+  {\reset@color\afterassignment\pgf@collectresetcolor\let\pgf@temp=}%
+  {\pgf@textdone}%
+}
+\def\pgf@textdone{%
+    \endpgfinterruptpicture%
+  \egroup%
+  \pgf@@maketextafter%
+}
+
+\long\def\pgf@makehbox#1{%
+  \setbox\pgf@hbox=\hbox{{%
+    \pgfinterruptpicture%
+      #1%
+    \endpgfinterruptpicture%
+    }}}
+
+
+
+% Picture environment
+%
+% Example:
+%
+% \begin{pgfpicture}
+%   \pgfsetendarrow{\pgfarrowto}
+%   \pgfpathmoveto{\pgfpointxy{-0.9}{0.2}}
+%   \pgfpathlineto{\pgfpointxy{0.9}{0.4}}
+%   \pgfusepath{stroke}
+% \end{pgfpicture}
+
+\def\pgfresetboundingbox{%
+    \global\pgf@picmaxx=-16000pt\relax%
+    \global\pgf@picminx=16000pt\relax%
+    \global\pgf@picmaxy=-16000pt\relax%
+    \global\pgf@picminy=16000pt\relax%
+}%
+
+\def\pgfpicture{%
+  \begingroup%
+    \pgfpicturetrue%
+    \global\advance\pgf@picture@serial@count by1\relax%
+    \edef\pgfpictureid{pgfid\the\pgf@picture@serial@count}%
+    \let\pgf@nodecallback=\pgfutil@gobble%
+    \pgf@picmaxx=-16000pt\relax%
+    \pgf@picminx=16000pt\relax%
+    \pgf@picmaxy=-16000pt\relax%
+    \pgf@picminy=16000pt\relax%
+    \pgf@relevantforpicturesizetrue%
+    \pgf@resetpathsizes%
+    \pgfutil@ifnextchar\bgroup\pgf@oldpicture\pgf@picture}
+\def\pgf@oldpicture#1#2#3#4{%
+  \pgfmathsetlength\pgf@picminx{#1}%
+  \pgfmathsetlength\pgf@picminy{#2}%
+  \pgfmathsetlength\pgf@picmaxx{#3}%
+  \pgfmathsetlength\pgf@picmaxy{#4}%
+  \pgf@relevantforpicturesizefalse%
+  \pgf@picture}
+
+\def\pgf@picture{%
+  \setbox\pgfpic\hbox to0pt\bgroup%
+    \begingroup%
+    \pgfsys@beginpicture%
+      \pgfsys@beginscope%
+        \begingroup%
+        \pgfsetcolor{.}%
+        \pgfsetlinewidth{0.4pt}%
+        \pgftransformreset%
+        \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+        \begingroup%
+          \let\pgf@setlengthorig=\setlength%
+          \let\pgf@addtolengthorig=\addtolength%
+          \let\pgf@selectfontorig=\selectfont%
+          \let\setlength=\pgf@setlength%
+          \let\addtolength=\pgf@addtolength%
+          \let\selectfont=\pgf@selectfont%
+          \nullfont\spaceskip0pt\xspaceskip0pt%
+          \tracinglostchars=%
+            \ifnum\tracinglostchars>2 2\else\tracinglostchars\fi
+          \setbox\pgf@layerbox@main\hbox to0pt\bgroup%
+            \begingroup%
+  }
+\def\endpgfpicture{%
+              \ifpgfrememberpicturepositiononpage%
+                \hbox to0pt{\pgfsys@markposition{\pgfpictureid}}%
+              \fi%
+              % ok, now let's position the box
+              \ifdim\pgf@picmaxx=-16000pt\relax%
+                % empty picture. make size 0.
+                \global\pgf@picmaxx=0pt\relax%
+                \global\pgf@picminx=0pt\relax%
+                \global\pgf@picmaxy=0pt\relax%
+                \global\pgf@picminy=0pt\relax%
+              \fi%
+              % Shift baseline outside:
+              \pgf@relevantforpicturesizefalse%
+              \pgf@process{\pgf@baseline}%
+              \xdef\pgf@shift@baseline{\the\pgf@y}%
+              %
+              \pgf@process{\pgf@trimleft}%
+              \global\advance\pgf@x by-\pgf@picminx
+              % prepare \hskip\pgf@trimleft@final.
+              % note that \pgf@trimleft@final is also queried
+              % by the pgf image externalization.
+              \xdef\pgf@trimleft@final{-\the\pgf@x}%
+              %
+              \pgf@process{\pgf@trimright}%
+              \global\advance\pgf@x by-\pgf@picmaxx
+              % prepare \hskip\pgf@trimright@final.
+              % note that \pgf@trimright@final is also queried
+              % by the pgf image externalization.
+              \xdef\pgf@trimright@final{\the\pgf@x}%
+        %
+        \pgf@remember@layerlist@globally
+            \endgroup%
+            \hss%
+          \egroup%
+      \pgf@restore@layerlist@from@global
+          \pgf@insertlayers%
+        \endgroup%
+        \pgfsys@discardpath%
+        \endgroup%
+      \pgfsys@endscope%
+    \pgfsys@endpicture%
+    \endgroup%
+    \hss
+  \egroup%
+  \pgfsys@typesetpicturebox\pgfpic%
+  \endgroup%
+}
+
+\def\pgf@remember@layerlist@globally{%
+  \global\let\pgf@layerlist@=\pgf@layerlist
+}%
+\def\pgf@restore@layerlist@from@global{%
+  \let\pgf@layerlist=\pgf@layerlist@
+}%
+\def\pgf@insertlayers{%
+  \box\pgf@layerbox@main%
+}
+
+\def\pgf@selectfont{\pgf@selectfontorig\nullfont}
+
+\def\pgf@setlength#1#2{% these will be used only when \nullfont is active
+  \begingroup% keep font setting local
+    \pgfutil@selectfont% restore font
+    \pgf@setlengthorig#1{#2}% calculate dimension (possibly using calc)
+    \expandafter%
+  \endgroup%
+  \expandafter#1\expandafter=\the#1\relax}
+\def\pgf@addtolength#1#2{%
+  \begingroup% keep font setting local
+    \pgfutil@selectfont% restore font
+    \pgf@addtolengthorig#1{#2}% calculate dimension (possibly using calc)
+    \expandafter%
+  \endgroup%
+  \expandafter#1\expandafter=\the#1\relax}
+
+
+% Sets the baseline at the y-coordinate of a given point
+%
+% #1 = point
+%
+% Sets the baseline of the picture to the y-coordinate of a given
+% point. However, the point will be evaluated *at the end of the
+% picture*.
+%
+% Example:
+%
+% \pgfsetbaselinepointlater{\pgfpointanchor{mynode}{base}}
+
+\def\pgfsetbaselinepointlater#1{\def\pgf@baseline{#1}}
+
+
+% Sets the baseline at the y-coordinate of a given point, now
+%
+% #1 = point
+%
+% Sets the baseline of the picture to the y-coordinate of a given
+% point.
+%
+% Example:
+%
+% \pgfsetbaselinepointnow{\pgfpoint{1cm}{2pt}}
+
+\def\pgfsetbaselinepointnow#1{%
+  \pgf@process{#1}%
+  \edef\pgf@setter@baseline{\noexpand\pgfpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgfsetbaselinepointlater{\pgf@setter@baseline}%
+}
+
+\def\pgf@default@text{default}%
+
+% Sets the baseline
+%
+% #1 = baseline
+%
+% Sets the baseline of the picture. Default is the lower border, which
+% is the same as \pgf@picminy
+%
+% Example:
+%
+% \pgfsetbaseline{1cm+2pt}
+% \pgfsetbaseline{default}% resets to default value
+
+\def\pgfsetbaseline#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgf@default@text
+    \pgfsetbaseline{\pgf@picminy}%
+  \else
+    \pgfsetbaselinepointlater{\pgfpoint{0pt}{#1}}%
+  \fi
+}
+\pgfsetbaseline{\pgf@picminy}
+
+% controls how the image externalization implements trim:
+\newif\ifpgf@trim@lowlevel
+\pgfkeys{
+  /pgf/trim lowlevel/.is if=pgf@trim@lowlevel,
+  /pgf/trim lowlevel/.default=true,
+}
+
+% Same as the y-baseline for horizontal alignment.
+% The effect is different, though: it is some kind of trimming which
+% leaves the bounding box intact.
+\def\pgfsettrimleftpointlater#1{\def\pgf@trimleft{#1}}
+\def\pgfsettrimleftpointnow#1{%
+  \pgf@process{#1}%
+  \edef\pgf@setter@baseline{\noexpand\pgfpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgfsettrimleftpointlater{\pgf@setter@baseline}%
+}
+% \pgfsettrimleft{<x coord>}
+% or
+% \pgfsettrimleft{default}
+\def\pgfsettrimleft#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgf@default@text
+    \pgfsettrimleft{\pgf@picminx}
+  \else
+    \pgfsettrimleftpointlater{\pgfpoint{#1}{0pt}}%
+  \fi
+}
+\pgfsettrimleft{\pgf@picminx}
+
+\def\pgfsettrimrightpointlater#1{\def\pgf@trimright{#1}}
+\def\pgfsettrimrightpointnow#1{%
+  \pgf@process{#1}%
+  \edef\pgf@setter@baseline{\noexpand\pgfpoint{\the\pgf@x}{\the\pgf@y}}%
+  \pgfsettrimrightpointlater{\pgf@setter@baseline}%
+}
+% \pgfsettrimright{<x coord>}
+% or
+% \pgfsettrimright{default}
+\def\pgfsettrimright#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgf@default@text
+    \pgfsettrimright{\pgf@picmaxx}%
+  \else
+    \pgfsettrimrightpointlater{\pgfpoint{#1}{0pt}}%
+  \fi
+}
+\pgfsettrimright{\pgf@picmaxx}
+
+
+% Interrupt path
+%
+% Description:
+%
+% The environment can be used to insert some drawing commands while
+% constructing a path. The drawing commands inside the environment
+% will not interfere with the path being constructed ``outside.''
+% However, you must ward against graphic state changes using a scope.
+%
+% Example: Draw two parallel lines
+%
+% \pgfmoveto{\pgfpoint{0cm}{0cm}}
+% \begin{pgfinterruptpath}
+%   \pgfmoveto{\pgfpoint{1cm}{0cm}}
+%   \pgfmoveto{\pgfpoint{1cm}{1cm}}
+%   \pgfusepath{stroke}
+% \end{pgfinterruptpath}
+% \pgflineto{\pgfpoint{0cm}{1cm}}
+% \pgfusepath{stroke}
+
+\def\pgfinterruptpath
+{%
+  \begingroup%
+  % save all sorts of things...
+  \edef\pgf@interrupt@savex{\the\pgf@path@lastx}%
+  \edef\pgf@interrupt@savey{\the\pgf@path@lasty}%
+  \pgf@getpathsizes\pgf@interrupt@pathsizes%
+  \pgfsyssoftpath@getcurrentpath\pgf@interrupt@path%
+  \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+  \let\pgf@interrupt@lastmoveto=\pgfsyssoftpath@lastmoveto%
+  \begingroup%
+}
+\def\endpgfinterruptpath
+{%
+  \endgroup%
+  \pgfsyssoftpath@setcurrentpath\pgf@interrupt@path%
+  \pgf@setpathsizes\pgf@interrupt@pathsizes%
+  \global\pgf@path@lastx\pgf@interrupt@savex%
+  \global\pgf@path@lasty\pgf@interrupt@savey%
+  \global\let\pgfsyssoftpath@lastmoveto\pgf@interrupt@lastmoveto%
+  \endgroup%
+}
+
+
+
+% Interrupt bounding box
+%
+% Description:
+%
+% The environment can be used to temporarily setup a new bounding box
+% computation. The bounding box will be made empty at the beginning of
+% the environment and will be reset to its old value after the
+% environment.
+%
+% Example:
+%
+% \begin{pgfinterruptboundinbox}
+%   \pgfmoveto{\pgfpoint{1cm}{0cm}}
+%   \pgfmoveto{\pgfpoint{1cm}{1cm}}
+%   \pgfusepath{stroke}
+% \end{pgfinterruptboundinbox}
+
+\def\pgfinterruptboundingbox
+{%
+  \begingroup%
+    \edef\pgf@interrupt@savemaxx{\the\pgf@picmaxx}%
+    \edef\pgf@interrupt@saveminx{\the\pgf@picminx}%
+    \edef\pgf@interrupt@savemaxy{\the\pgf@picmaxy}%
+    \edef\pgf@interrupt@saveminy{\the\pgf@picminy}%
+    \pgf@picmaxx=-16000pt\relax%
+    \pgf@picminx=16000pt\relax%
+    \pgf@picmaxy=-16000pt\relax%
+    \pgf@picminy=16000pt\relax%
+    \pgf@size@hookedfalse%
+    \let\pgf@path@size@hook=\pgfutil@empty%
+}
+\def\endpgfinterruptboundingbox
+{%
+    \global\pgf@picmaxx=\pgf@interrupt@savemaxx%
+    \global\pgf@picmaxy=\pgf@interrupt@savemaxy%
+    \global\pgf@picminx=\pgf@interrupt@saveminx%
+    \global\pgf@picminy=\pgf@interrupt@saveminy%
+  \endgroup%
+}
+
+
+
+
+% Creates an id scope.
+%
+% Description:
+%
+% An id scope is not (conceptually) a graphic scope, but a scope that
+% has a unique name or "id". This id can be used as a reference point
+% for instance for a hyperlink or for an animation (currently, only
+% SVG supports ids, all other drivers ignore id scopes).
+%
+% Prior to using \pgfidscope, call \pgfuseid to install an
+% id (and possibly \pgfusetype). The scope will then get this id and,
+% likely, a graphic scope is installed. If \pgfuseid has not been
+% called or if you try to call \pgfidscope again for the same id,
+% nothing happens (except for a \TeX\ group being established).
+
+\def\pgfidscope{\pgfsys@begin@idscope}
+\def\endpgfidscope{\pgfsys@end@idscope}
+
+\let\startpgfidscope\pgfidscope
+\let\stoppgfidscope\pgfendidscope
+
+
+
+
+% Use an id on the next graphic object
+%
+% #1 = a name
+%
+% The next scope or path can be the target of an animation command or
+% a hyperlink.
+
+\def\pgfuseid#1{%
+  \edef\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfutil@empty%
+  \else%
+    \pgf@lookup@id{#1}%
+    \pgfsys@use@id{\pgf@next@id}%
+    \expandafter\xdef\csname pgf@id@names@#1\endcsname{{\pgf@next@id}{}}%
+  \fi%
+}
+
+\def\pgf@lookup@id#1{%
+  \expandafter\let\expandafter\pgf@id@name\csname pgf@id@names@#1\endcsname%
+  \ifx\pgf@id@name\relax%
+    \let\pgf@prev@id\pgfutil@empty%
+    \let\pgf@next@id\pgfutil@empty%
+  \else%
+    \expandafter\pgf@id@parse\pgf@id@name%
+  \fi%
+  \ifx\pgf@next@id\pgfutil@empty%
+    \pgfsys@new@id\pgf@next@id%
+    \expandafter\xdef\csname pgf@id@names@#1\endcsname{{\pgf@prev@id}{\pgf@next@id}}%
+  \fi%
+}
+\def\pgf@id@parse#1#2{%
+  \def\pgf@prev@id{#1}%
+  \def\pgf@next@id{#2}%
+}
+
+
+
+% Clear the current id
+%
+% Description:
+%
+% Sets the current id to be empty so that it cannot be referenced.
+
+\def\pgfclearid{%
+  \pgfsys@clear@id%
+}
+
+
+% Get the id that will be given to a name upon the next use
+%
+% #1 = a macro
+% #2 = a name
+%
+% Description:
+%
+% #1 will get the id that will be used by \pgfuseid next time for the
+% given name.
+
+\def\pgfidrefnextuse#1#2{%
+  \edef\pgf@temp{#2}\ifx\pgf@temp\pgfutil@empty\pgferror{Missing name reference for ``\string#1''}\fi%
+  \pgf@lookup@id{#2}%
+  \let#1\pgf@next@id%
+}
+
+
+% Get the id was last used
+%
+% #1 = a macro
+% #2 = a name
+%
+% Description:
+%
+% #1 will get the id that was last used by \pgfuseid for #2.
+
+\def\pgfidrefprevuse#1#2{%
+  \edef\pgf@temp{#2}\ifx\pgf@temp\pgfutil@empty\pgferror{Missing name reference for ``\string#1''}\fi%
+  \pgf@lookup@id{#2}%
+  \let#1\pgf@prev@id%
+}
+
+
+% Use a type
+%
+% #1 = an id type; when starting with a dot, it is added to the
+% current type.
+%
+% The next scope or path can be the target of an animation command or
+% a hyperlink.
+
+\def\pgfusetype#1{%
+  \edef\pgf@temp{#1}%
+  \expandafter\pgfutil@ifnextchar\expandafter.\expandafter\pgf@id@use@type@add\expandafter\pgf@id@use@type@replace\pgf@temp\pgf@stop
+}
+\def\pgf@id@use@type@add.#1\pgf@stop{\pgfsys@append@type{#1}}
+\def\pgf@id@use@type@replace#1\pgf@stop{\pgfsys@use@type{#1}}
+
+% Push the current type on a global stack
+%
+% Description:
+%
+% The current type is pushed onto a global type stack. It can be
+% restored using \pgfpoptype.
+
+\def\pgfpushtype{\pgfsys@push@type}
+
+
+% Pop a type from the type stack
+%
+% Description:
+%
+% Restores the most current value from the type stack.
+
+\def\pgfpoptype{\pgfsys@pop@type}
+
+
+
+
+% Alias an id locally or globally
+%
+% #1 = the alias name
+% #2 = a existing id name
+%
+% Description:
+%
+% Creates an alias of a name
+
+\def\pgfaliasid#1#2{%
+  \expandafter\let\expandafter\pgf@temp\csname pgf@id@names@#2\endcsname%
+  \expandafter\let\csname pgf@id@names@#1\endcsname\pgf@temp%
+}
+\def\pgfgaliasid#1#2{%
+  \expandafter\let\expandafter\pgf@temp\csname pgf@id@names@#2\endcsname%
+  \expandafter\global\expandafter\let\csname pgf@id@names@#1\endcsname\pgf@temp%
+}
+
+
+% Check whether a name has been forward-referenced
+%
+% #1 = a name
+% #2 = what to do, when has been forward-referenced
+% #3 = what to do otherwise
+%
+% Description:
+%
+% Depending on whether #1 has been forward-referenced, #2 or #3 will be executed.
+
+\def\pgfifidreferenced#1#2#3{%
+  \expandafter\let\expandafter\pgf@id@name\csname pgf@id@names@#1\endcsname%
+  \ifx\pgf@id@name\relax%
+    #3%
+  \else
+    \expandafter\pgf@id@parse\pgf@id@name%
+    \ifx\pgf@next@id\pgfutil@empty%
+      #3%
+    \else%
+      #2%
+    \fi%
+  \fi%
+}
+
+
+% Interrupts a picture
+%
+% Description:
+%
+% This environment interrupts a picture and temporarily returns to
+% normal TeX mode. All sorts of things are saved and restored by this
+% environment.
+%
+% WARNING: Using this environment in conjunction with low level
+% transformations can *strongly* upset the typesetting. Typically, the
+% contents of this environment should have size/height/depth 0pt in
+% the end.
+%
+% WARNING: This environment should only be used inside typesetting a
+% box and this box must in turn be inserted using \pgfqbox.
+%
+% Example: Draw two parallel lines
+%
+% \pgfmoveto{\pgfpoint{0cm}{0cm}}
+% \setbox\mybox=\hbox{
+%    \begin{pgfinterruptpicture}
+%      This is normal text.
+%      \begin{pgfpicture} % a subpicture
+%        \pgfmoveto{\pgfpoint{1cm}{0cm}}
+%        \pgfmoveto{\pgfpoint{1cm}{1cm}}
+%        \pgfusepath{stroke}
+%      \end{pgfpicture}
+%      More text.
+%    \end{pgfinterruptpicture}
+%  }
+% \ht\mybox=0pt
+% \wd\mybox=0pt
+% \dp\mybox=0pt
+% \pgfqbox{\mybox}%
+% \pgfpathlineto{\pgfpoint{0cm}{1cm}}
+% \pgfusepath{stroke}
+
+\def\pgfinterruptpicture
+{%
+  \begingroup%
+    \csname tikz@inside@picturefalse\endcsname%
+    \pgfinterruptboundingbox%
+      \pgftransformreset%
+      \pgfinterruptpath%
+        \ifx\pgf@selectfontorig\@undefined%
+        \else%
+          \let\setlength\pgf@setlengthorig%
+          \let\addtolength\pgf@addtolengthorig%
+          \let\selectfont\pgf@selectfontorig%
+        \fi%
+        \pgfutil@selectfont%
+        \pgfpicturefalse%
+        \let\pgf@positionnodelater@macro\relax%
+        \pgf@savelayers%
+}
+\def\endpgfinterruptpicture
+{%
+        \pgf@restorelayers%
+      \endpgfinterruptpath%
+    \endpgfinterruptboundingbox%
+  \endgroup%
+}
+
+\let\pgf@savelayers=\relax
+\let\pgf@restorelayers=\relax
+
+\endinput

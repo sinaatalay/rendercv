@@ -1,0 +1,110 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-dvipdfm.def}
+
+% Driver commands for dvipdfm
+
+%
+% Load common pdf and pdf in dvi commands:
+%
+\input pgfsys-common-pdf.def
+\input pgfsys-common-pdf-via-dvi.def
+
+%
+% dvipdfm-specific stuff:
+%
+
+\def\pgfsys@hbox#1{%
+  \pgfsys@begin@idscope%
+  \pgfsys@invoke{q -1 0 0 -1 0 0 cm}%
+  \special{pdf: content -1 0 0 -1 0 0 cm 3 Tr q}% translate to
+                                % original coordinate system and do
+                                % not show anything
+  {\hbox to 0pt{\pgfutil@font@normalfont\pgfutil@selectfont.\hss}}% enforce font change
+  \pgfsys@invoke{0 Tr}%
+  \pgfsys@invoke{0 J [] 0 d}% reset line cap and dash
+    \wd#1=0pt%
+    \ht#1=0pt%
+    \dp#1=0pt%
+    \box#1
+  \pgfsys@invoke{n Q Q}%
+  \pgfsys@end@idscope%
+}
+\def\pgfsys@hboxsynced#1{%
+  {%
+    \pgfsys@begin@idscope%
+    \pgfsys@beginscope%
+    \setbox\pgf@hbox=\hbox{%
+      \hskip\pgf@pt@x%
+      \raise\pgf@pt@y\hbox{%
+        \pgf@pt@x=0pt%
+        \pgf@pt@y=0pt%
+        \special{pdf: content q}%
+        \pgflowlevelsynccm%
+        \pgfsys@invoke{q -1 0 0 -1 0 0 cm}%
+        \special{pdf: content -1 0 0 -1 0 0 cm q}% translate to original coordinate system
+        \pgfsys@invoke{0 J [] 0 d}% reset line cap and dash
+        \wd#1=0pt%
+        \ht#1=0pt%
+        \dp#1=0pt%
+        \box#1%
+        \pgfsys@invoke{n Q Q Q}%
+      }%
+      \hss%
+    }%
+    \wd\pgf@hbox=0pt%
+    \ht\pgf@hbox=0pt%
+    \dp\pgf@hbox=0pt%
+    \pgfsys@hbox\pgf@hbox%
+    \pgfsys@endscope%
+    \pgfsys@end@idscope%
+  }%
+}
+
+\def\pgfsys@beginpicture{%
+  \pgfsys@invoke{3 Tr}%
+  \hbox to 0pt{\pgfutil@font@normalfont\pgfutil@selectfont.\hss}% enforce font change
+  \pgfsys@invoke{0 Tr}%
+  \special{pdf: content q}}
+\def\pgfsys@endpicture{%
+  \pgfsys@invoke{n Q}%
+}
+
+\def\pgfsys@invoke#1{\special{pdf: content Q #1 q}} % ugly, but necessary...
+
+\def\pgfsys@papersize#1#2{%
+%  \expandafter\gdef\expandafter\pgfsys@atbegindocument%
+%  \expandafter{\pgfsys@atbegindocument
+    \special{papersize=#1,#2}%
+%  }
+}
+
+\def\pgfsys@prepare@papersize#1#2{%
+  \expandafter\gdef\expandafter\pgfsys@atbegindocument%
+  \expandafter{\pgfsys@atbegindocument
+    \special{papersize=#1,#2}%
+  }
+}
+
+%
+% Position tracking (needs pdftex >= 1.40.0-alpha-20051205 in dvi mode)
+%
+\ifx\pdftexversion\@undefined
+\else
+  \ifnum\pdftexversion>139
+    \pgf@sys@pdf@dvi@tracker
+  \fi
+\fi
+
+\endinput
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

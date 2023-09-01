@@ -1,0 +1,67 @@
+#!/bin/sh
+# mktexupd -- update ls-R with a new entry.
+# 
+# Primarily written by Thomas Esser, Karl Berry, and Olaf Weber.
+# Public domain.
+
+version='$Id: mktexupd 34656 2014-07-18 23:38:50Z karl $'
+
+# preferentially use subprograms from our own directory.
+mydir=`echo "$0" | sed 's,/[^/]*$,,'`
+mydir=`cd "$mydir" && pwd`
+PATH="$mydir:$PATH"; export PATH
+
+usage="Usage: $0 DIR FILE.
+  Update the ls-R file with an entry for FILE in DIR.
+
+Report bugs to: tex-k@tug.org
+TeX Live home page: <http://tug.org/texlive/>
+"
+mt_min_args=2
+mt_max_args=2
+
+# Common code for all scripts.
+: ${MT_TEXMFMAIN=`kpsewhich --expand-path='$TEXMFMAIN'`}
+: ${MT_MKTEX_OPT=`kpsewhich --format='web2c files' mktex.opt`}
+test -n "$MT_MKTEX_OPT" || MT_MKTEX_OPT="$MT_TEXMFMAIN/web2c/mktex.opt"
+if test ! -f "$MT_MKTEX_OPT"; then
+  echo "$0: Cannot find mktex.opt; check your installation." >&2
+  exit 1
+fi
+
+. "$MT_MKTEX_OPT"
+
+dir=$1
+file=$2
+test -d "$dir" || { echo "$0: $dir not a directory." >&2; exit 1; }
+test -f "$dir/$file" || { echo "$0: $dir/$file not a file." >&2; exit 1; }
+
+OIFS=$IFS; IFS=$SEP; set x `kpsewhich  -show-path=ls-R`; shift; IFS=$OIFS
+TEXMFLS_R=
+for d in "$@"; do
+  case $dir in
+    "") continue;;
+    ${d}|${d}/*) TEXMFLS_R="$d"; break;;
+  esac
+done
+test -n "$TEXMFLS_R" || exit 0
+db_file="$TEXMFLS_R/ls-R"
+db_file_lc="$TEXMFLS_R/ls-r"
+
+test ! -f "$db_file" && test -f "$db_file_lc" && db_file="$db_file_lc"
+test -f "$db_file" || { mktexlsr "$TEXMFLS_R"; exit; }
+test -w "$db_file" || { echo "$0: $db_file unwritable." >&2; exit 1; }
+
+test "x`sed '1s/$//;1q' \"$db_file\"`" = "x$ls_R_magic" \
+  || test "x`sed '1s/$//;1q' \"$db_file\"`" = "x$old_ls_R_magic" \
+  || { echo "$0: $db_file lacks magic string \`$ls_R_magic'." >&2; exit 1; }
+
+# Change `$TEXMFLS_R/' to `./'.
+dir=`echo $dir | sed "s%^$TEXMFLS_R/%./%g"`
+
+# May as well always put in a new directory entry; presumably cron will
+# come along soon enough and clean things up.
+echo "$dir:" >>"$db_file"
+echo "$file" >>"$db_file"
+
+exit 0

@@ -1,0 +1,1314 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmoduleanimations.code.tex}
+
+
+% We need the animation system abstraction:
+
+\input pgfsysanimations.code.tex
+
+
+% Animate an attribute over time
+%
+% #1 = an attribute
+% #2 = configuration keys
+%
+% This command adds animation commands for the attribute given in #1
+% of some future object to the current graphic scope. For instance,
+% when #1 is  "fill opacity" then the fill opacity of the object will
+% change over time. The object to which the command refers is
+% specified using a special key in #2.
+%
+% The keys in #2 specify how the changes occur over time. There are a
+% number of keys that have an effect on the animation "as a whole"
+% (like "repeats") while the most central key is the entry key. This
+% key takes two parameters: a time and a value. It specifies that at
+% the given time the attribute should have the specified value. The
+% times must be given in ascending order. Between the times given in
+% this way, the values of the attribute will be interpolated; you can
+% influence the details of how this interpolation is done using
+% additional keys.
+%
+% The keys in #2 are given in key-value syntax and can be given in any
+% order, except that the entry keys must be given in order of
+% ascending times.
+%
+% The syntax of the second parameter of the entry key depends on
+% #1. Currently, these are:
+%
+% Attribute                 Value Type
+% ---------------------------------------
+% fill opacity              scalar
+% stroke opacity            scalar
+% opacity                   scalar
+% visible                   boolean
+% line width                dimension
+% fill                      color
+% stroke                    color
+% motion                    motion
+% translate                 point
+% scale                     scaling
+% rotate                    scalar
+% xskew                     scalar
+% yskew                     scalar
+% path                      path
+% softpath                  softpath
+% view                      viewbox
+% dash phase                dimension
+% dash pattern              dashpattern
+% none                      any
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{entry={0s}{1}, entry={2s}{0}}
+
+\def\pgfanimateattribute#1#2{%
+  \pgfanimateattributecode{#1}{\pgfkeys{/pgf/animation/.cd,#2}}%
+}%
+
+
+% Variant of \pgfanimateattribute
+%
+% #1 = attribute
+% #2 = code
+%
+% Description:
+%
+% A version of \pgfanimateattribute where instead of keys #2 you
+% provide a code #2 that calls the animation keys itself.
+
+\def\pgfanimateattributecode#1#2{%
+  {%
+    \pgfkeys{/pgf/@animation attributes/.cd,#1}%
+    #2%
+    \csname pgf@animation@check@\pgf@animation@attribute\endcsname%
+    \pgfsysanimate{\pgf@animation@attribute}%
+  }%
+}%
+
+
+
+% Create a time snapshot
+%
+% #1 = a time
+%
+% Description:
+%
+% This command should be called in a scope prior to all calls of
+% animation commands in that scope. When called, all animations will
+% be "intercepted" and, instead of creating the animation code, normal
+% code will be generated that shows the state of the animation at the
+% specified "moment" #1. Since no animation code is involved, this
+% works with all drivers.
+%
+% The command \pgfsnapshotafter works the same way as \pgfsnapshot,
+% only the timing is slightly different: Conceptually, #1 is
+% interpreted as "#1+epsilon". For instance, if there are two values
+% specified for the time #1, then \pgfsnapshot will use the first
+% while \pgfsnapshotafter will use the second. Likewise, when an
+% animation ends at time #1, \pgfsnapshot will still us the
+% animation's value, while \pgfsnapshotafter will not.
+%
+% Example:
+%
+% {
+%   \pgfsnapshot{1.2s}
+%   \pgfanimateattribute{fill opacity}{entry={0s}{1}, entry={2s}{0}}
+%   \fill (0,0) rectangle (1,1);
+% }
+
+\def\pgfsnapshot#1{\pgfparsetime{#1}\expandafter\pgfsysanimsnapshot\expandafter{\pgftimeresult}}%
+\def\pgfsnapshotafter#1{\pgfparsetime{#1}\expandafter\pgfsysanimsnapshotafter\expandafter{\pgftimeresult}}%
+
+
+% The animation attributes
+
+\pgfkeys{/pgf/@animation attributes/.cd,
+  visible/.code=\pgf@animate@attr{visibility}{mapped}\def\pgf@anim@map@true{visible}\def\pgf@anim@map@false{hidden},
+  stage/.code=\pgf@animate@attr{visibility}{mapped}\def\pgf@anim@map@true{visible}\def\pgf@anim@map@false{hidden}\pgfsysanimkeybase\pgfsysanimvaltext{hidden},
+  opacity/.code=\pgf@animate@attr{opacity}{scalar},
+  fill opacity/.code=\pgf@animate@attr{fillopacity}{scalar},
+  draw opacity/.code=\pgf@animate@attr{strokeopacity}{scalar},
+  stroke opacity/.style=draw opacity,
+  line width/.code=\pgf@animate@attr{linewidth}{dimension},
+  fill/.code=\pgf@animate@attr{fillcolor}{color},
+  draw/.code=\pgf@animate@attr{strokecolor}{color},
+  color/.code=\pgf@animate@attr{color}{color},
+  stroke/.style=draw,
+  motion/.code=\pgf@animate@attr{motion}{scalar},
+  translate/.code=\pgf@animate@attr{translate}{point},
+  scale/.code=\pgf@animate@attr{scale}{scaling},
+  rotate/.code=\pgf@animate@attr{rotate}{scalar},
+  xskew/.code=\pgf@animate@attr{skewx}{scalar},
+  yskew/.code=\pgf@animate@attr{skewy}{scalar},
+  skew x/.style=xskew,
+  skew y/.style=yskew,
+  path/.code=\pgf@animate@attr{path}{path},
+  softpath/.code=\pgf@animate@attr{path}{softpath},
+  view/.code=\pgf@animate@attr{viewbox}{viewbox},
+  dash/.code=\pgf@animate@attr{dash}{dash},
+  none/.code=\pgf@animate@attr{none}{none},
+}%
+
+\def\pgf@animate@attr#1#2{%
+  \def\pgf@animation@attribute{#1}%
+  \expandafter\let\expandafter\pgfanim@type@parser\csname pgfanim@parse@type@#2\endcsname%
+}%
+
+
+
+% The time parser
+%
+% #1 = a time
+%
+% This macro parses the time in #1, but adds some support for times:
+%
+% 1) The postfix operator "s" is added, which has no effect.
+% 2) The postfix operator "ms" is added, which divides a number by
+%    1000, so "2ms" equals "0.002".
+% 3) The postfix operator "min" is added, which multiplies a number by
+%    60.
+% 4) The postfix operator "h" is added, which multiplies a number by
+%    3600.
+% 5) The infix operator ":" is redefined, so that it multiplies its
+%    first argument by 60 and adds the second. This implies that
+%    "1:20" equals "80" and "01:00:00" equals "3600".
+% 6) The parsing of octal numbers is switched off to allow things like
+%    "01:08" for 68s.
+
+\def\pgfparsetime#1{%
+  \begingroup%
+    \pgfmathdeclareoperator{s}{@seconds}{1}{postfix}{600}%
+    \pgfmathdeclareoperator{m}{m@encountered}{1}{postfix}{600}%
+    \pgfmathdeclareoperator{i}{i@encountered}{1}{postfix}{600}%
+    \pgfmathdeclareoperator{n}{@minutes}{1}{postfix}{600}%
+    \pgfmathdeclareoperator{h}{@hours}{1}{postfix}{600}%
+    \pgfmathdeclareoperator{:}{time@colon}{2}{infix}{50}%
+    \pgfmath@octalparsingfalse%
+    \pgfmathparse{#1}%
+  \expandafter\endgroup%
+  \expandafter\def\expandafter\pgftimeresult\expandafter{\pgfmathresult}%
+}%
+
+\newif\ifpgfanim@m@encountered
+\newif\ifpgfanim@i@encountered
+\pgfmathdeclarefunction{@seconds}{1}{%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \ifpgfanim@m@encountered%
+      \divide\pgfmath@x by1000\relax%
+    \fi%
+    \global\pgfanim@m@encounteredfalse%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+\pgfmathdeclarefunction{m@encountered}{1}{%
+  \global\pgfanim@m@encounteredtrue%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+\pgfmathdeclarefunction{i@encountered}{1}{%
+  \ifpgfanim@m@encountered%
+    \global\pgfanim@m@encounteredfalse%
+    \global\pgfanim@i@encounteredtrue%
+  \else%
+    \pgfmath@error{Unexpected i}{}%
+  \fi%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+\pgfmathdeclarefunction{@minutes}{1}{%
+  \ifpgfanim@i@encountered%
+    \global\pgfanim@i@encounteredfalse%
+  \else%
+    \pgfmath@error{Unexpected n}{}%
+  \fi%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@x60\pgfmath@x\relax%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+\pgfmathdeclarefunction{@hours}{1}{%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@x3600\pgfmath@x\relax%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+\pgfmathdeclarefunction{time@colon}{2}{%
+  \begingroup%
+    \pgfmath@x=#1pt\relax%
+    \pgfmath@x=60\pgfmath@x\relax%
+    \pgfmath@y=#2pt\relax%
+    \advance\pgfmath@x by\pgfmath@y%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+
+
+
+% Sets general animation attributes
+%
+% #1 = key-value pairs that are executed for the path /pgf/animation/
+
+\def\pgfanimationset{\pgfqkeys{/pgf/animation}}%
+
+
+% Sets the target animation scope that should be animated.
+%
+% #1 = A name that will be used with an idscope.
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{whom=some scope, entry={0s}{1}, entry={1s}{0}}
+% \begin{scope}[name=some scope]
+%   \draw (0,0) -- (1,1);
+%   \draw (1,0) -- (2,1);
+% \end{scope}
+
+\pgfanimationset{
+  whom/.code={%
+    \pgf@anim@decomp{#1}%
+    \pgfidrefnextuse\pgf@anim@id\pgf@anim@id@name%
+    \expandafter\expandafter\expandafter\pgfsysanimkeywhom\expandafter\expandafter\expandafter{\expandafter\pgf@anim@id\expandafter}\expandafter{\pgf@anim@type}%
+    \let\pgf@anim@whom@id\pgf@anim@id%
+    \let\pgf@anim@whom@type\pgf@anim@type%
+  }
+}%
+
+\def\pgf@anim@decomp#1{%
+  \edef\pgf@temp{#1}%
+  \expandafter\pgfutil@in@\expandafter.\expandafter{\pgf@temp}%
+  \ifpgfutil@in@%
+    \expandafter\pgf@anim@decomp@\pgf@temp\pgf@stop%
+  \else%
+    \expandafter\pgf@anim@decomp@\pgf@temp.\pgf@stop%
+  \fi%
+}%
+\def\pgf@anim@decomp@#1.#2\pgf@stop{%
+  \def\pgf@anim@id@name{#1}%
+  \def\pgf@anim@type{#2}%
+}%
+
+
+% Assigns a name to this animation so that it can be used as an event
+% id in another animation
+%
+% #1 = A name
+%
+% The name "previous" is special and always refers to the most recent
+% animation before the animation currently being constructed.
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{name=anim 1, entry={0s}{1}, entry={1s}{0}}
+% \pgfanimateattribute{fill opacity}{begin on={end,of=anim 1}, entry={0s}{1}, entry={1s}{0}}
+
+\pgfanimationset{
+  name/.code=\pgfuseid{#1},
+}%
+
+
+
+
+% Configures whether an animation can be restarted
+%
+% Some animations can restart when certain events take place. This key
+% configures this. Setting it to
+%
+% "true" allows a restart at any time,
+% "false" does not allow a restart,
+% "when not active" allows a restart only, when the element is not
+% active.
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{entry={0s}{1}, entry={1s}{0}, restart=false}
+
+\pgfanimationset{
+  restart/.is choice,
+  restart/.default=true,
+  restart/true/.code=\pgfsysanimkeyrestartalways,
+  restart/false/.code=\pgfsysanimkeyrestartnever,
+  restart/never/.code=\pgfsysanimkeyrestartnever,
+  restart/when not active/.code=\pgfsysanimkeyrestartwhennotactive,
+}%
+
+
+% Sets the number times an animation should repeat
+%
+% #1 = A string of the following form:
+%
+% [<empty> | <number> | for <time>] ["accumulating"]
+%
+% When empty (the default value) the animation repeats forever.
+%
+% When a <number> is provided, the animation will repeat <number>
+% times, which need not be an integer.
+%
+% When a <time> is given, the repeating will stop after this much time.
+%
+% When the optional "accumulating" is specified, the repeat
+% accumulates, otherwise each repeat begins with the original start
+% value.
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{repeats, entry={0s}{1}, entry={6s}{0}}
+% \pgfanimateattribute{fill opacity}{repeats=2, entry={0s}{1}, entry={6s}{0}}
+% \pgfanimateattribute{fill opacity}{repeats=2 accumulating, entry={0s}{1}, entry={6s}{0}}
+% \pgfanimateattribute{fill opacity}{repeats=for 15s, entry={0s}{1}, entry={6s}{0}}
+
+\pgfanimationset{
+  repeats/.code={%
+    \pgfutil@in@{accumulating\pgf@stop}{#1\pgf@stop}%
+    \ifpgfutil@in@%
+      \pgfsysanimkeyaccumulate%
+      \pgfanim@parse@acc#1\pgf@stop%
+    \else%
+      \pgfsysanimkeynoaccumulate%
+      \pgfanim@parse@noacc{#1}%
+    \fi%
+  },
+  repeats/.default=,
+  repeat/.style={repeats={#1}},
+  repeat/.default=,
+}%
+\def\pgfanim@parse@acc#1accumulating\pgf@stop{%
+  \pgfanim@parse@noacc{#1}%
+}%
+\def\pgfanim@parse@noacc#1{%
+  \pgfutil@in@{\pgf@stop for}{\pgf@stop#1}%
+  \ifpgfutil@in@%
+    \pgfanim@parse@for#1\pgf@stop%
+  \else%
+    \def\pgf@temp{#1}%
+    \ifx\pgf@temp\pgfutil@empty%
+      \pgfsysanimkeyrepeatindefinite%
+    \else%
+      \pgfmathparse{#1}%
+      \expandafter\pgfsysanimkeyrepeat\expandafter{\pgfmathresult}%
+    \fi%
+  \fi%
+}%
+\def\pgfanim@parse@for for#1\pgf@stop{\pgfparsetime{#1}\expandafter\pgfsysanimkeyrepeatdur\expandafter{\pgftimeresult}}%
+
+
+
+
+
+% Specifies that an animation should begin or end at a certain time
+% (relative to the current context). The "begin..." options may be
+% used multiple times and their effects accumulate, likewise for the
+% "end..." options.
+%
+% #1 = A time
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{begin=2s, end=2.5s, entry={0s}{1}, entry={1s}{0}}
+
+\pgfanimationset{
+  begin/.code=\pgfparsetime{#1}\expandafter\pgfsysanimkeyoffset\expandafter{\pgftimeresult}{begin},
+  end/.code=\pgfparsetime{#1}\expandafter\pgfsysanimkeyoffset\expandafter{\pgftimeresult}{end},
+}%
+
+
+
+% Specifies that an animation should begin (or end) when a certain
+% event takes place.
+%
+% #1 = A list of key-value pairs.
+%
+% The following keys are allowed:
+%
+% event=some event : The begin / end is triggered by that event. The
+%                    list of allowed events is defined in the SVG
+%                    standard.
+% of=some name     : The event does not refer to the current group,
+%                    but to the object named "some name", which must
+%                    previously have been named \pgfuseid. If some
+%                    name contains a period, the part before the
+%                    period must be the name of the id, the part
+%                    following it the type of the id.
+% key=some key     : The trigger is some key being pressed
+% repeat=number    : The trigger is that an animation has been
+%                    repeated number times.
+% delay=time       : A delay, may be negative.
+%
+% These keys are executed with the path prefix /pgf/animation/events.
+%
+% Some of them are predefined:
+%
+% "click" is a shorthand for "event=click"
+% "focus in" is a shorthand for "event=focusin"
+% "focus out" is a shorthand for "event=focusout"
+% "activate" is a shorthand for "event=activate"
+% "mouse down" is a shorthand for "event=mousedown"
+% "mouse up" is a shorthand for "event=mouseup"
+% "mouse over" is a shorthand for "event=mouseover"
+% "mouse move" is a shorthand for "event=mousemove"
+% "mouse out" is a shorthand for "event=mouseout"
+% "begin" is a shorthand for "event=begin"
+% "end" is a shorthand for "event=end"
+%
+% Example:
+%
+% % Begin after 5s or when clicked:
+% \pgfanimateattribute{fill opacity}{begin=5s, begin on=click, entry={0s}{1}, entry={1s}{0}}
+%
+% % Begin, when an object named "button" is clicked
+% \pgfanimateattribute{fill opacity}{begin on={click, of=button}, entry={0s}{1}, entry={1s}{0}, name=another animation}
+%
+% % Begin 1s after some other animation ends
+% \pgfanimateattribute{fill opacity}{begin on={end, of=another animation, delay=1s}, entry={0s}{1}, entry={1s}{0}}
+
+\pgfanimationset{
+  begin on/.code={\pgfanim@make@event{#1}{begin}},%
+  end on/.code={\pgfanim@make@event{#1}{end}},
+}%
+
+\def\pgfanim@make@event#1#2{%
+  \let\pgfanim@event@event\pgfutil@empty%
+  \let\pgf@anim@id\pgfutil@empty%
+  \let\pgf@anim@type\pgfutil@empty%
+  \let\pgfanim@event@key\pgfutil@empty%
+  \let\pgfanim@event@repeat\pgfutil@empty%
+  \let\pgfanim@event@delay\pgfutil@empty%
+  \pgfkeys{/pgf/animation/events/.cd,#1}%
+  \ifx\pgfanim@event@key\pgfutil@empty%
+    \ifx\pgfanim@event@repeat\pgfutil@empty%
+      \ifx\pgfanim@event@event\pgfutil@empty%
+        \pgferror{No event specified}%
+      \else%
+        \pgfsysanimkeyevent{\pgf@anim@id}{\pgf@anim@type}{\pgfanim@event@event}{\pgfanim@event@delay}{#2}%
+      \fi%
+    \else%
+      \pgfsysanimkeyrepeatevent{\pgf@anim@id}{\pgf@anim@type}{\pgfanim@event@repeat}{\pgfanim@event@delay}{#2}%
+    \fi%
+  \else%
+    \pgfsysanimkeyaccesskey{\pgfanim@event@key}{\pgfanim@event@delay}{#2}%
+  \fi%
+}%
+
+\pgfkeys{/pgf/animation/events/.cd,
+  event/.store in=\pgfanim@event@event,
+  of/.code={%
+    \pgf@anim@decomp{#1}%
+    \pgfidrefprevuse\pgf@anim@id\pgf@anim@id@name%
+    \ifx\pgf@anim@id\pgfutil@empty%
+      \pgferror{Unknown object/node name '\pgf@anim@id@name'. Did you
+        mean 'of next=\pgf@anim@id@name'?}%
+    \fi%
+  },
+  of next/.code={%
+    \pgf@anim@decomp{#1}%
+    \pgfidrefnextuse\pgf@anim@id\pgf@anim@id@name%
+  },
+  of id/.code=\def\pgf@anim@id{#1},
+  key/.store in=\pgfanim@event@key,
+  repeat/.code=\pgfmathparse{#1}\let\pgfanim@event@repeat\pgfmathresult,
+  delay/.code=\pgfparsetime{#1}\let\pgfanim@event@delay\pgftimeresult,
+  click/.style={event=click},
+  focus in/.style={event=focusin},
+  focus out/.style={event=focusout},
+  mouse down/.style={event=mousedown},
+  mouse up/.style={event=mouseup},
+  mouse over/.style={event=mouseover},
+  mouse move/.style={event=mousemove},
+  mouse out/.style={event=mouseout},
+  begin/.style={event=begin},
+  end/.style={event=end},
+}%
+
+
+% Specifies the timeline start for a snapshot
+%
+% #1 = a time
+%
+% Description:
+%
+% What a snapshot is taken of an animation (using \pgfsnapshot), all
+% animations normally start at time 0s. When this key is used, the
+% animation's timeline start is considered to be at moment #1
+% instead.
+
+\pgfanimationset{
+  begin snapshot/.code=
+    \pgfparsetime{#1}\expandafter\pgfsysanimkeysnapshotstart\expandafter{\pgftimeresult}
+}%
+
+
+% Specifies the origin for transforming animations
+%
+% #1 = a pgf point
+%
+% Specifies the origin of transformations (for instance, a rotate will
+% rotate around this point).
+%
+% Example:
+%
+% \pgfanimateattribute{rotate}{entry={0s}{0}, entry={1s}{90}, origin=\pgfpoint{1cm}{1cm}}
+
+\pgfanimationset{
+  origin/.code={%
+    \pgf@process{#1}%
+    \edef\pgf@marshal{%
+      \noexpand\pgfsysanimkeycanvastransform%
+      {\noexpand\pgftransformshift{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}{\noexpand\pgflowlevelsynccm}}%
+      {\noexpand\pgftransforminvert\noexpand\pgflowlevelsynccm}%
+      \noexpand\pgf@anim@save@transform{\noexpand\pgftransformshift{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}%
+    }%
+    \pgf@marshal%
+  },
+}%
+
+\pgfsysanimkeycanvastransform{{\pgflowlevelsynccm}}{\pgftransforminvert\pgflowlevelsynccm}%
+
+
+
+% Specifies the transforming for the animation coordinate system
+%
+% #1 = code that changes the pgf coordinate system
+%
+% Specifies an additional transformation of the coordinate system for
+% animations.
+%
+% Example:
+%
+% \pgfanimateattribute{shift}{entry={0s}{\pgfpointorigin}, entry={1s}{\pgfpoint{1cm}{0cm}}, transform=\pgftransformrotate{30}}
+
+\pgfanimationset{
+  transform/.code={%
+    \pgfsysanimkeycanvastransform{#1{\pgflowlevelsynccm}}{\pgftransforminvert\pgflowlevelsynccm}%
+    \pgf@anim@save@transform{#1}%
+  },
+}%
+
+
+
+% Specifies a motion path.
+%
+% #1 = pgf commands for constructing a path
+%
+% Use this key to specify a motion path for the motion attribute. The
+% values of the "entry" key specify fractions along this path.
+%
+% Example:
+%
+% \pgfanimateattribute{motion}{
+%   entry={0s}{0}, entry={1s}{1},
+%   along=\pgfpathmoveto{\pgfpointorigin} \pgfpathlineto{\pgfpoint{1cm}{1cm}}
+%   }
+
+\pgfanimationset{
+  along/.code=%
+  {%
+    \pgfsyssoftpath@getcurrentpath\pgfanim@save@path%
+    \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+    #1%
+    \pgfsyssoftpath@getcurrentpath\pgfanim@the@path%
+    \global\let\pgfanim@the@path\pgfanim@the@path%
+    \pgfsyssoftpath@setcurrentpath\pgfanim@save@path%
+  }%
+  \expandafter\pgf@anim@protocol@path@size\pgfanim@the@path\pgf@stop%
+  \expandafter\pgfsysanimkeymovealong\expandafter{\pgfanim@the@path}%
+}%
+
+
+% Specifies a motion soft path.
+%
+% #1 = a pgf soft path (result of calling \pgfsyssoftpath@getcurrentpath)
+%
+% Use this key to specify a motion path for the motion attribute when
+% a softpath has already been constructed.
+%
+% Example:
+%
+% \pgfanimateattribute{motion}{entry={0s}{0}, entry={1s}{1},
+%    along softpath=\pgfsyssoftpath@movetotoken {0pt}{0pt}\pgfsyssoftpath@linetotoken {10pt}{10pt}}
+
+\pgfanimationset{
+  along softpath/.code=%
+  \pgf@anim@protocol@path@size#1\pgf@stop%
+  \pgfsysanimkeymovealong{#1}%
+}%
+
+
+\def\pgf@anim@protocol@path@size{%
+  \pgfutil@ifnextchar\pgf@stop\pgfutil@gobble\pgf@anim@protocol@path@size@%
+}%
+\def\pgf@anim@protocol@path@size@#1#2#3{%
+  \pgf@protocolanimsizes@direct{#2}{#3}%
+  \pgf@anim@protocol@path@size%
+}%
+
+
+% Configures whether the motion is rotated along the path.
+%
+% Example:
+%
+% \pgfanimateattribute{motion}{rotate along, entry={0s}{0}, entry={1s}{1},
+%    along=\pgfpathmoveto{\pgfpointorigin} \pgfpathlineto{\pgfpoint{1cm}{1cm}}}
+
+\pgfanimationset{
+  rotate along/.is choice,
+  rotate along/.default=true,
+  rotate along/true/.code=\pgfsysanimkeyrotatealong,
+  rotate along/false/.code=\pgfsysanimkeynorotatealong,
+}%
+
+
+
+% Specifies an entry
+%
+% #1 = A time. This time will be parsed using \pgfparsetime
+% #2 = A value. The format of this value depends on the current type
+%      of the animation attribute. (So for an animation of the "fill
+%      opacity", #1 must be a scalar value, for an animation of the "fill"
+%      color, #1 must be a color, and so on.)
+%      If #2 is the special text "current value", then the current
+%      value will be used. For SVG, this is allowed only when exactly
+%      two entries are specified and this special value is used for
+%      the first one.
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{entry={0s}{0}, entry={1s}{1}}
+
+\pgfanimationset{entry/.code 2 args=\pgf@anim@entry{#1}{#2}}%
+\def\pgf@anim@entry#1#2{%
+  \pgf@anim@entry@giventrue%
+  \pgfparsetime{#1}%
+  \edef\pgf@marshal{\noexpand\pgfsysanimkeytime{\pgftimeresult}\pgf@anim@entry@spline\pgf@anim@exit@spline}%
+  \pgf@marshal%
+  \def\pgf@temp{#2}%
+  \ifx\pgf@temp\pgf@special@current@text%
+    \pgfsysanimvalcurrent%
+  \else%
+    \pgfanim@type@parser{#2}%
+  \fi%
+}%
+\def\pgf@special@current@text{current value}%
+\newif\ifpgf@anim@entry@given
+
+
+% Specifies a base value
+%
+% #1 = A value. The format is as for the entry key.
+%
+% Description:
+%
+% Will set the "base" value of the animation, which is a value that is
+% used when the animation is not active.
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{base = 0.5, entry={0s}{0.5}, entry={1s}{1}}
+
+\pgfanimationset{base/.code=\pgf@anim@base{#1}}%
+\def\pgf@anim@base#1{%
+  \pgfsysanimkeybase%
+  \pgfanim@type@parser{#1}%
+}%
+
+
+% Specifies that there is an entry "at infinity".
+%
+% When an animation ends, its "effect" can either persist or it can be
+% removed. Setting "freeze at end" to true will cause it to persist,
+% otherwise it will be removed.
+%
+% Example:
+%
+% \pgfanimateattribute{fill opacity}{entry={0s}{1}, entry={1s}{0}, freeze at end}
+
+\pgfanimationset{
+  freeze at end/.is choice,
+  freeze at end/.default=true,
+  freeze at end/true/.code=\pgfsysanimkeyfreezeatend,
+  freeze at end/false/.code=\pgfsysanimkeyremoveatend,
+}%
+
+
+
+% Specifies an entry or exit spline control
+%
+% #1 = time fraction
+% #2 = attribute fraction
+%
+% Description:
+%
+% Suppose that an animation is supposed to interpolate a attribute's
+% value between the two values "50" and "100" over a time of 10s. The
+% simplest way of doing so is to do a linear interpolation, where the
+% value as, say, 1s is 55, at 2s it is 60, and so on.
+%
+% Unfortunately, the linear interpolation does not "look" nice in many
+% cases since the acceleration of a linear interpolation is zero
+% during the animation, but infinite at the beginning and at the end;
+% which looks "jerky".
+%
+% To avoid this, you can specify that the time--attribute curve should
+% not be a straight line, but rather a curve. You specify this curve
+% using a spline.
+%
+% The most logical "coordinate rectangle" used for this spline in our
+% example would be (0s,50) and (10s,100) and we would like to specify
+% something like "(0s,50) .. controls (5s,50) and (9s,100)
+% .. (10s,100)". This would result in a time--attribute curve where
+% the attribute at 50 changes slowly at 0s and also arrives slowly at
+% 100 at 10s, but speeds up between these values.
+%
+% We call the first control point (5s,50) the "exit control" and call
+% (9s,100) the "entry control": The first control dictates how quickly
+% or slowly a time point is left, the second dictates how quickly or
+% slowly we enter the next one.
+%
+% The control points are, however, not specified in the coordinate
+% system indicated above. Rather, the rectangle (0s,50) to (10s, 100),
+% gets normalized to (0,0) to (1,1). The control point (5s,50) would
+% thus become (0.5,0) and (9s,100) becomes (0.9,1).
+%
+% Example:
+%
+% \pgfanimateattribute{rotate}{
+%   exit control={0.5}{0},
+%   entry control={0.9}{1},
+%   entry={0s}{50},
+%   entry={10s}{100}}
+
+\pgfanimationset{
+  entry control/.code 2 args={%
+    \pgfmathsetmacro\pgf@temp@t{#1}%
+    \pgfmathsetmacro\pgf@temp@a{#2}%
+    \edef\pgf@anim@entry@spline{{\pgf@temp@t}{\pgf@temp@a}}%
+  },
+  exit control/.code 2 args={%
+    \pgfmathsetmacro\pgf@temp@t{#1}%
+    \pgfmathsetmacro\pgf@temp@a{#2}%
+    \edef\pgf@anim@exit@spline{{\pgf@temp@t}{\pgf@temp@a}}%
+  },
+  stay/.code=\let\pgf@anim@exit@spline\pgfsys@stay@text,%
+  jump/.code=\let\pgf@anim@entry@spline\pgfsys@jump@text,%
+  linear/.style={entry control={1}{1},exit control={0}{0}},
+}%
+\def\pgf@anim@entry@spline@base{{1}{1}}%
+\def\pgf@anim@exit@spline@base{{0}{0}}%
+
+\def\pgf@anim@reset@linear{\let\pgf@anim@entry@spline\pgf@anim@entry@spline@base\let\pgf@anim@exit@spline\pgf@anim@exit@spline@base}%
+\pgf@anim@reset@linear
+
+
+
+% Specifies how much arrow tips should be shortened (as in
+% \pgfsetshortenstart)
+%
+% #1 = an additional shortening distance the path start.
+%
+% Description:
+%
+% Works like \pgfsetshortenstart, only for animated paths.
+
+\pgfanimationset{
+  shorten </.code={%
+    \ifpgf@anim@entry@given%
+      \pgferror{You must specify shorten < prior to the path entries}%
+    \else%
+      \pgfmathsetmacro\pgf@anim@marker@extra@shorten@start{#1}%
+      \edef\pgf@anim@marker@extra@shorten@start{\pgf@anim@marker@extra@shorten@start pt}%
+    \fi%
+  },
+  shorten >/.code={%
+    \ifpgf@anim@entry@given%
+      \pgferror{You must specify shorten < prior to the path entries}%
+    \else%
+      \pgfmathsetmacro\pgf@anim@marker@extra@shorten@end{#1}%
+      \edef\pgf@anim@marker@extra@shorten@end{\pgf@anim@marker@extra@shorten@end pt}%
+    \fi%
+  },
+}%
+\def\pgf@anim@marker@extra@shorten@start{0pt}%
+\def\pgf@anim@marker@extra@shorten@end{0pt}%
+\def\pgf@anim@marker@shorten@start{0pt}%
+\def\pgf@anim@marker@shorten@end{0pt}%
+
+% Specifies the arrow tips used for path animations
+%
+% #1 = an arrow specification of the form <start>-<end> as for the
+%      command \pgfsetarrows
+%
+% Description:
+%
+% Specifies arrow tips that are used in a path animation. Note that in
+% order to set the arrow tips of a path that is animated, you always
+% have to use this command. In particular, you should *not* set arrow
+% tips for the to-be-animated path, but use this key and the base key
+% to install a base path with arrow tips.
+
+\pgfanimationset{
+  arrows/.code={%
+    \ifpgf@anim@entry@given%
+      \pgferror{You must specify animation arrows prior to the path entries}%
+    \else%
+      \pgf@anim@parser@arrows#1\pgf@stop%
+    \fi%
+  },
+}%
+
+\def\pgf@anim@parser@arrows#1-#2\pgf@stop{%
+  \pgf@anim@prepare@arrow@start{#1}%
+  \pgf@anim@prepare@arrow@end{#2}%
+  \expandafter\expandafter\expandafter\pgfsysanimkeytipmarkers\expandafter\expandafter\expandafter{\expandafter\pgf@anim@marker@id@start\expandafter}\expandafter{\pgf@anim@marker@id@end}%
+}%
+
+\def\pgf@anim@prepare@arrow@start#1{%
+  \def\pgf@anim@temp{#1}%
+  \ifx\pgf@anim@temp\pgfutil@empty%
+    \let\pgf@anim@marker@id@start\pgfutil@empty%
+    \def\pgf@anim@marker@shorten@start{0pt}%
+  \else%
+    {%
+      \pgfsetarrowsstart{#1}%
+      \pgf@anim@prep@marker@arrow\pgf@start@tip@sequence\pgf@anim@marker@id\pgf@anim@marker@shorten%
+      \global\let\pgf@anim@marker@id@start\pgf@anim@marker@id%
+      \global\let\pgf@anim@temp\pgf@anim@marker@shorten%
+    }%
+    \let\pgf@anim@marker@shorten@start\pgf@anim@temp%
+  \fi%
+}%
+
+\def\pgf@anim@prepare@arrow@end#1{%
+  \def\pgf@anim@temp{#1}%
+  \ifx\pgf@anim@temp\pgfutil@empty%
+    \let\pgf@anim@marker@id@end\pgfutil@empty%
+    \def\pgf@anim@marker@shorten@end{0pt}%
+  \else%
+    {%
+      \pgfsetarrowsend{#1}%
+      \pgf@anim@prep@marker@arrow\pgf@end@tip@sequence\pgf@anim@marker@id\pgf@anim@marker@shorten%
+      \global\let\pgf@anim@marker@id@end\pgf@anim@marker@id%
+    }%
+    \let\pgf@anim@marker@shorten@end\pgf@anim@marker@shorten%
+  \fi%
+}%
+
+
+% Draw an arrow using markers
+
+\def\pgf@anim@prep@marker@arrow#1#2#3{%
+  % #1 = tip sequence
+  % #2 = macro for storing marker code
+  % #3 = macro for storing shortening length
+  %
+  % First, compute id's:
+  {%
+    \let\pgf@arrow@handle\pgf@anim@marker@id@test%
+    \let\pgf@arrow@handle@dot\relax%?
+    \global\let\pgf@anim@marker@id@list\pgfutil@empty%
+    #1%
+  }%
+  \expandafter\let\expandafter#2\csname pgfanim@marker@cache@\pgf@anim@marker@id@list\endcsname%
+  \expandafter\let\expandafter#3\csname pgfanim@marker@cachel@\pgf@anim@marker@id@list\endcsname%
+  \ifx#2\relax% ok, have to create it!
+    \pgf@relevantforpicturesizefalse%
+    \pgfinterruptpath%
+      \pgf@arrow@compute@shortening{#1}%
+      \xdef#3{\the\pgf@xa}%
+      {%
+        \let\pgf@arrow@handle\pgf@anim@drawer@marker
+        \let\pgf@arrow@handle@dot\relax%
+        \pgfsys@marker@declare#2{%
+          \pgftransformxshift{-\pgf@xb}%
+          \pgftransformxshift{\pgf@xa}%
+          #1%
+        }%
+      }%
+    \endpgfinterruptpath%
+    \expandafter\global\expandafter\let\csname pgfanim@marker@cache@\pgf@anim@marker@id@list\endcsname#2%
+    \expandafter\global\expandafter\let\csname pgfanim@marker@cachel@\pgf@anim@marker@id@list\endcsname#3%
+  \fi%
+}%
+
+\def\pgf@anim@marker@id@test#1#2{%
+  \pgfarrows@getid{#1}{#2}%
+  \expandafter\expandafter\expandafter\pgf@arrow@drawer@shift\csname pgf@ar@ends@\pgf@arrow@id\endcsname%
+  \xdef\pgf@anim@marker@id@list{\pgf@anim@marker@id@list:\pgf@arrow@id\ifpgfarrowswap s\else n\fi\pgfarrows@slant w\the\pgf@xc}%
+}%
+
+\def\pgf@anim@drawer@marker#1#2{%
+  % Prepare:
+  {%
+    \pgfarrows@getid{#1}{#2}%
+    % Do shift:
+    \expandafter\expandafter\expandafter\pgf@arrow@drawer@shift\csname pgf@ar@ends@\pgf@arrow@id\endcsname%
+    % Do slant:
+    \ifdim\pgfarrows@slant pt=0pt%
+    \else%
+      \pgftransformxslant{\pgfarrows@slant}%
+    \fi%
+    % do swap:
+    \ifpgfarrowswap%
+      \pgftransformyscale{-1}%
+    \fi%
+    {%
+      \csname pgf@ar@saves@\pgf@arrow@id\endcsname%
+      \pgfsys@beginscope%
+        \pgf@arrows@color@setup%
+        \pgflowlevelsynccm\csname pgf@ar@cache@\pgf@arrow@id\endcsname%
+      \pgfsys@endscope%
+    }%
+  \expandafter}%
+  % Transform to next tip:
+  \expandafter\pgftransformxshift\expandafter{\the\pgf@xc}%
+}%
+
+
+
+
+
+
+
+
+
+% The parsers
+
+% Parse no value
+%
+% #1 is ignored
+%
+% Example:
+%
+% entry = {0s}{5+6}
+
+\def\pgfanim@parse@type@none#1{%
+  \pgfsysanimvalnone%
+}%
+
+% Parse a scalar
+%
+% #1 is a number parsed using \pgfmathparse
+%
+% Example:
+%
+% entry = {0s}{5+6}
+
+\def\pgfanim@parse@type@scalar#1{%
+  \pgfmathparse{#1}%
+  \expandafter\pgfsysanimvalscalar\expandafter{\pgfmathresult}%
+}%
+
+
+% Parse a dimension
+%
+% #1 is a number parsed using \pgfmathparse
+%
+% Example:
+%
+% entry = {0s}{5cm + 2pt}
+
+\def\pgfanim@parse@type@dimension#1{%
+  \pgfmathparse{#1}%
+  \expandafter\pgfsysanimvaldimension\expandafter{\pgfmathresult pt}%
+}%
+
+
+
+% Parse a mapped text
+%
+% #1 is a text. It is looked up in \pgf@anim@map@#1 and gets replaced
+% by what this macro expands to.
+%
+% Example:
+%
+% entry = {0s}{true}
+
+\def\pgfanim@parse@type@mapped#1{%
+  {%
+    \expandafter\let\expandafter\pgf@temp\csname pgf@anim@map@#1\endcsname\relax%
+    \ifx\pgf@temp\relax%
+      \pgferror{Value '#1' not allowed for an animation for this attribute}%
+      \let\pgf@temp\pgfutil@empty%
+    \fi%
+  \expandafter}%
+  \expandafter\pgfsysanimvaltext\expandafter{\pgf@temp}%
+}%
+
+
+% Parse a color
+%
+% #1 is a color
+%
+% entry = {0s}{blue!20}
+
+\def\pgfanim@parse@type@color#1{%
+  \pgfsysanimvalcolor{#1}%
+}%
+
+
+% Parse a path
+%
+% #1 is a sequence of pgf path construction commands
+%
+% entry = {0s}{\pgfpathmoveto{\pgfpointorigin} \pgfpathlineto{\pgfpoint{1cm}{1cm}}}
+
+\def\pgfanim@parse@type@path#1{%
+  {%
+    \pgfsyssoftpath@getcurrentpath\pgfanim@save@path%
+    \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+    #1%
+    \pgfsyssoftpath@getcurrentpath\pgfanim@the@path%
+    \pgfprocessround{\pgfanim@the@path}{\pgfanim@the@path}%
+    \global\let\pgfanim@the@path\pgfanim@the@path%
+    \pgfsyssoftpath@setcurrentpath\pgfanim@save@path%
+  }%
+  \expandafter\pgfanim@parse@type@softpath\expandafter{\pgfanim@the@path}%
+}%
+
+
+% Parse a softpath
+%
+% #1 is a sequence of pgf softpath token commands
+%
+% entry = {0s}{\pgfsyssoftpath@movetotoken {0pt}{0pt}\pgfsyssoftpath@linetotoken {10pt}{10pt}}
+
+\def\pgfanim@parse@type@softpath#1{%
+  {%
+    \def\pgf@anim@path{#1}%
+    % Shorten?
+    \pgf@worryfalse%
+    \pgf@xb=\pgf@anim@marker@extra@shorten@start%
+    \advance\pgf@xb by\pgf@anim@marker@shorten@start%
+    \pgf@xc=\pgf@anim@marker@extra@shorten@end%
+    \advance\pgf@xc by\pgf@anim@marker@shorten@end%
+    \ifdim\pgf@xb=0pt\else\pgf@worrytrue\fi%
+    \ifdim\pgf@xc=0pt\else\pgf@worrytrue\fi%
+    \ifpgf@worry%
+      \edef\pgf@path@shortening@distance@end{\the\pgf@xc}%
+      \edef\pgf@path@shortening@distance@start{\the\pgf@xb}%
+      % Yes! Need to shorten.
+      \pgf@anim@shorten@path%
+    \fi%
+  \expandafter}%
+  \expandafter\pgfsysanimvalpath\expandafter{\pgf@anim@path}%
+}%
+
+
+\def\pgf@anim@shorten@path{%
+  \pgf@precise@shorteningfalse%
+  \let\pgf@path@shortening@distance\pgf@path@shortening@distance@end%
+  %
+  % Step 1: Split
+  %
+  \pgfprocesssplitpath{\pgf@anim@path}%
+  \pgfprocesssplitsubpath{\pgfprocessresultpathsuffix}%
+  %
+  % Step 2: extract
+  %
+  \expandafter\pgf@parse@end\pgfprocessresultsubpathsuffix\pgf@stop\pgf@stop\pgf@stop%
+  %
+  % Step 3: prep end
+  %
+  \pgf@prep@end%
+  %
+  % Step 4: shorten end
+  %
+  \ifdim\pgf@path@shortening@distance=0pt\else\pgf@do@shorten@end\fi%
+  %
+  \let\pgf@path@shortening@distance\pgf@path@shortening@distance@start%
+  %
+  % Step 5: extract
+  %
+  \expandafter\pgf@parse@start\pgfprocessresultpathsuffix\pgf@stop\pgf@stop\pgf@stop%
+  %
+  % Step 6: prep start
+  %
+  \pgf@prep@start%
+  %
+  % Step 7: shorten start
+  %
+  \ifdim\pgf@path@shortening@distance=0pt\else\pgf@do@shorten@start\fi%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgf@anim@path%
+  \expandafter\expandafter\expandafter{\expandafter\pgfprocessresultpathprefix\pgfprocessresultpathsuffix}%
+}%
+
+
+
+% Parse a point
+%
+% #1 is a point
+%
+% entry = {0s}{\pgfpoint{1cm}{2cm}}
+
+\def\pgfanim@parse@type@point#1{%
+  \pgf@process{#1}%
+  \pgf@protocolanimsizes\pgf@x\pgf@y%
+  \expandafter\expandafter\expandafter\pgfsysanimvaltranslate\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgf@x\expandafter}\expandafter{\the\pgf@y}%
+}%
+
+
+% Parse a scaling
+%
+% #1 = if #1 contains a comma, the two parts are passed to
+% pgfmathparse, otherwise the whole thing is passed to pgfmathparse.
+%
+% entry = {0s}{2}
+% entry = {0s}{2,1}
+
+\def\pgfanim@parse@type@scaling#1{%
+  \pgfutil@in@{,}{#1}%
+  \ifpgfutil@in@%
+    \pgfanim@unpack@comma#1\pgf@stop%
+  \else%
+    \pgfmathparse{#1}%
+    \expandafter\pgfsysanimvalscale\expandafter{\pgfmathresult}{\pgfmathresult}%
+  \fi%
+}%
+\def\pgfanim@unpack@comma#1,#2\pgf@stop{%
+  \pgfmathsetmacro{\pgf@anim@temp@x}{#1}%
+  \pgfmathsetmacro{\pgf@anim@temp@y}{#2}%
+  \expandafter\expandafter\expandafter\pgfsysanimvalscale\expandafter\expandafter\expandafter{\expandafter\pgf@anim@temp@x\expandafter}\expandafter{\pgf@anim@temp@y}%
+}%
+
+
+
+% Parse a viewbox
+%
+% #1 consists of two points, each in parentheses
+%
+% entry = {0s}{{\pgfpoint{1cm}{2cm}}{\pgfpoint{3cm}{4cm}}}
+
+\def\pgfanim@parse@type@viewbox#1{%
+  {%
+    \pgfanim@unpack@viewbox#1%
+    \xdef\pgf@anim@caller{\noexpand\pgfsysanimvalviewbox{\the\pgf@x}{\the\pgf@y}{\the\pgf@xa}{\the\pgf@ya}}%
+  }%
+  \pgf@anim@caller%
+}%
+\def\pgfanim@unpack@viewbox#1#2{%
+  \pgfpointtransformed{#2}%
+  \pgf@xa\pgf@x%
+  \pgf@ya\pgf@y%
+  \pgfpointtransformed{#1}%
+  \ifdim\pgf@xa<\pgf@x% swap needed
+    \pgf@xb=\pgf@x%
+    \pgf@x=\pgf@xa%
+    \pgf@xa=\pgf@xb%
+  \fi%
+  \ifdim\pgf@ya<\pgf@y% swap needed
+    \pgf@yb=\pgf@y%
+    \pgf@y=\pgf@ya%
+    \pgf@ya=\pgf@yb%
+  \fi%
+}%
+
+
+
+
+% Parse a dash pattern
+%
+% #1,#2 is a dash pattern as in \pgfsetdash
+%
+% entry = {0s}{{{1pt}{2pt}{3pt}{1pt}}{1pt}}
+
+\def\pgfanim@parse@type@dash#1{\pgfanim@parse@type@dash@#1}%
+\def\pgfanim@parse@type@dash@#1#2{%
+  \def\pgf@temp{}%
+  \def\pgf@next{\pgf@strip}%
+  \pgf@strip#1{pgf@stop}%
+  \expandafter\pgfsysanimvaldash\expandafter{\pgf@temp}{#2}%
+}%
+
+
+
+
+
+%
+%
+% Bounding box adjustments in animations.
+%
+%
+
+\def\pgf@protocolanimsizes#1#2{%
+  \edef\pgf@temp{\noexpand\pgf@anim@handle@point{\the#1}{\the#2}}%
+  \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@protocolanim@list\expandafter\expandafter\expandafter{\expandafter\pgf@protocolanim@list\pgf@temp}%
+}%
+\def\pgf@protocolanimsizes@direct#1#2{%
+  \expandafter\def\expandafter\pgf@protocolanim@list\expandafter{\pgf@protocolanim@list\pgf@anim@handle@point{#1}{#2}}%
+}%
+\let\pgf@protocolanim@list\pgfutil@empty
+
+\def\pgf@animation@check@translate{%
+  \ifx\pgf@protocolanim@list\pgfutil@empty%
+  \else%
+    \expandafter\expandafter\expandafter\pgf@animation@check@translate@\expandafter\expandafter\expandafter{\expandafter\pgf@protocolanim@list\expandafter}\expandafter{\pgf@anim@saved@transform}%
+  \fi%
+}%
+\let\pgf@animation@check@motion\pgf@animation@check@translate
+
+\def\pgf@animation@check@translate@#1#2{%
+  \pgfsys@attach@to@id\pgf@anim@whom@id\pgf@anim@whom@type{%
+    \pgf@size@hookedtrue%
+    {%
+      % Compute bounding box in local coordinate system
+      #2%
+      \pgf@pt@x0pt%
+      \pgf@pt@y0pt%
+      \pgf@picmaxx=-16000pt\relax%
+      \pgf@picminx=16000pt\relax%
+      \pgf@picmaxy=-16000pt\relax%
+      \pgf@picminy=16000pt\relax%
+      #1%
+      \edef\pgf@temp{{\the\pgf@picminx}{\the\pgf@picminy}{\the\pgf@picmaxx}{\the\pgf@picmaxy}}%
+      \expandafter%
+    }\expandafter%
+    \def\expandafter\pgf@temp\expandafter{\pgf@temp}%
+    \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@path@size@hook\expandafter\expandafter\expandafter{%
+      \expandafter\pgf@path@size@hook\expandafter\pgf@anim@bb\pgf@temp}%
+  }{}%
+}%
+\def\pgf@anim@handle@point#1#2{%
+  \pgf@x#1\pgf@y#2%
+  \pgf@pos@transform\pgf@x\pgf@y%
+  \ifdim\pgf@x<\pgf@picminx\pgf@picminx\pgf@x\fi%
+  \ifdim\pgf@x>\pgf@picmaxx\pgf@picmaxx\pgf@x\fi%
+  \ifdim\pgf@y<\pgf@picminy\pgf@picminy\pgf@y\fi%
+  \ifdim\pgf@y>\pgf@picmaxy\pgf@picmaxy\pgf@y\fi%
+}%
+
+\newdimen\pgf@anim@dim
+
+\def\pgf@anim@bb#1#2#3#4{% (#1,#2) lower left, (#3, #4) upper right
+  \pgf@anim@dim\pgf@size@hook@x%
+  \advance\pgf@anim@dim by#1\relax%
+  \ifdim\pgf@anim@dim<\pgf@picminx\global\pgf@picminx\pgf@anim@dim\fi%
+  \pgf@anim@dim\pgf@size@hook@x%
+  \advance\pgf@anim@dim by#3\relax%
+  \ifdim\pgf@anim@dim>\pgf@picmaxx\global\pgf@picmaxx\pgf@anim@dim\fi%
+  \pgf@anim@dim\pgf@size@hook@y%
+  \advance\pgf@anim@dim by#2\relax%
+  \ifdim\pgf@anim@dim<\pgf@picminy\global\pgf@picminy\pgf@anim@dim\fi%
+  \pgf@anim@dim\pgf@size@hook@y%
+  \advance\pgf@anim@dim by#4\relax%
+  \ifdim\pgf@anim@dim>\pgf@picmaxy\global\pgf@picmaxy\pgf@anim@dim\fi%
+}%
+
+\def\pgf@anim@save@transform#1{%
+  \def\pgf@anim@saved@transform{#1}%
+}%
+\let\pgf@anim@saved@transform\pgfutil@empty%
+
+\endinput

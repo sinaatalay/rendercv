@@ -1,0 +1,381 @@
+% Copyright 2020 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarytopaths.code.tex}
+
+
+% Move to
+
+\tikzset{move to/.style=                 {to path={(\tikztotarget) \tikztonodes}}}
+
+
+% Straight to
+
+\tikzset{line to/.style=                 {to path={-- (\tikztotarget) \tikztonodes}}}
+
+
+% Curved to
+
+\tikzset{every curve to/.style=          {}}
+\tikzset{curve to/.style=                {to path=\tikz@to@curve@path}}
+
+\tikzoption{bend angle}{\pgfmathsetmacro\tikz@to@bend{#1}}
+
+\tikzoption{bend left}[]{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfutil@empty%
+  \else%
+    \pgfmathsetmacro\tikz@to@bend{#1}%
+  \fi%
+  \let\tikz@to@out=\tikz@to@bend%
+  \pgfmathsetmacro\tikz@to@in{180-(\tikz@to@out)}%
+  \tikz@to@switch@on%
+  \tikz@to@relativetrue%
+}
+
+\tikzoption{bend right}[]{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfutil@empty%
+  \else%
+    \pgfmathsetmacro\tikz@to@bend{#1}%
+  \fi%
+  % Now, negate
+  \pgfmathsetmacro\tikz@to@out{-(\tikz@to@bend)}
+  \pgfmathsetmacro\tikz@to@in{180-(\tikz@to@out)}
+  \tikz@to@switch@on%
+  \tikz@to@relativetrue%
+}
+
+\tikzoption{relative}[true]{\csname tikz@to@relative#1\endcsname}
+\newif\iftikz@to@relative
+\tikz@to@relativefalse
+
+\tikzoption{in}{\def\tikz@to@in{#1}\tikz@to@switch@on}
+\tikzoption{out}{\def\tikz@to@out{#1}\tikz@to@switch@on}
+
+\tikzoption{in looseness}{\tikz@to@set@in@looseness{#1}}
+\tikzoption{out looseness}{\tikz@to@set@out@looseness{#1}}
+\tikzoption{looseness}{\tikz@to@set@in@looseness{#1}\tikz@to@set@out@looseness{#1}}
+
+\tikzoption{in control}{\tikz@to@set@in@control{#1}}
+\tikzoption{out control}{\tikz@to@set@out@control{#1}}
+\tikzoption{controls}{\tikz@to@parse@controls#1\pgf@stop}
+
+\tikzoption{in min distance}{\tikz@to@set@distances{#1}{}{}{}}
+\tikzoption{in max distance}{\tikz@to@set@distances{}{#1}{}{}}
+\tikzoption{in distance}{\tikz@to@set@distances{#1}{#1}{}{}}
+\tikzoption{out min distance}{\tikz@to@set@distances{}{}{#1}{}}
+\tikzoption{out max distance}{\tikz@to@set@distances{}{}{}{#1}}
+\tikzoption{out distance}{\tikz@to@set@distances{}{}{#1}{#1}}
+\tikzoption{min distance}{\tikz@to@set@distances{#1}{}{#1}{}}
+\tikzoption{max distance}{\tikz@to@set@distances{}{#1}{}{#1}}
+\tikzoption{distance}{\tikz@to@set@distances{#1}{#1}{#1}{#1}}
+
+\def\tikz@to@set@distances#1#2#3#4{%
+  \tikz@to@setifnotempy{#1}{\tikz@to@in@min}{\let\tikz@to@end@compute=\tikz@to@end@compute@looseness}%
+  \tikz@to@setifnotempy{#2}{\tikz@to@in@max}{\let\tikz@to@end@compute=\tikz@to@end@compute@looseness}%
+  \tikz@to@setifnotempy{#3}{\tikz@to@out@min}{\let\tikz@to@start@compute=\tikz@to@start@compute@looseness}%
+  \tikz@to@setifnotempy{#4}{\tikz@to@out@max}{\let\tikz@to@start@compute=\tikz@to@start@compute@looseness}%
+  \tikz@to@switch@on%
+}
+
+\def\tikz@to@setifnotempy#1#2#3{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfutil@empty\else\def#2{#1}#3\fi%
+}
+
+
+\def\tikz@to@set@in@looseness#1{%
+  \pgfmathsetmacro\tikz@to@in@looseness{#1}%
+  \let\tikz@to@end@compute=\tikz@to@end@compute@looseness%
+  \tikz@to@switch@on%
+}
+\def\tikz@to@set@out@looseness#1{%
+  \pgfmathsetmacro\tikz@to@out@looseness{#1}%
+  \let\tikz@to@start@compute=\tikz@to@start@compute@looseness%
+  \tikz@to@switch@on%
+}
+
+\def\tikz@to@parse@controls#1and#2\pgf@stop{\tikz@to@set@in@control{#2}\tikz@to@set@out@control{#1}}
+
+\def\tikz@to@set@in@control#1{%
+  \def\tikz@to@in@control{#1}%
+  \let\tikz@to@end@compute=\tikz@to@end@compute@control%
+  \tikz@to@switch@on%
+}
+\def\tikz@to@set@out@control#1{%
+  \def\tikz@to@out@control{#1}%
+  \let\tikz@to@start@compute=\tikz@to@start@compute@control%
+  \tikz@to@switch@on%
+}
+
+
+\def\tikz@to@bend{30}
+
+\def\tikz@to@out{45}
+\def\tikz@to@in{135}
+
+\def\tikz@to@out@looseness{1}
+\def\tikz@to@in@looseness{1}
+
+\def\tikz@to@in@min{0pt}
+\def\tikz@to@in@max{10000pt}
+\def\tikz@to@out@min{0pt}
+\def\tikz@to@out@max{10000pt}
+
+\def\tikz@to@switch@on{\let\tikz@to@path=\tikz@to@curve@path}
+
+\def\tikz@to@curve@path{%
+  [every curve to]
+  \pgfextra{\iftikz@to@relative\tikz@to@compute@relative\else\tikz@to@compute\fi}
+  \tikz@computed@path
+  \pgfextra{\tikz@updatenexttrue\tikz@updatecurrenttrue}%
+  \tikztonodes%
+}
+
+\def\tikz@to@modify#1#2{%
+  \pgfutil@ifundefined{pgf@sh@ns@#1}
+  {}%
+  {\edef#1{#1.#2}}
+}%
+
+\def\tikz@to@compute{%
+  \let\tikz@tofrom=\tikztostart%
+  \let\tikz@toto=\tikztotarget%
+  \tikz@to@modify\tikz@tofrom\tikz@to@out%
+  \tikz@to@modify\tikz@toto\tikz@to@in%
+  \ifx\tikz@to@start@compute\tikz@to@start@compute@looseness%
+    \tikz@to@compute@distance%
+  \else%
+    \ifx\tikz@from@start@compute\tikz@to@start@compute@looseness%
+      \tikz@to@compute@distance%
+    \fi%
+  \fi%
+  \tikz@to@start@compute%
+  \tikz@to@end@compute%
+  \edef\tikz@computed@path{.. controls \tikz@computed@start and \tikz@computed@end .. (\tikztotarget)}
+}
+
+\def\tikz@to@compute@distance{\tikz@scan@one@point\tikz@@to@compute@distance(\tikz@tofrom)}
+\def\tikz@@to@compute@distance#1{%
+  \def\tikz@first@point{#1}%
+  \tikz@scan@one@point\tikz@@@to@compute@distance(\tikz@toto)}
+\def\tikz@@@to@compute@distance#1{%
+  \iftikz@updatecurrent\else
+    \tikz@updatenextfalse
+  \fi
+  \def\tikz@second@point{#1}%
+  \tikz@to@compute@distance@main%
+}
+\def\tikz@to@compute@distance@main{%
+  \pgf@process{\pgfpointdiff{\tikz@first@point}{\tikz@second@point}}%
+  \ifdim\pgf@x<0pt\pgf@xa=-\pgf@x\else\pgf@xa=\pgf@x\fi%
+  \ifdim\pgf@y<0pt\pgf@ya=-\pgf@y\else\pgf@ya=\pgf@y\fi%
+  %
+  % Calculate length of second to first vector:
+  %
+  \pgf@process{\pgfpointnormalised{\pgfqpoint{\pgf@xa}{\pgf@ya}}}%
+  \ifdim\pgf@x>\pgf@y%
+    \c@pgf@counta=\pgf@x%
+    \ifnum\c@pgf@counta=0\relax%
+    \else%
+      \divide\c@pgf@counta by 255\relax%
+      \pgf@xa=16\pgf@xa\relax%
+      \divide\pgf@xa by\c@pgf@counta%
+      \pgf@xa=16\pgf@xa\relax%
+    \fi%
+  \else%
+    \c@pgf@counta=\pgf@y%
+    \ifnum\c@pgf@counta=0\relax%
+    \else%
+      \divide\c@pgf@counta by 255\relax%
+      \pgf@ya=16\pgf@ya\relax%
+      \divide\pgf@ya by\c@pgf@counta%
+      \pgf@xa=16\pgf@ya\relax%
+    \fi%
+  \fi%
+  \pgf@x=0.3915\pgf@xa%
+  \pgf@xa=\tikz@to@out@looseness\pgf@x%
+  \pgf@xb=\tikz@to@in@looseness\pgf@x%
+  % Adjust as necessary
+  \pgfmathsetlength{\pgf@ya}{\tikz@to@out@min}
+  \ifdim\pgf@xa<\pgf@ya%
+    \pgf@xa=\pgf@ya%
+  \fi%
+  \pgfmathsetlength{\pgf@ya}{\tikz@to@out@max}
+  \ifdim\pgf@xa>\pgf@ya%
+    \pgf@xa=\pgf@ya%
+  \fi%
+  \pgfmathsetlength{\pgf@ya}{\tikz@to@in@min}
+  \ifdim\pgf@xb<\pgf@ya%
+    \pgf@xb=\pgf@ya%
+  \fi%
+  \pgfmathsetlength{\pgf@ya}{\tikz@to@in@max}
+  \ifdim\pgf@xb>\pgf@ya%
+    \pgf@xb=\pgf@ya%
+  \fi%
+}
+
+\def\tikz@to@start@compute@looseness{%
+  \edef\tikz@computed@start{([shift=({\tikz@to@out}:\the\pgf@xa)]\tikz@tofrom)}%
+}
+\def\tikz@to@end@compute@looseness{%
+  \edef\tikz@computed@end{([shift=({\tikz@to@in}:\the\pgf@xb)]\tikz@toto)}%
+}
+\def\tikz@to@start@compute@control{%
+  \let\tikz@computed@start=\tikz@to@out@control%
+}
+\def\tikz@to@end@compute@control{%
+  \let\tikz@computed@end=\tikz@to@in@control%
+}
+
+\let\tikz@to@start@compute=\tikz@to@start@compute@looseness%
+\let\tikz@to@end@compute=\tikz@to@end@compute@looseness%
+
+
+
+
+% Relative curves
+
+\def\tikz@to@compute@relative{%
+  \tikz@scan@one@point\tikz@@to@compute@relative(\tikztostart)%
+}
+\def\tikz@@to@compute@relative#1{%
+  \def\tikz@tofrom{#1}%
+  \tikz@scan@one@point\tikz@@@to@compute@relative(\tikztotarget)%
+}
+\def\tikz@@@to@compute@relative#1{%
+  \def\tikz@toto{#1}%
+  \begingroup
+    %
+    % Adjust start and target so that they lie on the border in the
+    % rotated coordinate system.
+    %
+    \pgfutil@ifundefined{pgf@sh@ns@\tikztostart}
+    {%
+      \let\tikz@first@point=\tikz@tofrom%
+      \let\tikz@tostart@tikz=\pgfutil@empty
+    }%
+    {%
+      % Start computation of new start.
+      {%
+        \tikz@tofrom%
+        \pgf@xc=\pgf@x%
+        \pgf@yc=\pgf@y%
+        {%
+          \pgftransformreset%
+          \pgftransformshift{\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+          \pgftransformrotate{\tikz@to@out}%
+          \pgftransformshift{\pgfqpoint{-\pgf@xc}{-\pgf@yc}}%
+          \pgf@process{\pgfpointtransformed{\tikz@toto}}%
+        }%
+        \pgf@xc=\pgf@x%
+        \pgf@yc=\pgf@y%
+        \pgfpointshapeborder{\tikztostart}{\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+        \xdef\tikz@tofrom@smuggle{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+      }%
+      \let\tikz@first@point=\tikz@tofrom@smuggle%
+      \tikz@first@point%
+      \edef\tikz@tostart@tikz{(\the\pgf@x,\the\pgf@y)}%
+    }%
+    \pgfutil@ifundefined{pgf@sh@ns@\tikztotarget}
+    {%
+      \let\tikz@second@point=\tikz@toto%
+    }%
+    {%
+      % Start computation of new target.
+      {%
+        \tikz@toto%
+        \pgf@xc=\pgf@x%
+        \pgf@yc=\pgf@y%
+        {%
+          \pgftransformreset%
+          \pgftransformshift{\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+          \pgftransformrotate{180}%
+          \pgftransformrotate{\tikz@to@in}%
+          \pgftransformshift{\pgfqpoint{-\pgf@xc}{-\pgf@yc}}%
+          \pgf@process{\pgfpointtransformed{\tikz@tofrom}}%
+        }%
+        \pgf@xc=\pgf@x%
+        \pgf@yc=\pgf@y%
+        \pgfpointshapeborder{\tikztotarget}{\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+        \xdef\tikz@toto@smuggle{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+      }%
+      \let\tikz@second@point=\tikz@toto@smuggle%
+    }%
+    \tikz@second@point%
+    \edef\tikz@totarget@tikz{(\the\pgf@x,\the\pgf@y)}%
+    %
+    % Compute distances
+    %
+    \tikz@to@compute@distance@main%
+    \edef\tikz@to@first@distance{\the\pgf@xa}%
+    \edef\tikz@to@second@distance{\the\pgf@xb}%
+    %
+    % Next step: Establish a transformed coordinate system so that the (modified)
+    % start is at the origin and the (modified) target is at (1,0)
+    %
+    \pgftransformreset%
+    \pgf@process{\tikz@first@point}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\tikz@second@point}%
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    \pgfpointnormalised{}%
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \pgf@xb=-\pgf@x%
+    \pgf@yb=-\pgf@y%
+    %
+    % Now compute the control points.
+    %
+    {%
+      \pgftransformshift{\tikz@first@point}%
+      \pgftransformcm{\pgf@sys@tonumber\pgf@xc}{\pgf@sys@tonumber\pgf@yc}{\pgf@sys@tonumber\pgf@yb}{\pgf@sys@tonumber\pgf@xc}%
+                      {\pgfpointorigin}%
+      \pgf@process{\pgfpointtransformed{\pgfpointpolar{\tikz@to@out}{\tikz@to@first@distance}}}%
+      \xdef\tikz@computed@start{(\the\pgf@x,\the\pgf@y)}%
+    }
+    {%
+      \pgftransformshift{\tikz@second@point}%
+      \pgftransformcm{\pgf@sys@tonumber\pgf@xc}{\pgf@sys@tonumber\pgf@yc}{\pgf@sys@tonumber\pgf@yb}{\pgf@sys@tonumber\pgf@xc}%
+                      {\pgfpointorigin}%
+      \pgf@process{\pgfpointtransformed{\pgfpointpolar{\tikz@to@in}{\tikz@to@second@distance}}}%
+      \xdef\tikz@computed@end{(\the\pgf@x,\the\pgf@y)}%
+    }
+    \xdef\tikz@computed@path{
+      \tikz@tostart@tikz
+      .. controls \tikz@computed@start and \tikz@computed@end ..
+      \tikz@totarget@tikz}%
+  \endgroup
+}
+
+
+
+% Loops
+
+\tikzset{loop/.style=                    {to path={
+  \pgfextra{\let\tikztotarget=\tikztostart}
+  [looseness=8,min distance=5mm,every loop]
+  \tikz@to@curve@path
+  }}}
+
+\tikzset{every loop/.style=              {->,shorten >=1pt}}
+
+\tikzset{loop right/.style=              {right,out=15,in=-15,loop}}
+\tikzset{loop above/.style=              {above,out=105,in=75,loop}}
+\tikzset{loop left/.style=               {left,out=195,in=165,loop}}
+\tikzset{loop below/.style=              {below,out=285,in=255,loop}}
+
+
+
+
+
+\endinput

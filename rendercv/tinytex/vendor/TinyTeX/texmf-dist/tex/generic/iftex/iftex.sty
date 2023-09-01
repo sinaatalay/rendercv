@@ -1,0 +1,273 @@
+%% iftex TeX engine tests
+
+%% LaTeX3 Project
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3c of this license or (at your option) any later
+%% version.
+%%
+%% Using ideas from:
+%%
+%% ifetex Martin Scharrer
+%% ifxetex Will Robertson
+%% iftex 0.2 Persian TeX Group / Vafa Khalighi
+%% ifluatex ifvtex Heiko Oberdiek
+%% ifptex Takayuki YATO
+%% ifpdf Heiko Oberdiek and LaTeX3 Project
+
+% Only load once (not needed in LaTeX, but does no harm).
+\csname IFTEX\string @loaded\endcsname
+\expandafter\let\csname IFTEX\string @loaded\endcsname\endinput
+
+% File loadable in initex
+% require { } # with standard catcodes.
+\catcode123=1
+\catcode125=2
+\catcode35=6
+
+
+% ProvidesPackage declaration in LaTeX
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname ProvidesPackage\endcsname\relax\else
+  \ProvidesPackage{iftex}[2022/02/03 v1.0f TeX engine tests]
+\fi
+
+% Save @ catcode, to restore at end, not needed in LaTeX.
+\expandafter\chardef\csname IFTEX\string @atcatcode\endcsname\catcode64
+\catcode 64 11
+
+% Message format used in several pre-existing if*tex packages
+% Modified here to do a hard stop and not show any error context lines.
+\def\IFTEX@Require#1#2#3{%
+  #1\else
+      \newlinechar 64\relax
+      \errorcontextlines -1\relax
+      \immediate\write20{@
+      ********************************************@
+      * #2 is required to compile this document.@
+      * Sorry!@
+      ********************************************}%
+    \batchmode\read -1 to \@tempa
+    #3%
+}
+
+
+% eTeX \protected if available.
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname protected\endcsname\relax
+  \let\IFTEX@protected\relax
+\else
+  \let\IFTEX@protected\protected
+\fi
+
+% make sure \detokenize and \protected are available in lualatex,
+% but avoid defining them after the package if not already defined.
+  {
+  \catcode34 12 % "
+  \catcode40 12 % (
+  \catcode41 12 % )
+  \catcode44 12 % ,
+  \catcode46 12 % .
+  \expandafter\ifx\csname directlua\endcsname\relax\else
+    \directlua{tex.enableprimitives("IFTEX@", {"detokenize","protected"})}
+  \fi
+  }
+
+% \Require... commands that stop if the wrong engine detected.
+\IFTEX@protected\def\RequireeTeX{\IFTEX@Require\ifetex{eTeX}\fi}
+\IFTEX@protected\def\RequirePDFTeX{\IFTEX@Require\ifpdftex{pdfTeX}\fi}
+\IFTEX@protected\def\RequireXeTeX{\IFTEX@Require\ifxetex{XeTeX}\fi}
+\IFTEX@protected\def\RequireLuaTeX{\IFTEX@Require\ifluatex{LuaTeX}\fi}
+\IFTEX@protected\def\RequireLuaHBTeX{\IFTEX@Require\ifluahbtex{LuaHBTeX}\fi}
+\IFTEX@protected\def\RequirepTeX{\IFTEX@Require\ifptex{pTeX}\fi}
+\IFTEX@protected\def\RequireupTeX{\IFTEX@Require\ifuptex{upTeX}\fi}
+\IFTEX@protected\def\RequirepTeXng{\IFTEX@Require\ifptexng{pTeX-ng}\fi}
+\IFTEX@protected\def\RequireVTeX{\IFTEX@Require\ifvtex{VTeX}\fi}
+% alephtex as aleph name too generic
+\IFTEX@protected\def\RequireAlephTeX{\IFTEX@Require\ifalephtex{Aleph}\fi}
+% tutex == has \Umathchardef == XeTeX or Lua(HB)TeX currently
+\IFTEX@protected\def\RequireTUTeX{\IFTEX@Require\iftutex{LuaTeX or XeTeX}\fi}
+% TeXpad TeX
+\IFTEX@protected\def\RequireTexpadTeX{\IFTEX@Require\iftexpadtex{TexpadTeX}\fi}
+% HiTeX/HINT
+\IFTEX@protected\def\RequireHINT{\IFTEX@Require\ifhint{HINT}\fi}
+
+% As a matter of policy over-write any existing \if*tex macro and set
+% by the tests here.
+
+% \csname and \let construct useful for hiding \ifzzz tokens from
+% outer level \if tests.
+\def\IFTEX@let#1#2{%
+  \expandafter\let\csname if#1\expandafter\endcsname
+  \csname if#2\endcsname}
+
+% etex (should always be true in latex based formats)
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname numexpr\endcsname\relax
+  \IFTEX@let{etex}{false}
+\else
+  \IFTEX@let{etex}{true}
+\fi
+\IFTEX@let{eTeX}{etex}
+
+% pdftex (including in dvi mode)
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname pdftexversion\endcsname\relax
+  \IFTEX@let{pdftex}{false}
+\else
+  \IFTEX@let{pdftex}{true}
+\fi
+\IFTEX@let{PDFTeX}{pdftex}
+
+% xetex
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname XeTeXrevision\endcsname\relax
+  \IFTEX@let{xetex}{false}
+\else
+  \IFTEX@let{xetex}{true}
+\fi
+\IFTEX@let{XeTeX}{xetex}
+
+
+% luatex (including luahbtex)
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname directlua\endcsname\relax
+  \IFTEX@let{luatex}{false}
+\else
+  \IFTEX@let{luatex}{true}
+\fi
+\IFTEX@let{LuaTeX}{luatex}
+
+
+% luahbtex (or luatex + luaharfbuzz)
+% Use luaharfbuzz test rather than status.luatex_engine=="luahbtex"
+% for issue #2.
+\IFTEX@let{luahbtex}{false}
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname directlua\endcsname\relax
+\else
+  \directlua{\IFTEX@detokenize{
+   if(pcall(require, 'luaharfbuzz')) then
+     tex.print("\\let\\ifluahbtex\\iftrue ")
+   end
+  }}
+
+\fi
+\IFTEX@let{LuaHBTeX}{luahbtex}
+
+
+% ptex (including all variants)
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname kanjiskip\endcsname\relax
+  \IFTEX@let{ptex}{false}
+\else
+  \IFTEX@let{ptex}{true}
+\fi
+\IFTEX@let{pTeX}{ptex}
+
+% uptex (including euptex)
+\ifx\enablecjktoken \@undefined
+  \IFTEX@let{uptex}{false}
+\else
+  \IFTEX@let{uptex}{true}
+\fi
+\IFTEX@let{upTeX}{uptex}
+
+% ptex-ng
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname ngbanner\endcsname\relax
+  \IFTEX@let{ptexng}{false}
+\else
+  \IFTEX@let{ptexng}{true}
+\fi
+\IFTEX@let{pTeXng}{ptexng}
+
+% vtex
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname VTeXversion\endcsname\relax
+  \IFTEX@let{vtex}{false}
+\else
+  \IFTEX@let{vtex}{true}
+\fi
+\IFTEX@let{VTeX}{vtex}
+
+% aleph
+\IFTEX@let{alephtex}{false}
+\ifptex\else
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname omathchardef\endcsname\relax
+\else
+  \IFTEX@let{alephtex}{true}
+\fi
+\fi
+\IFTEX@let{AlephTeX}{alephtex}
+
+
+% tutex (LuaTeX or XeTeX)
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname Umathchardef\endcsname\relax
+  \IFTEX@let{tutex}{false}
+\else
+  \IFTEX@let{tutex}{true}
+\fi
+\IFTEX@let{TUTeX}{tutex}
+
+
+% texpadtex
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname TexpadTeXMode\endcsname\relax
+  \IFTEX@let{texpadtex}{false}
+\else
+  \IFTEX@let{texpadtex}{true}
+  \ifcase\TexpadTeXMode\relax
+    % This is 8 bit mode
+  \or
+    \IFTEX@let{tutex}{true}
+  \fi
+\fi
+\IFTEX@let{TexpadTeX}{texpadtex}
+
+% HiTeX
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname HINTversion\endcsname\relax
+  \IFTEX@let{hint}{false}
+\else
+  \IFTEX@let{hint}{true}
+\fi
+\IFTEX@let{HINT}{hint}
+
+
+% Output mode
+% declare as if with \newif
+\def\pdftrue{\let\ifpdf\iftrue}
+\def\pdffalse{\let\ifpdf\iffalse}
+\pdffalse
+\ifluatex
+\directlua{\IFTEX@detokenize{
+if (tex.outputmode or tex.pdfoutput or 0) > 0 then
+  tex.print('\\pdftrue')
+end
+}}
+\else
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname pdfoutput\endcsname\relax
+\ifvtex
+  \ifnum\OpMode=3 %
+    \pdftrue
+  \fi
+\else
+  \iftexpadtex
+    \pdftrue
+  \fi
+\fi
+\else
+  \ifnum\pdfoutput>0 %
+    \pdftrue
+  \fi
+\fi
+\fi
+
+
+% restore things
+\catcode64 \IFTEX@atcatcode

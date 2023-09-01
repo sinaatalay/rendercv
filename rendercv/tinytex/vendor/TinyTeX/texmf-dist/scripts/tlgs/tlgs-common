@@ -1,0 +1,329 @@
+
+-- $Id: tlgs-common 65362 2022-12-26 19:12:37Z reinhardk $
+
+-- Copyright (C) 2022 Reinhard Kotucha <reinhard.kotucha@web.de>
+-- 
+-- You may freely use, modify, and/or distribute this file.
+
+-- Note: This file can only be used by the scripts in the same directory and
+-- thus it's not executable on Unix and its name has no extension.
+
+--[===================================================================[
+
+Description
+===========
+
+This file contains functions used by the texlua scripts replacing the batch
+files for Windows.  It also defines optional arguments shared by all
+scripts.
+
+The following features are supported by all scripts:
+
+ 1. If you invoke a script without any command-line argument a usage message
+    is printed to stdout.
+
+ 2. On Windows arguments with spaces are quoted automatically though they
+    are already passed to Ghostscript as a list.  This is not necessary on
+    any other system.
+
+ 3. The scripts abort with an error message if the names of an input file
+    and an output file are identical.  Please note that there is no way to
+    protect you if you read from stdin an/or write to stdout.
+
+ 4. The environment variable TLGS_SHOW_ARGV can be used for debugging.
+    More details below.
+
+
+Compatibility
+=============
+
+Batch files for Windows and shell scripts for Unix are provided as 3rd-party
+software by Artifex.  They are quite different and not maintained for a long
+time.
+
+The texlua scripts in this package were derived from the Unix shell scripts.
+They are not fully compatible but supposed to behave identical on all
+systems supported by TeX Live.
+
+
+Using the scripts on Unix
+=========================
+
+In order to use the scripts on Unix, add /path/to/texmf-dist/scripts/tlgs to
+PATH.  They have to be invoked with their full names, for instance ps2pdf.lua
+instead of ps2pdf.
+
+
+Debugging
+=========
+
+If the environment variable TLGS_SHOW_ARGV is set the scripts print to
+stderr how they would invoke Ghostscript without actually invoking GS.
+Arguments are separated by newline characters.
+
+In order to see how Ghostscript is invoked on another operating system
+just pass the system name as a value to TLGS_SHOW_ARGV.
+
+Only the first letter of the value is evaluated.  'U' and 'u' denote Unix
+and 'W' and 'w' denote Windows.  To see on a Unix system how a script is
+invoked under Windows, set
+  
+  TLGS_SHOW_ARGV=windows
+
+--]===================================================================]
+
+
+-- Strip path and extension from arg[0].
+progname = arg[0]:match('.*[/\\](.*)$')
+if progname:match('%.') then progname = progname:gsub('%..*', '') end
+
+
+function PDF_level (progname)
+  -- Associate PDF version number with programs.
+  level = {
+    ps2pdf   = 1.5,
+    ps2pdf12 = 1.2,
+    ps2pdf13 = 1.3,
+    ps2pdf14 = 1.4,
+    pdfopt   = 1.4, -- newer versions of PDF don't support FastWebView. 
+  }
+  return level[progname]
+end
+
+
+local function msg (s, stream)
+  if stream == 1 then io.write(s) else io.stderr:write(s) end
+end
+
+
+local function indent (s)
+  -- Indent messages.  Remove all leading spaces from each line and
+  -- add a well defined number of them instead.  s can either be a
+  -- string with line breaks or a list of strings.
+  
+  local indentlevel = 3
+  local lines
+  
+  if type(s) == 'table' then
+    lines = s
+  else
+    lines = s:explode('\n')
+  end
+
+  for i=1, #lines do
+    lines[i] = lines[i]:gsub('^[\t ]*', '')
+    lines[i] = string.rep(' ', 3)..lines[i]
+    lines[i] = lines[i]:gsub('~', ' ')
+  end
+  return table.concat(lines, '\n')..'\n'
+end
+
+
+local function usage (progname, stream)
+  -- Print usage message.  The message is written to stdout with exit
+  -- code 0 if no arguments are given and to stderr with exit code 1
+  -- if it's attached to an error message.
+  
+  if not stream then stream = 2 end
+
+  local gsdoc = [===[
+    For optional arguments consult the Ghostscript documentation:
+
+    ~~~~https://ghostscript.readthedocs.io/en/gs<VERSION>/Use.html
+  ]===]
+
+  if doc.synopsis:match('@PDF_level@') then
+    doc.synopsis = doc.synopsis:gsub('@PDF_level@', PDF_level(progname))
+  end
+
+  msg('Usage:\n', stream)
+  msg(indent(progname .. ' ' .. doc.invocation..'\n'), stream)
+  msg(indent('Synopsis: '..doc.synopsis)..'\n', stream)
+  msg(indent(doc.details), stream)
+  msg(indent(gsdoc), stream)
+  os.exit(stream - 1)
+end
+
+
+local function errmsg (message)
+  io.stderr:write('!ERROR: '..message..'\n')
+  usage(progname, 2)
+end
+
+
+function gsname ()
+  -- Determine the name of the Ghostscript executable.
+  
+  if os.getenv('TLGS_SHOW_ARGV_W') then
+    os.type = 'windows'
+  end
+  
+  if os.type == 'windows' then
+    if os.getenv('PROCESSOR_ARCHITECTURE') == 'AMD64' or
+      os.getenv('PROCESSOR_ARCHITEW6432') == 'AMD64'
+    then
+      return 'gswin64c'
+    else
+      return 'gswin32c'
+    end
+  else
+    return 'gs'
+  end
+end
+
+
+function addto (t, ...)
+  -- Append elements to an ordered list (table with numeric indices).
+  -- An arbitrary number of arguments is allowed.
+  --
+  -- This function is used to collect command-line arguments (from the
+  -- arg array) and to assemble the command-line supposed to invoke
+  -- Ghostscript.
+  
+  local args = {...}
+  for _,val in ipairs(args) do
+    if type(val) == 'table' then
+      for _,str in ipairs(val) do
+        t[#t+1] = str
+      end
+    else
+      t[#t+1] = val
+    end
+  end
+end
+
+
+local function replace_or_add_extension (filename, default_ext)
+  -- We have to consider the case that a directory name contains a dot
+  -- and the file name has no extesion.  
+  local path = ''
+  local file
+
+  if filename:match('/') then -- filename has a path component
+    path, file = filename:match('(.*/)(.*)')
+  else -- no path component
+    file = filename
+  end
+
+  if file:match('%.') then -- has an extension, replace it
+    local basename = file:gsub('%..*', '')
+    file = basename .. default_ext
+  else -- no extension, add one
+    file = file .. default_ext
+  end
+
+  return file
+end
+
+
+function process_cmdline ()
+  -- Parse the argument vector and return the progname (arg[0]),
+  -- optional arguments (beginning with -) and filenames.
+
+  local options = {}
+  local file = {}
+     
+  -- If no arguments are given at all abort with a usage message.
+  if #arg == 0 then usage(progname, 1) end
+  
+  for i=1, #arg do
+    if string.find(arg[i], '^%-.+') then
+      addto(options, arg[i])
+    else
+      addto(file, arg[i])
+    end
+  end
+
+  file.input = file[1]:gsub('\\', '/')
+  if #file > 1 then file.output = file[2]:gsub('\\', '/') end
+
+  if #file < 2 then -- no output file specified
+    if default_outfile_ext then -- <outputfile> is optional
+      file.output = replace_or_add_extension(file.input, default_outfile_ext)
+    else -- <outputfile> is mandatory
+      errmsg('You have to specify <outputfile>.\n')
+    end
+  end
+    
+  local stdio = false
+  if file.input:match('^%-$') or file.output:match('^%-$') then stdio = true end
+ 
+  if not stdio and file.input == file.output then
+    errmsg('<outputfile> has the same name as <inputfile>\n'..
+           indent{'<inputfile>  = "'..file.input..'"',
+                  '<outputfile> = "'..file.output..'"'})
+  end
+  return progname, options, file
+end
+
+
+function execute (command)
+  -- Pass the command line specified by "command" to Ghostscript.
+  
+  -- We first prepend options common to all programs to the command
+  -- line.  Some of them are obsolete nowadays but needed by older
+  -- versions of Ghostscript.  They have to be specified in reverse
+  -- order.
+
+  -- Note: if -dNODISPLAY is set ps2pdf doesn't provide any output.
+  -- Thus we entirely depend on -dBATCH.
+
+  local common_opts = {
+    '-dALLOWPSTRANSPARENCY',
+    '-P-',
+    '-dSAFER',
+    '-dBATCH',
+    '-q' }
+  
+  for _, opt in ipairs(common_opts) do
+    table.insert(command, 2, opt)
+  end
+  
+  -- Windows converts the argument vector specified by execv*() to a
+  -- string and then back to a vector (argv).  In order to support
+  -- spaces in filenames arguments with spaces have to be quoted
+  -- explicitly.
+
+  local function fixwindows (command)
+    for i=2, #command do
+      if command[i]:match('%s') then
+        command[i] = '"'..command[i]..'"'
+      end
+      command[i] = command[i]:gsub('%%', '%%%%')
+    end
+    return command
+  end
+
+  if os.getenv('TLGS_SHOW_ARGV') then
+    if os.getenv('TLGS_SHOW_ARGV'):match('^[Uu]') then os.type = 'unix' end
+    if os.getenv('TLGS_SHOW_ARGV'):match('^[Ww]') then os.type = 'windows' end
+    command[1] = gsname()
+    if os.type == 'windows' then command = fixwindows(command) end
+
+    -- We have to write to stderr because we don't get the desired result if
+    -- the test files use I/O redirection.
+    
+    for i=1, #command do
+      io.stderr:write (command[i]..'\n')
+    end
+    os.exit(0)
+  end
+  
+  if os.type == 'windows' then command = fixwindows(command) end
+  os.exit(os.spawn(command))
+end
+
+-- These variables are passed as global variables to the scripts. 
+
+progname, options, file = process_cmdline()
+
+
+-- Local Variables:
+--  mode: Lua
+--  lua-indent-level: 2
+--  indent-tabs-mode: nil
+--  fill-column: 76
+--  coding: utf-8-unix
+-- End:
+-- vim:set tabstop=2 expandtab:
+

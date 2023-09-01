@@ -1,0 +1,301 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcorepatterns.code.tex}
+
+% Creates a new uncolored pattern
+%
+% [#1] = optional list of variables.
+% #2   = pattern name
+% #3   = lower left of bounding box
+% #4   = upper right of bounding box
+% #5   = step vector
+% #6   = pattern code
+%
+% Description:
+%
+% Declares a new uncolored pattern. An uncolored pattern is a pattern
+% that has no inherent color. When the pattern is used, a color for
+% the pattern must be supplied.
+%
+% See the pdf-manual for more details on uncolored patterns.
+%
+% Specifying a variable list makes the pattern ``mutable''.
+%
+% The bounding box must be a bounding box of the pattern cell.
+%
+% The step vector must provide the x- and y-step by which the cells
+% are spaced.
+%
+% The pattern code should be pgf code that can be protocolled.
+%
+% The transformation matrix will be reset prior to invoking the
+% pattern code.
+%
+% Example:
+%
+% \pgfdeclarepatternformonly{stars}{\pgfpointorigin}{\pgfpoint{1cm}{1cm}}
+% {\pgfpoint{1cm}{1cm}}{
+%   \pgftransformshift{\pgfpoint{.5cm}{.5cm}}
+%   \pgfpathmoveto{\pgfpointpolar{0}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{144}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{288}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{72}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{216}{4mm}}
+%   \pgfpathclose%
+%   \pgfusepath{stroke}
+% }
+%
+\def\pgfdeclarepatternformonly{%
+  \def\pgf@pattern@type{formonly}%
+  \pgfutil@ifnextchar[{\pgf@declarepattern@checkarg}{\pgf@declarepattern@checkarg[]}%
+}
+
+
+% Creates a new colored pattern
+%
+% [#1] = optional list of variables.
+% #2   = pattern name
+% #3   = lower left of bounding box
+% #4   = upper right of bounding box
+% #5   = step vector
+% #6   = pattern code
+%
+% Description:
+%
+% Declares a new colored pattern. Such patterns have a one or more
+% fixed inherent colors. See the pdf-manual for more details on
+% uncolored patterns.
+%
+% The parameters have the same effect as for uncolored patterns.
+%
+% Example:
+%
+% \pgfdeclarepatterninherentlycolored{red stars}{\pgfpointorigin}{\pgfpoint{1cm}{1cm}}
+% {\pgfpoint{1cm}{1cm}}{
+%   \pgfsetfillcolor{red}
+%   \pgfsetstrokecolor{black}
+%   \pgftransformshift{\pgfpoint{.5cm}{.5cm}}
+%   \pgfpathmoveto{\pgfpointpolar{0}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{144}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{288}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{72}{4mm}}
+%   \pgfpathlineto{\pgfpointpolar{216}{4mm}}
+%   \pgfpathclose%
+%   \pgfusepath{stroke,fill}
+% }
+%
+\def\pgfdeclarepatterninherentlycolored{%
+  \def\pgf@pattern@type{inherentlycolored}%
+  \pgfutil@ifnextchar[{\pgf@declarepattern@checkarg}{\pgf@declarepattern@checkarg[]}%
+}
+
+
+
+
+
+\def\pgf@declarepattern@checkarg[#1]{%
+  \def\pgf@pattern@tempvars{#1}%
+  \ifx\pgf@pattern@tempvars\pgfutil@empty%
+    \expandafter\let\expandafter\pgf@next\csname pgf@declarepattern\pgf@pattern@type\endcsname%
+  \else%
+    \expandafter\let\expandafter\pgf@next\csname pgf@declarepattern\pgf@pattern@type @mutable\endcsname%
+  \fi%
+  \pgf@next}
+
+\long\def\pgf@declarepatternformonly#1#2#3#4#5{\pgf@declarepattern{#1}{#2}{#3}{#4}{#5}{0}}
+
+\long\def\pgf@declarepatterninherentlycolored#1#2#3#4#5{\pgf@declarepattern{#1}{#2}{#3}{#4}{#5}{1}}
+
+\long\def\pgf@declarepatternformonly@mutable#1#2#3#4#5{%
+  \def\pgf@marshal{\pgf@declarepatternmutable{#1}}%
+  \expandafter\pgf@marshal\expandafter{\pgf@pattern@tempvars}{#2}{#3}{#4}{#5}{2}%
+}
+
+\long\def\pgf@declarepatterninherentlycolored@mutable#1#2#3#4#5#6{%
+  \def\pgf@marshal{\pgf@declarepatternmutable{#1}}%
+  \expandafter\pgf@marshal\expandafter{\pgf@pattern@tempvars}{#2}{#3}{#4}{#5}{3}%
+}
+
+\def\pgfsys@patternmatrix{{1.0}{0.0}{0.0}{1.0}{0.0pt}{0.0pt}}
+\def\pgf@declarepattern#1#2#3#4#5#6{%
+  \pgfutil@ifundefined{pgf@pattern@name@#1}{%
+  \pgfsysprotocol@getcurrentprotocol\pgf@pattern@temp%
+  {%
+    \pgfinterruptpath%
+      \pgfpicturetrue%
+      \pgf@relevantforpicturesizefalse%
+      \pgftransformreset%
+      \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+      \pgfsysprotocol@bufferedtrue%
+      \pgfsys@beginscope%
+      \pgfsetarrows{-}%
+      #5%
+      \pgfsys@endscope%
+      \pgfsysprotocol@getcurrentprotocol\pgf@pattern@code%
+      \global\let\pgf@pattern@code=\pgf@pattern@code%
+    \endpgfinterruptpath%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{#3}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgf@process{#4}%
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    % Now, build a name for the pattern
+    \pgfutil@tempcnta=\pgf@pattern@number%
+    \advance\pgfutil@tempcnta by1\relax%
+    \xdef\pgf@pattern@number{\the\pgfutil@tempcnta}%
+    \expandafter\xdef\csname pgf@pattern@name@#1\endcsname{\the\pgfutil@tempcnta}%
+    \expandafter\gdef\csname pgf@pattern@type@#1\endcsname{#6}%
+    \xdef\pgf@marshal{\noexpand\pgfsys@declarepattern
+      {\csname pgf@pattern@name@#1\endcsname}% name
+      {\the\pgf@xa}{\the\pgf@ya}{\the\pgf@xb}{\the\pgf@yb}% bbox
+      {\the\pgf@xc}{\the\pgf@yc}% x/y step
+      \pgfsys@patternmatrix% transformation matrix
+      {\pgf@pattern@code}{#6}}%
+  }%
+  \pgfsysprotocol@setcurrentprotocol\pgf@pattern@temp%
+  \expandafter\global\expandafter\let\csname pgf@pattern@instantiate@#1\endcsname=\pgf@marshal%
+  }
+  {%
+    \pgferror{Pattern `#1' already defined}%
+  }%
+}
+
+\def\pgf@pattern@number{0}%
+
+\def\pgf@declarepatternmutable#1#2#3#4#5#6#7{%
+  \pgfutil@ifundefined{pgf@pattern@name@#1}{%
+    \expandafter\gdef\csname pgf@pattern@name@#1\endcsname{#1}%
+    \expandafter\gdef\csname pgf@pattern@variables@#1\endcsname{#2}%
+    \expandafter\gdef\csname pgf@pattern@lowerleft@#1\endcsname{#3}%
+    \expandafter\gdef\csname pgf@pattern@upperright@#1\endcsname{#4}%
+    \expandafter\gdef\csname pgf@pattern@tilesize@#1\endcsname{#5}%
+    \expandafter\long\expandafter\gdef\csname pgf@pattern@code@#1\endcsname{#6}%
+    \expandafter\gdef\csname pgf@pattern@type@#1\endcsname{#7}%
+  }{\pgferror{The pattern `#1' is already defined}}%
+}
+
+\def\pgf@ifpatternisinherentlycolored#1#2#3{%
+  \expandafter\ifodd\csname pgf@pattern@type@#1\endcsname\relax#2\else#3\fi%
+}
+
+\def\pgf@ifpatternismutable#1#2#3{%
+  \expandafter\ifnum\csname pgf@pattern@type@#1\endcsname>1\relax#2\else#3\fi%
+}
+
+\def\pgfpatternreleasename#1{\expandafter\let\csname pgf@pattern@name@#1\endcsname\relax}
+
+
+
+
+
+
+% Set an pattern as fill color
+%
+% #1 = Name of the pattern
+% #2 = Color to be used for the pattern. If the pattern is already
+%      colored, this parameter is ignored.
+%
+% Description:
+%
+% Sets the pattern for subsequent filling operations.
+%
+% Example:
+%
+% \pgfsetfillpattern{stars}{red}
+%
+\def\pgfsetfillpattern#1#2{%
+  \pgfutil@ifundefined{pgf@pattern@name@#1}%
+  {%
+    \pgferror{Undefined pattern `#1'}%
+  }%
+  {%
+    \pgf@ifpatternismutable{#1}%
+    {%
+      % So, a mutable pattern. Check to see if the pattern
+      % has been used with the current variable values...
+      \let\pgf@pattern@tempvars\pgfutil@empty%
+      \expandafter\expandafter\expandafter\pgf@pattern@check@vars%
+        \csname pgf@pattern@variables@#1\endcsname,\pgf@stop,%
+      \edef\pgf@pattern@nametemp{pgf@pattern@#1@\pgf@pattern@tempvars}%
+      \expandafter\pgfutil@ifundefined\expandafter{\pgf@pattern@nametemp}%
+      {%
+        % ...Nope. So declare a new instance of the mutable pattern.
+        \pgf@ifpatternisinherentlycolored{#1}%
+          {\let\pgf@set@fillpattern@declare\pgfdeclarepatterninherentlycolored}%
+          {\let\pgf@set@fillpattern@declare\pgfdeclarepatternformonly}%
+        \pgf@set@fillpattern@declare%
+          {\pgf@pattern@nametemp}%
+          {\csname pgf@pattern@lowerleft@#1\endcsname}%
+          {\csname pgf@pattern@upperright@#1\endcsname}%
+          {\csname pgf@pattern@tilesize@#1\endcsname}%
+          {\csname pgf@pattern@code@#1\endcsname}%
+      }%
+      {%
+        % ...Yep. So do nothing.
+      }%
+      \expandafter\pgf@set@fillpattern\expandafter{\pgf@pattern@nametemp}{#2}%
+      \expandafter\gdef\csname\pgf@pattern@nametemp\endcsname{#1}%
+    }%
+    {%
+      % A non-mutable pattern.
+      \pgf@set@fillpattern{#1}{#2}%
+    }%
+  }%
+}
+
+
+\def\pgf@set@fillpattern#1#2{%
+  \pgfutil@ifundefined{pgf@pattern@name@#1}{%
+    \pgferror{Undefined pattern `#1'}}
+  {%
+    \csname pgf@pattern@instantiate@#1\endcsname%
+    \expandafter\global\expandafter\let\csname pgf@pattern@instantiate@#1\endcsname=\relax%
+    \pgf@ifpatternisinherentlycolored{#1}{%
+      \pgfsys@setpatterncolored{\csname pgf@pattern@name@#1\endcsname}%
+    }{%
+      \pgfutil@colorlet{pgf@tempcolor}{#2}%
+      \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgf@tempcolor}}%
+      \pgfutil@extractcolorspec{pgf@tempcolor}{\pgf@tempcolor}%
+      \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{rgb}{\pgf@rgbcolor}%
+      \expandafter\pgf@set@fill@patternuncolored\pgf@rgbcolor\relax{#1}%
+    }%
+  }%
+}
+
+\def\pgf@set@fill@patternuncolored#1,#2,#3\relax#4{%
+  \pgfsys@setpatternuncolored{\csname pgf@pattern@name@#4\endcsname}{#1}{#2}{#3}%
+}
+
+\def\pgf@pattern@check@vars#1,{%
+  \ifx#1\pgf@stop%
+    \let\pgf@next\relax%
+  \else%
+    \afterassignment\pgfmath@gobbletilpgfmath@%
+    \expandafter\let\expandafter\pgf@pattern@char#1#1\pgfmath@%
+    \ifx\pgf@pattern@char/%
+      \edef\pgf@pattern@tempvar{(\pgfkeysvalueof{#1})}%
+    \else%
+      \expandafter\ifcat\pgf@pattern@char\relax%
+        \edef\pgf@pattern@tempvar{(\the#1)}%
+      \else%
+        \edef\pgf@pattern@tempvar{(#1)}%
+      \fi%
+    \fi%
+    \edef\pgf@pattern@tempvars{\pgf@pattern@tempvars\pgf@pattern@tempvar}%
+    \let\pgf@next\pgf@pattern@check@vars%
+  \fi%
+  \pgf@next%
+}
+
+\endinput

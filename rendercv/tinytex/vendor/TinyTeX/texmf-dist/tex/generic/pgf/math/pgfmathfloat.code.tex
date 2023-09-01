@@ -1,0 +1,2669 @@
+% Copyright 2019 by Christian Feuersaenger
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+%
+% This file contains methods for basic floating point arithmetics, rounding
+% to arbitrary precision and number pretty printing.
+%
+
+
+\pgfkeys{
+    % The bug 3430171 (wrong minus sign spacing in pgfmathprintnumber)
+    % has been fixed in 2.10 CVS. Since it changes the spacing, its
+    % effects can be undone with this compatibility switch.
+    /pgf/compat/number printer/.is choice,
+    /pgf/compat/number printer/2.10/.code={%
+        \def\pgfmathprintnumber@begingroup{\bgroup}%
+        \def\pgfmathprintnumber@endgroup{\egroup}%
+    },
+    % I do not know the version number of the next release at this
+    % time. Please be so kind and KEEP THIS NAME INTACT. Add an alias
+    % if needed.
+    /pgf/compat/number printer/next after 2.10/.code={%
+        \def\pgfmathprintnumber@begingroup{\begingroup}%
+        \def\pgfmathprintnumber@endgroup{\endgroup}%
+    },
+    % activate the fix by default.
+    /pgf/compat/number printer/next after 2.10,%
+}
+
+
+\newif\ifpgfmathfloatcomparison
+\newif\ifpgfmathfloatroundhasperiod
+\newif\ifpgfmathprintnumberskipzeroperiod
+
+
+% used internally in grouped macros:
+\toksdef\pgfmathfloat@tmptoks=1
+\newif\ifpgfmathfloat@fixed@digits@after@period
+\newif\ifpgfmathfloatroundmayneedrenormalize
+\toksdef\pgfmathfloat@a@Mtok=0
+
+%% WARNING: avoid conflicting register names!
+\let\pgfmathfloat@a@S=\c@pgf@counta
+\let\pgfmathfloat@a@M=\pgf@xa
+\let\pgfmathfloat@a@E=\c@pgf@countb
+\let\pgfmathfloat@b@S=\c@pgf@countc
+\let\pgfmathfloat@b@M=\pgf@xb
+\let\pgfmathfloat@b@E=\c@pgf@countd
+
+% can be changed with options.
+\def\pgfmathfloat@round@precision{2}
+
+% I introduced this to access the "original" precision in case a
+% formatted changes it locally... in this case, the formatter may
+% overwrite \pgfmathfloat@round@precision@orig to provide the original
+% one.
+% The default implementation here does nothing:
+\def\pgfmathfloat@round@precision@orig{\pgfmathfloat@round@precision}%
+
+\gdef\pgfmathfloat@glob@TMP{}
+
+
+% Computes a normalised floating point representation for #1 of the
+% form
+%   [FLAGS] MANTISSE EXPONENT
+% meaning
+%   [+-]X.XXXXXXX*10^C
+% where
+%   X.XXXXXX is a mantissa with first number != 0, C is an integer and
+% FLAGS contains the sign and some other special cases.
+%
+% This method does NOT use TeX Registers to represent the numbers! The
+% computation is COMPLETELY STRING BASED.
+% This allows numbers such at 10000000 or 5.23e-10 to be represented
+% properly, although TeX-registers would produce overflow/underflow
+% errors in these cases.
+%
+% It is to be used to compute logs, because log(X*10^Y) = log(X) + log(10)*Y
+%
+% Arguments:
+% #1:  an arbitrary number which shall be parsed. Maybe a macro.
+%     Examples:
+%     [+-]XXXXX.XXXXXX
+%     [+-]XXXXX.XXXXXXeXXXX
+%     [+-]0.0000XXXXXX
+%     [+-]0.0000XXXXXXeXXXX
+%     [+-]inf
+%     nan
+%    Maybe a macro containing such a number.
+%
+% Return value:
+% \pgfmathresult will be \def'ed to
+%  FLAGS MANTISSE 'e' EXPONENT
+% where
+% FLAGS is a number in [0-5] where
+%     0 == '0' (the number is +- 0.0),
+%     1 == '+',
+%     2 == '-',
+%     3 == 'not a number'
+%     4 == '+ infinity'
+%     5 == '- infinity'
+%
+% MANTISSE is a normalised number 1 <= M < 10. It always contains a
+% period and at least one digit after the period.
+%
+% EXPONENT is an integer value.
+%
+% Example:
+% \pgfmathfloatparsenumber{1}
+% -> \pgfmathresult = 11.0e0
+% \pgfmathfloatparsenumber{141.212}
+% -> \pgfmathresult = 11.41212e2
+\def\pgfmathfloatparsenumber#1{%
+    \begingroup
+    \edef\pgfmathresult{#1}%
+    \expandafter\pgfflt@impl\pgfmathresult\pgfflt@EOI
+    \ifpgfmathfloatparsenumberpendingperiod
+        \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok.0}%
+    \fi
+    \pgfmathfloatcreate{\the\pgfmathfloat@a@S}{\the\pgfmathfloat@a@Mtok}{\the\pgfmathfloat@a@E}%
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+% The same as \pgfmathfloatparsenumber, but does not perform sanity checking.
+% FIXME: there is no longer any difference here.
+\let\pgfmathfloatqparsenumber=\pgfmathfloatparsenumber
+
+% Takes a floating point number #1 as input and writes flags to count
+% register #2, mantissa to dimen register #3 and exponent to count
+% register #4.
+\def\pgfmathfloattoregisters#1#2#3#4{%
+    \expandafter\pgfmathfloat@decompose#1\relax{#2}{#3}{#4}%
+}
+
+% the same, but writes the mantissa into a token register.
+\def\pgfmathfloattoregisterstok#1#2#3#4{%
+    \expandafter\pgfmathfloat@decompose@tok#1\relax{#2}{#3}{#4}%
+}
+
+% Extracts the flags of #1 into the count register #2.
+\def\pgfmathfloatgetflags#1#2{%
+    \expandafter\pgfmathfloat@decompose@F#1\relax{#2}%
+}
+% Extracts the flags of #1 into the macro #2.
+\def\pgfmathfloatgetflagstomacro#1#2{%
+    \expandafter\pgfmathfloat@decompose@Fmacro#1\relax{#2}%
+}%
+
+% Extracts the mantissa of #1 into the dimen register #2.
+\def\pgfmathfloatgetmantissa#1#2{%
+    \expandafter\pgfmathfloat@decompose@M#1\relax{#2}%
+}
+\let\pgfmathfloatgetmantisse=\pgfmathfloatgetmantissa
+% Extracts the mantissa of #1 into the token register #2.
+\def\pgfmathfloatgetmantissatok#1#2{%
+    \expandafter\pgfmathfloat@decompose@Mtok#1\relax{#2}%
+}
+\let\pgfmathfloatgetmantissetok=\pgfmathfloatgetmantissatok
+% Extracts the exponent of #1 into the count register #2.
+\def\pgfmathfloatgetexponent#1#2{%
+    \expandafter\pgfmathfloat@decompose@E#1\relax{#2}%
+}
+
+
+% Assigns \pgfmathresult to be a float encoded as
+% <FLAGS><MANTISSE>e<EXPONENT>
+%
+% example:
+% \pgfmathfloatcreate{1}{2.0}{10}
+% \pgfmathfloat@to@FMeE@style\pgfmathresult
+% ->
+% \pgfmathresult is now '12.0e10' regardless of the internal float
+% format.
+\def\pgfmathfloat@to@FMeE@style#1{\expandafter\pgfmathfloat@to@FMeE@style@#1\relax\relax}%
+\def\pgfmathfloat@to@FMeE@style@#1#2{%
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@to@FMeE@style@@%
+    \else
+        \expandafter\pgfmathfloat@to@FMeE@style@error%
+    \fi
+    #1#2%
+}%
+\def\pgfmathfloat@to@FMeE@style@@#1Y#2e#3]\relax\relax{\def\pgfmathresult{#1#2e#3}}%
+\def\pgfmathfloat@to@FMeE@style@error#1\relax\relax{%
+    \begingroup
+    \pgfmathfloatparsenumber@handleerror{wrong lowlevel format}{#1}{#1}%
+    \xdef\pgfmathfloat@decompose@TMP{%
+        \noexpand\pgfmathfloatcreate{\the\pgfmathfloat@a@S}{\the\pgfmathfloat@a@Mtok}{\the\pgfmathfloat@a@E}%
+    }%
+    \endgroup
+    \pgfmathfloat@decompose@TMP
+}%
+
+
+% decomposes a lowlevel floating point representation into flags,
+% mantissa and exponent.
+%
+% #4: integer register for the flags.
+% #5: dimen registers for the mantissa.
+% #6: integer register for the exponent.
+%
+% \expandafter\pgfmathfloat@decompose\pgfmathresult\relax\pgfmathfloat@a@S\pgfmathfloat@a@M\pgfmathfloat@a@E
+% -> the three temp registers contain flags, mantissa and exponent
+\def\pgfmathfloat@decompose#1#2{% sanitize!
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@decompose@%
+    \else
+        \expandafter\pgfmathfloat@decompose@error%
+    \fi
+    #1#2%
+}
+\def\pgfmathfloat@decompose@#1Y#2e#3]\relax#4#5#6{%
+   #4=#1\relax
+   #5=#2pt % keep space here.
+   #6=#3\relax%
+}
+
+% overloaded, #5 needs to be a token register for the mantissa.
+% @see also \pgfmathfloatvalueof  which does also employ the load
+% level repr.
+% \expandafter\pgfmathfloat@decompose@tok\pgfmathresult\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+% -> the three temp registers contain flags, mantissa and exponent
+\def\pgfmathfloat@decompose@tok#1#2{%
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@decompose@tok@%
+    \else
+        \expandafter\pgfmathfloat@decompose@tok@error%
+    \fi
+    #1#2%
+}%
+\def\pgfmathfloat@decompose@tok@#1Y#2e#3]\relax#4#5#6{%
+   #4=#1\relax
+   #5={#2}%
+   #6=#3\relax%
+}
+% overloaded, returns only ONE of the three components into #4:
+% \expandafter\pgfmathfloat@decompose@tok\pgfmathresult\relax\pgfmathfloat@a@S
+% -> \pgfmathfloat@a@S contains the flags field.
+\def\pgfmathfloat@decompose@F#1#2{%
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@decompose@F@%
+    \else
+        \expandafter\pgfmathfloat@decompose@F@error%
+    \fi
+    #1#2%
+}%
+\def\pgfmathfloat@decompose@Fmacro#1#2{%
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@decompose@Fmacro@%
+    \else
+        \expandafter\pgfmathfloat@decompose@F@error%
+    \fi
+    #1#2%
+}%
+\def\pgfmathfloat@decompose@M#1#2{%
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@decompose@M@%
+    \else
+        \expandafter\pgfmathfloat@decompose@M@error%
+    \fi
+    #1#2%
+}%
+\def\pgfmathfloat@decompose@E#1#2{%
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@decompose@E@%
+    \else
+        \expandafter\pgfmathfloat@decompose@E@error%
+    \fi
+    #1#2%
+}%
+\def\pgfmathfloat@decompose@Mtok#1#2{%
+    \ifx#2Y%
+        \expandafter\pgfmathfloat@decompose@Mtok@%
+    \else
+        \expandafter\pgfmathfloat@decompose@Mtok@error%
+    \fi
+    #1#2%
+}%
+\def\pgfmathfloat@decompose@F@#1Y#2e#3]\relax#4{#4=#1\relax}%
+\def\pgfmathfloat@decompose@Fmacro@#1Y#2e#3]\relax#4{\def#4{#1}}%
+\def\pgfmathfloat@decompose@M@#1Y#2e#3]\relax#4{#4=#2pt}%
+\def\pgfmathfloat@decompose@Mtok@#1Y#2e#3]\relax#4{#4={#2}}%
+\def\pgfmathfloat@decompose@E@#1Y#2e#3]\relax#4{#4=#3\relax}%
+
+\def\pgfmathfloat@decompose@error#1\relax#2#3#4{%
+    \begingroup
+    \pgfmathfloatparsenumber@handleerror{wrong lowlevel format}{#1}{#1}%
+    \xdef\pgfmathfloat@decompose@TMP{%
+        \noexpand#2=\the\pgfmathfloat@a@S\space
+        \noexpand#3=\the\pgfmathfloat@a@Mtok pt
+        \noexpand#4=\the\pgfmathfloat@a@E\space
+    }%
+    \endgroup
+    \pgfmathfloat@decompose@TMP
+}%
+\def\pgfmathfloat@decompose@tok@error#1\relax#2#3#4{%
+    \begingroup
+    \pgfmathfloatparsenumber@handleerror{wrong lowlevel format}{#1}{#1}%
+    \xdef\pgfmathfloat@decompose@TMP{%
+        \noexpand#2=\the\pgfmathfloat@a@S\space
+        \noexpand#3={\the\pgfmathfloat@a@Mtok}%
+        \noexpand#4=\the\pgfmathfloat@a@E\space
+    }%
+    \endgroup
+    \pgfmathfloat@decompose@TMP
+}%
+\def\pgfmathfloat@decompose@F@error#1\relax#2{%
+    \begingroup
+    \pgfmathfloatparsenumber@handleerror{wrong lowlevel format}{#1}{#1}%
+    \xdef\pgfmathfloat@decompose@TMP{\noexpand#2=\the\pgfmathfloat@a@S\space}%
+    \endgroup
+    \pgfmathfloat@decompose@TMP
+}%
+\def\pgfmathfloat@decompose@M@error#1\relax#2{%
+    \begingroup
+    \pgfmathfloatparsenumber@handleerror{wrong lowlevel format}{#1}{#1}%
+    \xdef\pgfmathfloat@decompose@TMP{\noexpand#2=\the\pgfmathfloat@a@Mtok pt }%
+    \endgroup
+    \pgfmathfloat@decompose@TMP
+}%
+\def\pgfmathfloat@decompose@Mtok@error#1\relax#2{%
+    \begingroup
+    \pgfmathfloatparsenumber@handleerror{wrong lowlevel format}{#1}{#1}%
+    \xdef\pgfmathfloat@decompose@TMP{\noexpand#2={\the\pgfmathfloat@a@Mtok}}%
+    \endgroup
+    \pgfmathfloat@decompose@TMP
+}%
+\def\pgfmathfloat@decompose@E@error#1\relax#2{%
+    \begingroup
+    \pgfmathfloatparsenumber@handleerror{wrong lowlevel format}{#1}{#1}%
+    \xdef\pgfmathfloat@decompose@TMP{\noexpand#2=\the\pgfmathfloat@a@E\space}%
+    \endgroup
+    \pgfmathfloat@decompose@TMP
+}%
+% Takes a floating point number #1 as input and writes flags to macro
+% #2, mantissa to macro #3 and exponent to macro #4.
+\def\pgfmathfloattomacro#1#2#3#4{%
+    \begingroup
+    \expandafter\pgfmathfloat@decompose@tok#1\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+    \xdef\pgfmathfloat@glob@TMP{%
+        \noexpand\def\noexpand#2{\the\pgfmathfloat@a@S}%
+        \noexpand\def\noexpand#3{\the\pgfmathfloat@a@Mtok}%
+        \noexpand\def\noexpand#4{\the\pgfmathfloat@a@E}%
+    }%
+    \endgroup
+    \pgfmathfloat@glob@TMP
+}
+
+
+% Defines \pgfmathresult as the floating point number encoded by
+% the flags #1, mantissa #2 and exponent #3.
+%
+% All arguments are characters and will be expanded using '\edef'.
+\def\pgfmathfloatcreate#1#2#3{%
+    \edef\pgfmathresult{#1Y#2e#3]}%
+}%
+% This is the character present in any low-level floating point
+% number. It is assumed to be the SECOND character of a float (after
+% the flags integer).
+\def\pgfmathfloat@POSTFLAGSCHAR{Y}
+
+
+
+% Converts a composed floating point representation to fixed point.
+%
+% Example:
+% \pgfmathfloattofixed{142e1}
+% -> \pgfmathresult = 42.0
+\def\pgfmathfloattofixed@#1{%
+    \begingroup
+    \expandafter\pgfmathfloat@decompose@tok#1\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+    \ifcase\pgfmathfloat@a@S
+        \def\pgfmathresult{0.0}%
+    \or
+        \expandafter\pgfmathfloattofixed@impl\the\pgfmathfloat@a@Mtok\relax
+    \or
+        \expandafter\pgfmathfloattofixed@impl\the\pgfmathfloat@a@Mtok\relax
+        \pgfmathfloat@a@Mtok=\expandafter{\pgfmathresult}%
+        \edef\pgfmathresult{-\the\pgfmathfloat@a@Mtok}%
+    \or\def\pgfmathresult{nan}%
+    \or\def\pgfmathresult{inf}%
+    \or\def\pgfmathresult{-inf}%
+    \fi
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+\let\pgfmathfloattofixed=\pgfmathfloattofixed@
+
+% Converts a float to an integer (in integer format).
+%
+% @see \pgfmathfloatint
+\def\pgfmathfloattoint#1{%
+    \pgfmathfloattofixed{#1}%
+    \expandafter\pgfmathfloattoint@@\pgfmathresult\relax
+}%
+\def\pgfmathfloattoint@@#1.#2\relax{%
+    \def\pgfmathresult{#1}%
+}%
+
+% Converts a floating point number to scientific format 1.234e5.
+%
+% This operation is very fast.
+\def\pgfmathfloattosci@#1{%
+    \begingroup
+    \expandafter\pgfmathfloat@decompose@tok#1\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+    \ifcase\pgfmathfloat@a@S
+        \def\pgfmathresult{0.0e0}%
+    \or
+        \edef\pgfmathresult{\the\pgfmathfloat@a@Mtok e\the\pgfmathfloat@a@E}%
+    \or
+        \edef\pgfmathresult{-\the\pgfmathfloat@a@Mtok e\the\pgfmathfloat@a@E}%
+    \or\def\pgfmathresult{nan}%
+    \or\def\pgfmathresult{inf}%
+    \or\def\pgfmathresult{-inf}%
+    \fi
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}%
+\let\pgfmathfloattosci=\pgfmathfloattosci@
+
+% Expands a floating point number to scientific format 1.234e5.
+%
+% This operation is very fast.
+\def\pgfmathfloatvalueof#1{\expandafter\pgfmathfloatvalueof@@#1@@}%
+
+% Make it fool proof such that the following arguments work:
+%     \pgfmathfloatvalueof{1Y1.0e1} -> 1.0e1
+%     \pgfmathfloatvalueof{2Y1.0e1} -> -1.0e1
+% and wrong arguments as well:
+%     \pgfmathfloatvalueof{1} -> 1
+%     \pgfmathfloatvalueof{1e2} -> 1e2
+\def\pgfmathfloatvalueof@@#1#2{%
+    \if#2Y%
+        % keep in mind that \pgfmathfloatvalueof should be expandable!
+        % We must not use \let here. Let's hope that #1 and #2 are
+        % single tokens (not something which was enclosed by curly
+        % braces...)
+        \expandafter\pgfmathfloatvalueof@@@\expandafter#1\expandafter#2%
+    \else
+        % Oh - no float!? Ok, we cannot report errors in this context.
+        % So: make it a feature and return the input argument as-is.
+        % Might be useful, in fact...
+        \expandafter\pgfmathfloatvalueof@abort\expandafter#1\expandafter#2%
+    \fi
+}
+\def\pgfmathfloatvalueof@@@#1Y#2e#3]@@{%
+    \ifcase#1 %
+        0.0e0%
+    \or
+        #2e#3%
+    \or
+        -#2e#3%
+    \or nan%
+    \or inf%
+    \or -inf%
+    \fi
+}%
+\def\pgfmathfloatvalueof@abort#1@@{#1}%
+
+
+
+% Rounds a fixed point number #1 to \pgfmathfloat@round@precision digits precision and returns
+% the result into \pgfmathresult.
+%
+% Any trailing zeros after the period are discarded.
+% See \pgfmathroundtozerofill if you want trailing zeros and fixed
+% width.
+%
+% This method is PURELY text based and can work with arbitrary
+% precision (well, limited to TeX's stack size and integer size).
+%
+% Examples:
+% \pgfmathroundto{1}
+% -> \pgfmathresult = '1'
+%
+% \pgfmathroundto{19999.9996}
+% -> \pgfmathresult = '20000'
+%
+% Arguments:
+% #1 may be either a number or a macro (\pgfmathresult is allowed) expanding to a number.
+%
+% SIDE EFFECT: the global variable \ifpgfmathfloatroundhasperiod will be set.
+\def\pgfmathroundto#1{%
+    \pgfmathfloatroundhasperiodtrue
+    \begingroup
+    \pgfmathfloat@fixed@digits@after@periodfalse
+    \pgfmathroundto@impl{#1}%
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+
+% Overloaded method.
+%
+% This variant always uses a FIXED number behind the period and fills
+% in zeros if necessary.
+% Examples:
+% \pgfmathroundtozerofill{1}
+% -> \pgfmathresult = '1.00'
+%
+% \pgfmathroundtozerofill{19999.9996}
+% -> \pgfmathresult = '20000.00'
+%
+% SIDE EFFECT: the global variable \ifpgfmathfloatroundhasperiod will be set.
+\def\pgfmathroundtozerofill#1{%
+    \pgfmathfloatroundhasperiodtrue
+    \begingroup
+    \pgfmathfloat@fixed@digits@after@periodtrue
+    \pgfmathroundto@impl{#1}%
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+% see \pgfmathprintnumber@fixed@style for docs
+\def\pgfmathprintnumber@fixed@styleDEFAULT#1#2#3e#4\relax{%
+    \begingroup
+    \pgfkeysgetvalue{/pgf/number format/set decimal separator}\pgfmathprintnumber@fixed@styleDEFAULT@DEC@SEP
+    \pgfkeysgetvalue{/pgf/number format/@dec sep mark}\pgfmathprintnumber@fixed@styleDEFAULT@DEC@SEP@MARK
+    \pgfkeysgetvalue{/pgf/number format/set thousands separator}\pgfmathprintnumber@fixed@styleDEFAULT@THOUSAND@SEP
+    \c@pgf@counta=#4\relax % it is the exponent here.
+    \ifnum#2=0
+        \c@pgf@counta=0
+    \fi
+    \def\pgfmathresult{}%
+    \ifpgfmathfloatroundhasperiod
+        \expandafter\pgfmathprintnumber@fixed@styleDEFAULT@impl@period#1\pgfmathfloat@EOI
+    \else
+        \expandafter\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod#1\pgfmathfloat@EOI\pgfmathfloat@EOI\pgfmathfloat@EOI%
+        \begingroup
+        \toks0=\expandafter{\pgfmathresult}%
+        \toks1=\expandafter{\pgfmathprintnumber@fixed@styleDEFAULT@DEC@SEP@MARK}%
+        \xdef\pgfmathfloat@glob@TMP{\the\toks0 \the\toks1 }%
+        \endgroup
+        \let\pgfmathresult=\pgfmathfloat@glob@TMP
+    \fi
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+\def\pgfmathprintnumber@fixed@styleDEFAULT@impl@period#1.#2\pgfmathfloat@EOI{%
+    \ifpgfmathprintnumberskipzeroperiod
+        \def\pgfmathfloat@loc@TMPb{#1}%
+        \ifx\pgfmathfloatparsenumber@tok@ZERO\pgfmathfloat@loc@TMPb
+        \else
+            \def\pgfmathfloat@loc@TMPc{-0}%
+            \ifx\pgfmathfloat@loc@TMPc\pgfmathfloat@loc@TMPb
+                \def\pgfmathresult{-}%
+            \else
+                \def\pgfmathfloat@loc@TMPc{+0}%
+                \ifx\pgfmathfloat@loc@TMPc\pgfmathfloat@loc@TMPb
+                    \def\pgfmathresult{+}%
+                \else
+                    \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod#1\pgfmathfloat@EOI\pgfmathfloat@EOI\pgfmathfloat@EOI
+                \fi
+            \fi
+        \fi
+    \else
+        \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod#1\pgfmathfloat@EOI\pgfmathfloat@EOI\pgfmathfloat@EOI
+    \fi
+    \ifpgfmathprintnumber@thousand@sep@in@fractional
+        \let\pgfmathresultfractional\pgfutil@empty%
+        \pgfmathprintnumber@thousand@sep@in@fractional#2MMMM\@@
+    \else
+        \def\pgfmathresultfractional{#2}%
+    \fi
+    \begingroup
+    \toks0=\expandafter{\pgfmathresult}%
+    \toks1=\expandafter{\pgfmathprintnumber@fixed@styleDEFAULT@DEC@SEP@MARK}%
+    \toks2=\expandafter{\pgfmathprintnumber@fixed@styleDEFAULT@DEC@SEP}%
+    \toks3=\expandafter{\pgfmathresultfractional}%
+    \xdef\pgfmathfloat@glob@TMP{\the\toks0 \the\toks1 \the\toks2 \the\toks3 }%
+    \endgroup
+    \let\pgfmathresult=\pgfmathfloat@glob@TMP
+}%
+
+% assigns \pgfmathresult such that it contains the formatted result.
+% It assumes that none of the following tokens contains a period.
+\def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod{%
+    \ifx\pgfmathprintnumber@fixed@styleDEFAULT@THOUSAND@SEP\pgfutil@empty
+        \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+            \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printall}%
+    \else
+        \ifnum\c@pgf@counta<0\relax % exponent of the number in this context
+            \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+                \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printall}%
+        \else
+            \ifnum\c@pgf@counta<\pgfkeysvalueof{/pgf/number format/min exponent for 1000 sep}\relax
+                \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+                    \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printall}%
+            \else
+                \advance\c@pgf@counta by1 % counta:= total number of digits, N.
+                \c@pgf@countb=\c@pgf@counta
+                \divide\c@pgf@countb by3 %  countb := N DIV 3
+                \c@pgf@countc=\c@pgf@countb
+                \multiply\c@pgf@countc by3
+                \advance\c@pgf@counta by-\c@pgf@countc% now counta := N MOD 3
+                \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+                    \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printsign
+                }%
+            \fi
+        \fi
+    \fi
+    \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT
+}
+\def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printsign#1{%
+    \def\pgfmathfloat@loc@TMPb{#1}%
+    \ifx\pgfmathfloat@loc@TMPb\pgfmathfloatparsenumber@tok@MINUS
+        \expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmathresult #1}%
+        \let\pgfmathfloat@loc@TMPb=\pgfutil@empty
+    \else
+        \ifx\pgfmathfloat@loc@TMPb\pgfmathfloatparsenumber@tok@PLUS
+            \expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmathresult #1}%
+            \let\pgfmathfloat@loc@TMPb=\pgfutil@empty
+        \else
+            \ifpgfmathprintnumber@showpositive
+                \expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmathresult +}%
+            \fi
+        \fi
+    \fi
+    \ifnum\c@pgf@counta>0 % \c@pgf@counta = N MOD 3 in this context
+        \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+            \expandafter\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printtrailingdigits\pgfmathfloat@loc@TMPb
+        }%
+    \else
+        \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+            \expandafter\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@counteverythird\pgfmathfloat@loc@TMPb
+        }%
+    \fi
+    \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT
+}
+\def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printtrailingdigits#1#2{%
+    \ifcase\c@pgf@counta % = N MOD 3 in this context
+        % does not happen per construction
+    \or
+        \expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmathresult #1}%
+        \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+            \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@counteverythird#2%
+        }%
+    \or
+        \expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmathresult #1#2}%
+        \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+            \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@counteverythird%
+        }%
+    \fi
+    \ifnum\c@pgf@countb>0\relax % \c@pgf@countb = N DIV 3 in this context
+        \begingroup
+        \toks0=\expandafter{\pgfmathresult}%
+        \toks1=\expandafter{\pgfmathprintnumber@fixed@styleDEFAULT@THOUSAND@SEP}%
+        \xdef\pgfmathfloat@glob@TMP{\the\toks0 \the\toks1 }%
+        \endgroup
+        \let\pgfmathresult=\pgfmathfloat@glob@TMP
+    \fi
+    \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT
+}
+\def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@counteverythird#1#2#3{%
+    \ifnum\c@pgf@countb>0\relax
+        \expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmathresult #1#2#3}%
+        \advance\c@pgf@countb by-1
+        \ifnum\c@pgf@countb>0\relax
+            \begingroup
+            \toks0=\expandafter{\pgfmathresult}%
+            \toks1=\expandafter{\pgfmathprintnumber@fixed@styleDEFAULT@THOUSAND@SEP}%
+            \xdef\pgfmathfloat@glob@TMP{\the\toks0 \the\toks1 }%
+            \endgroup
+            \let\pgfmathresult=\pgfmathfloat@glob@TMP
+        \fi
+        \def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT{%
+            \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@counteverythird%
+        }%
+    \else
+        % in this case, #1#2#3 are expected to be
+        % \pgfmathfloat@EOI\pgfmathfloat@EOI\pgfmathfloat@EOI
+        %--------------------------------------------------
+        % \def\pgfmathfloat@loc@TMPb{\pgfmathfloat@EOI\pgfmathfloat@EOI\pgfmathfloat@EOI}%
+        % \def\pgfmathfloat@loc@TMPc{#1#2#3}%
+        % \ifx\pgfmathfloat@loc@TMPc\pgfmathfloat@loc@TMPb
+        % \else
+        %     \pgfmath@error{INTERNAL ERROR in fixed style - The input sequence did not terminate as expected; which indicates a wrong exponent argument provided to \string\pgfmathprintnumber@fixed@style}{}%
+        % \fi
+        %--------------------------------------------------
+        \let\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT=\relax
+    \fi
+    \pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@NEXT
+}
+
+% \pgfmathprintnumber@thousand@sep@in@fractional 01234525MMMM\@@
+% ->
+% 012<sep>345<sep>25
+\def\pgfmathprintnumber@thousand@sep@in@fractional#1#2#3#4{%
+    \if#4M%
+        % Ok, no further separator
+        \def\pgfmathprint@next{\pgfmathprintnumber@thousand@sep@in@fractional@finish#1#2#3#4}%
+    \else
+        \begingroup
+        \toks0=\expandafter{\pgfmathresultfractional}%
+        \toks1={#1#2#3}%
+        \toks2=\expandafter{\pgfmathprintnumber@fixed@styleDEFAULT@THOUSAND@SEP}%
+        \xdef\pgfmathfloat@glob@TMP{\the\toks0 \the\toks1 \the\toks2 }%
+        \endgroup
+        \let\pgfmathresultfractional=\pgfmathfloat@glob@TMP
+        \def\pgfmathprint@next{\pgfmathprintnumber@thousand@sep@in@fractional#4}%
+    \fi
+    \pgfmathprint@next
+}%
+\def\pgfmathprintnumber@thousand@sep@in@fractional@finish#1M{%
+    \expandafter\def\expandafter\pgfmathresultfractional\expandafter{\pgfmathresultfractional #1}%
+    \pgfmathprintnumber@thousand@sep@in@fractional@finish@
+}%
+\def\pgfmathprintnumber@thousand@sep@in@fractional@finish@#1\@@{}%
+
+\def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printall#1{%
+    \def\pgfmathfloat@loc@TMPb{#1}%
+    \let\pgfmathfloat@loc@TMPc=\pgfutil@empty
+    \ifx\pgfmathfloat@loc@TMPb\pgfmathfloatparsenumber@tok@MINUS
+    \else
+        \ifx\pgfmathfloat@loc@TMPb\pgfmathfloatparsenumber@tok@PLUS
+        \else
+            \ifpgfmathprintnumber@showpositive
+                \def\pgfmathfloat@loc@TMPc{+}%
+            \fi
+        \fi
+    \fi
+    \expandafter\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printall@\pgfmathfloat@loc@TMPc#1%
+}
+\def\pgfmathprintnumber@fixed@styleDEFAULT@impl@noperiod@printall@#1\pgfmathfloat@EOI\pgfmathfloat@EOI\pgfmathfloat@EOI{%
+    \expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmathresult #1}%
+}%
+
+% @deprecated. It has been replaced by \pgfmathprintnumber@fixed@styleDEFAULT
+% #1 maybe a macro
+\def\pgfmathprintnumber@fixed@stylePERIOD#1#2#3e#4\relax{%
+    \def\pgfmathresult{#1}%
+}
+
+% @deprecated. It has been replaced by \pgfmathprintnumber@fixed@styleDEFAULT
+% #1 maybe a macro
+\def\pgfmathprintnumber@fixed@styleCOMMA#1#2#3e#4\relax{%
+    \ifpgfmathfloatroundhasperiod
+        \expandafter\pgfmathprintnumber@fixed@styleCOMMA@impl#1\pgfmathfloat@EOI
+    \else
+        \def\pgfmathresult{#1}%
+    \fi
+}
+\def\pgfmathprintnumber@fixed@styleCOMMA@impl#1.#2\pgfmathfloat@EOI{\def\pgfmathresult{#1{,}#2}}
+
+% The default style to display fixed point numbers.
+%
+% It does not apply numerics, but it is responsible for typesetting the
+% rounded number.
+% It can access the \ifpgfmathfloatroundhasperiod boolean.
+%
+% Arguments:
+% #1#2#3e#4\relax
+
+% Input:
+% #1  the fixed point number to be displayed (maybe a macro).
+% #2#3e#4:  the (possibly unformatted) floating point representation
+%     which belongs to #1. This format is returned (only!) by
+%     \pgfmathfloat@to@FMeE@style.
+%     It is used to determine sign and exponent.
+\let\pgfmathprintnumber@fixed@style=\pgfmathprintnumber@fixed@styleDEFAULT
+
+
+% Rounds a normalized floating point number to \pgfmathfloat@round@precision
+% digits precision and writes the result to \pgfmathresult.
+%
+% This method uses \pgfmathroundto for the mantissa.
+%
+% @see pgfmathfloatroundzerofill
+%
+% SIDE EFFECT: the global variable \ifpgfmathfloatroundhasperiod will be set to
+% whether the final mantissa #5 has a period or not.
+\def\pgfmathfloatround#1{%
+    \pgfmathfloatroundhasperiodtrue
+    \begingroup
+    \pgfmathfloat@fixed@digits@after@periodfalse
+    \expandafter\pgfmathfloat@decompose@tok#1\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+    \pgfmathfloatround@impl
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+% Overload.
+%
+% This method uses a fixed width for the mantissa and fills in zeros
+% if necessary.
+%
+% This method uses \pgfmathroundtozerofill for the mantissa.
+%
+% SIDE EFFECT: the global variable \ifpgfmathfloatroundhasperiod will be set to
+% whether the final mantissa #5 has a period or not.
+\def\pgfmathfloatroundzerofill#1{%
+    \pgfmathfloatroundhasperiodtrue
+    \begingroup
+    \pgfmathfloat@fixed@digits@after@periodtrue
+    \expandafter\pgfmathfloat@decompose@tok#1\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+    \pgfmathfloatround@impl
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+\newif\ifpgfmathfloatround@allow@empty@mantissa
+\def\pgfmathfloatround@mantissa@ONE{1pt }%
+
+% #1: sign
+% #2: mantissa
+% #3: exponent
+% #4: CODE to display if the mantissa is drawn.
+%     This code will be shown just before the exponent.
+%     Example: #4=\cdot
+% #5: CODE to display if the mantissa is NOT draw. (unused currently)
+%     Might be used to display '10^1' instead of '1*10^1'.
+% #6: CODE to display the exponent.
+\def\pgfmathfloatrounddisplaystyle@shared@impl#1#2e#3\relax#4#5#6{%
+    \pgfkeysgetvalue{/pgf/number format/@sci exponent mark}\pgfmathfloatrounddisplaystyle@e@mark
+    \ifcase#1\relax
+        \pgfmathprintnumber@fixed@style{#2}#1#2e0\relax%
+        \expandafter\pgfmathfloatrounddisplaystyle@shared@impl@\expandafter{\pgfmathresult}{#4#6}%
+    \or
+        \def\pgfmathfloat@loc@TMPa{1}% "should draw mantissa=1"
+        \ifpgfmathfloatround@allow@empty@mantissa
+        \else
+            \ifdim#2pt=\pgfmathfloatround@mantissa@ONE
+                \def\pgfmathfloat@loc@TMPa{0}% do not draw it.
+            \fi
+        \fi
+        %
+        \if1\pgfmathfloat@loc@TMPa
+            \pgfmathprintnumber@fixed@style{#2}#1#2e0\relax%
+            \expandafter\pgfmathfloatrounddisplaystyle@shared@impl@\expandafter{\pgfmathresult}{#4#6}%
+        \else
+            \def\pgfmathfloat@loc@TMPa{0}%
+            \pgfmathfloatrounddisplaystyle@shared@impl@{#5}{#6}%
+        \fi
+    \or
+        \def\pgfmathfloat@loc@TMPa{1}% "should draw mantissa=1"
+        \ifpgfmathfloatround@allow@empty@mantissa
+        \else
+            \ifdim#2pt=\pgfmathfloatround@mantissa@ONE
+                \def\pgfmathfloat@loc@TMPa{0}% do not draw it.
+            \fi
+        \fi
+        %
+        \if1\pgfmathfloat@loc@TMPa
+            \pgfmathprintnumber@fixed@style{-#2}#1#2e0\relax%
+            \expandafter\pgfmathfloatrounddisplaystyle@shared@impl@\expandafter{\pgfmathresult}{#4#6}%
+        \else
+            \def\pgfmathfloat@loc@TMPa{0}%
+            \pgfmathfloatrounddisplaystyle@shared@impl@{-#5}{#6}%
+        \fi
+    \or
+        \pgfmathfloatrounddisplaystyle@shared@impl@@{\hbox{NaN}}{}%
+    \or
+        \ifpgfmathprintnumber@showpositive
+            \pgfmathfloatrounddisplaystyle@shared@impl@@{+\infty}{}%
+        \else
+            \pgfmathfloatrounddisplaystyle@shared@impl@@{\infty}{}%
+        \fi
+    \or
+        \pgfmathfloatrounddisplaystyle@shared@impl@@{-\infty}{}%
+    \fi
+}
+
+% #1: the part before the exponent code
+% #2: the part for the exponent code.
+\def\pgfmathfloatrounddisplaystyle@shared@impl@#1#2{%
+    \pgfmathprintnumber@begingroup
+    \toks0={#1}%
+    \toks1=\expandafter{\pgfmathfloatrounddisplaystyle@e@mark #2}%
+    \xdef\pgfmathfloat@glob@TMP{\the\toks0 \the\toks1 }%
+    \pgfmathprintnumber@endgroup
+    \let\pgfmathresult=\pgfmathfloat@glob@TMP
+}%
+% Same as \pgfmathfloatrounddisplaystyle@shared@impl@, but it also
+% inserts the '@dec sep mark' at the end.
+\def\pgfmathfloatrounddisplaystyle@shared@impl@@#1#2{%
+    \pgfmathprintnumber@begingroup
+    \toks0={#1}%
+    \toks1=\expandafter{\pgfmathfloatrounddisplaystyle@e@mark #2}%
+    \pgfkeysgetvalue{/pgf/number format/@dec sep mark}\pgfmathprintnumber@fixed@styleDEFAULT@DEC@SEP@MARK
+    \toks2=\expandafter{\pgfmathprintnumber@fixed@styleDEFAULT@DEC@SEP@MARK}%
+    \xdef\pgfmathfloat@glob@TMP{\the\toks0 \the\toks1 \the\toks2 }%
+    \pgfmathprintnumber@endgroup
+    \let\pgfmathresult=\pgfmathfloat@glob@TMP
+}
+
+\def\pgfmathfloatrounddisplaystyle@std#1#2e#3\relax{%
+    \pgfmathfloatrounddisplaystyle@shared@impl#1#2e#3\relax{\cdot}{}{10^{#3}}%
+}
+\def\pgfmathfloatrounddisplaystyle@subscript#1#2e#3\relax{%
+    \pgfmathfloatrounddisplaystyle@shared@impl#1#2e#3\relax{}{1}{_{#3}}%
+}
+\def\pgfmathfloatrounddisplaystyle@superscript#1#2e#3\relax{%
+    \pgfmathfloatrounddisplaystyle@shared@impl#1#2e#3\relax{}{1}{^{#3}}%
+}
+\def\pgfmathfloatrounddisplaystyle@e#1#2e#3\relax{%
+    \ifnum#3<0\relax
+        \pgfmathprintnumber@begingroup
+        \count0=#3\relax
+        \multiply\count0 by-1
+        \xdef\pgfmathfloat@glob@TMP{e{-}\the\count0}%
+        \pgfmathprintnumber@endgroup%
+        \let\pgfmathresult=\pgfmathfloat@glob@TMP
+    \else
+        \def\pgfmathresult{e{+}#3}%
+    \fi
+    \def\pgfmathfloat@loc@TMPb{\pgfmathfloatrounddisplaystyle@shared@impl#1#2e#3\relax{}{1}}%
+    \expandafter\pgfmathfloat@loc@TMPb\expandafter{\pgfmathresult}%
+}
+\def\pgfmathfloatrounddisplaystyle@E#1#2e#3\relax{%
+    \ifnum#3<0\relax
+        \pgfmathprintnumber@begingroup
+        \count0=#3\relax
+        \multiply\count0 by-1
+        \xdef\pgfmathfloat@glob@TMP{E{-}\the\count0}%
+        \pgfmathprintnumber@endgroup%
+        \let\pgfmathresult=\pgfmathfloat@glob@TMP
+    \else
+        \def\pgfmathresult{E{+}#3}%
+    \fi
+    \def\pgfmathfloat@loc@TMPb{\pgfmathfloatrounddisplaystyle@shared@impl#1#2e#3\relax{}{1}}%
+    \expandafter\pgfmathfloat@loc@TMPb\expandafter{\pgfmathresult}%
+}
+
+\def\pgfmathfloatrounddisplaystyle@generic#1#2e#3\relax{%
+    \begingroup
+    \pgfkeysvalueof {/pgf/number format/sci generic/@/.@cmd}{#3}{#1}{#2}\pgfeov
+    \pgfkeysgetvalue{/pgf/number format/sci generic/mantissa sep}\pgfmathdisplay@aftermantissa
+    \pgfkeysgetvalue{/pgf/number format/sci generic/empty mantissa sep}\pgfmathdisplay@nomantissa
+    \pgfkeysgetvalue{/pgf/number format/sci generic/exponent}\pgfmathdisplay@e
+    \toks0=\expandafter{\pgfmathdisplay@aftermantissa}%
+    \toks1=\expandafter{\pgfmathdisplay@nomantissa}%
+    \toks2=\expandafter{\pgfmathdisplay@e}%
+    \xdef\pgfmathfloat@glob@TMP{\noexpand\pgfmathfloatrounddisplaystyle@shared@impl#1#2e#3\noexpand\relax{\the\toks0}{\the\toks1}{\the\toks2}}%
+    \endgroup
+    \pgfmathfloat@glob@TMP
+}
+
+% A macro which takes the argument '<SIGN><MANTISSE>e<EXPONENT>' and
+% expands to the final TeX-representation for that floating point
+% number.
+%
+% PRECONDITION:
+%   the floating point number has already been rounded properly and
+%   the mantissa has been rounded correctly.
+%
+% The argument needs to be in the format returned by
+% \pgfmathfloat@to@FMeE@style and terminated by '\relax'.
+\let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@std
+\newif\ifpgfmathfloat@usezerofill@sci
+\newif\ifpgfmathfloat@usezerofill@fixed
+\newif\ifpgfmathprintnumber@assumemathmode
+\newif\ifpgfmathprintnumber@showpositive
+\newif\ifpgfmathprintnumber@frac@warn
+\newif\ifpgfmathprintnumber@frac@whole
+\newif\ifpgfmathparsenumber@comma@as@period
+
+\long\def\pgfmathfloatfrac@verbatim#1#2{#1/#2}%
+
+\let\pgfmathround@@orig=\pgfmathround@
+
+% 2 = compatible
+% 0 = no
+% 1 = yes
+\def\pgfmathprintnumber@RELATIVE@choice@roundtofixed{2}%
+
+\newif\ifpgfmathprintnumber@thousand@sep@in@fractional
+\pgfkeys{%
+    /pgf/number format/.is family,
+    /pgf/number format,
+    fixed/.code=           \pgfmath@set@number@printer{pgfmathprintnumber@FIXED},
+    sci/.code=             \pgfmath@set@number@printer{pgfmathprintnumber@SCI},
+    std/.code=             {\pgfmath@set@number@printer{pgfmathprintnumber@STD}\pgfmathprintnumber@STD@setparam{#1}},
+    std/.default=,%
+    relative round mode/.is choice,
+    relative round mode/fixed/.code={\def\pgfmathprintnumber@RELATIVE@choice@roundtofixed{1}},
+    relative round mode/mantissa/.code={\def\pgfmathprintnumber@RELATIVE@choice@roundtofixed{0}},
+    relative round mode/compatible/.code={\def\pgfmathprintnumber@RELATIVE@choice@roundtofixed{2}},
+    % relative={<exponent base 10>}
+    relative/.code={%
+        \pgfmath@set@number@printer{pgfmathprintnumber@RELATIVE}%
+        \pgfmathround@@orig{#1}%
+        \expandafter\pgfmathfloattoint@@\pgfmathresult\relax
+        \let\pgfmathprintnumber@RELATIVE@param=\pgfmathresult
+    },%
+    relative/.value required,
+    relative*/.style={/pgf/number format/relative={#1},/pgf/number format/relative round mode=fixed},
+    every relative/.style=std,
+    relative style/.style={/pgf/number format/every relative/.append style={#1}},
+    fixed relative/.code=  \pgfmath@set@number@printer{pgfmathprintnumber@FIXED@RELATIVE},
+    int detect/.code=      \pgfmath@set@number@printer{pgfmathprintnumber@INT@DETECT},
+    int trunc/.code=       \pgfmath@set@number@printer{pgfmathprintnumber@INT@TRUNC},
+    frac/.code=            \pgfmath@set@number@printer{pgfmathprintnumber@frac},%
+    frac TeX/.initial=\frac,
+    frac whole format/.code={\def\pgfmathresult{#1}},
+    frac denom/.initial=,
+    frac whole/.is if=pgfmathprintnumber@frac@whole,
+    frac whole=true,
+    frac shift/.initial=4,
+    frac warning/.is if=pgfmathprintnumber@frac@warn,
+    frac warning=true,
+    assume math mode/.is if=pgfmathprintnumber@assumemathmode,
+    assume math mode/.default=true,
+    fixed zerofill/.is if= pgfmathfloat@usezerofill@fixed,
+    fixed zerofill/.default=true,
+    sci zerofill/.is if=   pgfmathfloat@usezerofill@sci,
+    sci zerofill/.default=true,
+    zerofill/.style=       {/pgf/number format/fixed zerofill={#1},/pgf/number format/sci zerofill={#1}},
+    zerofill/.default=     true,
+    precision/.store in=   \pgfmathfloat@round@precision,
+    sci precision/.code={%
+        \edef\pgfmathfloat@loc@TMPa{#1}%
+        \ifx\pgfmathfloat@loc@TMPa\pgfutil@empty
+            \def\pgfmathprintnumber@sci@precision{\pgfmathfloat@round@precision}%
+        \else
+            \let\pgfmathprintnumber@sci@precision=\pgfmathfloat@loc@TMPa
+        \fi
+    },%
+    sci precision/.default=,
+    sci precision=,
+    fixed default/.code=   {\let\pgfmathprintnumber@fixed@style=\pgfmathprintnumber@fixed@styleDEFAULT},
+    set decimal separator/.initial=,
+    dec sep/.style={/pgf/number format/set decimal separator={#1}},
+    @dec sep mark/.initial=,
+    @sci exponent mark/.initial=,
+    set thousands separator/.initial=,
+    1000 sep in fractionals/.is if=pgfmathprintnumber@thousand@sep@in@fractional,
+    1000 sep in fractionals/.default=true,
+    1000 sep/.style={/pgf/number format/set thousands separator={#1}},
+    min exponent for 1000 sep/.initial=0,
+    use period/.style=     {/pgf/number format/set decimal separator={.},/pgf/number format/set thousands separator={{{,}}}},
+    use comma/.style=      {/pgf/number format/set decimal separator={{{,}}},/pgf/number format/set thousands separator={.}},
+    showpos/.is if=pgfmathprintnumber@showpositive,
+    showpos/.default=true,
+    print sign/.is if=pgfmathprintnumber@showpositive,
+    print sign/.default=true,
+    read comma as period/.is if=pgfmathparsenumber@comma@as@period,
+    read comma as period/.default=true,
+    skip 0./.is if=pgfmathprintnumberskipzeroperiod,
+    skip 0./.default=true,
+    skip 0.= false,
+    use period,
+    sci 10^e/.code=        {\let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@std},
+    sci 10e/.code=         {\let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@std},
+    sci e/.code=           {\let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@e},
+    sci E/.code=           {\let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@E},
+    sci subscript/.code=   {\let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@subscript},
+    sci superscript/.code= {\let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@superscript},
+    sci generic/.code=     {%
+        \let\pgfmathfloatrounddisplaystyle=\pgfmathfloatrounddisplaystyle@generic
+        \pgfkeysdefargs{/pgf/number format/sci generic/@}%
+            {##1##2##3}%
+            {\pgfqkeys{/pgf/number format/sci generic}{#1}}%
+    },
+    sci generic/mantissa sep/.initial=,%
+    sci generic/empty mantissa sep/.initial=,%
+    sci generic/mantisse sep/.style={/pgf/number format/sci generic/mantissa sep={#1}},%
+    sci generic/empty mantisse sep/.style={/pgf/number format/sci generic/empty mantissa sep={#1}},%
+    sci generic/exponent/.initial=,%
+    sci generic/.value required,
+    verbatim/.code={%
+        \pgfqkeys{/pgf/number format}{%
+            sci generic={mantissa sep=,exponent={e##1}},
+            1000 sep=,
+            skip 0.=false,
+            print sign=false,
+            dec sep=.,
+            assume math mode,
+            frac TeX=\pgfmathfloatfrac@verbatim,
+            frac whole format/.code={\def\pgfmathresult{##1 }},
+            @dec sep mark=,
+            @sci exponent mark=,
+        }%
+    },
+    retain unit mantissa/.is if=pgfmathfloatround@allow@empty@mantissa,
+    retain unit mantissa/.default=true,
+    retain unit mantissa=true,
+    %
+    % allows to replace the implementation, for example
+    % 'implementation=\num'. This is experimental -- it is unclear
+    % if all consumers work well since they rely on the keys in
+    % /pgf/number format.
+    implementation/.code={\def\pgfmathprintnumber@protected{#1}},
+}
+
+
+
+\def\pgfmathprintnumber@STD#1{%
+    % parse the input:
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathprintnumber@STD@issci\pgfmathresult\relax
+}
+
+\def\pgfmathprintnumber@STD@setparam#1{%
+    \edef\pgfmathfloat@loc@TMPb{#1}%
+    \ifx\pgfmathfloat@loc@TMPb\pgfutil@empty
+        % DEFAULT for lower and upper bound.
+        \def\pgfmathprintnumber@STD@getlowerbound{%
+            \c@pgf@counta=\pgfmathfloat@round@precision@orig\relax
+            \divide\c@pgf@counta by-2\relax
+        }%
+        \def\pgfmathprintnumber@STD@upperbound{4}%
+    \else
+        \expandafter\pgfutil@in@\expandafter:\expandafter{\pgfmathfloat@loc@TMPb}%
+        \ifpgfutil@in@
+            % we have -4:5 or something like that.
+            % parse both values:
+            \def\pgfmathfloat@loc@TMPa##1:##2\relax{%
+                \edef\pgfmathprintnumber@STD@getlowerbound{%
+                    \noexpand\c@pgf@counta=##1\space
+                }%
+                \edef\pgfmathprintnumber@STD@upperbound{##2}%
+            }%
+            \expandafter\pgfmathfloat@loc@TMPa\pgfmathfloat@loc@TMPb\relax
+        \else
+            % we have just the lower bound:
+            \def\pgfmathprintnumber@STD@upperbound{4}%
+            \edef\pgfmathprintnumber@STD@getlowerbound{%
+                \noexpand\c@pgf@counta=\pgfmathfloat@loc@TMPb\space
+            }%
+        \fi
+    \fi
+}%
+
+\def\pgfmathprintnumber@STD@issci#1#2e#3\relax{%
+    \expandafter\ifnum#1<3
+        \expandafter\ifnum#3>\pgfmathprintnumber@STD@upperbound\relax
+            \pgfmathprintnumber@SCI@issci#1#2e#3\relax%
+        \else
+            \begingroup
+            \pgfmathprintnumber@STD@getlowerbound
+            \ifnum#3<\c@pgf@counta
+                \pgfmathprintnumber@SCI@issci#1#2e#3\relax%
+            \else
+                \pgfmathprintnumber@FIXED@issci#1#2e#3\relax%
+            \fi
+            \pgfmath@smuggleone\pgfmathresult
+            \endgroup
+        \fi
+    \else% nan or inf:
+        \pgfmathfloatrounddisplaystyle#1#2e#3\relax%
+    \fi
+}
+
+\def\pgfmathprintnumber@RELATIVE#1{%
+    % parse the input:
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathprintnumber@RELATIVE@issci\pgfmathresult\relax
+}
+
+\def\pgfmathprintnumber@RELATIVE@choice@roundtofixed@warn{%
+    \pgf@typeout{! Package pgf warning: the use of /pgf/number format/relative is discouraged (buggy). Please use 'relative*' instead or type \string\pgfkeys{/pgf/number format/relative round mode=fixed} into your preamble.}%
+    \global\let\pgfmathprintnumber@RELATIVE@choice@roundtofixed@warn=\relax
+}
+
+\def\pgfmathprintnumber@RELATIVE@issci#1#2e#3\relax{%
+    \begingroup
+        % format X / 10^{relative}:
+        \c@pgf@counta=#3\relax
+        \advance\c@pgf@counta by-\pgfmathprintnumber@RELATIVE@param\relax
+        \pgfmathfloatcreate{#1}{#2}{\the\c@pgf@counta}%
+        % OK, round it to the desired precision:
+        \if0\pgfmathprintnumber@RELATIVE@choice@roundtofixed
+            % relative round mode=mantissa
+            \def\b@round@fixed{0}%
+        \else
+            \if1\pgfmathprintnumber@RELATIVE@choice@roundtofixed
+                % relative round mode=fixed
+                \def\b@round@fixed{1}%
+            \else
+                \pgfmathprintnumber@RELATIVE@choice@roundtofixed@warn
+                % relative round mode=compatible
+                \ifnum\c@pgf@counta>0
+                    % hm. for positive exponents, we should round the
+                    % mantissa rather than only the fractional part.
+                    \def\b@round@fixed{0}%
+                \else
+                    % negative exponent -> round fixed representation:
+                    \def\b@round@fixed{1}%
+                \fi
+            \fi
+        \fi
+        \if1\b@round@fixed
+            % round fixed representation:
+            \pgfmathfloattofixed\pgfmathresult
+            \expandafter\pgfmathroundto\expandafter{\pgfmathresult}%
+            \pgfmathfloatparsenumber{\pgfmathresult}%
+            \pgfmathfloatroundhasperiodtrue% make sure the code below works:
+        \else
+            % round the mantissa:
+            \expandafter\pgfmathfloatround\expandafter{\pgfmathresult}%
+        \fi
+        % Now, compute result * 10^{relative} and format the result:
+        \pgfmathfloattoregisterstok\pgfmathresult\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+        \ifnum\pgfmathfloat@a@S=0
+            \pgfmathfloat@a@E=\pgfmathfloat@a@S % avoid 0 * 10^8
+        \else
+            \advance\pgfmathfloat@a@E by+\pgfmathprintnumber@RELATIVE@param\relax
+        \fi
+        \edef\pgfmathresultX{%
+            \the\pgfmathfloat@a@S
+            \the\pgfmathfloat@a@Mtok
+            \ifpgfmathfloatroundhasperiod\else.0\fi
+            e\the\pgfmathfloat@a@E}%
+        % call another formatter for the result (but avoid rounding inside of it):
+        \pgfqkeys{/pgf/number format}{/pgf/number format/every relative,
+            fixed zerofill=false,% useless here!
+            sci zerofill=false}%
+        \ifx\pgfmathprintnumber@issci\pgfmathprintnumber@RELATIVE@issci
+            \pgfmath@error{The '/pgf/number format/every relative' style should set a valid display style}{}%
+        \fi
+        \let\pgfmathfloat@round@precision@orig=\pgfmathfloat@round@precision
+        \def\pgfmathfloat@round@precision{9999}%
+        \expandafter\pgfmathprintnumber@issci\pgfmathresultX\relax%
+        \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+\def\pgfmathprintnumber@FIXED@RELATIVE#1{%
+    % parse the input:
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathprintnumber@FIXED@RELATIVE@issci\pgfmathresult\relax
+}
+
+\def\pgfmathprintnumber@FIXED@RELATIVE@issci#1#2e#3\relax{%
+    \begingroup
+    \pgfmathfloatcreate{#1}{#2}{#3}%
+    % we want the first <precision> digits - not the first
+    % <precision>+1 digits:
+    \c@pgf@counta=\pgfmathfloat@round@precision\relax
+    \advance\c@pgf@counta by-1
+    \edef\pgfmathfloat@round@precision{\the\c@pgf@counta}%
+    \pgfmathfloatround{\pgfmathresult}%
+    \pgfmathfloattoregisterstok\pgfmathresult\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+    \ifnum\pgfmathfloat@a@S=0
+        \pgfmathfloat@a@E=\pgfmathfloat@a@S % avoid 0 * 10^8
+    \fi
+    \edef\pgfmathresultX{%
+        \the\pgfmathfloat@a@S
+        \the\pgfmathfloat@a@Mtok
+        \ifpgfmathfloatroundhasperiod\else.0\fi
+        e\the\pgfmathfloat@a@E}%
+    \let\pgfmathfloat@round@precision@orig=\pgfmathfloat@round@precision
+    \pgfmathfloat@usezerofill@fixedfalse
+    \def\pgfmathfloat@round@precision{9999}% typeset all remaining digits!
+    \expandafter\pgfmathprintnumber@FIXED@issci\pgfmathresultX\relax%
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+\def\pgfmathprintnumber@frac#1{%
+    % parse the input:
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloatgetfrac{\pgfmathresult}%
+    \expandafter\pgfmathprintnumber@frac@formatresult\pgfmathresult
+}
+\def\pgfmathprintnumber@frac@issci#1#2e#3\relax{%
+    \pgfmathfloatcreate{#1}{#2}{#3}%
+    \pgfmathfloatgetfrac{\pgfmathresult}%
+    \expandafter\pgfmathprintnumber@frac@formatresult\pgfmathresult
+}
+\def\pgfmathprintnumber@frac@formatresult#1#2#3{%
+    \begingroup
+    \pgfkeysgetvalue{/pgf/number format/frac TeX}\pgfmathresult
+    \toks0=\expandafter{\pgfmathresult}%
+    \def\pgfmathfloat@loc@TMPa{#1}%
+    \ifx\pgfmathfloat@loc@TMPa\pgfutil@empty
+        \ifpgfmathprintnumber@showpositive
+            \def\pgfmathfloat@loc@TMPa{+}%
+        \fi
+    \else
+        \ifx\pgfmathfloat@loc@TMPa-%
+        \else
+            \ifx\pgfmathfloat@loc@TMPa+%
+            \else
+                \ifpgfmathprintnumber@showpositive
+                    \edef\pgfmathfloat@loc@TMPa{+\pgfmathfloat@loc@TMPa}%
+                \fi
+                \def\pgfmathfloat@loc@TMPb{\pgfkeysvalueof{/pgf/number format/frac whole format/.@cmd}}%
+                \expandafter\pgfmathfloat@loc@TMPb\pgfmathfloat@loc@TMPa\pgfeov
+                \let\pgfmathfloat@loc@TMPa=\pgfmathresult
+            \fi
+        \fi
+    \fi
+    \toks1=\expandafter{\pgfmathfloat@loc@TMPa}%
+    \edef\pgfmathresult{%
+        \the\toks1 \ifnum#2=0 \else\the\toks0 {#2}{#3}\fi%
+    }%
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}%
+
+% Defines \pgfmathresult to contain three sets of braces containing
+% the sign (optionally containing any components >1), the numerator and the denominator for #1.
+%
+% \pgfmathfloatgetfrac{0.5}  -> \pgfmathresult contains {}{1}{2}
+% \pgfmathfloatgetfrac{-0.5} -> \pgfmathresult contains {-}{1}{2}
+% \pgfmathfloatgetfrac{1.5} ->  \pgfmathresult contains {1}{1}{2}
+%
+% special cases:
+% \pgfmathfloatgetfrac{0}   ->  \pgfmathresult contains {0}{0}{1}
+% \pgfmathfloatgetfrac{1}   ->  \pgfmathresult contains {1}{0}{1}
+%
+% The numerator and denominator is always a number (not empty)
+\def\pgfmathfloatgetfrac#1{%
+    \pgfutil@ifundefined{pgfmathfloatmultiply@}{%
+        \pgfmath@error{Sorry, the number format 'frac' requires '\string\usetikzlibrary{fpu}' (and, optionally, \string\usepackage{fp}) in order to work correctly}{}%
+        \edef\pgfmathresult{{#1}{0}{1}}%
+    }{%
+        \pgfmathfloatgetfrac@{#1}%
+    }%
+}%
+\def\pgfmathfloatgetfrac@#1{%
+    \begingroup
+        \edef\pgfmathfloat@arg{#1}%
+        \expandafter\pgfmathfloat@decompose@tok\pgfmathfloat@arg\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+        \def\pgfmathfloat@loc@TMPa{0}%
+        \ifcase\pgfmathfloat@a@S
+        % #1 = 0:
+            \def\pgfmathresult{{0}{0}{1}}%
+        \or% #1 > 0
+            \pgfmathfloat@a@S=1
+            \def\pgfmathfloat@loc@TMPa{1}%
+        \or% #1 < 0
+            \pgfmathfloat@a@S=-1
+            \def\pgfmathfloat@loc@TMPa{1}%
+        \or
+            \edef\pgfmathresult{{}{NaN}{1}}%
+        \or
+            \edef\pgfmathresult{{}{\infty}{1}}%
+        \or
+            \edef\pgfmathresult{{-}{\infty}{1}}%
+        \fi
+        \if1\pgfmathfloat@loc@TMPa
+            \ifnum\pgfmathfloat@a@E<0
+                \def\pgfmathfloat@wholenumber{}%
+            \else
+                \pgfmathfloatcreate{1}{\the\pgfmathfloat@a@Mtok}{\the\pgfmathfloat@a@E}%
+                \pgfmathfloattofixed\pgfmathresult%
+                \def\pgfmathfloat@loc@TMPa##1.##2\relax{%
+                    \def\pgfmathfloat@wholenumber{##1}%
+                    \pgfmathfloatparsenumber{0.##2}%
+                }%
+                \expandafter\pgfmathfloat@loc@TMPa\pgfmathresult\relax
+                \expandafter\pgfmathfloat@decompose@tok\pgfmathresult\relax\pgfmathfloat@b@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+            \fi
+            %
+            \def\pgfmathfloat@loc@TMPa##1.##2\relax{%
+                \def\pgfmathfloat@mantissa@first{##1}%
+                \def\pgfmathfloat@mantissa@ltone{0.##2}%
+            }%
+            \expandafter\pgfmathfloat@loc@TMPa\the\pgfmathfloat@a@Mtok\relax
+            %
+            \def\pgfmathfloat@loc@@to@int##1.##2\relax##3{%
+                ##3=##1
+                \ifdim0.##2pt>0.5pt
+                    \advance##3 by1
+                \fi
+            }%
+            %
+            % alias registers names:
+            \let\pgfmathresultnumerator=\pgfmathfloat@b@S
+            \let\pgfmathresultdenom=\pgfmathfloat@b@E
+            %
+            \pgfkeysgetvalue{/pgf/number format/frac denom}\pgfmath@target@denominator
+            \ifx\pgfmath@target@denominator\pgfutil@empty
+            %
+                \pgfmathfloat@a@E=-\pgfmathfloat@a@E
+                \ifdim\pgfmathfloat@mantissa@ltone pt=0pt
+                    \def\pgfmathfloat@factor{1}%
+                    \edef\pgfmathfloat@scaled@numerator{\the\pgfmathfloat@a@Mtok}%
+                \else
+                    % FIXME : this here is numerically instable.
+                    %
+                    % The errors of 1/r are magnified by 10^k which
+                    % doesn't work.
+                    \pgfutil@ifundefined{FPdiv}{%
+                        \pgfmathfloatparsenumber{\pgfmathfloat@mantissa@ltone}%
+                        \pgfmathfloatreciprocal@{\pgfmathresult}%
+                    }{%
+                        % \usepackage{fp}.
+                        % yields higher absolute precision.
+                        \FPmessagesfalse%
+                        \FPdebugfalse%
+                        \FPdiv\pgfmathresult{1}{\pgfmathfloat@mantissa@ltone}%
+                        \pgfmathfloatparsenumber{\pgfmathresult}%
+                    }%
+                    \let\pgfmathfloat@inv=\pgfmathresult
+                    \pgfmathfloatcreate{1}{1.0}{\pgfkeysvalueof{/pgf/number format/frac shift}}%
+                    \let\pgfmathfloat@scalebaseten=\pgfmathresult
+                    \pgfmathfloatmultiply@{\pgfmathfloat@inv}{\pgfmathfloat@scalebaseten}%
+                    \let\pgfmathfloat@factor=\pgfmathresult
+                    %
+                    \expandafter\pgfmathfloatparsenumber\expandafter{\the\pgfmathfloat@a@Mtok}%
+                    \let\pgfmathfloat@loc@TMPa=\pgfmathresult
+                    \pgfmathfloatmultiply@{\pgfmathfloat@factor}{\pgfmathfloat@loc@TMPa}%
+                    \pgfmathfloattofixed\pgfmathresult
+                    \let\pgfmathfloat@scaled@numerator=\pgfmathresult
+                    %
+                    \pgfmathfloattofixed\pgfmathfloat@factor
+                    \expandafter\pgfmathfloat@loc@@to@int\pgfmathresult\relax{\pgfmathfloat@b@S}%
+                    \edef\pgfmathfloat@factor{\the\pgfmathfloat@b@S}%
+                \fi
+                %
+                %
+                \pgfmathresultdenom=\pgfmathfloat@factor\relax
+                \pgfmathfloat@multiply@ten@to@the@E\pgfmathresultdenom
+                %
+                \expandafter\pgfmathfloat@loc@@to@int\pgfmathfloat@scaled@numerator\relax{\pgfmathresultnumerator}%
+    %\message{scale = \pgfmathfloat@factor;  Z = \the\pgfmathresultnumerator\space ( von \pgfmathfloat@scaled@numerator), N = \the\pgfmathresultdenom.}%
+                %
+                \pgfmathgreatestcommondivisor{\pgfmathresultnumerator}{\pgfmathresultdenom}%
+                \divide\pgfmathresultnumerator by\pgfmathresult\relax
+                \divide\pgfmathresultdenom by\pgfmathresult\relax
+                \ifpgfmathprintnumber@frac@warn
+                    \ifnum\pgfmathresultdenom>1000
+                        \pgfutil@ifundefined{FPdiv}{%
+                            \pgfmathfloattosci@\pgfmathfloat@arg
+                            \pgf@typeout{! Package pgf /pgf/number format/frac warning=true: /pgf/number format/frac of `\pgfmathresult' = \the\pgfmathresultnumerator\space / \the\pgfmathresultdenom\space might be large due to instabilities. Try \string\usepackage{fp} to improve accuracy.}%
+                        }{}%
+                    \fi
+                \fi
+            \else
+                % use target denominator:
+                \pgfmathresultdenom=\pgfmath@target@denominator\relax
+                \pgfmathfloatcreate{1}{\the\pgfmathfloat@a@Mtok}{\the\pgfmathfloat@a@E}%
+                \pgfmathfloattofixed\pgfmathresult
+                \pgf@xa=\pgfmathresult pt
+                \multiply\pgf@xa by\pgfmathresultdenom
+                \edef\pgfmathfloat@scaled@numerator{\pgfmath@tonumber\pgf@xa}%
+                \expandafter\pgfmathfloat@loc@@to@int\pgfmathfloat@scaled@numerator\relax{\pgfmathresultnumerator}%
+            \fi
+            \ifpgfmathprintnumber@frac@whole
+            \else
+                \ifx\pgfmathfloat@wholenumber\pgfutil@empty
+                \else
+                    \count0=\pgfmathfloat@wholenumber\relax
+                    \multiply\count0 by\pgfmathresultdenom
+                    \advance\pgfmathresultnumerator by\count0
+                    \def\pgfmathfloat@wholenumber{}%
+                \fi
+            \fi
+            \ifnum\pgfmathfloat@a@S<0
+                \edef\pgfmathresult{{-\pgfmathfloat@wholenumber}{\the\pgfmathresultnumerator}{\the\pgfmathresultdenom}}%
+            \else
+                \edef\pgfmathresult{{\pgfmathfloat@wholenumber}{\the\pgfmathresultnumerator}{\the\pgfmathresultdenom}}%
+            \fi
+        \fi
+        \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}%
+\def\pgfmathfloat@gobble@until@relax#1\relax{}
+
+% computes the greatest common divisor of two integer numbers (in
+% integer arithmetics).
+\def\pgfmathgreatestcommondivisor#1#2{%
+    \begingroup
+        \count0=#1\relax
+        \count1=#2\relax
+        \ifnum\count0=0
+            \edef\pgfmathresult{\the\count1}%
+        \else
+            \pgfmathgreatestcommondivisor@loop
+            \edef\pgfmathresult{\the\count0}%
+        \fi
+        \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+\def\pgfmathgreatestcommondivisor@loop{%
+    \ifnum\count1=0
+    \else
+        \ifnum\count0>\count1
+            \advance\count0 by-\count1
+        \else
+            \advance\count1 by-\count0
+        \fi
+        \expandafter\pgfmathgreatestcommondivisor@loop
+    \fi
+}%
+
+% multiplies a TeX register by 10^E where E is stored in the register
+% \pgfmathfloat@a@E (and it should be positive!)%
+%
+% #1 a TeX register
+\def\pgfmathfloat@multiply@ten@to@the@E#1{%
+    \ifnum\pgfmathfloat@a@E>0
+        \multiply#1 by10
+        \advance\pgfmathfloat@a@E by-1
+        \def\pgfmathfloat@multiply@ten@to@the@E@next{\pgfmathfloat@multiply@ten@to@the@E{#1}}%
+    \else
+        \let\pgfmathfloat@multiply@ten@to@the@E@next=\relax%
+    \fi
+    \pgfmathfloat@multiply@ten@to@the@E@next
+}%
+
+\def\pgfmathprintnumber@INT@TRUNC#1{%
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathprintnumber@INT@TRUNC@issci\pgfmathresult\relax
+}
+
+\def\pgfmathprintnumber@INT@TRUNC@impl#1.#2\relax#3#4e#5\relax{%
+    \pgfmathfloatroundhasperiodfalse
+    \pgfmathprintnumber@fixed@style{#1}#3#4e#5\relax%
+}
+\def\pgfmathprintnumber@INT@TRUNC@issci#1#2e#3\relax{%
+    \ifnum#1<3\relax
+        \pgfmathfloatcreate{#1}{#2}{#3}%
+        \pgfmathfloattofixed{\pgfmathresult}%
+        \expandafter\pgfmathprintnumber@INT@TRUNC@impl\pgfmathresult\relax#1#2e#3\relax
+    \else
+        \pgfmathfloatrounddisplaystyle#1#2e#3\relax%
+    \fi
+}
+
+% Invokes '#2' if '#1' is actually an integer or '#3' if not.
+%
+% As a side-effect, \pgfretval will be set to the integer value if it
+% actually *is* an integer. Otherwise, \pgfretval will contain the
+% parsed floating point number.
+%
+% #1 a number constant (not necessarily a parsed float).
+\def\pgfmathifisint#1#2#3{%
+    \gdef\pgfmathfloatisint@@{0}%
+    \begingroup
+    \pgfmathfloatparsenumber{#1}%
+    \let\pgfretval\pgfmathresult
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathfloatisint@\pgfmathresult\relax
+    \pgfmath@smuggleone\pgfretval
+    \endgroup
+    \if1\pgfmathfloatisint@@ #2\else #3\fi
+}%
+\def\pgfmathfloatisint@#1#2e#3\relax{%
+    \ifnum#1<3\relax
+        \pgfmathfloatcreate{#1}{#2}{#3}%
+        \pgfmathfloattofixed{\pgfmathresult}%
+        \def\pgfmathfloat@round@precision{6}%
+        \expandafter\pgfmathroundto\expandafter{\pgfmathresult}%
+        \ifpgfmathfloatroundhasperiod
+        \else
+            \let\pgfretval\pgfmathresult%
+            \gdef\pgfmathfloatisint@@{1}%
+        \fi
+    \fi
+}
+
+\def\pgfmathprintnumber@INT@DETECT#1{%
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathprintnumber@INT@DETECT@issci\pgfmathresult\relax
+}
+
+\def\pgfmathprintnumber@INT@DETECT@issci#1#2e#3\relax{%
+    \begingroup
+    \ifnum#1<3\relax
+        \pgfmathfloatcreate{#1}{#2}{#3}%
+        \pgfmathfloattofixed{\pgfmathresult}%
+        \let\pgfmathfloat@round@precision@=\pgfmathfloat@round@precision
+        \def\pgfmathfloat@round@precision{6}%
+        \expandafter\pgfmathroundto\expandafter{\pgfmathresult}%
+        \let\pgfmathfloat@round@precision=\pgfmathfloat@round@precision@
+        \ifpgfmathfloatroundhasperiod
+            \pgfmathprintnumber@SCI@issci#1#2e#3\relax
+        \else
+            \expandafter\pgfmathprintnumber@fixed@style\expandafter{\pgfmathresult}#1#2e#3\relax
+        \fi
+    \else
+        \pgfmathfloatrounddisplaystyle#1#2e#3\relax%
+    \fi
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+\def\pgfmathprintnumber@FIXED#1{%
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathprintnumber@FIXED@issci\pgfmathresult\relax
+}
+
+\def\pgfmathprintnumber@FIXED@issci#1#2e#3\relax{%
+    \begingroup
+    \ifnum#1<3
+        \pgfmathfloatcreate{#1}{#2}{#3}%
+        \pgfmathfloattofixed{\pgfmathresult}%
+        \ifpgfmathfloat@usezerofill@fixed
+            \expandafter\pgfmathroundtozerofill\expandafter{\pgfmathresult}%
+        \else
+            \expandafter\pgfmathroundto\expandafter{\pgfmathresult}%
+        \fi
+        \ifpgfmathfloatroundmayneedrenormalize
+            \pgfmathfloat@a@E=#3\relax
+            \advance\pgfmathfloat@a@E by1
+            \edef\pgfmathfloat@loc@TMPb{\noexpand\pgfmathprintnumber@fixed@style{\pgfmathresult}#1#2e\the\pgfmathfloat@a@E}%
+            \pgfmathfloat@loc@TMPb\relax%
+        \else
+            \expandafter\pgfmathprintnumber@fixed@style\expandafter{\pgfmathresult}#1#2e#3\relax%
+        \fi
+    \else% nan or inf:
+        \pgfmathfloatrounddisplaystyle#1#2e#3\relax%
+    \fi
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+
+\def\pgfmathprintnumber@SCI#1{%
+    \pgfmathfloatparsenumber{#1}%
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathprintnumber@SCI@issci\pgfmathresult\relax
+}
+
+\def\pgfmathprintnumber@SCI@issci#1#2e#3\relax{%
+    \begingroup
+    \pgfmathfloatcreate{#1}{#2}{#3}%
+    \edef\pgfmathfloat@round@precision{\pgfmathprintnumber@sci@precision}%
+    \ifpgfmathfloat@usezerofill@sci
+        \pgfmathfloatroundzerofill{\pgfmathresult}%
+    \else
+        \pgfmathfloatround{\pgfmathresult}%
+    \fi
+    \pgfmathfloat@to@FMeE@style\pgfmathresult
+    \expandafter\pgfmathfloatrounddisplaystyle\pgfmathresult\relax
+    \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}
+
+% Prints argument #1 using the current pretty printer environment (all
+% variables in /pgf/number format).
+%
+% You may specify optional arguments with \pgfmathprintnumber[...].
+\pgfutil@protected\def\pgfmathprintnumber{%
+    \pgfutil@ifnextchar[%
+        {\pgfmathprintnumber@OPT}%
+        {\pgfmathprintnumber@noopt}%
+}
+
+\def\pgfmathprintnumber@noopt#1{%
+    \pgfmathprintnumber@{#1}%
+    \ifpgfmathprintnumber@assumemathmode
+        \pgfmathresult
+    \else
+        \pgfutilensuremath{\pgfmathresult}%
+    \fi
+}%
+\def\pgfmathprintnumber@OPT[#1]#2{%
+    \begingroup
+    \pgfqkeys{/pgf/number format}{#1}%
+    \pgfmathprintnumber@{#2}%
+    \ifpgfmathprintnumber@assumemathmode
+        \pgfmathresult
+    \else
+        \pgfutilensuremath{\pgfmathresult}%
+    \fi
+    \endgroup
+}%
+
+% As \pgfmathprintnumber, but it produces its output into the second
+% argument.
+\def\pgfmathprintnumberto{%
+    \pgfutil@ifnextchar[%
+        {\pgfmathprintnumberto@OPT}%
+        {\pgfmathprintnumberto@noopt}%
+}
+
+\def\pgfmathprintnumberto@noopt#1#2{%
+    \begingroup
+    \pgfmathprintnumber@{#1}%
+    \ifpgfmathprintnumber@assumemathmode
+        \global\let\pgfmathfloat@glob@TMP=\pgfmathresult
+    \else
+        \toks0=\expandafter{\pgfmathresult}%
+        \xdef\pgfmathfloat@glob@TMP{\noexpand\pgfutilensuremath{\the\toks0 }}%
+    \fi
+    \endgroup
+    \let#2=\pgfmathfloat@glob@TMP
+}%
+\def\pgfmathprintnumberto@OPT[#1]#2#3{%
+    \begingroup
+    \pgfqkeys{/pgf/number format}{#1}%
+    \pgfmathprintnumber@{#2}%
+    \ifpgfmathprintnumber@assumemathmode
+        \global\let\pgfmathfloat@glob@TMP=\pgfmathresult
+    \else
+        \toks0=\expandafter{\pgfmathresult}%
+        \xdef\pgfmathfloat@glob@TMP{\noexpand\pgfutilensuremath{\the\toks0 }}%
+    \fi
+    \endgroup
+    \let#3=\pgfmathfloat@glob@TMP
+}%
+
+
+% Changes the current number pretty printer to #1.
+%
+% #1 is the macro base name for the pretty print routine, without the
+% leading '\'.
+\def\pgfmath@set@number@printer#1{%
+    \expandafter\let\expandafter\pgfmathprintnumber@\csname #1\endcsname
+    \expandafter\let\expandafter\pgfmathprintnumber@issci\csname #1@issci\endcsname
+}
+
+\pgfkeys{/pgf/number format/std}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% IMPL
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% equals only itself when compared with \ifx:
+\def\pgfmathfloat@EOI{\pgfmathfloat@EOI}%
+
+% Re-use counters internally.
+%
+% They are always grouped and only used inside of the rounding
+% routines.
+\let\c@pgfmathroundto@prec=\pgfmathfloat@b@S% ATTENTION: DOUBLE-USED REGISTERS!
+\let\c@pgfmathroundto@offsetbehindperiod=\pgfmathfloat@b@E
+\newcount\c@pgfmathroundto@lastzeros
+
+\newif\ifpgfmathround@impl@PREPERIOD@is@negative@zero
+
+% PRECONDITION:
+% \ifpgfmathfloatroundhasperiod=\iftrue  holds outside of the current TeX group.
+%
+% POSTCONDITION:
+%   \ifpgfmathfloatroundhasperiod will be set correctly AFTER the
+%   current TeX group.
+%   \ifpgfmathfloatroundmayneedrenormalize will be set globally
+\def\pgfmathroundto@impl#1{%
+    \edef\pgfmathround@input{#1}%
+    \global\pgfmathfloatroundmayneedrenormalizefalse
+    \pgfmathfloat@tmptoks={}%
+    \let\pgfmathround@next=\pgfutil@empty
+    \let\pgfmathround@cur=\pgfutil@empty
+    \let\pgfmathresult=\pgfutil@empty
+    \expandafter\c@pgfmathroundto@prec\pgfmathfloat@round@precision\relax
+    \c@pgfmathroundto@lastzeros=0
+    \c@pgfmathroundto@offsetbehindperiod=-1 % means: no period found so far
+    \pgfmathround@impl@PREPERIOD@is@negative@zerotrue
+    \expandafter\pgfmathroundto@impl@ITERATE@NODOT@firstcall\pgfmathround@input\pgfmathfloat@EOI
+}
+
+% \pgfmathroundto implementation in WORDS:
+%
+% coarse idea:
+%     1. collect all digits/sign BEFORE the first period in REVERSE order
+%     2. then, collect UP TO \prec digits after the period in REVERSE order
+% Steps 1. and 2. lead to the digit [sign] sequence
+%     "x_{-p} x_{-p+1} ... x_{-2} x_{-1} '.' x_0 ... x_r"
+% where 'r' is the total number of digits. The integer 'p' denotes the
+% ACTUALLY collected number of digits behind the period.
+%
+% Let 'k' be the desired precision.
+%
+% Please note that pgfmathroundto rounds the mantissa, that means |abs(x)|.
+%
+% There are exactly TWO cases:
+% 1. The case with p<=k and x_{-p-1} = end of input.
+% 2. The case with p=k and x_{-p-1} is a further, next character.
+%
+% Then, for case 1.):
+%     discard any unused zeros at the tail of our number (possibly
+%     including the period)
+%
+% and in case 2.)
+%   if NEXT DIGIT < 5:
+%       do exactly the same as in case 1.) above and discard any
+%       following digits.
+%   else
+%       let q := -p
+%       while(x_q = 9 and q<=r )
+%           if q>=0
+%               set x_q = '0'
+%           else
+%               discard digit x_q='9'
+%           fi
+%           ++q
+%           if q=0
+%               discard the period
+%           fi
+%       end while
+%       if q = r+1
+%           insert a '1'
+%       else
+%           set x_q = x_q + 1
+%       fi
+%   fi
+%
+% All these loops have been implemented in spaghetti-code below.
+% Sorry, I fear its hard to understand. In principle, everything is
+% realised using more or less finite state machines (with some number
+% counting logic).
+%
+% Some comments:
+%     - The token register \pgfmathfloat@tmptoks is used to accumulate the REVERSED input number.
+%     - \pgfmathfloat@EOI always denotes 'END OF INPUT'.
+%     - in the second stage, we need to reverse \pgfmathfloat@tmptoks.
+%       This is -- again -- done with \pgfmathfloat@tmptoks.
+
+\def\pgfmathroundto@impl@discard@period#1.#2\pgfmathfloat@EOI{%
+    \pgfmathfloatroundhasperiodfalse
+    \aftergroup\pgfmathfloatroundhasperiodfalse
+    \def\pgfmathresult{#1}%
+}
+
+\def\pgfmathroundto@impl@gobble@rest@and@start#1\pgfmathfloat@EOI{%
+    \pgfmathroundto@impl@start
+}
+\def\pgfmathroundto@impl@gobble@and@start\pgfmathfloat@EOI{%
+    \pgfmathroundto@impl@start
+}
+\def\pgfmathroundto@impl@gobble\pgfmathfloat@EOI{}%
+\def\pgfmathroundto@impl@gobble@rest#1\pgfmathfloat@EOI{}%
+
+% This method will be invoked as soon as the first step, the reverse
+% collection of up to PREC digits after the period, has finished.
+\def\pgfmathroundto@impl@start{%
+    \ifx\pgfmathround@next\pgfutil@empty
+        \ifnum\c@pgfmathroundto@offsetbehindperiod<0
+            % no period found.
+            \ifpgfmathfloat@fixed@digits@after@period
+                \ifnum\c@pgfmathroundto@prec=0\relax
+                    \pgfmathfloatroundhasperiodfalse
+                    \aftergroup\pgfmathfloatroundhasperiodfalse
+                    \edef\pgfmathresult{\pgfmathround@input}%
+                \else
+                    \pgfmathfloat@tmptoks=\expandafter{\pgfmathround@input.}%
+                    \c@pgfmathroundto@offsetbehindperiod=\c@pgfmathroundto@prec
+                    \pgfmathroundto@impl@append@zeros
+                    \edef\pgfmathresult{\the\pgfmathfloat@tmptoks}%
+                \fi
+            \else
+                \pgfmathfloatroundhasperiodfalse
+                \aftergroup\pgfmathfloatroundhasperiodfalse
+                \edef\pgfmathresult{\pgfmathround@input}%
+            \fi
+        \else
+            %\ifnum\c@pgfmathroundto@offsetbehindperiod>\c@pgfmathroundto@prec
+            %    \pgfmath@error{Internal logic error in pgfmathroundto at [I] - should not have happened!?}{}%
+            %\fi
+            \pgfmathroundto@impl@finish@with@truncation
+        \fi
+    \else
+        %\ifnum\c@pgfmathroundto@offsetbehindperiod=\c@pgfmathroundto@prec
+        %\else
+        %    \pgfmath@error{Internal logic error in pgfmathroundto at [II] - should not have happened!? I have offsetbehindperiod=\the\c@pgfmathroundto@offsetbehindperiod and prec = \the\c@pgfmathroundto@prec}{}%
+        %\fi
+        \expandafter\ifnum\pgfmathround@next<5\relax
+            \pgfmathroundto@impl@finish@with@truncation
+        \else
+            \multiply\c@pgfmathroundto@offsetbehindperiod by-1
+            \expandafter\pgfmathroundto@impl@ADD@ONE\the\pgfmathfloat@tmptoks\pgfmathfloat@EOI
+        \fi
+    \fi
+}
+
+% takes the current input and decides whether trailing zeros shall be
+% discarded or more zeros need to be filled in.
+\def\pgfmathroundto@impl@finish@with@truncation{%
+    \ifpgfmathfloat@fixed@digits@after@period
+        \expandafter\pgfmathroundto@impl@REVERSE\the\pgfmathfloat@tmptoks\pgfmathfloat@EOI
+        \ifnum\c@pgfmathroundto@lastzeros=\c@pgfmathroundto@offsetbehindperiod
+            \ifpgfmathround@impl@PREPERIOD@is@negative@zero
+                % write '0.0000' instead of '-0.0000':
+                \expandafter\pgfmathroundto@impl@discard@minus\the\pgfmathfloat@tmptoks\pgfmathfloat@EOI
+            \fi
+        \fi
+        \ifnum\c@pgfmathroundto@prec=0\relax
+            \expandafter\pgfmathroundto@impl@discard@period\the\pgfmathfloat@tmptoks\pgfmathfloat@EOI
+        \else
+            \advance\c@pgfmathroundto@prec by-\c@pgfmathroundto@offsetbehindperiod
+            \c@pgfmathroundto@offsetbehindperiod=\c@pgfmathroundto@prec
+            \pgfmathroundto@impl@append@zeros
+            \edef\pgfmathresult{\the\pgfmathfloat@tmptoks}%
+        \fi
+    \else
+        \pgfmathroundto@impl@discard@suffix@zeros
+    \fi
+}
+
+\def\pgfmathroundto@impl@discard@minus-#1\pgfmathfloat@EOI{\pgfmathfloat@tmptoks={#1}}%
+
+% appends \c@pgfmathroundto@offsetbehindperiod zeros at the end of \pgfmathfloat@tmptoks.
+\def\pgfmathroundto@impl@append@zeros{%
+    \ifnum\c@pgfmathroundto@offsetbehindperiod>0
+        \pgfmathfloat@tmptoks=\expandafter{\the\pgfmathfloat@tmptoks0}%
+        \advance\c@pgfmathroundto@offsetbehindperiod by-1
+        \pgfmathroundto@impl@append@zeros
+    \fi
+}
+
+\def\pgfmathroundto@impl@ADD@ONE{%
+    \pgfmathfloat@tmptoks={}% no longer needed because its old value will be read from input
+    \pgfmathroundto@impl@ADD@ONE@ITERATE
+}
+\def\pgfmathroundto@impl@ADD@ONE@ITERATE{%
+    \pgfutil@ifnextchar\pgfmathfloat@EOI{%
+        \global\pgfmathfloatroundmayneedrenormalizetrue
+        \edef\pgfmathresult{1\the\pgfmathfloat@tmptoks}%
+        \pgfmathroundto@impl@gobble
+    }{%
+        \pgfutil@ifnextchar.{%
+            \ifnum\c@pgfmathroundto@prec=0
+                % silently discard period in special case precision=0
+                \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ADD@ONE@ITERATE@gobble@dot}%
+            \else
+                \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ADD@ONE@NEXT@COLLECT}%
+            \fi
+            \pgfmathround@nextcmd
+        }{%
+            \pgfutil@ifnextchar+{%
+                \global\pgfmathfloatroundmayneedrenormalizetrue
+                \edef\pgfmathresult{1\the\pgfmathfloat@tmptoks}%
+                \pgfmathroundto@impl@gobble@rest
+            }{%
+                \pgfutil@ifnextchar-{%
+                    \global\pgfmathfloatroundmayneedrenormalizetrue
+                    \edef\pgfmathresult{-1\the\pgfmathfloat@tmptoks}%
+                    \pgfmathroundto@impl@gobble@rest
+                }{%
+                    \pgfmathroundto@impl@ADD@ONE@NEXT
+                }%
+            }%
+        }%
+    }%
+}
+
+\def\pgfmathroundto@impl@ADD@ONE@ITERATE@gobble@dot.{%
+    \pgfmathfloatroundhasperiodfalse
+    \aftergroup\pgfmathfloatroundhasperiodfalse
+    \pgfmathroundto@impl@ADD@ONE@ITERATE
+}
+
+\def\pgfmathroundto@impl@ADD@ONE@NEXT@COLLECT#1{%
+    \pgfmathfloat@tmptoks=\expandafter{\expandafter#1\the\pgfmathfloat@tmptoks}%
+    \pgfmathroundto@impl@ADD@ONE@ITERATE
+}
+\def\pgfmathroundto@impl@ADD@ONE@NEXT#1{%
+    \ifnum#1=9
+        \ifnum\c@pgfmathroundto@offsetbehindperiod<0
+            \ifpgfmathfloat@fixed@digits@after@period
+                \pgfmathfloat@tmptoks=\expandafter{\expandafter0\the\pgfmathfloat@tmptoks}%
+            \else
+                % silently DROP digit
+            \fi
+        \else
+            \pgfmathfloat@tmptoks=\expandafter{\expandafter0\the\pgfmathfloat@tmptoks}%
+        \fi
+        \advance\c@pgfmathroundto@offsetbehindperiod by1
+        \ifnum\c@pgfmathroundto@offsetbehindperiod=0
+            \ifpgfmathfloat@fixed@digits@after@period
+                \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ADD@ONE@ITERATE}%
+            \else
+                \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ADD@ONE@ITERATE@gobble@dot}%
+            \fi
+        \else
+            \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ADD@ONE@ITERATE}%
+        \fi
+    \else
+        % re-use this counter:
+        \c@pgfmathroundto@lastzeros=#1
+        \advance\c@pgfmathroundto@lastzeros by1
+        \edef\pgfmathresult{\the\c@pgfmathroundto@lastzeros\the\pgfmathfloat@tmptoks}%
+        \pgfmathfloat@tmptoks=\expandafter{\pgfmathresult}%
+        \def\pgfmathround@nextcmd{\pgfmathroundto@impl@REVERSE@ITERATE}%
+    \fi
+    \pgfmathround@nextcmd
+}
+
+
+\def\pgfmathroundto@impl@discard@suffix@zeros{%
+    \ifnum\c@pgfmathroundto@lastzeros=\c@pgfmathroundto@offsetbehindperiod
+        \ifpgfmathround@impl@PREPERIOD@is@negative@zero
+            \pgfmathfloatroundhasperiodfalse
+            \aftergroup\pgfmathfloatroundhasperiodfalse
+            \def\pgfmathresult{0}% write '0' instead of '-0'
+        \else
+            \expandafter\pgfmathroundto@impl@discard@period\pgfmathround@input\pgfmathfloat@EOI
+        \fi
+    \else
+        \ifnum\c@pgfmathroundto@lastzeros=0
+            \expandafter\pgfmathroundto@impl@REVERSE\the\pgfmathfloat@tmptoks\pgfmathfloat@EOI
+        \else
+            \expandafter\pgfmathroundto@impl@discard@suffix@zeros@ITERATE\the\pgfmathfloat@tmptoks\pgfmathfloat@EOI
+        \fi
+    \fi
+}
+
+% PRECONDITION:
+%     \c@pgfmathroundto@lastzeros > 0
+\def\pgfmathroundto@impl@discard@suffix@zeros@ITERATE#1{%
+    \advance\c@pgfmathroundto@lastzeros by-1
+    \ifnum\c@pgfmathroundto@lastzeros=0
+        \def\pgfmathround@nextcmd{\pgfmathroundto@impl@REVERSE}%
+    \else
+        \def\pgfmathround@nextcmd{\pgfmathroundto@impl@discard@suffix@zeros@ITERATE}%
+    \fi
+    \pgfmathround@nextcmd
+}
+
+% Usage:
+% \pgfmathroundto@impl@REVERSE#1\pgfmathfloat@EOI
+% -> writes #1 reversed into \pgfmathfloat@tmptoks
+\def\pgfmathroundto@impl@REVERSE{%
+    \pgfmathfloat@tmptoks={}%
+    \pgfmathroundto@impl@REVERSE@ITERATE
+}
+
+\def\pgfmathroundto@impl@REVERSE@ITERATE{%
+    \pgfutil@ifnextchar\pgfmathfloat@EOI{%
+        \edef\pgfmathresult{\the\pgfmathfloat@tmptoks}%
+        \pgfmathroundto@impl@gobble
+    }{%
+        \pgfmathroundto@impl@REVERSE@NEXT
+    }%
+}
+
+\def\pgfmathroundto@impl@REVERSE@NEXT#1{%
+    \pgfmathfloat@tmptoks=\expandafter{\expandafter#1\the\pgfmathfloat@tmptoks}%
+    \pgfmathroundto@impl@REVERSE@ITERATE
+}
+
+\def\pgfmathroundto@impl@BEGIN@DOT.{%
+    \pgfmathfloat@tmptoks=\expandafter{\expandafter.\the\pgfmathfloat@tmptoks}%
+    \c@pgfmathroundto@offsetbehindperiod=0
+    \pgfmathroundto@impl@ITERATE@DOT
+}
+\def\pgfmathroundto@impl@ITERATE@DOT{%
+    \pgfutil@ifnextchar\pgfmathfloat@EOI{%
+        % finished.
+        \pgfmathroundto@impl@gobble@and@start
+    }{%
+        \pgfmathroundto@impl@NEXT@DOT
+    }%
+}
+\def\pgfmathroundto@impl@NEXT@DOT#1{%
+    \ifnum\c@pgfmathroundto@offsetbehindperiod=\c@pgfmathroundto@prec
+        \def\pgfmathround@next{#1}%
+        \def\pgfmathround@nextcmd{\pgfmathroundto@impl@gobble@rest@and@start}%
+    \else
+        \advance\c@pgfmathroundto@offsetbehindperiod by1
+        \ifnum#1=0
+            \advance\c@pgfmathroundto@lastzeros by1
+        \else
+            \c@pgfmathroundto@lastzeros=0
+        \fi
+        \pgfmathfloat@tmptoks=\expandafter{\expandafter#1\the\pgfmathfloat@tmptoks}%
+        \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ITERATE@DOT}%
+    \fi
+    \pgfmathround@nextcmd
+}%
+
+% in contrast to pgfmathroundto@impl@ITERATE@NODOT, this method here
+% checks also for signs
+\def\pgfmathroundto@impl@ITERATE@NODOT@firstcall#1{%
+    \def\pgfmathround@cur{#1}%
+    \ifx\pgfmathround@cur\pgfmathfloat@EOI
+        \pgfmathround@impl@PREPERIOD@is@negative@zerofalse
+        \def\pgfmathround@nextcmd{\pgfmathroundto@impl@start}%
+    \else
+        \ifx\pgfmathround@cur\pgfmathfloatparsenumber@tok@PERIOD
+            \pgfmathround@impl@PREPERIOD@is@negative@zerofalse
+            \def\pgfmathround@nextcmd{\pgfmathroundto@impl@BEGIN@DOT.}%
+        \else
+            \ifx\pgfmathround@cur\pgfmathfloatparsenumber@tok@MINUS
+            \else
+                \pgfmathround@impl@PREPERIOD@is@negative@zerofalse
+            \fi
+            \pgfmathfloat@tmptoks=\expandafter{\expandafter#1\the\pgfmathfloat@tmptoks}%
+            \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ITERATE@NODOT}%
+        \fi
+    \fi
+    \pgfmathround@nextcmd
+}
+
+\def\pgfmathroundto@impl@ITERATE@NODOT#1{%
+    \def\pgfmathround@cur{#1}%
+    \ifx\pgfmathround@cur\pgfmathfloat@EOI
+        \def\pgfmathround@nextcmd{\pgfmathroundto@impl@start}%
+    \else
+        \ifx\pgfmathround@cur\pgfmathfloatparsenumber@tok@PERIOD
+            \def\pgfmathround@nextcmd{\pgfmathroundto@impl@BEGIN@DOT.}%
+        \else
+            \ifx\pgfmathround@cur\pgfmathfloatparsenumber@tok@ZERO
+            \else
+                \pgfmathround@impl@PREPERIOD@is@negative@zerofalse
+            \fi
+            \pgfmathfloat@tmptoks=\expandafter{\expandafter#1\the\pgfmathfloat@tmptoks}%
+            \def\pgfmathround@nextcmd{\pgfmathroundto@impl@ITERATE@NODOT}%
+        \fi
+    \fi
+    \pgfmathround@nextcmd
+}
+
+%--------------------------------------------
+% END of pgfmathroundto implementation.
+%--------------------------------------------
+
+
+% flags, mantissa and exponent has already been stored into
+% \pgfmathfloat@a@* [using ...@Mtok]
+%
+% PRECONDITION:
+%   \ifpgfmathfloatroundhasperiod = \iftrue outside of the current
+%   group
+%
+% POSTCONDITION:
+%   \ifpgfmathfloatroundhasperiod will be set after the current TeX
+%   group.
+\def\pgfmathfloatround@impl{%
+    \expandafter\pgfmathroundto@impl\expandafter{\the\pgfmathfloat@a@Mtok}%
+    \ifpgfmathfloatroundmayneedrenormalize
+        \ifpgfmathfloatroundhasperiod
+            \expandafter\pgfmathfloatround@impl@renormalize\pgfmathresult\pgfmathfloat@EOI%
+        \else
+            \expandafter\pgfmathfloatround@impl@renormalize\pgfmathresult.\pgfmathfloat@EOI%
+        \fi
+        \advance\pgfmathfloat@a@E by1
+    \fi
+    \pgfmathfloatcreate{\the\pgfmathfloat@a@S}{\pgfmathresult}{\the\pgfmathfloat@a@E}%
+}
+
+\def\pgfmathfloatround@impl@renormalize#1#2.#3\pgfmathfloat@EOI{%
+    \pgfmathroundto@impl{#1.#2#3}%
+}
+
+
+
+
+
+% ATTENTION: this thing REQUIRES a period in the mantissa!
+% collects everything into \pgfmathresult
+\def\pgfmathfloattofixed@impl#1.#2\relax{%
+    \ifnum\pgfmathfloat@a@E<0
+        \ifcase-\pgfmathfloat@a@E
+        \or%e-1
+            \pgfmathfloat@a@Mtok={0.}%
+        \or%e-2
+            \pgfmathfloat@a@Mtok={0.0}%
+        \or%e-3
+            \pgfmathfloat@a@Mtok={0.00}%
+        \or%e-4
+            \pgfmathfloat@a@Mtok={0.000}%
+        \or%e-5
+            \pgfmathfloat@a@Mtok={0.0000}%
+        \or%e-6
+            \pgfmathfloat@a@Mtok={0.00000}%
+        \or%e-7
+            \pgfmathfloat@a@Mtok={0.000000}%
+        \or%e-8
+            \pgfmathfloat@a@Mtok={0.0000000}%
+        \or%e-9
+            \pgfmathfloat@a@Mtok={0.00000000}%
+        \or%e-10
+            \pgfmathfloat@a@Mtok={0.000000000}%
+        \else%<= -11
+            \pgfmathfloat@a@Mtok={0.0000000000}%
+            \advance\pgfmathfloat@a@E by10
+            \pgfutil@loop
+            \ifnum\pgfmathfloat@a@E<-1
+                \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok 0}%
+                \advance\pgfmathfloat@a@E by1
+            \pgfutil@repeat
+        \fi
+        \def\pgfmathfloat@loc@TMPb{#2}%
+        \def\pgfmathfloat@loc@TMPc{0}%
+        \ifx\pgfmathfloat@loc@TMPb\pgfmathfloat@loc@TMPc
+            \edef\pgfmathresult{\the\pgfmathfloat@a@Mtok #1}%
+        \else
+            \edef\pgfmathresult{\the\pgfmathfloat@a@Mtok #1#2}%
+        \fi
+    \else
+        %--------------------------------------------------
+        % \ifnum\pgfmathfloat@a@E=0%
+        %     \edef\pgfmathresult{#1.#2}%
+        % \else
+        %     \pgfmathfloat@a@Mtok={#1}%
+        %     \pgfmathfloattofixed@impl@collectmantissa#2\count\pgfmathfloat@a@E
+        %     \edef\pgfmathresult{\the\pgfmathfloat@a@Mtok}%
+        % \fi
+        %--------------------------------------------------
+        \pgfmathfloat@a@Mtok{#1}%
+        \pgfmathfloattofixed@impl@pos#2000000000\pgfmathfloat@EOI
+        \edef\pgfmathresult{\the\pgfmathfloat@a@Mtok}%
+    \fi
+}
+
+% FIXME: this implementation here is very fast, but it introduces trailing zeros. Is that acceptable?
+\def\pgfmathfloattofixed@impl@pos#1#2#3#4#5#6#7#8#9\pgfmathfloat@EOI{%
+    \ifcase\pgfmathfloat@a@E
+    % e+0
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok .#1#2#3#4#5#6#7#8#9}%
+    \or%e+1
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1.#2#3#4#5#6#7#8#9}%
+    \or%e+2
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2.#3#4#5#6#7#8#9}%
+    \or%e+3
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2#3.#4#5#6#7#8#9}%
+    \or%e+4
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2#3#4.#5#6#7#8#9}%
+    \or%e+5
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2#3#4#5.#6#7#8#9}%
+    \or%e+6
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2#3#4#5#6.#7#8#9}%
+    \or%e+7
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2#3#4#5#6#7.#8#9}%
+    \or%e+8
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2#3#4#5#6#7#8.#9}%
+    \else%>=9
+        \pgfmathfloat@a@Mtok\expandafter{\the\pgfmathfloat@a@Mtok #1#2#3#4#5#6#7#8}%
+        \advance\pgfmathfloat@a@E by-8
+        \pgfmathfloattofixed@impl@collectmantissa#9\count\pgfmathfloat@a@E
+    \fi
+}%
+
+\def\pgfmathfloattofixed@impl@collectmantissa#1#2\count#3{%
+    \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok #1}%
+    \advance\pgfmathfloat@a@E by-1%
+    \def\pgfmathfloat@loc@TMPb{#2}%
+    \ifx\pgfmathfloat@loc@TMPb\pgfutil@empty
+        \pgfutil@loop
+        \ifnum\pgfmathfloat@a@E>0%
+            \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok 0}%
+            \advance\pgfmathfloat@a@E by-1%
+        \pgfutil@repeat
+        \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok .0}%
+    \else
+        \ifnum\pgfmathfloat@a@E=0
+            \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok .#2}%
+        \else
+            \pgfmathfloattofixed@impl@collectmantissa#2\count#3%
+        \fi
+    \fi
+}
+
+
+% ============================================
+%
+%
+% \pgfmathfloatparsenumber implementation
+%
+%
+% ============================================
+
+% accepted parser tokens:
+\def\pgfmathfloatparsenumber@tok@ZERO{0}
+\def\pgfmathfloatparsenumber@tok@PLUS{+}
+\def\pgfmathfloatparsenumber@tok@MINUS{-}
+\def\pgfmathfloatparsenumber@tok@PERIOD{.}
+
+\newif\ifpgfmathfloatparsenumberpendingperiod
+
+\def\pgfflt@EOI{p@EOI}%
+\def\pgfflt@EOI@unexpanded{\pgfflt@EOI}%
+
+% Starts a finite-start-machine parser to read a number.
+%
+% The machine's state is represented by the macro which is currently
+% processed; state transitions are realised using \csname...#1\endcsname
+% constructions.
+%
+% It assigns \pgfmathfloat@a@S, \pgfmathfloat@a@Mtok, \pgfmathfloat@a@E.
+\def\pgfflt@impl#1{%
+    \pgfmathfloatparsenumberpendingperiodfalse
+    \pgfmathfloat@tmptoks={}% this register is used to collect PENDING ZEROS
+    \pgfmathfloat@a@E=0
+    % start parsing: check for sign:
+    \expandafter\ifx\csname pgfflt@#1\endcsname\relax
+        \pgfmathfloat@a@S=1
+        \expandafter\pgfflt@init\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgfflt@#1\endcsname
+    \fi
+}
+% State transitions:
+\expandafter\def\csname pgfflt@+\endcsname{%
+    \pgfmathfloat@a@S=1 %
+    \pgfflt@init}%
+\expandafter\def\csname pgfflt@-\endcsname{%
+    \pgfmathfloat@a@S=2 %
+    \pgfflt@init}%
+\expandafter\def\csname pgfflt@\pgfflt@EOI\endcsname{%
+    \pgfmathfloatparsenumber@handleerror{empty number}{}{}}%
+
+\pgfkeys{
+    /pgf/fpu/handlers/empty number/.style 2 args={%
+        /pgf/fpu/handlers/invalid number={#1}{#2}%
+    },
+    /pgf/fpu/empty number is zero/.style={%
+        /pgf/fpu/handlers/empty number/.code 2 args={%
+            \pgfmathfloatcreate{0}{0.0}{0}%
+        }%
+    },%
+    /pgf/fpu/handlers/invalid separator/.code 2 args={%
+        \pgfmath@error{Could not parse input '#1' as a floating point number, sorry. The unreadable part was near the decimal separator '#2'. Do you need the option 'read comma as period'?}{}%
+    },
+    /pgf/fpu/handlers/invalid number/.code 2 args={%
+        \pgfmath@error{Could not parse input '#1' as a floating point number, sorry. The unreadable part was near '#2'.}{}%
+    },
+    /pgf/fpu/handlers/wrong lowlevel format/.code 2 args={%
+        \pgfmath@error{Sorry, an internal routine of the floating point unit got an ill-formatted floating point number `#1'. The unreadable part was near '#2'.}{}%
+        \let\pgfmathresult=\pgfutil@empty
+    },
+}
+
+% #1 the error handler
+% #2 the number which was invalid.
+% #3 the part which produced the error
+%
+% POSTCONDITION: the three registers
+%     \pgfmathfloat@a@S
+%     \pgfmathfloat@a@Mtok
+%     \pgfmathfloat@a@E
+% will contain the number which results from the error handler.
+\def\pgfmathfloatparsenumber@handleerror#1#2#3{%
+    \let\pgfmathresult=\pgfutil@empty
+    \pgfmathfloatparsenumberpendingperiodfalse
+    \pgfkeys{/pgf/fpu/handlers/#1={#2}{#3}}%
+    \ifx\pgfmathresult\pgfutil@empty
+        \pgfmathfloat@a@S=3
+        \pgfmathfloat@a@Mtok={0.0}%
+        \pgfmathfloat@a@E=0
+    \else
+        \expandafter\pgfmathfloat@decompose@tok\pgfmathresult\relax\pgfmathfloat@a@S\pgfmathfloat@a@Mtok\pgfmathfloat@a@E
+    \fi
+}
+\def\pgfflt@error#1\pgfflt@EOI{%
+    \begingroup
+    \pgfmathfloat@a@Mtok={#1}%
+    \xdef\pgfmathfloat@glob@TMP{%
+        \noexpand\pgfmathfloatparsenumber@handleerror
+            {invalid number}{\pgfmathresult}{\the\pgfmathfloat@a@Mtok}}%
+    \endgroup
+    \pgfmathfloat@glob@TMP
+}%
+
+
+
+% FROM: checksign.
+%
+\def\pgfflt@init#1{%
+    \expandafter\ifx\csname pgffltA@#1\endcsname\relax
+        \expandafter\pgfflt@error\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgffltA@#1\endcsname
+    \fi}
+% state transitions:
+\expandafter\def\csname pgffltA@0\endcsname{\pgfflt@leadingzero}% FIXME: inline optimization!
+\expandafter\def\csname pgffltA@1\endcsname{\pgfflt@nonzerodigit1}%
+\expandafter\def\csname pgffltA@2\endcsname{\pgfflt@nonzerodigit2}%
+\expandafter\def\csname pgffltA@3\endcsname{\pgfflt@nonzerodigit3}%
+\expandafter\def\csname pgffltA@4\endcsname{\pgfflt@nonzerodigit4}%
+\expandafter\def\csname pgffltA@5\endcsname{\pgfflt@nonzerodigit5}%
+\expandafter\def\csname pgffltA@6\endcsname{\pgfflt@nonzerodigit6}%
+\expandafter\def\csname pgffltA@7\endcsname{\pgfflt@nonzerodigit7}%
+\expandafter\def\csname pgffltA@8\endcsname{\pgfflt@nonzerodigit8}%
+\expandafter\def\csname pgffltA@9\endcsname{\pgfflt@nonzerodigit9}%
+\def\pgfflt@nonzerodigit#1{%
+    \pgfmathfloat@a@Mtok={#1}%
+    \pgfmathfloatparsenumberpendingperiodtrue
+    \pgfflt@positiveexp}%
+\expandafter\def\csname pgffltA@n\endcsname{\pgfflt@readnan}% FIXME: inlining?
+\expandafter\def\csname pgffltA@N\endcsname{\pgfflt@readnan}% FIXME: inlining?
+\expandafter\def\csname pgffltA@i\endcsname{\pgfflt@readinf}% FIXME: inlining?
+\expandafter\def\csname pgffltA@I\endcsname{\pgfflt@readinf}% FIXME: inlining?
+\expandafter\def\csname pgffltA@.\endcsname{% read '.9' like '0.9'
+    \pgfmathfloat@a@E=-1
+    \pgfflt@leadingzero@foundperiod}%
+\expandafter\def\csname pgffltA@,\endcsname{% read ',9' like '0,9'
+    \pgfmathfloat@frenchinput{%
+        \pgfmathfloat@a@E=-1
+        \pgfflt@leadingzero@foundperiod
+    }%
+}%
+
+\def\pgfmathfloat@frenchinput#1{%
+    \ifpgfmathparsenumber@comma@as@period
+        \def\pgf@marshal{#1}%
+        \expandafter\pgf@marshal
+    \else
+        \expandafter\pgfflt@error@separator\expandafter,%
+    \fi
+}%
+\def\pgfflt@error@separator#1\pgfflt@EOI{%
+    \begingroup
+    \pgfmathfloat@a@Mtok={#1}%
+    \xdef\pgfmathfloat@glob@TMP{%
+        \noexpand\pgfmathfloatparsenumber@handleerror
+            {invalid separator}{\pgfmathresult}{\the\pgfmathfloat@a@Mtok}}%
+    \endgroup
+    \pgfmathfloat@glob@TMP
+}%
+
+\def\pgfflt@finish#1\pgfflt@EOI{}
+
+\def\pgfflt@readnan #1#2{%
+    \def\pgfflt@readnan@ok{1}%
+    \if#1a\else\if#1A\else\def\pgfflt@readnan@ok{0}\fi\fi
+    \if#2n\else\if#2N\else\def\pgfflt@readnan@ok{0}\fi\fi
+    \if\pgfflt@readnan@ok1%
+        \pgfmathfloat@a@S=3\relax%
+        \pgfmathfloat@a@Mtok={0.0}%
+        \pgfmathfloat@a@E=0%
+        \expandafter\pgfflt@finish
+    \else
+        \def\pgfflt@readnan@{\pgfflt@error #1#2}%
+        \expandafter\pgfflt@readnan@
+    \fi
+}
+\def\pgfflt@readinf #1#2{%
+    \def\pgfflt@readinf@ok{1}%
+    \if#1n\else\if#1N\else\def\pgfflt@readinf@ok{0}\fi\fi
+    \if#2f\else\if#2F\else\def\pgfflt@readinf@ok{0}\fi\fi
+    \if\pgfflt@readinf@ok1%
+        \ifnum\pgfmathfloat@a@S=1 %
+            \pgfmathfloat@a@S=4 %
+            \pgfmathfloat@a@Mtok={0.0}%
+        \else
+            \pgfmathfloat@a@S=5 %
+            \pgfmathfloat@a@Mtok={0.0}%
+        \fi
+        \pgfmathfloat@a@E=0 %
+        \expandafter\pgfflt@finish
+    \else
+        \def\pgfflt@readinf@{\pgfflt@error #1#2}%
+        \expandafter\pgfflt@readinf@
+    \fi
+}
+\def\pgfflt@leadingzero#1{%
+    \expandafter\ifx\csname pgffltB@#1\endcsname\relax
+        \expandafter\pgfflt@error\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgffltB@#1\endcsname
+    \fi}
+% State transitions:
+\expandafter\def\csname pgffltB@0\endcsname{\pgfflt@leadingzero}%
+\expandafter\def\csname pgffltB@1\endcsname{\pgfmathfloat@a@Mtok={1}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@2\endcsname{\pgfmathfloat@a@Mtok={2}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@3\endcsname{\pgfmathfloat@a@Mtok={3}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@4\endcsname{\pgfmathfloat@a@Mtok={4}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@5\endcsname{\pgfmathfloat@a@Mtok={5}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@6\endcsname{\pgfmathfloat@a@Mtok={6}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@7\endcsname{\pgfmathfloat@a@Mtok={7}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@8\endcsname{\pgfmathfloat@a@Mtok={8}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@9\endcsname{\pgfmathfloat@a@Mtok={9}\pgfmathfloatparsenumberpendingperiodtrue \pgfflt@positiveexp}
+\expandafter\def\csname pgffltB@\pgfmathfloat@POSTFLAGSCHAR\endcsname{\pgfmathfloat@a@Mtok={0}\pgfflt@readlowlevelfloat}%
+\expandafter\def\csname pgffltB@.\endcsname{%
+    \pgfmathfloat@a@E=-1
+    \pgfflt@leadingzero@foundperiod}%
+\expandafter\def\csname pgffltB@,\endcsname{%
+    \pgfmathfloat@frenchinput{%
+        \pgfmathfloat@a@E=-1
+        \pgfflt@leadingzero@foundperiod
+    }%
+}%
+\expandafter\def\csname pgffltB@e\endcsname{%
+    \pgfmathfloat@a@S=0\relax%
+    \pgfmathfloat@a@Mtok={0.0}%
+    \pgfmathfloat@a@E=0%
+    \pgfflt@readexponent}%
+\let\pgffltB@E=\pgffltB@e
+\expandafter\def\csname pgffltB@\pgfflt@EOI\endcsname{%
+    \pgfmathfloat@a@S=0\relax%
+    \pgfmathfloat@a@Mtok={0.0}%
+    \pgfmathfloat@a@E=0}%
+
+\def\pgfflt@leadingzero@foundperiod#1{%
+    \expandafter\ifx\csname pgffltC@#1\endcsname\relax
+        \expandafter\pgfflt@error\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgffltC@#1\endcsname
+    \fi}
+% State transitions:
+\expandafter\def\csname pgffltC@0\endcsname{%
+    \advance\pgfmathfloat@a@E by-1
+    \pgfflt@leadingzero@foundperiod}%
+\expandafter\def\csname pgffltC@1\endcsname{\pgfmathfloat@a@Mtok={1}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@2\endcsname{\pgfmathfloat@a@Mtok={2}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@3\endcsname{\pgfmathfloat@a@Mtok={3}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@4\endcsname{\pgfmathfloat@a@Mtok={4}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@5\endcsname{\pgfmathfloat@a@Mtok={5}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@6\endcsname{\pgfmathfloat@a@Mtok={6}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@7\endcsname{\pgfmathfloat@a@Mtok={7}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@8\endcsname{\pgfmathfloat@a@Mtok={8}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@9\endcsname{\pgfmathfloat@a@Mtok={9}\pgfmathfloatparsenumberpendingperiodtrue\pgfflt@finish@number@after@period}%
+\expandafter\def\csname pgffltC@e\endcsname{%
+    \pgfmathfloat@a@S=0\relax%
+    \pgfmathfloat@a@Mtok={0.0}%
+    \pgfmathfloat@a@E=0%
+    \pgfflt@readexponent}%
+\let\pgffltC@E=\pgffltC@e
+\expandafter\def\csname pgffltC@\pgfflt@EOI\endcsname{%
+    \pgfmathfloat@a@S=0\relax%
+    \pgfmathfloat@a@Mtok={0.0}%
+    \pgfmathfloat@a@E=0}%
+
+
+\def\pgfflt@positiveexp#1{%
+    \expandafter\ifx\csname pgffltD@#1\endcsname\relax
+        \expandafter\pgfflt@error\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgffltD@#1\endcsname
+    \fi}
+% State transitions:
+\expandafter\def\csname pgffltD@0\endcsname{%
+    \advance\pgfmathfloat@a@E by1
+    \pgfmathfloat@tmptoks=\expandafter{\the\pgfmathfloat@tmptoks0}%
+    \pgfflt@pendingzeros@positiveexp}%
+\expandafter\def\csname pgffltD@1\endcsname{\pgffltD@nonzerodigit1}%
+\expandafter\def\csname pgffltD@2\endcsname{\pgffltD@nonzerodigit2}%
+\expandafter\def\csname pgffltD@3\endcsname{\pgffltD@nonzerodigit3}%
+\expandafter\def\csname pgffltD@4\endcsname{\pgffltD@nonzerodigit4}%
+\expandafter\def\csname pgffltD@5\endcsname{\pgffltD@nonzerodigit5}%
+\expandafter\def\csname pgffltD@6\endcsname{\pgffltD@nonzerodigit6}%
+\expandafter\def\csname pgffltD@7\endcsname{\pgffltD@nonzerodigit7}%
+\expandafter\def\csname pgffltD@8\endcsname{\pgffltD@nonzerodigit8}%
+\expandafter\def\csname pgffltD@9\endcsname{\pgffltD@nonzerodigit9}%
+\expandafter\def\csname pgffltD@\pgfmathfloat@POSTFLAGSCHAR\endcsname{\pgfflt@readlowlevelfloat}%
+\expandafter\def\csname pgffltD@.\endcsname{\pgfflt@finish@number@after@period}% FIXME : inlining?
+\expandafter\def\csname pgffltD@,\endcsname{\pgfmathfloat@frenchinput{\pgfflt@finish@number@after@period}}%
+\expandafter\def\csname pgffltD@e\endcsname{\pgfflt@readexponent}% FIXME : inlining?
+\let\pgffltD@E=\pgffltD@e
+\expandafter\def\csname pgffltD@\pgfflt@EOI\endcsname{}% NOP
+\def\pgffltD@nonzerodigit#1{%
+    \advance\pgfmathfloat@a@E by1
+    \ifpgfmathfloatparsenumberpendingperiod
+        \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok.}%
+        \pgfmathfloatparsenumberpendingperiodfalse
+    \fi
+    \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok#1}%
+    \pgfflt@positiveexp}%
+
+% Read a low-level floating point.
+% Since we are in the second state, \pgfmathfloat@a@Mtok contains the
+% FLAGS. The post-flags-char has also been read.
+\def\pgfflt@readlowlevelfloat#1e#2]\pgfflt@EOI{%
+    \pgfmathfloatparsenumberpendingperiodfalse
+    \pgfmathfloat@a@S=\the\pgfmathfloat@a@Mtok\relax
+    \pgfmathfloat@a@Mtok={#1}%
+    \pgfmathfloat@a@E=#2
+}%
+
+\def\pgfflt@readexponent#1\pgfflt@EOI{%
+    \afterassignment\pgfflt@readexponent@
+    \pgfmathfloat@b@E=#1 \pgfflt@EOI% the white space is important, otherwise \pgfflt@EOI will be expanded.
+}
+\def\pgfflt@readexponent@#1{%
+    \advance\pgfmathfloat@a@E by\pgfmathfloat@b@E\relax
+    %
+    % sanity checking:
+    \def\pgfmathfloat@loc@TMPb{#1}%
+    \ifx\pgfmathfloat@loc@TMPb\pgfflt@EOI@unexpanded
+    \else
+        \def\pgfmathfloat@loc@TMPb{\pgfflt@error#1}%
+        \expandafter\pgfmathfloat@loc@TMPb
+    \fi
+}
+
+\def\pgfflt@pendingzeros@positiveexp#1{%
+    \expandafter\ifx\csname pgffltE@#1\endcsname\relax
+        \expandafter\pgfflt@error\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgffltE@#1\endcsname
+    \fi}
+% State transitions:
+\expandafter\def\csname pgffltE@0\endcsname{%
+    \pgfmathfloat@tmptoks=\expandafter{\the\pgfmathfloat@tmptoks0}%
+    \advance\pgfmathfloat@a@E by1
+    \pgfflt@pendingzeros@positiveexp}%
+\expandafter\def\csname pgffltE@1\endcsname{\pgffltE@nonzerodigit1}%
+\expandafter\def\csname pgffltE@2\endcsname{\pgffltE@nonzerodigit2}%
+\expandafter\def\csname pgffltE@3\endcsname{\pgffltE@nonzerodigit3}%
+\expandafter\def\csname pgffltE@4\endcsname{\pgffltE@nonzerodigit4}%
+\expandafter\def\csname pgffltE@5\endcsname{\pgffltE@nonzerodigit5}%
+\expandafter\def\csname pgffltE@6\endcsname{\pgffltE@nonzerodigit6}%
+\expandafter\def\csname pgffltE@7\endcsname{\pgffltE@nonzerodigit7}%
+\expandafter\def\csname pgffltE@8\endcsname{\pgffltE@nonzerodigit8}%
+\expandafter\def\csname pgffltE@9\endcsname{\pgffltE@nonzerodigit9}%
+\expandafter\def\csname pgffltE@.\endcsname{\pgfflt@finish@number@after@period}% FIXME : inlining?
+\expandafter\def\csname pgffltE@,\endcsname{\pgfmathfloat@frenchinput{\pgfflt@finish@number@after@period}}% FIXME : inlining?
+\def\pgffltE@e{\pgfflt@readexponent}% FIXME : inlining?
+\let\pgffltE@E=\pgffltE@e
+\expandafter\def\csname pgffltE@\pgfflt@EOI\endcsname{}% NOP
+\def\pgffltE@nonzerodigit#1{%
+    \advance\pgfmathfloat@a@E by1
+    \ifpgfmathfloatparsenumberpendingperiod
+        \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok.}%
+        \pgfmathfloatparsenumberpendingperiodfalse
+    \fi
+    \pgfmathfloat@a@Mtok=\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgfmathfloat@a@Mtok\the\pgfmathfloat@tmptoks}%
+    \pgfmathfloat@tmptoks={}%
+    \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok#1}%
+    \pgfflt@positiveexp}%
+
+\def\pgfflt@finish@number@after@period#1{%
+    \expandafter\ifx\csname pgffltF@#1\endcsname\relax
+        \expandafter\pgfflt@error\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgffltF@#1\endcsname
+    \fi}
+% State transitions:
+\expandafter\def\csname pgffltF@0\endcsname{%
+    \pgfmathfloat@tmptoks=\expandafter{\the\pgfmathfloat@tmptoks0}%
+    \pgfflt@pendingzeros}%
+\expandafter\def\csname pgffltF@1\endcsname{\pgffltF@nonzerodigit1}%
+\expandafter\def\csname pgffltF@2\endcsname{\pgffltF@nonzerodigit2}%
+\expandafter\def\csname pgffltF@3\endcsname{\pgffltF@nonzerodigit3}%
+\expandafter\def\csname pgffltF@4\endcsname{\pgffltF@nonzerodigit4}%
+\expandafter\def\csname pgffltF@5\endcsname{\pgffltF@nonzerodigit5}%
+\expandafter\def\csname pgffltF@6\endcsname{\pgffltF@nonzerodigit6}%
+\expandafter\def\csname pgffltF@7\endcsname{\pgffltF@nonzerodigit7}%
+\expandafter\def\csname pgffltF@8\endcsname{\pgffltF@nonzerodigit8}%
+\expandafter\def\csname pgffltF@9\endcsname{\pgffltF@nonzerodigit9}%
+\def\pgffltF@e{\pgfflt@readexponent}%
+\let\pgffltF@E=\pgffltF@e
+\expandafter\def\csname pgffltF@\pgfflt@EOI\endcsname{}% NOP
+\def\pgffltF@nonzerodigit#1{%
+    \ifpgfmathfloatparsenumberpendingperiod
+        \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok.}%
+        \pgfmathfloatparsenumberpendingperiodfalse
+    \fi
+    \pgfmathfloat@a@Mtok=\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgfmathfloat@a@Mtok\the\pgfmathfloat@tmptoks}%
+    \pgfmathfloat@tmptoks={}%
+    \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok#1}%
+    \pgfflt@finish@number@after@period}%
+
+
+\def\pgfflt@pendingzeros#1{%
+    \expandafter\ifx\csname pgffltG@#1\endcsname\relax
+        \expandafter\pgfflt@error\expandafter#1%
+    \else
+        \expandafter\expandafter\csname pgffltG@#1\endcsname
+    \fi}
+% State transitions:
+\expandafter\def\csname pgffltG@0\endcsname{%
+    \pgfmathfloat@tmptoks=\expandafter{\the\pgfmathfloat@tmptoks0}%
+    \pgfflt@pendingzeros}%
+\expandafter\def\csname pgffltG@1\endcsname{\pgffltG@nonzerodigit1}%
+\expandafter\def\csname pgffltG@2\endcsname{\pgffltG@nonzerodigit2}%
+\expandafter\def\csname pgffltG@3\endcsname{\pgffltG@nonzerodigit3}%
+\expandafter\def\csname pgffltG@4\endcsname{\pgffltG@nonzerodigit4}%
+\expandafter\def\csname pgffltG@5\endcsname{\pgffltG@nonzerodigit5}%
+\expandafter\def\csname pgffltG@6\endcsname{\pgffltG@nonzerodigit6}%
+\expandafter\def\csname pgffltG@7\endcsname{\pgffltG@nonzerodigit7}%
+\expandafter\def\csname pgffltG@8\endcsname{\pgffltG@nonzerodigit8}%
+\expandafter\def\csname pgffltG@9\endcsname{\pgffltG@nonzerodigit9}%
+\def\pgffltG@e{\pgfflt@readexponent}% FIXME: inlining?
+\let\pgffltG@E=\pgffltG@e
+\expandafter\def\csname pgffltG@\pgfflt@EOI\endcsname{}% NOP
+\def\pgffltG@nonzerodigit#1{%
+    \ifpgfmathfloatparsenumberpendingperiod
+        \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok.}%
+        \pgfmathfloatparsenumberpendingperiodfalse
+    \fi
+    \pgfmathfloat@a@Mtok=\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgfmathfloat@a@Mtok\the\pgfmathfloat@tmptoks}%
+    \pgfmathfloat@tmptoks={}%
+    \pgfmathfloat@a@Mtok=\expandafter{\the\pgfmathfloat@a@Mtok#1}%
+    \pgfflt@finish@number@after@period}%
+
+\endinput

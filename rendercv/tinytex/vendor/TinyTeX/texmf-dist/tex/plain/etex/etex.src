@@ -1,0 +1,892 @@
+%% e-TeX V2.1;0
+%% Revision-date:  01-FEB-1999 22:36:22 /PB
+%% Revision-history: (at-end)
+
+% The version  number in the first line is compared with the corresponding
+% element in e-TeX, and an error reported if incompatibility is detected.
+% The cycle and revision numbers (that is, the element(s) following the
+% period) are not used in this comparison, allowing enhancements to be made to
+% this module and recorded in its header without introducing a risk of conflict.
+%
+% This allows to use this file with e-TeX versions 2.0 and 2.1!
+%
+% Other files whose headers must be kept in synch include "etexdefs.lib" and
+% "language.def".
+
+% This is "etex.src", the (e-TeX) source file for the "etex" format file.
+% To build the format from it, use one of the following commands or the
+% local equivalent:
+
+% Generic: einitex *etex.src \dump
+% emTeX:   etex -i *etex.src \dump
+% VMS:     etex /init /noformat *"etex.src \dump"
+
+% Assume a purely IniTeX environment and set up a minimal \catcode r\'egime
+
+\catcode `\{=1
+\catcode `\}=2
+\catcode `\#=6
+\catcode `\^=7
+\catcode `\@=\catcode `\A
+
+% Define the basic error-reporting and abort mechanisms:
+
+\def \et@xmsg #1#2%
+   {\begingroup
+    \def \n {^^J}%
+    \def \ { }%
+    \newlinechar=\expandafter `\n
+    \if E#1%
+          \errorcontextlines=0
+          \errmessage {e-TeX error: #2}%
+    \else
+          \message {\n ! e-TeX \if I#1 message%
+                               \else \if W#1 warning%
+                                     \else \if F#1 fatal error%
+                                           \else
+                                               \ unknown (#1)%
+                                           \fi
+                                     \fi
+                               \fi: #2%
+                   }%
+    \fi
+    \endgroup
+   }
+
+% Note: a future version may report errors in the %<fac>-<s>-<code>[, <text>]
+% format, allowing the more verbose <text>s to be read from file rather than
+% stored in the format.
+
+\def \et@xabort #1%
+    {\et@xmsg {F}{#1}%
+     \batchmode
+     \end
+    }
+
+% Make sure this file is being read by e-TeX in extended mode;
+% If it is, prepare to check version/revision compatibility, otherwise abort.
+
+\ifx \undefined \eTeXversion
+     \et@xabort {this file can be processed only in extended mode;\n
+                 \ \ did you perhaps forget the asterisk?%
+                }%
+\else
+     \begingroup
+     \catcode `\%=12
+     \catcode `\?=14
+     \xdef \et@xfilehdr
+          {\detokenize {%% e-TeX V}\the \eTeXversion \eTeXrevision}?
+     \xdef \et@xlibhdr
+          {\detokenize {%% e-TeXlib V}\the \eTeXversion \eTeXrevision}?
+     \endgroup
+\fi
+
+% Assume extended mode, but no additional \catcodes/\defs yet;
+% set up a simple e-TeX condition-reporting system:
+
+\def \et@xinf #1{\et@xmsg {I}{#1}} %%% not currently used
+\def \et@xwarn #1{\et@xmsg {W}{#1}}
+\def \et@xerr   #1#2{{\errhelp={#2}\et@xmsg {E}{#1}}}
+
+% deactivate the processing of patterns and exceptions; these will be
+% reinstated later, after the \uselanguage mechanism has been defined.
+
+\let \et@xpatterns=\patterns
+\def \patterns
+    {\begingroup
+     \everyeof={\fi \endgroup}%
+     \message {[skipping from \noexpand \patterns to end-of-file...]}%
+     \iffalse
+    }
+
+% Read "plain.tex" (\patterns & \hyphenation will be skipped)
+
+\input plain
+
+% restore the catcode of commercial-at (@), which will just have been clobbered
+
+\catcode `\@=\catcode `\A
+
+% Assume an extended Plain environment (i.e. there are no longer any
+% restrictions on the coding techniques we can use).  First prepare to
+% carry out consistency checks on the file headers and the current e-TeX
+% version/revision levels:
+
+\newread \et@xinput
+
+\def \etexhdrchk #1#2%
+    {\openin \et@xinput=#2
+     \ifeof \et@xinput
+            \chardef \etexstatus=0 % V1.0-1
+     \else
+            \begingroup
+            \endlinechar=-1
+            \readline \et@xinput to \et@xbuf
+            \closein \et@xinput
+            \def \p@rtition ##1.##2\endp@rtition {##1}%            V2.1%0
+            \xdef \et@xbuf
+                {\expandafter \p@rtition \et@xbuf .\endp@rtition}% V2.1;0
+            \xdef \et@xtmp {\csname et@x#1hdr\endcsname}%
+            \xdef \et@xtmp
+                {\expandafter \p@rtition \et@xtmp .\endp@rtition}% V2.1;0
+            \endgroup
+            \ifx \et@xtmp \et@xbuf
+                 \chardef \etexstatus=2 % V1.1;4
+            \else
+                 \chardef \etexstatus=1 % V1.1;4
+            \fi
+     \fi
+    }
+
+% Check the version number of this file:
+
+\def \et@xfmtsrc {etex.src}
+\etexhdrchk {file} {\et@xfmtsrc}
+\ifcase \etexstatus
+        \et@xerr {unable to open format source file "\et@xfmtsrc";}
+                   {This should not happen; please ensure that your system
+                    allows a file to be opened for reading more than once
+                    concurrently.%
+                   }%
+\or
+        \et@xwarn {format source file "\et@xfmtsrc" has wrong header;\n
+                    \ \ expected: "\et@xfilehdr"; found: "\et@xbuf";%
+                  }%
+                  {You are using a version of e-TeX which may be incompatible
+                   with the source for the format file you are trying to
+                   compile; please ensure that you have the most recent
+                   version of each.  I will proceed, but you should treat
+                   the results with caution...%
+                  }%
+\fi
+
+% Module handling now implemented (V1.0-2)
+
+\def \module #1{\iftrue}
+\let \endmodule=\fi
+
+\newtoks \et@xtoks
+
+\def \et@xl@@d #1 #2\endl@ad %%% the "#1 #2" code avoids trailing spaces
+    {\ifcsname module:#1\endcsname
+             \et@xwarn {duplicate module name "#1"}%
+     \else
+        \csname module:#1\endcsname %%% we exploit the side-effect explicitly
+        \et@xtoks=\expandafter
+                {\the \et@xtoks
+                 \expandafter \let \csname module:#1\endcsname=\undefined
+                }%
+     \fi
+    }
+
+\def \et@xl@ad #1#2,#3\endl@ad %%% the #1#2 code avoids spurious leading spaces
+    {\et@xl@@d #1#2 \endl@ad
+     \if *#3*
+        \let \n@xt=\relax
+     \else
+        \def \n@xt {\et@xl@ad #3\endl@ad}%
+     \fi
+     \n@xt
+    }
+
+\def \et@xload #1 %%% needed because of the embedded \ifs...
+    {\def \module ##1%
+         {\unless
+          \ifcsname module:##1\endcsname
+                 \message {Skipping module "##1";}%
+          \else
+                 \message {Loading module "##1";}%
+         }%
+     \input #1
+     \def \module ##1{\iftrue}%
+    }
+
+\def \load #1 from #2 %%% selective module loading from an e-TeX library file
+    {\etexhdrchk {lib} {#2}%
+     \ifcase \etexstatus
+        \et@xerr {unable to open library file "#2"; load aborted.}
+                   {I got an <eof> on trying to open your library file;
+                    please make sure it exists, is readable and is not locked.%
+                   }%
+     \or
+        \et@xerr {library file "#2" has wrong header;\n
+                    \ \ expected: "\et@xlibhdr"; found: "\et@xbuf";\n
+                    \ \ load aborted.%
+                 }%
+                 {The first line of your library does not start with
+                  the correct e-TeX header; you may need to update the
+                  file to be compatible with the current version of
+                  e-TeX, or you may simply have specified the wrong file.%
+                 }%
+     \else
+        \et@xtoks={\et@xtoks={}}%
+        \et@xl@ad #1,\endl@ad
+        \et@xload {#2}
+        \the \et@xtoks
+     \fi
+    }
+
+\load interactionmodes from etexdefs.lib %%% \load <foo>[, <bar>...] from <baz>
+
+\def \@sk #1#2#3%
+    {\ifnum \interactionmode=\interactionmodes {errorstop} %%% V2.0;15
+        \def \pr@mpt {\csname #1 \endcsname}%
+        \edef \pr@mptloop {{\escapechar=-1 \global \readline 16 to \pr@mpt}}%
+        \loop \pr@mptloop
+           \ch@ckforyn \pr@mpt {#2}%
+        \ifb@dresponse
+           \message {Please answer Y[es] or N[o]}%
+        \repeat
+     \else
+        \def \pr@mpt {#3}%
+        \ch@ckforyn \pr@mpt {#2}%
+     \fi
+    }
+
+\def \ch@ckforyn #1#2% Bernd Raichle's improved version, V1.0-1
+    {\edef \@nswer {#1}%
+     \def \p@rse ##1##2\endp@rse
+         {\lowercase {\if y##1}\b@dresponsefalse \csname #2true\endcsname
+          \else \lowercase {\if n##1}\b@dresponsefalse \csname #2false\endcsname
+                \else
+                      \b@dresponsetrue
+                \fi
+          \fi
+         }%
+     \expandafter \p@rse \@nswer \endp@rse
+    }
+
+\def \usef@llback %%% V1.0-3
+    {\message {Using fallback mode (USenglish)}%
+     \addlanguage {USenglish}{hyphen}{}{2}{3}%
+    }
+
+% OK, that's all the utilities defined; on with the real work:
+% First, re-instate \patterns:
+
+\let \patterns=\et@xpatterns
+
+% Define the language-handling commands
+
+\def \et@xlang {\csname newlanguage\endcsname}
+
+\def \uselanguage #1%
+    {\ifcsname lang@#1\endcsname
+        \language=\csname lang@#1\endcsname
+        \lefthyphenmin=\csname lhm@#1\endcsname
+        \righthyphenmin=\csname rhm@#1\endcsname
+        \ifdefined \uselanguage@hook % V1.0-1
+            \uselanguage@hook {#1}%  % V1.0-1
+        \fi
+     \else
+        \et@xerr {language #1 undefined.}%
+                 {You are trying to use a language which has not previously
+                  been defined; remember that any language you want to use
+                  will need to have been specified at the time the format
+                  was created.%
+                 }%
+     \fi
+    }
+
+\def \addlanguage #1#2#3#4#5% language patterns exceptions lhm rhm
+    {\expandafter \et@xlang \csname lang@#1\endcsname
+     \expandafter \chardef \csname lhm@#1\endcsname=#4 % V1.0-1
+     \expandafter \chardef \csname rhm@#1\endcsname=#5 % V1.0-1
+     \uselanguage {#1}%
+     \input #2
+     \if *#3*\else \input #3 \fi
+     \ifdefined \addlanguage@hook % V1.0-4
+        \addlanguage@hook {#1}%  % V1.0-4
+     \fi
+     \edef \fmtversion {\fmtversion/#1}%
+    }
+
+% Decrement \count 19, because \newlanguage will increment it again
+
+\advance \count 19 by -1
+
+% We are about to try to process a user/site-specific file "language.def",
+% which establishes a Babel-like language selection environment.  Since
+% there is always a risk of a spurious file of that name being found,
+% we look for an e-TeX header in the first line.  If the file can be opened,
+% but doesn't have the right header, we interrogate the user as to whether
+% to use fallback mode; in this mode, we simply establish USenglish as the
+% sole language, with the et@x patterns, exceptions and left- and right-
+% hyphen minima for TeX.  If we can't interrogate the user (e.g. not in
+% \errorstopmode), or if the user elects not to use fallback, we abort;
+% if the file can't be found/opened, we use fallback unconditionally.
+
+\newif \ifb@dresponse
+\newif \ifusef@llback
+
+\def \l@ngdefnfile {language.def}
+
+\etexhdrchk {file} {\l@ngdefnfile}
+\ifcase \etexstatus
+        \et@xwarn {unable to open file "\l@ngdefnfile";}%
+        \usef@llback                      % unable to open "language.def"
+\or
+        \et@xwarn {file "\l@ngdefnfile" has wrong header;\n
+                      \ \ expected: "\et@xfilehdr"; found: "\et@xbuf";%
+     		  }%
+        \@sk {Use fallback?} {usef@llback} {y}%
+        \ifusef@llback
+                \usef@llback
+        \else
+                \input \l@ngdefnfile    % use "language.def" after warning
+        \fi
+\else
+        \input \l@ngdefnfile    % "language.def" open & valid
+\fi
+
+% All that was just to set up natural language handling...
+% The "real" work of "etex.src", however, is to augment the non-primitives
+% of Plain.TeX to incorporate e-TeX specific features, and to add new
+% non-primitives to simplify access to new e-TeX specific primitives.
+
+\message {Augmenting the Plain TeX definitions:}
+\message {\string \tracingall;}
+
+\def \tracingall
+    {\tracingonline=\@ne
+     \tracingcommands=\thr@@ % plain.tex has \tw@
+     \tracingstats=\tw@
+     \tracingpages=\@ne
+     \tracingoutput=\@ne
+     \tracinglostchars=\tw@ % plain.tex has \@ne
+     \tracingmacros=\tw@
+     \tracingparagraphs=\@ne
+     \tracingrestores=\@ne
+     \showboxbreadth=\maxdimen
+     \showboxdepth=\maxdimen
+     \errorstopmode
+     \tracinggroups=\@ne
+     \tracingifs=\@ne
+     \tracingscantokens=\@ne
+     \tracingnesting=\@ne
+     \tracingassigns=\tw@
+     }
+
+\message {Adding new e-TeX definitions:}
+
+\message {\string \eTeX,}
+\def \eTeX {$\varepsilon$-\TeX} %%% the simple version, not suitable for maths;
+                                %%% a more sophisticated one may find its way
+                                %%% into "etexdefs.lib" in due course.
+
+\message {\string \loggingall,}
+\def \loggingall {\tracingall \tracingonline=\z@}
+
+\message {\string \tracingnone,}
+\def \tracingnone
+    {\tracingassigns=\z@
+     \tracingnesting=\z@
+     \tracingscantokens=\z@
+     \tracingifs=\z@
+     \tracinggroups=\z@
+     \showboxdepth=\thr@@
+     \showboxbreadth=5
+     \tracingrestores=\z@
+     \tracingparagraphs=\z@
+     \tracingmacros=\z@
+     \tracinglostchars=\@ne
+     \tracingoutput=\z@
+     \tracingpages=\z@
+     \tracingstats=\z@
+     \tracingcommands=\z@
+     \tracingonline=\z@
+    }
+
+\message {register allocation;}
+
+\newcount \et@xins % our insertion counter (\insc@unt is used differently)
+
+% We have to adjust the Plain TeX register allocation counts for our
+% slightly modified book-keeping:
+
+\advance \count 10 by 1 % \count 10=23 % allocates \count registers 23, 24, ...
+\advance \count 11 by 1 % \count 11=10 % allocates \dimen registers 10, 11, ...
+\advance \count 12 by 1 % \count 12=10 % allocates \skip registers 10, 11, ...
+\advance \count 13 by 1 % \count 13=10 % allocates \muskip registers 10, 11, ...
+\advance \count 14 by 1 % \count 14=10 % allocates \box registers 10, 11, ...
+\advance \count 15 by 1 % \count 15=10 % allocates \toks registers 10, 11, ...
+\advance \count 16 by 1 % \count 16=0  % allocates input streams 0, 1, ...
+\advance \count 17 by 1 % \count 17=0  % allocates output streams 0, 1, ...
+\advance \count 18 by 1 % \count 18=4  % allocates math families 4, 5, ...
+\advance \count 19 by 1 % \count 19=0  % allocates \language codes 0, 1, ...
+
+\et@xins=\insc@unt % \et@xins=255 % allocates insertions 254, 253, ...
+
+% We don't change the Plain TeX definitions of \newcount, etc., but the
+% \alloc@ macro doing the actual work is redefined.
+
+% When the normal register pool for \count, \dimen, \skip, \muskip,
+% \box, or \toks registers is exhausted, we switch to the extended pool.
+
+\def \alloc@ #1#2#3#4#5%
+    {\ifnum \count 1#1 < #4% make sure there's still room
+     	 \allocationnumber=\count 1#1
+	 \global \advance \count 1#1 by \@ne
+	 \global #3#5=\allocationnumber
+	 \wlog {\string #5=\string #2\the \allocationnumber}%
+     \else \ifnum #1 < 6
+    		  \begingroup \escapechar=\m@ne
+		  \expandafter \alloc@@ \expandafter {\string #2}#5%
+	   \else	
+	 	  \errmessage {No room for a new #2}%
+	   \fi
+     \fi
+  }
+
+% The \expandafter construction used here allows the generation of
+% \newcount and \globcount from #1=count. Moreover (and more important)
+% this construction avoids the appearance of \outer macros inside
+% macro definitions or conditionals.
+
+\def \alloc@@ #1#2%
+    {\endgroup % restore \escapechar
+     \message {Normal \csname#1\endcsname register pool exhausted,
+						switching to extended pool.}%
+     \global \expandafter 
+     \let \csname new#1\expandafter \endcsname \csname glob#1\endcsname
+     \csname new#1\endcsname#2%
+    }
+
+% We do change the Plain TeX definition of \newinsert
+
+\outer \def \newinsert #1%make sure there's still room for ...
+      {\ch@ck 0 \et@xins \count % ... a \count, ...
+        {\ch@ck 1 \et@xins \dimen % ... \dimen, ...
+     	  {\ch@ck 2 \et@xins \skip % ... \skip, ...
+       	    {\ch@ck 4 \et@xins \box % ... and \box register
+              {\global \advance \et@xins by \m@ne
+	       \unless 
+               \ifnum \insc@unt < \et@xins 
+	      	      \global \insc@unt=\et@xins 
+	       \fi
+	       \allocationnumber=\et@xins
+	       \global \chardef #1=\allocationnumber
+	       \wlog {\string #1=\string \insert \the \allocationnumber}%
+	      }%
+            }%
+          }%
+        }%
+      }
+
+\def \ch@ck #1#2#3#4%
+    {\ifnum \count 1#1 < #2#4\else \errmessage {No room for a new #3}\fi}
+
+% And we define \reserveinserts, so that you can say \reserveinserts{17} 
+% in order to reserve room for up to 17 additional insertion classes that will
+% not be taken away by \newcount, \newdimen, \newskip, or \newbox.
+
+\outer \def \reserveinserts#1%
+      {\global \insc@unt=\numexpr \et@xins \ifnum #1 > \z@ -#1\fi \relax}
+
+\message {extended register allocation;}
+
+% Now, we define \globcount, \globbox, etc., so that you can say
+% \globcount\foo and \foo will be defined (with \countdef) to be the
+% next count register from the vastly larger but somewhat less efficient
+% extended register pool. We also define \loccount, etc., but these
+% register definitions are local to the current group.
+
+\count 260=277     % globally allocates \count registers 277, 278, ...
+\count 261=\@cclvi % globally allocates \dimen registers 256, 257, ...
+\count 262=\@cclvi % globally allocates \skip registers 256, 257, ...
+\count 263=\@cclvi % globally allocates \muskip registers 256, 257, ...
+\count 264=\@cclvi % globally allocates \box registers 256, 257, ...
+\count 265=\@cclvi % globally allocates \toks registers 256, 257, ...
+\count 266=\@ne    % globally allocates \marks classes 1, 2, ...
+
+\def \et@xmaxregs {32768}
+
+\count 270=\et@xmaxregs % locally allocates \count registers 32767, 32766, ...
+\count 271=\et@xmaxregs % ditto for \dimen registers
+\count 272=\et@xmaxregs % ditto for \skip registers
+\count 273=\et@xmaxregs % ditto for \muskip registers
+\count 274=\et@xmaxregs % ditto for \box registers
+\count 275=\et@xmaxregs % ditto for \toks registers
+\count 276=\et@xmaxregs % ditto for \marks classes
+
+% \count registers 256-259 and 267-269 are not (yet) used
+
+\outer \def \globcount  {\et@xglob 0 \count  \countdef}
+       \def \loccount   {\et@xloc  0 \count  \countdef}
+\outer \def \globdimen  {\et@xglob 1 \dimen  \dimendef}
+       \def \locdimen   {\et@xloc  1 \dimen  \dimendef}
+\outer \def \globskip   {\et@xglob 2 \skip   \skipdef}
+       \def \locskip    {\et@xloc  2 \skip   \skipdef}
+\outer \def \globmuskip {\et@xglob 3 \muskip \muskipdef}
+       \def \locmuskip  {\et@xloc  3 \muskip \muskipdef}
+\outer \def \globbox    {\et@xglob 4 \box    \mathchardef}
+       \def \locbox     {\et@xloc  4 \box    \mathchardef}
+\outer \def \globtoks   {\et@xglob 5 \toks   \toksdef}
+       \def \loctoks    {\et@xloc  5 \toks   \toksdef}
+\outer \def \globmarks  {\et@xglob 6 \marks  \mathchardef}
+       \def \locmarks   {\et@xloc  6 \marks  \mathchardef}
+
+\let\newmark=\globmarks %%% 2.0;14
+\let\newmarks=\globmarks
+
+\def \et@xglob #1#2#3#4%
+    {\et@xchk #1#2% make sure there's still room
+    	{\allocationnumber=\count 26#1
+	 \global \advance \count 26#1 by \@ne
+	 \global #3#4=\allocationnumber
+	 \wlog {\string #4=\string #2\the \allocationnumber}%
+        }%
+ }
+
+\def \et@xloc#1#2#3#4%
+    {\et@xchk #1#2% make sure there's still room
+        {\advance \count 27#1 by \m@ne
+         \allocationnumber=\count 27#1
+ 	 #3#4=\allocationnumber 
+	 \wlog {\string #4=\string #2\the \allocationnumber \space (local)}%
+       }%
+ }
+
+\def \et@xchk #1#2#3%
+    {\ifnum \count 26#1 < \count 27#1 
+        #3%
+     \else 
+	\errmessage {No room for a new #2}%
+     \fi
+    }
+
+% Next we define \globcountblk, \loccountblk, etc., so that one can
+% write \globcountblk\foo{17} and \foo will be defined (with \mathchardef)
+% as the first (the zeroth?) of a block of 17 consecutive registers.
+% Thus the user is intended to reference elements <\foo+0> to <\foo+n-1>,
+% where n is the length of the block allocated.
+
+\outer \def \globcountblk  {\et@xgblk 0 \count}
+       \def \loccountblk   {\et@xlblk 0 \count}
+\outer \def \globdimenblk  {\et@xgblk 1 \dimen}
+       \def \locdimenblk   {\et@xlblk 1 \dimen}
+\outer \def \globskipblk   {\et@xgblk 2 \skip}
+       \def \locskipblk    {\et@xlblk 2 \skip}
+\outer \def \globmuskipblk {\et@xgblk 3 \muskip}
+       \def \locmuskipblk  {\et@xlblk 3 \muskip}
+\outer \def \globboxblk    {\et@xgblk 4 \box}
+       \def \locboxblk     {\et@xlblk 4 \box}
+\outer \def \globtoksblk   {\et@xgblk 5 \toks}
+       \def \loctoksblk    {\et@xlblk 5 \toks}
+\outer \def \globmarksblk  {\et@xgblk 6 \marks}
+       \def \locmarksblk   {\et@xlblk 6 \marks}
+
+% And, both to provide a higher-level interface to the block allocation
+% scheme, and to demonstrate possible applications of the new \...expr
+% primitives, we also define \globcountvector and \loccountvector (etc)
+% which allow the user to access elements with embedded arithmetic, as in
+
+% \globcountvector \foo {12}
+% \foo {\count 0 + 3} = \foo {\count 1 * 2}
+
+\outer \def \globcountvector  {\et@xgvec 0 \count}
+       \def \loccountvector   {\et@xlvec 0 \count}
+\outer \def \globdimenvector  {\et@xgvec 1 \dimen}
+       \def \locdimenvector   {\et@xlvec 1 \dimen}
+\outer \def \globskipvector   {\et@xgvec 2 \skip}
+       \def \locskipvector    {\et@xlvec 2 \skip}
+\outer \def \globmuskipvector {\et@xgvec 3 \muskip}
+       \def \locmuskipvector  {\et@xlvec 3 \muskip}
+\outer \def \globboxvector    {\et@xgvec 4 \box}
+       \def \locboxvector     {\et@xlvec 4 \box}
+\outer \def \globtoksvector   {\et@xgvec 5 \toks}
+       \def \loctoksvector    {\et@xlvec 5 \toks}
+\outer \def \globmarksvector  {\et@xgvec 6 \marks}
+       \def \locmarksvector   {\et@xlvec 6 \marks}
+
+\def \et@xgblk #1#2#3#4%
+    {\et@xchkblk #1#2{#4}% make sure there's still room
+        {\allocationnumber=\count 26#1
+         \global \advance \count 26#1 by #4%
+         \global \mathchardef #3=\allocationnumber
+         \wlog {\string #3=\string #2blk{\number #4} at \the \allocationnumber}%
+      }%
+    }
+
+\def \et@xlblk #1#2#3#4%
+    {\et@xchkblk #1#2{#4}% make sure there's still room
+        {\advance \count 27#1 by -#4%
+         \allocationnumber=\count 27#1
+         \mathchardef #3=\allocationnumber
+         \wlog {\string #3=\string #2blk{\number #4} 
+       		at \the \allocationnumber \space (local)%
+       	       }%
+      }%
+    }
+
+\begingroup
+\catcode `\# = 12
+\gdef \et@xhash {#}
+\endgroup
+
+\def \et@xgvec #1#2#3#4%
+    {\et@xchkblk #1#2{#4}% make sure there's still room
+        {\allocationnumber=\count 26#1
+         \global \advance \count 26#1 by #4%
+         \ifx    #2\box
+                 \def \2{}%
+         \else   \ifx #2\marks
+                      \def \2{}%
+                 \else
+                      \def \2{\string #2}%
+                 \fi
+         \fi
+         \xdef #3##1{\2 \noexpand \numexpr \the \allocationnumber+##1\relax}%
+         \wlog {\string #3 {\et@xhash 1} =
+                  \2 {\the \allocationnumber+\et@xhash 1} (global #2 vector)%
+      	     }%
+      }%
+    }
+
+\def \et@xlvec #1#2#3#4%
+    {\et@xchkblk #1#2{#4}% make sure there's still room
+        {\advance \count 27#1 by -#4%
+ 	 \allocationnumber=\count27#1 
+	 \mathchardef #3=\allocationnumber
+	 \ifx  #2\box
+               \def \2{}%
+	 \else \ifx #2\marks
+               	   \def \2{}%
+               \else
+               	   \def \2{\string #2}%
+               \fi
+	 \fi
+	 \edef #3##1{\2 \noexpand \numexpr \the \allocationnumber+##1\relax}%
+	 \wlog {\string #3 {\et@xhash 1} =
+                   \2 {\the \allocationnumber+\et@xhash 1} (local #2 vector)%
+               }%
+        }%
+    }
+
+\def \et@xchkblk #1#2#3#4%
+    {\ifnum #3 < \z@
+     	   \errmessage {Negative register block size \number #3}%
+     \else \ifnum \numexpr \count 26#1+#3 > \count 27#1
+     		\errmessage {No room for new #2block of size \number#3}%
+     	   \else 
+	 	 #4%
+     	   \fi 
+     \fi
+    }
+
+% In an attempt to reduce the overheads of e-TeX, we recycle all possible
+% resources, including (as a penultimate step) the recycler itself...
+% The user can circumvent (or force) this during format creation,
+% by \letting \ifrecycle=\iffalse (or \iftrue, to force it).
+
+% As this file has grown by accretion, it is possible that we are no
+% longer recycling all the resources we could; this will be investigated.
+
+\def \mayber@cycle {\expandafter \ifrecycle}
+\def \forcer@cycle {\expandafter \iftrue}
+
+\ifdefined \ifrecycle
+        \mayber@cycle
+\else
+        \forcer@cycle
+\fi
+
+% There's a concealed \if... lurking here, which explains the
+% strange indentation of the code that follows (V1.0-1)
+
+        \def \r@cycle #1%
+            {\ifdefined #1
+                 \message {\string #1,}\let #1=\und@fined
+             \else
+                 \message {\string #1 (not defined),}
+             \fi
+            }
+        {\newlinechar=`\! \message {!Recycling:}}
+
+        \r@cycle \addlanguage
+        \r@cycle \@nswer
+        \r@cycle \@sk
+        \r@cycle \b@dresponsetrue
+        \r@cycle \b@dresponsefalse
+        \r@cycle \ch@ckforyn
+        \r@cycle \mayber@cycle
+        \r@cycle \et@xabort
+        \r@cycle \et@xbuf
+        \r@cycle \et@xfmtsrc
+        \r@cycle \et@xfilehdr
+        \r@cycle \et@xinf
+        \r@cycle \et@xpatterns
+%       \r@cycle \ifb@dresponse
+%       \r@cycle \ifusef@llback
+        \r@cycle \l@ngdefnfile
+        \r@cycle \n@xt
+        \r@cycle \p@rse
+        \r@cycle \pr@mpt
+        \r@cycle \pr@mptloop
+        \r@cycle \forcer@cycle
+        \r@cycle \usef@llback
+        \r@cycle \usef@llbacktrue
+        \r@cycle \usef@llbackfalse
+
+% The following are retained, since they may be needed by user code; with a few
+% (regrettable) exceptions, all of these are given the \etex or \et@x prefix,
+% to reduce as far as possible the risk of them clashing with other used-defined
+% names.
+
+% The e-TeX team are willing to change the names of the remaining, at-risk,
+% control sequences if it is demonstrated that the current names cause problems
+% or difficulties.
+
+        \def \r@tain #1%
+            {\ifdefined #1
+                 \message {\string #1,}
+             \else
+                 \message {\string #1 (not defined),}
+             \fi
+            }
+        {\newlinechar=`\! \message {!Retaining:}}
+
+        \r@tain \et@xerr
+        \r@tain \et@xinput
+        \r@tain \et@xlibhdr
+        \r@tain \et@xmsg
+        \r@tain \et@xtoks
+        \r@tain \et@xwarn
+        \r@tain \et@xl@@d
+        \r@tain \et@xl@ad
+        \r@tain \et@xload
+        \r@tain \et@xlang
+        \r@tain \et@xhash
+        \r@tain \eTeX
+        \r@tain \etexhdrchk
+%       \r@tain \endmodule
+        \r@tain \etexstatus
+        \r@tain \module
+        \r@tain \uselanguage
+
+        \r@cycle \r@tain
+        \r@cycle \r@cycle
+
+\fi
+
+% And finally re-catcode commercial-at
+
+\catcode `\@=12
+\endinput
+
+%% Revision-history:
+
+01-FEB-1999: 2.1;0  Allow file to be used with e-TeX versions 2.0 and 2.1
+
+25-MAR-1998: 2.0;19 Improved log message for \{glob|loc}{marks|box}vector (PEB)
+
+24-MAR-1998: 2.0;18 Optimisation of one section made (DC & PEB),
+			a couple of \if tests made more robust,
+			and spacing improved in one macro.
+
+24-MAR-1998: 2.0;17 Coding styles unified and all references to Peter
+     			Breitenlohner eliminated from main code
+
+23-MAR-1998: 2.0;16 Continued from 2.0;15
+
+20-MAR-1998: 2.0;15 Changes made here and in "etexdefs.lib" to
+			improve compatibility with LaTeX, and
+			\{glob,loc}{marks,box}vector re-thought.
+
+11-MAR-1998: 2.0;14 \newmark made synonym for \newmarks / PT
+
+10-MAR-1998: 2.0;13 Missing brace re-inserted in \...lvec /PT
+
+10-MAR-1998: 2.0;12 Typo corrected in Peter's name /PT
+
+10-MAR-1998: 2.0;11 "\...lvec" failed to use \et@xhash; fixed / PT
+
+10-MAR-1998: 2.0;10 \h@sh -> \et@xhash /PT
+
+06-MAR-1998: 2.0;9 Final tweaks by PEB !
+
+05-MAR-1998: <missing version number> Final tweaks by PT
+
+28-Feb-1998: 2.0;8 Major re-work by PEB
+
+24-Feb-1998: 2.0;7 \tracingnesting -> \tw@
+
+24-FEB-1998: 2.0;6 version-mismatch reduced in severity;
+                   \tracingall and ...none improved;
+                   aesthetic spaces around "=" removed
+
+24-Jan-1998: 2.0;5: block allocation of registers added
+
+21-Jan-1998: 2.0;4: released to e-TeX team for testing/comments
+
+20-Jan-1998: \glob... implemented, and coding simplified by
+             the implementation and use of of \max@xpr
+
+06-Jan-1998: Alpha-testing complete of extended and local register allocation.
+
+29-Dec-1997: The "%!" convention replaced by a corresponding "%%":
+             this should avoid any inadvertent conflict with Adobe conventions.
+
+             \tracingall augmented with
+                \tracinglostchars=\tw@ %%% Q -- should this be default?
+                \tracingnesting=\@ne
+
+             \tracingnone augmented.
+
+05-DEC-1997: A long-standing bug removed: left- and right- hyphenmin
+             were transposed in fallback mode :-(((((
+
+24-APR-1997: An interim release, to provide compatibility with Peter's
+             naming conventions for beta-test versions of e-TeX V2.
+             Consistency checking is now restricted to \eTeXversion,
+             and \eTeXrevision is ignored.
+
+01-NOV-1996: V1.1;5: Final stage? Checking that everything possible
+             is recycled whilst nothing that is needed is lost.  Retained
+             names given \etex or \et@x prefix wherever possible.  Some
+             potentially dangerous cs-names commented out of the recycle/retain
+             lists because they were synonyms of members of the if-else-fi set.
+             The definition of the e-TeX logo added: this had somehow slipped
+             through the net!  Intended to be the final revision before public
+             release, but awaiting comments from other members of the team.
+
+31-OCT-1996: V1.1;4: errors noticed while proof-reading corrected; far
+             greater use made of concealed control sequences with
+             commercial-at (@); library file headers differentiated
+             from ordinary file headers; return-values for header-check
+             altered to allow fall-thru' if ok; fallback-use algorithm
+             significantly modified (major semantic shift).
+
+29-OCT-1996: V1.1;3: tidying up prior to release; careful check on
+             which control words can be re-cycled; \recycle made more
+             robust, to check whether one is trying to re-cycle something
+             that was never 'cycled' in the first place (PEB suggestion);
+             \et@xmsg re-written to use \message or \errmessage as necessary;
+             \errhelps provided for all places they might be referenced.
+
+27-OCT-1996: V1.1;2: minor version numbers re-introduced, using semi-colon
+             as delimiter and stopping pattern matching at the semi-colon;
+             \et@xfilehdr defined dynamically, based in \eTeXversion and
+             \eTeXrevision;  \load now uses \etexhdrchk, so library
+             files are required to start with an e-TeX header; this will
+             have implications when e-TeX -> V2+, so this code should be
+             re-considered at this point.
+
+17-OCT-1996: V1.1: minor version numbers eliminated, to reduce the
+             need for users to update their "language.def" files.
+
+17-OCT-1996: V1.0-4: \addlanguage@hook added, version history moved to end.
+
+17-OCT-1996: Version 1.0-3 does away with the "fallback" file.
+
+16-OCT-1996: Version 1.0-2 implements module handling, so constant "3"
+             no longer used (see below).
+
+13-Oct-1996: Replaced \def by \chardef where possible;
+             eliminated dependency on "etexdefs.def", hard-coding
+             in the constant "3" (with comment) instead;
+             used Bernd's \ch@ckforyn;
+             re-catcoded `\@ earlier, to reduce number of \[if]csnames;
+             commented the strange indentation of the \recycles at end.
+
+11-Oct-1996: language handling commands modified (V1.0): PT/BR

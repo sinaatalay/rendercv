@@ -1,0 +1,202 @@
+%% filename: cyrmax.mf
+%% version: 2.2
+%% date: 1995/01/04
+%%
+%% American Mathematical Society
+%% Technical Support
+%% Publications Technical Group
+%% 201 Charles Street
+%% Providence, RI 02904
+%% USA
+%% tel: (401) 455-4080
+%%      (800) 321-4267 (USA and Canada only)
+%% fax: (401) 331-3842
+%% email: tech-support@ams.org
+%%
+%% Copyright 1995 Humanities and Arts Computing Center, University of
+%% Washington.
+%%
+%% Unlimited copying and redistribution of this file are permitted as
+%% long as this file is not modified.  Modifications, and distribution
+%% of modified versions, are permitted, but only if the resulting file
+%% is renamed.
+%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+def slantswitch =
+slant:=-slant;
+currenttransform:= identity slanted slant yscaled aspect_ratio scaled granularity;
+enddef; %reverse slant so that mirror() will work
+
+def lowerfit = 0 enddef;
+
+transform MIRROR;
+MIRROR=identity reflectedabout(origin,up);
+
+% produce a mirror image of current picture reflected about a vertical axis
+def mirror (expr axis) =
+currentpicture:=currentpicture transformed MIRROR shifted (2axis,0);
+slantswitch; % restore normal slant
+enddef;
+
+vardef armup(suffix $,$$,@)(expr darkness,jut) =  % arm from |z$| to |z$$|
+ x@0=good.x(x$$r-jut); y@0=y$l;
+ if serifs: y@1=y$r; z@1=z$$r-whatever*(z@0-z$$r);
+  z@2=.5[z$r,z@1];
+  filldraw z$$l{z@1-z$$l}...darkness[z@1,.5[z@2,z$$l] ]...z@2
+   ---z$r--z$l--z@0--z$$r--cycle; % arm and beak
+ else: filldraw z$l--z$r--z@0--z$$r--cycle; fi  % sans-serif arm
+ penlabels(@0,@1,@2); enddef;
+
+def varwid =
+  if serifs: if hefty: vair else: 1.5cap_hair fi else: vair fi
+  enddef;
+
+
+vardef cyrsanserif(suffix $) =
+ x$.css.r=x$r; x$.css.l=x$l; x$.css=x$;
+  y$.css.r=y$r-2slab; y$.css.l=y$l-2slab; y$.css=y$-2slab; 
+ filldraw stroke z$e--z$.css.e;
+enddef;
+
+vardef lcyrsanserif(suffix $) =
+ numeric cssdif; cssdif=.5(x$r-x$l); if cssdif<0: cssdif:=-cssdif; fi
+ x$'.css.r=x$r+cssdif; x$'.css.l=x$l+cssdif; x$'.css=x$+cssdif;
+  y$'.css.r=y$'.css.l=y$'.css=bot y$ + slab; 
+ x$.css.r=x$r+cssdif; x$.css.l=x$l+cssdif; x$.css=x$+cssdif;
+  y$.css.r=y$r-2slab; y$.css.l=y$l-2slab; y$.css=y$-2slab; 
+ filldraw stroke z$'.css.e--z$.css.e;
+enddef;
+
+vardef rcyrsanserif(suffix $) =
+ numeric cssdif; cssdif=.5(x$r-x$l); if cssdif<0: cssdif:=-cssdif; fi
+ x$'.css.r=x$r-cssdif; x$'.css.l=x$l-cssdif; x$'.css=x$-cssdif;
+  y$'.css.r=y$'.css.l=y$'.css=bot y$ + slab; 
+ x$.css.r=x$r-cssdif; x$.css.l=x$l-cssdif; x$.css=x$-cssdif;
+  y$.css.r=y$r-2slab; y$.css.l=y$l-2slab; y$.css=y$-2slab; 
+ filldraw stroke z$'.css.e--z$.css.e;
+enddef;
+
+numeric flouradjust; flouradjust=.09designsize;
+vardef cyr_serif(suffix $,$$,@)  % serif at |z$| for stroke from |z$$|
+  (expr darkness,jut) suffix modifier =
+ pickup crisp.nib; numeric bracket_height; pair downward; 
+ bracket_height=if dark.modifier: 1.5 fi\\ bracket;
+ if y$<y$$: y@2=min(y$+bracket_height,y$$);
+  top y@1-slab=bot y@0+eps=tiny.bot y$; downward=z$-z$$;
+  if y@1>y@2: y@2:=y@1; fi
+ else: y@2=max(y$-bracket_height,y$$);
+  bot y@1+slab=top y@0-eps=tiny.top y$; downward=z$$-z$;
+  if y@1<y@2: y@2:=y@1; fi fi
+ y@3=y@2; z@3=whatever[z$,z$$];
+ if jut<0: z@2+penoffset downward of currentpen =
+   z$l+penoffset downward of pen_[tiny.nib]+whatever*downward;
+  lft x@0=lft x@1=tiny.lft x$l+jut;
+  if x@3<x@2+eps: x@3:=x@2+eps; fi
+ else: z@2-penoffset downward of currentpen =
+   z$r-penoffset downward of pen_[tiny.nib]+whatever*downward;
+   rt x@0=rt x@1=tiny.rt x$r+jut;
+   if x@3>x@2-eps: x@3:=x@2-eps; fi fi
+ pair corner; ypart corner=y@1; corner=z@2+whatever*downward;
+ pair flourish; xpart flourish= x@0 if jut > 0: + cyrflwd else: - cyrflwd fi;
+ ypart flourish= y@0 - cyrflht;
+if (designsize < 15pt): 
+   pair flourishcorner; xpart flourishcorner=flouradjust[x@2,(xpart flourish)];
+    ypart flourishcorner=ypart flourish; %if jut > 0: -1.5 else: +1.5 fi;
+   filldraw z@2{z$-z$$}
+  ...darkness[corner,.5[z@1,z@2] ]{z@1-z@2}
+  ...{jut,0}z@1--z@0{down}...{jut,-1}flourish--flourishcorner{-jut,0}
+   ...{-jut,0}(x$,y@0)--z@3--cycle; % the serif
+else: filldraw z@2{z$-z$$}
+  ...darkness[corner,.5[z@1,z@2] ]{z@1-z@2}
+  ...{jut,0}z@1--z@0{down}...{jut,-1}flourish{-jut,0}
+   ...{-jut,0}(x$,y@0)--z@3--cycle; % the serif
+fi
+ labels (@0,@1,@2,@3); enddef;
+
+
+def dish_cyr_serif(suffix $,$$,@)(expr left_darkness,left_jut)
+  (suffix @@)(expr right_darkness,right_jut) suffix modifier =
+ cyr_serif($,$$,@,left_darkness,-left_jut) modifier;
+ cyr_serif($,$$,@@,right_darkness,right_jut) modifier;
+enddef;
+
+def l_cyr_serif(suffix $,$$,@)(expr left_darkness,left_jut)
+  (suffix @@)(expr right_darkness,right_jut) suffix modifier =
+ cyr_serif($,$$,@,left_darkness,-left_jut) modifier;
+ serif($,$$,@@,right_darkness,right_jut) modifier;
+enddef;
+
+def r_cyr_serif(suffix $,$$,@)(expr left_darkness,left_jut)
+  (suffix @@)(expr right_darkness,right_jut) suffix modifier =
+ serif($,$$,@,left_darkness,-left_jut) modifier;
+ cyr_serif($,$$,@@,right_darkness,right_jut) modifier;
+enddef;
+
+% cyrbrev is called with suffix, dummy_suffix e.g.
+% cyrbrev(2,q) where the breve will be centered
+% above x2 using dummy suffixes q_1, q_2 etc.
+def cyrbrev (suffix $,@) =
+pickup crisp.nib; pos@_1(vair,-180); pos@_3(vair,0);
+top y@_1=top y@_3=h;
+lft x@_1r=hround(x$-4u-.5vair); rt x@_3r=hround(x$+4u+.5vair);
+numeric mid_thickness; mid_thickness=vround 1/3[vair,stem];
+pos@_2(mid_thickness,-90); x@_2=x$;
+bot y@_2r=y$+dot_size;
+filldraw stroke z@_1e{down}...z@_2e{right}...{up}z@_3e;  % stroke
+pos@_11(dot_size,0); pos@_12(dot_size,90);
+pos@_13(dot_size,0); pos@_14(dot_size,90);
+lft x@_11l=lft x@_1r; rt x@_13r=rt x@_3r; y@_11=y@_12=y@_13=y@_14=h;
+x@_12=x@_11; x@_14=x@_13; dot(@_11,@_12); dot(@_13,@_14);
+penlabels(@_1,@_2,@_3,@_11,@_13); enddef;
+
+boolean altaccent; altaccent=false;   % altaccent inhibits right side dot
+def nucyrbrev (suffix $,@) =
+pickup crisp.nib; pos@_1(vair,-180); pos@_3(vair,0);
+top y@_1=top y@_3=y@_2r+cyrspread;
+lft x@_1r=hround(x$-4u-.5vair); rt x@_3r=hround(x$+4u+.5vair);
+numeric mid_thickness; mid_thickness=vround 1/3[vair,stem];
+pos@_2(mid_thickness,-90); x@_2=x$;
+bot y@_2r=y$+.5dot_size;
+filldraw stroke z@_1e{down}...z@_2e{right}...{up}z@_3e;  % stroke
+
+if square_dots: % relax
+else:
+  pos@_11(dot_size,0); pos@_12(dot_size,90); 
+  pos@_13(dot_size,0); pos@_14(dot_size,90);
+  lft x@_11l=lft x@_1r; rt x@_13r=rt x@_3r; 
+  y@_11=y@_12=y@_13=y@_14=y@_2r+cyrspread;
+  x@_12=x@_11; x@_14=x@_13; dot(@_11,@_12); 
+  if altaccent: % relax
+  else: dot(@_13,@_14); fi
+fi
+penlabels(@_1,@_2,@_3,@_11,@_13); enddef;
+
+% flip rotates 180 degrees about the centerpoint whose suffix is passed
+def flip (suffix $) =
+picture V; transform FLIP;
+y$:=y$*aspect_ratio;
+FLIP=identity rotatedaround(z$,180) shifted(2slant*y$,0);
+V=currentpicture transformed FLIP; currentpicture:=V;
+enddef;
+
+def dot_sharp_values =
+numeric dot_diam#; dot_diam#=max(dot_size#,cap_curve#);
+numeric dot_top#; dot_top#=min(asc_height#,10/7x_height#+.5dot_diam#);
+enddef;
+
+
+% umlaut
+% calling specification is (xx,q) where xx is a point over which to center
+%                                 the umlaut, q is a dummy suffix which may be used
+def umlaut (suffix $,@) =
+dot_sharp_values;
+define_whole_blacker_pixels(dot_diam);
+pickup tiny.nib; pos@_1(dot_diam,0); pos@_2(dot_diam,90);
+x@_1=x@_2=x$-dot_diam; top y@_2r=2dot_diam+y$;
+y@_1=.5[y@_2l,y@_2r];  
+dot(@_1,@_2);  % dot
+pos@_3(dot_diam,0); pos@_4(dot_diam,90);
+x@_3=x@_4=x$+1.75u; top y@_4r=2dot_diam+y$;
+y@_3=.5[y@_4l,y@_4r];  
+dot(@_3,@_4);  % dot
+enddef;

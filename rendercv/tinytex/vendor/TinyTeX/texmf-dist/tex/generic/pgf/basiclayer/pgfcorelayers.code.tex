@@ -1,0 +1,210 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcorelayers.code.tex}
+
+
+% Creates a new pgf layer
+%
+% #1 = layer name
+%
+% Declares a new layer for pgf.
+%
+% Example:
+%
+% \pgfdeclarelayer{background}
+
+\def\pgfdeclarelayer#1{%
+  \pgfutil@ifundefined{pgf@layerbox@#1}{%
+    \expandafter\expandafter\csname pgf@newbox\endcsname\csname pgf@layerbox@#1\endcsname%
+    \expandafter\expandafter\csname pgf@newbox\endcsname\csname pgf@layerboxsaved@#1\endcsname%
+  }{}%
+}
+\let\pgf@newbox=\newbox % avoid plain TeX outer problem
+
+% Sets the layers that compose the picture
+%
+% #1 = List of layers
+%
+% Description:
+%
+% Sets the list of layers that make up the picture. The layers will be
+% put on top of each other in the order given. 
+%
+% This command can also be given inside of a picture in which case it
+% applies only to that very picture.
+%
+% Example:
+%
+% \pgfsetlayers{background,main}
+
+\def\pgfsetlayers#1{%
+  \let\pgf@layerlist\pgfutil@empty%
+  \pgf@dosetlayer#1,,\relax%
+}
+
+\def\pgf@dosetlayer#1,#2,\relax{%
+  \ifx\pgf@layerlist\pgfutil@empty%
+    \edef\pgf@layerlist{\pgfutil@trimspaces{#1}}%
+  \else
+    \edef\pgf@layerlist{\pgf@layerlist,\pgfutil@trimspaces{#1}}%
+  \fi
+  \def\pgf@test{#2}%
+  \ifx\pgf@test\pgfutil@empty%
+  \else%
+    \pgf@dosetlayer#2,\relax%
+  \fi%
+}
+
+\pgfsetlayers{main}
+
+% Adds code to a layer
+%
+% #1 = layer name
+%
+% Note:
+%
+% You cannot add anything to the ``main'' layer using this command.
+%
+% Example:
+%
+% \begin{pgfonlayer}{background}
+%   \fill[red] (0,0) -- (1,1);
+% \end{pgfonlayer}
+
+\def\pgfonlayer@name{main}
+
+\def\pgfonlayer#1{%
+  \pgfutil@ifundefined{pgf@layerbox@#1}{%
+     \pgferror{Sorry, the requested layer '#1' could not be found. Maybe you misspelled it?}%
+   \bgroup
+     \begingroup
+  }{%
+      \begingroup
+        \edef\pgf@temp{#1}%
+        \ifx\pgf@temp\pgfonlayer@name
+          % we are already on this layer.
+          \def\pgf@temp{%
+            \bgroup
+            \begingroup
+          }%
+      \else
+        \let\pgfonlayer@name=\pgf@temp
+        \pgfonlayer@assert@is@active
+        \def\pgf@temp{%
+          \expandafter\global\expandafter%
+          \setbox\csname pgf@layerbox@#1\endcsname=\hbox to 0pt%
+            \bgroup%
+              \expandafter\box\csname pgf@layerbox@#1\endcsname%
+              \begingroup%
+        }%
+      \fi
+   \pgfsetlinewidth{0.4pt}% always reset the line width
+   \pgf@temp
+  }%
+}
+\def\endpgfonlayer{%
+      \endgroup%
+      \hss
+    \egroup%
+  \endgroup
+}
+
+\let\startpgfonlayer=\pgfonlayer
+\let\stoppgfonlayer=\endpgfonlayer
+
+\def\pgfdiscardlayername{discard}
+
+\def\pgfonlayer@assert@is@active{%
+  \ifx\pgfonlayer@name\pgfdiscardlayername
+     % this special layer name can be used as /dev/null without
+   % warning.
+  \else
+    \begingroup
+    \def\pgfonlayer@isactive{0}%
+    \expandafter\pgf@assert@layer@is@active@loop\pgf@layerlist,,\relax%
+    \if0\pgfonlayer@isactive
+       \pgfonlayer@assert@fail
+    \fi
+    \endgroup
+  \fi
+}%
+\def\pgfonlayer@assert@fail{%
+  \pgferror{Sorry, the requested layer '\pgfonlayer@name' is not 
+   part of the layer list. Please verify that you provided 
+   \string\pgfsetlayers\space and that '\pgfonlayer@name' is part of this list}%
+}%
+\def\pgf@assert@layer@is@active@loop#1,#2,\relax{%
+  \edef\pgf@test{#1}%
+  \ifx\pgf@test\pgfonlayer@name
+     \def\pgfonlayer@isactive{1}%
+  \else
+    \def\pgf@test{#2}%
+    \ifx\pgf@test\pgfutil@empty%
+    \else%
+    \pgf@assert@layer@is@active@loop#2,\relax%
+    \fi%
+  \fi
+}
+
+% Hooks into the scoping:
+
+\def\pgf@insertlayers{%
+  \expandafter\pgf@dolayer\pgf@layerlist,,\relax%
+}
+\def\pgf@maintext{main}%
+\def\pgf@dolayer#1,#2,\relax{%
+  \def\pgf@test{#1}%
+  \ifx\pgf@test\pgf@maintext%
+    \box\pgf@layerbox@main%
+  \else%
+    \pgfsys@beginscope%
+      \expandafter\box\csname pgf@layerbox@#1\endcsname%
+    \pgfsys@endscope%
+  \fi%
+  \def\pgf@test{#2}%
+  \ifx\pgf@test\pgfutil@empty%
+  \else%
+    \pgf@dolayer#2,\relax%
+  \fi%
+}
+
+\def\pgf@savelayers{%
+  \expandafter\pgf@dosavelayer\pgf@layerlist,,\relax%
+}
+\def\pgf@dosavelayer#1,#2,\relax{%
+  \def\pgf@test{#1}%
+  \ifx\pgf@test\pgf@maintext%
+  \else%
+    \setbox\csname pgf@layerboxsaved@#1\endcsname=\box\csname pgf@layerbox@#1\endcsname%
+  \fi%
+  \def\pgf@test{#2}%
+  \ifx\pgf@test\pgfutil@empty%
+  \else%
+    \pgf@dosavelayer#2,\relax%
+  \fi%
+}
+
+\def\pgf@restorelayers{%
+  \expandafter\pgf@dorestorelayer\pgf@layerlist,,\relax%
+}
+\def\pgf@dorestorelayer#1,#2,\relax{%
+  \def\pgf@test{#1}%
+  \ifx\pgf@test\pgf@maintext%
+  \else%
+    \global\setbox\csname pgf@layerbox@#1\endcsname=\box\csname pgf@layerboxsaved@#1\endcsname%
+  \fi%
+  \def\pgf@test{#2}%
+  \ifx\pgf@test\pgfutil@empty%
+  \else%
+    \pgf@dorestorelayer#2,\relax%
+  \fi%
+}
+
+\endinput

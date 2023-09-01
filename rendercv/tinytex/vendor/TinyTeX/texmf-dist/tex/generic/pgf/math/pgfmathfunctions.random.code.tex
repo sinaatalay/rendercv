@@ -1,0 +1,246 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+% This file defines the pseudorandom numbers.
+%
+% Version 1.414213 29/9/2007
+
+% Pseudo-random number generation.
+%
+% See:
+% \book@{pressetal1992,
+%    author    = {William H. Press and Brian P. Flannery and Saul A.
+%                 Teukolsky and William T. Vetterling},
+%    title     = {Numerical Recipies in C},
+%    edition   = {Second},
+%    publisher = {Cambridge University Press}
+% }
+%
+% See also, the documentation for the lcg package by Erich Janka:
+% (http://www.ctan.org/tex-archive/macros/latex/contrib/lcg/lcg.pdf)
+%
+\def\pgfmath@rnd@m{2147483647}% LaTeX Maximum.
+
+\begingroup
+\c@pgfmath@counta=\time%
+\multiply\c@pgfmath@counta by\year%
+\ifnum\c@pgfmath@counta=0
+  \c@pgfmath@counta=1
+\fi
+\xdef\pgfmath@rnd@z{\the\c@pgfmath@counta}% The seed.
+\endgroup
+
+% \pgfmathsetseed
+%
+% Explicitly set the seed for the generator
+%
+% #1 -> the new seed.
+%
+\def\pgfmathsetseed#1{%
+    % Attention pgflibraryluamath.code.tex relies on the fact that
+    % this method also modifies \pgfmathresult:
+    \pgfmathparse{#1}\expandafter\pgfmath@setseed\pgfmathresult.0\pgfmath@stop
+}%
+\def\pgfmath@setseed#1.#2\pgfmath@stop{\def\pgfmath@rnd@z{#1}}%
+
+% Alternative parameters - see Press et al (1992) p278-279,
+% for discussion.
+%
+% a=16807 q=127773 r=2836
+% a=48271 q=4488   r=3399
+%
+\def\pgfmath@rnd@a{69621}
+\def\pgfmath@rnd@r{23902}
+\def\pgfmath@rnd@q{30845}
+
+% \pgfmathgeneratepseudorandomnumber
+%
+% A linear congruency generator for generating
+% pseudo-random numbers. Generates numbers in
+% the range 1 - 2^31-1.
+%
+\def\pgfmathgeneratepseudorandomnumber{%
+    \begingroup%
+        \c@pgfmath@counta=\pgfmath@rnd@z%
+        \c@pgfmath@countb=\pgfmath@rnd@z%
+        \c@pgfmath@countc=\pgfmath@rnd@q%
+        \divide\c@pgfmath@counta by\c@pgfmath@countc%
+        \multiply\c@pgfmath@counta by-\c@pgfmath@countc%
+        \advance\c@pgfmath@counta by\c@pgfmath@countb
+        \c@pgfmath@countc=\pgfmath@rnd@a%
+        \multiply\c@pgfmath@counta by\c@pgfmath@countc%
+        \c@pgfmath@countc=\pgfmath@rnd@q%
+        \divide\c@pgfmath@countb by\c@pgfmath@countc%
+        \c@pgfmath@countc=\pgfmath@rnd@r%
+        \multiply\c@pgfmath@countb by\c@pgfmath@countc%
+        \advance\c@pgfmath@counta by-\c@pgfmath@countb%
+        \ifnum\c@pgfmath@counta<0\relax%
+            \c@pgfmath@countb=\pgfmath@rnd@m%
+            \advance\c@pgfmath@counta by\c@pgfmath@countb%
+        \fi%
+        \xdef\pgfmath@rnd@z{\the\c@pgfmath@counta}%
+    \endgroup%
+    \edef\pgfmathresult{\pgfmath@rnd@z}%
+}
+
+% \pgfmathrnd
+%
+% Generates a pseudo-random number between 0 and 1.
+%
+\pgfmathdeclarefunction{rnd}{0}{%
+    \begingroup%
+        \pgfmathgeneratepseudorandomnumber%
+        \c@pgfmath@counta\pgfmathresult%
+        \c@pgfmath@countb\c@pgfmath@counta%
+        \divide\c@pgfmath@countb100001\relax% To get one.
+        \multiply\c@pgfmath@countb-100001\relax%
+        \advance\c@pgfmath@countb\c@pgfmath@counta%
+        \advance\c@pgfmath@countb1000000\relax%
+        \expandafter\pgfmathrnd@@\the\c@pgfmath@countb\pgfmath@%
+        \pgfmath@returnone\pgfmath@x%
+    \endgroup%
+}%
+
+\def\pgfmathrnd@@#1#2#3\pgfmath@{%
+    \edef\pgfmath@temp{#2.#3}%
+    \pgfmath@x=\pgfmath@temp pt\relax%
+}%
+
+% \pgfmathrand
+%
+% Generates a pseudo-random number between -1 and 1.
+%
+\pgfmathdeclarefunction{rand}{0}{%
+    \begingroup%
+        \pgfmathgeneratepseudorandomnumber%
+        \c@pgfmath@counta\pgfmathresult%
+        \c@pgfmath@countb\c@pgfmath@counta%
+        \divide\c@pgfmath@countb200001\relax%
+        \multiply\c@pgfmath@countb-200001\relax%
+        \advance\c@pgfmath@countb\c@pgfmath@counta%
+        \advance\c@pgfmath@countb-100000\relax%
+        \ifnum\c@pgfmath@countb<0\relax%
+            \advance\c@pgfmath@countb-1000000\relax%
+        \else%
+            \advance\c@pgfmath@countb1000000\relax%
+        \fi%
+        \expandafter\pgfmathrand@@\the\c@pgfmath@countb\pgfmath@%
+        \pgfmath@returnone\pgfmath@x%
+    \endgroup%
+}%
+
+\def\pgfmathrand@@#1#2#3#4\pgfmath@{%
+    \ifx#1-%
+        \edef\pgfmath@temp{-#3.#4}%
+    \else%
+        \edef\pgfmath@temp{#2.#3#4}%
+    \fi%
+    \pgfmath@x=\pgfmath@temp pt\relax%
+}%
+
+\pgfmathdeclarefunction{random}{...}{%
+    \begingroup%
+        \def\pgfmath@temp{#1}%
+        \ifx\pgfmath@temp\pgfmath@empty%
+            \pgfmathrnd@%
+        \else%
+            \expandafter\pgfmathrandom@@#1\pgfmath@stop%
+        \fi%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup}
+
+\def\pgfmathrandom@@{\futurelet\pgfmath@token\pgfmathrandom@@@}
+\def\pgfmathrandom@@@{%
+    \ifx\pgfmath@token\bgroup%
+        \expandafter\pgfmath@random@@@@%
+    \else%
+        \expandafter\pgfmath@random@@@@@%
+    \fi%
+}
+\def\pgfmath@random@@@@@#1\pgfmath@stop{%
+    \pgfmathrandominteger\pgfmathresult{1}{#1}%
+}
+\def\pgfmath@random@@@@#1#2\pgfmath@stop{%
+    \pgfmathrandominteger\pgfmathresult{#1}{#2}%
+}
+
+% \pgfmathrandominteger
+%
+% Return a 'randomly' selected integer in the range #2 - #3 (inclusive).
+%
+% #1 - a macro to store the integer (not a count register).
+% #2 - the lower limit of the range.
+% #3 - the upper limit of the range.
+%
+\def\pgfmathrandominteger#1#2#3{%
+    \begingroup%
+        \pgfmathsetcount\c@pgfmath@counta{#2}%
+        \pgfmathsetcount\c@pgfmath@countb{#3}%
+        \c@pgfmath@countc\c@pgfmath@countb%
+        % OK. Maybe #2 > #3.
+        \ifnum\c@pgfmath@counta>\c@pgfmath@countb\relax%
+            \c@pgfmath@countc\c@pgfmath@counta%
+            \c@pgfmath@counta\c@pgfmath@countb%
+            \c@pgfmath@countb\c@pgfmath@countc%
+        \fi%
+        \c@pgfmath@countd\c@pgfmath@counta
+        \advance\c@pgfmath@countc1\relax%
+        \advance\c@pgfmath@countc-\c@pgfmath@counta%
+        \pgfmathgeneratepseudorandomnumber%
+        \c@pgfmath@counta\pgfmathresult\relax%
+        \c@pgfmath@countb\c@pgfmath@counta%
+        \divide\c@pgfmath@countb\c@pgfmath@countc%
+        \multiply\c@pgfmath@countb-\c@pgfmath@countc%
+        \advance\c@pgfmath@counta\c@pgfmath@countb%
+        \advance\c@pgfmath@counta\c@pgfmath@countd
+        \edef\pgfmathresult{\the\c@pgfmath@counta}%
+        \pgfmath@smuggleone{\pgfmathresult}%
+    \endgroup%
+    \edef#1{\pgfmathresult}%
+}
+
+% \pgfmathdeclarerandomlist
+%
+% Create a list to be used with \pgfmathrandomelement.
+%
+% #1 - the name of the list
+% #2 - a list of elements (e.g., {item-1}{item-2}...{item-n}).
+%
+\def\pgfmathdeclarerandomlist#1#2{%
+    \def\pgfmath@randomlistname{#1}%
+    \begingroup%
+        \c@pgfmath@counta=1\relax%
+        % {} is a possible random element so (locally)
+        % redefine \pgfmath@empty.
+        \def\pgfmath@empty{pgfmath@empty}%
+        \expandafter\pgfmath@scanrandomlist#2{pgfmath@empty}}
+\def\pgfmath@scanrandomlist#1{%
+    \def\pgfmath@scanneditem{#1}%
+    \ifx\pgfmath@scanneditem\pgfmath@empty%
+        \advance\c@pgfmath@counta-1\relax%
+        \expandafter\xdef\csname pgfmath@randomlist@\pgfmath@randomlistname\endcsname{\the\c@pgfmath@counta}%
+        \endgroup%
+    \else%
+        \expandafter\gdef\csname pgfmath@randomlist@\pgfmath@randomlistname @\the\c@pgfmath@counta\endcsname{#1}%
+        \advance\c@pgfmath@counta1\relax%
+        \expandafter\pgfmath@scanrandomlist%
+    \fi}
+
+% \pgfmathrandomitem
+%
+% Return a 'randomly' selected element from a list.
+%
+% #1 - a macro to store the item.
+% #2 - the name of the list.
+%
+\def\pgfmathrandomitem#1#2{%
+    \pgfmath@ifundefined{pgfmath@randomlist@#2}{\pgfmath@error{Unknown random list `#2'}{}}{%
+        \edef\pgfmath@randomlistlength{\csname pgfmath@randomlist@#2\endcsname}%
+        \pgfmathrandominteger{\pgfmath@randomtemp}{1}{\pgfmath@randomlistlength}%
+        \expandafter\def\expandafter#1\expandafter{\csname pgfmath@randomlist@#2@\pgfmath@randomtemp\endcsname}}}

@@ -1,0 +1,204 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsyssoftpath.code.tex}
+
+
+% This package provides the pgf system path abstraction layer. This
+% layer is used to construct paths first ``abstractly.'' These
+% abstract paths can still be modified, before they are ``made
+% concrete.''
+%
+% An abstract path consists of a sequence of basic building blocks,
+% each of which is a tuple consisting of two numbers (specifying a
+% coordinate) and a token. Possible tokens are:
+%
+% 1. moveto
+% 2. lineto
+% 3. rectcorner
+% 4. rectsize
+% 5. curvetosupporta
+% 6. curvetosupportb
+% 7. curveto
+% 8. closepath
+% 9. specialround
+%
+% A curveto must always be preceded by a curvetosupporta and a
+% curvetosupportb. A non-empty path must always begin with a
+% moveto. The coordinates of a closepath are non-specified, currently,
+% but they might be set to the coordinate of the path segment start,
+% in the future.
+
+
+% Access to the current path:
+%
+% Lots of stuff is added to the current path and it can get very long
+% (containing literally tens of thousands of tokens). For such macros,
+% adding things using a simple "g@addtomacro" takes more and more
+% time, resulting in quadratic runtime. To avoid this, ideally, one
+% would collect things in an array and then use a divide and conquer
+% merger. A simple intermediate solution is the following, implemented
+% here: We have the path and two buffers. New tokens are added to the
+% first buffer, which is quite small. When it overflow, its contents
+% is added to the second buffer, which is large. If that buffer
+% overflow, the contents is finally added to the main path (which can
+% have arbitrary length). Whenever the main path is set or read, the
+% buffers are flushed.
+%
+% Because of this buffering, it is imperative that the main path is
+% accessed only via appropriate interface macros.
+
+
+
+% The current path
+\let\pgfsyssoftpath@thepath=\pgfutil@empty
+\let\pgfsyssoftpath@bigbuffer=\pgfutil@empty
+\let\pgfsyssoftpath@smallbuffer=\pgfutil@empty
+\newcount\pgfsyssoftpath@smallbuffer@items
+\newcount\pgfsyssoftpath@bigbuffer@items
+
+\def\pgfsyssoftpath@flushbuffers{%
+  \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\gdef%
+  \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\pgfsyssoftpath@thepath%
+  \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter{%
+    \expandafter\expandafter\expandafter\pgfsyssoftpath@thepath%
+    \expandafter\pgfsyssoftpath@bigbuffer\pgfsyssoftpath@smallbuffer}%
+  \global\let\pgfsyssoftpath@smallbuffer=\pgfutil@empty
+  \global\let\pgfsyssoftpath@bigbuffer=\pgfutil@empty
+  \global\pgfsyssoftpath@bigbuffer@items0\relax%
+  \global\pgfsyssoftpath@smallbuffer@items0\relax%
+}
+
+% Getting and setting the current path
+\def\pgfsyssoftpath@getcurrentpath#1{%
+  \pgfsyssoftpath@flushbuffers%
+  \let#1=\pgfsyssoftpath@thepath%
+}
+
+\def\pgfsyssoftpath@setcurrentpath#1{%
+  \global\let\pgfsyssoftpath@thepath=#1%
+  \global\let\pgfsyssoftpath@smallbuffer=\pgfutil@empty
+  \global\let\pgfsyssoftpath@bigbuffer=\pgfutil@empty
+  \global\pgfsyssoftpath@bigbuffer@items0\relax%
+  \global\pgfsyssoftpath@smallbuffer@items0\relax%
+}
+
+
+% Invoking the current path (slightly optimized)
+\def\pgfsyssoftpath@invokecurrentpath{%
+  \pgfsyssoftpath@thepath%
+  \pgfsyssoftpath@bigbuffer%
+  \pgfsyssoftpath@smallbuffer%
+}
+
+\def\pgfsyssoftpath@flushcurrentpath{%
+  \pgfsyssoftpath@invokecurrentpath%
+  \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+}
+
+% Add an item at the end
+\def\pgfsyssoftpath@addtocurrentpath#1{%
+  \global\advance\pgfsyssoftpath@smallbuffer@items by1\relax%
+  \ifnum\pgfsyssoftpath@smallbuffer@items<40\relax% good number?
+    \expandafter\gdef\expandafter\pgfsyssoftpath@smallbuffer\expandafter{\pgfsyssoftpath@smallbuffer#1}%
+  \else%
+    \pgfsyssoftpath@smalloverflow{#1}%
+  \fi%
+}
+\def\pgfsyssoftpath@smalloverflow#1{%
+  \global\advance\pgfsyssoftpath@bigbuffer@items by1\relax%
+  \ifnum\pgfsyssoftpath@bigbuffer@items<30\relax% good number?
+    \expandafter\expandafter\expandafter\gdef%
+    \expandafter\expandafter\expandafter\pgfsyssoftpath@bigbuffer%
+    \expandafter\expandafter\expandafter{\expandafter\pgfsyssoftpath@bigbuffer\pgfsyssoftpath@smallbuffer#1}%
+    \global\let\pgfsyssoftpath@smallbuffer=\pgfutil@empty%
+    \global\pgfsyssoftpath@smallbuffer@items0\relax%
+  \else%
+    \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\gdef%
+    \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\pgfsyssoftpath@thepath%
+    \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter{%
+      \expandafter\expandafter\expandafter\pgfsyssoftpath@thepath
+      \expandafter\pgfsyssoftpath@bigbuffer\pgfsyssoftpath@smallbuffer#1}%
+    \global\let\pgfsyssoftpath@smallbuffer=\pgfutil@empty
+    \global\let\pgfsyssoftpath@bigbuffer=\pgfutil@empty
+    \global\pgfsyssoftpath@bigbuffer@items0\relax%
+    \global\pgfsyssoftpath@smallbuffer@items0\relax%
+  \fi%
+}
+
+
+
+\def\pgfsyssoftpath@lastmoveto{{0pt}{0pt}}
+
+\newif\ifpgfsyssoftpathmovetorelevant
+\pgfsyssoftpathmovetorelevanttrue
+
+% Add a moveto element to the current path
+\def\pgfsyssoftpath@moveto#1#2{%
+  \edef\pgfsyssoftpath@coord{{#1}{#2}}%
+  \expandafter\pgfsyssoftpath@addtocurrentpath\expandafter{\expandafter\pgfsyssoftpath@movetotoken\pgfsyssoftpath@coord}%
+  \ifpgfsyssoftpathmovetorelevant%
+    \global\let\pgfsyssoftpath@lastmoveto\pgfsyssoftpath@coord%
+  \fi%
+}
+
+% Add a lineto element to the current path
+\def\pgfsyssoftpath@lineto#1#2{%
+  \edef\pgfsyssoftpath@coord{{#1}{#2}}%
+  \expandafter\pgfsyssoftpath@addtocurrentpath\expandafter{\expandafter\pgfsyssoftpath@linetotoken\pgfsyssoftpath@coord}%
+}
+
+
+% Add curveto elements to the current path
+\def\pgfsyssoftpath@curveto#1#2#3#4#5#6{%
+  \edef\pgfsyssoftpath@temp{{%
+      \noexpand\pgfsyssoftpath@curvetosupportatoken{#1}{#2}%
+      \noexpand\pgfsyssoftpath@curvetosupportbtoken{#3}{#4}%
+      \noexpand\pgfsyssoftpath@curvetotoken{#5}{#6}%
+    }}%
+  \expandafter\pgfsyssoftpath@addtocurrentpath\pgfsyssoftpath@temp%
+}
+
+
+% Add rectangle elements to the current path
+\def\pgfsyssoftpath@rect#1#2#3#4{%
+  \edef\pgfsyssoftpath@temp{{%
+    \noexpand\pgfsyssoftpath@rectcornertoken{#1}{#2}%
+    \noexpand\pgfsyssoftpath@rectsizetoken{#3}{#4}%
+  }}%
+  \expandafter\pgfsyssoftpath@addtocurrentpath\pgfsyssoftpath@temp%
+}
+
+% Add closepath element to the current path
+\def\pgfsyssoftpath@closepath{%
+  \expandafter\pgfsyssoftpath@addtocurrentpath\expandafter{\expandafter\pgfsyssoftpath@closepathtoken\pgfsyssoftpath@lastmoveto}%
+}
+
+% Add special element to the current path
+\def\pgfsyssoftpath@specialround#1#2{%
+  \edef\pgfsyssoftpath@temp{{#1}{#2}}%
+  \expandafter\pgfsyssoftpath@addtocurrentpath\expandafter{\expandafter\pgfsyssoftpath@specialroundtoken\pgfsyssoftpath@temp}%
+}
+
+% Marshallers
+\def\pgfsyssoftpath@movetotoken#1#2{\pgfsys@moveto{#1}{#2}}
+\def\pgfsyssoftpath@linetotoken#1#2{\pgfsys@lineto{#1}{#2}}
+\def\pgfsyssoftpath@rectcornertoken#1#2#3#4#5{\pgfsys@rect{#1}{#2}{#4}{#5}} % #3 = \pgfsyssoftpath@rectsizetoken
+\def\pgfsyssoftpath@curvetosupportatoken#1#2#3#4#5#6#7#8{\pgfsys@curveto{#1}{#2}{#4}{#5}{#7}{#8}}
+\def\pgfsyssoftpath@closepathtoken#1#2{\pgfsys@closepath}
+\let\pgfsyssoftpath@specialroundtoken=\pgfutil@gobbletwo
+\def\pgfsyssoftpath@curvetosupportbtoken#1#2{curvetotokenb} % make sure this \ifx-equal only to itself
+\def\pgfsyssoftpath@curvetotoken#1#2{curvetotoken}% make sure this \ifx-equal only to itself
+
+
+\endinput
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

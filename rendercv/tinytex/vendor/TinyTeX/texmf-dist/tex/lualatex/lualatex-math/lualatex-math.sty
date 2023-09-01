@@ -1,0 +1,301 @@
+%%
+%% This is file `lualatex-math.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% lualatex-math.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright 2011-2020 Philipp Stephani
+%% 
+%% This file may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either
+%% version 1.3c of this license or (at your option) any later
+%% version.  The latest version of this license is in
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.3c or later is part of all distributions of
+%% LaTeX version 2009/09/24 or later.
+%% 
+\NeedsTeXFormat{LaTeX2e}[2020/02/02]
+\RequirePackage{expl3}[2018/06/18]
+\ProvidesExplPackage{lualatex-math}{2022/01/01}{1.12}%
+  {Patches for mathematics typesetting with LuaLaTeX}
+\RequirePackage { etoolbox } [ 2007/10/08 ]
+\cs_if_exist:NF \newluabytecode
+  { \RequirePackage { luatexbase } [ 2010/05/27 ] }
+\directlua{require("lualatex-math")}
+\cs_new_nopar:Npn \__lltxmath_restore_catcode:N #1 {
+  \char_set_catcode:nn { \int_eval:n { `#1 } }
+    { \char_value_catcode:n { `#1 } }
+}
+\exp_args:Nx \AtEndOfPackage {
+  \__lltxmath_restore_catcode:N \$
+}
+\char_set_catcode_math_toggle:N \$
+\msg_new:nnn { lualatex-math } { luatex-required } {
+  The~ lualatex-math~ package~ requires~ LuaTeX. \\
+  I~ will~ stop~ loading~ now.
+}
+\msg_new:nnn { lualatex-math } { macro-expected } {
+  I've~ expected~ that~ #1~ is~ a~ macro,~ but~ it~ isn't.
+}
+\msg_new:nnn { lualatex-math } { wrong-meaning } {
+  I've~ expected~ #1~ to~ have~ the~ meaning \\
+  #3, \\
+  but~ it~ has~ the~ meaning \\
+  #2.
+}
+\msg_new:nnn { lualatex-math } { patch-macro } {
+  I'm~ going~ to~ patch~ macro~ #1.
+}
+\sys_if_engine_luatex:F {
+  \msg_error:nn { lualatex-math } { luatex-required }
+  \endinput
+}
+\cs_new_eq:NN \__lltxmath_temp:w \prg_do_nothing:
+\cs_new_protected_nopar:Npn \__lltxmath_patch:NNnnn #1 #2 #3 #4 #5 {
+  \cs_if_exist:NT #1 {
+    \token_if_macro:NTF #1 {
+      \group_begin:
+      #2 \__lltxmath_temp:w #3 { #4 }
+      \cs_if_eq:NNTF #1 \__lltxmath_temp:w {
+        \msg_info:nnx { lualatex-math } { patch-macro }
+          { \token_to_str:N #1 }
+        \group_end:
+        #2 #1 #3 { #5 }
+      } {
+        \msg_warning:nnxxx { lualatex-math } { wrong-meaning }
+          { \token_to_str:N #1 } { \token_to_meaning:N #1 }
+          { \token_to_meaning:N \__lltxmath_temp:w }
+        \group_end:
+      }
+    } {
+      \msg_warning:nnx { lualatex-math } { macro-expected }
+        { \token_to_str:N #1 }
+    }
+  }
+}
+\cs_generate_variant:Nn \__lltxmath_patch:NNnnn { c }
+\cs_new_protected_nopar:Npn \__lltxmath_set_mathchar:NN #1 #2 {
+  \Umathchardef #1
+  \lua_now:e {
+    lualatex.math.print_class_fam_slot( \int_eval:n { `#2 } )
+  }
+  \scan_stop:
+}
+\@ifl@t@r \fmtversion { 2021/11/15 } {
+  \cs_new_protected_nopar:Npn \__lltxmath_before_package:nn #1 #2 {
+    \AddToHook { package/#1/before } { #2 }
+  }
+  \cs_new_protected_nopar:Npn \__lltxmath_after_package:nn #1 #2 {
+    \AddToHook { package/#1/after } { #2 }
+  }
+}{
+  \@ifl@t@r \fmtversion { 2020/10/01 } {
+    \cs_new_protected_nopar:Npn \__lltxmath_before_package:nn #1 #2 {
+      \AddToHook { package/before/#1 } { #2 }
+    }
+    \cs_new_protected_nopar:Npn \__lltxmath_after_package:nn #1 #2 {
+      \AddToHook { package/after/#1 } { #2 }
+    }
+  } {
+    \RequirePackage { filehook } [ 2011/03/09 ]
+    \cs_new_protected_nopar:Npn \__lltxmath_before_package:nn #1 #2 {
+      \AtBeginOfPackageFile { #1 } { #2 }
+    }
+    \cs_new_protected_nopar:Npn \__lltxmath_after_package:nn #1 #2 {
+      \AtEndOfPackageFile { #1 } { #2 }
+    }
+  }
+}
+\cs_new_protected_nopar:Npn \__lltxmath_after_package_or_now:nn #1 #2 {
+  \@ifpackageloaded { #1 } { #2 } { \__lltxmath_after_package:nn { #1 } { #2 } }
+}
+\AtEndPreamble {
+  \@ifpackageloaded { amsmath } { } {
+    \__lltxmath_patch:cNnnn { frac~ } \cs_set:Npn { #1 #2 } {
+      {
+        \begingroup #1 \endgroup \over #2
+      }
+    } {
+      {
+        \Ustack { \group_begin: #1 \group_end: \over #2 }
+      }
+    }
+  }
+}
+\int_const:Nn \c__lltxmath_std_minus_mathcode_int { "2200 }
+\int_const:Nn \c__lltxmath_std_equal_mathcode_int { "303D }
+\tl_new:N \l__lltxmath_minus_mathchar
+\tl_new:N \l__lltxmath_equal_mathchar
+\__lltxmath_before_package:nn { amsmath } {
+  \@ifpackagelater { amsmath } { 2020/08/24 } { } {
+    \__lltxmath_set_mathchar:NN \l__lltxmath_minus_mathchar \-
+    \__lltxmath_set_mathchar:NN \l__lltxmath_equal_mathchar \=
+    \char_set_mathcode:nn { `\- } { \c__lltxmath_std_minus_mathcode_int }
+    \char_set_mathcode:nn { `\= } { \c__lltxmath_std_equal_mathcode_int }
+    \__lltxmath_after_package:nn { amsmath } {
+      \cs_set_eq:NN \std@minus \l__lltxmath_minus_mathchar
+      \cs_set_eq:NN \std@equal \l__lltxmath_equal_mathchar
+      \Umathcodenum `\- \l__lltxmath_minus_mathchar
+      \Umathcodenum `\= \l__lltxmath_equal_mathchar
+    }
+  }
+}
+\__lltxmath_after_package_or_now:nn { amsmath } {
+  \@ifpackagelater { amsmath } { 2020/08/24 } { } {
+    \tl_replace_once:Nnn \@begindocumenthook {
+      \mathchardef \std@minus \mathcode `\- \relax
+      \mathchardef \std@equal \mathcode `\= \relax
+    } {
+      \__lltxmath_set_mathchar:NN \std@minus \-
+      \__lltxmath_set_mathchar:NN \std@equal \=
+    }
+  }
+  \@ifpackagelater { amsmath } { 2020/09/23 } { } {
+    \__lltxmath_patch:NNnnn \subarray \cs_set:Npn { #1 } {
+      \vcenter
+      \bgroup
+      \Let@
+      \restore@math@cr
+      \default@tag
+      \baselineskip \fontdimen 10~ \scriptfont \tw@
+      \advance \baselineskip \fontdimen 12~ \scriptfont \tw@
+      \lineskip \thr@@ \fontdimen 8~ \scriptfont \thr@@
+      \lineskiplimit \lineskip
+      \ialign
+      \bgroup
+      \ifx c #1 \hfil \fi
+      $ \m@th \scriptstyle ## $
+      \hfil
+      \crcr
+    } {
+      \vcenter
+      \c_group_begin_token
+      \Let@
+      \restore@math@cr
+      \default@tag
+      \skip_set:Nn \baselineskip {
+        \Umathstacknumup \scriptstyle
+        + \Umathstackdenomdown \scriptstyle
+      }
+      \lineskip \Umathstackvgap \scriptstyle
+      \lineskiplimit \lineskip
+      \ialign
+      \c_group_begin_token
+      \token_if_eq_meaning:NNT c #1 { \hfil }
+      \Ustartmath
+      \m@th
+      \scriptstyle
+      \alignmark \alignmark
+      \Ustopmath
+      \hfil
+      \crcr
+    }
+    \__lltxmath_patch:cNnnn { frac~ } \cs_set:Npn { #1 #2 } {
+      {
+        \begingroup #1 \endgroup \@@over #2
+      }
+    } {
+      {
+        \Ustack { \group_begin: #1 \group_end: \@@over #2 }
+      }
+    }
+    \__lltxmath_patch:cNnnn { genfrac~ } \cs_set:Npn {
+      #1 #2 #3 #4 #5 #6
+    } {
+      {
+        \@mathstyle { #4 }
+        \genfrac@choice o { #1 }
+        {
+          \begingroup #5 \endgroup
+          \ifx @ #3 @ \@@over \else \@@above \fi #3 \relax
+          #6
+        }
+        \genfrac@choice c { #2 }
+      }
+    } {
+      {
+        \@mathstyle { #4 }
+        \genfrac@choice o { #1 }
+        {
+          \Ustack {
+            \group_begin: #5 \group_end:
+            \tl_if_empty:nTF { #3 } {
+              \@@over
+            } {
+              \@@above #3 \scan_stop:
+            }
+            #6
+          }
+        }
+        \genfrac@choice c { #2 }
+      }
+    }
+  }
+}
+\__lltxmath_after_package_or_now:nn { mathtools } {
+  \@ifpackagelater { mathtools } { 2021/03/28 } { } {
+    \__lltxmath_patch:NNnnn \MT_cramped_internal:Nn
+      \cs_set_nopar:Npn { #1 #2 } {
+      \setbox \z@ \hbox {
+        $
+        \m@th
+        #1
+        \kern -\nulldelimiterspace
+        \radical \z@ { #2 }
+        $
+      }
+      \ifx #1 \displaystyle
+        \dimen@ = \fontdimen 8 \textfont 3
+        \advance \dimen@ .25 \fontdimen 5 \textfont 2
+      \else
+        \dimen@ = 1.25 \fontdimen 8
+        \ifx #1 \textstyle
+          \textfont
+        \else
+          \ifx #1 \scriptstyle
+            \scriptfont
+          \else
+            \scriptscriptfont
+          \fi
+        \fi
+        3
+      \fi
+      \advance \dimen@ -\ht\z@
+      \ht\z@ = -\dimen@
+      \ifvmode \leavevmode \fi
+      { }
+      \box\z@
+    } {
+      {
+        \ensuremath {
+          \use:c { cramped \cs_to_str:N #1 } #2
+        }
+      }
+    }
+  }
+}
+\__lltxmath_after_package_or_now:nn { icomma } {
+  \@ifl@t@r \fmtversion { 2020/10/01 } {
+    \hook_gput_code:nnn { begindocument } { lualatex-math } {
+      \__lltxmath_set_mathchar:NN \mathcomma \,
+      \mathcode `\, = "8000 ~
+    }
+    \hook_gset_rule:nnnn
+      { begindocument } { lualatex-math } { voids } { icomma }
+  } {
+    \tl_replace_once:Nnn \@begindocumenthook {
+      \mathchardef \mathcomma \mathcode `\,
+    } {
+      \__lltxmath_set_mathchar:NN \mathcomma \,
+    }
+  }
+}
+\endinput
+%%
+%% End of file `lualatex-math.sty'.

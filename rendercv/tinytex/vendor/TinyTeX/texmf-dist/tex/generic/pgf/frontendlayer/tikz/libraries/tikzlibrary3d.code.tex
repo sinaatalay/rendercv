@@ -1,0 +1,108 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrary3d.code.tex}
+
+
+
+% New coordinate systems:
+
+\tikzdeclarecoordinatesystem{xyz cylindrical}
+{%
+  \pgfset{/tikz/cs/.cd,angle=0,radius=0,z=0,#1}%
+  \pgfpointcylindrical{\tikz@cs@angle}{\tikz@cs@xradius}{\tikz@cs@z}%
+}%
+
+\tikzdeclarecoordinatesystem{xyz spherical}
+{%
+  \pgfset{/tikz/cs/.cd,angle=0,radius=0,latitude=0,longitude=0,#1}%
+  \pgfpointspherical{\tikz@cs@angle}{\tikz@cs@latitude}{\tikz@cs@xradius}%
+}%
+
+\pgfset{/tikz/cs/longitude/.store in=\tikz@cs@angle}%
+\pgfset{/tikz/cs/latitude/.store in=\tikz@cs@latitude}%
+
+
+% Options for transforming into a plane:
+
+\tikzoption{plane origin}{\def\tikz@plane@origin{\tikz@scan@one@point\pgfutil@firstofone#1}}%
+\tikzoption{plane x}{\def\tikz@plane@x{\tikz@scan@one@point\pgfutil@firstofone#1}}%
+\tikzoption{plane y}{\def\tikz@plane@y{\tikz@scan@one@point\pgfutil@firstofone#1}}%
+
+\let\tikz@plane@origin=\pgfpointorigin
+\def\tikz@plane@x{\pgfpointxy{1}{0}}%
+\def\tikz@plane@y{\pgfpointxy{0}{1}}%
+
+\tikzoption{canvas is plane}[]{
+  \tikz@canvas@is@plane
+}%
+\tikzoption{canvas is xy plane at z}[]{%
+  \def\tikz@plane@origin{\pgfpointxyz{0}{0}{#1}}%
+  \def\tikz@plane@x{\pgfpointxyz{1}{0}{#1}}%
+  \def\tikz@plane@y{\pgfpointxyz{0}{1}{#1}}%
+  \tikz@canvas@is@plane
+}%
+\tikzoption{canvas is yx plane at z}[]{%
+  \def\tikz@plane@origin{\pgfpointxyz{0}{0}{#1}}%
+  \def\tikz@plane@x{\pgfpointxyz{0}{1}{#1}}%
+  \def\tikz@plane@y{\pgfpointxyz{1}{0}{#1}}%
+  \tikz@canvas@is@plane
+}%
+\tikzoption{canvas is xz plane at y}[]{%
+  \def\tikz@plane@origin{\pgfpointxyz{0}{#1}{0}}%
+  \def\tikz@plane@x{\pgfpointxyz{1}{#1}{0}}%
+  \def\tikz@plane@y{\pgfpointxyz{0}{#1}{1}}%
+  \tikz@canvas@is@plane
+}%
+\tikzoption{canvas is zx plane at y}[]{%
+  \def\tikz@plane@origin{\pgfpointxyz{0}{#1}{0}}%
+  \def\tikz@plane@x{\pgfpointxyz{0}{#1}{1}}%
+  \def\tikz@plane@y{\pgfpointxyz{1}{#1}{0}}%
+  \tikz@canvas@is@plane
+}%
+\tikzoption{canvas is yz plane at x}[]{%
+  \def\tikz@plane@origin{\pgfpointxyz{#1}{0}{0}}%
+  \def\tikz@plane@x{\pgfpointxyz{#1}{1}{0}}%
+  \def\tikz@plane@y{\pgfpointxyz{#1}{0}{1}}%
+  \tikz@canvas@is@plane
+}%
+\tikzoption{canvas is zy plane at x}[]{%
+  \def\tikz@plane@origin{\pgfpointxyz{#1}{0}{0}}%
+  \def\tikz@plane@x{\pgfpointxyz{#1}{0}{1}}%
+  \def\tikz@plane@y{\pgfpointxyz{#1}{1}{0}}%
+  \tikz@canvas@is@plane
+}%
+
+
+
+% Transformation code
+
+\def\tikz@canvas@is@plane{
+  \pgf@process{\tikz@plane@x}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{\tikz@plane@y}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@process{\tikz@plane@origin}%
+  \edef\pgf@marshal{\noexpand\tikz@addtransform{%
+      \noexpand\pgftransformtriangle
+      {\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+      {\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}
+      {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}
+      \noexpand\pgftransformscale{0.035146}%
+      \noexpand\pgfsetxvec{\noexpand\pgfpoint{1cm}{0cm}}%
+      \noexpand\pgfsetyvec{\noexpand\pgfpoint{0cm}{1cm}}%
+      \noexpand\pgfsetzvec{\noexpand\pgfpoint{0cm}{0cm}}%
+    }}%
+  \pgf@marshal%
+}%
+
+
+\endinput

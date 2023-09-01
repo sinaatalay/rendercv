@@ -1,0 +1,660 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmodulematrix.code.tex}
+
+\usepgfmodule{shapes}%
+
+\newif\ifpgfmatrix
+\newif\ifpgf@matrix@correct@call
+
+\newif\ifpgf@matrix@fixed
+
+\newcount\pgfmatrixcurrentrow
+
+\newcount\pgfmatrixcurrentcolumn
+\newcount\pgf@matrix@numberofcolumns
+
+\let\pgf@matrix@cell=\pgfnodeparttextbox % alias
+\let\pgf@matrix@box=\pgf@matrix@cell % alias
+
+\long\def\pgfmatrixbeforeassemblenode#1{%
+  \long\def\pgf@matrix@before@assemnble@node{#1}}
+\pgfmatrixbeforeassemblenode{}
+
+% Sets the default row or column sep
+%
+% #1 = default row or column sep list
+%
+% Description:
+%
+% Sets the macro \pgfmatrixrowsep or \pgfmatrixcolumnsep to #1.
+%
+% Example:
+%
+% \pgfsetmatrixrowsep{5pt}
+
+\def\pgfsetmatrixrowsep#1{\def\pgfmatrixrowsep{#1}}%
+\def\pgfsetmatrixcolumnsep#1{\def\pgfmatrixcolumnsep{#1}}%
+
+\def\pgfmatrixrowsep{0pt}%
+\def\pgfmatrixcolumnsep{0pt}%
+
+
+
+% The pgfmatrix command creates a node that contains a matrix. Like
+% the \pgfnode command, it is to be used inside a pgfpicture
+% environment.
+%
+% #1 = shape type
+% #2 = anchor
+% #3 = name for later reference
+% #4 = path usage command
+% #5 = inner shift
+% #6 = startup code
+% #7 = the matrix code (may contain verbatim stuff)
+%
+% Description:
+%
+% This command creates a node that contains a matrix. For
+% each cell of the matrix, drawing commands may be given. These
+% commands will create a cell picture and a bounding box is computed
+% for each cell picture. The cell picture is then placed inside the
+% cell. The position inside the cell is computed according to the
+% following rules:
+%
+% 1. In each column, the origins of the cell pictures are all on a
+%    vertical line.
+% 2. In each row, the origins of the cell pictures are all on a
+%    horizontal line.
+% 3. All cells in the same row have the same height and depth.
+% 4. All cells in the same column have the same width.
+% 5. The size of cells are chosen minimal such that the boxes fit into
+%    the cells and still meet the above requirement.
+%
+% Next, the whole resulting matrix, which is given as #7, is placed
+% inside a node whose name is given as #3, whose shape is #1, and
+% whose anchor is #2. This means that the resulting node is shifted
+% such that the given anchor lies at the origin. Then, as for a normal
+% node, the #4 path usage command is used for the node.
+%
+% The parameter #5 is an additional negative shift for the node. Normally, such
+% a shift could be given beforehand (that is, the shift could be
+% preapplied to the current transformation matrix). However, when #5
+% is evaluated, you can refer to temporary positions of nodes inside
+% the matrix. In detail, the following happens: When the matrix has
+% been typeset, all nodes in the matrix temporarily get assigned their
+% positions in the matrix box. The origin of this coordinate system is
+% at the left baseline end of the matrix box, which corresponds to the
+% text anchor. The position #5 is then interpreted inside this
+% coordinate system and then used for shifting.
+%
+% The idea behind using the parameter #5 is the following: If you
+% specify "text" as anchor #2 and specify \pgfpointanchor{inner
+% node}{some anchor} for parameter #5, where inner node is a node that
+% is created in the matrix, then the whole matrix will be shifted such
+% that inner node.some anchor lies at the origin of the whole picture.
+%
+% At the beginning and at the end of each cell, the macros
+% \pgfmatrixbegincode and \pgfmatrixendcode are called. Inside these
+% macros you can use \pgfmatrixcurrentcolumn and \pgfmatrixcurrentrow
+% to access the current row and column.
+%
+% Before each column except for the first, an extra space given by the
+% macro \pgfmatrixcolumnsep is added. Additionally, an extra space
+% given by the optional argument of the \pgfmatrixnextcell commands in
+% the first line are added, which may vary between columns. Between
+% rows, an extra space given by the macro \pgfmatrixrowsep is
+% added. You can also change this value for each row by using a \gdef.
+%
+%
+% Lines are ended using the command \pgfmatrixendrow. The command \\
+% is \let to be the same, but \\ is sometimes overridden by, say,
+% minipage, so it's good to have \pgfmatrixendrow as a "fallback".
+%
+% Inside the matrix, \\ must be used to end every line ***including
+% the last***. You can pass an optional parameter to \\ as in \\[2pt]
+% to give an additional space after this particular line.
+%
+% The usage of \\ at the end of the matrix is important since this
+% command is used to find the end of the matrix. What happens is that
+% \\ followed by a closing brace ends the matrix.
+%
+% Inside the matrix, you must use \pgfmatrixnextcell to separate
+% columns. The reason is that two columns are used internally for
+% every single column shown. The macro \pgfmatrixnextcell is yields
+% (more or less) two && (and some further trickery).
+%
+% The parameter #6 is executed at the beginning of the matrix
+% group. It is inside the protecting group of the matrix, but outside
+% the matrix itself. It can be used for different purposes: 1) It can be
+% used to simplify the next cell macro. 2) It can be used to issue an
+% \aftergroup command. 3) It can be used to setup local settings. For
+% example, by setting #6 to \let\&=\pgfmatrixnextcell you can use \&
+% instead of \pgfmatrixnextcell. You can also set the catcode of & to
+% active.
+%
+%
+% Example:
+%
+% \begin{tikzpicture}
+%
+%   \draw (0,0) circle (1mm);  % b.north will lie on the center of this circle
+%
+%   \pgfmatrix{rectangle}{text}{mymatrix}{\pgfusepath{}}{\pgfpointanchor{b}{north}}{\let\&=\pgfmatrixnextcell}
+%   {
+%     \draw (0,0) circle (1cm); \& \node (a) [draw] {Hallo}; \\
+%     \node (b) [draw] {Welt};  \& \draw (0,0) circle (5mm); \\
+%   }
+%
+%   \draw [->] (a) -- (b);
+%
+% \end{tikzpicture}
+
+\def\pgfmatrix#1#2#3#4#5#6{%
+  \ifpgfmatrix%
+    \pgferror{You cannot nest pgfmatrix environments, yet}
+  \fi%
+  \bgroup%
+    \everycr{}%
+    #6%
+    \def\pgf@matrix@par@shape{#1}%
+    \def\pgf@matrix@par@anchor{#2}%
+    \def\pgf@matrix@par@name{#3}%
+    \def\pgf@matrix@par@usage{#4}%
+    \def\pgf@matrix@par@shift{#5}%
+    % the matrix must have a name:
+    \ifx\pgf@matrix@par@name\pgfutil@empty%
+      \def\pgf@matrix@par@name{pgf@matrix@internal}%
+    \fi%
+    \pgfmatrixcurrentrow=0\relax%
+    \pgfmatrixcurrentcolumn=0\relax%
+    \pgf@matrix@numberofcolumns=0\relax%
+    \let\\=\pgfmatrixendrow%
+    \tabskip=0pt%
+    \offinterlineskip%
+    \pgfmatrixtrue%
+    \let\pgf@matrix@node@list=\pgfutil@empty%
+    \expandafter\let\csname pgf@matrix@column@finish@1\endcsname=\pgfutil@empty%
+    \let\pgf@matrix@row@finish=\pgfutil@empty%
+    %
+    % Get rid of bgroup
+    %
+    \afterassignment\pgf@matrix@cont\let\pgf@next=%
+}%
+\def\pgf@matrix@cont{%
+    \setbox\pgf@matrix@box=\hbox\bgroup\vbox\bgroup%
+    \halign\bgroup%
+    \pgf@matrix@init@row%
+    \pgf@matrix@step@column%
+    {%
+      \pgf@matrix@startcell%
+      ##%
+      \pgf@matrix@endcell%
+    }%
+    &%
+    ##\pgf@matrix@padding&&%
+    \pgf@matrix@step@column%
+    {%
+      \pgf@matrix@startcell%
+      ##%
+      \pgf@matrix@endcell%
+    }&%
+    ##\pgf@matrix@padding%
+    \cr%
+}%
+
+\def\pgf@end@matrix{%
+      \egroup\egroup%
+    \egroup%
+    %
+    % Inject custom tokens before assembling the node holding the matrix.  Can
+    % be used to apply additional settings.
+    %
+    \pgf@matrix@before@assemnble@node
+    %
+    % If there are named nodes, we must adjust their coordinates.
+    %
+    \ifx\pgf@matrix@node@list\pgfutil@empty%
+    \else%
+      % Ok, this means we got a lot of work to do...
+      \pgf@matrix@compute@origin%
+      \pgf@matrix@shift@nodes@initial%
+    \fi%
+    %
+    % Compute additional shift
+    %
+    \pgftransformresetnontranslations%
+    \pgftransformshift{\pgf@process{\pgftransformreset\pgf@matrix@par@shift\pgf@x=-\pgf@x\pgf@y=-\pgf@y}}%
+    %
+    % Create node
+    %
+    \pgfmultipartnode{\pgf@matrix@par@shape}{\pgf@matrix@par@anchor}{\pgf@matrix@par@name}{\pgf@matrix@par@usage}%
+    %
+    % If there are named nodes, we must adjust their coordinates, again.
+    %
+    \ifx\pgf@matrix@node@list\pgfutil@empty%
+    \else%
+      {%
+        \pgftransformreset%
+        \pgf@process{\pgfpointanchor{\pgf@matrix@par@name}{text}}%
+        \xdef\pgf@matrix@offset{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+        \pgf@matrix@shift@nodes@secondary{\pgf@matrix@offset}%
+      }%
+    \fi%
+}%
+
+
+
+
+% Ending a cell
+%
+% #1 = (optional) spacing between previous and next column. This
+%      parameter only has an effect in the first row.
+%
+% Description:
+%
+% This command ends a cell of a matrix.
+%
+% Example:
+%
+% \pgfmatrix{rectangle}{text}{mymatrix}{\pgfusepath{}}{\pgfpointanchor{b}{north}}{}
+% {
+%   \draw (0,0) circle (1cm); \pgfmatrixnextcell[1cm] \node (a) [draw] {Hallo}; \\
+%   \node (b) [draw] {Welt};  \pgfmatrixnextcell \draw (0,0) circle (5mm); \\
+% }
+
+\def\pgfmatrixnextcell{%
+  % if the cell contains nothing, the following \let will be at the
+  % beginning (macro expansion has stopped here since neither \omit
+  % nor \span was found)
+  \let\pgf@matrix@signal@cell@end=\pgf@matrix@signal@cell@end%
+  \pgfutil@ifnextchar[{\pgf@matrix@cell@cont}{\pgf@matrix@cell@cont[0pt]}}%}%
+
+\def\pgf@matrix@cell@cont[#1]{%
+  \xdef\pgf@matrix@last@nextcell@options{#1}%
+  &\pgf@matrix@correct@calltrue&%
+}%
+
+
+\def\pgf@matrix@fixed@text{between origins}%
+\def\pgf@matrix@natural@text{between borders}%
+
+\def\pgf@matrix@addtolength#1#2{\edef\pgf@temp{#2}\expandafter\pgf@matrix@addtolength@\expandafter#1#2,\pgf@stop}%
+\def\pgf@matrix@addtolength@#1#2,#3\pgf@stop{%
+  \pgfkeys@spdef\pgf@temp{#2}%
+  \ifx\pgf@temp\pgfutil@empty%
+  \else%
+    \ifx\pgf@temp\pgf@matrix@fixed@text%
+      \global\pgf@matrix@fixedtrue%
+    \else%
+      \ifx\pgf@temp\pgf@matrix@natural@text%
+        \global\pgf@matrix@fixedfalse%
+      \else%
+        \pgfmathaddtolength{#1}{#2}%
+      \fi%
+    \fi%
+  \fi%
+  \def\pgf@temp{#3}%
+  \ifx\pgf@temp\pgfutil@empty%
+  \else%
+    \pgf@matrix@addtolength@#1#3\pgf@stop%
+  \fi%
+}%
+
+
+
+% Init a line
+
+\def\pgf@matrix@init@row{%
+  \relax%
+  \global\advance\pgfmatrixcurrentrow by 1\relax%
+  \global\pgfmatrixcurrentcolumn=0\relax%
+  \expandafter\gdef\csname pgf@matrix@maxy\the\pgfmatrixcurrentrow\endcsname{0pt}%
+  \expandafter\gdef\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname{0pt}%
+}%
+
+
+
+% Step the row column number
+
+\def\pgf@matrix@step@column{%
+  \relax%
+  \global\advance\pgfmatrixcurrentcolumn by1\relax%
+}%
+
+
+
+% Start a cell
+
+\def\pgf@matrix@startcell{%
+  %
+  % Step 1: Init the list of nodes for this cell
+  %
+  \let\pgf@nodecallback=\pgf@matrix@nodecallback%
+  %
+  % Step 2: Setup the bounding box
+  %
+  \pgfinterruptboundingbox%
+  %
+  % Step 3: Reset the transformation matrix
+  %
+  \pgftransformreset%
+  %
+  % Step 4: Collect everything in a cell box
+  %
+  \setbox\pgf@matrix@cell=\hbox\bgroup\bgroup%
+    % make sure that cell pictures are not affected if matrices have
+    % 'overlay' option on:
+    \pgf@relevantforpicturesizetrue
+    \pgfsys@beginpicture%
+    \normalbaselines%
+    % Find out whether the cell is empty:
+    \pgfutil@ifnextchar\let%
+    {% ok, candidate, check following symbol
+      \afterassignment\pgf@matrix@empty@check\let\pgf@matrix@temp=% get rid of \let
+    }%
+    {% no, not empty
+      \pgf@matrix@empty@cell@false%
+      \pgfmatrixbegincode%
+    }%
+}%
+
+\def\pgf@matrix@empty@check{\futurelet\pgf@matrix@check@token\pgf@matrix@empty@check@cont}%
+\def\pgf@matrix@empty@check@cont{%
+  \ifx\pgf@matrix@check@token\pgf@matrix@signal@cell@end%
+    \pgf@matrix@empty@cell@true%
+    \expandafter%
+    \pgfmatrixemptycode%
+    \expandafter%
+    \let% reinserted
+  \else%
+    \pgf@matrix@empty@cell@false%
+    \expandafter%
+    \pgfmatrixbegincode%
+    \expandafter
+    \let% reinserted
+  \fi%
+}%
+
+\newif\ifpgf@matrix@empty@cell@
+
+
+% End a  cell
+
+\def\pgf@matrix@endcell{%
+    \ifpgf@matrix@empty@cell@%
+    \else%
+      \expandafter\expandafter\expandafter\pgfmatrixendcode%
+      \expandafter\ifpgf@matrix@last@cell@in@row\expandafter\pgf@matrix@last@cell@in@rowtrue\expandafter\fi%
+    \fi%
+    \pgfsys@endpicture%
+    \ifnum\pgfmatrixcurrentcolumn<\pgf@matrix@numberofcolumns%
+    \else%
+    \ifpgf@matrix@last@cell@in@row\else%
+    {%
+      \global\pgf@matrix@fixedfalse%
+      \pgf@x=0pt%
+      \pgf@matrix@addtolength{\pgf@x}{\pgfmatrixcolumnsep}%
+      \pgf@matrix@addtolength{\pgf@x}{\pgf@matrix@last@nextcell@options}%
+      \ifpgf@matrix@fixed%
+        \expandafter\pgfutil@g@addto@macro\csname pgf@matrix@column@finish@\the\pgfmatrixcurrentcolumn\endcsname%
+          {\global\pgf@picmaxx=0pt}%
+      \fi%
+      \advance\pgfmatrixcurrentcolumn by1\relax % only temporary for the following:
+      \expandafter\xdef\csname pgf@matrix@column@sep@\the\pgfmatrixcurrentcolumn\endcsname{\the\pgf@x}%
+      \ifpgf@matrix@fixed%
+        \expandafter\gdef\csname pgf@matrix@column@finish@\the\pgfmatrixcurrentcolumn\endcsname{\global\pgf@picminx=0pt}%
+      \else%
+        \expandafter\global\expandafter\let\csname pgf@matrix@column@finish@\the\pgfmatrixcurrentcolumn\endcsname=\pgfutil@empty%
+      \fi%
+    }%
+    \fi\fi%
+    % Special case of the empty picture
+    \ifdim\pgf@picmaxx=-16000pt\relax%
+      \global\pgf@picmaxx=0pt\relax%
+      \global\pgf@picminx=0pt\relax%
+      \global\pgf@picmaxy=0pt\relax%
+      \global\pgf@picminy=0pt\relax%
+    \fi%
+    \csname pgf@matrix@column@finish@\the\pgfmatrixcurrentcolumn\endcsname%
+    \pgf@matrix@row@finish%
+  \egroup\egroup%
+  %
+  % Step 5: Horizontal gap
+  %
+  \ifnum\pgfmatrixcurrentcolumn>1\relax%
+    \pgf@y=\csname pgf@matrix@column@sep@\the\pgfmatrixcurrentcolumn\endcsname\relax%
+    \advance\pgf@picminx by-\pgf@y%
+  \fi%
+  %
+  % Step 6: Protocol and adjust height and depth
+  %
+  % Step 6.1: Protocol...
+  %
+  \ifdim\pgf@picmaxy>\csname pgf@matrix@maxy\the\pgfmatrixcurrentrow\endcsname%
+    \expandafter\xdef\csname pgf@matrix@maxy\the\pgfmatrixcurrentrow\endcsname{\the\pgf@picmaxy}%
+  \fi%
+  \ifdim\pgf@picminy<\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname%
+    \expandafter\xdef\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname{\the\pgf@picminy}%
+  \fi%
+  %
+  % Step 6.2: and setup.
+  %
+  \ht\pgf@matrix@cell=\pgf@picmaxy%
+  \dp\pgf@matrix@cell=-\pgf@picminy%
+  %
+  % Step 7: Protocol and adjust left and right width
+  %
+  % Step 7.1: Protocol...
+  %
+  \ifnum\pgfmatrixcurrentcolumn>\pgf@matrix@numberofcolumns\relax%
+    \expandafter\xdef\csname pgf@matrix@maxx\the\pgfmatrixcurrentcolumn\endcsname{\the\pgf@picmaxx}%
+    \expandafter\xdef\csname pgf@matrix@minx\the\pgfmatrixcurrentcolumn\endcsname{\the\pgf@picminx}%
+    \global\pgf@matrix@numberofcolumns=\pgfmatrixcurrentcolumn\relax%
+  \else%
+    \ifdim\pgf@picmaxx>\csname pgf@matrix@maxx\the\pgfmatrixcurrentcolumn\endcsname%
+      \expandafter\xdef\csname pgf@matrix@maxx\the\pgfmatrixcurrentcolumn\endcsname{\the\pgf@picmaxx}%
+    \fi%
+    \ifdim\pgf@picminx<\csname pgf@matrix@minx\the\pgfmatrixcurrentcolumn\endcsname%
+      \expandafter\xdef\csname pgf@matrix@minx\the\pgfmatrixcurrentcolumn\endcsname{\the\pgf@picminx}%
+    \fi%
+  \fi%
+  %
+  % Step 7.2: and setup.
+  %
+  \xdef\pgf@matrix@paddingskip{\the\pgf@picmaxx}%
+  %
+  % Step 8: Put in the box now
+  %
+  \hfil\hskip-\pgf@picminx%
+  \wd\pgf@matrix@cell=0pt%
+  \box\pgf@matrix@cell%
+  %
+  % Step 9: End bounding box
+  \endpgfinterruptboundingbox%
+}%
+
+% Default code for the start and end code
+\let\pgfmatrixbegincode=\relax
+\let\pgfmatrixendcode=\relax
+\let\pgfmatrixemptycode=\relax
+
+
+% The following callback is called for every node that is produced
+% inside a cell
+
+\def\pgf@matrix@nodecallback#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfutil@empty%
+  \else%
+    \xdef\pgf@matrix@node@list{\pgf@matrix@node@list,{#1}}%
+    \expandafter\xdef\csname pgf@matrix@node@location@#1\endcsname{{\the\pgfmatrixcurrentrow}{\the\pgfmatrixcurrentcolumn}}%
+  \fi%
+}%
+
+
+
+% Padding code
+
+\def\pgf@matrix@padding{%
+  \ifpgf@matrix@correct@call%
+  \else%
+    \pgferror{Single ampersand used with wrong catcode}%
+  \fi%
+  \hskip\pgf@matrix@paddingskip\hfil%
+}%
+
+
+% Compute the real positions of the origins
+
+% We must now compute the real positions of the origins of all the
+% small pictures. To this end, we need to compute prefix sums. After
+% the procedure is done, the minx and the maxy will contain the origin
+% positions.
+
+\def\pgf@matrix@compute@origin{%
+  %
+  % Inverse prefix sum on the vertical positions
+  %
+  {%
+    \ifnum\pgfmatrixcurrentrow>0\relax%
+      \expandafter\gdef\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname{0pt}%
+    \fi
+    \c@pgf@counta=\pgfmatrixcurrentrow\relax%
+    \loop%
+    \ifnum\c@pgf@counta>1\relax%
+      \pgf@y=\csname pgf@matrix@miny\the\c@pgf@counta\endcsname\relax%
+      \advance\pgf@y by\csname pgf@matrix@maxy\the\c@pgf@counta\endcsname\relax
+      \advance\c@pgf@counta by-1\relax%
+      \pgf@ya=\csname pgf@matrix@miny\the\c@pgf@counta\endcsname\relax%
+      \advance\pgf@y by-\pgf@ya\relax%
+      \expandafter\xdef\csname pgf@matrix@miny\the\c@pgf@counta\endcsname{\the\pgf@y}%
+    \repeat%
+  }%
+  %
+  % Prefix sum on the horizontal positions
+  %
+  {%
+    \ifnum\pgf@matrix@numberofcolumns>0\relax%
+      \pgf@x=\csname pgf@matrix@minx1\endcsname\relax%
+      \pgf@x=-\pgf@x%
+      \expandafter\xdef\csname pgf@matrix@minx1\endcsname{\the\pgf@x}%
+    \fi
+    \c@pgf@counta=1\relax%
+    \loop%
+    \ifnum\c@pgf@counta<\pgf@matrix@numberofcolumns\relax%
+      \pgf@x=\csname pgf@matrix@minx\the\c@pgf@counta\endcsname\relax%
+      \advance\pgf@x by\csname pgf@matrix@maxx\the\c@pgf@counta\endcsname\relax%
+      \advance\c@pgf@counta by1\relax%
+      \pgf@xa=\csname pgf@matrix@minx\the\c@pgf@counta\endcsname\relax%
+      \advance\pgf@x by-\pgf@xa\relax%
+      \expandafter\xdef\csname pgf@matrix@minx\the\c@pgf@counta\endcsname{\the\pgf@x}%
+    \repeat%
+  }%
+}%
+
+
+% Shift the nodes to their origins
+
+% The following procedure shifts all nodes in
+% \pgf@matrix@node@list to their location inside a temporary
+% picture. This picture will later be shifted again to its final
+% position in the real picture.
+
+\def\pgf@matrix@shift@nodes@initial{%
+  {%
+  \pgfutil@for\pgf@matrix@node@name:=\pgf@matrix@node@list\do{%
+    \ifx\pgf@matrix@node@name\pgfutil@empty%
+    \else%
+      \expandafter\ifx\csname pgf@matrix@node@visited@\pgf@matrix@node@name\endcsname\relax%
+        \pgf@shift@node{\pgf@matrix@node@name}{%
+          \pgf@x=\csname pgf@matrix@minx%
+            \expandafter\expandafter\expandafter\pgfutil@secondoftwo\csname pgf@matrix@node@location@\pgf@matrix@node@name\endcsname\endcsname%
+          \pgf@y=\csname pgf@matrix@miny%
+            \expandafter\expandafter\expandafter\pgfutil@firstoftwo\csname pgf@matrix@node@location@\pgf@matrix@node@name\endcsname\endcsname%
+          }%
+        \expandafter\let\csname pgf@matrix@node@visited@\pgf@matrix@node@name\endcsname=\pgfutil@empty%
+      \fi%
+    \fi%
+  }%
+  }%
+}%
+
+
+% The second shifting, done in the following procedure, shifts all
+% nodes to their real positions inside the real picture.
+
+\def\pgf@matrix@shift@nodes@secondary#1{%
+  \pgfutil@for\pgf@matrix@node@name:=\pgf@matrix@node@list\do{%
+    \ifx\pgf@matrix@node@name\pgfutil@empty%
+    \else%
+      \expandafter\ifx\csname pgf@matrix@node@visited@\pgf@matrix@node@name\endcsname\relax%
+        \pgf@shift@node{\pgf@matrix@node@name}{#1}%
+        \expandafter\let\csname pgf@matrix@node@visited@\pgf@matrix@node@name\endcsname=\pgfutil@empty%
+      \fi%
+    \fi%
+  }%
+}%
+
+
+% End of line
+\def\pgfmatrixendrow{%
+  % if the cell contains nothing, the following \let will be at the
+  % beginning (macro expansion has stopped here since neither \omit
+  % nor \span was found)
+  \let\pgf@matrix@signal@cell@end=\pgf@matrix@signal@cell@end
+  \pgf@matrix@last@cell@in@rowtrue%
+  \xdef\pgf@matrix@rowsep{\pgfmatrixrowsep}%
+  &\pgf@matrix@correct@calltrue%
+  \global\pgf@matrix@fixedfalse%
+  \pgf@y=0pt%
+  \pgf@matrix@addtolength\pgf@y{\pgf@matrix@rowsep}%
+  \pgfutil@ifnextchar[{\pgfmatrixendrow@skip}{\pgf@matrix@finish@line}%
+}%
+\newif\ifpgf@matrix@last@cell@in@row
+
+\def\pgf@matrix@signal@cell@end{\pgf@matrix@signal@cell@end}%
+% exact definition does not matter, only needs to be unique.
+
+\def\pgfmatrixendrow@skip[#1]{%
+  \pgf@matrix@addtolength\pgf@y{#1}%
+  \pgf@matrix@finish@line%
+}%
+
+\def\pgf@matrix@finish@line{%
+  \global\pgf@y=\pgf@y%
+  \pgf@ya=-\pgf@y%
+  \global\advance\pgf@ya by\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname%
+  \expandafter\xdef\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname{\the\pgf@ya}%
+  \pgfutil@ifnextchar\egroup{\cr\pgf@end@matrix}{\pgf@matrix@no@eom@found}%
+}%
+
+\def\pgf@matrix@eom@found{%
+  \cr%
+  \pgf@end@matrix%
+}%
+
+\def\pgf@matrix@no@eom@found{%
+  \cr%
+  \noalign{\vskip\pgf@y%
+  \ifpgf@matrix@fixed%
+    \vskip\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname% unskip
+    \vskip\pgf@y%
+    \pgf@y=-\pgf@y%
+    \expandafter\xdef\csname pgf@matrix@miny\the\pgfmatrixcurrentrow\endcsname{\the\pgf@y}%
+    \gdef\pgf@matrix@row@finish{\global\pgf@picmaxy=0pt}%
+  \else%
+    \global\let\pgf@matrix@row@finish=\pgfutil@empty%
+  \fi%
+  }%
+}%
+
+
+\endinput

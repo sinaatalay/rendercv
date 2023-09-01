@@ -1,0 +1,144 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarymatrix.code.tex}
+
+
+% A matrix of nodes contains a node in each cell.
+
+\tikzset{matrix of nodes/.style={%
+   matrix,%
+   cells={anchor=base},%
+   execute at begin cell=\tikz@lib@matrix@start@cell,%
+   execute at end cell=\tikz@lib@matrix@end@cell,%
+   execute at empty cell=\tikz@lib@matrix@empty@cell,
+   execute at begin matrix=\iftikz@handle@active@code\tikz@orig@shorthands\fi,%
+}}%
+
+\def\tikz@lib@matrix@empty@cell{\iftikz@lib@matrix@empty\node[name=\tikzmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn]{};\fi}%
+
+\newif\iftikz@lib@matrix@plain
+
+\def\tikz@lib@matrix@start@cell{%
+  \pgfutil@ifnextchar|{\tikz@lib@matrix@with@options}{\tikz@lib@matrix@normal@start@cell}}%
+
+\def\tikz@lib@matrix@with@options|#1|{\tikz@lib@matrix@plainfalse\node%
+  [name=\tikzmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn]#1\bgroup\tikz@lib@matrix@startup}%
+
+
+\def\tikz@lib@matrix@normal@start@cell{\pgfutil@ifnextchar\let{\tikz@lib@matrix@check}{\tikz@lib@matrix@plainfalse\node
+  [name=\tikzmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn]\bgroup\tikz@lib@matrix@startup}}%
+
+\def\tikz@lib@matrix@check#1{% evil hackery to find out about start of path
+  \pgfutil@ifnextchar\tikz@signal@path{\tikz@lib@matrix@plaintrue\let}{\tikz@lib@matrix@plainfalse\node
+  [name=\tikzmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn]\bgroup\tikz@lib@matrix@startup\let}%
+}%
+
+\def\tikz@lib@matrix@end@cell{%
+  \iftikz@lib@matrix@plain%
+  \else%
+    \expandafter\egroup\expandafter;%
+  \fi%
+}%
+
+\def\tikz@lib@matrix@startup{%
+  \pgfutil@ifnextchar\bgroup{%
+    % Save meaning of \\:
+    \let\tikz@lib@matrix@saved@eol=\\%
+    % Now smuggle meaning inside following group.
+    \let\\=\pgfmatrixendrow%
+    \afterassignment\tikz@lib@matrix@smuggle%
+    \let\tikz@next}
+  {\let\\=\pgfmatrixendrow}%
+}%
+\def\tikz@lib@matrix@smuggle{%
+  \bgroup%
+  \let\\=\tikz@lib@matrix@saved@eol%
+}%
+
+
+% Fill empty nodes in a matrix of nodes
+
+\newif\iftikz@lib@matrix@empty
+
+\tikzoption{nodes in empty cells}[true]{\csname tikz@lib@matrix@empty#1\endcsname}%
+
+
+% Same as a matrix of nodes, but switch on math mode in each cell
+\tikzset{matrix of math nodes/.style={%
+  matrix of nodes,
+  nodes={%
+   execute at begin node=$,%
+   execute at end node=$%
+  }%
+}}%
+
+
+
+% Provide a delimiter
+
+\tikzoption{left delimiter}{\tikzset{append after command={\tikz@delimiter%
+    {south east}%
+    {south west}%
+    {every delimiter,every left delimiter}%
+    {south}%
+    {north}%
+    {#1}%
+    {.}%
+    {\pgf@y}}}}%
+
+\tikzoption{right delimiter}{\tikzset{append after command={\tikz@delimiter%
+    {south west}%
+    {south east}%
+    {every delimiter,every right delimiter}%
+    {south}%
+    {north}%
+    {.}%
+    {#1}%
+    {\pgf@y}}}}%
+
+\tikzoption{above delimiter}{\tikzset{append after command={\tikz@delimiter%
+    {south east}%
+    {north west}%
+    {every delimiter,every above delimiter,rotate=-90}%
+    {west}%
+    {east}%
+    {#1}%
+    {.}%
+    {\pgf@x}}}}%
+
+\tikzoption{below delimiter}{\tikzset{append after command={\tikz@delimiter%
+    {south west}%
+    {south west}%
+    {every delimiter,every below delimiter,rotate=-90}%
+    {west}%
+    {east}%
+    {.}%
+    {#1}%
+    {\pgf@x}}}}%
+
+\def\tikz@delimiter#1#2#3#4#5#6#7#8{%
+  \bgroup
+    \pgfextra{\let\tikz@save@last@fig@name=\tikz@last@fig@name\tikz@node@is@a@labelfalse}%
+    node[outer sep=0pt,inner sep=0pt,draw=none,fill=none,anchor=#1,at=(\tikz@last@fig@name.#2),#3]
+    {%
+      {\nullfont\pgf@process{\pgfpointdiff{\pgfpointanchor{\tikz@last@fig@name}{#4}}{\pgfpointanchor{\tikz@last@fig@name}{#5}}}}%
+      $\left#6\vcenter{\hrule height .5#8 depth .5#8 width0pt}\right#7$%
+    }
+    \pgfextra{\global\let\tikz@last@fig@name=\tikz@save@last@fig@name}%
+  \egroup%
+}%
+
+\tikzset{every delimiter/.style={}}%
+\tikzset{every left delimiter/.style={}}%
+\tikzset{every right delimiter/.style={}}%
+\tikzset{every above delimiter/.style={}}%
+\tikzset{every below delimiter/.style={}}%
+
+\endinput

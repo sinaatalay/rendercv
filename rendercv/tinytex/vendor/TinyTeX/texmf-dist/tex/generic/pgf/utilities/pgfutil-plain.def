@@ -1,0 +1,343 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+
+
+\pgfutil@format@is@plaintrue
+
+
+% The aux files, needed for reading back coordinates
+\def\pgfutil@aux@read@hook{
+  \pgfutil@IfFileExists{\jobname.pgf}{\input \jobname.pgf\relax}{}
+  \csname newwrite\endcsname\pgfutil@auxout
+  \immediate\csname openout\endcsname\pgfutil@auxout\jobname.pgf
+}
+\def\pgfutil@writetoaux#1{\write\pgfutil@auxout{#1}}
+
+% XColor-like support for plain TeX
+
+\def\pgfutil@definecolor#1#2#3{\csname pgfutil@emu@#2\endcsname{#1}#3\@nil}
+
+\def\pgfutil@emu@rgb#1#2,#3,#4\@nil{\expandafter\def\csname\string\color@#1\endcsname{\xcolor@{}{}{rgb}{#2,#3,#4}}}
+\def\pgfutil@emu@gray#1#2\@nil{\expandafter\def\csname\string\color@#1\endcsname{\xcolor@{}{}{rgb}{#2,#2,#2}}}
+\def\pgfutil@emu@RGB#1#2,#3,#4\@nil{%
+    \begingroup
+    \pgfmathdivide@{#2}{255}\let\pgfutil@emu@RGB@r\pgfmathresult
+    \pgfmathdivide@{#3}{255}\let\pgfutil@emu@RGB@g\pgfmathresult
+    \pgfmathdivide@{#4}{255}\let\pgfutil@emu@RGB@b\pgfmathresult
+    \edef\pgf@marshal{\def\expandafter\noexpand\csname\string\color@#1\endcsname{%
+        \noexpand\xcolor@{}{}{rgb}{\pgfutil@emu@RGB@r,\pgfutil@emu@RGB@g,\pgfutil@emu@RGB@b}}}%
+    \expandafter\endgroup\pgf@marshal
+}
+
+\pgfutil@definecolor{white}{gray}{1}
+\pgfutil@definecolor{black}{gray}{0}
+\pgfutil@definecolor{gray}{gray}{0.5}
+\pgfutil@definecolor{red}{rgb}{1,0,0}
+\pgfutil@definecolor{green}{rgb}{0,1,0}
+\pgfutil@definecolor{blue}{rgb}{0,0,1}
+\pgfutil@definecolor{cyan}{rgb}{0,1,1}
+\pgfutil@definecolor{magenta}{rgb}{1,0,1}
+\pgfutil@definecolor{yellow}{rgb}{1,1,0}
+\pgfutil@definecolor{orange}{rgb}{1,0.5,0}
+\pgfutil@definecolor{violet}{rgb}{0.5,0,0.5}
+\pgfutil@definecolor{purple}{rgb}{0.75,0,0.25}
+\pgfutil@definecolor{brown}{rgb}{0.75,0.5,0.25}
+
+\def\pgfutil@color#1{%
+  \pgfutil@colorlet{.}{#1}%
+  \pgfsysprotocol@getcurrentprotocol\pgfutil@emu@temp%
+  {%
+    \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+    \pgfsysprotocol@bufferedtrue%
+    \pgfsetcolor{.}%
+    \expandafter\pgfsys@outerinvoke\expandafter{\pgfsysprotocol@currentprotocol}%
+  }%
+  \pgfsysprotocol@setcurrentprotocol\pgfutil@emu@temp%
+  \aftergroup\pgfutil@reset@color%
+}
+
+\def\pgfutil@extractcolorspec#1#2{%
+  \def#2{{#1}}%
+}
+
+\def\pgfutil@convertcolorspec#1#2#3{%
+  \edef#3{\expandafter\expandafter\expandafter\pgfutil@emu@select\csname\string\color@#1\endcsname}%
+}
+
+
+\def\pgfutil@doifcolorelse#1#2#3{%
+  \expandafter\ifx\csname\string\color@#1\endcsname\relax%
+    \let\pgf@next=\pgfutil@secondoftwo%
+  \else
+    \let\pgf@next=\pgfutil@firstoftwo%
+  \fi%
+  \pgf@next{#2}{#3}%
+}
+
+
+\def\pgfutil@reset@color{%
+  \pgfsysprotocol@getcurrentprotocol\pgfutil@emu@temp%
+  {%
+    \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+    \pgfsysprotocol@bufferedtrue%
+    \pgfsetcolor{.}%
+    \expandafter\pgfsys@outerinvoke\expandafter{\pgfsysprotocol@currentprotocol}%
+  }%
+  \pgfsysprotocol@setcurrentprotocol\pgfutil@emu@temp%
+}
+\expandafter\def\csname\string\color@.\endcsname{\xcolor@{}{}{rgb}{0,0,0}}
+
+\def\pgfutil@colorlet#1#2{%
+  \edef\pgf@marshal{#2}%
+  \expandafter\pgfutil@in@\expandafter!\expandafter{\pgf@marshal}%
+  \ifpgfutil@in@%
+    % compute mixture
+    {%
+      \expandafter\pgfutil@emu@mix\pgf@marshal!white!\@nil%
+      \xdef\pgf@marshal{\noexpand\def\expandafter\noexpand\csname\string\color@#1\endcsname{%
+          \noexpand\xcolor@{}{}{rgb}{\pgf@sys@tonumber\pgf@xa,\pgf@sys@tonumber\pgf@xb,\pgf@sys@tonumber\pgf@xc}}}%
+    }%
+    \pgf@marshal%
+  \else%
+    \edef\pgf@marshal{\noexpand\let\expandafter\noexpand\csname\string\color@#1\endcsname=%
+                      \expandafter\noexpand\csname\string\color@#2\endcsname}%
+    \pgf@marshal%
+  \fi%
+}
+\def\pgfutil@emu@mix#1!#2!#3!#4\@nil{%
+  \expandafter\expandafter\expandafter\pgfutil@emu@unpack\csname\string\color@#1\endcsname%
+  \pgf@ya=\pgf@xa%
+  \pgf@yb=\pgf@xb%
+  \pgf@yc=\pgf@xc%
+  \expandafter\expandafter\expandafter\pgfutil@emu@unpack\csname\string\color@#3\endcsname%
+  \c@pgf@counta=#2\relax%
+  \c@pgf@countb=100\relax%
+  \advance\c@pgf@countb by-\c@pgf@counta\relax%
+  \pgf@xa=\c@pgf@countb\pgf@xa%
+  \advance\pgf@xa by\c@pgf@counta\pgf@ya%
+  \divide\pgf@xa by 100\relax%
+  \pgf@xb=\c@pgf@countb\pgf@xb%
+  \advance\pgf@xb by\c@pgf@counta\pgf@yb%
+  \divide\pgf@xb by 100\relax%
+  \pgf@xc=\c@pgf@countb\pgf@xc%
+  \advance\pgf@xc by\c@pgf@counta\pgf@yc%
+  \divide\pgf@xc by 100\relax%
+}
+\def\pgfutil@emu@unpack#1#2#3#4#5{%
+  \pgfutil@emu@@unpack#5\@nil%
+}
+\def\pgfutil@emu@@unpack#1,#2,#3\@nil{%
+  \pgf@xa=#1pt%
+  \pgf@xb=#2pt%
+  \pgf@xc=#3pt%
+}
+
+\def\pgfutil@emu@select#1#2#3#4#5{#5}
+
+
+
+\let\definecolor=\pgfutil@definecolor
+\let\color=\pgfutil@color
+\let\colorlet=\pgfutil@colorlet
+\let\extractcolorspec=\pgfutil@extractcolorspec
+\let\convertcolorspec=\pgfutil@convertcolorspec
+
+\def\XC@tgt@mod#1{#1}
+\def\XC@sdef#1#2{\edef#1{#2}}
+\def\XC@mod@cmyk{cmyk}
+\def\XC@mod@rgb{rgb}
+
+
+% pgfutil@minipage
+
+\def\pgfutil@minipage[#1]#2{%
+  \hbox to#2\bgroup%
+    \hsize=#2\relax%
+    \vbox\bgroup\noindent%
+}
+\def\pgfutil@endminipage{\egroup\egroup}
+
+
+
+% Driver detector (not so good):
+
+\ifx\pdfoutput\@undefined\alloc@0\count\countdef\insc@unt\pdfoutput\fi
+\ifx\pdfoutput\relax\alloc@0\count\countdef\insc@unt\pdfoutput\fi
+
+\def\pgfutil@guessdriver{
+  \ifx\directlua\@undefined
+      \ifx\HCode\@undefined%
+        \ifcase\pdfoutput%
+          \ifx\XeTeXversion\@undefined
+            \def\pgfsysdriver{pgfsys-dvips.def}% hopefully
+          \else
+            \def\pgfsysdriver{pgfsys-xetex.def}% should be right
+          \fi
+        \else%
+          \def\pgfsysdriver{pgfsys-pdftex.def}% should be right
+        \fi%
+      \else%
+        \def\pgfsysdriver{pgfsys-tex4ht.def}% should be right
+      \fi%
+  \else
+      \def\pgfsysdriver{pgfsys-luatex.def}%
+  \fi
+}
+
+
+
+% Global colors
+
+\let\pgfutil@globalcolorsfalse=\relax
+\let\pgfutil@globalcolorstrue=\relax
+
+
+
+% Font stuff
+
+\def\pgfutil@font@tiny{\fam\z@\fiverm}            % How to do this correctly?
+\def\pgfutil@font@scriptsize{\fam\z@\sevenrm}
+\def\pgfutil@font@footnotesize{\rm}
+\def\pgfutil@font@small{\fam\z@\ninerm}
+\def\pgfutil@font@normalsize{\rm}
+\def\pgfutil@font@large{\rm}
+\def\pgfutil@font@Large{\rm}
+\def\pgfutil@font@huge{\rm}
+\def\pgfutil@font@Huge{\rm}
+
+\def\pgfutil@font@itshape{\it}
+\def\pgfutil@font@bfseries{\bf}
+
+\let\pgfutil@font@normalfont=\rm
+
+\let\pgfutil@selectfont=\rm
+
+
+% Extra counters, registers, boxes
+
+\newcount\pgfutil@tempcnta
+\newcount\pgfutil@tempcntb
+
+\newbox\pgfutil@tempboxa
+
+\let\pgfmath@tempdima\pgfutil@tempdima
+\let\pgfmath@tempdima\pgfutil@tempdima
+\let\pgfmath@tempcnta\pgfutil@tempcnta
+\let\pgfmath@tempcntb\pgfutil@tempcntb
+
+% From LaTeX
+\newskip\pgfutil@flushglue
+\pgfutil@flushglue=0pt plus 1fil
+
+% Module stuff
+
+\def\pgfutil@usemodule#1{\input #1.tex}
+
+
+
+% End of file stuff
+
+\let\pgfutil@origend=\end
+\def\end{\the\pgfutil@everybye\pgfutil@origend}
+
+% Link to existing stuff
+\let\pgfutil@voidb@x\voidb@x
+\let\pgfutil@toks@\toks@
+
+
+
+
+% Hack shipout. Now use atbegshi
+
+\def\pgfutil@insertatbegincurrentpagefrombox#1{%
+  \edef\pgf@temp{\the\wd\pgfutil@abb}%
+  \global\setbox\pgfutil@abb\hbox{%
+    \unhbox\pgfutil@abb
+    %
+    % the order in which \pgfutil@insertatbegincurrentpagefrombox
+    % matters unless we make the following -shift!
+    % To see this, consider writing two such statements. The second
+    % one will (naturally) be placed more to the right, although there
+    % is no apparent reason why it should.
+    %
+    % CF observed problems when placing patterns in XObjects without
+    % this skip (dvipdfmx driver for pgfplots shader=interp)
+    \hskip-\pgf@temp\relax
+    #1%
+  }%
+}
+\newbox\pgfutil@abb%
+\def\pgfutil@insertatbegincurrentpage#1{%
+  \expandafter\gdef\expandafter\pgfutil@abc\expandafter{\pgfutil@abc#1}%
+}
+\let\pgfutil@abc\pgfutil@empty%
+\def\pgfutil@insertatbegineverypage#1{%
+  \expandafter\gdef\expandafter\pgfutil@abe\expandafter{\pgfutil@abe#1}%
+}
+\let\pgfutil@abe\pgfutil@empty%
+
+% Code by Heiko Oberdiek on ctt
+\input atbegshi.sty\relax
+\AtBeginShipout{%
+  \setbox\AtBeginShipoutBox=\vbox{%
+    \setbox0=\hbox{%
+      \begingroup
+        % the boxes \pgfutil@abe ("every page") and \pgfutil@abb ("current page")
+        % are used to generate pdf objects / dictionaries which are
+        % required for the graphics which are somewhere in the "real"
+        % page content.
+        % BUT: these pdf objects MUST NOT be affected by text layout
+        % shifts! Consequently, we have to undo \hoffset and \voffset
+        % (which are h/v shifts to the page layout).
+        %
+        % Note that this of importance for shadings. To be more
+        % specific: try out shadings with standalone (which uses
+        % \hoffset) and with xdvipdfmx (which appears to be more
+        % fragile than pdflatex) - they break unless we undo \hoffset
+        % and \voffset.
+        \ifdim\hoffset=0pt \else \hskip-\hoffset\fi
+        \pgfutil@abe
+        \unhbox\pgfutil@abb
+        \pgfutil@abc
+        \global\let\pgfutil@abc\pgfutil@empty
+        \ifdim\hoffset=0pt \else \hskip+\hoffset\fi
+      \endgroup
+    }%
+    \wd0=0pt\relax
+    \ht0=0pt\relax
+    \dp0=0pt\relax
+    % ... see remark above regarding \hoffset/\voffset:
+    \ifdim\voffset=0pt \else \vskip-\voffset\fi
+    \box0 %
+    \ifdim\voffset=0pt \else \vskip+\voffset\fi
+    \nointerlineskip
+    \box\AtBeginShipoutBox
+  }%
+}%
+% End of HO code
+
+% The following is still messy and needs to be cleanup up (everything
+% prefixed by pgfutil@):
+
+%\def\PackageInfo#1#2{}
+%\def\PackageWarning#1#2{\immediate\write17{Package #1: Warning! #2.}}%
+%\def\PackageError#1#2#3{\immediate\write17{Package #1: Error! #2.}}%
+\long\def\AtBeginDocument#1{#1}%
+
+% pgfcalendar uses translations
+
+\def\pgfutil@translate#1{#1} % is there a translator package for plain?
+
+% e-TeX primitives
+
+\let\pgfutil@protected\protected
+\let\pgfutil@unexpanded\unexpanded
+
+\endinput

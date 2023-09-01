@@ -1,0 +1,3216 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmoduledatavisualization.code.tex}
+
+\usepgfmodule{oo,shapes}%
+\usepgflibrary{fpu}%
+
+
+% This module defines the basic framework for data visualization.
+
+% In order to visualize data, you first need data. The format for this
+% data is not specified, indeed, different formats are possible. A
+% data point is created each time the command \pgfdatapoint is
+% used. The "parameters" of the data point are just the current values
+% of the keys or macros in the current scope.
+%
+% A set of data points created using the \pgfdata command.
+% When a data point is created, a number of signals are emitted, see
+% the description of \pgfdatapoint. To actually visualize something,
+% objects should be created that listen to these signals and that
+% handle them.
+%
+% The following class manages a data visualization
+
+\pgfooclass{data visualization}
+{%
+  % Class data visualization
+  %
+  % This class is used to "manage" a data visualization. It provides
+  % methods for hooking into the data visualization process and its
+  % constructor initializes the signals that are issued during a data
+  % visualization.
+  %
+  % When a data visualization object is created, a whole bunch of
+  % signal objects. You should then create objects that connect to
+  % these signals. They will be emitted when datapoints come
+  % available.
+  %
+  % It is permissible to have several data visualization objects
+  % active at the same time.
+  %
+  % To use a data visualization object, you should (possibly
+  % repeatedly) call the method add data() or the macro \pgfdata. You should also
+  % create transformation, mapping and visualization objects. Then,
+  % you should, first, call the method survey, which will "survey" the
+  % data, allowing the mapping and bounding objects to compute the
+  % correct ranges. You may then create further objects based on this
+  % data. Then, you should call the "visualize" method, which will
+  % invoke the visualization signals for the data points.
+
+
+  % These attribute store code that should be executed at certain
+  % points. The order is the following:
+  %
+  %  1. "before survey" code
+  %  2. "begin survey" phase signal
+  %  3. "at start survey" code
+  %  4. data points are processed
+  %  5. "at end survey" code
+  %  6. "end survey" phase signal
+  %  7. "after survey" code
+  %
+  % The first seven points will be repeated until the method "do
+  % another survey" is no longer called during a survey.
+  %
+  %  8. "before visualization" code
+  %  9. "begin visualization" phase signal
+  % 10. "at start visualization" code
+  % 11. data points are processed once more
+  % 12. "at end visualization" code
+  % 13. "end visualization" phase signal
+  % 14. "after visualization" code
+  \attribute before survey;%
+  \attribute at start survey;%
+  \attribute at end survey;%
+  \attribute after survey;%
+  \attribute before visualization;%
+  \attribute at start visualization;%
+  \attribute at end visualization;%
+  \attribute after visualization;%
+
+  %
+  % Survey counts and handling
+  %
+
+  \attribute survey count=1;%
+  % Each time a survey is done before the visualization is done, this
+  % count is incremented. Normally, there is only one survey, but
+  % objects may request another survey or even more surveys to be
+  % done, giving them a chance to setup further internal values. By
+  % accessing this count (via the get survey count method), you can
+  % find out which survey is currently being done.
+
+  \attribute number of surveys=1;%
+  % By increasing this count, you can request additional surveys to be
+  % done.
+
+
+  % Stores the to-be-visualized data
+  \attribute data;%
+
+
+  % Stores the signal objects
+  \attribute prepare datapoint signal;%
+  \attribute map datapoint signal;%
+  \attribute transform datapoint signal;%
+  \attribute visualize datapoint signal;%
+  \attribute finish datapoint signal;%
+  \attribute survey datapoint signal;%
+  \attribute phase signal;%
+  \attribute path signal;%
+  \attribute direction signal;%
+  \attribute style signal;%
+
+
+  % Constructor
+  %
+  % Inits the signals
+  \method data visualization() {
+    \pgfoonew{prepare datapoint signal}=new signal()%
+    \pgfoonew{map datapoint signal}=new signal()%
+    \pgfoonew{transform datapoint signal}=new signal()%
+    \pgfoonew{visualize datapoint signal}=new signal()%
+    \pgfoonew{finish datapoint signal}=new signal()%
+    \pgfoonew{survey datapoint signal}=new signal()%
+    \pgfoonew{phase signal}=new signal()%
+    \pgfoonew{path signal}=new signal()%
+    \pgfoonew{direction signal}=new signal()%
+    \pgfoonew{style signal}=new signal()%
+    %
+    % Store this object in a key
+    %
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeyslet{/pgf/data visualization/obj}\pgf@dv@me
+  }%
+
+  % The phase signal will emit the following constants:
+  \def\pgfdvbeforesurvey{1}%
+  \def\pgfdvbeginsurvey{2}%
+  \def\pgfdvendsurvey{3}%
+  \def\pgfdvaftersurvey{4}%
+  \def\pgfdvbeforevisualization{5}%
+  \def\pgfdvbeginvisualization{6}%
+  \def\pgfdvendvisualization{7}%
+  \def\pgfdvaftervisualization{8}%
+
+  % The path signale will meit the following constants:
+  \def\pgfdvpathmovetotoken{5}%
+  \def\pgfdvpathlinetotoken{6}%
+  \def\pgfdvdirectionfromtoken{7}%
+  \def\pgfdvdirectiontotoken{8}%
+  \def\pgfdvdirectionattoken{9}%
+
+  % Method
+  %
+  % Connect the object #1's slot "#2" to the signal named "#3"
+  \method connect(#1,#2,#3) {
+    \pgfoovalueof{#3}.connect(#1,#2)
+  }%
+
+  % Method
+  %
+  % Add data that is to be visualized. The code #1 should call the
+  % \pgfdatapoint macro for each data point it creates.
+  \method add data(#1) {
+    \pgf@dv@stripped@add#1\pgf@stop
+  }%
+  \def\pgf@dv@stripped@add#1\pgf@stop{%
+    \pgfooappend{data}{#1}%
+  }%
+
+
+  % Setters
+  \method before survey(#1) {
+    \pgfooappend{before survey}{#1}
+  }%
+  \method at start survey(#1) {
+    \pgfooappend{at start survey}{#1}
+  }%
+  \method before visualization(#1) {
+    \pgfooappend{before visualization}{#1}
+  }%
+  \method at start visualization(#1) {
+    \pgfooappend{at start visualization}{#1}
+  }%
+
+  % Method
+  \method at end survey(#1) {
+    \pgfooprefix{at end survey}{#1}
+  }%
+  \method after survey(#1) {
+    \pgfooprefix{after survey}{#1}
+  }%
+  \method at end visualization(#1) {
+    \pgfooprefix{at end visualization}{#1}
+  }%
+  \method after visualization(#1) {
+    \pgfooprefix{after visualization}{#1}
+  }%
+
+
+  % Method
+  %
+  % Copy the signals to macros. This is just for efficiency (ha!)
+  \method prepare signal macros() {
+    \pgfooget{prepare datapoint signal}\pgf@signalpreparedatapoint
+    \pgfooget{map datapoint signal}\pgf@signalmapdatapoint
+    \pgfooget{transform datapoint signal}\pgf@signaltransformdatapoint
+    \pgfooget{visualize datapoint signal}\pgf@signalvisualizedatapoint
+    \pgfooget{finish datapoint signal}\pgf@signalfinishdatapoint
+    \pgfooget{survey datapoint signal}\pgf@signalsurveydatapoint
+    \pgfooget{phase signal}\pgf@signalphase
+    \pgfooget{path signal}\pgf@signalpath
+    \pgfooget{direction signal}\pgf@signaldirection
+    \pgfooget{style signal}\pgf@signalstyle
+  }%
+
+
+  % Survey method
+  %
+  % Call this method to "survey" the data. This should be done before
+  % the "visualize" method is called.
+  \method survey() {
+    % Survey phase.
+    \let\pgfdatapoint=\pgfdatapoint@surveyphase%
+    \pgfoothis.prepare signal macros()
+    \pgfooset{survey count}{1}
+    \pgfutil@loop
+      \pgf@signalphase.emit(\pgfdvbeforesurvey)
+      \pgfoovalueof{before survey}%
+      \pgf@signalphase.emit(\pgfdvbeginsurvey)
+      \pgfoovalueof{at start survey}
+      \pgfoovalueof{data}%
+      \pgfoovalueof{at end survey}
+      \pgf@signalphase.emit(\pgfdvendsurvey)%
+      \pgfoovalueof{after survey}
+      \pgf@signalphase.emit(\pgfdvaftersurvey)
+      \c@pgf@counta=\pgfoovalueof{survey count}\relax
+      \c@pgf@countb=\pgfoovalueof{number of surveys}\relax
+    \ifnum\c@pgf@counta<\c@pgf@countb
+      \advance\c@pgf@counta by1\relax
+      \pgfooeset{survey count}{\the\c@pgf@counta}
+    \pgfutil@repeat
+  }%
+
+  % Getter
+  \method get survey count(#1) {
+    \pgfooget{survey count}{#1}
+  }%
+
+  % Request another survey to be done
+  \method do an additional survey() {
+    \c@pgf@counta=\pgfoovalueof{number of surveys}\relax
+    \advance\c@pgf@counta by1\relax
+    \pgfooeset{number of surveys}{\the\c@pgf@counta}
+  }%
+
+  % Visualize method
+  %
+  % This method will cause the actual visualization.
+  \method visualize() {
+    % Visualization phase.
+    \let\pgfdatapoint=\pgfdatapoint@visualizationphase%
+    \pgfoothis.prepare signal macros()
+    \pgf@signalphase.emit(\pgfdvbeforevisualization)%
+    \pgfoovalueof{before visualization}
+    \pgf@signalphase.emit(\pgfdvbeginvisualization)%
+    \pgfoovalueof{at start visualization}
+    \pgfoovalueof{data}%
+    \pgfoovalueof{at end visualization}
+    \pgf@signalphase.emit(\pgfdvendvisualization)%
+    \pgfoovalueof{after visualization}
+    \pgf@signalphase.emit(\pgfdvaftervisualization)%
+  }%
+}%
+
+
+%
+% The data point keys
+%
+% Unlike other keys, the subkeys of /data point/ can simply be set
+% directly. If the key has not been initialized, it will automatically
+% be.
+\pgfkeys{/data point/.unknown/.code={%
+    \pgfkeyssetvalue{/data point/\pgfkeyscurrentname}{#1}
+  },
+}%
+
+
+
+
+% Create and handle a data point
+%
+% Description:
+%
+% This command is called by the survey and the visualize methods
+% whenever a complete data point has been produced. Depending on the
+% current circumstances, different signals will be emitted.
+%
+% The data that is represented by the data point is not given as a
+% parameter. Rather, it is stored in macros and keys, that is, the
+% data point is conceptually given by the settings of all the keys and
+% macros in the local scope.
+%
+% There are two phases to data processing: In the survey phase data
+% points are produced and handled in order to find out things like
+% their number or the minimum and maximum values of attributes, so
+% that axes and picture sizes can be prepared correctly. In the
+% visualization phase, data point are actually shown.
+%
+% During the survey phase, for each data point the signal
+% "surveydatapoint" is emitted.
+%
+% During the visualization phase, more signals are emitted. A prepare
+% signal is emitted first, giving all objects a
+% chance to "prepare" for the data point. Note that it is permissible
+% for an object to manipulate the data point here (and also
+% in later on).
+%
+% Next, the command \pgfdvmapdatapointtocanvas is called. Mainly,
+% the effect of this command is to setup the keys /data point/canvas x
+% and /data point/canvas y, see the description of this command for
+% more details.
+%
+% The next step consists of signaling "visualize data point". Objects
+% listening to this will cause some form of visualization of the
+% data point to occur.
+%
+% Before the visualization is started, it is checked whether the key
+% /data point/name is set (to a non-empty value). If so,
+% a coordinate is created with the given canvas x and y values and
+% this key's value as name.
+%
+% Finally, finish data point allows objects to do any final processing
+% of the data point.
+
+\def\pgfdatapoint@surveyphase{%
+  \pgf@signalpreparedatapoint.emit()%
+  \pgf@signalmapdatapoint.emit()%
+  \pgf@signalsurveydatapoint.emit()%
+}%
+
+\def\pgfdatapoint@visualizationphase{%
+  \pgf@signalpreparedatapoint.emit()%
+  \pgfdvmapdatapointtocanvas%
+  \pgfkeysifdefined{/data point/name}
+  {%
+    \pgfcoordinate{\pgfkeysvalueof{/data point/name}}{\pgfpointdvdatapoint}%
+  }{}%
+  \pgf@signalvisualizedatapoint.emit()%
+  \pgf@signalfinishdatapoint.emit()%
+}%
+
+
+
+% Compute a position of a data point
+%
+% Description:
+%
+% This command uses a special signal to compute the position where a
+% data point should be visualized on the canvas. In detail, the
+% following happens:
+%
+% A local scope is created and the
+% transformation matrix is reset. Then, two signals are emitted: First,
+% "map data points" and then "transform data point". The first
+% lets listening objects "map" the object by setting up
+% attributes of the data point. The second asks objects
+% listening to this signal to transform  the current transformation
+% matrix. After the signals, we compute where
+% the origin lies inside this transformed coordinate system. Then the
+% two keys /data point/canvas x and /data point/canvas y are set to
+% the values of this position. The local scope ends (but the settings
+% of the keys persist by a bit of magic), thus restoring the
+% transformation matrix to its original value.
+
+\def\pgfdvmapdatapointtocanvas{%
+  {%
+    \pgfpointdvlocaldatapoint
+    % Smuggle outside group
+    \expandafter%
+  }%
+  \edef\pgf@marshal{%
+    \noexpand\pgfkeyssetvalue{/data point/canvas x}{\the\pgf@x}
+    \noexpand\pgfkeyssetvalue{/data point/canvas y}{\the\pgf@y}
+  }%
+  \pgf@marshal%
+}%
+
+% Help functions for locating a canvas data point
+%
+% Description:
+%
+% The first function returns the data point computed by a
+% canvasposition... call.
+
+\def\pgfpointdvdatapoint{%
+  \pgfqpoint{\pgfkeysvalueof{/data point/canvas x}}{\pgfkeysvalueof{/data point/canvas y}}%
+}%
+
+\def\pgfpointdvlocaldatapoint{%
+  {%
+    % only returns the data point in \pgf@x and \pgf@y, does not set
+    % canvas x and canvas y
+    \pgf@signalmapdatapoint.emit()%
+    \pgftransformreset%
+    \pgf@signaltransformdatapoint.emit()%
+    \pgfpointtransformed{\pgfpointorigin}%
+  }%
+}%
+
+
+
+%
+% Special path constructions commands
+%
+%
+% The following commands are used to construct paths based on
+% datapoints.
+%
+% Normally, all these methods need to do is to compute the current
+% canvas position of the current data point and then do a moveto,
+% lineto or some other operation to this position.
+%
+% However, when the coordinate system is weird, like with polar
+% coordinates or spherical or log-polar coordinate or whatever, a
+% straight line "along an attribute" is no longer a straight line.
+% In this case, two actions can be taken:
+%
+% 1. The problem can be ignored, resulting in a wrong line.
+% 2. Some clever algorithm kicks in an replaces the straight line by
+%    the correct replacement.
+%
+% As always, when a computer tries to be clever, things can go
+% wrong... Nevertheless, some support for the second method is
+% given. This works as follows: Objects can register to the data
+% visualization path signal. This signal is emitted every time the
+% lineto or moveto commands are executed. If an object reacts to such
+% a command and handles it, it should set
+% \pgfdvhandledtrue.
+
+\newif\ifpgfdvhandled
+
+\def\pgfdv@generic#1#2#3{%
+  {%
+    \pgfdvhandledfalse%
+    \pgf@signalmapdatapoint.emit()%
+    #1.emit(#2)%
+    \ifpgfdvhandled%
+    \else%
+      \pgf@process{%
+        \pgftransformreset%
+        \pgf@signaltransformdatapoint.emit()%
+        \pgfpointtransformed{\pgfpointorigin}%
+      }%
+      #3{}%
+    \fi%
+  }%
+}%
+
+
+% Handle a moveto
+%
+% This command has no parameters since the target of the moveto is
+% given by the canvas position of the current local data point.
+\def\pgfpathdvmoveto{%
+  \pgfdv@generic{\pgf@signalpath}{\pgfdvpathmovetotoken}{\pgfpathmoveto}
+}%
+
+
+% Handle a lineto
+%
+% This command has no parameters since the target of the moveto is
+% given by the canvas position of the current local data point.
+\def\pgfpathdvlineto{%
+  \pgfdv@generic{\pgf@signalpath}{\pgfdvpathlinetotoken}{\pgfpathlineto}
+}%
+
+
+
+% Compute a normalized vector at the current point pointing along a
+% line from #1 to #2.
+%
+% #1 = code for setting the attributes of the first point
+% #2 = code for setting the attributes of the second point
+%
+% The current point should be a point on a line from #1 to
+% #2. Both points as well as the current point are
+% localized on the canvas and a vector pointing from the first point
+% to the second one is returned. However, for instance in polar
+% coordinates the vector may actually "point along" the angle axis.
+%
+% Internally, this command first sets up the first data point and then
+% emits a "direction" signal with the \pgfdvpathdirectionfromtoken set and
+% then sets up the second point and emits the corresponding
+% ...totoken. Finally, the \pgfdvpathdirectionattoken is emitted.
+%
+
+\def\pgfpointdvdirection#1#2{%
+  {
+    {
+      #1
+      \pgfdv@generic{\pgf@signaldirection}{\pgfdvdirectionfromtoken}{\xdef\pgf@dv@from{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}
+    }
+    {
+      #2
+      \pgfdv@generic{\pgf@signaldirection}{\pgfdvdirectiontotoken}{\xdef\pgf@dv@to{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}
+    }
+    {\pgfdv@generic{\pgf@signaldirection}{\pgfdvdirectionattoken}{%
+        \pgf@process{
+          \pgfpointnormalised{%
+            \pgfpointdiff{\pgf@dv@from}{\pgf@dv@to}
+          }
+        }}}
+  }
+}%
+
+
+
+
+
+%
+%
+% Data parsing and formatting
+%
+%
+
+
+
+% Run the rendering pipeline on a dataset and/or save the dataset.
+%
+% #1 = options with path /pgf/data/
+% #2 = optionally data given inline in curly braces.
+%
+% Description:
+%
+% This command is used to define a data set. For a single data
+% visualization, multiple data sets can be defined, they will
+% accumulate. Data can be in different formats, as specified by the
+% "format" key, and you can define new formats.
+%
+% The settings of the following keys are important:
+%
+% /pgf/data visualization/obj
+%   contains a handle to the dv-object
+%
+% /pgf/data/format
+%   stores the format (see below)
+%
+% /pgf/data/read from file
+%   determines where the data is.
+%
+% /pgf/data/store in group
+%   when nonempty, the data is stored here instead of being fed to the
+%   rendering pipeline
+%
+% /pgf/data/use group
+%   when nonempty, data that has previously been stored here using
+%   |define group| is read from here and all other keys are ignored
+%
+% If "read from file" is empty, the data is stored in the argument that
+% follows. Otherwise, the data is read from the specified source file.
+% This data is stored in an internal variable, which is local to the
+% current group.
+%
+% After the group, the key "/pgf/data/continue code" will be
+% executed.
+%
+% When the data is actually used later on (during a survey or a
+% visualization), independently of what source is used, a format
+% handler is started for each data set. This works as follows: first,
+% the handler's startup code is executed. Then for each line of the
+% data file/the data given inline, the line handler function is
+% called. Finally, the data format end handler is called.
+%
+% The format handler's job is to call \pgfdatapoint each time a
+% complete data point has been produced.
+%
+% Example:
+%
+% \pgfoonew \dv=new data visualization()
+% \pgfoonew \obj=new attribute mapper(...)
+% ...
+%
+% \pgfkeys{/pgf/data/.cd,
+%          column 1=dax/low,
+%          column 2=dax/high,
+%          column 3=dax/entry,
+%          column 4=dax/exit}
+%
+% \pgfdata[format=space separated columns]
+% {
+%   % today
+%   2000 2300 2100 2200
+%   2000 2350 2200 2500
+%   2200 2300 2250 2260
+%   1800 2260 2260 1900
+%   2000 2300 2100 2200
+% }
+%
+% \pgfdata[format=comma separated columns]
+% {
+%   % yesterday
+%   2000, 2350, 2200, 2250
+%   2200, 2300, 2250, 2260
+% }
+%
+% \pgfdata[read from file=data.csv,format=comma separated columns]
+%
+% \dv.survey()
+% \dv.visualize()
+
+\def\pgfdata{\pgfutil@ifnextchar[{\pgf@datagroup@data@opt}{\pgf@datagroup@data@opt[]}}%}%
+\def\pgf@datagroup@data@opt[#1]{%
+  % Ok, add one data thing...
+  \begingroup%
+    \pgfkeys{/pgf/data/.cd,/pgf/every data/.try,#1}%
+    \pgfkeysgetvalue{/pgf/data/continue code}\pgf@dv@cont@code%
+    \global\let\pgf@dv@cont@code\pgf@dv@cont@code%
+    \pgfkeysgetvalue{/pgf/data/use group}\pgf@dv@use@group%
+    \ifx\pgf@dv@use@group\pgfutil@empty%
+      \pgf@dv@do@adddata{\pgfkeysvalueof{/pgf/data visualization/obj}.add data(\pgf@do@data{#1})}%
+      \expandafter\pgf@datagroup@data@opt@cont%
+    \else%
+      \expandafter\ifx\csname pgf@dv@group@@\pgf@dv@use@group\endcsname\relax%
+        \pgferror{Undefined data group '\pgf@dv@use@group'}%
+      \else%
+        {%
+          \pgfkeys{/pgf/data/define group/.code=}% no redefinitions during use
+          \csname pgf@dv@group@@\pgf@dv@use@group\endcsname%
+        }%
+      \fi%
+  \endgroup%
+  \expandafter\pgf@dv@cont@code%
+      \fi%
+}%
+\def\pgf@datagroup@data@opt@cont{%
+  \pgfkeysgetvalue{/pgf/data/format}\pgf@dv@format%
+  \expandafter\let\expandafter\pgf@dv@format@catcodes\csname pgfdv@format@\pgf@dv@format @catcodes\endcsname%
+  \ifx\pgf@dv@format@catcodes\relax
+    \pgferror{Unknown data format '\pgf@dv@format'}%
+  \else%
+    \pgfkeysgetvalue{/pgf/data/read from file}\pgf@dv@source%
+    \ifx\pgf@dv@source\pgfutil@empty%
+      \let\pgf@next\pgf@datagroup@grab@inline%
+    \else%
+      \let\pgf@next\pgf@datagroup@grab@external%
+    \fi%
+    \pgf@next%
+}%
+
+\def\pgf@datagroup@grab@inline{%
+  \pgfutil@ifnextchar\bgroup{%
+    \begingroup%
+    \catcode`\^^M=\active%
+    \pgf@dv@format@catcodes%
+    \pgf@datagroup@grab@@inline}%
+  {\pgferror{Opening brace expected}}%
+}%
+\def\pgf@datagroup@grab@external{%
+    \fi%
+  \endgroup%
+  \pgf@dv@do@adddata{\pgfkeysvalueof{/pgf/data visualization/obj}.add data({{{\pgf@datagroup@do@external}}})}%
+  \pgf@dv@cont@code%
+}%
+
+\def\pgf@dv@do@adddata#1{%
+  \pgfkeysgetvalue{/pgf/data/store in group}\pgf@dv@temp%
+  \ifx\pgf@dv@temp\pgfutil@empty%
+    #1%
+  \else%
+    \expandafter\pgfutil@g@addto@macro\csname pgf@dv@group@@\pgf@dv@temp\endcsname{#1}%
+  \fi%
+}%
+
+{\catcode`\^=7 \catcode`\^^M=13
+  \gdef\pgf@datagroup@grab@@inline#1{%
+    \endgroup%
+    \pgf@dv@do@adddata{\pgfkeysvalueof{/pgf/data visualization/obj}.add data({{{\pgf@datagroup@do@inline#1^^M\pgf@@eol}}})}%
+    \fi%
+  \endgroup%
+  \pgf@dv@cont@code%
+  }%
+}%
+\def\pgf@@eol{\pgf@eol}%
+
+\def\pgf@do@data#1#2{%
+  \begingroup%
+    \pgfkeys{/pgf/data/.cd,/pgf/every data/.try,#1}%
+    \pgfkeysgetvalue{/pgf/data/format}\pgf@dv@format%
+    \expandafter\let\expandafter\pgf@dv@format@line\csname pgfdv@format@\pgf@dv@format @line\endcsname%
+    \expandafter\let\expandafter\pgf@dv@format@emptyline\csname pgfdv@format@\pgf@dv@format @empty\endcsname%
+    \csname pgfdv@format@\pgfkeysvalueof{/pgf/data/format}@startup\endcsname%
+    #2%
+    \csname pgfdv@format@\pgfkeysvalueof{/pgf/data/format}@end\endcsname%
+  \endgroup%
+}%
+
+
+%
+% Read external file
+%
+
+\def\pgf@datagroup@do@external{%
+  \csname pgfdv@format@\pgfkeysvalueof{/pgf/data/format}@catcodes\endcsname%
+  \immediate\openin\r@pgf@reada=\pgfkeysvalueof{/pgf/data/read from file} %
+  \ifeof\r@pgf@reada\relax
+     \pgferror{Data file '\pgfkeysvalueof{/pgf/data/read from file}' not found}%
+  \else
+    \pgf@datagroup@readline%
+  \fi
+  \immediate\closein\r@pgf@reada%
+}%
+
+\def\pgf@partext{\par}%
+\def\pgf@datagroup@readline{%
+  \endlinechar=-1 % suppress white space at end; this is local to `\pgfdata`
+  \immediate\read\r@pgf@reada to \pgf@temp%
+  \ifx\pgf@temp\pgf@partext%
+    \pgf@dv@format@emptyline%
+  \else%
+    \ifx\pgf@temp\pgfutil@empty%
+      \pgf@dv@format@emptyline%
+    \else%
+      \expandafter\pgf@dv@format@line\pgf@temp\pgfeol%
+    \fi%
+  \fi%
+  \ifeof\r@pgf@reada\else\expandafter\pgf@datagroup@readline\fi%
+}%
+
+
+%
+% Read inline data
+%
+
+\def\pgf@datagroup@do@inline{%
+  \pgf@dv@handle@line%
+}%
+
+{\catcode`\^=7 \catcode`\^^M=13
+\gdef\pgf@dv@handle@line{%
+  \pgfutil@ifnextchar^^M{\pgf@dv@format@emptyline\expandafter\pgf@dv@handle@line\pgfutil@gobble}%
+  {\pgfutil@ifnextchar\pgf@@eol{\pgfutil@gobble}{\pgf@dv@handle@nonemptyline}}%
+}%
+\gdef\pgf@dv@handle@nonemptyline#1^^M{%
+  \pgf@dv@format@line#1\pgfeol%
+  \pgf@dv@handle@line%
+}%
+}%
+
+\pgfkeys{
+  /pgf/data/data visualization obj/.initial=\undefined,
+  /pgf/data/format/.initial=table,% the default format
+  /pgf/data/read from file/.initial=,
+  /pgf/data/inline/.style={read from file=},
+  /pgf/data/continue code/.initial=,
+  /pgf/data/store in group/.initial=,
+  /pgf/data/new group/.code={\expandafter\global\expandafter\let\csname pgf@dv@group@@#1\endcsname\pgfutil@empty},
+  /pgf/data/use group/.initial=,
+}%
+
+
+
+
+
+
+% Define a data format
+%
+% #1 = format name
+% #2 = catcode code
+% #3 = startup code
+% #4 = line arguments
+% #5 = line code
+% #6 = empty line code
+% #7 = end code
+%
+% Description:
+%
+% This command defines a new data format for data visualization. When
+% a data set is visualized and the format is set to #1, this handler
+% is used to parse the data.
+%
+% In detail, the \pgfdata command will select a source. Before this
+% source is read, #2 will be executed to setup the
+% catcodes. Additionally, each time the data is parsed, #3 will be
+% called. Then, for each nonempty line of the source, the
+% command #5 is executed, where the line will be matched against the
+% argument pattern given in #4. For empty lines, #6 will be executed
+% instead. At the end of the source, #7 will be executed.
+
+\def\pgfdeclaredataformat#1#2#3#4#5#6#7{%
+  \expandafter\def\csname pgfdv@format@#1@catcodes\endcsname{#2}%
+  \expandafter\def\csname pgfdv@format@#1@startup\endcsname{#3}%
+  \expandafter\def\csname pgfdv@format@#1@line\endcsname#4\pgfeol{#5}%
+  \expandafter\def\csname pgfdv@format@#1@empty\endcsname{#6}%
+  \expandafter\def\csname pgfdv@format@#1@end\endcsname{#7}%
+}%
+
+
+
+%
+% Predefined standard formats
+%
+
+% TeX code format
+%
+% Description:
+%
+% The lines of the data set are assumed to contain executable TeX
+% code that will call \pgfdatapoint.
+%
+% Example:
+%
+% \pgfdatavisualizationrender[format=TeX code]
+% \dataset{
+%   \pgfkeyssetvalue{/data point/x}{5}
+%   \pgfkeyssetvalue{/data point/y}{5}
+%   \pgfdatapoint
+%   \pgfkeyssetvalue{/data point/x}{6}
+%   \pgfkeyssetvalue{/data point/y}{6}
+%   \pgfdatapoint
+% }
+
+\pgfdeclaredataformat{TeX code}{}{}{#1}{#1 }{}{}%
+
+
+
+% Key-value lines format
+%
+% Description:
+%
+% The lines of the data set are passed to \pgfkeys with the path set
+% to /data point.
+%
+% Example:
+%
+% \data[format=named] {
+%   x=5, y=6, hi=9
+%   x=7, y=6, lo=10
+% }
+
+\pgfdeclaredataformat{named}{}{}{#1}{\pgf@dv@parse@named#1,\pgf@stop}{}{}%
+\def\pgf@dv@parse@named{%
+  \pgfutil@ifnextchar\pgf@stop{\pgfdatapoint\pgfutil@gobble}{\pgf@dv@parse@named@}
+}%
+\def\pgf@dv@parse@named@#1=#2,#3\pgf@stop{%
+  \foreach \pgf@dv@temp in {#2} {%
+    \def\pgf@dv@tempb{/data point/#1=}%
+    \expandafter\expandafter\expandafter\pgfkeys%
+    \expandafter\expandafter\expandafter{\expandafter\pgf@dv@tempb\pgf@dv@temp}%
+    \pgf@dv@parse@named#3\pgf@stop%
+  }
+}%
+
+
+
+
+
+% Table format
+%
+% Description:
+%
+% A table consists of a head line, which contains the attribute names
+% of the values that will be found in the following lines. Each line
+% (except for the headline) contains one data point.
+%
+% Inside each line the data points are separated by a separator like a
+% comma or a space or a colon. The separator can be configured using
+% the key /pgf/data/separator (leave the separator empty or set it to
+% \space for a space as separator). The default separator is a comma.
+%
+% Some tables will miss the headline. In this case, using the
+% /pgf/data/headline key you can provide a headline yourself.
+%
+% Example:
+%
+% \data[format=table] {
+%    x  y
+%   10  5
+%   11  6
+%    6  7
+%  }
+%
+% \data[format=table,separator={,}] {
+%    x, y
+%   10, 5
+%   11, 6
+%    6, 7
+% }
+%
+% \data[format=table,headline=x y] {
+%   10 5
+%   11 6
+%    6 7
+% }
+
+\pgfdeclaredataformat{table}
+{} % no catcodes
+{
+  \pgfkeysgetvalue{/pgf/data/headline}\pgf@dv@headline
+  \pgfkeysgetvalue{/pgf/data/separator}\pgf@dv@separator
+  \ifx\pgf@dv@separator\pgfutil@empty
+    \let\pgf@dv@separator\space
+  \fi
+  \ifx\pgf@dv@separator\pgf@dv@spacetext
+    \let\pgf@dv@separator\space
+  \fi
+  \expandafter\def\expandafter\pgf@dv@till@separator%
+  \expandafter##\expandafter1\pgf@dv@separator{\pgf@dv@table@handle{##1}}
+  \expandafter\def\expandafter\pgf@dv@till@separator@head%
+  \expandafter##\expandafter1\pgf@dv@separator{\pgf@dv@head@handle{##1}}
+  \ifx\pgf@dv@headline\pgfutil@empty
+    % Ok, read headline from file
+    \pgfdv@firstlinetrue
+  \else
+    % Headline already set
+    \pgfdv@firstlinefalse
+    \expandafter\pgf@dv@parse@headline\expandafter{\pgf@dv@headline}
+  \fi
+}
+{#1} % special line pattern, so read everything
+{
+  \ifpgfdv@firstline
+    \pgfdv@firstlinefalse
+    \pgf@dv@parse@headline{#1}
+  \else
+    {
+      \c@pgf@counta=0\relax% keep track of attribute number
+      \def\pgf@marshal{\pgf@dv@parse@table#1}
+      \expandafter\expandafter\expandafter\pgf@marshal%
+      \expandafter\pgf@dv@separator\expandafter\pgfeol\pgf@dv@separator
+      \pgfdatapoint
+    }
+  \fi
+}
+{}% ignore empty lines
+{}% no special end code
+
+\newif\ifpgfdv@firstline
+
+\pgfkeys{
+  /pgf/data/separator/.initial={,},
+  /pgf/data/headline/.initial=
+}%
+\def\pgf@dv@spacetext{\space}%
+
+\def\pgf@dv@parse@table{%
+  \pgfutil@ifnextchar"% Special, but ignored right now...
+  {\pgferror{csv with quotes not yet implemented}}
+  {\pgf@dv@till@separator}
+}%
+\def\pgf@dv@table@handle#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfeoltext%
+    % Bingo! Stop
+    \let\pgf@next=\relax%
+  \else%
+    \advance\c@pgf@counta by1\relax%
+    \pgfkeysgetvalue{/pgf/data/table/attribute \the\c@pgf@counta}\pgf@dv@target
+    \ifx\pgf@dv@target\relax%
+      \edef\pgf@dv@target{attribute \the\c@pgf@counta}
+      \pgfkeyslet{/pgf/data/table/attribute \the\c@pgf@counta}\pgf@dv@target
+    \fi
+    \pgfkeyssetvalue{/data point/\pgf@dv@target}{#1}
+    \let\pgf@next=\pgf@dv@parse@table%
+  \fi%
+  \pgf@next%
+}%
+
+
+
+\def\pgf@dv@parse@headline#1{
+  \c@pgf@counta=0\relax% keep track of attribute number
+  \def\pgf@marshal{\pgf@dv@doparse@headline#1}
+  \expandafter\expandafter\expandafter\pgf@marshal%
+  \expandafter\pgf@dv@separator\expandafter\pgfeol\pgf@dv@separator
+}%
+
+\def\pgf@dv@doparse@headline{%
+  \pgfutil@ifnextchar"% Special, but ignored right now...
+  {\pgferror{csv with quotes not yet implemented}}
+  {\pgf@dv@till@separator@head}
+}%
+\def\pgf@dv@head@handle#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfeoltext%
+    % Bingo! Stop
+    \let\pgf@next=\relax%
+  \else%
+    \advance\c@pgf@counta by1\relax%
+    \pgfkeyssetvalue{/pgf/data/table/attribute \the\c@pgf@counta}{#1}
+    \let\pgf@next=\pgf@dv@doparse@headline%
+  \fi%
+  \pgf@next%
+}%
+
+\def\pgfeoltext{\pgfeol}%
+
+
+%
+%
+% Micro math kernel for dv
+%
+%
+
+% The idea behind the following methods is to "abstract away" which
+% math engine is used. In the future, something fancy build on luatex
+% might be used, so it would we should not rely directly on the
+% fpu library code.
+%
+% The system works as follows: First, you "enter" a number into the
+% engine. When you do so, it is converted into some internal
+% representation that cannot be accessed any more and is called a
+% "math variable" henceforth. All commands of the
+% math system only work on math variables.
+%
+% In order to "exit" a value stored in a math variable from the
+% engine, some other macros can be used.
+%
+% Operations like addition or multiplication take two math variables
+% and store the result in another math variable.
+
+
+
+% Store a value in a math variable of the math engine
+%
+% #1 = a math variable (a macro name) that is to store the value
+% #2 = an expression describing a number
+%
+%
+% Description:
+%
+% The #2 should be an expression that evaluates to a number. However,
+% due to the way the pgf math engine(s) work, currently, there are
+% several restrictions/the syntax is not as simple as one might
+% hope. Fortunately, the syntax is hopefully compatible with
+% easier-to-use future systems.
+%
+% The syntax is as follows: #2 may be
+%
+% 1. a simple high-precision number. This number is currently directly
+%    passed to \pgfmathfloatparsenumber, so typical permissible values
+%    are "100" or "10000000000000" or "nan" or "-5.673543345345e9000"
+%
+% 2. a mathematical expression, which *must* be surrounded by
+%    parentheses. From a "mathematical" point of view these
+%    parentheses are superfluous, but the they are used to help pgf
+%    distinguish expressions from high-precision numbers. (If, in the
+%    future, expressions may contain high precision numbers, the
+%    parentheses will simply be ignored.)
+%
+%    The expression is evaluated using \pgfmathparse, which means that
+%    TeX-precision is used. This means, for instance, that numbers
+%    larger than about 16500 will create error messages.
+%
+%    The advantage is that you may say write things like "(5+6)" or
+%    "(pi/2)".
+%
+% 3. In case #2 starts with an exclamation mark (indicating an
+%    "escape"), everything following the mark is simply evaluated by
+%    TeX. The effect of evaluating #2 should be that the math
+%    variable "\pgfdvmathvalue" is set to some value. This value will
+%    then be transferred to #1.
+%
+% 4. In case #2 is the result of calling \pgfdvmathexitbyserializing, the
+%    "serialized" value is restored. The idea is that the serialized
+%    will turn its internal representation of a number into something
+%    that can be stored as a text somewhere.
+%
+%    Currently, "@" at the beginning of #2 is used to indicate that
+%    what follows is a serialized version of a math variable.
+%
+% In order to determine which of the above cases is to be used for a
+% variable, the first symbol #2 is checked, *after* the first symbol
+% of #2 has been expanded once (using \expandafter once).
+%
+% Example:
+%
+% \pgfdvmathenter{\mymacro}{20000000000000}
+% \pgfdvmathenter{\mymacro}{(5+pi)}
+% \pgfdvmathenter{\mymacro}{!\pgfdvmathadd{\pgfdvmathvalue}{\a}{\b}}
+%
+% \pgfdvmathenter{\foo}{5}
+% \pgfdvmathexitbyserializing{\somevalue}{\foo}
+% \pgfdvmathenter{\mymacro}{\somevalue}
+
+\def\pgfdvmathenter#1#2{%
+  \expandafter\pgfdvmathenter@check\expandafter#1#2\pgfdvmath@end%
+}%
+\def\pgfdvmathenter@check#1{%
+  \pgfutil@ifnextchar @{\pgfdvmath@internal#1}{%
+    \pgfutil@ifnextchar ({\pgfdvmath@expression#1}{%)
+      \pgfutil@ifnextchar !{\pgfdvmath@execute#1}{\pgfdvmath@normal#1}}}%
+}%
+
+\def\pgfdvmath@internal#1@#2\pgfdvmath@end{%
+  \def#1{#2}%
+}%
+\def\pgfdvmath@expression#1(#2)#3\pgfdvmath@end{%
+  \pgfmathparse{#2}%
+  \pgfmathfloatparsenumber{\pgfmathresult}%
+  \let#1=\pgfmathresult%
+}%
+\def\pgfdvmath@execute#1!#2\pgfdvmath@end{%
+  #2%
+  \let#1=\pgfdvmathvalue%
+}%
+\def\pgfdvmath@normal#1#2\pgfdvmath@end{%
+  \pgfmathfloatparsenumber{#2}%
+  \let#1=\pgfmathresult%
+}%
+
+
+
+% Print a math variable in the math engine using \pgfmathprintnumber
+%
+% #1 = math variable
+%
+% Description:
+%
+% See the description of \pgfmathprintnumber
+%
+% Example:
+%
+% \pgfdvmathenter{\mymacro}{20000000000000}
+% \pgfdvmathexitbyprinting{\mymacro}
+
+\def\pgfdvmathexitbyprinting#1{%
+  \pgfmathprintnumber{#1}%
+}%
+
+
+
+% Exit a math variable as a number in a scientific and portable number
+% format in a macro
+%
+% #1 = macro in which to store the value
+% #2 = math variable
+%
+% Description:
+%
+% You can exit a number using this operation. You can then directly
+% reenter the number using \pgfdvmathenter
+%
+% Example:
+%
+% \pgfdvmathenter{\mynumber}{20000000000000}
+% \pgfdvmathexitbyscientificformat{\mymacro}{\mynumber}
+
+\def\pgfdvmathexitbyscientificformat#1#2{%
+  \edef#1{\pgfmathfloatvalueof#2}%
+}%
+
+
+
+% Exit a math variable as a "serialized" (= string-based)
+% version.
+%
+% #1 = macro in which to store the value
+% #2 = math variable
+%
+% Description:
+%
+% The serialized version can be reentered using
+% \pgfmathenter and is similar to \pgfdvmathexitbyscientificformat,
+% but exiting and entering are (a bit) faster.
+%
+% Example:
+%
+% \pgfdvmathenter{\mynumber}{20000000000000}
+% \pgfdvmathexitbyserializing{\mymacro}{\mynumber}
+
+\def\pgfdvmathexitbyserializing#1#2{%
+  \edef#1{@#2}%
+}%
+
+
+
+
+
+% Operations on two numbers
+%
+% #1 = macro that should store the result of applying the
+%      corresponding operation to the following:
+% #2 = entered number
+% #3 = entered number
+%
+% Description:
+%
+% Sets #1 to the result of applying an operation to #2 and #3
+%
+% Example:
+%
+% \pgfdvmathenter{\a}{2000}
+% \pgfdvmathenter{\b}{5+6}
+% \pgfdvmathadd{\c}{\a}{\b}
+
+\def\pgfdvmathadd#1#2#3{%
+  \pgfmathfloatadd{#2}{#3}%
+  \let#1=\pgfmathresult%
+}%
+\def\pgfdvmathsub#1#2#3{%
+  \pgfmathfloatsubtract{#2}{#3}%
+  \let#1=\pgfmathresult%
+}%
+\def\pgfdvmathmul#1#2#3{%
+  \pgfmathfloatmultiply{#2}{#3}%
+  \let#1=\pgfmathresult%
+}%
+\def\pgfdvmathdiv#1#2#3{%
+  \pgfmathfloatdivide{#2}{#3}%
+  \let#1=\pgfmathresult%
+}%
+
+% Multiply by small number
+%
+% #1 = macro that should store the result of applying the
+%      corresponding operation to the following:
+% #2 = entered number
+% #3 = fixed point number like 2 or 0.5, but not 10000000000
+%
+% Description:
+%
+% Sets #1 to the result of applying an operation to #2 and #3
+%
+% Example:
+%
+% \pgfdvmathenter{\a}{2000}
+% \pgfdvmathadd{\b}{\a}{0.2}
+% % \b now stores 400
+
+\def\pgfdvmathmulfixed#1#2#3{%
+  \pgfmathfloatmultiplyfixed{#2}{#3}%
+  \let#1=\pgfmathresult%
+}%
+
+
+
+% Log, ln and exponent functions
+%
+% #1 = a math variable
+% #2 = a math variable
+%
+% Description
+%
+% \pgfdvmathln will compute #1 = ln(#2)
+% \pgfdvmathlog will compute #1 = log_{10}(#2)
+% \pgfdvmathexp will compute #1 = exp(#2)
+% \pgfdvmathpowten will compute #1 = 10^{#2}
+
+\def\pgfdvmathln#1#2{%
+  \pgfmathfloatln{#2}%
+  \let#1=\pgfmathresult%
+}%
+
+\def\pgfdvmathlog#1#2{%
+  \pgfmathfloatln{#2}%
+  \pgfmathfloatmultiply{\pgfmathresult}{\pgfdvmathalwaysloge}%
+  \let#1=\pgfmathresult%
+}%
+
+\def\pgfdvmathexp#1#2{%
+  \pgfmathfloatexp{#2}%
+  \let#1=\pgfmathresult%
+}%
+
+\def\pgfdvmathpowten#1#2{%
+  \pgfmathfloattofixed{#2}%
+  \let\pgf@dv@temp=\pgfmathresult%
+  \pgfmathround{\pgf@dv@temp}%
+  \let\pgf@dv@temp@round=\pgfmathresult%
+  \pgf@x=\pgf@dv@temp@round pt%
+  \pgf@x=-\pgf@x%
+  \advance\pgf@x by\pgf@dv@temp pt\relax%
+  \ifdim\pgf@x>0.0002pt%
+    \pgfmathfloatmultiply{#2}{\pgfdvmathalwayslnten}%
+    \pgfmathfloatexp{\pgfmathresult}%
+  \else
+    \ifdim\pgf@x<-0.0002pt%
+      \pgfmathfloatmultiply{#2}{\pgfdvmathalwayslnten}%
+      \pgfmathfloatexp{\pgfmathresult}%
+    \else
+      \pgf@x=\pgf@dv@temp@round sp%
+      \c@pgf@counta=\pgf@x%
+      \pgfmathfloatcreate{1}{1.0}{\the\c@pgf@counta}%
+    \fi
+  \fi
+  \let#1=\pgfmathresult%
+}%
+
+
+% Floor functions
+%
+% #1 = a math variable
+% #2 = a math variable
+%
+% Description
+%
+% Sets #1 to the largest integer less or equal to #2
+
+\def\pgfdvmathfloor#1#2{%
+  \pgfmathifisint{#2}{%
+    \let#1=#2%
+  }{%
+    \pgfmathfloatgetflags#2\c@pgf@counta%
+    \ifcase\c@pgf@counta
+      \let#1=\pgfdvmathalwayszero%
+    \or
+      \pgfmathfloatfloor{#2}%
+      \let#1=\pgfmathresult%
+    \or
+      \pgfmathfloatsubtract{\pgfdvmathalwaysone}{#2}%
+      \pgfmathfloatfloor{\pgfmathresult}%
+      \pgfmathfloatsubtract{\pgfdvmathalwayszero}{\pgfmathresult}%
+      \let#1=\pgfmathresult%
+    \or\let#1=#2%
+    \or\let#1=#2%
+    \or\let#1=#2%
+    \fi%
+  }%
+}%
+
+
+% Advanced unary operations
+%
+% #1 = macro that should store the result of applying the
+%      operation to an entered number
+% #2 = the operation (as a string like "ln")
+% #3 = entered number
+%
+% Description:
+%
+% Sets #1 to the result of applying #2 to #3
+%
+% Example:
+%
+% \pgfdvmathenter{\a}{2000}
+% \pgfdvmathunaryop{\b}{ln}{\a}
+
+\def\pgfdvmathunaryop#1#2#3{%
+  \csname pgfmathfloat#2\endcsname{#3}%
+  \let#1=\pgfmathresult%
+}%
+
+
+% Advanced binary operations
+%
+% #1 = macro that should store the result of applying the
+%      operation to two entered number
+% #2 = the operation (as a string like "veclen")
+% #3 = first argument (an entered number)
+% #4 = second argument (an entered number)
+%
+% Description:
+%
+% Sets #1 to the result of applying #2 to #3
+%
+% Example:
+%
+% \pgfdvmathenter{\a}{3}
+% \pgfdvmathenter{\b}{4}
+% \pgfdvmathbinop{\c}{veclen}{\a}{\b}
+
+\def\pgfdvmathbinop#1#2#3#4{%
+  \csname pgfmathfloat#2\endcsname{#3}{#4}%
+  \let#1=\pgfmathresult%
+}%
+
+
+
+% Comparing values
+%
+% #1 = first math variable
+% #2 = second math variable
+% #3 = code to-be-executed if #1 < #2
+% #4 = code to-be-executed if #1 >= #2
+%
+%
+% Example:
+%
+% \pgfdvmathenter{\a}{3}
+% \pgfdvmathenter{\b}{4}
+% \pgfdvmathifless{\a}{\b}{yes}{should not happen}
+
+\def\pgfdvmathifless#1#2#3#4{%
+  \pgfmathfloatlessthan{#1}{#2}%
+  \ifpgfmathfloatcomparison#3\else#4\fi%
+}%
+
+
+
+
+%
+%
+% Standard objects for data visualization
+%
+%
+
+
+%
+% Transformers
+%
+
+\pgfooclass{linear transformer}
+{%
+  % Class linear transformer
+  %
+  % This class is a transformer class. It reacts to the transform
+  % datapoint signal. When this signal is raised, it will shift the
+  % coordinate system as follows: If the current value of /data
+  % point/this.attribute  is 0, then the system is shifted to the
+  % current value of this.origin. If the current value is 1, the
+  % system is shifted to this.origin + this.unit vector. For other
+  % values of /data point/this.attribuate, the shift is interpolated
+  % between these two values.
+
+
+  \attribute attribute;%
+  % The attribute (/data point/this.attribute) by which
+  % the unit vector is multiplied. If it is empty (which is
+  % different from 0), no transformation is done at all.
+
+  \attribute origin = \pgfpointorigin;%
+  % The shift in case the /data point/this.attribute is 0.
+
+  \attribute unit vector;%
+  % The coordinate system is additionally shifted by this amount
+  % times the current value of /data point/this.attribute.
+
+
+  % Constructor
+  %
+  % #1 = attribute that is being transformed. Example: x
+  % #2 = a vector corresponding to one unit of #1.
+  %      Example: \pgfpoint{1cm}{0cm}
+  \method linear transformer(#1,#2) {
+    \pgfooset{attribute}{#1}
+    \pgf@process{#2}
+    \edef\pgf@temp{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+    \pgfoolet{unit vector}\pgf@temp%
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,transform,transform datapoint signal)
+  }%
+
+  % Setter
+  \method set origin(#1) {
+    \pgf@process{#1}
+    \edef\pgf@temp{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+    \pgfoolet{origin}\pgf@temp%
+  }%
+
+  % Slot
+  %
+  % This slot should be connected to the transform datapoint
+  % signal. When this signal is emitted, the coordinate system will be
+  % shifted according to the current value of the attribute.
+  \method transform() {
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{attribute}}\pgf@dv@val%
+    \ifx\pgf@dv@val\pgfutil@empty%
+    \else%
+      \ifx\pgf@dv@val\relax%
+      \else%
+        \pgfdvmathenter{\pgf@dv@math@var}{\pgf@dv@val}%
+        \pgfdvmathexitbyscientificformat{\pgf@dv@val}{\pgf@dv@math@var}%
+        \pgftransformshift{\pgfoovalueof{origin}}%
+        \pgfmathfloatgetexponent\pgf@dv@math@var\c@pgf@counta%
+        \ifnum\c@pgf@counta<-3\relax%
+        \else%
+          \pgftransformshift{\pgfpointscale{\pgf@dv@val}{\pgfoovalueof{unit vector}}}%
+        \fi%
+      \fi%
+    \fi%
+  }%
+}%
+
+
+%
+% Numerical mapping of attributes to other attributes
+%
+
+\pgfooclass{interval mapper}
+{%
+  % Class interval mapper
+  %
+  % This interval mapper reacts to the map datapoint signal. Its purpose is to
+  % map one attribute to another attribute. For the first attribute,
+  % an intervals is specified.
+  %
+  % In addition to the in interval [a,b] there is also an outinterval
+  % [c,d]. Values in the range [a,b] are linearly mapped to the
+  % range [c,d] and the result is stored in the second attribute.
+  %
+  % For instance, if the first range is [10,20] and the second range
+  % is [0,100], then 10 is mapped to 0, 11 is mapped to 10, 20 is
+  % mapped to 100 and 30 is mapped to 200.
+  %
+  % It is permissible to specify an additional non-linear
+  % transformation function f. In this case, for an input value x the
+  % position of f(x) inside the interval [f(a),f(b)] is determined and
+  % this position is linearly mapped to [c,d].
+  %
+  % For example, if f(x) = log_10 (x) and the first range [a,b] =
+  % [10,1000] and the second range is [1,2], then 10 is mapped to 1,
+  % 100 is mapped to 1.5 (since f(100) = 3 lies in the middle
+  % between f(10) = 2 and f(1000) = 4) and 100000 is mapped to 3.
+
+
+  \attribute in;%
+  % The name of the input attribute. If the value of this attribute
+  % is empty or undefined, no mapping is done.
+  %
+  % The in attribute may have a subkey called .../const. If this key
+  % has a value different from \relax, it will always be used instead
+  % of the in attribute itself. This can be useful to temporarily
+  % set a constant value to a key inside a mapping chain.
+  %
+  % If the subkey /is min or max is set to "min" or "max", the mapping
+  % will always be done to the respective out min or out max values.
+
+  \attribute out;%
+  % The name of the output attribute.
+
+  \attribute trans;%
+  % Stores (more or less) the transformation function.
+
+  \attribute out min;%
+  % Start of the second range (the value of c).
+
+  \attribute out min;%
+  % End of the second range (the value of d).
+
+  \attribute trans in min;%
+  % Transformed value of the start of the first range (the value
+  % f(a)).
+
+  \attribute scale;%
+  % The scaling factor, that is, the value of (f(b)-f(a))/(d-c).
+
+
+  % Constructor
+  %
+  % #1 = input attribute. Example: velocity.
+  % #2 = output attribute. Example: x
+  % #3 = optional transformation function. The input value for this
+  %      function is stored in entered number \pgfvalue.
+  %      The output of the function should be stored in the
+  %      same entered number.
+  %
+  % The intervals are set using setter methods later on.
+  %
+  \method interval mapper(#1,#2,#3) {
+    \pgfooset{in}{#1}
+    \pgfooset{out}{#2}
+    \def\pgf@temp{#3}%
+    \ifx\pgf@temp\pgfutil@empty%
+    \else%
+      \pgfooset{trans}{%
+        #3%
+      }%
+    \fi%
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,map,map datapoint signal)
+  }%
+
+  % Method
+  %
+  % #1 = in interval minimum
+  % #2 = in interval maximum
+  % #3 = out interval minimum
+  % #4 = out interval maximum
+  %
+  % This method will (re)compute the correct mappings for the interval
+  % mapper.
+  \method set interval values(#1,#2,#3,#4) {
+    {%
+      \pgfdvmathenter{\pgf@in@interval@min}{#1}
+      \pgfdvmathenter{\pgf@in@interval@max}{#2}
+      \pgfdvmathenter{\pgf@out@interval@min}{#3}
+      \pgfdvmathenter{\pgf@out@interval@max}{#4}
+      % Let's start with the output, it's easier...
+      \pgfoolet{out min}{\pgf@out@interval@min}
+      \pgfoolet{out max}{\pgf@out@interval@max}
+      \pgfdvmathifless{\pgf@in@interval@min}{\pgf@in@interval@max}{%
+        \pgfdvmathsub{\pgf@out@diff}{\pgf@out@interval@max}{\pgf@out@interval@min}
+        \let\pgfvalue=\pgf@in@interval@min
+        \pgfoovalueof{trans}
+        \let\pgf@in@interval@min@transformed=\pgfvalue
+        \pgfoolet{trans in min}{\pgf@in@interval@min@transformed}%
+        \let\pgfvalue=\pgf@in@interval@max
+        \pgfoovalueof{trans}
+        \let\pgf@in@interval@max@transformed=\pgfvalue
+        \pgfdvmathsub{\pgf@diff@in@transformed}{\pgf@in@interval@max@transformed}{\pgf@in@interval@min@transformed}
+        %
+        % Precompute the scaling
+        %
+        \pgfdvmathdiv{\pgf@scale}{\pgf@out@diff}{\pgf@diff@in@transformed}%
+        \pgfoolet{scale}{\pgf@scale}%
+      }{%
+        \pgfoolet{scale}\pgf@dv@no@scale%
+      }%
+    }%
+  }%
+  \def\pgf@dv@no@scale{noscale}%
+
+  % Slot
+  \method map() {
+    \pgfooget{scale}\pgf@dv@scale
+    \ifx\pgf@dv@scale\pgfutil@empty%
+      % not yet setup
+    \else%
+      \pgfkeysgetvalue{/data point/\pgfoovalueof{in}/is min or max}\pgf@dv@is%
+      \ifx\pgf@dv@is\pgf@min@text%
+        \pgf@dv@set@out@min%
+      \else%
+        \ifx\pgf@dv@is\pgf@max@text%
+          \pgf@dv@set@out@max%
+        \else%
+          \ifx\pgf@dv@scale\pgf@dv@no@scale%
+            \pgf@dv@mapper@goto@mid%
+          \else%
+            \pgfkeysgetvalue{/data point/\pgfoovalueof{in}/const}\pgf@dv@external@value%
+            \ifx\pgf@dv@external@value\relax%
+              \pgfkeysgetvalue{/data point/\pgfoovalueof{in}}\pgf@dv@external@value%
+            \fi%
+            \ifx\pgf@dv@external@value\pgfutil@empty%
+              \pgf@dv@mapper@pos@check%
+            \else%
+              \ifx\pgf@dv@external@value\relax%
+                \pgf@dv@mapper@pos@check%
+              \else%
+                \pgfdvmathenter{\pgfvalue}{\pgf@dv@external@value}%
+                \pgf@dv@mapper@trans
+              \fi%
+            \fi%
+          \fi%
+        \fi%
+      \fi%
+    \fi%
+  }%
+
+  \def\pgf@dv@set@out@min{%
+    \pgfkeyslet{/data point/\pgfoovalueof{out}/is min or max}\pgf@min@text%
+    \pgfooget{out min}{\pgf@minmax@temp}%
+    \pgf@dv@set@out@now%
+  }%
+  \def\pgf@dv@set@out@max{%
+    \pgfkeyslet{/data point/\pgfoovalueof{out}/is min or max}\pgf@max@text%
+    \pgfooget{out max}{\pgf@minmax@temp}%
+    \pgf@dv@set@out@now%
+  }%
+  \def\pgf@dv@set@out@now{%
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{out}/offset}\pgf@dv@external@offset%
+    \ifx\pgf@dv@external@offset\relax\else%
+      \ifx\pgf@dv@external@offset\pgfutil@empty\else%
+        \pgfdvmathenter{\pgfvalue}{\pgf@minmax@temp}%
+        \pgfdvmathenter{\pgf@dv@offset}{\pgf@dv@external@offset}%
+        \pgfdvmathadd{\pgfvalue}{\pgfvalue}{\pgf@dv@offset}
+        \pgfdvmathexitbyserializing{\pgf@minmax@temp}{\pgfvalue}%
+      \fi
+    \fi
+    \pgfkeyslet{/data point/\pgfoovalueof{out}}\pgf@minmax@temp%
+  }%
+
+  \def\pgf@dv@mapper@trans{
+    \pgfooget{trans in min}{\pgf@dv@trans@in@min}%
+    \pgfooget{scale}{\pgf@dv@scale}%
+    \pgfooget{out min}{\pgf@dv@out@min}%
+    \pgfoovalueof{trans}%
+    \pgfdvmathsub{\pgfvalue}{\pgfvalue}{\pgf@dv@trans@in@min}%
+    \pgfdvmathmul{\pgfvalue}{\pgfvalue}{\pgf@dv@scale}%
+    \pgfdvmathadd{\pgfvalue}{\pgfvalue}{\pgf@dv@out@min}%
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{out}/offset}\pgf@dv@external@offset%
+    \ifx\pgf@dv@external@offset\relax\else%
+      \ifx\pgf@dv@external@offset\pgfutil@empty\else%
+        \pgfdvmathenter{\pgf@dv@offset}{\pgf@dv@external@offset}%
+        \pgfdvmathadd{\pgfvalue}{\pgfvalue}{\pgf@dv@offset}
+      \fi
+    \fi
+    \pgfdvmathexitbyserializing{\pgf@temp}{\pgfvalue}%
+    \pgfkeyslet{/data point/\pgfoovalueof{out}}\pgf@temp%
+  }%
+
+  \def\pgf@dv@mapper@pos@check{%
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{in}/out pos}\pgf@dv@pos@value%
+    \ifx\pgf@dv@pos@value\relax\else\if\pgf@dv@pos@value\pgfutil@empty\else%
+      \pgfmathsetmacro{\pgf@dv@pos@num}{\pgf@dv@pos@value}%
+      \pgfmathsetmacro{\pgf@dv@pos@num@prime}{1-\pgf@dv@pos@num}%
+      % Ok, compute transformed min position:
+      \pgfooget{out min}{\pgf@out@interval@min}
+      \pgfooget{out max}{\pgf@out@interval@max}
+      \pgfdvmathmulfixed{\pgf@out@interval@min}{\pgf@out@interval@min}{\pgf@dv@pos@num@prime}
+      \pgfdvmathmulfixed{\pgf@out@interval@max}{\pgf@out@interval@max}{\pgf@dv@pos@num}
+      \pgfdvmathadd{\pgf@out@val}{\pgf@out@interval@min}{\pgf@out@interval@max}%
+      \pgfdvmathexitbyserializing{\pgf@temp}{\pgf@out@val}%
+      \pgfkeyslet{/data point/\pgfoovalueof{out}}\pgf@temp%
+    \fi\fi%
+  }%
+
+  \def\pgf@dv@mapper@goto@mid{%
+    % Ok, compute transformed min position:
+    \pgfooget{out min}{\pgf@out@interval@min}
+    \pgfooget{out max}{\pgf@out@interval@max}
+    \pgfdvmathmulfixed{\pgf@out@interval@min}{\pgf@out@interval@min}{.5}
+    \pgfdvmathmulfixed{\pgf@out@interval@max}{\pgf@out@interval@max}{.5}
+    \pgfdvmathadd{\pgf@out@val}{\pgf@out@interval@min}{\pgf@out@interval@max}%
+    \pgfdvmathexitbyserializing{\pgf@temp}{\pgf@out@val}%
+    \pgfkeyslet{/data point/\pgfoovalueof{out}}\pgf@temp%
+  }%
+}%
+
+
+
+
+
+%\newif\ifpgf@dvclip
+\newif\ifpgf@dvignore
+
+\pgfooclass{scaling mapper}
+{%
+  % Class scaling mapper
+  %
+  % A scaling mapper is (mainly) used to scale an attribute in such a way
+  % that it can be rendered easily on a page. The idea is that you
+  % specify some attribute and a desired target interval size (like
+  % [0,5]). The scaling mapper will then survey the data and will setup a
+  % interval mapper in such a way that the minimum value present in the data is
+  % mapped to 0 and the maximum to 5. However, it is also possible to,
+  % say, only have the maximum value mapped to 5 and have 0 be mapped
+  % to 0. Other, more complicated specifications are also possible.
+  %
+  % The scaling mapper internally creates several objects: First, a surveyor
+  % for determining the minimum and maximum values of the attribute
+  % and a interval mapper for then mapping the values to the scaled
+  % values. Additionally, interval objects are needed.
+
+  \attribute in;%
+  % The to-be-scaled attribute;
+
+  \attribute out;%
+  % The attribute storing the scaled value.
+
+  \attribute in range obj;%
+  % This interval keep track of the range of the in attribute
+
+  \attribute scaling spec;%
+  % A specification of how the scaling should be performed.
+  %
+  % The format is the following:
+  %
+  % #1 at #2 and #3 at #4
+  %
+  % Here, #2 and #4 must be numbers. #1 and #3 can either be numbers
+  % or #1 can be the text "min" and #3 can be the text "max".
+  %
+  % The effect of such a specification is the following: The value #1
+  % is mapped to #2, the value #3 is mapped to #4 and values between
+  % #1 and #3 (or outside this range) are mapped linearly to a value
+  % between (or outside) #2 and #4. In case #1 is set to "min", the
+  % smallest observed value of the in-attribute is mapped to #3 and
+  % similarly for a value of "max" for #3.
+  %
+  % Additionally, as for a interval mapper, a function f might be specified
+  % that deforms the linear mapping. In case f is specified,
+  % f(#1) is mapped to #2 and f(#3) is mapped to #4.
+
+  \attribute spec maps min;%
+  % When the scaling spec maps "min" to some value, rather than some
+  % specific value to that value, then spec maps min will be set to
+  % \pgfutil@firstoftwo, otherwise to \pgfutil@secondoftwo
+
+  \attribute spec maps max;%
+  % Like spec maps min
+
+  \attribute function;%
+  % Stores the function
+
+  \attribute interval mapper;%
+  % Stores the interval mapper object
+
+  \attribute range surveyor;%
+  % Stores the range surveyor object
+
+
+  % Constructor
+  %
+  % #1 = in attribute
+  % #2 = out attribute
+  % #3 = scaling specification
+  % #4 = optional function
+  %
+  \method scaling mapper(#1,#2,#3,#4) {
+    %
+    % Save the parameters in attributes
+    %
+    \pgfooset{in}{#1}
+    \pgfooset{out}{#2}
+    \pgfooset{scaling spec}{#3}
+    \pgfooset{function}{#4}
+    %
+    % Now setup the objects for the before survey phase
+    %
+    %
+    % First, the in range interval
+    \pgfoonew \pgf@dv@in@range@obj=new interval(,)
+    \pgfoolet{in range obj}\pgf@dv@in@range@obj
+    % Second, the in range surveyor. We do not need to store this
+    % object, it will "do its work in the background"
+    \pgfoonew \pgf@dv@range@obj=new range surveyor(#1,\pgf@dv@in@range@obj)
+    \pgf@dv@range@obj.default connects()
+    \pgfoolet{range surveyor}\pgf@dv@range@obj
+    %
+    %
+    % The interval mapper:
+    %
+    \pgfoonew{interval mapper}=new interval mapper(#1,#2,#4)
+    \pgfoovalueof{interval mapper}.default connects()
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,phase,phase signal)
+  }%
+
+  % Getter
+  %
+  % Returns an interval object that stores the range of the in
+  % attribute.
+  \method get in range interval() {
+    \pgfooget{in range obj}\pgfdvinrangeinterval
+  }%
+
+
+  % Getter
+  %
+  % Returns the out attribute.
+  %
+  \method get out() {
+    \pgfooget{out}\pgfdvout
+  }%
+
+  % Getter
+  %
+  % Returns the function attribute.
+  %
+  \method get function(#1) {
+    \pgfooget{function}#1
+  }%
+
+  % Method
+  %
+  % #1 = a included in value
+  %
+  % This method only affects the survey. The value #1 is recorded as
+  % if it were encountered for the in attribute at some point.
+  %
+  \method include in value(#1) {
+    \pgfoovalueof{range surveyor}.include attribute value({#1})
+  }%
+
+
+  % Method
+  %
+  % #1 = value for the attribute
+  %
+  % Sets the attribute to the (evaluated) given value (evaluation
+  % using \pgfmathparse). When the value  is evaluated, the values of
+  % \pgfdvmin and \pgfdvmax will be set to the minimum and maximum
+  % values of the in interval. (See \pgfdvmathenter with the "!"-notation).
+  %
+  % In case #1 is set to the special value "min", it evaluates to
+  % \pgfdvmin, when set to "max" it evaluates to \pgfdvmax.
+  %
+  \method set in to(#1) {%
+    \edef\pgf@temp{#1}%
+    \ifx\pgf@temp\pgf@min@text%
+      \pgf@dv@lib@set@mm%
+      \let\pgf@dv@value\pgfdvmin%
+      \pgfoovalueof{spec maps min}{\pgfkeyslet{/data point/\pgfoovalueof{in}/is min or max}\pgf@min@text}{}%
+    \else%
+      \ifx\pgf@temp\pgf@max@text%
+        \pgf@dv@lib@set@mm%
+        \let\pgf@dv@value\pgfdvmax%
+        \pgfoovalueof{spec maps min}{\pgfkeyslet{/data point/\pgfoovalueof{in}/is min or max}\pgf@max@text}{}%
+      \else%
+        \pgfdvmathenter{\pgf@dv@value}{\pgf@temp}%
+      \fi%
+    \fi%
+    \pgfdvmathexitbyserializing{\pgf@dv@serial}{\pgf@dv@value}%
+    \pgfkeyslet{/data point/\pgfoovalueof{in}}\pgf@dv@serial%
+  }%
+  \def\pgf@dv@lib@set@mm{
+    \pgfooget{in range obj}\pgfdvinrangeinterval
+    \pgfdvinrangeinterval.get min and max()%
+  }%
+
+
+  % Slot
+  \method phase(#1) {
+    \ifx#1\pgfdvendsurvey
+      % Ok, we setup the interval mapper.
+      %
+      % We start by computing the interval borders:
+      \pgfoovalueof{in range obj}.get min and max()
+      \ifx\pgfdvmin\pgfutil@empty% undefined, since no data points
+      \else%
+        \pgfooget{scaling spec}\pgf@temp%
+        \expandafter\pgf@lib@dv@parse@scaling\pgf@temp\pgf@stop%
+        \pgfoovalueof{interval mapper}.set interval values(%
+          \pgf@lib@dv@min,\pgf@lib@dv@max,%
+          \pgf@lib@dv@min@at,\pgf@lib@dv@max@at)
+      \fi
+    \fi
+  }%
+
+
+  % Internal helper
+  \def\pgf@lib@dv@parse@scaling#1 at#2and #3 at#4\pgf@stop{%
+    \def\pgf@lib@dv@min{#1}%
+    \pgfdvmathenter{\pgf@lib@dv@min@at@mv}{#2}
+    \def\pgf@lib@dv@max{#3}%
+    \pgfdvmathenter{\pgf@lib@dv@max@at@mv}{#4}
+    \ifx\pgf@lib@dv@min\pgf@min@text%
+      \let\pgf@lib@dv@min@mv\pgfdvmin
+      \pgfoolet{spec maps min}\pgfutil@firstoftwo%
+    \else
+      \pgfdvmathenter{\pgf@lib@dv@min@mv}{\pgf@lib@dv@min}
+      \pgfoolet{spec maps min}\pgfutil@secondoftwo%
+    \fi
+    \ifx\pgf@lib@dv@max\pgf@max@text%
+      \let\pgf@lib@dv@max@mv\pgfdvmax
+      \pgfoolet{spec maps max}\pgfutil@firstoftwo%
+    \else
+      \pgfdvmathenter{\pgf@lib@dv@max@mv}{\pgf@lib@dv@max}
+      \pgfoolet{spec maps max}\pgfutil@secondoftwo%
+    \fi
+    \pgfdvmathexitbyserializing{\pgf@lib@dv@min}{\pgf@lib@dv@min@mv}
+    \pgfdvmathexitbyserializing{\pgf@lib@dv@min@at}{\pgf@lib@dv@min@at@mv}
+    \pgfdvmathexitbyserializing{\pgf@lib@dv@max}{\pgf@lib@dv@max@mv}
+    \pgfdvmathexitbyserializing{\pgf@lib@dv@max@at}{\pgf@lib@dv@max@at@mv}
+  }%
+  \def\pgf@min@text{min}%
+  \def\pgf@max@text{max}%
+}%
+
+
+
+
+
+%
+% Surveyors
+%
+
+\pgfooclass{range surveyor}
+{%
+  % Class range surveyor
+  %
+  % A range surveyor is used only in the survey phase. Its job is to
+  % determine the minimum and maximum values of an attribute that are
+  % "seen" during the survey phase. Based on this value, the size of,
+  % say, an axis can be determined later on.
+  %
+  % You can also set the key "sub attributes" of the attribute. In
+  % this case, this key should contain -- as the name suggests -- a
+  % list of subkeys that should also be taken into account for the
+  % computation of the minimum and maximum value. Inside the "sub
+  % attributes" key, each subkey should be surrounded by a call of
+  % \pgfdvsub. For instance, if there are two sub attributes "/data
+  % point/velocity/min" and "/data point/velocity/max" for a key
+  % "/data point/velocity", then "/data point/velocity/sub attributes"
+  % should be set to "\pgfdvsub{/min}\pgfdvsub{/max}".
+
+  \attribute attribute;%
+  % The to-be-surveyed attribute
+
+  \attribute interval obj;%
+  % The interval object that protocols the minimum and maximum
+  % values.
+
+
+  % Constructor
+  %
+  % #1 = the attribute
+  % #2 = handle to the interval object
+  %
+  \method range surveyor(#1,#2) {
+    \pgfooset{attribute}{#1}
+    \pgfoolet{interval obj}#2
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,survey,survey datapoint signal)
+  }%
+
+  % Method
+  %
+  % #1 = a value
+  %
+  % Adjust the interval as if during the survey this value were
+  % encountered
+  \method include attribute value(#1) {
+    \pgf@dv@assign@val@stripped#1\pgf@stop%
+    \pgfoovalueof{interval obj}.adjust(\pgf@dv@range@surv)
+  }%
+  \def\pgf@dv@assign@val@stripped#1\pgf@stop{%
+    \def\pgf@dv@val{#1}
+  }%
+
+  % Slot
+  %
+  % This slot should be connected to the survey datapoint signal. For
+  % each datapoint, this method will call the adjust method of the
+  % interval.
+  %
+  \method survey() {
+    \let\pgfdvsub\pgf@dv@range@surv@sub
+    \pgfdvsub{}%
+    \pgfkeysvalueof{/data point/\pgfoovalueof{attribute}/sub attributes}
+  }%
+
+  \def\pgf@dv@range@surv@sub#1{
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{attribute}#1}\pgf@dv@val%
+    \ifx\pgf@dv@val\relax%
+    \else%
+      \edef\pgf@dv@val{\pgf@dv@val}%
+      \ifx\pgf@dv@val\pgfutil@empty%
+      \else%
+        \pgfoovalueof{interval obj}.adjust(\pgf@dv@range@surv)%
+      \fi%
+    \fi%
+  }%
+
+  \def\pgf@dv@range@surv{%
+    \pgfdvmathenter{\pgf@dv@value}{\pgf@dv@val}%
+    % Now, protocol value
+    \ifx\pgfdvmin\pgfutil@empty%
+      \let\pgfdvmin\pgf@dv@value%
+    \else%
+      \pgfdvmathifless{\pgf@dv@value}{\pgfdvmin}{\let\pgfdvmin\pgf@dv@value}{}%
+    \fi%
+    \ifx\pgfdvmax\pgfutil@empty%
+      \let\pgfdvmax\pgf@dv@value%
+    \else%
+      \pgfdvmathifless{\pgfdvmax}{\pgf@dv@value}{\let\pgfdvmax\pgf@dv@value}{}%
+    \fi%
+  }%
+}%
+
+
+
+%
+% Visualizers
+%
+
+\usepgflibrary{plothandlers}%
+
+
+
+\pgfooclass{plot handler visualizer}
+{%
+  % Class plot handler visualizer
+  %
+  % This visualizer uses one or more plot handlers to visualize data points.
+  % As the data points are processed, the canvas positions of the data
+  % points are recorded. At the end of a group of data points, the
+  % recorded stream of canvas position is visualized (rendered)
+  % using plot handlers. For instance, when the lineto plot handler
+  % is used, the data points are connected by straight lines, when the
+  % curveto plot handler is used, they are connected by smooth curves
+  % and so on.
+  %
+  % Since plot lines are not drawn immediately, but only at the end,
+  % when everything has been collected, multiple plot handlers can
+  % coexist peacefully at the same time.
+  %
+  % You can specify a "filter", which will cause only those data
+  % points to be visualized by the visualizer that pass the test. The
+  % filter should set \pgfdvfilterpassedfalse for to-be-filtered data
+  % point.
+  %
+  % You can specify "projection code" that changes the canvas x and
+  % canvas y positions. This projection code allows you to draw, say,
+  % projected points instead of the actual data point.
+  %
+  % The keys /data point/<name>/execute at begin and /data
+  % point/<name>/execute at end, where <name> is the name of
+  % the visualizer, should store code that is to be executed directly
+  % before and after the stream of coordinates is created. Typically,
+  % these keys will store commands to use the path created by the plot
+  % handler.
+
+  \attribute handlers;%
+  % The to-be-used handlers
+
+  \attribute name;%
+  % The attribute
+
+  \attribute filter=\pgfdvnamedvisualizerfilter;%
+  % Filter code
+
+  \attribute positions;%
+  % An internal protocol of the positions on the stream
+
+  \attribute cache;%
+  % An internal cache. Positions are first inserted into this
+  % cache. Every 100 steps this cache is moved to positions. The idea
+  % behind this is that it will avoid the quadratic time increase that
+  % is normally caused when a protocol is build in TeX.
+
+  \attribute projection code;%
+  % This code is empty by default. However, you can set it for
+  % instance to the following
+  %
+  % \pgfkeyssetvalue{/data point/y=0}\pgfdvmapdatapointtocanvas
+  %
+  % in order to visualize the data point with its y-coordinate
+  % replaced by 0.
+
+  % Constructor
+  %
+  % #1 = A name
+  % #2 = A comma-separated list of handlers like
+  %      "\pgfplothandlerlineto,\pgfplothandlercurveto"
+  %
+  \method plot handler visualizer(#1,#2) {
+    \pgfooset{name}{#1}
+    \pgfooset{handlers}{#2}
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,protocol,visualize datapoint signal)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,phase,phase signal)
+  }%
+
+  % Setter
+  \method set filter(#1) {
+    \pgfooset{filter}{#1}
+  }%
+
+  % Setter
+  \method set projection code(#1) {
+    \pgfooset{projection code}{#1}
+  }%
+
+  % Slot
+  \method protocol() {
+    \pgfdvfilterpassedtrue
+    \pgfoovalueof{filter}
+    \ifpgfdvfilterpassed%
+      \pgf@dv@line@cache@it
+    \fi%
+  }%
+
+  \def\pgf@dv@line@cache@it{
+    % Cache it
+    \pgfooget{cache}\pgf@dv@cache
+    \pgfkeysgetvalue{/data point/outlier}\pgf@temp%
+    \ifx\pgf@temp\pgfutil@empty
+      {%
+        \pgfoovalueof{projection code}
+        \xdef\pgf@dv@add{\noexpand\pgf@dv@ph{\pgfkeysvalueof{/data
+              point/canvas x}}{\pgfkeysvalueof{/data point/canvas y}}}%
+      }
+    \else%
+      % An outlier!
+      \gdef\pgf@dv@add{\pgf@dv@outliner}%
+    \fi%
+    \expandafter\expandafter\expandafter\def%
+    \expandafter\expandafter\expandafter\pgf@dv@cache%
+    \expandafter\expandafter\expandafter{\expandafter\pgf@dv@cache\pgf@dv@add}%
+    % Possibly flush cache
+    \global\advance\pgf@lib@dv@cache@count by1\relax%
+    \ifnum\pgf@lib@dv@cache@count=100\relax%
+      \global\pgf@lib@dv@cache@count=0\relax%
+      % Append cache to positions
+      \pgfooget{positions}\pgf@dv@temp
+      \expandafter\expandafter\expandafter\def%
+      \expandafter\expandafter\expandafter\pgf@dv@temp%
+      \expandafter\expandafter\expandafter{\expandafter\pgf@dv@temp\pgf@dv@cache}%
+      \pgfoolet{positions}\pgf@dv@temp
+      \let\pgf@dv@cache\pgfutil@empty
+    \fi
+    \pgfoolet{cache}\pgf@dv@cache
+  }%
+
+  % Slot
+  \method phase(#1) {%
+    \ifx#1\pgfdvendvisualization%
+      \pgfoothis.render()%
+    \fi%
+  }%
+
+  % Internal method
+  \method render() {
+    \pgfscope
+      \pgfooget{handlers}\tikz@dv@temp@list
+      \foreach\tikz@dv@temp in\tikz@dv@temp@list{
+        \ifx\tikz@dv@temp\pgfutil@empty
+        \else
+          \pgfkeysvalueof{/data point/\pgfoovalueof{name}/execute at begin}
+          \tikz@dv@temp
+          \pgfdvnewstreamtrue
+          \pgfoovalueof{positions}
+          \pgfoovalueof{cache}
+          \ifpgfdvnewstream\else\pgfplotstreamend\fi
+          \pgfkeysvalueof{/data point/\pgfoovalueof{name}/execute at end}
+        \fi
+      }
+    \endpgfscope
+    \pgfoolet{positions}\pgfutil@empty
+    \pgfoolet{cache}\pgfutil@empty
+  }%
+
+  \def\pgf@dv@ph#1#2{\ifpgfdvnewstream\pgfplotstreamstart\pgfdvnewstreamfalse\fi\pgfplotstreampoint{\pgfqpoint{#1}{#2}}}%
+  \def\pgf@dv@outliner{\ifpgfdvnewstream\else\pgfplotstreamend\pgfdvnewstreamtrue\fi}%
+}%
+
+\newif\ifpgfdvnewstream
+\newcount\pgf@lib@dv@cache@count
+
+\pgfkeys{%
+  /data point/outlier/.initial=,
+  /data point/outlier/.default=true,
+}%
+
+
+% A possible filter for unnamed visualizers
+%
+% #1 = Text to be compared with key /data point/set
+%
+% Description:
+%
+% In a data visualization with multiple visualizers, data points
+% typically "belong" only to a single visualizer. It is, thus,
+% necessary to filter data points according to the current
+% visualizer. This current visualizer is assumed to be stored in /data
+% point/visualizer.
+%
+% When objects allow you to set a filter, you can use this filter to
+% test against /data point/set being equal to #1.
+
+\def\pgfdvvisualizerfilter#1{%
+  \pgfkeysgetvalue{/data point/set}\pgf@dv@visualizer%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgf@dv@visualizer%
+  \else
+    \pgfdvfilterpassedfalse
+  \fi%
+}%
+
+
+
+% A filter for named visualizer
+%
+% Description:
+%
+% This filter works like \pgfdvvisualizerfilter, only it assumes the
+% the object defines a "name" attribute. In this case, the value of
+% /data point/set is tested against this attribute.
+
+\def\pgfdvnamedvisualizerfilter{%
+  \pgfkeysgetvalue{/data point/set}\pgf@dv@visualizer%
+  \pgfooget{name}\pgf@temp%
+  \ifx\pgf@temp\pgf@dv@visualizer%
+  \else
+    \pgfdvfilterpassedfalse
+  \fi%
+}%
+
+
+
+\pgfooclass{rectangle visualizer}
+{%
+  % Class rectangle visualizer
+  %
+  % This visualizer visualizes a datapoint as a rectangle. It needs
+  % a name, so that /data point/<name>/attribute 1 and /data
+  % point/<name>/attribute 2 store two attributes names a1 to a2. Then,
+  % provided the current value of /data point/set equals name, for
+  % each data point a rectangle between (a1/min,a2/min) and
+  % (a1/max,a2/max) is created.
+
+
+  \attribute name;%
+  % The name
+
+  \attribute a1;%
+  \attribute a2;%
+  % The attributes, filled from /data point/<name>/attribute 1 and 2
+
+
+  % Constructor
+  %
+  % #1 = first attribute
+  % #2 = second attribute
+  %
+  \method rectangle visualizer(#1) {
+    \pgfooset{name}{#1}
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,visualize,visualize datapoint signal)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,phase,phase signal)
+  }%
+
+  % Slot
+  \method phase(#1) {%
+    \ifx#1\pgfdvbeginsurvey%
+      \pgfooeset{a1}{/data point/\pgfkeysvalueof{/data point/\pgfoovalueof{name}/attribute 1}}
+      \pgfooeset{a2}{/data point/\pgfkeysvalueof{/data point/\pgfoovalueof{name}/attribute 2}}
+      \pgfkeyssetvalue{\pgfoovalueof{a1}/sub attributes}{\pgfdvsub{/min}\pgfdvsub{/max}}
+      \pgfkeyssetvalue{\pgfoovalueof{a2}/sub attributes}{\pgfdvsub{/min}\pgfdvsub{/max}}
+    \fi%
+  }%
+
+  % Slot
+  \method visualize() {
+    {
+      \pgfkeysgetvalue{/data point/set}\pgf@dv@visualizer%
+      \pgfooget{name}\pgf@temp%
+      \ifx\pgf@temp\pgf@dv@visualizer%
+        \pgf@dv@rect@do
+      \fi
+    }
+  }%
+
+  \def\pgf@dv@rect@do{
+      \pgfkeysgetvalue{\pgfoovalueof{a1}/min}\pgf@dv@amin
+      \ifx\pgf@dv@amin\relax\else\ifx\pgf@dv@amin\pgfutil@empty\else
+      \pgfkeysgetvalue{\pgfoovalueof{a1}/max}\pgf@dv@amax
+      \ifx\pgf@dv@amax\relax\else\ifx\pgf@dv@amax\pgfutil@empty\else
+      \pgfkeysgetvalue{\pgfoovalueof{a2}/min}\pgf@dv@bmin
+      \ifx\pgf@dv@bmin\relax\else\ifx\pgf@dv@bmin\pgfutil@empty\else
+      \pgfkeysgetvalue{\pgfoovalueof{a2}/max}\pgf@dv@bmax
+      \ifx\pgf@dv@bmax\relax\else\ifx\pgf@dv@bmax\pgfutil@empty\else
+      \pgfkeysvalueof{/data point/\pgfoovalueof{name}/execute at begin}
+        \pgfkeyssetvalue{\pgfoovalueof{a1}}{\pgf@dv@amin}
+        \pgfkeyssetvalue{\pgfoovalueof{a2}}{\pgf@dv@bmin}
+        \pgfpathdvmoveto
+        \pgfkeyssetvalue{\pgfoovalueof{a2}}{\pgf@dv@bmax}
+        \pgfpathdvlineto
+        \pgfkeyssetvalue{\pgfoovalueof{a1}}{\pgf@dv@amax}
+        \pgfpathdvlineto
+        \pgfkeyssetvalue{\pgfoovalueof{a2}}{\pgf@dv@bmin}
+        \pgfpathdvlineto
+        \pgfkeyssetvalue{\pgfoovalueof{a1}}{\pgf@dv@amin}
+        \pgfpathdvlineto
+        \pgfpathclose
+      \pgfkeysvalueof{/data point/\pgfoovalueof{name}/execute at end}
+      \fi\fi
+      \fi\fi
+      \fi\fi
+      \fi\fi
+  }%
+}%
+
+\newcount\pgf@lib@dv@cache@count
+
+
+
+%
+% Label positioning classes
+%
+
+\pgfooclass{label visualizer}
+{%
+  % Class label visualizer
+  %
+  % The job of this class is to visualize a label of a curve or some
+  % other object.
+  %
+  % The idea is as follows: This class monitors a certain
+  % attribute. When this attribute reaches a certain value for the
+  % first time, the following happens: A normalized vector of the line
+  % connecting the current canvas position to the canvas position of
+  % the previous data point is computed and stored in pgf@x/pgf@y. The
+  % coordinate system is shifted so that the current data point is at
+  % the origin. Then, some drawing code is executed.
+
+  \attribute attribute;%
+  % The monitored attribute
+
+  \attribute filter;%
+  % Filter code, see plot handler visualizer doc.
+
+  \attribute threshold;%
+  % When the attribute exceeds this threshold, the drawing code is
+  % executed
+
+  \attribute before canvas position=;%
+  % Stores canvas position of the data point before the interesting one
+
+  \attribute canvas position=;%
+  % Stores canvas position of the data point
+
+  \attribute code;%
+  % To-be-executed code when the label should be drawn
+
+
+  % Constructor
+  %
+  % #1 = attribute
+  % #2 = a macro, storing the threshold
+  % #3 = code
+  % #4 = filter code
+  %
+  \method label visualizer(#1,#2,#3,#4) {
+    \pgfooset{attribute}{#1}
+    \expandafter\pgfdvmathenter\expandafter{\expandafter\pgf@temp\expandafter}\expandafter{#2}
+    \pgfoolet{threshold}\pgf@temp
+    \pgfooset{code}{#3}
+    \pgfooset{filter}{#4}
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,test,visualize datapoint signal)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,phase,phase signal)
+  }%
+
+  % Slot
+  \method test() {
+    \pgfdvfilterpassedtrue
+    \pgfoovalueof{filter}
+    \ifpgfdvfilterpassed%
+      \pgfooget{attribute}\pgf@dv@attribute
+      \ifx\pgf@dv@attribute\pgfutil@empty%
+      % nothing to do (anymore)
+      \else%
+        \pgf@dv@label@vis@record
+      \fi%
+    \fi%
+  }%
+
+  \def\pgf@dv@label@vis@record{
+    % Record current position
+    \edef\pgf@dv@pos{%
+      \noexpand\pgfqpoint%
+      {\pgfkeysvalueof{/data point/canvas x}}%
+      {\pgfkeysvalueof{/data point/canvas y}}}%
+    \pgfooget{canvas position}\pgf@dv@temp%
+    \pgfoolet{before canvas position}\pgf@dv@temp%
+    \pgfoolet{canvas position}\pgf@dv@pos%
+    % Now check threshold
+    \pgfooget{threshold}\pgf@dv@thres%
+    \ifx\pgf@dv@thres\pgfutil@empty%
+    \else%
+      % Hmm, have to check, whether the value is, indeed, correct
+      \pgfkeysgetvalue{/data point/\pgfoovalueof{attribute}}\pgf@dv@val
+      \ifx\pgf@dv@val\relax%
+      \else\ifx\pgf@dv@val\pgfutil@empty%
+      \else%
+        \pgfdvmathenter{\pgf@dv@value}{\pgf@dv@val}%
+        \pgfooget{threshold}{\pgf@dv@thres}
+        % Now, protocol value
+        \pgfdvmathifless{\pgf@dv@value}{\pgf@dv@thres}{}{%
+          \pgfoolet{attribute}\pgfutil@empty% Stop!
+        }%
+      \fi\fi%
+    \fi%
+  }%
+
+  % Slot
+  \method phase(#1) {%
+    \ifx#1\pgfdvendvisualization%
+      \scope
+        \pgfcoordinate{label visualizer coordinate}{\pgfoovalueof{canvas position}}
+        \pgfcoordinate{label visualizer coordinate'}{\pgfoovalueof{before canvas position}}
+        \pgfoovalueof{code}
+      \endscope
+    \fi%
+  }%
+}%
+
+
+
+%
+% Style sheets
+%
+\pgfooclass{style attribute}
+{%
+  % Class style attribute
+  %
+  % Instances of this class are used to select a style based on the
+  % current value of an attribute.
+  %
+  % Instances of this class monitor an attribute. Whenever the "style"
+  % signal is raised, the object investigates the current value of the
+  % attribute. It then looks up /pgf/data visualization/style
+  % sheets/<name of style sheet>/<value of the attribute> and executes
+  % this key, provided it is defined. If it not defined, the key
+  % /pgf/data visualization/style sheets/<name of style sheet>/default
+  % style is executed with the value as a parameter.
+
+  \attribute attribute;%
+  % The name of the attribute
+
+  \attribute style sheet name;%
+  % The styling function
+
+  % Constructor
+  %
+  % #1 = attribute (including, if present, /data point/)
+  % #2 = style sheet name
+  %
+  \method style attribute(#1,#2) {
+    \pgfooset{attribute}{#1}
+    \pgfooset{style sheet name}{#2}
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,invoke style,style signal)
+  }%
+
+  % Slots
+  \method invoke style() {
+    \pgfooget{attribute}\pgf@dv@temp
+    \pgfkeysgetvalue{\pgf@dv@temp}\pgf@dv@temp@val
+    \ifx\pgf@dv@temp@val\pgfutil@empty%do nothing
+    \else\ifx\pgf@dv@temp@val\relax%do nothing
+    \else%
+      \pgfkeysifdefined{\pgf@dv@temp/\pgf@dv@temp@val}{\pgfkeysgetvalue{\pgf@dv@temp/\pgf@dv@temp@val}\pgf@dv@temp@val}{}% redirect
+      \edef\pgf@temp{/pgf/data visualization/style sheets/\pgfoovalueof{style sheet name}}
+      \pgfkeysifassignable{\pgf@temp/\pgf@dv@temp@val}{%
+        \pgfkeysalso{\pgf@temp/\pgf@dv@temp@val}}{%
+        \pgfkeysalso{\pgf@temp/default style/.expand once=\pgf@dv@temp@val}
+      }
+    \fi\fi%
+  }%
+}%
+
+
+% Declares a new style sheet
+%
+% #1 = name of style sheet
+% #2 = settings
+%
+% Description:
+%
+% This is a shortcut for doing a /.cd to /pgf/data visualization/style sheets/#1
+
+\def\pgfdvdeclarestylesheet#1#2{
+  \pgfkeys{/pgf/data visualization/style sheets/#1/.cd,#2}
+}%
+
+
+
+
+
+
+
+
+
+%
+% Legend container class
+%
+
+\pgfooclass{legend}
+{%
+  % Class legend
+  %
+  % This class is used to collect entries into a legend. The idea is
+  % that, say, for each line of a picture you would like to have an
+  % entry in a legend. Then you prepare these entries and send
+  % them to a legend container object. It will collect the entries
+  % and, at the end, arrange them in rows and columns by
+  % separating them using \pgfdvnextcell and \pgfdvendrow.
+  %
+  % By surrounding the resulting arrangement by a call to \pgfmatrix or
+  % a call to \halign you can then create a legend.
+  %
+  % To specify how the entries should be arranged, a size
+  % specification and two directions are needed.
+  %
+  % For the size specification you specify either the ideal number of
+  % columns and the maximum number of rows or you specify the ideal
+  % number of rows and the maximum number of columns. In the first
+  % case, the class first tries to create as many columns as specified
+  % by the "ideal" parameter. If there are less entries than this
+  % parameter, you obviously get less columns, namely as many as there
+  % are entries, each column containing only one entry. If there are
+  % more entries that the ideal number of columns, you get multiple
+  % columns, each containing as many entries to make sure that the
+  % ideal number is met. However, if a column would get more than the
+  % specified maximum number of elements per column, you get more
+  % columns that the ideal number -- to ensure that no column contains
+  % more than the desired number. The case is symmetric, but with the
+  % roles of columns and rows exchanged.
+  %
+  % Here is an example: You specify that you want 2 columns, ideally,
+  % each having a maximum of 4 entries. Here is what you would get:
+  %
+  % Number of entries & Number of resulting columns ... & ... and rows
+  % 1                 & 1                               & 1
+  % 2                 & 2                               & 1
+  % 3                 & 2                               & 2
+  % 4                 & 2                               & 2
+  % 5                 & 2                               & 3
+  % 6                 & 2                               & 3
+  % 7                 & 2                               & 4
+  % 8                 & 2                               & 4
+  % 9                 & 3                               & 4
+  % 10                & 3                               & 4
+  % 11                & 3                               & 4
+  % 12                & 3                               & 4
+  % 13                & 4                               & 4
+  %
+  %
+  % Once the number of columns and rows has been computed, the next
+  % step is to "fill" the table. For this, eight strategies may be
+  % specified: right then down, right then up, left then down, left
+  % then up, up then right, up then left, down then right, down then
+  % left. A strategy like "right then up" means the following: Each
+  % new entry should placed right of the previous entry in the
+  % arrangement. However, once the maximum number of elements in a row
+  % has been reached, the a new row should be started that is placed
+  % above ("up") then just-assembled row.
+  %
+  %
+  %
+  %
+  % Example:
+  %
+  % You create an object \legend and then call
+  %
+  % \pgfoofnew \legend=new legend(columns,2,3,down then right)
+  % \legend.add entry(first)
+  % \legend.add entry(second)
+  % \legend.add entry(third)
+  % \legend.add entry(fourth)
+  % \legend.add entry(fifth)
+  % \legend.add entry(sixth)
+  % \legend.add entry(seventh)
+  % \legend.get arrangement(\arrangement)
+  %
+  % Then \arrangment will expand to
+  %
+  %   first  \pgfdvnextcell   fourth  \pgfdvnextcell  seventh  \pgfdvendrow
+  %   second \pgfdvnextcell   fifth   \pgfdvnextcell  third    \pgfdvendrow
+  %   third  \pgfdvendrow   sixth   \pgfdvnextcell           \pgfdvendrow
+  %
+  % By saying \let\pgfdvendrow=\\ and \let\pgfdvnextcell=&, you
+  % can use \arrangment inside a table.
+
+
+  \attribute entries;%
+  % Collects the entries
+
+  \attribute columns or rows;%
+  % Specifies whether columns or rows are specified
+
+  \attribute ideal;%
+  % The ideal number of columns/rows
+
+  \attribute max;%
+  % The maximum number of entries per column/row
+
+  \attribute strategy;%
+  % Specifies how the matrix should be filled
+
+  \attribute number of entries=0;%
+  % Counts the number of entries that have been stored
+
+
+  % Constructor
+  %
+  % #1 = "columns" or "rows" -> specifies whether the ideal number and
+  %      the max entries number refer to columns or the row
+  % #2 = the ideal number of #1's
+  % #3 = the maximum number of entries in a #1
+  % #4 = one of the eight strategies
+  %
+  \method legend(#1,#2,#3,#4) {
+    \pgfooset{columns or rows}{#1}
+    \pgfooset{ideal}{#2}
+    \pgfooset{max}{#3}
+    \pgfooset{strategy}{#4}
+  }%
+
+  % Method
+  \method default connects() {
+  }%
+
+  % Method
+  \method add entry(#1) {
+    \pgfooappend{entries}{{#1}}
+    \c@pgf@counta=\pgfoovalueof{number of entries}\relax%
+    \advance\c@pgf@counta by1\relax%
+    \pgfooeset{number of entries}{\the\c@pgf@counta}
+  }%
+
+  % Method
+  \method get arrangement(#1) {
+    {
+      %
+      % Step 1: Compute the desired number of rows or columns
+      %
+      %
+      % Compute the ideal number of entries per row/column (called
+      % "target" in the following) and entries per colum/row (called
+      % "per target" in the following)
+      %
+      % if (number of entries > ideal)
+      \ifnum\pgfoovalueof{number of entries}>\pgfoovalueof{ideal}\relax%
+      % {
+        % if (ideal * max > number of entries)
+        \c@pgf@counta=\pgfoovalueof{ideal}\relax%
+        \multiply\c@pgf@counta by\pgfoovalueof{max}\relax%
+        \ifnum\c@pgf@counta>\pgfoovalueof{number of entries}\relax
+        % {
+        %   target = ideal;
+        %   per target = ceil (number of entries / ideal);
+          \c@pgf@counta=\pgfoovalueof{ideal}\relax%
+          \c@pgf@countb=\pgfoovalueof{number of entries}\relax
+          \advance\c@pgf@countb by-1\relax
+          \divide\c@pgf@countb by\c@pgf@counta\relax%
+          \advance\c@pgf@countb by1\relax%
+        % }
+        % else
+        % {
+        %   target = ceil(number of entries / max);
+        %   per target = max;
+        \else
+          \c@pgf@countb=\pgfoovalueof{max}\relax%
+          \c@pgf@counta=\pgfoovalueof{number of entries}\relax
+          \advance\c@pgf@counta by-1\relax
+          \divide\c@pgf@counta by\c@pgf@countb\relax%
+          \advance\c@pgf@counta by1\relax%
+        \fi
+        % }
+      % }
+      % else
+      % {
+      %   target = number of entries;
+      %   per target = 1;
+      % }
+      \else
+        \c@pgf@counta=\pgfoovalueof{number of entries}\relax%
+        \c@pgf@countb=1\relax%
+      \fi%
+      %
+      % Ensure that counta = rows, countb = columns
+      %
+      \pgfooget{columns or rows}\pgf@temp
+      \ifx\pgf@temp\pgf@dv@columnstext%
+        \c@pgf@countc=\c@pgf@counta\relax
+        \c@pgf@counta=\c@pgf@countb\relax
+        \c@pgf@countb=\c@pgf@countc\relax
+      \fi
+      %\edef\temp{rows: \the\c@pgf@counta, columns: \the\c@pgf@countb}\temp
+      %
+      % Now arrange the matrix
+      %
+      \csname pgf@dv@legend@init@\pgfoovalueof{strategy}\endcsname
+      \expandafter\let\expandafter\pgf@dv@updater\csname pgf@dv@legend@update@\pgfoovalueof{strategy}\endcsname
+      \pgfooget{entries}\pgf@temp
+      \expandafter\pgf@dv@legend@arrange\pgf@temp\pgf@stop
+      %
+      % Now assemble the matrix
+      %
+      \edef\pgf@dv@row@list{1,...,\the\c@pgf@counta}
+      \edef\pgf@dv@column@list{1,...,\the\c@pgf@countb}
+      \global\let\pgf@dv@matrix\pgfutil@empty
+      \foreach \pgf@dv@row in \pgf@dv@row@list
+      {
+        \global\let\pgf@dv@matrix@row\pgf@dv@first@mark
+        \foreach \pgf@dv@column in \pgf@dv@column@list
+        {
+          \expandafter\let\expandafter\pgf@temp\csname pgf@dv@legend@entry@\pgf@dv@row @\pgf@dv@column\endcsname
+          \ifx\pgf@temp\relax
+            \let\pgf@temp\pgfutil@empty
+          \fi
+          \ifx\pgf@dv@matrix@row\pgf@dv@first@mark
+            \global\let\pgf@dv@matrix@row\pgf@temp
+          \else
+            \expandafter\pgfutil@g@addto@macro\expandafter\pgf@dv@matrix@row\expandafter{\expandafter\pgfdvnextcell\pgf@temp}
+          \fi
+        }
+        \pgfutil@g@addto@macro\pgf@dv@matrix@row{\pgfdvendrow}
+        \expandafter\pgfutil@g@addto@macro\expandafter\pgf@dv@matrix\expandafter{\pgf@dv@matrix@row}
+      }
+      \global\let\pgf@dv@matrix@row\relax
+    }
+    \let#1\pgf@dv@matrix
+    \global\let\pgf@dv@matrix\relax
+  }%
+
+  \def\pgf@dv@first@mark{\pgf@dv@first@mark}%
+
+  \def\pgf@dv@legend@arrange{%
+    \pgfutil@ifnextchar\pgf@stop{\pgfutil@gobble}{\pgf@dv@legend@handle@entry}
+  }%
+
+  \def\pgf@dv@legend@handle@entry#1{
+    \expandafter\def\csname pgf@dv@legend@entry@\the\c@pgf@countc @\the\c@pgf@countd\endcsname{#1}%
+    \pgf@dv@updater%
+    \pgf@dv@legend@arrange%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@down then right\endcsname{%
+    \c@pgf@countc=1\relax%
+    \c@pgf@countd=1\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@down then right\endcsname{%
+    \advance\c@pgf@countc by1\relax
+    \ifnum\c@pgf@countc>\c@pgf@counta\relax%
+      \c@pgf@countc=1\relax%
+      \advance\c@pgf@countd by1\relax%
+    \fi%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@right then down\endcsname{%
+    \c@pgf@countc=1\relax%
+    \c@pgf@countd=1\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@right then down\endcsname{%
+    \advance\c@pgf@countd by1\relax
+    \ifnum\c@pgf@countd>\c@pgf@countb\relax%
+      \c@pgf@countd=1\relax%
+      \advance\c@pgf@countc by1\relax%
+    \fi%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@up then right\endcsname{%
+    \c@pgf@countc=\c@pgf@counta\relax%
+    \c@pgf@countd=1\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@up then right\endcsname{%
+    \advance\c@pgf@countc by-1\relax
+    \ifnum\c@pgf@countc=0\relax%
+      \c@pgf@countc=\c@pgf@counta\relax%
+      \advance\c@pgf@countd by1\relax%
+    \fi%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@right then up\endcsname{%
+    \c@pgf@countc=\c@pgf@counta\relax%
+    \c@pgf@countd=1\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@right then up\endcsname{%
+    \advance\c@pgf@countd by1\relax
+    \ifnum\c@pgf@countd>\c@pgf@countb\relax%
+      \c@pgf@countd=1\relax%
+      \advance\c@pgf@countc by-1\relax%
+    \fi%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@left then up\endcsname{%
+    \c@pgf@countc=\c@pgf@counta\relax%
+    \c@pgf@countd=\c@pgf@countb\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@left then up\endcsname{%
+    \advance\c@pgf@countd by-1\relax
+    \ifnum\c@pgf@countd=0\relax%
+      \c@pgf@countd=\c@pgf@countb\relax%
+      \advance\c@pgf@countc by-1\relax%
+    \fi%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@up then left\endcsname{%
+    \c@pgf@countc=\c@pgf@counta\relax%
+    \c@pgf@countd=\c@pgf@countb\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@up then left\endcsname{%
+    \advance\c@pgf@countc by-1\relax
+    \ifnum\c@pgf@countc=0\relax%
+      \c@pgf@countc=\c@pgf@counta\relax%
+      \advance\c@pgf@countd by-1\relax%
+    \fi%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@left then down\endcsname{%
+    \c@pgf@countc=1\relax%
+    \c@pgf@countd=\c@pgf@countb\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@left then down\endcsname{%
+    \advance\c@pgf@countd by-1\relax
+    \ifnum\c@pgf@countd=0\relax%
+      \c@pgf@countd=\c@pgf@countb\relax%
+      \advance\c@pgf@countc by1\relax%
+    \fi%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@init@down then left\endcsname{%
+    \c@pgf@countc=1\relax%
+    \c@pgf@countd=\c@pgf@countb\relax%
+  }%
+
+  \expandafter\def\csname pgf@dv@legend@update@down then left\endcsname{%
+    \advance\c@pgf@countc by1\relax
+    \ifnum\c@pgf@countc>\c@pgf@countb\relax%
+      \c@pgf@countc=1\relax%
+      \advance\c@pgf@countd by-1\relax%
+    \fi%
+  }%
+
+  \def\pgf@dv@columnstext{columns}%
+}%
+
+
+
+%
+% Help classes
+%
+
+\pgfooclass{interval}
+{%
+  % Class interval
+  %
+  % Instances of this class store intervals. When either the min or
+  % the max value is empty, this corresponds to "not yet set", (not to
+  % "infinity).
+
+  \attribute min;%
+  % The minimum value of the interval
+
+  \attribute max;%
+  % The maximum value of the interval
+
+  % Constructor
+  %
+  % #1 = initial minimum value
+  % #2 = initial maximum value
+  %
+  \method interval(#1,#2) {
+    \pgfooset{min}{#1}
+    \pgfooset{max}{#2}
+  }%
+
+  % Method
+  \method default connects() {
+  }%
+
+  % Sets the minimum/maximum to a new value
+  \method set min(#1) {
+    \pgfooset{min}{#1}
+  }%
+  \method set max(#1) {
+    \pgfooset{max}{#1}
+  }%
+  \method let min(#1) {
+    \pgfoolet{min}{#1}
+  }%
+  \method let max(#1) {
+    \pgfoolet{max}{#1}
+  }%
+
+  % Getter
+  %
+  % Returns the current values of the minimum and maximum in the
+  % macros \pgfdvmin and \pgfdvmax.
+  \method get min and max() {
+    \pgfooget{min}\pgfdvmin
+    \pgfooget{max}\pgfdvmax
+  }%
+
+  % Adjusts the minimum and maximum values
+  %
+  % #1 = some code. When this code is executed, the values of
+  %      \pgfdvmin and \pgfdvmax will be set to the current values of
+  %      the minimum/maximum. The code may change these values. The
+  %      changed values will then be stored.
+  %
+  % This method does nothing that cannot be achieved also by calling
+  % set/get methods, but it is easier to use and faster.
+  \method adjust(#1) {
+    {%
+      \pgfooget{min}\pgfdvmin
+      \pgfooget{max}\pgfdvmax
+      #1%
+      \pgfoolet{min}\pgfdvmin
+      \pgfoolet{max}\pgfdvmax
+    }%
+  }%
+}%
+
+
+
+\pgfooclass{count}
+{%
+  % Class count
+  %
+  % This class can be used to count the number of data points that are
+  % present or that have a certain property. By default, for every
+  % data point a counter is incremented and the value of this counter
+  % is stored in an attribute. You can also specify an increment for
+  % the counter. You can specify that certain data points should
+  % not have an effect on the counter.
+
+
+  \attribute attribute;%
+  % The attribute that will be set to the current value of the counter
+
+  \attribute val=0;%
+  % The current value of the counter
+
+  \attribute max=0;%
+  % The current value of the counter
+
+  \attribute step=1;%
+  % The stepping by which the counter is incremented for each
+  % datapoint
+
+  \attribute start val=0;%
+  % The start value of the counter
+
+  \attribute filter=;%
+  % This attribute stores some code that is executed for each
+  % data point. If the data point sets the TeX-if ifpgfdvfilterpassed to
+  % true, then the counter is not incremented.
+
+
+  % Constructor
+  %
+  % #1 = The attribute in which the counter value is stored
+  %
+  \method count(#1) {
+    \pgfooset{attribute}{#1}
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,apply,prepare datapoint signal)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,phase,phase signal)
+  }%
+
+  % Getter
+  \method get max(#1) {
+    \pgfooget{max}{#1}
+  }%
+
+  % Setter
+  \method set value(#1) {
+    \pgfooset{val}{#1}
+    \pgfkeyssetvalue{/data point/\pgfoovalueof{attribute}}{#1}%
+  }%
+
+  % Setter
+  \method set start value(#1) {
+    \pgfooset{start val}{#1}
+    \pgfooset{max}{#1}
+  }%
+
+  % Setter
+  \method set filter(#1) {
+    \pgfooset{filter}{#1}
+  }%
+
+  % Setter
+  \method set step(#1) {
+    \pgfooset{step}{#1}
+  }%
+
+  % Slot
+  \method apply() {
+    \pgfdvfilterpassedtrue%
+    \pgfoovalueof{filter}%
+    \ifpgfdvfilterpassed%
+      \pgfmathparse{\pgfoovalueof{val}+\pgfoovalueof{step}}%
+      \pgfoolet{val}\pgfmathresult%
+      \pgfkeyslet{/data point/\pgfoovalueof{attribute}}\pgfmathresult%
+      \ifdim\pgfmathresult pt>\pgfoovalueof{max}pt\relax%
+        \pgfoolet{max}\pgfmathresult%
+      \fi%
+      \pgfooget{max}\pgfmathresult%
+      \pgfkeyslet{/data point/\pgfoovalueof{attribute}/max}\pgfmathresult%
+    \fi%
+  }%
+
+  % Slot
+  \method phase(#1) {
+    \ifx#1\pgfdvbeginsurvey
+      \pgfooeset{val}{\pgfoovalueof{start val}}
+    \else \ifx#1\pgfdvbeginvisualization
+      \pgfooeset{val}{\pgfoovalueof{start val}}
+    \fi\fi
+  }%
+}%
+
+\newif\ifpgfdvfilterpassed
+
+
+
+
+\pgfooclass{accumulator}
+{%
+  % Class accumulator
+  %
+  % This class is used to keep track of the sum of the values of some
+  % attribute. When this object is connected to some attribute, the
+  % subkey attribute/sum will always contain the sum of all values in
+  % all previous data points with respect to this
+  % attribute. Furthermore, the subkey attribute/prev key will hold
+  % the previous sum, which is sometimes also useful to have access
+  % to.
+
+  \attribute attribute;%
+  % The attribute to-be-accumulated
+
+  \attribute sum;%
+  % The initial value of the sum
+
+  % Constructor
+  %
+  % #1 = to-be-accumulated attribute
+  \method accumulator(#1) {
+    \pgfooset{attribute}{#1}
+    \pgfoothis.reset()
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,apply,prepare datapoint signal)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,phase,phase signal)
+  }%
+
+  % Slot
+  \method apply() {%
+    % Save old sum
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{attribute}/sum}\pgf@temp%
+    \pgfkeyslet{/data point/\pgfoovalueof{attribute}/prev sum}\pgf@temp%
+    % Add new attribute...
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{attribute}}{\pgf@temp@b}%
+    \pgfdvmathenter{\pgf@dv@new@val}{\pgf@temp@b}%
+    % ... to sum
+    \pgfooget{sum}\pgf@dv@sum%
+    \pgfdvmathadd{\pgf@dv@sum}{\pgf@dv@new@val}{\pgf@dv@sum}%
+    \pgfoolet{sum}\pgf@dv@sum
+    % Record in attribute
+    \pgfdvmathexitbyscientificformat{\pgf@dv@serial@sum}{\pgf@dv@sum}
+    \pgfkeyslet{/data point/\pgfoovalueof{attribute}/sum}\pgf@dv@serial@sum
+  }%
+
+  % Method
+  %
+  % Use this method to reset the sum at any point.
+  %
+  \method reset() {
+    \pgfdvmathenter{\pgf@dv@temp}{0}
+    \pgfoolet{sum}{\pgf@dv@temp}
+    \pgfdvmathexitbyserializing{\pgf@dv@zero}{\pgf@dv@temp}
+    \pgfkeyslet{/data point/\pgfoovalueof{attribute}/prev sum}{\pgf@dv@zero}
+    \pgfkeyslet{/data point/\pgfoovalueof{attribute}/sum}{\pgf@dv@zero}
+  }%
+
+  % Slot
+  \method phase(#1) {
+    \ifx#1\pgfdvbeginsurvey
+      \pgfoothis.reset()
+    \else \ifx#1\pgfdvbeginvisualization
+      \pgfoothis.reset()
+    \fi\fi
+  }%
+}%
+
+
+
+
+
+
+
+%
+%
+% Help keys and, attributes
+%
+%
+
+\pgfkeys{% do not even think of changing the values of the following:
+  /data point/always true/.initial=true,
+  /data point/always false/.initial=false,
+  /data point/always 0/.initial=0,
+  /data point/always 1/.initial=1,
+  /data point/always empty/.initial=,
+  /data point/always pgfusepath stroke/.initial=\pgfusepath{stroke},
+}%
+
+\pgfdvmathenter{\pgfdvmathalwaysloge}{0.434294481903252}%
+\pgfdvmathenter{\pgfdvmathalwayslnten}{2.302585092994046}%
+\pgfdvmathenter{\pgfdvmathalwayszero}{0}%
+\pgfdvmathenter{\pgfdvmathalwaysone}{1}%
+
+
+\endinput
