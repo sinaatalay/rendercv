@@ -1,13 +1,16 @@
 # TinyTeX
 
-Modifications that have been made to TinyTeX:
+Normally, this directory should contain a `TinyTeX` folder with all the TinyTeX binaries. I couldn't figure out how to get a minimal TinyTeX that can render a CV and have a small file size, so I don't push TinyTeX to Github for now.
 
-## FontAwesome
+## Modifications that have been made to TinyTeX
+Attempts to make TinyTeX smaller for CV purposes only.
+
+### FontAwesome
 
 - mkdir TinyTeX/textmf-local/fonts/opentype/FontAwesome and copy FontAwesome's opentype contents inside.
 - mkdir TinyTeX/textmf-local/tex/latex/FontAwesome and copy FontAwesome's tex contents inside.
 
-## Removing files
+### Removing files
 
 - In TinyTeX/, remove all the files except LICENSE.CTAN and LICENSE.TL
 - Remove TinyTeX/tlpg/
