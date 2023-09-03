@@ -16,7 +16,7 @@ def render(latexFilePath):
             [
                 f"{tinytexPath}\\latexmk.exe",
                 "-lualatex",
-                "-c",
+                # "-c",
                 "test.tex",
                 "-synctex=1",
                 "-interaction=nonstopmode",
