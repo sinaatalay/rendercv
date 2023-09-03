@@ -1,3 +1,8 @@
+((# IMPORT MACROS #))
+((* from "components/education.tex.j2" import education *))
+((* from "components/experience.tex.j2" import experience *))
+((* from "components/header.tex.j2" import header *))
+
 \documentclass[10pt, a4paper]{memoir}
 
 % ===========
@@ -17,9 +22,12 @@
 \newcommand{\YMarginBetweenBullets}{0.07cm}
 \newcommand{\LeftMarginOfBullets}{0.7cm}
 
+\newcommand{\YMarginBetweenEntryAndHighlights}{0.1cm}
+
 \newcommand{\DateandLocationWidth}{3.7cm}
 % ===========
 % ===========
+
 
 % ======================================================================================
 % ======================================================================================
@@ -36,12 +44,15 @@
 \usepackage{fontspec} % for loading fonts
 \usepackage[explicit]{titlesec} % for customizing section titles
 \usepackage{tabularx} % for making tables with fixed width columns
-\usepackage{array} % for making tables with fixed width columns
+\usepackage{array} % tabularx requires this
+\usepackage{xifthen} % for if-then-else statements
 \usepackage[dvipsnames]{xcolor} % for coloring text
-\usepackage{fontawesome} % for using icons
+\definecolor{primaryColor}{RGB}{\PRIMARYCOLOR}
+\usepackage{enumitem} % for customizing lists
+\usepackage{fontawesome5} % for using icons
 \usepackage[
-    pdftitle={(((cv.name)))'s CV},
-    pdfauthor={(((cv.name)))},
+    pdftitle={<<cv.name>>'s CV},
+    pdfauthor={<<cv.name>>},
     colorlinks=true,
     urlcolor=primaryColor
 ]{hyperref} % for links, metadata and bookmarks
@@ -61,9 +72,7 @@
 \titleformat{\section}{
         \LARGE\color{primaryColor}
     }{
-
     }{
-
     }{
         \textbf{#1}\hspace{0.15cm}\titlerule[0.8pt]
     }[] % Section title formatting
@@ -96,7 +105,7 @@
         \end{itemize}
     } % New environment for highlights
 
-\newenvironment{header}[1][\topsep]{\setlength{\topsep}{#1}\par\kern\topsep\centering\color{primaryColor}\linespread{1.5}}{\par\kern\topsep} % New environment for the header
+\newenvironment{header}{\setlength{\topsep}{0pt}\par\kern\topsep\centering\color{primaryColor}\linespread{1.5}}{\par\kern\topsep} % New environment for the header
 % ======================================================================================
 % ======================================================================================
 % ======================================================================================
@@ -110,13 +119,47 @@
     \vspace{\YMarginBetweenEntries}
 }
 
+\newcommand{\Header}[6]{
+    \begin{header}
+        \Huge
+        \textbf{#1}
+
+        \normalsize
+        \faPhone\hspace{0.13cm}#2 \hspace{0.5cm}
+        \href{mailto:#3}{\faEnvelope[regular]\hspace{0.13cm}#3} \hspace{0.5cm}
+        \href{https://#4}{\faLaptop\hspace{0.13cm}#4} \hspace{0.5cm}
+        \href{https://www.linkedin.com/in/#5}{\faLinkedin\hspace{0.13cm}#5} \hspace{0.5cm}
+        \href{https://www.github.com/#6}{\faGithub\hspace{0.13cm}#6}
+    \end{header}
+}
+
 \begin{document}
     % Test out the 4 main entry types with the commands below:
+    \Header{a}{b}{c}{d}{e}{f}
+
+    <<header(
+        name=cv.name,
+        connections=cv.connections
+    )>>
 
     \section{Education}
-    ((* set education = cv.education[0] *))
-    \EducationEntry{(((education.institution)))}{(((education.area)))}{(((education.studyType)))}{(((education.startDate)))}{(((education.endDate)))}{(((education.gpa)))}{(((education.courses)))}{(((education.location)))}
-    \EducationEntry{a}{b}{c}{d}{e}{f}{g}{j}
+    ((* for edu in cv.education *))
+    <<education(
+        study_type=edu.study_type,
+        institution=edu.institution,
+        area=edu.area,
+        highlights=edu.highlights,
+        dates_and_locations=[edu.start_date]
+    )|indent(4)>>
+    ((* endfor *))
 
-
+    \section{Work Experience}
+    ((* for work in cv.work_experience *))
+    <<experience(
+        company=work.company,
+        position=work.position,
+        highlights=work.highlights,
+        dates_and_locations=[work.start_date]
+    )|indent(4)>>
+    ((* endfor *))
 \end{document}
