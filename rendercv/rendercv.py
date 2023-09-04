@@ -1,6 +1,6 @@
 from jinja2 import Environment, FileSystemLoader
 
-from data.content import CurriculumVitae
+from data.data_model import RenderCVDataModel
 
 # from . import tinytex # https://github.com/praw-dev/praw/blob/master/praw/reddit.py
 # from . import templates, sonra mesela: classic.render() tarzi seyler olabilir
@@ -30,9 +30,9 @@ if __name__ == "__main__":
     with open(input_file_path) as file:
         raw_json = json.load(file)
 
-    cv = CurriculumVitae(**raw_json)
+    data = RenderCVDataModel(**raw_json)
 
-    output_latex_file = template.render(cv=cv)
+    output_latex_file = template.render(design=data.design.options, cv=data.cv)
 
     # Create an output file and write the rendered LaTeX code to it:
     output_file_path = os.path.join(workspace, "tests", "outputs", "test.tex")
