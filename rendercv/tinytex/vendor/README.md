@@ -10,6 +10,9 @@ Attempts to make TinyTeX smaller for CV purposes only.
 - mkdir TinyTeX/textmf-local/fonts/opentype/FontAwesome and copy FontAwesome's opentype contents inside.
 - mkdir TinyTeX/textmf-local/tex/latex/FontAwesome and copy FontAwesome's tex contents inside.
 
+### SourceSans3 Font
+- mkdir TinyTeX\texmf-local\fonts\truetype and copy all ttf files inside.
+
 ### Removing files
 
 - In TinyTeX/, remove all the files except LICENSE.CTAN and LICENSE.TL
