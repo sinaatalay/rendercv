@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     template = environment.get_template(f"{templateName}.tex.j2")
 
-    input_file_path = os.path.join(workspace, "tests", "inputs", "test.json")
+    input_file_path = os.path.join(workspace, "tests", "inputs", "personal.json")
     with open(input_file_path) as file:
         raw_json = json.load(file)
 
