@@ -1,15 +1,7 @@
 from pydantic import BaseModel, HttpUrl, model_validator
 from pydantic_extra_types.phone_numbers import PhoneNumber
-from typing import Literal
+from typing import Literal, Union
 from datetime import date as Date
-
-
-class Location(BaseModel):
-    # 1) Mandotory user inputs:
-    city: str
-    country: str
-    # 2) Optional user inputs:
-    state: str = None
 
 
 class Skill(BaseModel):
@@ -31,10 +23,11 @@ class TestScore(BaseModel):
 class Project(BaseModel):
     # 1) Mandotory user inputs:
     name: str
-    location: Location
+    location: str
     # 2) Optional user inputs:
     start_date: Date = None
-    end_date: Date = None
+    end_date: Date | Literal["present"] = None
+    date: str = None
     url: HttpUrl = None
     highlights: list[str] = None
 
@@ -43,10 +36,11 @@ class Experience(BaseModel):
     # 1) Mandotory user inputs:
     company: str
     position: str
-    start_date: Date
-    location: Location
+    location: str
     # 2) Optional user inputs:
-    end_date: Date = None
+    start_date: Date = None
+    end_date: Date | Literal["present"] = None
+    date: str = None
     highlights: list[str] = None
 
 
@@ -54,10 +48,11 @@ class Education(BaseModel):
     # 1) Mandotory user inputs:
     institution: str
     area: str
-    location: Location
-    start_date: Date
+    location: str
     # 2) Optional user inputs:
-    end_date: Date = None
+    start_date: Date = None
+    end_date: Date | Literal["present"] = None
+    date: str = None
     study_type: str = None
     gpa: str = None
     transcript_url: HttpUrl = None
@@ -69,10 +64,12 @@ class SocialNetwork(BaseModel):
     network: Literal["LinkedIn", "GitHub", "Instagram"]
     username: str
 
+
 class Connection(BaseModel):
     # 3) Derived fields (not user inputs):
     name: Literal["LinkedIn", "GitHub", "Instagram", "phone", "email", "website"]
     value: str
+
 
 class CurriculumVitae(BaseModel):
     # 1) Mandotory user inputs:
@@ -81,7 +78,7 @@ class CurriculumVitae(BaseModel):
     email: str = None
     phone: PhoneNumber = None
     website: HttpUrl = None
-    location: Location = None
+    location: str = None
     social_networks: list[SocialNetwork] = None
     education: list[Education] = None
     work_experience: list[Experience] = None
@@ -105,10 +102,10 @@ class CurriculumVitae(BaseModel):
             connections.append(Connection(name="website", value=model.website))
         if model.social_networks is not None:
             for social_network in model.social_networks:
-                connections.append(Connection(
-                    name=social_network.network,
-                    value=social_network.username
-                ))
+                connections.append(
+                    Connection(
+                        name=social_network.network, value=social_network.username
+                    )
+                )
         model.connections = connections
         return model
-    
