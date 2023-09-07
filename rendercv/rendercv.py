@@ -1,3 +1,7 @@
+import os
+import json
+import logging
+
 from jinja2 import Environment, FileSystemLoader
 
 from data.data_model import RenderCVDataModel
@@ -6,11 +10,14 @@ from data.data_model import RenderCVDataModel
 # from . import templates, sonra mesela: classic.render() tarzi seyler olabilir
 from tinytex.render import render
 
-import os
-import json
-
 
 if __name__ == "__main__":
+    # logging config:
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(name)s - %(levelname)s - %(message)s",
+    )
+
     workspace = os.path.dirname(os.path.dirname(__file__))
     templateName = "classic"
     templatePath = os.path.join(workspace, "rendercv", "templates", templateName)
@@ -26,7 +33,9 @@ if __name__ == "__main__":
 
     template = environment.get_template(f"{templateName}.tex.j2")
 
-    input_file_path = os.path.join(workspace, "tests", "inputs", "personal.json")
+    inpur_name = "personal"
+
+    input_file_path = os.path.join(workspace, "tests", "inputs", f"{inpur_name}.json")
     with open(input_file_path) as file:
         raw_json = json.load(file)
 
@@ -35,7 +44,7 @@ if __name__ == "__main__":
     output_latex_file = template.render(design=data.design.options, cv=data.cv)
 
     # Create an output file and write the rendered LaTeX code to it:
-    output_file_path = os.path.join(workspace, "tests", "outputs", "test.tex")
+    output_file_path = os.path.join(workspace, "tests", "outputs", f"{inpur_name}.tex")
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
     with open(output_file_path, "w") as file:
         file.write(output_latex_file)
