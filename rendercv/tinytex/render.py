@@ -4,6 +4,8 @@ import subprocess
 
 def render(latexFilePath):
     latexFilePath = os.path.normpath(latexFilePath)
+    latexFile = os.path.basename(latexFilePath)
+
     if os.name == "nt":
         tinytexPath = os.path.join(
             os.path.dirname(__file__),
@@ -17,11 +19,10 @@ def render(latexFilePath):
                 f"{tinytexPath}\\latexmk.exe",
                 "-lualatex",
                 # "-c",
-                "test.tex",
+                f"{latexFile}",
                 "-synctex=1",
                 "-interaction=nonstopmode",
                 "-file-line-error",
-                "test.tex",
             ],
             cwd=os.path.dirname(latexFilePath),
         )
