@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import re
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -9,6 +10,8 @@ from data.data_model import RenderCVDataModel
 # from . import tinytex # https://github.com/praw-dev/praw/blob/master/praw/reddit.py
 # from . import templates, sonra mesela: classic.render() tarzi seyler olabilir
 from tinytex.render import render
+
+
 
 
 if __name__ == "__main__":
@@ -24,6 +27,24 @@ if __name__ == "__main__":
     environment = Environment(
         loader=FileSystemLoader(templatePath), trim_blocks=True, lstrip_blocks=True
     )
+
+    def markdown_to_latex(value: str) -> str:
+        """
+        To be continued...
+        """
+        # convert links
+        link = re.search("\[(.*)\]\((.*?)\)", value)
+        if link is not None:
+            link = link.groups()
+            oldLinkString = "[" + link[0] + "](" + link[1] + ")"
+            newLinkString = "\hrefExternal{" + link[1] + "}{" + link[0] + "}"
+
+            value = value.replace(oldLinkString, newLinkString)
+
+        return value
+    
+    environment.filters["markdown_to_latex"] = markdown_to_latex
+
     environment.block_start_string = "((*"
     environment.block_end_string = "*))"
     environment.variable_start_string = "<<"

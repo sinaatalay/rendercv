@@ -3,6 +3,7 @@ from typing import Literal, Union
 from typing_extensions import Annotated
 import re
 import logging
+import math
 from functools import cached_property
 
 from pydantic import BaseModel, HttpUrl, model_validator, computed_field
@@ -70,9 +71,12 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
     else:
         howManyYearsString = f"{howManyYears} years"
 
-    howManyMonths = (timeSpan % 365) // 30
+    howManyMonths = math.ceil((timeSpan % 365) / 30)
     if howManyMonths == 0:
-        howManyYearsString = None
+        howManyMonths = 1
+        
+    if howManyMonths == 0:
+        howManyMonthsString = None
     elif howManyMonths == 1:
         howManyMonthsString = "1 month"
     else:
@@ -128,7 +132,6 @@ class Event(BaseModel):
     end_date: Date | Literal["present"] = None
     date: str = None
     location: str
-    # date_and_location_strings: list[str] = []
 
     @model_validator(mode="after")
     @classmethod
