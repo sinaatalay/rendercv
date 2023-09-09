@@ -40,7 +40,15 @@ dictionary = [
 
 def check_spelling(sentence: str) -> str:
     """
-    To be continued...
+    Check the spelling of a sentence and give warnings if there are any misspelled
+    words.
+    
+    It uses pyspellchecker. It can also guess the correct version of the
+    misspelled word, but it is not used because it is very slow.
+
+    :param sentence: the sentence to be checked
+    :type sentence: str
+    :return: the same sentence
     """
     modifiedSentence = sentence.lower()  # convert to lower case
     modifiedSentence = re.sub(
@@ -276,9 +284,9 @@ class Event(BaseModel):
                 or "month" in string
             ):
                 strings_without_time_span.remove(string)
-        
+
         return strings_without_time_span
-    
+
     @computed_field
     @cached_property
     def highlight_strings(self) -> list[SpellCheckedString]:
