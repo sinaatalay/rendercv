@@ -31,8 +31,11 @@ if __name__ == "__main__":
         """
         To be continued...
         """
+        if value is None:
+            raise ValueError("markdown_to_latex should only be used on strings!")
+
         # convert links
-        link = re.search("\[(.*)\]\((.*?)\)", value)
+        link = re.search(r"\[(.*)\]\((.*?)\)", value)
         if link is not None:
             link = link.groups()
             oldLinkString = "[" + link[0] + "](" + link[1] + ")"
@@ -42,7 +45,17 @@ if __name__ == "__main__":
 
         return value
 
+    def is_markdown(value: str) -> bool:
+        """
+        To be continued...
+        """
+        if re.search(r"\[(.*)\]\((.*?)\)", value) is not None:
+            return True
+        else:
+            return False
+
     environment.filters["markdown_to_latex"] = markdown_to_latex
+    environment.filters["is_markdown"] = is_markdown
 
     environment.block_start_string = "((*"
     environment.block_end_string = "*))"
