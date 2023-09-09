@@ -39,7 +39,7 @@ if __name__ == "__main__":
         if link is not None:
             link = link.groups()
             oldLinkString = "[" + link[0] + "](" + link[1] + ")"
-            newLinkString = "\hrefExternal{" + link[1] + "}{" + link[0] + "}"
+            newLinkString = "\\hrefExternal{" + link[1] + "}{" + link[0] + "}"
 
             value = value.replace(oldLinkString, newLinkString)
 

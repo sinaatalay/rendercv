@@ -1,0 +1,2 @@
+# tinytex module
+::: rendercv.tinytex
