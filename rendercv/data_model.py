@@ -1,9 +1,9 @@
 from datetime import date as Date
+from datetime import datetime
 from typing import Literal
 from typing_extensions import Annotated
 import re
 import logging
-import math
 from functools import cached_property
 
 from pydantic import BaseModel, HttpUrl, Field, model_validator, computed_field
@@ -188,19 +188,13 @@ class Design(BaseModel):
 # ======================================================================================
 
 
-class Skill(BaseModel):
-    # 1) Mandotory user inputs:
-    name: str
-    # 2) Optional user inputs:
-    details: str = None
-
-
 class Event(BaseModel):
     start_date: Date = None
     end_date: Date | Literal["present"] = None
-    date: str | Date = None
+    date: str = None
     location: str = None
     highlights: list[SpellCheckedString] = None
+    url: HttpUrl = None
 
     @model_validator(mode="after")
     @classmethod
@@ -239,7 +233,13 @@ class Event(BaseModel):
 
         if self.date is not None:
             # Then it means start_date and end_date are not provided.
-            date_and_location_strings.append(self.date)
+            try:
+                # If this runs, it means the date is an ISO format string, and it can be
+                # parsed
+                date = format_date(Date.fromisoformat(self.date))
+                date_and_location_strings.append(date)
+            except:
+                date_and_location_strings.append(self.date)
         else:
             # Then it means start_date and end_date are provided.
 
@@ -260,10 +260,10 @@ class Event(BaseModel):
 
             date_and_location_strings.append(f"{start_date} to {end_date}")
 
-            list_of_no_time_span_string_classes = [
-                "Education",
+            class_names_that_uses_time_span_strings = [
+                "ExperienceEntry",
             ]
-            if not self.__class__.__name__ in list_of_no_time_span_string_classes:
+            if self.__class__.__name__ in class_names_that_uses_time_span_strings:
                 date_and_location_strings.append(f"{time_span_string}")
 
         return date_and_location_strings
@@ -280,45 +280,43 @@ class Event(BaseModel):
 
         return highlight_strings
 
+    @computed_field
+    @cached_property
+    def markdown_url(self) -> str:
+        """
+        To be continued...
+        """
+        url = str(self.url)
 
-class TestScore(Event):
+        if "github" in url:
+            text_url = "view on GitHub"
+        elif "linkedin" in url:
+            text_url = "view on LinkedIn"
+        elif "instagram" in url:
+            text_url = "view on Instagram"
+        else:
+            text_url = "view on my website"
+
+        markdown_url = f"[{text_url}]({url})"
+
+        return markdown_url
+
+
+class OneLineEntry(BaseModel):
     # 1) Mandotory user inputs:
     name: str
-    score: str
-    # 2) Optional user inputs:
-    url: HttpUrl = None
+    details: str
 
 
 class NormalEntry(Event):
     # 1) Mandotory user inputs:
     name: str
-    # 2) Optional user inputs:
-    url: HttpUrl = None
-
-    @computed_field
-    @cached_property
-    def highlight_strings(self) -> list[SpellCheckedString]:
-        """
-        To be continued...
-        """
-        highlight_strings = []
-
-        highlight_strings.extend(self.highlights)
-
-        if self.url is not None:
-            # remove "https://" from the url for a cleaner look
-            textUrl = str(self.url).replace("https://", "")
-            linkString = f"Course certificate: [{textUrl}]({self.transcript_url}))"
-            highlight_strings.append(linkString)
-
-        return highlight_strings
 
 
 class ExperienceEntry(Event):
     # 1) Mandotory user inputs:
     company: str
     position: str
-    # 2) Optional user inputs:
 
 
 class EducationEntry(Event):
@@ -375,8 +373,8 @@ class CurriculumVitae(BaseModel):
     academic_projects: list[NormalEntry] = None
     certificates: list[NormalEntry] = None
     extracurricular_activities: list[ExperienceEntry] = None
-    test_scores: list[TestScore] = None
-    skills: list[Skill] = None
+    test_scores: list[OneLineEntry] = None
+    skills: list[OneLineEntry] = None
 
     @computed_field
     @cached_property
