@@ -260,14 +260,25 @@ class Event(BaseModel):
 
             date_and_location_strings.append(f"{start_date} to {end_date}")
 
-            class_names_that_uses_time_span_strings = [
-                "ExperienceEntry",
-            ]
-            if self.__class__.__name__ in class_names_that_uses_time_span_strings:
-                date_and_location_strings.append(f"{time_span_string}")
+            date_and_location_strings.append(f"{time_span_string}")
 
         return date_and_location_strings
 
+    @computed_field
+    @cached_property
+    def date_and_location_strings_without_time_span(self) -> list[str]:
+        strings_without_time_span = self.date_and_location_strings
+        for string in strings_without_time_span:
+            if (
+                "years" in string
+                or "months" in string
+                or "year" in string
+                or "month" in string
+            ):
+                strings_without_time_span.remove(string)
+        
+        return strings_without_time_span
+    
     @computed_field
     @cached_property
     def highlight_strings(self) -> list[SpellCheckedString]:
@@ -286,23 +297,28 @@ class Event(BaseModel):
         """
         To be continued...
         """
-        url = str(self.url)
-
-        if "github" in url:
-            text_url = "view on GitHub"
-        elif "linkedin" in url:
-            text_url = "view on LinkedIn"
-        elif "instagram" in url:
-            text_url = "view on Instagram"
+        if self.url is None:
+            return None
         else:
-            text_url = "view on my website"
+            url = str(self.url)
 
-        markdown_url = f"[{text_url}]({url})"
+            if "github" in url:
+                text_url = "view on GitHub"
+            elif "linkedin" in url:
+                text_url = "view on LinkedIn"
+            elif "instagram" in url:
+                text_url = "view on Instagram"
+            elif "YOUTUBE" in url:
+                text_url = "view on YouTube"
+            else:
+                text_url = "view on my website"
 
-        return markdown_url
+            markdown_url = f"[{text_url}]({url})"
+
+            return markdown_url
 
 
-class OneLineEntry(BaseModel):
+class OneLineEntry(Event):
     # 1) Mandotory user inputs:
     name: str
     details: str
@@ -371,6 +387,7 @@ class CurriculumVitae(BaseModel):
     education: list[EducationEntry] = None
     work_experience: list[ExperienceEntry] = None
     academic_projects: list[NormalEntry] = None
+    personal_projects: list[NormalEntry] = None
     certificates: list[NormalEntry] = None
     extracurricular_activities: list[ExperienceEntry] = None
     test_scores: list[OneLineEntry] = None

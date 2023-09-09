@@ -31,7 +31,7 @@ if __name__ == "__main__":
         """
         To be continued...
         """
-        if value is None:
+        if not isinstance(value, str):
             raise ValueError("markdown_to_latex should only be used on strings!")
 
         # convert links
@@ -45,17 +45,24 @@ if __name__ == "__main__":
 
         return value
 
-    def is_markdown(value: str) -> bool:
+    def markdown_url_to_url(value: str) -> bool:
         """
         To be continued...
         """
-        if re.search(r"\[(.*)\]\((.*?)\)", value) is not None:
-            return True
+        if not isinstance(value, str):
+            raise ValueError("markdown_to_latex should only be used on strings!")
+        
+        link = re.search(r"\[(.*)\]\((.*?)\)", value)
+        if link is not None:
+            url = link.groups()[1]
+            return url
         else:
-            return False
+            raise ValueError(
+                "markdown_url_to_url should only be used on markdown links!"
+            )
 
     environment.filters["markdown_to_latex"] = markdown_to_latex
-    environment.filters["is_markdown"] = is_markdown
+    environment.filters["markdown_url_to_url"] = markdown_url_to_url
 
     environment.block_start_string = "((*"
     environment.block_end_string = "*))"
