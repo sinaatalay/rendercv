@@ -1,7 +1,19 @@
+"""
+This module implements a handler for TinyTeX.
+"""
+
 import os
 import subprocess
 
 def run_latex(latexFilePath):
+    """
+    Run LuaLateX on the given LaTeX file and generate a PDF.
+
+    :param latexFilePath: The path to the LaTeX file to compile.
+    :type latexFilePath: str
+    :return: None
+    :rtype: None
+    """
     latexFilePath = os.path.normpath(latexFilePath)
     latexFile = os.path.basename(latexFilePath)
 
