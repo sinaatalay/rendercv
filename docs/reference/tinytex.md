@@ -1,2 +1,2 @@
-# tinytex module
+# TinyTeX
 ::: rendercv.tinytex

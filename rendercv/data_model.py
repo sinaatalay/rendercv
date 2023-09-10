@@ -1,3 +1,8 @@
+"""
+This module contains classes and functions to parse a specifically structured YAML or
+JSON to generate meaningful data for Python.
+"""
+
 from datetime import date as Date
 from datetime import datetime
 from typing import Literal
@@ -42,13 +47,13 @@ def check_spelling(sentence: str) -> str:
     """
     Check the spelling of a sentence and give warnings if there are any misspelled
     words.
-    
+
     It uses pyspellchecker. It can also guess the correct version of the
     misspelled word, but it is not used because it is very slow.
 
-    :param sentence: the sentence to be checked
+    :param sentence: The sentence to be checked.
     :type sentence: str
-    :return: the same sentence
+    :return: The same sentence.
     """
     modifiedSentence = sentence.lower()  # convert to lower case
     modifiedSentence = re.sub(
@@ -80,7 +85,15 @@ SpellCheckedString = Annotated[str, AfterValidator(check_spelling)]
 
 def compute_time_span_string(start_date: Date, end_date: Date) -> str:
     """
-    To be continued...
+    Compute the time span between two dates and return a string that represents it. For,
+    example, if the time span is 1 year and 3 months, it will return "1 year 3 months".
+
+    :param start_date: The start date.
+    :type start_date: Date
+    :param end_date: The end date.
+    :type end_date: Date
+    :return: The time span string.
+    :rtype: str
     """
     # calculate the number of days between start_date and end_date:
     timeSpanInDays = (end_date - start_date).days
@@ -197,6 +210,12 @@ class Design(BaseModel):
 
 
 class Event(BaseModel):
+    """s
+    aa
+
+    Attributes:
+        test
+    """
     start_date: Date = None
     end_date: Date | Literal["present"] = None
     date: str = None
@@ -355,9 +374,6 @@ class EducationEntry(Event):
     @computed_field
     @cached_property
     def highlight_strings(self) -> list[SpellCheckedString]:
-        """
-        To be continued...
-        """
         highlight_strings = []
 
         if self.gpa is not None:

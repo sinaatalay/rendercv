@@ -1,2 +1,3 @@
-# data_model module
+# Data Model
+
 ::: rendercv.data_model

@@ -1,2 +1,2 @@
-# __main__ module
+# Main
 ::: rendercv.__main__
