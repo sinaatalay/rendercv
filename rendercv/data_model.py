@@ -4,14 +4,21 @@ JSON to generate meaningful data for Python.
 """
 
 from datetime import date as Date
-from datetime import datetime
 from typing import Literal
 from typing_extensions import Annotated
 import re
 import logging
 from functools import cached_property
 
-from pydantic import BaseModel, HttpUrl, Field, model_validator, computed_field
+from pydantic import (
+    BaseModel,
+    HttpUrl,
+    Field,
+    model_validator,
+    computed_field,
+    EmailStr,
+    PastDate
+)
 from pydantic.functional_validators import AfterValidator
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from pydantic_extra_types.color import Color
@@ -83,15 +90,15 @@ def check_spelling(sentence: str) -> str:
 SpellCheckedString = Annotated[str, AfterValidator(check_spelling)]
 
 
-def compute_time_span_string(start_date: Date, end_date: Date) -> str:
+def compute_time_span_string(start_date: PastDate, end_date: PastDate) -> str:
     """
     Compute the time span between two dates and return a string that represents it. For,
     example, if the time span is 1 year and 3 months, it will return "1 year 3 months".
 
     :param start_date: The start date.
-    :type start_date: Date
+    :type start_date: PastDate
     :param end_date: The end date.
-    :type end_date: Date
+    :type end_date: PastDate
     :return: The time span string.
     :rtype: str
     """
@@ -216,8 +223,9 @@ class Event(BaseModel):
     Attributes:
         test
     """
-    start_date: Date = None
-    end_date: Date | Literal["present"] = None
+
+    start_date: PastDate = None
+    end_date: PastDate | Literal["present"] = None
     date: str = None
     location: str = None
     highlights: list[SpellCheckedString] = None
@@ -330,17 +338,17 @@ class Event(BaseModel):
             url = str(self.url)
 
             if "github" in url:
-                text_url = "view on GitHub"
+                link_text = "view on GitHub"
             elif "linkedin" in url:
-                text_url = "view on LinkedIn"
+                link_text = "view on LinkedIn"
             elif "instagram" in url:
-                text_url = "view on Instagram"
-            elif "YOUTUBE" in url:
-                text_url = "view on YouTube"
+                link_text = "view on Instagram"
+            elif "youtube" in url:
+                link_text = "view on YouTube"
             else:
-                text_url = "view on my website"
+                link_text = "view on my website"
 
-            markdown_url = f"[{text_url}]({url})"
+            markdown_url = f"[{link_text}]({url})"
 
             return markdown_url
 
@@ -403,7 +411,7 @@ class CurriculumVitae(BaseModel):
     # 1) Mandotory user inputs:
     name: str
     # 2) Optional user inputs:
-    email: str = None
+    email: EmailStr = None
     phone: PhoneNumber = None
     website: HttpUrl = None
     location: str = None
