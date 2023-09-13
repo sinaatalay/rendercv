@@ -1,2 +1,0 @@
-# TinyTeX
-::: rendercv.tinytex

@@ -29,13 +29,6 @@ with open(input_file_path) as file:
     raw_json = yaml.load(file)
 
 data = RenderCVDataModel(**raw_json)
+output_latex_file=render_template(data=data)
 
-output_latex_file = render_template(data=data)
-
-# Create an output file and write the rendered LaTeX code to it:
-output_file_path = os.path.join(workspace, "tests", "outputs", f"{input_name}.tex")
-os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-with open(output_file_path, "w") as file:
-    file.write(output_latex_file)
-
-run_latex(output_file_path)
+run_latex(output_latex_file)

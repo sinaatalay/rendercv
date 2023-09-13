@@ -1,4 +1,4 @@
-"""This module implements rendering utilities.
+"""This module implements LaTeX file generation and LaTeX runner utilities for RenderCV.
 """
 import os
 import subprocess
@@ -89,6 +89,13 @@ def markdown_url_to_url(value: str) -> bool:
 
 
 def render_template(data):
+    """Render the template using the given data.
+
+    Example:
+        >>> render_template(data)
+        
+
+    """
     # templates_directory = os.path.dirname(os.path.dirname())
 
     # create a Jinja2 environment:
@@ -117,7 +124,15 @@ def render_template(data):
     environment.filters["markdown_to_latex"] = markdown_to_latex
     environment.filters["markdown_url_to_url"] = markdown_url_to_url
 
-    return template.render(design=data.design.options, cv=data.cv)
+    output_latex_file = template.render(design=data.design.options, cv=data.cv)
+
+    # Create an output file and write the rendered LaTeX code to it:
+    output_file_path = os.path.join(os.getcwd(), "tests", "outputs", "test.tex")
+    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+    with open(output_file_path, "w") as file:
+        file.write(output_latex_file)
+
+    return output_file_path
 
 
 def run_latex(latexFilePath):
