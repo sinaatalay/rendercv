@@ -51,16 +51,27 @@ dictionary = [
 
 
 def check_spelling(sentence: str) -> str:
-    """
-    Check the spelling of a sentence and give warnings if there are any misspelled
+    """Check the spelling of a sentence and give warnings if there are any misspelled
     words.
 
-    It uses pyspellchecker. It can also guess the correct version of the
-    misspelled word, but it is not used because it is very slow.
+    It uses [pyspellchecker](https://github.com/barrust/pyspellchecker). It can also
+    guess the correct version of the misspelled word, but it is not used because it is
+    very slow.
 
-    :param sentence: The sentence to be checked.
-    :type sentence: str
-    :return: The same sentence.
+    Example:
+        ```python
+        check_spelling("An interesting sentence is akways good.")
+        ```
+
+        will print the following warning:
+
+        `WARNING - The word "akways" might be misspelled according to the pyspellchecker.`
+
+    Args:
+        sentence (str): The sentence to check.
+    
+    Returns:
+        str: The same sentence.
     """
     modifiedSentence = sentence.lower()  # convert to lower case
     modifiedSentence = re.sub(
@@ -90,17 +101,24 @@ def check_spelling(sentence: str) -> str:
 SpellCheckedString = Annotated[str, AfterValidator(check_spelling)]
 
 
-def compute_time_span_string(start_date: PastDate, end_date: PastDate) -> str:
-    """
-    Compute the time span between two dates and return a string that represents it. For,
-    example, if the time span is 1 year and 3 months, it will return "1 year 3 months".
+def compute_time_span_string(start_date: Date, end_date: Date) -> str:
+    """Compute the time span between two dates and return a string that represents it.
+    
+    Example:
+        ```python
+        compute_time_span_string(Date(2022,9,24), Date(2025,2,12))
+        ```
 
-    :param start_date: The start date.
-    :type start_date: PastDate
-    :param end_date: The end date.
-    :type end_date: PastDate
-    :return: The time span string.
-    :rtype: str
+        will return:
+
+        `#!python "2 years 5 months"`
+
+    Args:
+        start_date (Date): The start date.
+        end_date (Date): The end date.
+    
+    Returns:
+        str: The time span string.
     """
     # calculate the number of days between start_date and end_date:
     timeSpanInDays = (end_date - start_date).days
@@ -138,8 +156,24 @@ def compute_time_span_string(start_date: PastDate, end_date: PastDate) -> str:
 
 
 def format_date(date: Date) -> str:
-    """
-    To be continued...
+    """Formats a date to a string in the following format: "Jan. 2021".
+
+    It uses month abbreviations, taken from
+    [Yale University Library](https://web.library.yale.edu/cataloging/months).
+
+    Example:
+        ```python
+        format_date(Date(2024,5,1))
+        ```
+        will return
+
+        `#!python "May 2024"`
+    
+    Args:
+        date (Date): The date to format.
+    
+    Returns:
+        str: The formatted date.
     """
     # Month abbreviations,
     # taken from: https://web.library.yale.edu/cataloging/months
@@ -177,9 +211,10 @@ def format_date(date: Date) -> str:
 
 
 class ClassicThemeOptions(BaseModel):
-    """
-    In RenderCV, each theme has its own ThemeNameThemeOptions class so that new themes
-    can be implemented easily.
+    """This class stores the options for the classic theme.
+
+    In RenderCV, each theme has its own Pydantic class so that new themes
+    can be implemented easily in future.
     """
 
     primary_color: Color = Field(default="blue")
@@ -203,6 +238,8 @@ class ClassicThemeOptions(BaseModel):
 
 
 class Design(BaseModel):
+    """This class stores the theme name of the CV and the theme's options.
+    """
     theme: Literal["classic"] = "classic"
     options: ClassicThemeOptions
 
@@ -217,11 +254,11 @@ class Design(BaseModel):
 
 
 class Event(BaseModel):
-    """s
-    aa
+    """This class is the parent class for classes like `#!python EducationEntry`,
+    `#!python ExperienceEntry`, `#!python NormalEntry`, and `#!python OneLineEntry`.
 
-    Attributes:
-        test
+    It stores the common fields between these classes like dates, location, highlights,
+    and URL.
     """
 
     start_date: PastDate = None
@@ -234,8 +271,8 @@ class Event(BaseModel):
     @model_validator(mode="after")
     @classmethod
     def check_dates(cls, model):
-        """
-        To be continued...
+        """Make sure that either `#!python start_date` and `#!python end_date` or only
+        `#!python date`is provided.
         """
         if (
             model.start_date is not None
@@ -317,9 +354,6 @@ class Event(BaseModel):
     @computed_field
     @cached_property
     def highlight_strings(self) -> list[SpellCheckedString]:
-        """
-        To be continued...
-        """
         highlight_strings = []
 
         highlight_strings.extend(self.highlights)
@@ -329,9 +363,6 @@ class Event(BaseModel):
     @computed_field
     @cached_property
     def markdown_url(self) -> str:
-        """
-        To be continued...
-        """
         if self.url is None:
             return None
         else:
@@ -354,23 +385,28 @@ class Event(BaseModel):
 
 
 class OneLineEntry(Event):
-    # 1) Mandotory user inputs:
+    """This class stores [OneLineEntry](../index.md#onelineentry) information.
+    """
     name: str
     details: str
 
 
 class NormalEntry(Event):
-    # 1) Mandotory user inputs:
+    """This class stores [NormalEntry](../index.md#normalentry) information.
+    """
     name: str
 
 
 class ExperienceEntry(Event):
-    # 1) Mandotory user inputs:
+    """This class stores [ExperienceEntry](../index.md#experienceentry) information.
+    """
     company: str
     position: str
 
 
 class EducationEntry(Event):
+    """This class stores [EducationEntry](../index.md#educationentry) information.
+    """
     # 1) Mandotory user inputs:
     institution: str
     area: str
@@ -396,18 +432,28 @@ class EducationEntry(Event):
 
 
 class SocialNetwork(BaseModel):
-    # 1) Mandotory user inputs:
+    """This class stores a social network information.
+
+    Currently, only LinkedIn, Github, and Instagram are supported.
+    """
     network: Literal["LinkedIn", "GitHub", "Instagram"]
     username: str
 
 
 class Connection(BaseModel):
-    # 3) Derived fields (not user inputs):
+    """This class stores a connection/communication information.
+    
+    Warning:
+        This class isn't designed for users to use, but it is used by RenderCV to make
+        the $\LaTeX$ templating easier.
+    """
     name: Literal["LinkedIn", "GitHub", "Instagram", "phone", "email", "website"]
     value: str
 
 
 class CurriculumVitae(BaseModel):
+    """This class bindes all the information of a CV together.
+    """
     # 1) Mandotory user inputs:
     name: str
     # 2) Optional user inputs:
@@ -452,5 +498,7 @@ class CurriculumVitae(BaseModel):
 
 
 class RenderCVDataModel(BaseModel):
+    """This class binds both the CV and the design information together.
+    """
     design: Design
     cv: CurriculumVitae

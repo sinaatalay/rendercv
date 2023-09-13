@@ -17,8 +17,13 @@ def markdown_to_latex(markdown_string: str) -> str:
     """Convert a markdown string to LaTeX.
 
     Example:
-        >>> markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
-        "This is a \\textbf{bold} text with a \\hrefExternal{https://google.com}{\\textit{link}}."
+        ```python
+        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
+        ```
+
+        will return:
+
+        `#!pytjon "This is a \\textbf{bold} text with a \\hrefExternal{https://google.com}{\\textit{link}}."`
 
     Args:
         value (str): The markdown string to convert.
@@ -68,8 +73,13 @@ def markdown_url_to_url(value: str) -> bool:
     """Convert a markdown link to a normal string URL.
 
     Example:
-        >>> markdown_url_to_url("[Google](https://google.com)")
-        "https://google.com"
+        ```python
+        markdown_url_to_url("[Google](https://google.com)")
+        ```
+
+        will return:
+
+        `#!python "https://google.com"`
 
     Args:
         value (str): The markdown link to convert.
@@ -91,10 +101,11 @@ def markdown_url_to_url(value: str) -> bool:
 def render_template(data):
     """Render the template using the given data.
 
-    Example:
-        >>> render_template(data)
-        
+    Args:
+        data (RenderCVDataModel): The data to use to render the template.
 
+    Returns:
+        str: The path to the rendered LaTeX file.
     """
     # templates_directory = os.path.dirname(os.path.dirname())
 
@@ -137,12 +148,10 @@ def render_template(data):
 
 def run_latex(latexFilePath):
     """
-    Run LuaLateX on the given LaTeX file and generate a PDF.
+    Run TinyTeX with the given LaTeX file and generate a PDF.
 
-    :param latexFilePath: The path to the LaTeX file to compile.
-    :type latexFilePath: str
-    :return: None
-    :rtype: None
+    Args:
+        latexFilePath (str): The path to the LaTeX file to compile.
     """
     latexFilePath = os.path.normpath(latexFilePath)
     latexFile = os.path.basename(latexFilePath)
