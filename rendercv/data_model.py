@@ -1,11 +1,14 @@
 """
-This module contains classes and functions to parse a specifically structured YAML or
-JSON to generate meaningful data for Python.
+This module contains classes and functions to parse and validate YAML or JSON input
+files. It uses [Pydantic](https://github.com/pydantic/pydantic) to achieve this goal.
+All the data classes have `BaseModel` from Pydantic as a base class, and some data
+fields have advanced types like `HttpUrl`, `EmailStr`, or `PastDate` from the Pydnatic
+library for validation.
 """
 
 from datetime import date as Date
 from typing import Literal
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Optional
 import re
 import logging
 from functools import cached_property
@@ -17,7 +20,7 @@ from pydantic import (
     model_validator,
     computed_field,
     EmailStr,
-    PastDate
+    PastDate,
 )
 from pydantic.functional_validators import AfterValidator
 from pydantic_extra_types.phone_numbers import PhoneNumber
@@ -69,7 +72,7 @@ def check_spelling(sentence: str) -> str:
 
     Args:
         sentence (str): The sentence to check.
-    
+
     Returns:
         str: The same sentence.
     """
@@ -98,12 +101,9 @@ def check_spelling(sentence: str) -> str:
     return sentence
 
 
-SpellCheckedString = Annotated[str, AfterValidator(check_spelling)]
-
-
 def compute_time_span_string(start_date: Date, end_date: Date) -> str:
     """Compute the time span between two dates and return a string that represents it.
-    
+
     Example:
         ```python
         compute_time_span_string(Date(2022,9,24), Date(2025,2,12))
@@ -116,7 +116,7 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
     Args:
         start_date (Date): The start date.
         end_date (Date): The end date.
-    
+
     Returns:
         str: The time span string.
     """
@@ -168,10 +168,10 @@ def format_date(date: Date) -> str:
         will return
 
         `#!python "May 2024"`
-    
+
     Args:
         date (Date): The date to format.
-    
+
     Returns:
         str: The formatted date.
     """
@@ -204,10 +204,135 @@ def format_date(date: Date) -> str:
 # ======================================================================================
 # ======================================================================================
 
+# ======================================================================================
+# CUSTOM DATA TYPES ====================================================================
+# ======================================================================================
+
+# To understand how to create custom data types, see:
+# https://docs.pydantic.dev/latest/usage/types/custom/
+LaTeXDimension = Annotated[
+    str,
+    Field(
+        pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
+        examples=["1.35 cm", "1 in", "12 pt", "14 mm", "2 ex", "3 em"],
+    ),
+]
+SpellCheckedString = Annotated[str, AfterValidator(check_spelling)]
+
+# ======================================================================================
+# ======================================================================================
+# ======================================================================================
 
 # ======================================================================================
 # DESIGN MODELS ========================================================================
 # ======================================================================================
+
+
+class ClassicThemePageMargins(BaseModel):
+    """This class stores the margins of pages for the classic theme."""
+
+    top: LaTeXDimension = Field(
+        default="1.35 cm",
+        title="Top Margin",
+        description="The top margin of the page.",
+    )
+    bottom: LaTeXDimension = Field(
+        default="1.35 cm",
+        title="Bottom Margin",
+        description="The bottom margin of the page.",
+    )
+    left: LaTeXDimension = Field(
+        default="1.35 cm",
+        title="Left Margin",
+        description="The left margin of the page.",
+    )
+    right: LaTeXDimension = Field(
+        default="1.35 cm",
+        title="Right Margin",
+        description="The right margin of the page.",
+    )
+
+
+class ClassicThemeSectionTitleMargins(BaseModel):
+    """This class stores the margins of section titles for the classic theme."""
+
+    top: LaTeXDimension = Field(
+        default="0.13 cm",
+        title="Top Margin",
+        description="The top margin of section titles.",
+    )
+    bottom: LaTeXDimension = Field(
+        default="0.13 cm",
+        title="Bottom Margin",
+        description="The bottom margin of section titles.",
+    )
+
+
+class ClassicThemeEntryAreaMargins(BaseModel):
+    """This class stores the margins of entry areas for the classic theme.
+
+    For the classic theme, entry areas are (OneLineEntry)[../index.md#onelineentry],
+    (NormalEntry)[../index.md#normalentry], and
+    (ExperienceEntry)[../index.md#experienceentry].
+    """
+
+    left: LaTeXDimension = Field(
+        default="0.2 cm",
+        title="Left Margin",
+        description="The left margin of entry areas.",
+    )
+    right: LaTeXDimension = Field(
+        default="0.2 cm",
+        title="Right Margin",
+        description="The right margin of entry areas.",
+    )
+
+    vertical_between: LaTeXDimension = Field(
+        default="0.12 cm",
+        title="Vertical Margin Between Entry Areas",
+        description="The vertical margin between entry areas.",
+    )
+
+
+class ClassicThemeHighlightsAreaMargins(BaseModel):
+    """This class stores the margins of highlights areas for the classic theme."""
+
+    top: LaTeXDimension = Field(
+        default="0.12 cm",
+        title="Top Margin",
+        description="The top margin of highlights areas.",
+    )
+    left: LaTeXDimension = Field(
+        default="0.6 cm",
+        title="Left Margin",
+        description="The left margin of highlights areas.",
+    )
+    vertical_between_bullet_points: LaTeXDimension = Field(
+        default="0.07 cm",
+        title="Vertical Margin Between Bullet Points",
+        description="The vertical margin between bullet points.",
+    )
+
+
+class ClassicThemeMargins(BaseModel):
+    """This class stores the margins for the classic theme."""
+
+    page: ClassicThemePageMargins = Field(
+        default=ClassicThemePageMargins(),
+        title="Page Margins",
+    )
+    section_title: ClassicThemeSectionTitleMargins = Field(
+        default=ClassicThemeSectionTitleMargins(),
+        title="Section Title Margins",
+    )
+    entry_area: ClassicThemeEntryAreaMargins = Field(
+        default=ClassicThemeEntryAreaMargins(),
+        title="Entry Area Margins",
+    )
+    highlights_area: ClassicThemeHighlightsAreaMargins = Field(
+        default=ClassicThemeHighlightsAreaMargins(),
+        title="Highlights Area Margins",
+    )
 
 
 class ClassicThemeOptions(BaseModel):
@@ -217,31 +342,46 @@ class ClassicThemeOptions(BaseModel):
     can be implemented easily in future.
     """
 
-    primary_color: Color = Field(default="blue")
+    primary_color: Color = Field(
+        default="rgb(0,79,144)",
+        validate_default=True,
+        title="Primary Color",
+        description=(
+            "The primary color of Classic Theme. It is used for the section titles,"
+            " heading, and the links.\nThe color can be specified either with their"
+            " [name](https://www.w3.org/TR/SVG11/types.html#ColorKeywords), hexadecimal"
+            " value, RGB value, or HSL value."
+        ),
+        examples=["Black", "7fffd4", "rgb(0,79,144)", "hsl(270, 60%, 70%)"],
+    )
 
-    page_top_margin: str = Field(default="1.35cm")
-    page_bottom_margin: str = Field(default="1.35cm")
-    page_left_margin: str = Field(default="1.35cm")
-    page_right_margin: str = Field(default="1.35cm")
+    date_and_location_width: LaTeXDimension = Field(
+        default="3.7 cm",
+        title="Date and Location Column Width",
+        description="The width of the date and location column.",
+        examples=["1.35 cm", "1 in", "12 pt", "14 mm", "2 ex", "3 em"],
+    )
 
-    section_title_top_margin: str = Field(default="0.13cm")
-    section_title_bottom_margin: str = Field(default="0.13cm")
-
-    vertical_margin_between_bullet_points: str = Field(default="0.07cm")
-    bullet_point_left_margin: str = Field(default="0.7cm")
-
-    vertical_margin_between_entries: str = Field(default="0.12cm")
-
-    vertical_margin_between_entries_and_highlights: str = Field(default="0.12cm")
-
-    date_and_location_width: str = Field(default="3.7cm")
+    margins: ClassicThemeMargins = Field(
+        default=ClassicThemeMargins(),
+        title="Margins",
+        description="Page, section title, entry field, and highlights field margins.",
+    )
 
 
 class Design(BaseModel):
-    """This class stores the theme name of the CV and the theme's options.
-    """
-    theme: Literal["classic"] = "classic"
-    options: ClassicThemeOptions
+    """This class stores the theme name of the CV and the theme's options."""
+
+    theme: Literal["classic"] = Field(
+        default="classic",
+        title="Theme name",
+        description='The only option is "Classic" for now.',
+    )
+    options: ClassicThemeOptions = Field(
+        default=ClassicThemeOptions(),
+        title="Theme Options",
+        description="The options of the theme.",
+    )
 
 
 # ======================================================================================
@@ -261,12 +401,50 @@ class Event(BaseModel):
     and URL.
     """
 
-    start_date: PastDate = None
-    end_date: PastDate | Literal["present"] = None
-    date: str = None
-    location: str = None
-    highlights: list[SpellCheckedString] = None
-    url: HttpUrl = None
+    start_date: Optional[PastDate] = Field(
+        default=None,
+        title="Start Date",
+        description="The start date of the event in YYYY-MM-DD format.",
+        examples=["2020-09-24"],
+    )
+    end_date: Optional[PastDate | Literal["present"]] = Field(
+        default=None,
+        title="End Date",
+        description=(
+            "The end date of the event in YYYY-MM-DD format. If the event is still"
+            ' ongoing, then the value should be "present".'
+        ),
+        examples=["2020-09-24", "present"],
+    )
+    date: Optional[str] = Field(
+        default=None,
+        title="Date",
+        description=(
+            "If the event is a one-day event, then this field should be filled in"
+            " YYYY-MM-DD format. If the event is a multi-day event, then the start date"
+            " and end date should be provided instead. All of them can't be provided at"
+            " the same time."
+        ),
+        examples=["2020-09-24"],
+    )
+    highlights: list[SpellCheckedString] = Field(
+        default=[],
+        title="Highlights",
+        description=(
+            "The highlights of the event. It will be rendered as bullet points."
+        ),
+        examples=["Did this.", "Did that."],
+    )
+    location: Optional[str] = Field(
+        default=None,
+        title="Location",
+        description=(
+            "The location of the event. It will be shown with the date in the"
+            " same column."
+        ),
+        examples=["Istanbul, Turkey"],
+    )
+    url: Optional[HttpUrl] = None
 
     @model_validator(mode="after")
     @classmethod
@@ -362,7 +540,7 @@ class Event(BaseModel):
 
     @computed_field
     @cached_property
-    def markdown_url(self) -> str:
+    def markdown_url(self) -> Optional[str]:
         if self.url is None:
             return None
         else:
@@ -385,35 +563,77 @@ class Event(BaseModel):
 
 
 class OneLineEntry(Event):
-    """This class stores [OneLineEntry](../index.md#onelineentry) information.
-    """
-    name: str
-    details: str
+    """This class stores [OneLineEntry](../index.md#onelineentry) information."""
+
+    name: str = Field(
+        title="Name",
+        description="The name of the entry. It will be shown as bold text.",
+    )
+    details: str = Field(
+        title="Details",
+        description="The details of the entry. It will be shown as normal text.",
+    )
 
 
 class NormalEntry(Event):
-    """This class stores [NormalEntry](../index.md#normalentry) information.
-    """
-    name: str
+    """This class stores [NormalEntry](../index.md#normalentry) information."""
+
+    name: str = Field(
+        title="Name",
+        description="The name of the entry. It will be shown as bold text.",
+    )
 
 
 class ExperienceEntry(Event):
-    """This class stores [ExperienceEntry](../index.md#experienceentry) information.
-    """
-    company: str
-    position: str
+    """This class stores [ExperienceEntry](../index.md#experienceentry) information."""
+
+    company: str = Field(
+        title="Company",
+        description="The company name. It will be shown as bold text.",
+        examples=["CERN", "Apple"],
+    )
+    position: str = Field(
+        title="Position",
+        description="The position. It will be shown as normal text.",
+        examples=["Software Engineer", "Mechanical Engineer"],
+    )
 
 
 class EducationEntry(Event):
-    """This class stores [EducationEntry](../index.md#educationentry) information.
-    """
+    """This class stores [EducationEntry](../index.md#educationentry) information."""
+
     # 1) Mandotory user inputs:
-    institution: str
-    area: str
+    institution: str = Field(
+        title="Institution",
+        description="The institution name. It will be shown as bold text.",
+        examples=["Massachusetts Institute of Technology", "Bogazici University"],
+    )
+    area: str = Field(
+        title="Area",
+        description="The area of study. It will be shown as normal text.",
+        examples=["Mechanical Engineering", "Computer Science"],
+    )
     # 2) Optional user inputs:
-    study_type: str = None
-    gpa: str = None
-    transcript_url: HttpUrl = None
+    study_type: Optional[str] = Field(
+        default=None,
+        title="Study Type",
+        description="The type of the degree.",
+        examples=["BS", "BA", "PhD", "MS"],
+    )
+    gpa: Optional[str] = Field(
+        default=None,
+        title="GPA",
+        description="The GPA of the degree.",
+        examples=["4.00/4.00", "3.80/4.00"],
+    )
+    transcript_url: Optional[HttpUrl] = Field(
+        default=None,
+        title="Transcript URL",
+        description=(
+            "The URL of the transcript. It will be shown as a link next to the GPA."
+        ),
+        examples=["https://example.com/transcript.pdf"],
+    )
 
     @computed_field
     @cached_property
@@ -436,40 +656,161 @@ class SocialNetwork(BaseModel):
 
     Currently, only LinkedIn, Github, and Instagram are supported.
     """
-    network: Literal["LinkedIn", "GitHub", "Instagram"]
-    username: str
+
+    network: Literal["LinkedIn", "GitHub", "Instagram"] = Field(
+        title="Social Network",
+        description="The social network name.",
+        examples=["LinkedIn", "GitHub", "Instagram"],
+    )
+    username: str = Field(
+        title="Username",
+        description="The username of the social network. The link will be generated.",
+        examples=["johndoe", "johndoe123"],
+    )
 
 
 class Connection(BaseModel):
     """This class stores a connection/communication information.
-    
+
     Warning:
         This class isn't designed for users to use, but it is used by RenderCV to make
         the $\LaTeX$ templating easier.
     """
+
     name: Literal["LinkedIn", "GitHub", "Instagram", "phone", "email", "website"]
     value: str
 
 
+class Section(BaseModel):
+    """This class stores a section information."""
+
+    title: str = Field(
+        title="Section Title",
+        description="The title of the section.",
+        examples=["Awards", "My Custom Section", "Languages"],
+    )
+    entry_type: Literal[
+        "OneLineEntry", "NormalEntry", "ExperienceEntry", "EducationEntry"
+    ] = Field(
+        title="Entry Type",
+        description=(
+            "The type of the entries in the section. Classic theme supports"
+            " four types of entries: OneLineEntry, NormalEntry, ExperienceEntry, and"
+            " EducationEntry."
+        ),
+        examples=["OneLineEntry", "NormalEntry", "ExperienceEntry", "EducationEntry"],
+    )
+    link_text: Optional[str] = Field(
+        default=None,
+        title="Link Text",
+        description=(
+            "If the section has a link, then what should be the text of the link? If"
+            " this field is not provided, then the link text will be generated"
+            " automatically based on the URL."
+        ),
+        examples=["view on GitHub", "view on LinkedIn"],
+    )
+    entries: list[NormalEntry | OneLineEntry | ExperienceEntry | EducationEntry] = (
+        Field(
+            title="Entries",
+            description=(
+                "The entries of the section. The format depends on the entry type."
+            ),
+        )
+    )
+
+
 class CurriculumVitae(BaseModel):
-    """This class bindes all the information of a CV together.
-    """
+    """This class bindes all the information of a CV together."""
+
     # 1) Mandotory user inputs:
-    name: str
+    name: str = Field(
+        title="Name",
+        description="The name of the person.",
+        examples=["John Doe", "Jane Doe"],
+    )
     # 2) Optional user inputs:
-    email: EmailStr = None
-    phone: PhoneNumber = None
-    website: HttpUrl = None
-    location: str = None
-    social_networks: list[SocialNetwork] = None
-    education: list[EducationEntry] = None
-    work_experience: list[ExperienceEntry] = None
-    academic_projects: list[NormalEntry] = None
-    personal_projects: list[NormalEntry] = None
-    certificates: list[NormalEntry] = None
-    extracurricular_activities: list[ExperienceEntry] = None
-    test_scores: list[OneLineEntry] = None
-    skills: list[OneLineEntry] = None
+    label: Optional[str] = Field(
+        default=None,
+        title="Label",
+        description="The label of the person.",
+        examples=["Software Engineer", "Mechanical Engineer"],
+    )
+    location: Optional[str] = Field(
+        default=None,
+        title="Location",
+        description="The location of the person. This is not rendered currently.",
+        examples=["Istanbul, Turkey", "Boston, MA, USA"],
+    )
+    email: Optional[EmailStr] = Field(
+        default=None,
+        title="Email",
+        description="The email of the person. It will be rendered in the heading.",
+    )
+    phone: Optional[PhoneNumber] = None
+    website: Optional[HttpUrl] = None
+    section_order: Optional[list[str]] = Field(
+        default=None,
+        title="Section Order",
+        description=(
+            "The order of sections in the CV. The section title should be used."
+        ),
+        examples=[["Education", "Work Experience", "Skills"]],
+    )
+    social_networks: Optional[list[SocialNetwork]] = Field(
+        default=None,
+        title="Social Networks",
+        description=(
+            "The social networks of the person. They will be rendered in the heading."
+        ),
+    )
+    education: Optional[list[EducationEntry]] = Field(
+        default=None,
+        title="Education",
+        description="The education entries of the person.",
+    )
+    work_experience: Optional[list[ExperienceEntry]] = Field(
+        default=None,
+        title="Work Experience",
+        description="The work experience entries of the person.",
+    )
+    academic_projects: Optional[list[NormalEntry]] = Field(
+        default=None,
+        title="Academic Projects",
+        description="The academic project entries of the person.",
+    )
+    personal_projects: Optional[list[NormalEntry]] = Field(
+        default=None,
+        title="Personal Projects",
+        description="The personal project entries of the person.",
+    )
+    certificates: Optional[list[NormalEntry]] = Field(
+        default=None,
+        title="Certificates",
+        description="The certificate entries of the person.",
+    )
+    extracurricular_activities: Optional[list[ExperienceEntry]] = Field(
+        default=None,
+        title="Extracurricular Activities",
+        description="The extracurricular activity entries of the person.",
+    )
+    test_scores: Optional[list[OneLineEntry]] = Field(
+        default=None,
+        title="Test Scores",
+        description="The test score entries of the person.",
+    )
+    skills: Optional[list[OneLineEntry]] = Field(
+        default=None,
+        title="Skills",
+        description="The skill entries of the person.",
+    )
+    custom_sections: Optional[list[Section]] = Field(
+        default=None,
+        title="Custom Sections",
+        description=(
+            "Custom sections with custom section titles can be rendered as well."
+        ),
+    )
 
     @computed_field
     @cached_property
@@ -491,6 +832,75 @@ class CurriculumVitae(BaseModel):
 
         return connections
 
+    @computed_field
+    @cached_property
+    def sections(self) -> list[Section]:
+        sections = []
+
+        # Pre-defined sections (i.e. sections that are not custom)):
+        pre_defined_sections = {
+            "Education": self.education,
+            "Work Experience": self.work_experience,
+            "Academic Projects": self.academic_projects,
+            "Personal Projects": self.personal_projects,
+            "Certificates": self.certificates,
+            "Extracurricular Activities": self.extracurricular_activities,
+            "Test Scores": self.test_scores,
+            "Skills": self.skills,
+        }
+
+        if self.section_order is None:
+            # If the user didn't specify the section order, then use the default order:
+            self.section_order = [
+                "Education",
+                "Work Experience",
+                "Academic Projects",
+                "Personal Projects",
+                "Skills",
+                "Test Scores",
+                "Certificates",
+                "Extracurricular Activities",
+            ]
+            if self.custom_sections is not None:
+                # If the user specified custom sections, then add them to the end of the
+                # section order with the same order as they are in the input file:
+                self.section_order.extend(
+                    [section.title for section in self.custom_sections]
+                )
+
+        link_text = None
+        for section_name in self.section_order:
+            # Create a section for each section name in the section order:
+            if section_name in pre_defined_sections:
+                entry_type = pre_defined_sections[section_name][0].__class__.__name__
+                entries = pre_defined_sections[section_name]
+                if section_name == "Test Scores":
+                    link_text = "view score report"
+            else:
+                # If the section is not pre-defined, then it is a custom section.
+                # Find the corresponding custom section and get its entries:
+                if self.custom_sections is None:
+                    raise ValueError(
+                        f'"{section_name}" is not a valid section name. Please fix the'
+                        " section_order field."
+                    )
+                else:
+                    for custom_section in self.custom_sections:
+                        if custom_section.title == section_name:
+                            entry_type = custom_section.entries[0].__class__.__name__
+                            entries = custom_section.entries
+                            break
+
+            section = Section(
+                title=section_name,
+                entry_type=entry_type,  # type: ignore
+                entries=entries,  # type: ignore
+                link_text=link_text,
+            )
+            sections.append(section)
+
+        return sections
+
 
 # ======================================================================================
 # ======================================================================================
@@ -498,7 +908,7 @@ class CurriculumVitae(BaseModel):
 
 
 class RenderCVDataModel(BaseModel):
-    """This class binds both the CV and the design information together.
-    """
+    """This class binds both the CV and the design information together."""
+
     design: Design
     cv: CurriculumVitae
