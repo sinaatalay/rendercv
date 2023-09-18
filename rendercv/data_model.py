@@ -492,12 +492,6 @@ class Event(BaseModel):
             )
             model.end_date = "present"
 
-        elif not start_date_is_provided and not date_is_provided:
-            raise ValueError(
-                'Either "date" or "start_date" and "end_date" should be provided in'
-                " each entry."
-            )
-
         return model
 
     @computed_field
@@ -678,6 +672,50 @@ class EducationEntry(Event):
         return highlight_strings
 
 
+class PublicationEntry(Event):
+    """This class stores [PublicationEntry](../index.md#publicationentry) information."""
+
+    title: str = Field(
+        title="Title of the Publication",
+        description="The title of the publication. It will be shown as bold text.",
+        examples=["My Awesome Paper", "My Awesome Book"],
+    )
+    authors: list[str] = Field(
+        title="Authors",
+        description="The authors of the publication in order as a list of strings.",
+        examples=["John Doe", "Jane Doe"],
+    )
+    journal: str = Field(
+        title="Journal",
+        description="The journal or the conference name.",
+        examples=[
+            "Physical Review B",
+            "ASME International Mechanical Engineering Congress and Exposition",
+        ],
+    )
+    doi: str = Field(
+        title="DOI",
+        description="The DOI of the publication.",
+        examples=["10.1103/PhysRevB.76.054309"],
+    )
+    date: str = Field(
+        title="Publication Date",
+        description="The date of the publication.",
+        examples=[2021, 2022],
+    )
+    cited_by: Optional[int] = Field(
+        default=None,
+        title="Cited By",
+        description="The number of citations of the publication.",
+        examples=[10, 100],
+    )
+
+    @computed_field
+    @cached_property
+    def doi_url(self) -> str:
+        return f"https://doi.org/{self.doi}"
+
+
 class SocialNetwork(BaseModel):
     """This class stores a social network information.
 
@@ -719,9 +757,13 @@ class Connection(BaseModel):
         elif self.name == "email":
             url = f"mailto:{self.value}"
         elif self.name == "website":
-            url = self.value
+            url = f"{self.value}"
+        elif self.name == "phone":
+            url = f"{self.value}"
         else:
             raise RuntimeError(f'"{self.name}" is not a valid connection!"')
+
+        return url
 
 
 class Section(BaseModel):
@@ -733,15 +775,14 @@ class Section(BaseModel):
         examples=["Awards", "My Custom Section", "Languages"],
     )
     entry_type: Literal[
-        "OneLineEntry", "NormalEntry", "ExperienceEntry", "EducationEntry"
+        "OneLineEntry",
+        "NormalEntry",
+        "ExperienceEntry",
+        "EducationEntry",
+        "PublicationEntry",
     ] = Field(
         title="Entry Type",
-        description=(
-            "The type of the entries in the section. Classic theme supports"
-            " four types of entries: OneLineEntry, NormalEntry, ExperienceEntry, and"
-            " EducationEntry."
-        ),
-        examples=["OneLineEntry", "NormalEntry", "ExperienceEntry", "EducationEntry"],
+        description="The type of the entries in the section.",
     )
     link_text: Optional[str] = Field(
         default=None,
@@ -753,7 +794,7 @@ class Section(BaseModel):
         ),
         examples=["view on GitHub", "view on LinkedIn"],
     )
-    entries: list[NormalEntry | OneLineEntry | ExperienceEntry | EducationEntry] = (
+    entries: list[NormalEntry | OneLineEntry | ExperienceEntry | EducationEntry | PublicationEntry] = (
         Field(
             title="Entries",
             description=(
@@ -827,6 +868,11 @@ class CurriculumVitae(BaseModel):
         title="Personal Projects",
         description="The personal project entries of the person.",
     )
+    publications: Optional[list[PublicationEntry]] = Field(
+        default=None,
+        title="Publications",
+        description="The publication entries of the person.",
+    )
     certificates: Optional[list[NormalEntry]] = Field(
         default=None,
         title="Certificates",
@@ -890,6 +936,7 @@ class CurriculumVitae(BaseModel):
             "Extracurricular Activities": self.extracurricular_activities,
             "Test Scores": self.test_scores,
             "Skills": self.skills,
+            "Publications": self.publications,
         }
 
         if self.section_order is None:
@@ -903,6 +950,7 @@ class CurriculumVitae(BaseModel):
                 "Test Scores",
                 "Certificates",
                 "Extracurricular Activities",
+                "Publications"
             ]
             if self.custom_sections is not None:
                 # If the user specified custom sections, then add them to the end of the
@@ -915,7 +963,7 @@ class CurriculumVitae(BaseModel):
         for section_name in self.section_order:
             # capitalize the first letter of each word in the section name:
             section_name = section_name.title()
-            
+
             # Create a section for each section name in the section order:
             if section_name in pre_defined_sections:
                 entry_type = pre_defined_sections[section_name][0].__class__.__name__

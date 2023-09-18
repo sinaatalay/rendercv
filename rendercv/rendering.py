@@ -16,6 +16,8 @@ import rendercv.templates
 def markdown_to_latex(markdown_string: str) -> str:
     """Convert a markdown string to LaTeX.
 
+    This function is used as a Jinja2 filter.
+
     Example:
         ```python
         markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
@@ -72,6 +74,8 @@ def markdown_to_latex(markdown_string: str) -> str:
 def markdown_url_to_url(value: str) -> bool:
     """Convert a markdown link to a normal string URL.
 
+    This function is used as a Jinja2 filter.
+
     Example:
         ```python
         markdown_url_to_url("[Google](https://google.com)")
@@ -96,6 +100,37 @@ def markdown_url_to_url(value: str) -> bool:
         return url
     else:
         raise ValueError("markdown_url_to_url should only be used on markdown links!")
+
+
+def make_it_bold(value: str, match_str: str) -> str:
+    """Make the matched parts of the string bold.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        make_it_bold_if("Hello World!", "Hello")
+        ```
+
+        will return:
+
+        `#!python "\\textbf{Hello} World!"`
+
+    Args:
+        value (str): The string to make bold.
+        match_str (str): The string to match.
+    """
+    if not isinstance(value, str):
+        raise ValueError("make_it_bold_if should only be used on strings!")
+
+    if not isinstance(match_str, str):
+        raise ValueError("The string to match should be a string!")
+
+    if match_str in value:
+        value.replace(match_str, "\\textbf{" + match_str + "}")
+        return value
+    else:
+        return value
 
 
 def render_template(data):
@@ -134,6 +169,7 @@ def render_template(data):
     # add custom filters:
     environment.filters["markdown_to_latex"] = markdown_to_latex
     environment.filters["markdown_url_to_url"] = markdown_url_to_url
+    environment.filters["make_it_bold"] = make_it_bold
 
     output_latex_file = template.render(design=data.design.options, cv=data.cv)
 
