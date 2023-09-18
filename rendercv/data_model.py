@@ -452,24 +452,51 @@ class Event(BaseModel):
         """Make sure that either `#!python start_date` and `#!python end_date` or only
         `#!python date`is provided.
         """
-        if (
-            model.start_date is not None
-            and model.end_date is not None
-            and model.date is not None
-        ):
+        dateIsProvided = False
+        startDateIsProvided = False
+        endDateIsProvided = False
+        if model.date is not None:
+            dateIsProvided = True
+        if model.start_date is not None:
+            startDateIsProvided = True
+        if model.end_date is not None:
+            endDateIsProvided = True
+
+        if dateIsProvided and startDateIsProvided and endDateIsProvided:
             logging.warning(
-                "start_date, end_date and date are all provided. Therefore, date will"
-                " be ignored."
+                '"start_date", "end_date" and "date" are all provided in of the'
+                " entries. Therefore, date will be ignored."
             )
             model.date = None
-        elif model.date is not None and (
-            model.start_date is not None or model.end_date is not None
-        ):
+
+        elif dateIsProvided and startDateIsProvided and not endDateIsProvided:
             logging.warning(
-                "date is provided. Therefore, start_date and end_date will be ignored."
+                'Both "date" and "start_date" is provided in of the entries.'
+                ' "start_date" will be ignored.'
             )
             model.start_date = None
             model.end_date = None
+
+        elif dateIsProvided and endDateIsProvided and not startDateIsProvided:
+            logging.warning(
+                'Both "date" and "end_date" is provided in of the entries. "end_date"'
+                " will be ignored."
+            )
+            model.start_date = None
+            model.end_date = None
+
+        elif startDateIsProvided and not endDateIsProvided:
+            logging.warning(
+                '"start_date" is provided in of the entries, but "end_date" is not.'
+                ' "end_date" will be set to "present".'
+            )
+            model.end_date = "present"
+
+        elif not startDateIsProvided and not dateIsProvided:
+            raise ValueError(
+                'Either "date" or "start_date" and "end_date" should be provided in'
+                " each entry."
+            )
 
         return model
 
