@@ -452,24 +452,24 @@ class Event(BaseModel):
         """Make sure that either `#!python start_date` and `#!python end_date` or only
         `#!python date`is provided.
         """
-        dateIsProvided = False
-        startDateIsProvided = False
-        endDateIsProvided = False
+        date_is_provided = False
+        start_date_is_provided = False
+        end_date_is_provided = False
         if model.date is not None:
-            dateIsProvided = True
+            date_is_provided = True
         if model.start_date is not None:
-            startDateIsProvided = True
+            start_date_is_provided = True
         if model.end_date is not None:
-            endDateIsProvided = True
+            end_date_is_provided = True
 
-        if dateIsProvided and startDateIsProvided and endDateIsProvided:
+        if date_is_provided and start_date_is_provided and end_date_is_provided:
             logging.warning(
                 '"start_date", "end_date" and "date" are all provided in of the'
                 " entries. Therefore, date will be ignored."
             )
             model.date = None
 
-        elif dateIsProvided and startDateIsProvided and not endDateIsProvided:
+        elif date_is_provided and start_date_is_provided and not end_date_is_provided:
             logging.warning(
                 'Both "date" and "start_date" is provided in of the entries.'
                 ' "start_date" will be ignored.'
@@ -477,7 +477,7 @@ class Event(BaseModel):
             model.start_date = None
             model.end_date = None
 
-        elif dateIsProvided and endDateIsProvided and not startDateIsProvided:
+        elif date_is_provided and end_date_is_provided and not start_date_is_provided:
             logging.warning(
                 'Both "date" and "end_date" is provided in of the entries. "end_date"'
                 " will be ignored."
@@ -485,14 +485,14 @@ class Event(BaseModel):
             model.start_date = None
             model.end_date = None
 
-        elif startDateIsProvided and not endDateIsProvided:
+        elif start_date_is_provided and not end_date_is_provided:
             logging.warning(
                 '"start_date" is provided in of the entries, but "end_date" is not.'
                 ' "end_date" will be set to "present".'
             )
             model.end_date = "present"
 
-        elif not startDateIsProvided and not dateIsProvided:
+        elif not start_date_is_provided and not date_is_provided:
             raise ValueError(
                 'Either "date" or "start_date" and "end_date" should be provided in'
                 " each entry."
@@ -913,6 +913,9 @@ class CurriculumVitae(BaseModel):
 
         link_text = None
         for section_name in self.section_order:
+            # capitalize the first letter of each word in the section name:
+            section_name = section_name.title()
+            
             # Create a section for each section name in the section order:
             if section_name in pre_defined_sections:
                 entry_type = pre_defined_sections[section_name][0].__class__.__name__
