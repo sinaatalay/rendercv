@@ -1,16 +1,10 @@
 """This module implements LaTeX file generation and LaTeX runner utilities for RenderCV.
 """
-import os
 import subprocess
-
 import os
-import json
-import logging
 import re
 
-from jinja2 import Environment, FileSystemLoader, PackageLoader
-
-import rendercv.templates
+from jinja2 import Environment, PackageLoader
 
 
 def markdown_to_latex(markdown_string: str) -> str:
@@ -127,7 +121,7 @@ def make_it_bold(value: str, match_str: str) -> str:
         raise ValueError("The string to match should be a string!")
 
     if match_str in value:
-        value.replace(match_str, "\\textbf{" + match_str + "}")
+        value = value.replace(match_str, "\\textbf{" + match_str + "}")
         return value
     else:
         return value
@@ -182,22 +176,22 @@ def render_template(data):
     return output_file_path
 
 
-def run_latex(latexFilePath):
+def run_latex(latex_file_path):
     """
     Run TinyTeX with the given LaTeX file and generate a PDF.
 
     Args:
         latexFilePath (str): The path to the LaTeX file to compile.
     """
-    latexFilePath = os.path.normpath(latexFilePath)
-    latexFile = os.path.basename(latexFilePath)
+    latex_file_path = os.path.normpath(latex_file_path)
+    latex_file = os.path.basename(latex_file_path)
 
     if os.name == "nt":
         # remove all files except the .tex file
-        for file in os.listdir(os.path.dirname(latexFilePath)):
+        for file in os.listdir(os.path.dirname(latex_file_path)):
             if file.endswith(".tex"):
                 continue
-            os.remove(os.path.join(os.path.dirname(latexFilePath), file))
+            os.remove(os.path.join(os.path.dirname(latex_file_path), file))
 
         tinytexPath = os.path.join(
             os.path.dirname(__file__),
@@ -211,12 +205,12 @@ def run_latex(latexFilePath):
                 f"{tinytexPath}\\latexmk.exe",
                 "-lualatex",
                 # "-c",
-                f"{latexFile}",
+                f"{latex_file}",
                 "-synctex=1",
                 "-interaction=nonstopmode",
                 "-file-line-error",
             ],
-            cwd=os.path.dirname(latexFilePath),
+            cwd=os.path.dirname(latex_file_path),
         )
     else:
         print("Only Windows is supported for now.")

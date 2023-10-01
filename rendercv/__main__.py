@@ -3,11 +3,7 @@ This module is a script to run the RenderCV and generate a CV as a PDF.
 """
 
 import os
-import json
 import logging
-import re
-
-from jinja2 import Environment, FileSystemLoader
 
 from ruamel.yaml import YAML
 

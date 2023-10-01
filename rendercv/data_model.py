@@ -121,38 +121,38 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
         str: The time span string.
     """
     # calculate the number of days between start_date and end_date:
-    timeSpanInDays = (end_date - start_date).days
+    timespan_in_days = (end_date - start_date).days
 
     # calculate the number of years between start_date and end_date:
-    howManyYears = timeSpanInDays // 365
-    if howManyYears == 0:
-        howManyYearsString = None
-    elif howManyYears == 1:
-        howManyYearsString = "1 year"
+    how_many_years = timespan_in_days // 365
+    if how_many_years == 0:
+        how_many_years_string = None
+    elif how_many_years == 1:
+        how_many_years_string = "1 year"
     else:
-        howManyYearsString = f"{howManyYears} years"
+        how_many_years_string = f"{how_many_years} years"
 
     # calculate the number of months between start_date and end_date:
-    howManyMonths = round((timeSpanInDays % 365) / 30)
-    if howManyMonths == 0:
-        howManyMonths = 1
+    how_many_months = round((timespan_in_days % 365) / 30)
+    if how_many_months == 0:
+        how_many_months = 1
 
-    if howManyMonths == 0:
-        howManyMonthsString = None
-    elif howManyMonths == 1:
-        howManyMonthsString = "1 month"
+    if how_many_months == 0:
+        how_many_months_string = None
+    elif how_many_months == 1:
+        how_many_months_string = "1 month"
     else:
-        howManyMonthsString = f"{howManyMonths} months"
+        how_many_months_string = f"{how_many_months} months"
 
     # combine howManyYearsString and howManyMonthsString:
-    if howManyYearsString is None:
-        timeSpanString = howManyMonthsString
-    elif howManyMonthsString is None:
-        timeSpanString = howManyYearsString
+    if how_many_years_string is None:
+        timespan_string = how_many_months_string
+    elif how_many_months_string is None:
+        timespan_string = how_many_years_string
     else:
-        timeSpanString = f"{howManyYearsString} {howManyMonthsString}"
+        timespan_string = f"{how_many_years_string} {how_many_months_string}"
 
-    return timeSpanString
+    return timespan_string
 
 
 def format_date(date: Date) -> str:
@@ -362,6 +362,15 @@ class ClassicThemeOptions(BaseModel):
         examples=["1.35 cm", "1 in", "12 pt", "14 mm", "2 ex", "3 em"],
     )
 
+    show_timespan_in_experience_entries: bool = Field(
+        default=True,
+        title="Show Time Span in Experience Entries",
+        description=(
+            "If this option is set to true, then the time span of the experience"
+            " entries will be shown in the date and location column."
+        ),
+    )
+
     margins: ClassicThemeMargins = Field(
         default=ClassicThemeMargins(),
         title="Margins",
@@ -496,7 +505,7 @@ class Event(BaseModel):
 
     @computed_field
     @cached_property
-    def date_and_location_strings(self) -> list[str]:
+    def date_and_location_strings_with_timespan(self) -> list[str]:
         date_and_location_strings = []
 
         if self.location is not None:
@@ -537,18 +546,19 @@ class Event(BaseModel):
 
     @computed_field
     @cached_property
-    def date_and_location_strings_without_time_span(self) -> list[str]:
-        strings_without_time_span = self.date_and_location_strings
-        for string in strings_without_time_span:
+    def date_and_location_strings_without_timespan(self) -> list[str]:
+        # use copy() to avoid modifying the original list
+        date_and_location_strings = self.date_and_location_strings_with_timespan.copy()
+        for string in date_and_location_strings:
             if (
                 "years" in string
                 or "months" in string
                 or "year" in string
                 or "month" in string
             ):
-                strings_without_time_span.remove(string)
+                date_and_location_strings.remove(string)
 
-        return strings_without_time_span
+        return date_and_location_strings
 
     @computed_field
     @cached_property
@@ -794,13 +804,11 @@ class Section(BaseModel):
         ),
         examples=["view on GitHub", "view on LinkedIn"],
     )
-    entries: list[NormalEntry | OneLineEntry | ExperienceEntry | EducationEntry | PublicationEntry] = (
-        Field(
-            title="Entries",
-            description=(
-                "The entries of the section. The format depends on the entry type."
-            ),
-        )
+    entries: list[
+        NormalEntry | OneLineEntry | ExperienceEntry | EducationEntry | PublicationEntry
+    ] = Field(
+        title="Entries",
+        description="The entries of the section. The format depends on the entry type.",
     )
 
 
@@ -950,7 +958,7 @@ class CurriculumVitae(BaseModel):
                 "Test Scores",
                 "Certificates",
                 "Extracurricular Activities",
-                "Publications"
+                "Publications",
             ]
             if self.custom_sections is not None:
                 # If the user specified custom sections, then add them to the end of the
