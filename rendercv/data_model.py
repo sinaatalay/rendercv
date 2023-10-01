@@ -592,6 +592,23 @@ class Event(BaseModel):
 
             return markdown_url
 
+    @computed_field
+    @cached_property
+    def month_and_year(self) -> Optional[str]:
+        if self.date is not None:
+            # Then it means start_date and end_date are not provided.
+            try:
+                # If this runs, it means the date is an ISO format string, and it can be
+                # parsed
+                month_and_year = format_date(Date.fromisoformat(self.date))
+            except:
+                month_and_year = self.date
+        else:
+            # Then it means start_date and end_date are provided and month_and_year
+            # doesn't make sense.
+            month_and_year = None
+
+        return month_and_year
 
 class OneLineEntry(Event):
     """This class stores [OneLineEntry](../index.md#onelineentry) information."""
