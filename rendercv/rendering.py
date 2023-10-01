@@ -126,6 +126,65 @@ def make_it_bold(value: str, match_str: str) -> str:
     else:
         return value
 
+def make_it_underlined(value: str, match_str: str) -> str:
+    """Make the matched parts of the string underlined.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        make_it_underlined_if("Hello World!", "Hello")
+        ```
+
+        will return:
+
+        `#!python "\\underline{Hello} World!"`
+
+    Args:
+        value (str): The string to make underlined.
+        match_str (str): The string to match.
+    """
+    if not isinstance(value, str):
+        raise ValueError("make_it_underlined_if should only be used on strings!")
+
+    if not isinstance(match_str, str):
+        raise ValueError("The string to match should be a string!")
+
+    if match_str in value:
+        value = value.replace(match_str, "\\underline{" + match_str + "}")
+        return value
+    else:
+        return value
+
+def make_it_italic(value: str, match_str: str) -> str:
+    """Make the matched parts of the string italic.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        make_it_italic_if("Hello World!", "Hello")
+        ```
+
+        will return:
+
+        `#!python "\\textit{Hello} World!"`
+
+    Args:
+        value (str): The string to make italic.
+        match_str (str): The string to match.
+    """
+    if not isinstance(value, str):
+        raise ValueError("make_it_italic_if should only be used on strings!")
+
+    if not isinstance(match_str, str):
+        raise ValueError("The string to match should be a string!")
+
+    if match_str in value:
+        value = value.replace(match_str, "\\textit{" + match_str + "}")
+        return value
+    else:
+        return value
 
 def render_template(data):
     """Render the template using the given data.
@@ -164,6 +223,8 @@ def render_template(data):
     environment.filters["markdown_to_latex"] = markdown_to_latex
     environment.filters["markdown_url_to_url"] = markdown_url_to_url
     environment.filters["make_it_bold"] = make_it_bold
+    environment.filters["make_it_underlined"] = make_it_underlined
+    environment.filters["make_it_italic"] = make_it_italic
 
     output_latex_file = template.render(design=data.design.options, cv=data.cv)
 
