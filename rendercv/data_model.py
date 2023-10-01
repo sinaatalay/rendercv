@@ -371,6 +371,15 @@ class ClassicThemeOptions(BaseModel):
         ),
     )
 
+    show_last_updated_date: bool = Field(
+        default=True,
+        title="Show Last Updated Date",
+        description=(
+            "If this option is set to true, then the last updated date will be shown"
+            " in the header."
+        ),
+    )
+
     margins: ClassicThemeMargins = Field(
         default=ClassicThemeMargins(),
         title="Margins",
@@ -609,6 +618,7 @@ class Event(BaseModel):
             month_and_year = None
 
         return month_and_year
+
 
 class OneLineEntry(Event):
     """This class stores [OneLineEntry](../index.md#onelineentry) information."""
