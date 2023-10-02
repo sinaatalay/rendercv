@@ -123,6 +123,11 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
     # calculate the number of days between start_date and end_date:
     timespan_in_days = (end_date - start_date).days
 
+    if timespan_in_days < 0:
+        raise ValueError(
+            "The start date is after the end date. Please check the dates!"
+        )
+
     # calculate the number of years between start_date and end_date:
     how_many_years = timespan_in_days // 365
     if how_many_years == 0:
