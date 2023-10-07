@@ -1,0 +1,76 @@
+% tone.sty -- TIPA optional package for displaying `tone letters'.
+% Copyright 2002 FUKUI Rei
+%
+% This program may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.2
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.2 or later is part of all distributions of LaTeX 
+% version 1999/12/01 or later.
+%
+% This program consists of all files listed in Manifest.txt.
+%
+%  1996/06/10 first version.
+%  2001/11/07 \stone (for a short tone bar) added.
+%  2001/12/32 \@tonestembar added (due to encoding change;
+%             \char'277 is now exclusively used for tone letter stem.
+%
+\RequirePackage{tipa}[2001/12/31 TIPA version 1.1]
+
+\newif\if@longtone
+\newdimen\@tonebarhtunit
+\newdimen\@tonebarhalfwd
+
+\newcommand\@tonestembar{\tipaencoding\char'277}
+
+\newcommand\tone[1]{\@inittone\leavevmode
+  \hbox{\kern\@sidegap\@tone#1\relax\kern-\@tonebarhalfwd{\@tonestembar}}}
+
+\newcommand\rtone[1]{\@inittone\leavevmode
+  \hbox{{\@tonestembar}\kern-\@tonebarhalfwd\@tone#1\relax\kern\@sidegap}}
+
+\newcommand\stone[1]{\@inittone\@longtonefalse\leavevmode
+  \hbox{\kern\@sidegap\@tone#1\relax\kern-\@tonebarhalfwd{\@tonestembar}}}
+
+\newcommand\@tone[1]{%
+  \ifx#1\relax
+    \ifx\pr@vpr@vtone\relax \@outputtone\pr@vtone\pr@vtone
+    \else \@outputtone\pr@vpr@vtone\pr@vtone\fi
+    \let\next\relax
+  \else
+    \ifx\pr@vpr@vtone\relax\else
+      \@longtonefalse\@outputtone\pr@vpr@vtone\pr@vtone\fi
+    \let\pr@vpr@vtone\pr@vtone\def\pr@vtone{#1}%
+    \let\next\@tone \fi
+  \next}
+
+\newcommand\@outputtone[2]{{%
+  \count\z@ #1\advance\count\z@ -#2\def\@mintone{#2}%
+  \ifnum\count\z@>0\count\@ne128\advance\count\@ne \count\z@
+    \edef\@tonecode{\the\count\@ne}% falling tone
+  \else
+    \ifnum\count\z@<0\count\@ne132\advance\count\@ne -\count\z@
+      \edef\@tonecode{\the\count\@ne}\def\@mintone{#1}% rising tone
+    \else
+      \def\@tonecode{128}\fi\fi % level tone
+  \if@longtone\else\count\z@\@tonecode
+    \advance\count\z@ 9 \def\@tonecode{\the\count\z@}\fi
+  \@longtonefalse
+  \count\@ne\@mintone \advance\count\@ne \m@ne
+  \dimen\z@\the\count\@ne\@tonebarhtunit
+  \raise\dimen\z@\hbox{%
+    \@accshift{-\dimen\z@}%
+    {\tipaencoding\char\@tonecode}%
+    \@accshift{\dimen\z@}}}}
+
+\newcommand\@toneshift[1]{\dimen\@ne#1}
+
+\newcommand\@inittone{%
+  \@getaccshift \let\c@lcshift\@toneshift
+  \let\pr@vtone\relax\let\pr@vpr@vtone\relax
+  \@longtonetrue{\setbox\z@\hbox{\@tonestembar}%
+  \global\@tonebarhtunit.25\ht\z@
+  \global\@tonebarhalfwd.5\wd\z@}}
+
+\endinput

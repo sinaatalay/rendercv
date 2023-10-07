@@ -1,0 +1,700 @@
+% ======================================================================
+% scrlayer-notecolumn-en.tex
+% Copyright (c) Markus Kohm, 2013-2022
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+% Chapter about scrlayer-notecolumn of the KOMA-Script guide
+% Maintained by Markus Kohm
+%
+% ============================================================================
+
+\KOMAProvidesFile{scrlayer-notecolumn-en.tex}
+                 [$Date: 2018-02-05 01:50:56 -0800 (Mon, 05 Feb 2018) $
+                  KOMA-Script guide (chapter:scrlayer-notecolumn)]
+
+\translator{Markus Kohm\and Arndt Schubert\and Karl Hagen}
+
+\chapter{Note Columns with \Package{scrlayer-notecolumn}}
+\labelbase{scrlayer-notecolumn}
+
+\BeginIndexGroup
+\BeginIndex{Package}{scrlayer-notecolumn}%
+Through version~3.11b, \KOMAScript{} supported note columns only in the form
+of marginal notes that get their contents from \DescRef{maincls.cmd.marginpar}
+and \DescRef{maincls.cmd.marginline} (see \autoref{sec:maincls.marginNotes},
+\DescPageRef{maincls.cmd.marginline}). This kind of note column has several
+disadvantages:
+\begin{itemize}
+\item Marginal notes must be set completely on a single page. Page
+  breaks\textnote{page break} inside marginal notes are not possible. This
+  sometimes causes the marginal notes to protrude into the lower margin.
+\item Marginal notes near page breaks sometimes float to the next page and
+  then, in the case of two-sided printing, cause alternate marginal columns to
+  appear in the wrong margin.\textnote{assignment to the correct margin}. This
+  problem can be solved with the additional package
+  \Package{mparhack}\IndexPackage{mparhack} or by using \Macro{marginnote}
+  from the \Package{marginnote}\IndexPackage{marginnote} package (see
+    \cite{package:marginnote}).
+\item Marginal notes inside floating environments\textnote{floating
+    environments} or footnotes\textnote{footnotes} are not possible. This
+  problem can also be solved with \Macro{marginnote} of the
+  \Package{marginnote}\IndexPackage{marginnote} package.
+\item There is only one marginal note column\textnote{several note columns},
+  or at most two if you use \Macro{reversemarginpar} and
+  \Macro{normalmarginpar}. Note that \Macro{reversemarginpar} is of less
+  utility with two-sided documents.
+\end{itemize}
+Using \Package{marginnote}\IndexPackage{marginnote} leads to one more problem.
+Because the package does not have any collision detection, marginal notes that
+are set near to each other can partially or totally overlap. Moreover,
+depending on the settings used, \Macro{marginnote} sometimes changes the
+baseline distance of the normal text.
+
+The \Package{scrlayer-notecolumn} package should solve all these problems. To
+do so, it relies on the basic functionality of
+\hyperref[cha:scrlayer]{\Package{scrlayer}}\IndexPackage{scrlayer}%
+\important{\hyperref[cha:scrlayer]{\Package{scrlayer}}}. However, using this
+package has a drawback:\textnote{Attention!} you can only output notes on
+pages that use a page style based on
+\hyperref[cha:scrlayer]{\Package{scrlayer}}. This disadvantage, however, can
+easily be resolved, or even turned into an advantage, with the help of
+\hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}%
+\important{\hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}}%
+\IndexPackage{scrlayer-scrpage}.
+
+\section{Note about the State of Development}
+\seclabel{draft}
+
+This package was originally developed as a so-called \emph{proof of
+  concept}\textnote{proof of concept} to demonstrate the potential of
+\hyperref[cha:scrlayer]{\Package{scrlayer}}%
+\important{\hyperref[cha:scrlayer]{\Package{scrlayer}}}. Although it is still
+in its early stages of development, most of its stability is less a question
+of \Package{scrlayer-notecolumn} than of
+\hyperref[cha:scrlayer]{\Package{scrlayer}}. Nevertheless, you can assume that
+there are still bugs in \Package{scrlayer-notecolumn}. Please report such bugs
+whenever you find them. Some of the package's shortcomings are caused by the
+attempt to minimise complexity. For example, although note columns can break
+across several pages, there is no new paragraph break. \TeX{} itself does not
+provide this.
+
+Because the package is rather experimental\textnote{experimental}, its
+instructions are found here in the second part of \iffree{the \KOMAScript{}
+manual}{this book}. Accordingly, it is primarily directed towards experienced
+users. If you are a beginner or a user on the way to become an
+expert\textnote{for experts}, some of the following explanations may be
+unclear or even incomprehensible.
+\iffree{Please understand that I want to keep the effort spent on the manual
+  to something halfway bearable when it comes to experimental packages.}{%
+  However, this should be enough to solve simple tasks with
+  \Package{scrlayer-notecolumn}. At the same time, developers will hopefully
+  find useful stimulus for their own ideas.}
+
+\iffalse% Umbruchoptimierung
+Note also\textnote{Attention!} that the author of \KOMAScript{} does not
+guarantee the further development of this package and offers only limited
+support for it. This is the nature of a package written solely for the
+purposes of demonstration.%
+\fi
+
+\LoadCommonFile{options}% \section{Early or late Selection of Options}
+
+\LoadCommonFile{textmarkup}% \section{Text Markup}
+
+\section{Declaring New Note Columns}
+\seclabel{declaration}
+
+Loading the package automatically declares a note column named
+\PValue{marginpar}. As the name implies, this note column is placed in the
+area of the normal marginal column used by \DescRef{maincls.cmd.marginpar} and
+\DescRef{maincls.cmd.marginline}. The \Macro{reversemarginpar} and
+\Macro{normalmarginpar} settings are also taken into account, but only for all
+the notes on a page instead of note by note. The relevant setting is the one
+that applies at the end of the page, namely during the output of the note
+column. If you want to have notes in both the left and right margin of the
+same page, you should define a second note column.
+
+The default settings for all newly declared note columns are the same as the
+defaults for \PValue{marginpar}. %
+\iftrue% Umbruchoptimierung
+But you can easily change them during their initialisation.%
+\fi
+
+Note\textnote{Attention!} that note columns can be output only on pages that
+use a page style based on the
+\hyperref[cha:scrlayer]{\Package{scrlayer}}\IndexPackage{scrlayer}%
+\important{\hyperref[cha:scrlayer]{\Package{scrlayer}}} package. The
+\Package{scrlayer-notecolumn} package automatically loads
+\hyperref[cha:scrlayer]{\Package{scrlayer}}, which by default provides only
+\PageStyle{empty}\IndexPagestyle{empty} page style. If you need additional
+page styles, \hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}%
+\IndexPackage{scrlayer-scrpage}%
+\important{\hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}} is
+recommended.
+
+\begin{Declaration}
+  \Macro{DeclareNoteColumn}%
+  \OParameter{option~list}\Parameter{note~column~name}%
+  \Macro{DeclareNewNoteColumn}%
+  \OParameter{option~list}\Parameter{note~column~name}%
+  \Macro{ProvideNoteColumn}%
+  \OParameter{option~list}\Parameter{note~column~name}%
+  \Macro{RedeclareNoteColumn}%
+  \OParameter{option~list}\Parameter{note~column~name}%
+\end{Declaration}
+You can use these commands to create note columns. \Macro{DeclareNoteColumn}
+creates the note column regardless of whether it already exists.
+\Macro{DeclareNewNoteColumn} throws an error if the \PName{note column name}
+has already been used for another note column. \Macro{ProvideNoteColumn}
+simply does nothing in that case. You can use \Macro{RedeclareNoteColumn} only
+to reconfigure an existing note column.
+
+By the way, when reconfiguring existing note columns with
+\Macro{DeclareNoteColumn} or \Macro{RedeclareNoteColumn}, the notes that have
+already been generated for this column are retained.
+
+\BeginIndex{FontElement}{notecolumn.\PName{note column name}}%
+\BeginIndex{FontElement}{notecolumn.marginpar}%
+Declaring a new note column always defines a new element for changing its font
+attributes with \DescRef{\LabelBase.cmd.setkomafont} and
+\DescRef{\LabelBase.cmd.addtokomafont}, if such an element does not yet exist.
+The name of the element is \PValue{notecolumn.}\PName{note column name}. For
+this reason, the default note column \PValue{marginnote} has the
+element\textnote{element name} \FontElement{notecolumn.marginpar}. You can
+directly specify the initial setting of the element's font when declaring a
+note column by using the \Option{font} option within the \PName{option list}.%
+\EndIndex{FontElement}{notecolumn.marginpar}%
+\EndIndex{FontElement}{notecolumn.\PName{note column name}}%
+
+The \PName{option list} is a comma-separated list of keys with or without
+values, also known as options. The available options are listed in
+\autoref{tab:scrlayer-notecolumn.note.column.options},
+\autopageref{tab:scrlayer-notecolumn.note.column.options}.
+The\textnote{default: option \Option{marginpar}} \Option{marginpar} option is
+set by default, but you can overwrite this default with your individual
+settings.
+
+Because note columns are implemented using \Package{scrlayer}, a
+layer\Index{layer} is created for each note column. The layer
+name\textnote{layer name} is the same as the name of the element,
+\PValue{notecolumn.}\PName{note column name}. For more information about
+layers see \autoref{sec:scrlayer.layers}, starting on
+\autopageref{sec:scrlayer.layers}.
+%
+\begin{Example}
+  Suppose you are a professor of comedy law and want to write a treatise on
+  the new ``Statute Concerning the Riotous Airing of Common Humour'', SCRACH
+  for short. The better part of the work will consist of commentary on
+  individual paragraphs of the statute. You decide on a two-column layout,
+  with the comments in the main column and the paragraphs placed in a smaller
+  note column on the right of the main column using a font that is
+  smaller\iffree{ and in a different colour}{}.
+\begin{lstcode}
+  \documentclass{scrartcl}
+  \usepackage{lmodern}
+  \usepackage{xcolor}
+
+  \usepackage{scrjura}
+  \setkomafont{contract.Clause}{\bfseries}
+  \setkeys{contract}{preskip=-\dp\strutbox}
+
+  \usepackage{scrlayer-scrpage}
+  \usepackage{scrlayer-notecolumn}
+
+  \newlength{\paragraphscolwidth}
+  \AfterCalculatingTypearea{%
+    \setlength{\paragraphscolwidth}{%
+      .333\textwidth}%
+    \addtolength{\paragraphscolwidth}{%
+      -\marginparsep}%
+  }
+  \recalctypearea
+  \DeclareNewNoteColumn[%
+    position=\oddsidemargin+1in
+             +.667\textwidth
+             +\marginparsep,
+    width=\paragraphscolwidth,
+    font=\raggedright\footnotesize
+         \color{blue}
+  ]{paragraphs}
+\end{lstcode}
+  The treatise should be a one-sided article. The font is Latin Modern, and
+  the colour selection uses the \Package{xcolor}\IndexPackage{xcolor} package.
+
+  For formatting legal texts\textnote{legal texts with
+  \hyperref[cha:scrjura]{\Package{scrjura}}} with the
+  \hyperref[cha:scrjura]{\Package{scrjura}}\IndexPackage{scrjura} package, see
+  \autoref{cha:scrjura}.
+
+  Since this document uses a page style\textnote{page style with
+    \hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}} with a
+  page number, the
+  \hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}%
+  \IndexPackage{scrlayer-scrpage} package is loaded. Thus, note columns can be
+  output on all pages.
+
+  Next, the \Package{scrlayer-notecolumn}\textnote{note columns with
+  \Package{scrlayer-notecolumn}} package is loaded. The required width of the
+  note column is calculated with
+  \DescRef{typearea-experts.cmd.AfterCalculatingTypearea}%
+  \IndexPackage{typearea}\IndexCmd{AfterCalculatingTypearea} after any
+  recalculation\textnote{type area with
+  \hyperref[cha:typearea]{\Package{typearea}}}%
+  \IndexPackage{typearea} of the type area. It should be one third of the type
+  area minus the distance between the main text and the note column. %
+
+  With this information, we define the new note column. For the positions, we
+  use a simple dimension expression. Note that \Length{oddsidemargin} is not
+  the total left margin but for historical reasons the left margin minus
+  1\Unit{inch}. So we have to add this value.
+
+  This concludes the definition. Note that the note column would currently be
+  placed inside the type area. This means that the note column would overwrite
+  the text.
+
+\begin{lstcode}
+  \begin{document}
+
+  \title{Commentary on the SCRACH}
+  \author{Professor R. O. Tenase}
+  \date{11/11/2011}
+  \maketitle
+  \tableofcontents
+
+  \section{Preamble}
+  The SCRACH is without doubt the most important law
+  on the manners of humour that has been passed in
+  the last thousand years. The first reading took
+  place on 11/11/1111 in the Supreme Manic Fun
+  Congress, but the law was rejected by the Vizier
+  of Fun. Only after the ludicrous, Manic Fun
+  monarchy was transformed into a representative,
+  witty monarchy by W. Itzbold, on 9/9/1999 was
+  the way finally clear for this law.
+\end{lstcode}
+  Because\textnote{Attention!} the text area was not reduced, the preamble is
+  output extending over the whole width of the type area. To test this, you
+  can temporarily add:
+\begin{lstcode}
+  \end{document}
+\end{lstcode}
+\end{Example}
+%
+In the example, the question of how the text for the commentary can be set in
+a narrower column remains unresolved. You will discover how to do this by
+continuing the example below.%
+%
+%\begin{table}% Umbruchoptimierung: Tabelle hinter das Beispiel verschoben
+\begin{desclist}
+  \desccaption{%
+%  \caption[Available settings for declaring note columns]{%
+    Available settings for declaring note columns%
+%  }%
+    \label{tab:scrlayer-notecolumn.note.column.options}%
+  }{%
+    Available settings for declaring note columns
+    (\emph{continued})%
+  }%
+%  \begin{desctabular}
+    \entry{\OptionVName{font}{font attribute}}{%
+      The font attributes of the note column set with
+      \DescRef{\LabelBase.cmd.setkomafont}. For possible values, refer to
+      \autoref{sec:maincls.textmarkup},
+      \DescPageRef{maincls.cmd.setkomafont}.\par%
+      Default: \emph{empty}%
+    }%
+    \entry{\Option{marginpar}}{%
+      Sets \Option{position} and \Option{width} to correspond to the marginal
+      note column of \DescRef{maincls.cmd.marginpar}. Switching between
+      \Macro{reversemarginpar}\IndexCmd{reversemarginpar} and
+      \Macro{normalmarginpar}\IndexCmd{normalmarginpar} is only considered at
+      the end of the page when the note column is output. Note that this
+      option does not expect or allow any value.\par%
+      Default: \emph{yes}%
+    }%
+    \entry{\Option{normalmarginpar}}{%
+      Sets \Option{position} and \Option{width} to use the normal marginal
+      note column and ignore \Macro{reversemarginpar} and
+      \Macro{normalmarginpar}. Note that this option does not expect or allow
+      a value.\par%
+      Default: \emph{no}%
+    }%
+    \entry{\OptionVName{position}{offset}}{%
+      Sets the horizontal offset of the note column from the left edge of the
+      paper. The \PName{offset} can be a complex expression as long as it is
+      fully expandable and expands to a length or a dimensional expression at
+      the time the note column is output. See \cite[section~3.5]{manual:eTeX}
+      for more information about dimensional expressions.\par%
+      Default: \emph{through the \Option{marginpar} option}%
+    }%
+    \entry{\Option{reversemarginpar}}{%
+      Sets \Option{position} and \Option{width} to use the reverse marginal
+      note column of \DescRef{maincls.cmd.marginpar} with the
+      \Macro{reversemarginpar} setting. Note that this option does not expect
+      or allow a value.\par%
+      Default: \emph{no}%
+    }%
+    \entry{\OptionVName{width}{length}}{%
+      Sets the width of the note column. The \PName{length} can be a complex
+      expression as long as it is fully expandable and expands to a length or
+      a dimensional expression at the time the note column is output. See
+      \cite[section~3.5]{manual:eTeX} for more information about dimensional
+      expressions.\par%
+      Default: \emph{through the \Option{marginpar} option}%
+    }%
+%  \end{desctabular}
+%\end{table}
+\end{desclist}
+\EndIndexGroup
+
+
+\section{Making a Note}
+\seclabel{makenote}
+
+After you declare a note column, you can create notes for this column. But
+these notes are not be output immediately. Initially, they are written to an
+auxiliary file with extension ``\File{.slnc}''. Specifically, they are first
+written to the \File{aux}-file and, when the \File{aux}-file is read inside
+\Macro{end}\PParameter{document}, they are copied to the \File{slnc}-file. If
+necessary, the \Macro{nofiles}\IndexCmd{nofiles} setting is also taken into
+account. At the next \LaTeX{} run, this auxiliary file will be read piece by
+piece, according to the progress of the document, and at the end of the page
+the notes for that page will be output.
+
+Note\textnote{Attention!}, however, that note columns are output only on pages
+whose page style is based on the \Package{scrlayer}\IndexPackage{scrlayer}
+package. This package is loaded automatically by \Package{scrlayer-notecolumn}
+and by default provides only the \PageStyle{empty}\IndexPagestyle{empty} page
+style. If you need additional page styles, the
+\Package{scrlayer-scrpage}\IndexPackage{scrlayer-scrpage} package is
+recommended.
+
+\begin{Declaration}
+  \Macro{makenote}\OParameter{note-column name}\Parameter{note}\\
+  \Macro{makenote*}\OParameter{note-column name}\Parameter{note}\\
+\end{Declaration}
+You can use this command to make a new \PName{note}. The current vertical
+position is used as the vertical position for the start of the \PName{note}.
+The horizontal position for the note results from the defined position of the
+note column. To work correctly, the package relies on
+\Macro{pdfsavepos}\IndexCmd{pdfsavepos},
+\Macro{pdflastypos}\IndexCmd{pdflastypos}, and
+\Macro{pdfpageheight}\IndexLength{pdfpageheight} or their equivalent in newer
+\LuaTeX{} versions. Without these commands, \Package{scrlayer-notecolumn} will
+not work. The primitives should act exactly as they would using pdf\TeX.
+
+However, if the package detects a collision\textnote{collision avoidance} with
+a previous \PName{note} in the same note column, the new \PName{note} is moved
+below that earlier \PName{note}. If the \PName{note} does not fit on the
+page\textnote{page break}\Index{page>break}, it will be moved completely or
+partially to the next page.
+
+The optional argument \PName{note column name} determines which note column
+should be used for the \PName{note}. If the optional argument is omitted, the
+default note column \PValue{marginpar} is used.%
+\begin{Example}
+  Let's add a commented paragraph to the example of the previous section. The
+  paragraph itself should be placed in the newly defined note column:
+\begin{lstcode}
+  \section{Analysis}
+  \begin{addmargin}[0pt]{.333\textwidth}
+    \makenote[paragraphs]{%
+      \protect\begin{contract}
+        \protect\Clause{%
+          title={No Joke without an Audience}%
+        }
+        A joke can only be funny if is has an
+        audience.
+      \protect\end{contract}%
+    }
+    This is one of the most central statements of
+    the law. It is so fundamental that it is quite
+    appropriate to bow to the wisdom of the authors.
+\end{lstcode}
+  The \DescRef{maincls.env.addmargin}\IndexEnv{addmargin}%
+  \textnote{column width with \DescRef{maincls.env.addmargin}} environment,
+  which is described in \autoref{sec:maincls.lists},
+  \DescPageRef{maincls.env.addmargin}, is used to reduce the width of the main
+  text by the width of the column for the paragraphs.
+
+  Here you can see one of the few problems of using \Macro{makenote}. Because
+  the mandatory argument is written to an auxiliary file,
+  commands\textnote{fragile commands} inside this argument can, unfortunately,
+  \emph{break}. To avoid this, you should use \Macro{protect} in front of all
+  commands that should not expand when written to the auxiliary file.
+  Otherwise, using a command inside this argument could result in error
+  messages.
+
+  In principle you could now finish this example with
+\begin{lstcode}
+  \end{addmargin}
+  \end{document}
+\end{lstcode}
+  to see a preliminary result.
+\end{Example}
+If you test this example, you will see that the column for the legal text is
+longer than that of the commentary. If\textnote{Attention!} you add another
+section with another paragraph, you may encounter the problem that the
+commentary will not continue below the legal text but immediately after the
+previous comment. Next you will find a solution to this problem.
+
+The\ChangedAt{v0.1.2583}{\Package{scrlayer-notecolumn}} problem with fragile
+commands mentioned in the example above does not occur with the starred
+variant\important{\Macro{makenote*}}. It uses \Macro{detokenize} to prevent
+the expansion of commands. But this also means that you should not use
+commands in the \PName{note} that change their definition within the
+document.
+
+Unfortunately, both commands have two other known
+limitations\textnote{Attention!}. The first issue is related to colours using
+\Package{color}\IndexPackage{color} or \Package{xcolor}\IndexPackage{xcolor}
+within the note columns. To make such colour changes possible each note column
+requires its own colour management using so-called \emph{colour stacks}.
+Because the package was designed only as a \emph{proof of concept} and because
+\XeTeX{} does not support multiple colour stacks, \XeTeX{} colour switching is
+restricted to the attributes of the font element
+\FontElement{notecolumn.\PName{note column name}}, a limitation which
+eliminates the time and effort required to implement custom colour management.
+
+The second issue is of a more conceptual nature. The content of the auxiliary
+file that contains the note-column information is read while processing the
+page header. This has consequences in particular if the read occurs while
+an environment like \Environment{verbatim} is active. In this case, the
+\Macro{catcode} settings of this environment would be active while reading the
+auxiliary file. This will inevitably lead to errors in processing and output.
+To attenuate this risk, the \Macro{catcodes} of the characters from
+\Macro{dospecials}\IndexCmd{dospecials} are stored during
+\Macro{begin}\PParameter{document} and explicitly restored when reading from
+the auxiliary file.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{syncwithnotecolumn}\OParameter{note column name}
+\end{Declaration}
+This command adds a
+synchronisation\textnote{synchronisation}\Index{synchronisation} point in a
+note column and in the main text of the document. Whenever a synchronisation
+point is reached during the output of a note column or the main text, a mark
+will be generated that consists of the current page and the current vertical
+position.
+
+In parallel with the generation of synchronisation points,
+\Package{scrlayer-notecolumn} determines whether a mark has been set in the
+note column or the main text during the previous \LaTeX{} run. If so, it
+compares their values. If the mark of the note column is lower on the current
+page or on a later page, the main text will be moved down to the position of
+the mark.
+
+As a rule,\textnote{Hint!} you should not place synchronisation points within
+paragraphs of the main text but only between them. If you nonetheless use
+\Macro{syncwithnotecolumn} inside a paragraph, the synchronisation point will
+be delayed until the current line has been output. This behaviour is similar
+to that of, e.\,g., \Macro{vspace}\IndexCmd{vspace} in this respect.
+
+Because synchronisation points are not recognized until the next \LaTeX{}
+run\textnote{several \LaTeX{} runs}, this mechanism requires at least three
+\LaTeX{} runs. Any new synchronisation may also result in shifts of later
+synchronisation points, which in turn will require additional \LaTeX{} runs.
+Such shifts are usually indicated by the message: ``\LaTeX{} Warning: Label(s)
+may have changed. Rerun to get cross-references right.'' But reports about
+undefined labels may also indicate the need for another \LaTeX{} run.
+
+If you omit the optional argument, the default note column \PValue{marginpar}
+will be used. Note\textnote{Attention!} that an empty optional argument is not
+the same as omitting the optional argument!
+
+You cannot use\textnote{Attention!} \Macro{syncwithnotecolumn} inside a note
+itself, that is, inside the mandatory argument of
+\Macro{makenote}\IndexCmd{makenote}! Currently the package cannot recognise
+such a mistake, and it causes new shifts of the synchronisation point with
+each \LaTeX{} run, so the process will never terminate. To synchronise two or
+more note columns, you have to synchronise each of them with the main text.
+The recommended command for this is described below.%
+%
+\begin{Example}
+  Let's extend the example above by first adding a synchronisation point
+  and then another paragraph with a comment:
+\begin{lstcode}
+    \syncwithnotecolumn[paragraphs]\bigskip
+    \makenote[paragraphs]{%
+      \protect\begin{contract}
+        \protect\Clause{title={Humor of a Culture}}
+        \setcounter{par}{0}%
+        The humour of a joke can be determined by the
+        cultural environment in which it is told.
+
+       The humour of a joke can be determined by the
+       cultural environment in which it acts.
+      \protect\end{contract}
+    }
+    The cultural component of a joke is, in fact, not
+    negligible. Although the political correctness of
+    using the cultural environment can easily be
+    disputed, nonetheless the accuracy of such comedy
+    in the appropriate environment is striking. On
+    the other hand, a supposed joke in the wrong
+    cultural environment can also be a real danger
+    for the joke teller.
+\end{lstcode}
+  In addition to the synchronisation point, a vertical skip has been added
+  with \Macro{bigskip} to better distinguish each paragraph and the
+  corresponding comments.
+
+  Further\textnote{Attention}, this example illustrates another potential
+  problem. Because the note columns uses boxes that are assembled and
+  disassembled, counters\textnote{counter in note column} inside note columns
+  can sometimes jitter. In the example, therefore, the first paragraph would
+  be numbered 2 instead of 1. This, however, can easily be fixed by a direct
+  reset of the corresponding counter.
+
+  The example is almost complete. You just have to close the environments:
+\begin{lstcode}
+  \end{addmargin}
+  \end{document}
+\end{lstcode}
+  In reality, of course, all the remaining section of the law should also be
+  commented. But let us focus on the main purpose.
+\end{Example}
+But stop! What if, in this example, the \PName{paragraphs} would no longer fit
+on the page? Would it be printed on the next page? We will answer this
+question in the next section.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{syncwithnotecolumns}\OParameter{list of note column names}
+\end{Declaration}
+This command synchronises the main text with all note columns of the
+comma-separated \PName{list of note column names}. The main text
+will be synchronised with the note column whose mark is closest to the
+end of the document. As a side effect, the note columns will be synchronised
+with each other.
+
+If the optional argument is omitted or empty (or begins with \Macro{relax}),
+synchronisation will be done with all currently declared note columns.%
+\EndIndexGroup
+
+
+\section{Forced Output of Note Columns}
+\seclabel{clearnotes}
+
+In addition to the normal output of note columns described in the previous
+section, you may sometimes need to output all collected notes that have
+not yet been output. This is especially useful when large notes cause more and
+more notes to be moved down to new pages. A good time to force the
+output\textnote{force output} is, for example, the end of a chapter or the end
+of the document.
+
+\begin{Declaration}
+  \Macro{clearnotecolumn}\OParameter{note column name}
+\end{Declaration}
+This command prints all notes\textnote{pending notes} of a particular note
+column that have not yet been output by the end of the current page but which
+were created on that or a previous page. Blank pages are generated as needed
+to output these pending notes. During the output of the pending notes of this
+note column, notes of other note columns may also be output, but only as
+necessary to output the pending notes of the specified note column.
+
+During the output of the pending notes, notes created in the previous \LaTeX{}
+run on the pages that are now replaced by the inserted blank pages may be
+output by mistake. This will be corrected automatically in one of the
+subsequent \LaTeX{} runs. Such shifts are usually indicated by the message:
+``\LaTeX{} Warning: Label(s) may have changed. Rerun to get cross-references
+right.''
+
+The note column whose pending notes are to be output is indicated by the
+optional argument \PName{note column name}. If this argument is omitted, the
+notes of the default note column \PValue{marginpar} will be output.
+
+The attentive reader\textnote{forced output vs. synchronisation} will have
+noticed that the forced output of a note column is not unlike synchronisation.
+But if the forced output actually results in an output, it will be at the
+start of a new page and not just below the previous output. Nonetheless, a
+forced output usually results in fewer \LaTeX{} runs.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{clearnotecolumns}\OParameter{list of note column names}
+\end{Declaration}
+This command is similar to \DescRef{\LabelBase.cmd.clearnotecolumn}, but the
+the optional argument here can be not only the name of one note column but a
+comma-separated \PName{list of note column names}. The pending notes of all
+these note columns are then ouput.
+
+If you omit the optional argument or leave it empty, all pending notes of all
+note columns will be output.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{autoclearnotecolumns}{simple switch}
+\end{Declaration}
+As a rule, pending notes will always be output if a document
+implicitly\,---\,e.\,g. because of a \DescRef{maincls.cmd.chapter}
+command\,---\,or explicitly executes \DescRef{maincls.cmd.clearpage}. This is
+also the case at the end of the document within
+\Macro{end}\PParameter{document}. The \Option{autoclearnotecolumns} option can
+be used to control whether \DescRef{\LabelBase.cmd.clearnotecolumns} should be
+executed automatically without arguments when running
+\DescRef{maincls.cmd.clearpage}.
+
+Since this is generally the desired behaviour, the option is active by
+default. But you can change this with the appropriate value for a simple
+switch (see \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch})
+at any time.
+
+Note\textnote{Attention!} that disabling the automatic output of pending notes
+can result in lost notes at the end of the document. So in this case you
+should insert \DescRef{\LabelBase.cmd.clearnotecolumns} before
+\Macro{end}\PParameter{document} fore safety's sake.
+
+The question from the end of the last section should now be answered. If the
+paragraph is to be completely output, it had to be wrapped to the next page.
+This is, of course, the default setting. However, since this would happen
+after the end of the \DescRef{maincls.env.addmargin} environment, the forced
+output could still overlap with subsequent text. So in the example it would
+make sense to add another synchronisation point after the
+\DescRef{maincls.env.addmargin} environment.
+
+The result of the example is shown in
+\autoref{fig:scrlayer-notecolumn.example}.\iffree{}{ Only the colour has been
+changed from blue to grey.}
+
+\begin{figure}
+  \KOMAoptions{captions=bottombeside}%
+  \setcapindent{0pt}%
+  \begin{captionbeside}[{A sample page for the example in
+      \autoref{cha:scrlayer-notecolumn}}]{A sample page for the example in
+      this chapter\label{fig:scrlayer-notecolumn.example}}[l]
+  \frame{\includegraphics[width=.5\textwidth,keepaspectratio]%
+    {scrlayer-notecolumn-example-en}}
+  \end{captionbeside}
+\end{figure}
+\EndIndexGroup
+%
+\EndIndexGroup
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "scrguide-en.tex"
+%%% coding: utf-8
+%%% ispell-local-dictionary: "en_GB"
+%%% eval: (flyspell-mode 1)
+%%% End:

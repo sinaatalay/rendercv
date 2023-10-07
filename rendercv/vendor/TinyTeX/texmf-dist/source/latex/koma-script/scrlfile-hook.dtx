@@ -1,0 +1,707 @@
+% \iffalse^^A meta-comment
+% ======================================================================
+% scrlfile-hook.dtx
+% Copyright (c) Markus Kohm, 2021-2022
+%
+% This file is part of the work `scrlfile' which is part of the LaTeX2e
+% KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+%%% From File: $Id: scrlfile-hook.dtx$
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2022-06-05 12:38:02 +0200 (So, 05. Jun 2022) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 3874 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrlfile-hook.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script package source
+  }%
+\reserved@a
+%</dtx>
+%<package&current>\ProvidesPackage{scrlfile-hook}[%
+%<package&3.34>\ProvidesPackage{scrlfile-hook-3.34}[%
+%!KOMAScriptVersion
+%<package>  package
+  (using LaTeX hooks)]
+%<*dtx>
+\ifx\documentclass\undefined
+  \input scrdocstrip.tex
+  \@@input scrkernel-version.dtx
+  \@@input scrstrip.inc
+  \KOMAdefVariable{COPYRIGHTFROM}{2002}
+  \generate{\usepreamble\defaultpreamble
+    \file{scrlfile-hook.sty}{%
+      \from{scrlfile-hook.dtx}{package,current}%
+      \from{scrlogo.dtx}{logo}%
+    }%
+    \file{scrlfile-hook-3.34.sty}{%
+      \from{scrlfile-hook.dtx}{package,3.34}%
+      \from{scrlogo.dtx}{logo}%
+    }%
+  }%
+  \@@input scrstrop.inc
+\else
+  \let\endbatchfile\relax
+\fi
+\endbatchfile
+\documentclass[USenglish]{l3doc}% Using class for documentation of expl3 style packages.
+\usepackage{babel}
+\expandafter\let\expandafter\nodriver\csname iffalse\endcsname
+\expandafter\let\expandafter\endnodriver\csname fi\endcsname
+\makeatletter\input{scrlogo.dtx}\makeatother
+\CodelineIndex
+
+\begin{document}
+  \DocInput{scrlfile-hook.dtx}
+\end{document}
+%</dtx>
+% \fi^^A meta-comment
+%
+% \changes{v3.32}{2020/08/25}{new (sub-)package}
+% \changes{v3.36}{2022/02/03}{use new documentation style}
+% \changes{v3.36}{2022/02/03}{using \file{scrlogo.dtx} to define the logo}
+%
+% \GetFileInfo{scrlfile-hook.dtx}
+% \title{\pkg{scrlfile} \KOMAScript{} Sub-Packages \pkg{scrlfile-hook} and
+% \pkg{scrlfile-hook-3.34}}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   This package provides hooks before and after loading files, packages or
+%   classes. It also provides a hook after the last \cs{clearpage} of the
+%   document. It allowes to replace files, packages and classes by other
+%   files, packages and classes. It is inteded to be used by package and class
+%   authors but may also be used by \LaTeX{} users.
+% \end{abstract}
+% \tableofcontents
+% 
+%
+% \section{User Manual}
+%
+% \pkg{scrlfile-hook} implements the \LaTeX-hook-based part of
+% \pkg{scrlfile}. \pkg{scrlfile-hook-3.34} is a variant for \LaTeX{} kernel
+% versions before 2021/06/01.
+%
+% There isn't any user manual for the user level \LaTeXe{} commands in this
+% file. Please see the manual of \pkg{scrlfile} for more information about
+% \pkg{scrlfile-hook} and \pkg{scrlfile-hook-3.34}.
+%
+% This section, however, contains the user manual of the \LaTeX3{} package
+% author commands.
+%
+% \begin{function}[TF, added = 2020-08-26]
+%   {\scrlfile_if_class_loaded:n,\scrlfile_if_package_loaded:n}
+%   \begin{syntax}
+%     \cs{scrlfile_if_class_loaded:nTF} \Arg{class name} \Arg{true code} \Arg{false code}
+%     \cs{scrlfile_if_package_loaded:nTF} \Arg{package name} \Arg{true code} \Arg{false code}
+%   \end{syntax}
+%   Tests if the class \meta{class name} resp. the package \meta{package name}
+%   has been loaded completely. It runs the \Arg{true code} only, if the input
+%   of the class file with the name \meta{class
+%   name}\file{.}\cs{@clsextension} resp. the package file with the name 
+%   \meta{package name}\file{.}\cs{@pkgextension} has already been
+%   finished. It runs the \Arg{false code}, if the class or package has not
+%   been loaded or the input of the class or package file is still in
+%   progress.
+% \end{function}
+%
+%
+% \MaybeStop{\PrintIndex}
+%
+% \section{Implementation of \pkg{scrlfile-hook}}
+%
+%    \begin{macrocode}
+%<@@=scrlfile>
+%    \end{macrocode}
+%
+% Test whether the used \LaTeX{} provides all commands we need.
+% \changes{v3.34}{2021/04/21}{make it more robust agains not recommended
+%   direct usage}
+% \changes{v3.35}{2021/10/31}{new file version because \LaTeX{} kernel
+%   2021/11/15 has changed the field order of gerneric hooks}
+% \changes{v3.36}{2022/02/03}{package name in messages fixed}
+%    \begin{macrocode}
+\@ifundefined{IfFormatAtLeastTF}{%
+  \PackageError{scrlfile-hook}{not recommended usage of package}{%
+    It seems this package has been loaded directly using a LaTeX
+    version\MessageBreak
+    prior to 2020-10-01. This is not recommended. Please always load
+    package\MessageBreak
+    scrlfile instead of scrlfile-hook.\MessageBreak
+    If you would continue, I will try to load scrlfile-patcholdlatex%
+  }%
+  \RequirePackage{scrlfile-patcholdlatex}\endinput
+}{%
+  \IfFormatAtLeastTF{2020/10/01}{%
+    \IfFormatAtLeastTF{2021/11/15}{%
+%<*3.34>
+      \PackageError{scrlfile-hook-3.34}{LaTeX too new for this package}{%
+        It seems this package has ben loaded directly using a LaTeX
+        version\MessageBreak
+        newer than 2021-06-01. This is not recommended. Please always load
+        package\MessageBreak
+        scrlfile instead of scrlfile-hook-3.34.\MessageBreak
+        If you would continue, I will try to load scrlfile-hook%
+      }%
+      \RequirePackage{scrlfile-hook}\endinput
+%</3.34>
+    }{%
+%<*current>
+      \PackageError{scrlfile-hook}{LaTeX too old for this package}{%
+        It seems this package has been loaded directly using LaTeX
+        version\MessageBreak
+        prior to 2021-11-15. This is not recommended. Please always load
+        package\MessageBreak
+        scrlfile instead of scrlfile-hook.\MessageBreak
+        If you would continue, I will try to load scrlfile-hook-3.34%
+      }%
+      \RequirePackage{scrlfile-hook-3.34}\endinput
+%</current>
+    }%
+  }{%
+    \PackageError{scrlfile-hook}{LaTeX too old for this package}{%
+      It seems this package has been loaded directly using a LaTeX
+      version\MessageBreak
+      prior to 2020-10-01. This is not recommended. Please always load
+      package\MessageBreak
+      scrlfile instead of scrlfile-hook.\MessageBreak
+      If you would continue, I will try to load scrlfile-patcholdlatex%
+    }%
+    \RequirePackage{scrlfile-patcholdlatex}\endinput
+  }%
+}
+%    \end{macrocode}
+%
+%
+% \subsection{Before and After Commands}
+%
+% The hook implementation is based on a \LaTeX{} version that provides
+% \LaTeX3. So it makes sense to use it.
+%
+%    \begin{macrocode}
+\ExplSyntaxOn
+%    \end{macrocode}
+%
+% \begin{macro}[updated = 2021-10-31]{\BeforeFile}
+% The hook version of this command is just a wrapper to the corresponding
+% \LaTeX{} file hooks. It supports a mandatory \meta{file} argument, an
+% optional \meta{label} argument and a mandatory \meta{hook code} argument.
+% From \LaTeX{} kernel version 2021/11/15 the hook has
+% been changed from \texttt{file/before/\meta{file name}} to
+% \texttt{file/\meta{file name}/before}.
+%    \begin{macrocode}
+\NewDocumentCommand \BeforeFile { m }
+  {
+%<3.34>    \AddToHook { file / before / #1 } 
+%<current>    \AddToHook { file / #1 / before } 
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[updated = 2021-10-31]{\AfterFile}
+% The hook version of this command is just a wrapper to the corresponding
+% \LaTeX{} file hooks. It supports a mandatory \meta{file} argument, an
+% optional \meta{label} argument and a mandatory \meta{hook code} argument.
+% From \LaTeX{} kernel version 2021/11/15 the hook has
+% been changed from \texttt{file/after/\meta{file name}} to
+% \texttt{file/\meta{file name}/after}.
+%    \begin{macrocode}
+\NewDocumentCommand \AfterFile { m }
+  {
+%<3.34>    \AddToHook { file / after / #1 } 
+%<current>    \AddToHook { file / #1 / after } 
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\BeforeClass,\BeforePackage}
+% The hook version of these commands are also wrappers to the
+% \texttt{file/before} hooks, because the \meta{code} should also be executed
+% already in the class or package context.
+%    \begin{macrocode}
+\NewDocumentCommand \BeforeClass { m }
+  {
+    \BeforeFile { #1.\@clsextension }
+  }
+\NewDocumentCommand \BeforePackage { m }
+  {
+    \BeforeFile { #1.\@pkgextension }
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}[updated = 2021-10-31, updated = 2021-11-09]
+%   {\AfterAtEndOfClass,\AfterAtEndOfPackage}
+% \changes{v3.35}{2021/10/31}{field order of generic hooks changed in
+%   \LaTeX{} 2021/11/15}
+% \changes{v3.35}{2021/11/09}{hooks became one-time hooks in
+%   \LaTeX{} 2021/11/15}
+% With version 3.32 the syntax of these commands have been changed. Now, there
+% is also a star variant, that runs the \meta{code} immediately if the class
+% or package has already been loaded completely. Otherwise and in the normal
+% variant the \meta{code} is added to the \texttt{class/after} or
+% \texttt{package/after} hook, because this hook is used outside the context
+% of the class or package and after the \cs{AtEndOfClass} or
+% \cs{AtEndOfPackage} code.
+% From \LaTeX{} kernel version 2021/11/15 the hooks has
+% been changed from \texttt{class/after/\meta{class name}} to
+% \texttt{class/\meta{class name}/after} and from
+% \texttt{package/after/\meta{package name}} to
+% \texttt{package/\meta{package name}/after}. Additionally the hooks became
+% one-time hooks. So they are executed immediately, if the class or package
+% has already been loaded. Because of this, we additionally have to test this
+% case in the non star variant.
+%    \begin{macrocode}
+\NewDocumentCommand \AfterAtEndOfClass { s m o +m }
+  {
+    \IfBooleanTF { #1 }
+      {
+        \scrlfile_if_class_loaded:nTF { #2 }
+          { #4 }
+%<3.34>          { \hook_gput_code:nnn { class / after / #2 } { #3 } { #4 } }
+%<current>          { \hook_gput_code:nnn { class / #2 / after } { #3 } { #4 } }
+      }
+%<3.34>      { \hook_gput_code:nnn { class / after / #2 } { #3 } { #4 } }
+%<*current>
+      {
+        \scrlfile_if_class_loaded:nF
+          { #2 }
+          { \hook_gput_code:nnn { class / #2 / after } { #3 } { #4 } }
+      }
+%</current>
+  }
+\NewDocumentCommand \AfterAtEndOfPackage { s m o +m }
+  {
+    \IfBooleanTF { #1 }
+      {
+        \scrlfile_if_package_loaded:nTF { #2 }
+          { #4 }
+%<3.34>          { \hook_gput_code:nnn { package / after / #2 } { #3 } { #4 } }
+%<current>          { \hook_gput_code:nnn { package / #2 / after } { #3 } { #4 } }
+      }
+%<3.34>      { \hook_gput_code:nnn { package / after / #2 } { #3 } { #4 } }
+%<*current>
+      {
+        \scrlfile_if_package_loaded:nF
+          { #2 }
+          { \hook_gput_code:nnn { package / #2 / after } { #3 } { #4 } }
+      }
+%</current>
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{variable}[added = 2020-06-26,
+%   updated = 2021-01-01]{\g__scrlfile_input_file_seq}
+% \changes{3.33}{2021/01/01}{message definition moved outside function}
+% \cs{g__scrlfile_input_file_seq} is a sequence of active file inputs (without
+% path information). Two global hooks are used to setup the sequence. The new
+% conditional tests if a file is in the sequence. And a message is defined for
+% the case of more pops than pushs to the stack.
+%    \begin{macrocode}
+\seq_new:N \g__scrlfile_input_file_seq
+\hook_gput_code:nnn { file / before } { . }
+  { \seq_gpush:Nx \g__scrlfile_input_file_seq { \CurrentFile }  }
+\msg_new:nnn { scrlfile-hook } { too-many-pops }
+  {
+    More~file~names~popped~from~stack~than~put~to.~
+    This~should~never~happen.~
+    However,~it~could~happen~if~scrlfile-hook~is~loaded~by~another~
+    package~or~class.~In~this~case~some~packages~or~classes~are~not~
+    recognised~correctly.
+  }
+\hook_gput_code:nnn { file / after } { . }
+  {
+    \seq_gpop:NNF \g__scrlfile_input_file_seq \l_tmpa_seq
+      {
+        \msg_warning:nn { scrlfile-hook } { too-many-pops }
+      }
+  }
+%    \end{macrocode}
+% Unfortunately we need an ugly hack to initialise the stack using an internal
+% kernel variable. This is a no go but I do not know a better solution for
+% this, because loading of the package could be done late.
+% \begin{description}
+% \item[ToDo:] Decide, if the second or fourth token is correct.  If fourth,
+%   \cs{CurrentFile} has to be used always instead of \cs{CurrentFileUsed}.
+% \end{description}
+%    \begin{macrocode}
+\cs_if_exist:NTF \g__filehook_input_file_seq
+  {
+    \seq_map_inline:Nn \g__filehook_input_file_seq
+      {
+        \seq_gput_right:Nx \g__scrlfile_input_file_seq
+          { \tl_item:nn { #1 } { 2 } }
+      }
+  }
+  {
+    \seq_gpush:Nx \g__scrlfile_input_file_seq { }
+    \cs_if_exist:NTF \CurrentFileUsed
+      { \seq_gpush:Nx \g__scrlfile_input_file_seq { \CurrentFileUsed } }
+      { \seq_gpush:Nx \g__scrlfile_input_file_seq { \CurrentFile } }
+  }
+%    \end{macrocode}
+% \end{variable}
+% \begin{function}[TF, added = 2020-06-26]{\@@_if_loading:n}
+% Test if the file name is in the file name list.
+%    \begin{macrocode}
+\prg_new_protected_conditional:Npnn \__scrlfile_if_loading:n #1 { T, F, TF }
+  {
+    \str_set:Nx \l_tmpa_str { #1 }
+    \seq_if_in:NxTF \g__scrlfile_input_file_seq { \str_use:N \l_tmpa_str }
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
+%    \end{macrocode}
+% \end{function}
+%
+% \begin{function}[TF, added = 2020/08/22]
+%   {\scrlfile_if_class_loaded:n,\scrlfile_if_package_loaded:n}
+% \cs{scrlfile_if_class_loaded:nTF} is similar to \cs{@ifclassloaded} and
+% \cs{scrlfile_if_package_loaded:nTF} is similar to \cs{@ifpackageloaded} but in
+% opposite to those they test, if the class or package has been loaded
+% completely.
+%    \begin{macrocode}
+\prg_new_protected_conditional:Npnn \scrlfile_if_class_loaded:n #1 { T, F, TF }
+  {
+    \@ifclassloaded { #1 }
+      {
+        \__scrlfile_if_loading:nTF { #1.\@clsextension }
+          { \prg_return_false: }
+          { \prg_return_true: }
+      }
+      {
+        \prg_return_false:
+      }
+  }
+\prg_new_protected_conditional:Npnn \scrlfile_if_package_loaded:n #1 { T, F, TF }
+  {
+    \@ifpackageloaded { #1 }
+      {
+        \__scrlfile_if_loading:nTF { #1.\@pkgextension }
+          { \prg_return_false: }
+          { \prg_return_true: }
+      }
+      {
+        \prg_return_false:
+      }
+  }
+%    \end{macrocode}
+% \end{function}
+%
+% \begin{macro}[updated = 2021-10-31]{\AfterClass,\AfterPackage}
+% With version 3.32 these do not support plus or exclamation mark variants,
+% but only the normal and the star variants. Instead of the plus or
+% exclamation mark variants users should use the star variant of
+% \cs{AfterAtEndOfClass} and \cs{AfterAtEndOfPackage}. The commands use the
+% \texttt{file/after} hook, because the user manual declares, that \meta{code}
+% is used before the code of \cs{AtEndOfClass} or \cs{AtEndOfPackage}.
+% From \LaTeX{} kernel version 2021/11/15 the hook has
+% been changed from \texttt{file/after/\meta{file name}} to
+% \texttt{file/\meta{file name}/after}.
+%    \begin{macrocode}
+\NewDocumentCommand \scrlfile@AfterClass { s m o +m }
+  {
+    \IfBooleanTF { #1 }
+      {
+        \@ifclassloaded{ #2 }
+          { #4 }
+          {
+            \hook_gput_code:nnn
+%<3.34>              { file / after / #2.\@clsextension }
+%<current>              { file / #2.\@clsextension / after }
+              { #3 }
+              { #4 }
+          }
+      }
+      {
+%<3.34>        \hook_gput_code:nnn { file / after / #2.\@clsextension } { #3 } { #4 }
+%<current>        \hook_gput_code:nnn { file / #2.\@clsextension / after } { #3 } { #4 }
+      }
+  }
+\NewDocumentCommand \AfterClass { } { \scrlfile@AfterClass }
+\NewDocumentCommand \scrlfile@AfterPackage { s m o +m }
+  {
+    \IfBooleanTF { #1 }
+      {
+        \@ifpackageloaded{ #2 }
+          { #4 }
+          {
+            \hook_gput_code:nnn
+%<3.34>              { file / after / #2.\@pkgextension }
+%<current>              { file / #2.\@pkgextension / after }
+              { #3 }
+              { #4 }
+          }
+      }
+      {
+%<3.34>        \hook_gput_code:nnn { file / after / #2.\@pkgextension } { #3 } { #4 }
+%<current>        \hook_gput_code:nnn { file / #2.\@pkgextension / after } { #3 } { #4 }
+      }
+  }
+\NewDocumentCommand \AfterPackage { } { \scrlfile@AfterPackage }
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \subsection{File Substitution}
+%
+% With new file hooks the substitutions are so easy we even do not need
+% \LaTeX3 syntax to implement them.
+%
+% \begin{macro}{\ReplaceInput}
+% This is only the simplest wrapper to \cs{declare@file@substitution}.
+%    \begin{macrocode}
+\NewDocumentCommand{\ReplaceInput}{}{\declare@file@substitution}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ReplaceClass}
+% \begin{macro}{\ReplacePackage}
+% These are also wrappers to \cs{declare@file@substitution}. But in this case
+% we also have to add the extension.
+%    \begin{macrocode}
+\NewDocumentCommand\ReplaceClass{mm}{%
+  \declare@file@substitution{#1.\@clsextension}{#2.\@clsextension}%
+}
+\NewDocumentCommand\ReplacePackage{mm}{%
+  \declare@file@substitution{#1.\@pkgextension}{#2.\@pkgextension}%
+}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\UnReplaceInput}
+% This is the simplest wrapper to \cs{undeclare@file@substitution}.
+%    \begin{macrocode}
+\NewDocumentCommand{\UnReplaceInput}{}{\undeclare@file@substitution}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\UnReplaceClass}
+% \begin{macro}{\UnReplacePackage}
+% Also very simple but again we have to add the extension.
+%    \begin{macrocode}
+\NewDocumentCommand\UnReplaceClass{m}{%
+  \undeclare@file@substitution{#1.\@clsextension}%
+}
+\NewDocumentCommand\UnReplacePackage{mm}{%
+  \undeclare@file@substitution{#1.\@pkgextension}%
+}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \subsection{Prevent Package from Loading}
+%
+% To store and reset the hole list of prevents we use a comma separated
+% list. So we need again use \LaTeX3.
+%
+% \begin{variable}[added = 2020-09-02]{\g__scrlfile_prevents_clist}
+% This local variable stores the list of files, that should be prevented from
+% loading. It is needed to stay compatible with old \file{scrlfile}. Without
+% this compatibility purpose we would be able to use simple wrappers to
+% \cs{disable@package@load} and \cs{reenable@package@load}.
+%    \begin{macrocode}
+\clist_new:N \g__scrlfile_prevent_clist
+%    \end{macrocode}
+% \end{variable}
+%
+% \begin{macro}{\PreventPackageFromLoading}
+% This is more than a wrapper to \cs{disable@package@load} because we have to
+% manage an internal list and it is documented, that the re-enabling does not
+% undefine the \meta{alternate-code} setting but only disables it. So we have
+% to extra store it. Note: Local loading of packages does not make sense, so
+% local changes of the prevent list also does not make sense. Therefore this
+% is a global acting command!
+%    \begin{macrocode}
+\NewDocumentCommand \PreventPackageFromLoading { s +o m }
+  {
+    \clist_set:Nx \l__scrlfile_package_clist { #3 }
+    \clist_map_inline:Nn \l__scrlfile_package_clist
+      {
+        \@ifpackageloaded { ##1 }
+          {
+            \IfBooleanTF { #1 } { \msg_info:nnn } { \msg_warning:nnn }
+              { scrlfile } { no-prevent-for-already-loaded } { ##1 }
+          }
+          {
+            \clist_if_in:NnF \g__scrlfile_prevent_clist { ##1 }
+              { \clist_gput_right:Nn \g__scrlfile_prevent_clist { ##1 } }
+            \tl_if_exist:cF { g__scrlfile_exclude_package_##1_tl }
+              {
+                \tl_new:c { g__scrlfile_exclude_package_##1_tl }
+              }
+            \IfValueT { #2 }
+              {
+                \tl_gput_right:cn { g__scrlfile_exclude_package_##1_tl } { #2 }
+              }
+            \disable@package@load { ##1 }
+              { \tl_use:c { g__scrlfile_exclude_package_##1_tl } }
+          }
+      }
+    \clist_clear:N \l__scrlfile_package_clist  
+  }
+%    \end{macrocode}
+%
+% \begin{macro}{\l__scrlfile_package_clist}
+% One local variable is used to process the \meta{package-list} argument of
+% \cs{PreventPackageFromLoading}.
+%    \begin{macrocode}
+\clist_new:N \l__scrlfile_package_clist
+%    \end{macrocode}
+% \end{macro}
+%
+% And here comes the message, that could be used either as a warning or as an
+% info.
+%    \begin{macrocode}
+\msg_new:nnn { scrlfile } { no-prevent-for-already-loaded }
+  {
+    Cannot~prevent~package~`#1'~from~being~loaded,~
+    because~it~has~been~loaded~already~before~line~\msg_line_number:
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\StorePreventPackageFromLoading}
+% This simply copies the internal \texttt{clist} to a macro.
+%    \begin{macrocode}
+\NewDocumentCommand \StorePreventPackageFromLoading { m }
+  { \edef #1 { \clist_use:Nn \g__scrlfile_prevent_clist { , } } }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ResetPreventPackageFromLoading}
+% Map the internal list to a function that re-enables the package. At the end
+% the internal list is cleared.
+%    \begin{macrocode}
+\NewDocumentCommand \ResetPreventPackageFromLoading {}
+  {
+    \clist_map_function:NN \g__scrlfile_prevent_clist \reenable@package@load
+    \clist_gclear:N \g__scrlfile_prevent_clist
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\UnPreventPackageFromLoading}
+% Here again the argument is a \meta{package-list} not only one
+% \meta{package}. So we have to build a local \texttt{clist} and walk through
+% it.
+%    \begin{macrocode}
+\NewDocumentCommand \UnPreventPackageFromLoading { s m }
+  {
+    \clist_set:Nx \l__scrlfile_package_clist { #2 }
+    \clist_map_inline:Nn \l__scrlfile_package_clist
+      {
+        \clist_if_in:NnT \g__scrlfile_prevent_clist { ##1 }
+          {
+            \clist_gremove_all:Nn \g__scrlfile_prevent_clist { ##1 }
+            \reenable@package@load { ##1 }
+            \IfBooleanT { #1 }
+              { \cs_undefine:c { g__scrlfile_exclude_package_##1_tl } }
+          }
+      }
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \subsection{Extra Document Hooks}
+%
+% \begin{macro}{\BeforeClosingMainAux}
+% \changes{v3.32}{2020/09/10}{optional argument added}
+% Here we cannot simply wrap this to the hook
+% \texttt{enddocument/afterlastpage}, because it is documented, that inside
+% the \meta{code} \cs{protected@write} is replaced by
+% \cs{immediate@protected@write}. So we have to take extra care to it.
+%    \begin{macrocode}
+\NewDocumentCommand \BeforeClosingMainAux { o m }
+  {
+    \hook_gput_code:nnn { enddocument / afterlastpage } { #1 }
+      {
+        \debug_suspend:
+        \RenewDocumentCommand \BeforeClosingMainAux { m } { ##1 }
+        \cs_set_eq:NN \__scrlfile_protected@write:Nnn \protected@write
+        \cs_set_eq:NN \protected@write \protected@immediate@write
+        #2
+        \cs_set_eq:NN \protected@write \__scrlfile_protected@write:Nnn
+        \debug_resume:
+      }
+  }  
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\AfterReadingMainAux}
+% \changes{v3.32}{2020/09/10}{optional argument added}
+% Here we the exact same problem as with \cs{BeforeClosingMainAux}.
+%    \begin{macrocode}
+\NewDocumentCommand \AfterReadingMainAux { o m }
+  {
+    \hook_gput_code:nnn { enddocument / afteraux } { #1 }
+      {
+        \debug_suspend:
+        \RenewDocumentCommand \AfterReadingMainAux { m } { ##1 }
+        \cs_set_eq:NN \__scrlfile_protected@write:Nnn \protected@write
+        \cs_set_eq:NN \protected@write \protected@immediate@write
+        #2
+        \cs_set_eq:NN \protected@write \__scrlfile_protected@write:Nnn
+        \debug_resume:
+      }
+  }  
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\ExplSyntaxOff
+%    \end{macrocode}
+%
+% \subsection{Kernel Extensions not Using \LaTeX3}
+%
+% \begin{macro}{\protected@immediate@write}
+% Like \LaTeX{} kernel's |\protected@write| but using |\immediate\write|. In
+% this case it is even not a good idea to protect |\thepage|!
+%    \begin{macrocode}
+\ProvideDocumentCommand\protected@immediate@write{m+m+m}
+  {%
+    \begingroup
+      #2%
+      \let\protect\@unexpandable@protect
+      \edef\reserved@a{\immediate\write#1{#3}}%
+      \reserved@a
+    \endgroup
+    \if@nobreak\ifvmode\nobreak\fi\fi
+  }
+%    \end{macrocode}
+% \end{macro}
+% 
+% \Finale
+% \PrintChanges
+%
+% \endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:

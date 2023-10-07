@@ -1,0 +1,313 @@
+% url.sty  ver 3.4    16-Sep-2013   Donald Arseneau   asnd@triumf.ca
+% Copyright 1996-2013 Donald Arseneau,  Vancouver, Canada.
+% This program can be used, distributed, and modified under the terms
+% of the LaTeX Project Public License, version 2 or later.
+%
+% A form of \verb that allows linebreaks at certain characters or
+% combinations of characters, accepts reconfiguration, and can usually
+% be used in the argument to another command.  It is intended for email
+% addresses, hypertext links, directories/paths, etc., which normally
+% have no spaces.  The font may be selected using the \urlstyle command,
+% and new url-like commands can be defined using \urldef.
+%
+% Usage:    Conditions:
+% \url{ }   If the argument contains any "%" or "^^", or ends with
+%           "\", it can't be used in the argument to another command.
+%           The argument must not contain unbalanced braces.
+% \url|  |  ...where "|" is any character not used in the argument and not
+%           "{" or a space.  The same restrictions as above except that the
+%           argument may contain unbalanced braces.
+% \urldef\xyz\url{ }
+% \xyz      a defined-url: "\xyz" can be used anywhere, no matter what
+%           characters it contains.
+% \DeclareUrlCommand\abc{settings}: makes \abc{ } like \url{ } with settings
+%
+% See url.tex/url.pdf for documentation.  Some info after \endinput
+%
+% Required catcodes during loading:  letters @ = letter, 
+%        ` = > < . [ ] + - digits = other,  
+%        { } \ ~ # % $ _ ^ = their normal
+
+% default style assignments
+\def\UrlBreaks{\do\.\do\@\do\\\do\/\do\!\do\_\do\|\do\;\do\>\do\]%
+ \do\)\do\,\do\?\do\&\do\'\do+\do\=\do\#}%
+\def\UrlBigBreaks{\do\:\do@url@hyp}%
+\def\UrlNoBreaks{\do\(\do\[\do\{\do\<}%
+% any ordinary characters that aren't usually:
+\def\UrlOrds{\do\*\do\-\do\~\do\'\do\"\do\-}%
+\def\UrlSpecials{\do\ {\Url@space}\do\%{\Url@percent}\do\^^M{\Url@space}%
+   \Url@force@Tilde}% package option may force faked text-ascii-tilde
+
+\@namedef{Url@OT1encSpecials}{%
+  %  *Some* latin-1 or windows characters that ot1 has elsewhere:  OE  oe  ss
+  \do\^^8c{\mathchar30 }\do\^^9c{\mathchar27 }\do\^^df{\mathchar25 }%
+  \do\~{\lower.45ex\hbox{\m@th$\mathchar126$}}% For tt style
+  % lots more to add, but I should later link into inputenc
+  \do\^^b5{\mu}%
+  \Url@OTnonTT % more for any but typewriter
+  }
+
+\def\Url@OTnonTT{\do\<{\langle}\do\>{\mathbin{\rangle}}\do
+  \_{\_\penalty\@m}\do\|{\mid}\do\{{\lbrace}\do\}{\mathbin{\rbrace}}\do
+  \\{\mathbin{\backslash}}\UrlTildeSpecial}
+
+% *Some* latin-1 or windows characters. Most will pass through safely to T1 enc
+% mu  inverted-?  OE  oe
+% lots more to add, but I should later link into inputenc
+\@namedef{Url@T1encSpecials}{\do\^^b5{\mu}\do\^^bf{\mathchar190 }%
+  \do\^^8c{\mathchar215 }\do\^^9c{\mathchar247 }\do\^^df{\mathchar255 }%
+  \do\^^ff{\mathchar184 }}
+
+\@namedef{Url@LY1encSpecials}{\do\~{\mathchar158 }}
+
+\def\UrlTildeSpecial{\do\~{\raise.45ex\hbox{\m@th$\scriptstyle\sim$}}}
+\let\Url@force@Tilde\relax
+
+\def\url@ttstyle{%
+ \@ifundefined{selectfont}{\def\UrlFont{\tt}}{\def\UrlFont{\ttfamily}}}
+
+\def\url@rmstyle{%
+ \@ifundefined{selectfont}{\def\UrlFont{\rm}}{\def\UrlFont{\rmfamily}}}
+
+\def\url@sfstyle{%
+ \@ifundefined{selectfont}{\def\UrlFont{\sf}}{\def\UrlFont{\sffamily}}}
+
+\def\url@samestyle{\def\UrlFont{}}
+
+\@ifundefined{strip@prefix}{\def\strip@prefix#1>{}}{}
+\@ifundefined{verbatim@nolig@list}{\def\verbatim@nolig@list{\do\`}}{}
+
+% \Url sets up the reading the argument verbatim if possible
+\def\Url{%
+ \Url@movingtest
+ \ifmmode\@inmatherr$\fi %$
+ \let\do\@makeother \dospecials % verbatim catcodes
+ \catcode`{\@ne \catcode`}\tw@ % with exceptions
+ \catcode`\ =10 % allow "\url {x}"
+ \catcode`\#=6  % always # -> ##, so I can later convert ## -> #
+ \@ifnextchar\bgroup{\obeyspaces\obeylines\Url@z}\Url@y}
+
+% \Url@y read arguments delimited like |...|, passing to \Url@z
+\def\Url@y#1{\catcode`{11 \catcode`}11\obeyspaces\obeylines
+  \def\@tempa##1#1{\Url@z{##1}}\@tempa}
+
+% \Url@z read arguments delimited like {...}, verbatimizes with \meaning,
+% performs character translations, then invokes the formatter.
+\def\Url@z#1{\toks@{#1}\edef\Url@String{\the\toks@}%
+  \edef\Url@String{\expandafter\strip@prefix\meaning\Url@String}%
+%\if\urldebug \message{------------------------------------------------------}%
+%\message{ \Url@String}\fi
+% \meaning introduces spurious spaces in the text, so it would be nice
+% to preserve the real spaces before \meaning, but that doesn't work --
+% we can only do replacement on streams of non-syntactic characters.
+  \Url@ObeySp % may be no-op; otherwise put ordinary (12) space characters
+%\if\urldebug \message{ \Url@String}\fi
+% we left the catcode of # with its normal value (6) so \meaning
+% doubles it to ##.  Now we convert back to single #.  This allows
+% \url{#} to appear in the arguments of other commands, where we can't
+% make # be an ordinary character.  We make the single # active rather
+% than `other' to support hyperref.sty.
+  \Url@acthash
+%\if\urldebug \message{ \Url@String}\fi
+% Also make % active to support hyperref.
+  \Url@actpercent
+% now do any hyper referencing due to hyperref (or perform a url-def)
+  \Url@HyperHook
+% Now do the formatting in a group (can also have \Url@HyperHook take
+% this as an argument.
+  {\Url@FormatString}%
+  \endgroup}
+
+\let\Url@ObeySp\@empty
+\let\UrlRight\@empty
+\let\UrlLeft\@empty
+\let\Url@HyperHook\@empty
+
+% This is the normal way to format the strings, using math mode.
+\def\Url@FormatString{%
+ \UrlFont \Url@MathSetup 
+ $\fam\z@ \textfont\z@\font
+ \expandafter\UrlLeft\Url@String\UrlRight
+ \m@th$%
+% \if\urldebug \showlists \fi 
+}%
+
+\def\Url@MathSetup{%
+ \medmuskip\Urlmuskip \thickmuskip\medmuskip \thinmuskip0mu%
+ \relpenalty\UrlBigBreakPenalty \binoppenalty\UrlBreakPenalty
+ \expandafter\let\expandafter\UrlEncSpecials\csname Url@\f@encoding encSpecials\endcsname
+ % Insert test for unknown encodings here \ifx\UrlEncSpecials\relax
+ \ifdim\fontdimen\thr@@\font=\z@ \let\Url@OTnonTT\relax \fi
+ \@tempcnta\z@ %  \fam\multiply\@tempcnta\@cclvi
+ \let\do\set@mathcode \UrlOrds % ordinary characters that were special
+ \advance\@tempcnta 8192 \UrlBreaks % bin
+ \advance\@tempcnta 4096 \UrlBigBreaks % rel
+ \advance\@tempcnta 4096 \UrlNoBreaks % open
+ \let\do\set@mathact \UrlSpecials \UrlEncSpecials % active
+ \let\do\set@mathnolig \verbatim@nolig@list % prevent ligatures
+}
+
+\def\set@mathcode#1{\count@`#1\advance\count@\@tempcnta
+%\message{Set mathcode of \string #1 (\number`#1) = \number`#1 + \number\@tempcnta. }%
+\mathcode`#1\count@}
+\def\set@mathact#1#2{\mathcode`#1=32768 \begingroup 
+    \lccode`\~`#1\lowercase{\endgroup\def~}{#2}}
+\def\set@mathnolig#1{\ifnum\mathcode`#1<32768
+   \begingroup\lccode`\~`#1\lowercase{\endgroup
+     \edef~}{\mathchar\number\mathcode`#1\sb{\/}}%
+   \mathcode`#1=32768 \fi}
+
+\def\Url@movingtest{\begingroup
+ \ifx\let\HyPsd@LetCommand % we are already in a pdf string!
+  \expandafter\Url@unmove \fi % give the argument and hope for the best
+ \let\Url@moving\relax\relax\relax
+ \ifx\Url@moving\relax\else \expandafter\Url@unmove \fi
+ \endgroup}
+\long\def\Url@unmove#1\Url@y{\endgroup \ifx\protect\relax\else\protect\Url\fi}
+\edef\Url@moving{\csname Url Error\endcsname}
+\expandafter\edef\Url@moving
+ {\csname url used in a moving argument.\endcsname}
+\expandafter\expandafter\expandafter \let \Url@moving\@undefined
+
+\def\urldef#1#2{\begingroup \setbox\z@\hbox\bgroup
+  \def\Url@HyperHook##1\endgroup{\Url@def{#1}{#2}}%
+  % Because hyperref breaks \urldef and does not define its own (Grrrr!)...
+  \def\url@##1{\egroup\endgroup\DeclareRobustCommand#1{#2{##1}}}%
+ #2}
+\def\Url@def#1#2{%
+   \toks0\expandafter{\Url@String}%
+   \protected@edef\Url@String{\Url@String}%
+   \toks1\expandafter{\Url@String}%
+   \edef\Url@String{\endgroup\egroup\endgroup\def
+     \expandafter\noexpand\csname\expandafter\@gobble\string#1 \endcsname
+     {\noexpand\Url@eitherdef{\the\toks1}{\noexpand#2{\the\toks0}}}}%
+   \Url@String
+   \edef#1{\noexpand\protect
+      \expandafter\noexpand\csname\expandafter\@gobble\string#1 \endcsname}%
+  }
+\def\Url@eitherdef{\ifx\let\HyPsd@LetCommand % we are already in a pdf string!
+  \expandafter\@firstoftwo \else \expandafter\@secondoftwo \fi}
+
+\def\urlstyle#1{\expandafter\protect\csname url@#1style\endcsname}
+
+\def\DeclareUrlCommand#1#2{\def#1{\leavevmode\begingroup #2\Url}}
+
+% Sample (and default) configuration:
+%
+\DeclareUrlCommand\url{}
+\urlstyle{tt}
+%
+\newmuskip\Urlmuskip \Urlmuskip=0mu
+\mathchardef\UrlBreakPenalty=\binoppenalty
+\mathchardef\UrlBigBreakPenalty=\relpenalty
+%
+% picTeX defines \path, so declare it optionally:
+\@ifundefined{path}{\DeclareUrlCommand\path{\urlstyle{tt}}}{}
+%
+% too many styles define \email like \address, so I will not define it.
+% \DeclareUrlCommand\email{\urlstyle{rm}}
+
+% Process LaTeX \package options
+%
+\let\Url@sppen\@M
+\def\Url@space{\penalty\Url@sppen}
+\def\do@url@hyp{}% by default, no breaks after hyphens
+
+\@ifundefined{ProvidesPackage}{
+}{\ProvidesPackage
+ {url}[2013/09/16 \space ver 3.4 \space Verb mode for urls, etc.]
+\DeclareOption{hyphens}{\def\do@url@hyp{\do\-}}% allow breaks after hyphens
+\DeclareOption{obeyspaces}{\let\Url@ObeySp\relax}% a flag for later
+\DeclareOption{spaces}{\def\Url@sppen{\UrlBreakPenalty}}
+\DeclareOption{LY1}{}
+\DeclareOption{T1}{}
+\DeclareOption{allowmove}{\let\Url@moving\@empty}
+\DeclareOption{lowtilde}{%
+  \def\UrlTildeSpecial{\do\~{\raise.2ex\hbox{\m@th$\scriptstyle\sim$}}}
+  \let\Url@force@Tilde\UrlTildeSpecial
+}
+\ProcessOptions\relax
+\ifx\Url@ObeySp\relax % [obeyspaces] was declared
+  \begingroup \lccode`+=32 \lowercase
+   {\endgroup \def\Url@ObeySp{\Url@Edit\Url@String{ }{+}}}
+   \def\Url@space{\penalty\Url@sppen\ }
+\fi
+}
+\ifx\f@encoding\undefined \def\f@encoding{OT1}\fi
+
+\begingroup
+% \Url@acthash:    convert `other' (doubled) ## to active #
+% \Url@actpercent: convert `other' % to active %
+ \lccode`+=`\# \lccode`\~=`\#
+  \lowercase {\long\gdef\Url@acthash{\Url@Edit\Url@String{++}{~}%
+     \ifnum\mathcode`\#<32768 \def~{\#}\fi}}%
+ \lccode`+=`\% \lccode`\~=`\%
+  \lowercase {\long\gdef\Url@actpercent{\Url@Edit\Url@String{+}{~}%
+    \ifnum\mathcode`\%<32768 \def~{\%}\fi}}%
+ \catcode13=12 %
+ \gdef\Url@percent{\@ifnextchar^^M{\@gobble}{\mathbin{\mathchar`\%}}}%
+\endgroup%
+
+%   Edit macro #1 changing all appearances of pattern #2 to replacement #3.
+%   The replacement is recursive, so don't put the search pattern into the
+%   replacement text!
+
+{ \catcode`Q=3
+
+\gdef\Url@Edit#1#2#3{%
+ \begingroup % \tracingall
+ \def\DOE@a{\endgroup\def#1}% Just so I can \expandafter it safely.
+ \def\DOE@b##1#2##2Q##3{\@ifblank{##2}% if finished,
+   {\DOE@c ##1Q}% then remove \@empty's and redefine macro
+   {\DOE@b##1##3##2Q{##3}}% else, re-iterate
+ }%  the leading \@empty preserves braces, as does the trailing pattern:
+ \expandafter\DOE@b\expandafter\@empty #1\@empty#2Q{#3}}
+\gdef\DOE@c#1\@empty Q{\expandafter\DOE@a\expandafter{#1}}
+%
+%  \@ifblank (LaTeX syntax) --- checks if parameter is blank (Spaces
+%     count as blank) use \@ifblank{#1}{true case}{false case} etc
+\long\gdef\@ifblank#1{\@Ifbl@nk#1QQ\@secondoftwo\@firstoftwo!}%
+\long\gdef\@Ifbl@nk#1#2Q#3#4#5!{#4}
+
+} % restore Q catcode
+
+
+%\ifx\urldebug\@undefined \def\urldebug{01}\fi
+
+\endinput
+% For documentation, please see accompanying url.tex (url.pdf)
+% Package Options:  obeyspaces, hyphens, spaces, lowtilde
+%
+% Revision History:
+% ver 1.1 6-Feb-1996:
+% Fix hyphens that wouldn't break and ligatures that weren't suppressed.
+% ver 1.2 19-Oct-1996:
+% Package option for T1 encoding; Hooks: "\UrlLeft" and "\UrlRight".
+% ver 1.3 21-Jul-1997:
+% Prohibit spaces as delimiter characters; change ascii tilde in OT1.
+% ver 1.4 02-Mar-1999:
+% LaTeX license; moving-argument-error
+% ver 1.5 28-Mar-1999:
+% possibility of spacing around break characters; re-settable penalties
+% ver 1.6 20-Jun-2002:
+% un-double #, fix obeyed-spaces, ignore trailing %, hook for hyperref
+% (\Url@HyperHook), no macros in pre-processed url string (in \Url@String),
+% limit catcode change of ~.
+% ver 3.0 June 2003/Nov 2003:
+% \DeclareUrlCommand; make font encoding automatic (only a few inputenc characters
+% are supported yet - needs refactoring); reverse penalties. 
+% ver 3.1 Mar 2004:
+% Remove spurious spaces in \url@XXstyle commands.
+% ver 3.2 June 2005:
+% Fix cmsy-symbols in tt bug (from 3.0); LY1 encoding bug; Enable plain
+% with miniltx (again); Define the \urldef for hyperref; Lower "sim" tilde
+% a little; fix \lowercase error in \UrlSpecials handling.
+% ver 3.3 April 2006:
+% Fix some encoding bugs and remove 8-bit characters.  lowtilde option
+% ver 3.4 Sept 2013:
+% \@nomatherr->\@inmatherr. & is now another \UrlBreak character.
+% The End
+
+Test file integrity:  ASCII 32-57, 58-126:  !"#$%&'()*+,-./0123456789
+:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+

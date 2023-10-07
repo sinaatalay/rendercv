@@ -1,0 +1,2402 @@
+%%
+%% This is file `xparse-2018-04-12.sty', generated from
+%% xparse.dtx  (with options: `core,package', on 2021-01-20)
+%% then adapted and frozen for compatibility.  Development of
+%% xparse.dtx will continue in the LaTeX2e kernel as ltcmd.dtx.
+%% 
+%% Copyright (C) 2009-2021 The LaTeX Project
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "l3packages bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: xparse.dtx
+\RequirePackage{expl3}[2018-04-12]
+\@ifpackagelater{expl3}{2018-04-12}
+  {}
+  {%
+    \PackageError{xparse}{Support package l3kernel too old}
+      {%
+        Please install an up to date version of l3kernel\MessageBreak
+        using your TeX package manager or from CTAN.\MessageBreak
+        \MessageBreak
+        Loading xparse will abort!%
+      }%
+    \endinput
+  }
+% \ProvidesExplPackage{xparse}{2021-01-09}{}
+%   {L3 Experimental document command parser}
+\expandafter\protected@xdef\csname ver@xparse.sty\endcsname
+  {2021-01-09 L3 Experimental document command parser}
+\ExplSyntaxOn
+\clist_new:N \l__xparse_options_clist
+\DeclareOption* { \clist_put_right:NV \l__xparse_options_clist \CurrentOption }
+\ProcessOptions \relax
+\keys_define:nn { xparse }
+  {
+    log-declarations .bool_set:N = \l__xparse_log_bool ,
+    log-declarations .initial:n  = false
+  }
+\keys_set:nV { xparse } \l__xparse_options_clist
+\bool_if:NF \l__xparse_log_bool
+  { \msg_redirect_module:nnn { LaTeX / xparse } { info } { none } }
+\tl_new:N \l__xparse_arg_spec_tl
+\tl_new:N \l__xparse_args_tl
+\tl_new:N \l__xparse_args_i_tl
+\tl_new:N \l__xparse_args_ii_tl
+\int_new:N \l__xparse_current_arg_int
+\bool_new:N \l__xparse_defaults_bool
+\tl_new:N \l__xparse_defaults_tl
+\bool_new:N \l__xparse_environment_bool
+\str_new:N \l__xparse_environment_str
+\bool_new:N \l__xparse_expandable_bool
+\tl_new:N \l__xparse_expandable_aux_name_tl
+\tl_set:Nn \l__xparse_expandable_aux_name_tl
+  {
+    \l__xparse_function_tl \c_space_tl
+    ( arg~ \int_use:N \l__xparse_current_arg_int )
+  }
+\int_new:N \g__xparse_grabber_int
+\tl_new:N \l__xparse_fn_tl
+\tl_new:N \l__xparse_fn_code_tl
+\tl_new:N \l__xparse_function_tl
+\bool_new:N \l__xparse_grab_expandably_bool
+\bool_new:N \l__xparse_obey_spaces_bool
+\tl_new:N \l__xparse_last_delimiters_tl
+\bool_new:N \l__xparse_long_bool
+\int_new:N \l__xparse_m_args_int
+\bool_new:N \l__xparse_prefixed_bool
+\tl_new:N \l__xparse_process_all_tl
+\tl_new:N \l__xparse_process_one_tl
+\bool_new:N \l__xparse_process_some_bool
+\tl_new:N \l__xparse_saved_args_tl
+\tl_new:N \l__xparse_signature_tl
+\bool_new:N \l__xparse_some_obey_spaces_bool
+\bool_new:N \l__xparse_some_long_bool
+\bool_new:N \l__xparse_some_short_bool
+\prop_new:N \l__xparse_tmp_prop
+\tl_new:N \l__xparse_tmpa_tl
+\tl_new:N \l__xparse_tmpb_tl
+\cs_new_eq:NN \__xparse_tmp:w ?
+\cs_new_protected:Npn \__xparse_declare_cmd:Nnn
+  {
+    \bool_set_false:N \l__xparse_expandable_bool
+    \__xparse_declare_cmd_aux:Nnn
+  }
+\cs_new_protected:Npn \__xparse_declare_expandable_cmd:Nnn
+  {
+    \bool_set_true:N \l__xparse_expandable_bool
+    \__xparse_declare_cmd_aux:Nnn
+  }
+\cs_new_protected:Npn \__xparse_declare_cmd_aux:Nnn #1#2#3
+  {
+    \cs_if_exist:NTF #1
+      {
+        \__kernel_msg_info:nnxx { xparse } { redefine-command }
+          { \token_to_str:N #1 } { \tl_to_str:n {#2} }
+      }
+      {
+        \bool_lazy_or:nnT
+          { \cs_if_exist_p:c { \cs_to_str:N #1 ~ code } }
+          { \cs_if_exist_p:c { \cs_to_str:N #1 ~ defaults } }
+          {
+            \__kernel_msg_warning:nnx { xparse } { unsupported-let }
+              { \token_to_str:N #1 }
+          }
+        \__kernel_msg_info:nnxx { xparse } { define-command }
+          { \token_to_str:N #1 } { \tl_to_str:n {#2} }
+      }
+    \bool_set_false:N \l__xparse_environment_bool
+    \__xparse_declare_cmd_internal:Nnnn #1 {#2} {#3} { }
+  }
+\cs_new_protected:Npn \__xparse_declare_cmd_internal:Nnnn #1#2#3#4
+  {
+    \tl_set:Nx \l__xparse_function_tl { \cs_to_str:N #1 }
+    \tl_set:Nx \l__xparse_fn_tl
+      { \exp_not:c { \l__xparse_function_tl \c_space_tl } }
+    \__xparse_normalize_arg_spec:n {#2}
+    \exp_args:No \__xparse_prepare_signature:n \l__xparse_arg_spec_tl
+    \__xparse_declare_cmd_code:Nnn #1 {#2} {#3}
+    #4
+    \__xparse_break_point:n {#2}
+  }
+\cs_generate_variant:Nn \__xparse_declare_cmd_internal:Nnnn { cnx }
+\cs_new_eq:NN \__xparse_break_point:n \use_none:n
+\cs_new_protected:Npn \__xparse_declare_cmd_code:Nnn
+  {
+    \bool_if:NTF \l__xparse_grab_expandably_bool
+      { \__xparse_declare_cmd_code_expandable:Nnn }
+      { \__xparse_declare_cmd_code_aux:Nnn }
+   }
+\cs_new_protected:Npn \__xparse_declare_cmd_code_aux:Nnn #1#2#3
+  {
+    \cs_generate_from_arg_count:cNnn
+      { \l__xparse_function_tl \c_space_tl code }
+      \cs_set_protected:Npn \l__xparse_current_arg_int {#3}
+    \cs_set_protected_nopar:Npx #1
+      {
+        \bool_if:NTF \l__xparse_environment_bool
+          {
+            \__xparse_start_env:nnnnn { \exp_not:n {#2} }
+              { \l__xparse_environment_str }
+          }
+          {
+            \__xparse_start:nNNnnn { \exp_not:n {#2} }
+              \exp_not:c { \l__xparse_function_tl \c_space_tl }
+              \exp_not:c { \l__xparse_function_tl \c_space_tl code }
+          }
+          { \exp_not:o \l__xparse_signature_tl }
+          {
+            \bool_if:NT \l__xparse_defaults_bool
+              { \exp_not:o \l__xparse_defaults_tl }
+          }
+          {
+            \bool_if:NT \l__xparse_process_some_bool
+              { \exp_not:o \l__xparse_process_all_tl }
+          }
+      }
+  }
+\cs_new_protected:Npn \__xparse_declare_cmd_code_expandable:Nnn #1#2#3
+  {
+    \exp_args:Ncc \cs_generate_from_arg_count:NNnn
+      { \l__xparse_function_tl \c_space_tl code }
+      { cs_set \bool_if:NF \l__xparse_expandable_bool { _protected } :Npn }
+      \l__xparse_current_arg_int {#3}
+    \bool_if:NT \l__xparse_defaults_bool
+      {
+        \use:x
+          {
+            \cs_generate_from_arg_count:cNnn
+              { \l__xparse_function_tl \c_space_tl defaults }
+              \cs_set:Npn \l__xparse_current_arg_int
+              { \exp_not:o \l__xparse_defaults_tl }
+          }
+      }
+    \bool_if:NTF \l__xparse_expandable_bool
+      { \cs_set_nopar:Npx } { \cs_set_protected_nopar:Npx } #1
+      {
+        \exp_not:N \__xparse_start_expandable:nNNNNn
+          { \exp_not:n {#2} }
+          \exp_not:c { \l__xparse_function_tl \c_space_tl }
+          \exp_not:c
+            {
+              \l__xparse_function_tl \c_space_tl
+              \bool_if:NT \l__xparse_some_short_bool
+                { \bool_if:NT \l__xparse_some_long_bool { \c_space_tl } }
+            }
+          \exp_not:c { \l__xparse_function_tl \c_space_tl code }
+          \bool_if:NTF \l__xparse_defaults_bool
+            { \exp_not:c { \l__xparse_function_tl \c_space_tl defaults } }
+            { ? }
+          { \exp_not:o \l__xparse_signature_tl }
+      }
+    \bool_if:NTF \l__xparse_some_long_bool
+      {
+        \bool_if:NT \l__xparse_some_short_bool
+          {
+            \cs_set_nopar:cpx { \l__xparse_function_tl \c_space_tl \c_space_tl }
+              ##1##2 { ##1 {##2} }
+          }
+        \cs_set:cpx
+      }
+      { \cs_set_nopar:cpx }
+          { \l__xparse_function_tl \c_space_tl } ##1##2 { ##1 {##2} }
+  }
+\cs_new_protected:Npn \__xparse_declare_env:nnnn #1#2
+  {
+    \str_set:Nx \l__xparse_environment_str {#1}
+    \str_set:Nx \l__xparse_environment_str
+      { \tl_trim_spaces:o { \l__xparse_environment_str } }
+    \cs_if_exist:cTF { \l__xparse_environment_str }
+      {
+        \__kernel_msg_info:nnxx { xparse } { redefine-environment }
+          { \l__xparse_environment_str } { \tl_to_str:n {#2} }
+      }
+      {
+        \__kernel_msg_info:nnxx { xparse } { define-environment }
+          { \l__xparse_environment_str } { \tl_to_str:n {#2} }
+      }
+    \bool_set_false:N \l__xparse_expandable_bool
+    \bool_set_true:N \l__xparse_environment_bool
+    \exp_args:NV \__xparse_declare_env_internal:nnnn
+      \l__xparse_environment_str {#2}
+  }
+\cs_new_protected:Npn \__xparse_declare_env_internal:nnnn #1#2#3#4
+  {
+    \__xparse_declare_cmd_internal:cnxn { environment~ #1 } {#2}
+      {
+        \cs_set_nopar:Npx \exp_not:c { environment~ #1 ~end~aux }
+          {
+            \exp_not:N \exp_not:N \exp_not:c { environment~ #1~end~aux~ }
+            \exp_not:n { \exp_not:o \l__xparse_args_tl }
+          }
+        \exp_not:n {#3}
+      }
+      {
+        \cs_set_nopar:cpx { environment~ #1 ~end }
+          { \exp_not:c { environment~ #1 ~end~aux } }
+        \cs_generate_from_arg_count:cNnn
+          { environment~ #1 ~end~aux~ } \cs_set:Npn
+          \l__xparse_current_arg_int {#4}
+        \cs_set_eq:cc {#1}       { environment~ #1 }
+        \cs_set_eq:cc { end #1 } { environment~ #1 ~end }
+      }
+  }
+\cs_new_protected:Npn \__xparse_start_env:nnnnn #1#2
+  {
+    \cs_if_exist_use:N \conditionally@traceoff
+    \group_align_safe_begin:
+    \str_set:Nn \l__xparse_environment_str {#2}
+    \bool_set_true:N \l__xparse_environment_bool
+    \__xparse_start_aux:ccnnnn
+      { environment~ \l__xparse_environment_str \c_space_tl }
+      { environment~ \l__xparse_environment_str \c_space_tl code }
+      {#1}
+  }
+\cs_new_protected:Npx \__xparse_start:nNNnnn #1#2#3
+  {
+    \exp_not:c { xparse~function~is~not~expandable }
+    \exp_not:n { \cs_if_exist_use:N \conditionally@traceoff }
+    \exp_not:N \group_align_safe_begin:
+    \exp_not:n { \bool_set_false:N \l__xparse_environment_bool }
+    \exp_not:N \__xparse_start_aux:NNnnnn
+    #2 #3 {#1}
+  }
+\cs_new_protected:Npn \__xparse_start_aux:NNnnnn #1#2#3#4#5#6
+  {
+    \tl_clear:N \l__xparse_args_tl
+    \tl_set:Nn \l__xparse_fn_tl {#1}
+    \tl_set:Nn \l__xparse_fn_code_tl {#2}
+    \tl_set:Nn \l__xparse_defaults_tl {#5}
+    \tl_set:Nn \l__xparse_process_all_tl {#6}
+    #4 \__xparse_run_code:
+  }
+\cs_generate_variant:Nn \__xparse_start_aux:NNnnnn { cc }
+\cs_new_protected:Npn \__xparse_run_code:
+  {
+    \tl_if_empty:NF \l__xparse_defaults_tl { \__xparse_defaults: }
+    \tl_if_empty:NF \l__xparse_process_all_tl { \__xparse_args_process: }
+    \group_align_safe_end:
+    \cs_if_exist_use:N \conditionally@traceon
+    \exp_after:wN \l__xparse_fn_code_tl \l__xparse_args_tl
+  }
+\cs_new_protected:Npn \__xparse_defaults:
+  {
+    \__xparse_defaults_def:
+    \tl_set_eq:NN \l__xparse_args_i_tl \l__xparse_args_tl
+    \__xparse_defaults_aux: \__xparse_defaults_aux: \__xparse_defaults_aux:
+    \__xparse_defaults_aux: \__xparse_defaults_aux: \__xparse_defaults_aux:
+    \__xparse_defaults_aux: \__xparse_defaults_aux: \__xparse_defaults_aux:
+    \__xparse_defaults_error:w
+    \q_recursion_stop
+    \tl_set_eq:NN \l__xparse_args_tl \l__xparse_args_i_tl
+  }
+\cs_new_protected:Npn \__xparse_defaults_aux:
+  {
+    \tl_set:Nx \l__xparse_args_ii_tl
+      { \exp_after:wN \__xparse_tmp:w \l__xparse_args_i_tl }
+    \tl_if_eq:NNT \l__xparse_args_ii_tl \l__xparse_args_i_tl
+      { \use_none_delimit_by_q_recursion_stop:w }
+    \tl_set_eq:NN \l__xparse_args_i_tl \l__xparse_args_ii_tl
+  }
+\cs_new_protected:Npn \__xparse_defaults_error:w \q_recursion_stop
+  {
+    \__kernel_msg_error:nnx { xparse } { loop-in-defaults }
+      { \__xparse_environment_or_command: }
+  }
+\cs_new_protected:Npn \__xparse_defaults_def:
+  {
+    \tl_clear:N \l__xparse_tmpa_tl
+    \int_zero:N \l__xparse_current_arg_int
+    \__xparse_tl_mapthread_function:NNN \l__xparse_args_tl \l__xparse_defaults_tl
+      \__xparse_defaults_def:nn
+    \cs_generate_from_arg_count:NNVo \__xparse_tmp:w \cs_set:Npn
+      \l__xparse_current_arg_int \l__xparse_tmpa_tl
+  }
+\cs_generate_variant:Nn \cs_generate_from_arg_count:NNnn { NNVo }
+\cs_new_protected:Npn \__xparse_defaults_def:nn
+  {
+    \int_incr:N \l__xparse_current_arg_int
+    \exp_args:NV \__xparse_defaults_def:nnn \l__xparse_current_arg_int
+  }
+\cs_new_protected:Npn \__xparse_defaults_def:nnn #1#2#3
+  {
+    \tl_put_right:Nx \l__xparse_tmpa_tl
+      {
+        {
+          \exp_not:N \exp_not:n
+            {
+              \tl_if_novalue:nTF {#2}
+                { \exp_not:o {#3} }
+                { \exp_not:n { ## #1 } }
+            }
+        }
+      }
+  }
+\cs_new_protected:Npn \__xparse_args_process:
+  {
+    \tl_clear:N \l__xparse_args_ii_tl
+    \__xparse_tl_mapthread_function:NNN
+      \l__xparse_args_tl
+      \l__xparse_process_all_tl
+      \__xparse_args_process_loop:nn
+    \tl_set_eq:NN \l__xparse_args_tl \l__xparse_args_ii_tl
+  }
+\cs_new_protected:Npn \__xparse_args_process_loop:nn #1#2
+  {
+    \tl_set:Nn \ProcessedArgument {#1}
+    \tl_if_novalue:nF {#1}
+      { \tl_map_function:nN {#2} \__xparse_args_process_aux:n }
+    \tl_put_right:No \l__xparse_args_ii_tl
+      { \exp_after:wN { \ProcessedArgument } }
+  }
+\cs_new_protected:Npn \__xparse_args_process_aux:n #1
+  {
+    \cs_generate_from_arg_count:NNnn \__xparse_tmp:w \cs_set:Npn
+      { \tl_count:N \l__xparse_args_tl } {#1}
+    \exp_args:NNNo \exp_after:wN \__xparse_tmp:w \l__xparse_args_tl
+      { \ProcessedArgument }
+  }
+\cs_new:Npn \__xparse_start_expandable:nNNNNn #1#2#3#4#5#6
+  {
+    \group_align_safe_begin:
+    #6 \__xparse_end_expandable:NNw #5 #4 \q__xparse #2#3
+  }
+\cs_new:Npn \__xparse_end_expandable:NNw #1#2
+  { \__xparse_end_expandable_aux:w #1#2 \prg_do_nothing: }
+\cs_new:Npn \__xparse_end_expandable_aux:w #1#2#3 \q__xparse
+  { \exp_args:No \__xparse_end_expandable_aux:nNNNN {#3} #1 #2 }
+\cs_new:Npn \__xparse_end_expandable_aux:nNNNN #1#2#3#4#5
+  {
+    \token_if_eq_charcode:NNT ? #2 { \exp_after:wN \use_iv:nnnn }
+    \__xparse_end_expandable_defaults:nnnNNn {#1} { } {#1} #2#3
+      { } { } { } { } { } { } { } { } { } { }
+      {
+        \__kernel_msg_expandable_error:nnf
+          { xparse } { loop-in-defaults }
+          { \exp_args:Nf \tl_trim_spaces:n { \token_to_str:N #4 } }
+        \use_iv:nnnn
+      }
+    \q_stop
+  }
+\cs_new:Npn \__xparse_end_expandable_defaults:nnnNNn #1#2#3#4#5#6
+  {
+    #6
+    \str_if_eq:nnTF {#1} {#2}
+      { \use_i_delimit_by_q_stop:nw { \group_align_safe_end: #5 #1 } }
+      {
+        \exp_args:No \__xparse_tl_mapthread_function:nnN
+          { #4 #1 } {#3}
+          \__xparse_end_expandable_defaults:nnw
+        \__xparse_end_expandable_defaults:nnnNNn { } {#1} {#3} #4 #5
+      }
+  }
+\cs_new:Npn \__xparse_end_expandable_defaults:nnw #1#2
+  {
+    \tl_if_novalue:nTF {#2}
+      { \exp_args:No \__xparse_end_expandable_defaults:nw {#1} }
+      { \__xparse_end_expandable_defaults:nw {#2} }
+  }
+\cs_new:Npn \__xparse_end_expandable_defaults:nw
+    #1#2 \__xparse_end_expandable_defaults:nnnNNn #3
+  { #2 \__xparse_end_expandable_defaults:nnnNNn { #3 {#1} } }
+\cs_new_protected:Npn \__xparse_normalize_arg_spec:n #1
+  {
+    \int_zero:N \l__xparse_current_arg_int
+    \tl_clear:N \l__xparse_last_delimiters_tl
+    \tl_clear:N \l__xparse_arg_spec_tl
+    \bool_set_true:N \l__xparse_grab_expandably_bool
+    \bool_set_false:N \l__xparse_obey_spaces_bool
+    \bool_set_false:N \l__xparse_long_bool
+    \bool_set_false:N \l__xparse_some_obey_spaces_bool
+    \bool_set_false:N \l__xparse_some_long_bool
+    \bool_set_false:N \l__xparse_some_short_bool
+    \__xparse_normalize_arg_spec_loop:n #1
+      \q_recursion_tail \q_recursion_tail \q_recursion_tail \q_recursion_stop
+    \int_compare:nNnT \l__xparse_current_arg_int > 9
+      {
+        \__kernel_msg_error:nnxx { xparse } { too-many-arguments }
+          { \__xparse_environment_or_command: } { \tl_to_str:n {#1} }
+        \__xparse_bad_def:wn
+      }
+    \bool_if:NT \l__xparse_expandable_bool
+      {
+        \tl_if_empty:NF \l__xparse_last_delimiters_tl
+          {
+            \__kernel_msg_error:nnxx { xparse } { expandable-ending-optional }
+              { \iow_char:N \\ \l__xparse_function_tl } { \tl_to_str:n {#1} }
+            \__xparse_bad_def:wn
+          }
+      }
+    \bool_if:NT \l__xparse_expandable_bool
+      { \bool_set_true:N \l__xparse_grab_expandably_bool }
+    \bool_if:NT \l__xparse_environment_bool
+      { \bool_set_false:N \l__xparse_grab_expandably_bool }
+  }
+\cs_new_protected:Npn \__xparse_normalize_arg_spec_loop:n #1
+  {
+    \quark_if_recursion_tail_stop:n {#1}
+    \int_incr:N \l__xparse_current_arg_int
+    \cs_if_exist_use:cF { __xparse_normalize_type_ \tl_to_str:n {#1} :w }
+      {
+        \__kernel_msg_error:nnxx { xparse } { unknown-argument-type }
+          { \__xparse_environment_or_command: } { \tl_to_str:n {#1} }
+        \__xparse_bad_def:wn
+      }
+  }
+\cs_set_protected:Npn \__xparse_tmp:w #1
+  {
+    \cs_new_protected:Npn \__xparse_normalize_type_d:w ##1##2
+      {
+        \quark_if_recursion_tail_stop_do:nn {##2} { \__xparse_bad_arg_spec:wn }
+        \__xparse_normalize_type_D:w {##1} {##2} {#1}
+      }
+    \cs_new_protected:Npn \__xparse_normalize_type_e:w ##1
+      {
+        \quark_if_recursion_tail_stop_do:nn {##1} { \__xparse_bad_arg_spec:wn }
+        \__xparse_normalize_type_E:w {##1} { }
+      }
+    \cs_new_protected:Npn \__xparse_normalize_type_o:w
+      { \__xparse_normalize_type_D:w [ ] {#1} }
+    \cs_new_protected:Npn \__xparse_normalize_type_O:w
+      { \__xparse_normalize_type_D:w [ ] }
+    \cs_new_protected:Npn \__xparse_normalize_type_r:w ##1##2
+      {
+        \quark_if_recursion_tail_stop_do:nn {##2} { \__xparse_bad_arg_spec:wn }
+        \__xparse_normalize_type_R:w {##1} {##2} {#1}
+      }
+    \cs_new_protected:Npn \__xparse_normalize_type_s:w
+      { \__xparse_normalize_type_t:w * }
+  }
+\exp_args:No \__xparse_tmp:w { \c_novalue_tl }
+\cs_new_protected:Npx \__xparse_normalize_type_g:w
+  { \exp_not:N \__xparse_normalize_type_G:w { \exp_not:V \c_novalue_tl } }
+\cs_new_protected:cpn { __xparse_normalize_type_>:w } #1#2
+  {
+    \quark_if_recursion_tail_stop_do:nn {#2} { \__xparse_bad_arg_spec:wn }
+    \bool_if:NT \l__xparse_expandable_bool
+      {
+        \__kernel_msg_error:nnxx { xparse } { processor-in-expandable }
+          { \iow_char:N \\ \l__xparse_function_tl } { \tl_to_str:n {#1} }
+        \__xparse_bad_def:wn
+      }
+    \tl_put_right:Nx \l__xparse_arg_spec_tl { > { \tl_trim_spaces:n {#1} } }
+    \int_decr:N \l__xparse_current_arg_int
+    \bool_set_false:N \l__xparse_grab_expandably_bool
+    \__xparse_normalize_arg_spec_loop:n {#2}
+  }
+\cs_new_protected:cpn { __xparse_normalize_type_+:w } #1
+  {
+    \quark_if_recursion_tail_stop_do:nn {#1} { \__xparse_bad_arg_spec:wn }
+    \bool_if:NT \l__xparse_long_bool
+      {
+        \__kernel_msg_error:nnxx { xparse } { two-markers }
+          { \__xparse_environment_or_command: } { + }
+        \__xparse_bad_def:wn
+      }
+    \bool_set_true:N \l__xparse_long_bool
+    \int_decr:N \l__xparse_current_arg_int
+    \__xparse_normalize_arg_spec_loop:n {#1}
+  }
+\cs_new_protected:cpn { __xparse_normalize_type_!:w } #1
+  {
+    \quark_if_recursion_tail_stop_do:nn {#1} { \__xparse_bad_arg_spec:wn }
+    \bool_if:NT \l__xparse_obey_spaces_bool
+      {
+        \__kernel_msg_error:nnxx { xparse } { two-markers }
+          { \__xparse_environment_or_command: } { ! }
+        \__xparse_bad_def:wn
+      }
+    \bool_set_true:N \l__xparse_obey_spaces_bool
+    \bool_set_true:N \l__xparse_some_obey_spaces_bool
+    \int_decr:N \l__xparse_current_arg_int
+    \__xparse_normalize_arg_spec_loop:n {#1}
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_D:w #1#2#3
+  {
+    \quark_if_recursion_tail_stop_do:nn {#3} { \__xparse_bad_arg_spec:wn }
+    \__xparse_single_token_check:n {#1} \__xparse_allowed_token_check:N #1
+    \__xparse_single_token_check:n {#2}
+    \__xparse_add_arg_spec:n { D #1 #2 {#3} }
+    \tl_put_right:Nn \l__xparse_last_delimiters_tl {#1}
+    \bool_set_false:N \l__xparse_grab_expandably_bool
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_E:w #1#2
+  {
+    \quark_if_recursion_tail_stop_do:nn {#2} { \__xparse_bad_arg_spec:wn }
+    \tl_if_blank:nT {#1} { \__xparse_bad_arg_spec:wn }
+    \tl_map_function:nN {#1} \__xparse_single_token_check:n
+    \tl_map_function:nN {#1} \__xparse_allowed_token_check:N
+    \__xparse_normalize_E_unique_check:w #1 \q_nil \q_stop
+    \int_compare:nNnT { \tl_count:n {#2} } > { \tl_count:n {#1} }
+      { \__xparse_bad_arg_spec:wn }
+    \__xparse_add_arg_spec:n { E {#1} {#2} }
+    \tl_put_right:Nn \l__xparse_last_delimiters_tl {#1}
+    \bool_set_false:N \l__xparse_grab_expandably_bool
+    \int_add:Nn \l__xparse_current_arg_int { \tl_count:n {#1} - 1 }
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_E_unique_check:w #1#2 \q_stop
+  {
+    \quark_if_nil:NF #1
+      {
+        \tl_if_in:nnT {#2} {#1} { \__xparse_bad_arg_spec:wn }
+        \__xparse_normalize_E_unique_check:w #2 \q_stop
+      }
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_G:w #1
+  {
+    \quark_if_recursion_tail_stop_do:nn {#1} { \__xparse_bad_arg_spec:wn }
+    \__xparse_normalize_check_gv:N G
+    \__xparse_add_arg_spec:n { G {#1} }
+    \tl_put_right:Nn \l__xparse_last_delimiters_tl { { } }
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_t:w #1
+  {
+    \quark_if_recursion_tail_stop_do:Nn #1 { \__xparse_bad_arg_spec:wn }
+    \__xparse_single_token_check:n {#1} \__xparse_allowed_token_check:N #1
+    \tl_put_right:Nx \l__xparse_arg_spec_tl
+      {
+        \bool_if:NT \l__xparse_obey_spaces_bool { ! }
+        t \exp_not:n {#1}
+      }
+    \tl_put_right:Nn \l__xparse_last_delimiters_tl {#1}
+    \bool_set_false:N \l__xparse_grab_expandably_bool
+    \bool_set_false:N \l__xparse_obey_spaces_bool
+    \bool_set_false:N \l__xparse_long_bool
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_l:w
+  {
+    \__xparse_normalize_check_lu:N l
+    \__xparse_add_arg_spec_mandatory:n { l }
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_m:w
+  {
+    \__xparse_delimiter_check:nnn { } { m } { \iow_char:N \{ }
+    \__xparse_add_arg_spec_mandatory:n { m }
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_R:w #1#2#3
+  {
+    \quark_if_recursion_tail_stop_do:nn {#3} { \__xparse_bad_arg_spec:wn }
+    \__xparse_single_token_check:n {#1} \__xparse_allowed_token_check:N #1
+    \__xparse_single_token_check:n {#2}
+    \__xparse_delimiter_check:nnn {#1} { R/r } { \tl_to_str:n {#1} }
+    \bool_set_false:N \l__xparse_grab_expandably_bool
+    \__xparse_add_arg_spec_mandatory:n { R #1 #2 {#3} }
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_u:w #1
+  {
+    \quark_if_recursion_tail_stop_do:nn {#1} { \__xparse_bad_arg_spec:wn }
+    \__xparse_normalize_check_lu:N u
+    \__xparse_add_arg_spec_mandatory:n { u {#1} }
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_v:w
+  {
+    \__xparse_normalize_check_gv:N v
+    \__xparse_add_arg_spec_mandatory:n { v }
+    \__xparse_normalize_arg_spec_loop:n
+  }
+\cs_new_protected:Npn \__xparse_normalize_type_b:w #1
+  {
+    \bool_if:NF \l__xparse_environment_bool
+      {
+        \__kernel_msg_error:nnxx
+          { xparse } { invalid-command-arg }
+          { \__xparse_environment_or_command: } { b }
+        \__xparse_bad_def:wn
+      }
+    \tl_clear:N \l__xparse_last_delimiters_tl
+    \__xparse_add_arg_spec:n { b }
+    \quark_if_recursion_tail_stop:n {#1}
+    \__kernel_msg_error:nnxx { xparse } { arg-after-body }
+      { \__xparse_environment_or_command: }
+      { \tl_to_str:n {#1} }
+    \__xparse_bad_def:wn
+  }
+\cs_new_protected:Npn \__xparse_single_token_check:n #1
+  {
+    \tl_trim_spaces_apply:nN {#1} \tl_if_single_token:nF
+      {
+        \__kernel_msg_error:nnxx { xparse } { not-single-token }
+          { \__xparse_environment_or_command: } { \tl_to_str:n {#1} }
+        \__xparse_bad_def:wn
+      }
+  }
+\cs_new_protected:Npn \__xparse_allowed_token_check:N #1
+  {
+    \token_if_eq_meaning:NNTF #1 \c_group_begin_token
+        { \use:n }
+        {
+          \token_if_eq_meaning:NNTF #1 \c_group_end_token
+            { \use:n }
+            { \use_none:n }
+        }
+      {
+        \__kernel_msg_error:nnxxx
+          { xparse } { forbidden-implicit-group-token }
+          { \__xparse_environment_or_command: } { \tl_to_str:n {#1} }
+          {
+            \token_if_eq_meaning:NNTF #1 \c_group_begin_token
+              { begin } { end }
+          }
+        \__xparse_bad_def:wn
+      }
+  }
+\cs_new_protected:Npn \__xparse_normalize_check_gv:N #1
+  {
+    \bool_if:NT \l__xparse_expandable_bool
+      {
+        \__kernel_msg_error:nnxx
+          { xparse } { invalid-expandable-argument-type }
+          { \iow_char:N \\ \l__xparse_function_tl } { \tl_to_str:n {#1} }
+        \__xparse_bad_def:wn
+      }
+    \bool_set_false:N \l__xparse_grab_expandably_bool
+  }
+\cs_new_protected:Npn \__xparse_normalize_check_lu:N #1
+  {
+    \bool_if:NT \l__xparse_expandable_bool
+      {
+        \tl_if_empty:NF \l__xparse_last_delimiters_tl
+          {
+            \__kernel_msg_error:nnxx
+              { xparse } { invalid-after-optional-expandably }
+              { \iow_char:N \\ \l__xparse_function_tl } { \tl_to_str:n {#1} }
+            \__xparse_bad_def:wn
+          }
+      }
+  }
+\cs_new_protected:Npn \__xparse_delimiter_check:nnn #1#2#3
+  {
+    \tl_map_inline:Nn \l__xparse_last_delimiters_tl
+      {
+        \tl_if_eq:nnT {##1} {#1}
+          {
+            \__kernel_msg_warning:nnxx { xparse } { optional-mandatory }
+              {#2} {#3}
+          }
+      }
+  }
+\cs_new_protected:Npn \__xparse_bad_arg_spec:wn #1 \__xparse_break_point:n #2
+  {
+    \__kernel_msg_error:nnxx { xparse } { bad-arg-spec }
+      { \__xparse_environment_or_command: } { \tl_to_str:n {#2} }
+  }
+\cs_new_protected:Npn \__xparse_bad_def:wn #1 \__xparse_break_point:n #2 { }
+\cs_new_protected:Npn \__xparse_add_arg_spec:n #1
+  {
+    \bool_lazy_and:nnT
+      { ! \l__xparse_long_bool }
+      { \l__xparse_some_long_bool }
+      {
+        \bool_if:NT \l__xparse_expandable_bool
+          {
+            \__kernel_msg_error:nnx { xparse } { inconsistent-long }
+              { \iow_char:N \\ \l__xparse_function_tl }
+            \__xparse_bad_def:wn
+          }
+        \bool_set_false:N \l__xparse_grab_expandably_bool
+      }
+    \bool_if:NTF \l__xparse_long_bool
+      { \bool_set_true:N \l__xparse_some_long_bool }
+      { \bool_set_true:N \l__xparse_some_short_bool }
+    \tl_put_right:Nx \l__xparse_arg_spec_tl
+      {
+        \bool_if:NT \l__xparse_long_bool { + }
+        \bool_if:NT \l__xparse_obey_spaces_bool { ! }
+        \exp_not:n {#1}
+      }
+    \bool_set_false:N \l__xparse_long_bool
+    \bool_set_false:N \l__xparse_obey_spaces_bool
+  }
+\cs_new_protected:Npn \__xparse_add_arg_spec_mandatory:n #1
+  {
+    \bool_if:NT \l__xparse_some_obey_spaces_bool
+      {
+        \__kernel_msg_error:nnxx { xparse } { non-trailing-obey-spaces }
+          { \__xparse_environment_or_command: } { \tl_to_str:n {#1} }
+        \__xparse_bad_def:wn
+      }
+    \tl_clear:N \l__xparse_last_delimiters_tl
+    \__xparse_add_arg_spec:n {#1}
+  }
+\cs_new_protected:Npn \__xparse_prepare_signature:n #1
+  {
+    \int_zero:N \l__xparse_current_arg_int
+    \bool_set_false:N \l__xparse_long_bool
+    \bool_set_false:N \l__xparse_obey_spaces_bool
+    \int_zero:N \l__xparse_m_args_int
+    \bool_set_false:N \l__xparse_defaults_bool
+    \tl_clear:N \l__xparse_defaults_tl
+    \tl_clear:N \l__xparse_process_all_tl
+    \tl_clear:N \l__xparse_process_one_tl
+    \bool_set_false:N \l__xparse_process_some_bool
+    \tl_clear:N \l__xparse_signature_tl
+    \__xparse_prepare_signature:N #1 \q_recursion_tail \q_recursion_stop
+    \bool_if:NF \l__xparse_expandable_bool { \__xparse_flush_m_args: }
+  }
+\cs_new_protected:Npn \__xparse_prepare_signature:N
+  {
+    \bool_set_false:N \l__xparse_prefixed_bool
+    \__xparse_prepare_signature_bypass:N
+  }
+\cs_new_protected:Npn \__xparse_prepare_signature_bypass:N #1
+  {
+    \quark_if_recursion_tail_stop:N #1
+    \use:c
+      {
+         __xparse_add
+         \bool_if:NT \l__xparse_grab_expandably_bool { _expandable }
+         _type_  \token_to_str:N #1 :w
+      }
+  }
+\cs_new_protected:cpn { __xparse_add_type_+:w }
+  {
+    \__xparse_flush_m_args:
+    \bool_set_true:N \l__xparse_long_bool
+    \bool_set_true:N \l__xparse_prefixed_bool
+    \__xparse_prepare_signature_bypass:N
+  }
+\cs_new_protected:cpn { __xparse_add_type_!:w }
+  {
+    \__xparse_flush_m_args:
+    \bool_set_true:N \l__xparse_obey_spaces_bool
+    \bool_set_true:N \l__xparse_prefixed_bool
+    \__xparse_prepare_signature_bypass:N
+  }
+\cs_new_protected:cpn { __xparse_add_type_>:w } #1
+  {
+    \__xparse_flush_m_args:
+    \bool_set_true:N \l__xparse_prefixed_bool
+    \bool_set_true:N \l__xparse_process_some_bool
+    \tl_put_left:Nn \l__xparse_process_one_tl { {#1} }
+    \__xparse_prepare_signature_bypass:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_b:w
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default:
+    \__xparse_add_grabber:N b
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_D:w #1#2#3
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default:n {#3}
+    \__xparse_add_grabber:N D
+    \tl_put_right:Nn \l__xparse_signature_tl { #1 #2 }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_E:w #1#2
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default_E:nn {#1} {#2}
+    \__xparse_add_grabber:N E
+    \tl_put_right:Nn \l__xparse_signature_tl { {#1} }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_G:w #1
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default:n {#1}
+    \__xparse_add_grabber:N G
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_l:w
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default:
+    \__xparse_add_grabber:N l
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_m:w
+  {
+    \__xparse_add_default:
+    \bool_if:NTF \l__xparse_prefixed_bool
+      { \__xparse_add_grabber:N m }
+      { \int_incr:N \l__xparse_m_args_int }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_R:w #1#2#3
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default:n {#3}
+    \__xparse_add_grabber:N R
+    \tl_put_right:Nn \l__xparse_signature_tl { #1 #2 }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_t:w #1
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default:
+    \__xparse_add_grabber:N t
+    \tl_put_right:Nn \l__xparse_signature_tl {#1}
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_u:w #1
+  {
+    \__xparse_flush_m_args:
+    \__xparse_add_default:
+    \__xparse_add_grabber:N u
+    \tl_put_right:Nn \l__xparse_signature_tl { {#1} }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_type_v:w
+  {
+    \__xparse_flush_m_args:
+    \exp_args:No \__xparse_add_default:n \c_novalue_tl
+    \__xparse_add_grabber:N v
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_flush_m_args:
+  {
+    \int_compare:nNnT \l__xparse_m_args_int > 0
+      {
+        \tl_put_right:Nx \l__xparse_signature_tl
+          { \exp_not:c { __xparse_grab_m_ \int_use:N \l__xparse_m_args_int :w } }
+        \tl_put_right:Nx \l__xparse_process_all_tl
+          { \prg_replicate:nn { \l__xparse_m_args_int } { { } } }
+      }
+    \int_zero:N \l__xparse_m_args_int
+  }
+\cs_new_protected:Npn \__xparse_add_grabber:N #1
+  {
+    \tl_put_right:Nx \l__xparse_signature_tl
+      {
+        \exp_not:c
+          {
+            __xparse_grab_ #1
+            \bool_if:NT \l__xparse_long_bool { _long }
+            \bool_if:NT \l__xparse_obey_spaces_bool { _obey_spaces }
+            :w
+          }
+      }
+    \bool_set_false:N \l__xparse_long_bool
+    \bool_set_false:N \l__xparse_obey_spaces_bool
+    \tl_put_right:Nx \l__xparse_process_all_tl
+      { { \exp_not:o \l__xparse_process_one_tl } }
+    \tl_clear:N \l__xparse_process_one_tl
+  }
+\cs_new_protected:Npn \__xparse_add_default:n #1
+  {
+    \tl_if_novalue:nTF {#1}
+      { \__xparse_add_default: }
+      {
+        \int_incr:N \l__xparse_current_arg_int
+        \bool_set_true:N \l__xparse_defaults_bool
+        \tl_put_right:Nn \l__xparse_defaults_tl { { \prg_do_nothing: #1 } }
+      }
+  }
+\cs_new_protected:Npn \__xparse_add_default:
+  {
+    \int_incr:N \l__xparse_current_arg_int
+    \tl_put_right:Nn \l__xparse_defaults_tl { \c_novalue_tl }
+  }
+\cs_new_protected:Npn \__xparse_add_default_E:nn #1#2
+  {
+    \tl_map_function:nN {#2} \__xparse_add_default:n
+    \prg_replicate:nn
+      { \tl_count:n {#1} - \tl_count:n {#2} }
+      { \__xparse_add_default: }
+  }
+\cs_new_protected:cpn { __xparse_add_expandable_type_+:w }
+  {
+    \bool_set_true:N \l__xparse_long_bool
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_D:w
+  { \__xparse_add_expandable_type_D_aux:NNNn D }
+\cs_new_protected:Npn \__xparse_add_expandable_type_D_aux:NNNn #1#2#3#4
+  {
+    \__xparse_add_default:n {#4}
+    \tl_if_eq:nnTF {#2} {#3}
+      { \__xparse_add_expandable_type_D_aux:NN #1 #2 }
+      { \__xparse_add_expandable_type_D_aux:NNN #1 #2 #3 }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_D_aux:NNN #1#2#3
+  {
+    \bool_if:NTF \l__xparse_long_bool
+      { \cs_set:cpx }
+      { \cs_set_nopar:cpx }
+      { \l__xparse_expandable_aux_name_tl } ##1 ##2 #2 ##3 \q__xparse ##4 #3
+      { ##1 {##2} {##3} {##4} }
+    \__xparse_add_expandable_grabber:nn {#1}
+      {
+        \exp_not:c  { \l__xparse_expandable_aux_name_tl }
+        \exp_not:n { #2 #3 }
+      }
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_D_aux:NN #1#2
+  {
+    \bool_if:NTF \l__xparse_long_bool
+      { \cs_set:cpx }
+      { \cs_set_nopar:cpx }
+      { \l__xparse_expandable_aux_name_tl } ##1 #2 ##2 #2
+      { ##1 {##2} }
+    \__xparse_add_expandable_grabber:nn { #1_alt }
+      {
+        \exp_not:c  { \l__xparse_expandable_aux_name_tl }
+        \exp_not:n {#2}
+      }
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_E:w #1#2
+  {
+    \__xparse_add_default_E:nn {#1} {#2}
+    \tl_clear:N \l__xparse_tmpb_tl
+    \tl_map_function:nN {#1} \__xparse_add_expandable_type_E_aux:n
+    \__xparse_add_expandable_grabber:nn
+      { E \bool_if:NT \l__xparse_long_bool { _long } }
+      {
+        { \exp_not:o \l__xparse_tmpb_tl }
+        {
+          \prg_replicate:nn { \tl_count:n {#1} }
+            { { \c_novalue_tl } }
+        }
+      }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_E_aux:n #1
+  {
+    \__xparse_get_grabber:NN #1 \l__xparse_tmpa_tl
+    \tl_put_right:Nx \l__xparse_tmpb_tl
+      { \exp_not:o \l__xparse_tmpa_tl \exp_not:N #1 }
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_l:w
+  { \__xparse_add_expandable_type_u:w ## }
+\cs_new_protected:Npn \__xparse_add_expandable_type_m:w
+  {
+    \__xparse_add_default:
+    \__xparse_add_expandable_grabber:nn
+      { m \bool_if:NT \l__xparse_long_bool { _long } } { }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_R:w
+  { \__xparse_add_expandable_type_D_aux:NNNn R }
+\cs_new_protected:Npn \__xparse_add_expandable_type_t:w #1
+  {
+    \__xparse_add_default:
+    \__xparse_get_grabber:NN #1 \l__xparse_tmpa_tl
+    \__xparse_add_expandable_grabber:nn { t }
+      {
+        \exp_not:o \l__xparse_tmpa_tl
+        \exp_not:N #1
+      }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_type_u:w #1
+  {
+    \__xparse_add_default:
+    \bool_if:NTF \l__xparse_long_bool
+      { \cs_set:cpn }
+      { \cs_set_nopar:cpn }
+      { \l__xparse_expandable_aux_name_tl } ##1 \q__xparse ##2 ##3 ##4 #1
+      { ##1 {##4} \q__xparse ##2 ##3 }
+    \__xparse_add_expandable_grabber:nn { u }
+      { \exp_not:c  { \l__xparse_expandable_aux_name_tl } }
+    \__xparse_prepare_signature:N
+  }
+\cs_new_protected:Npn \__xparse_add_expandable_grabber:nn #1#2
+  {
+    \tl_put_right:Nx \l__xparse_signature_tl
+      { \exp_not:c { __xparse_expandable_grab_ #1 :w } #2 }
+  }
+\cs_new_protected:Npn \__xparse_get_grabber:NN #1#2
+  {
+    \cs_set:Npn \__xparse_tmp:w ##1 #1 {##1}
+    \exp_args:Nc \__xparse_get_grabber_auxi:NN
+      { __xparse_grabber_ \token_to_str:N #1 :w } #2
+  }
+\cs_new_protected:Npn \__xparse_get_grabber_auxi:NN #1#2
+  {
+    \cs_if_eq:NNTF \__xparse_tmp:w #1
+      { \tl_set:Nn #2 {#1} }
+      {
+        \cs_if_exist:NTF #1
+          {
+            \int_gincr:N \g__xparse_grabber_int
+            \exp_args:Nc \__xparse_get_grabber_auxi:NN
+              {
+                __xparse_grabber_
+                - \int_use:N \g__xparse_grabber_int :w
+              }
+              #2
+          }
+          { \__xparse_get_grabber_auxii:NN #1 #2 }
+      }
+  }
+\cs_new_protected:Npn \__xparse_get_grabber_auxii:NN #1#2
+  {
+    \cs_set_eq:NN #1 \__xparse_tmp:w
+    \tl_set:Nn #2 {#1}
+  }
+\cs_new_protected:Npn \__xparse_grab_b:w
+  { \__xparse_grab_b_aux:NNw \cs_set_protected_nopar:Npn \tl_trim_spaces:n }
+\cs_new_protected:Npn \__xparse_grab_b_long:w
+  { \__xparse_grab_b_aux:NNw \cs_set_protected:Npn \tl_trim_spaces:n }
+\cs_new_protected:Npn \__xparse_grab_b_obey_spaces:w
+  { \__xparse_grab_b_aux:NNw \cs_set_protected_nopar:Npn \exp_not:n }
+\cs_new_protected:Npn \__xparse_grab_b_long_obey_spaces:w
+  { \__xparse_grab_b_aux:NNw \cs_set_protected:Npn \exp_not:n }
+\cs_new_protected:Npn \__xparse_grab_b_aux:NNw #1#2#3 \__xparse_run_code:
+  {
+    \__xparse_grab_D_aux:NNnN \begin \end {#3} #1
+    \tl_put_left:Nn \l__xparse_signature_tl { \__xparse_grab_b_end:Nw #2 }
+    \tl_set_eq:NN \l__xparse_saved_args_tl \l__xparse_args_tl
+    \tl_clear:N \l__xparse_args_tl
+    \exp_args:Nc \l__xparse_fn_tl { begin ~ }
+  }
+\cs_new_protected:Npn \__xparse_grab_b_end:Nw #1#2 \__xparse_run_code:
+  {
+    \tl_set:Nx \l__xparse_args_tl
+      {
+        \exp_not:V \l__xparse_saved_args_tl
+        { \exp_after:wN #1 \l__xparse_args_tl }
+      }
+    #2
+    \__xparse_run_code:
+    \end
+  }
+\cs_new_protected:Npn \__xparse_grab_D:w #1#2#3 \__xparse_run_code:
+  {
+    \__xparse_grab_D_aux:NNnNN #1 #2 {#3} \cs_set_protected_nopar:Npn
+      \__xparse_peek_nonspace_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_D_long:w #1#2#3 \__xparse_run_code:
+  {
+    \__xparse_grab_D_aux:NNnNN #1 #2 {#3} \cs_set_protected:Npn
+      \__xparse_peek_nonspace_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_D_obey_spaces:w #1#2#3 \__xparse_run_code:
+  {
+    \__xparse_grab_D_aux:NNnNN #1 #2 {#3} \cs_set_protected_nopar:Npn
+      \__xparse_peek_meaning_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_D_long_obey_spaces:w #1#2#3 \__xparse_run_code:
+  {
+    \__xparse_grab_D_aux:NNnNN #1 #2 {#3} \cs_set_protected:Npn
+      \__xparse_peek_meaning_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_D_aux:NNnNN #1#2#3#4#5
+  {
+    \__xparse_grab_D_aux:NNnN #1#2 {#3} #4
+    #5 #1
+      { \__xparse_grab_D_call:Nw #1 }
+      { \__xparse_add_arg:o \c_novalue_tl }
+  }
+\cs_new_protected:Npn \__xparse_grab_D_aux:NNnN #1#2#3#4
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#3}
+    \exp_after:wN #4 \l__xparse_fn_tl ##1 #2
+      {
+        \tl_if_in:nnTF {##1} {#1}
+          { \__xparse_grab_D_nested:NNnN #1 #2 {##1} #4 }
+          {
+            \tl_if_blank:oTF { \use_none:n ##1 }
+              { \__xparse_add_arg:o { \use_none:n ##1 } }
+              {
+                \str_if_eq:eeTF
+                  { \exp_not:o { \use_none:n ##1 } }
+                  { { \exp_not:o { \use_ii:nnn ##1 \q_nil } } }
+                  { \__xparse_add_arg:o { \use_ii:nn ##1 } }
+                  { \__xparse_add_arg:o { \use_none:n ##1 } }
+              }
+          }
+      }
+  }
+\tl_new:N \l__xparse_nesting_a_tl
+\tl_new:N \l__xparse_nesting_b_tl
+\quark_new:N \q__xparse
+\cs_new_protected:Npn \__xparse_grab_D_nested:NNnN #1#2#3#4
+  {
+    \tl_clear:N \l__xparse_nesting_a_tl
+    \tl_clear:N \l__xparse_nesting_b_tl
+    \exp_after:wN #4 \l__xparse_fn_tl ##1 #1 ##2 \q__xparse ##3 #2
+      {
+        \tl_put_right:No \l__xparse_nesting_a_tl { \use_none:n ##1 #1 }
+        \tl_put_right:No \l__xparse_nesting_b_tl { \use_i:nn #2 ##3 }
+        \tl_if_in:nnTF {##2} {#1}
+          {
+            \l__xparse_fn_tl
+              \q_nil ##2 \q__xparse \ERROR
+          }
+          {
+            \tl_put_right:Nx \l__xparse_nesting_a_tl
+              { \__xparse_grab_D_nested:w \q_nil ##2 \q_stop }
+            \tl_if_in:NnTF \l__xparse_nesting_b_tl {#1}
+              {
+                \tl_set_eq:NN \l__xparse_tmpa_tl \l__xparse_nesting_b_tl
+                \tl_clear:N \l__xparse_nesting_b_tl
+                \exp_after:wN \l__xparse_fn_tl \exp_after:wN
+                  \q_nil \l__xparse_tmpa_tl \q_nil \q__xparse \ERROR
+              }
+              {
+                \tl_put_right:No \l__xparse_nesting_a_tl
+                  \l__xparse_nesting_b_tl
+                \__xparse_add_arg:V \l__xparse_nesting_a_tl
+              }
+          }
+      }
+    \l__xparse_fn_tl #3 \q_nil \q__xparse \ERROR
+  }
+\cs_new:Npn \__xparse_grab_D_nested:w #1 \q_nil \q_stop
+  { \exp_not:o { \use_none:n #1 } }
+\cs_new_protected_nopar:Npn \__xparse_grab_D_call:Nw #1
+  {
+    \token_if_eq_catcode:NNTF + #1
+      {
+        \exp_after:wN \exp_after:wN \exp_after:wN
+          \l__xparse_fn_tl \char_generate:nn { `#1 } { 11 }
+      }
+      {
+        \__xparse_token_if_cs:NTF #1
+          {
+            \exp_after:wN \l__xparse_fn_tl
+            \cs:w \cs_to_str:N #1 ~ \cs_end:
+          }
+          {
+            \exp_after:wN \l__xparse_fn_tl
+            \token_to_str:N #1
+          }
+      }
+  }
+\cs_new_protected:Npn \__xparse_grab_E:w #1#2 \__xparse_run_code:
+  {
+    \__xparse_grab_E:nnNN {#1} {#2}
+      \cs_set_protected_nopar:Npn
+      \__xparse_peek_nonspace_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_E_long:w #1#2 \__xparse_run_code:
+  {
+    \__xparse_grab_E:nnNN {#1} {#2}
+      \cs_set_protected:Npn
+      \__xparse_peek_nonspace_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_E_obey_spaces:w #1#2 \__xparse_run_code:
+  {
+    \__xparse_grab_E:nnNN {#1} {#2}
+      \cs_set_protected_nopar:Npn
+      \__xparse_peek_meaning_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_E_long_obey_spaces:w #1#2 \__xparse_run_code:
+  {
+    \__xparse_grab_E:nnNN {#1} {#2}
+      \cs_set_protected:Npn
+      \__xparse_peek_meaning_remove:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_E:nnNN #1#2#3#4
+  {
+    \exp_after:wN #3 \l__xparse_fn_tl ##1##2##3
+      {
+        \prop_put:Nnn \l__xparse_tmp_prop {##1} {##3}
+        \__xparse_grab_E_loop:NnN #4 { } ##2 \q_recursion_stop
+      }
+    \prop_clear:N \l__xparse_tmp_prop
+    \tl_set:Nn \l__xparse_signature_tl {#2}
+    \cs_set_protected:Npn \__xparse_grab_E_finalise:
+      {
+        \tl_map_inline:nn {#1}
+          {
+            \prop_get:NnNF \l__xparse_tmp_prop {####1} \l__xparse_tmpb_tl
+              { \tl_set_eq:NN \l__xparse_tmpb_tl \c_novalue_tl }
+            \tl_put_right:Nx \l__xparse_args_tl
+              { { \exp_not:V \l__xparse_tmpb_tl } }
+          }
+        \l__xparse_signature_tl \__xparse_run_code:
+      }
+    \__xparse_grab_E_loop:NnN #4 { } #1 \q_recursion_tail \q_recursion_stop
+  }
+\cs_new_protected:Npn \__xparse_grab_E_loop:NnN #1#2#3#4 \q_recursion_stop
+  {
+    \cs_if_eq:NNTF #3 \q_recursion_tail
+      { \__xparse_grab_E_finalise: }
+      {
+        #1 #3
+          { \l__xparse_fn_tl #3 {#2#4} }
+          { \__xparse_grab_E_loop:NnN #1 {#2#3} #4 \q_recursion_stop }
+      }
+  }
+\cs_new_protected:Npn \__xparse_grab_E_finalise: { }
+\cs_new_protected:Npn \__xparse_grab_G:w #1 \__xparse_run_code:
+  {
+    \__xparse_grab_G_aux:nNN {#1} \cs_set_protected_nopar:Npn
+      \__xparse_peek_nonspace:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_G_long:w #1 \__xparse_run_code:
+  {
+    \__xparse_grab_G_aux:nNN {#1} \cs_set_protected:Npn
+      \__xparse_peek_nonspace:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_G_obey_spaces:w #1 \__xparse_run_code:
+  {
+    \__xparse_grab_G_aux:nNN {#1} \cs_set_protected_nopar:Npn
+      \peek_meaning:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_G_long_obey_spaces:w #1 \__xparse_run_code:
+  {
+    \__xparse_grab_G_aux:nNN {#1} \cs_set_protected:Npn
+      \peek_meaning:NTF
+  }
+\cs_new_protected:Npn \__xparse_grab_G_aux:nNN #1#2#3
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN #2 \l__xparse_fn_tl ##1
+      { \__xparse_add_arg:n {##1} }
+    #3 \c_group_begin_token
+      { \l__xparse_fn_tl }
+      { \__xparse_add_arg:o \c_novalue_tl }
+  }
+\cs_new_protected:Npn \__xparse_grab_l:w #1 \__xparse_run_code:
+  { \__xparse_grab_l_aux:nN {#1} \cs_set_protected_nopar:Npn }
+\cs_new_protected:Npn \__xparse_grab_l_long:w #1 \__xparse_run_code:
+  { \__xparse_grab_l_aux:nN {#1} \cs_set_protected:Npn }
+\cs_new_protected:Npn \__xparse_grab_l_aux:nN #1#2
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN #2 \l__xparse_fn_tl ##1##
+      { \__xparse_add_arg:n {##1} }
+    \l__xparse_fn_tl
+  }
+\cs_new_protected:Npn \__xparse_grab_m:w #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_protected_nopar:Npn \l__xparse_fn_tl ##1
+      { \__xparse_add_arg:n {##1} }
+    \l__xparse_fn_tl
+  }
+\cs_new_protected:Npn \__xparse_grab_m_long:w #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_protected:Npn \l__xparse_fn_tl ##1
+      { \__xparse_add_arg:n {##1} }
+    \l__xparse_fn_tl
+  }
+\cs_new_protected_nopar:Npn \__xparse_grab_m_aux:Nnnnnnnnn #1#2#3#4#5#6#7#8#9
+  {
+    \tl_put_right:No \l__xparse_args_tl
+      { #1 {#2} {#3} {#4} {#5} {#6} {#7} {#8} {#9} }
+    \l__xparse_signature_tl \__xparse_run_code:
+  }
+\cs_new_protected:cpn { __xparse_grab_m_1:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \use_none:nnnnnnn { } { } { } { } { } { } { }
+  }
+\cs_new_protected:cpn { __xparse_grab_m_2:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \use_none:nnnnnn { } { } { } { } { } { }
+  }
+\cs_new_protected:cpn { __xparse_grab_m_3:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \use_none:nnnnn { } { } { } { } { }
+  }
+\cs_new_protected:cpn { __xparse_grab_m_4:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \use_none:nnnn { } { } { } { }
+  }
+\cs_new_protected:cpn { __xparse_grab_m_5:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \use_none:nnn { } { } { }
+  }
+\cs_new_protected:cpn { __xparse_grab_m_6:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \use_none:nn { } { }
+  }
+\cs_new_protected:cpn { __xparse_grab_m_7:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \use_none:n { }
+  }
+\cs_new_protected:cpn { __xparse_grab_m_8:w } #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \exp_after:wN \cs_set_eq:NN \l__xparse_fn_tl \__xparse_grab_m_aux:Nnnnnnnnn
+    \l__xparse_fn_tl \prg_do_nothing:
+  }
+\cs_new_protected:cpx { __xparse_grab_m_9:w }
+  {
+    \exp_not:c { __xparse_grab_m_5:w }
+    \exp_not:c { __xparse_grab_m_4:w }
+  }
+\cs_new_protected:Npn \__xparse_grab_R:w #1#2#3 \__xparse_run_code:
+  { \__xparse_grab_R_aux:NNnN #1 #2 {#3} \cs_set_protected_nopar:Npn }
+\cs_new_protected:Npn \__xparse_grab_R_long:w #1#2#3 \__xparse_run_code:
+  { \__xparse_grab_R_aux:NNnN #1 #2 {#3} \cs_set_protected:Npn }
+\cs_new_protected:Npn \__xparse_grab_R_aux:NNnN #1#2#3#4
+  {
+    \__xparse_grab_D_aux:NNnN #1 #2 {#3} #4
+    \__xparse_peek_nonspace_remove:NTF #1
+      { \__xparse_grab_D_call:Nw #1 }
+      {
+        \__kernel_msg_error:nnxx { xparse } { missing-required }
+          { \__xparse_environment_or_command: }
+          { \token_to_str:N #1 }
+        \__xparse_add_arg:o \c_novalue_tl
+      }
+  }
+\cs_new_protected:Npn \__xparse_grab_t:w
+  { \__xparse_grab_t_aux:NNw \__xparse_peek_nonspace_remove:NTF }
+\cs_new_protected:Npn \__xparse_grab_t_obey_spaces:w
+  { \__xparse_grab_t_aux:NNw \__xparse_peek_meaning_remove:NTF }
+\cs_new_protected:Npn \__xparse_grab_t_aux:NNw #1#2#3 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#3}
+    \exp_after:wN \cs_set_protected:Npn \l__xparse_fn_tl
+      {
+        #1 #2
+          { \__xparse_add_arg:n { \BooleanTrue } }
+          { \__xparse_add_arg:n { \BooleanFalse } }
+      }
+    \l__xparse_fn_tl
+  }
+\cs_new_protected:Npn \__xparse_grab_u:w #1#2 \__xparse_run_code:
+  { \__xparse_grab_u_aux:nnN {#1} {#2} \cs_set_protected_nopar:Npn }
+\cs_new_protected:Npn \__xparse_grab_u_long:w #1#2 \__xparse_run_code:
+  { \__xparse_grab_u_aux:nnN {#1} {#2} \cs_set_protected:Npn }
+\cs_new_protected:Npn \__xparse_grab_u_aux:nnN #1#2#3
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#2}
+    \exp_after:wN #3 \l__xparse_fn_tl ##1 #1
+      { \__xparse_add_arg:n {##1} }
+    \l__xparse_fn_tl
+  }
+\tl_new:N \l__xparse_v_arg_tl
+\cs_new_protected:Npn \__xparse_grab_v:w
+  {
+    \bool_set_false:N \l__xparse_long_bool
+    \__xparse_grab_v_aux:w
+  }
+\cs_new_protected:Npn \__xparse_grab_v_long:w
+  {
+    \bool_set_true:N \l__xparse_long_bool
+    \__xparse_grab_v_aux:w
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux:w #1 \__xparse_run_code:
+  {
+    \tl_set:Nn \l__xparse_signature_tl {#1}
+    \group_begin:
+      \tex_escapechar:D = 92 \scan_stop:
+      \tl_clear:N \l__xparse_v_arg_tl
+      \peek_remove_spaces:n
+        {
+          \peek_meaning_remove:NTF \c_group_begin_token
+            {
+              \group_align_safe_end:
+              \__xparse_grab_v_bgroup:
+            }
+            {
+              \peek_N_type:TF
+                { \__xparse_grab_v_aux_test:N }
+                { \__xparse_grab_v_aux_abort:n { } }
+            }
+        }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_group_end:
+  {
+        \exp_args:NNNo
+      \group_end:
+    \tl_set:Nn \l__xparse_v_arg_tl { \l__xparse_v_arg_tl }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux_test:N #1
+  {
+    \__xparse_grab_v_token_if_char:NTF #1
+      {
+        \__xparse_grab_v_aux_put:N #1
+        \__xparse_grab_v_aux_catcodes:
+        \__xparse_grab_v_aux_loop:N #1
+      }
+      { \__xparse_grab_v_aux_abort:n {#1} #1 }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux_loop:N #1
+  {
+    \peek_N_type:TF
+      { \__xparse_grab_v_aux_loop:NN #1 }
+      { \__xparse_grab_v_aux_abort:n { } }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux_loop:NN #1#2
+  {
+    \__xparse_grab_v_token_if_char:NTF #2
+      {
+        \token_if_eq_charcode:NNTF #1 #2
+          { \__xparse_grab_v_aux_loop_end: }
+          {
+            \__xparse_grab_v_aux_put:N #2
+            \__xparse_grab_v_aux_loop:N #1
+          }
+      }
+      { \__xparse_grab_v_aux_abort:n {#2} #2 }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux_loop_end:
+  {
+    \__xparse_grab_v_group_end:
+    \__xparse_add_arg:x { \tl_tail:N \l__xparse_v_arg_tl }
+  }
+\int_new:N \l__xparse_v_nesting_int
+\cs_new_protected:Npx \__xparse_grab_v_bgroup:
+  {
+    \exp_not:N \__xparse_grab_v_aux_catcodes:
+    \exp_not:n { \int_set:Nn \l__xparse_v_nesting_int { 1 } }
+    \exp_not:N \__xparse_grab_v_aux_put:N \iow_char:N \{
+    \exp_not:N \__xparse_grab_v_bgroup_loop:
+  }
+\cs_new_protected:Npn \__xparse_grab_v_bgroup_loop:
+  {
+    \peek_N_type:TF
+      { \__xparse_grab_v_bgroup_loop:N }
+      { \__xparse_grab_v_aux_abort:n { } }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_bgroup_loop:N #1
+  {
+    \__xparse_grab_v_token_if_char:NTF #1
+      {
+        \token_if_eq_charcode:NNTF \c_group_end_token #1
+          {
+            \int_decr:N \l__xparse_v_nesting_int
+            \int_compare:nNnTF \l__xparse_v_nesting_int > 0
+              {
+                \__xparse_grab_v_aux_put:N #1
+                \__xparse_grab_v_bgroup_loop:
+              }
+              { \__xparse_grab_v_aux_loop_end: }
+          }
+          {
+            \token_if_eq_charcode:NNT \c_group_begin_token #1
+              { \int_incr:N \l__xparse_v_nesting_int }
+            \__xparse_grab_v_aux_put:N #1
+            \__xparse_grab_v_bgroup_loop:
+          }
+      }
+      { \__xparse_grab_v_aux_abort:n {#1} #1 }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux_catcodes:
+  {
+    \cs_set_eq:NN \do \char_set_catcode_other:N
+    \dospecials
+    \tex_endlinechar:D = `\^^M \scan_stop:
+    \bool_if:NTF \l__xparse_long_bool
+      { \char_set_catcode_other:n { \tex_endlinechar:D } }
+      { \char_set_catcode_parameter:n { \tex_endlinechar:D } }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux_abort:n #1
+  {
+    \__xparse_grab_v_group_end:
+    \exp_after:wN \exp_after:wN \exp_after:wN
+      \peek_meaning_remove:NTF \char_generate:nn { \tex_endlinechar:D } { 6 }
+      {
+        \__kernel_msg_error:nnxxx { xparse } { verbatim-newline }
+          { \__xparse_environment_or_command: }
+          { \tl_to_str:N \l__xparse_v_arg_tl }
+          { \tl_to_str:n {#1} }
+        \__xparse_add_arg:o \c_novalue_tl
+      }
+      {
+        \__kernel_msg_error:nnxxx { xparse } { verbatim-tokenized }
+          { \__xparse_environment_or_command: }
+          { \tl_to_str:N \l__xparse_v_arg_tl }
+          { \tl_to_str:n {#1} }
+        \__xparse_add_arg:o \c_novalue_tl
+      }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_aux_put:N #1
+  {
+    \tl_put_right:Nx \l__xparse_v_arg_tl
+      {
+        \token_if_active:NTF #1
+          { \exp_not:N #1 } { \token_to_str:N #1 }
+      }
+  }
+\cs_new_protected:Npn \__xparse_grab_v_token_if_char:NTF #1
+  { \str_if_eq:eeTF { } { \str_tail:n {#1} } }
+\cs_new_protected:Npn \__xparse_add_arg:n #1
+  {
+    \tl_put_right:Nn \l__xparse_args_tl { {#1} }
+    \l__xparse_signature_tl \__xparse_run_code:
+  }
+\cs_generate_variant:Nn \__xparse_add_arg:n { V , o , x }
+\cs_new:Npn \__xparse_expandable_grab_D:w #1 \q__xparse #2#3
+  { #2 { \__xparse_expandable_grab_D:NNNwNNn #1 \q__xparse #2 #3 } }
+\cs_set_protected:Npn \__xparse_tmp:w #1
+  {
+    \cs_new:Npn \__xparse_expandable_grab_D:NNNwNNn ##1##2##3##4 \q__xparse ##5##6##7
+      {
+        \str_if_eq:nnTF {##2} {##7}
+          {
+            \str_if_eq:onTF
+              { ##1 { } { } ##7 ##2 \q__xparse ##3 }
+              { { } {##2} { } }
+          }
+          { \use_ii:nn }
+          {
+            ##1
+              { \__xparse_expandable_grab_D:NNNwNNnnn ##1##2##3##4 \q__xparse ##5##6 }
+              \q_nil { } ##2 \ERROR \q__xparse \ERROR
+          }
+          { ##4 {#1} \q__xparse ##5 ##6 {##7} }
+      }
+  }
+\exp_args:No \__xparse_tmp:w { \c_novalue_tl }
+\cs_new:Npn \__xparse_expandable_grab_D:NNNwNNnnn #1#2#3#4 \q__xparse #5#6#7#8#9
+  {
+    \exp_args:Nof \__xparse_expandable_grab_D:nnNNNwNN
+      { \use_ii:nn #7 #2 }
+      { \__xparse_expandable_grab_D:Nw #3 \exp_stop_f: #8 #9 }
+    #1#2#3 #4 \q__xparse #5 #6
+  }
+\cs_new:Npn \__xparse_expandable_grab_D:Nw #1#2 \ERROR \ERROR { #2 #1 }
+\cs_new:Npn \__xparse_expandable_grab_D:nnNNNwNN #1#2#3#4#5#6 \q__xparse #7#8
+  {
+    \exp_args:No \tl_if_empty:oTF
+      { #3 { \use_none:nnn } #2 \q__xparse #5 #4 \q__xparse #5 }
+      {
+        \tl_if_blank:oTF { \use_none:nn #1#2 }
+          { \__xparse_put_arg_expandable:ow { \use_none:nn #1#2 } }
+          {
+            \str_if_eq:eeTF
+              { \exp_not:o { \use_none:nn #1#2 } }
+              { { \exp_not:o { \use_iii:nnnn #1#2 \q_nil } } }
+              { \__xparse_put_arg_expandable:ow { \use_iii:nnn #1#2 } }
+              { \__xparse_put_arg_expandable:ow { \use_none:nn #1#2 } }
+          }
+            #6 \q__xparse #7 #8
+      }
+      {
+        #3
+          { \__xparse_expandable_grab_D:NNNwNNnnn #3#4#5#6 \q__xparse #7 #8 }
+          \q_nil {#1} #2 \ERROR \q__xparse \ERROR
+      }
+  }
+\cs_new:Npn \__xparse_expandable_grab_D_alt:w #1 \q__xparse #2#3
+  { #2 { \__xparse_expandable_grab_D_alt:NNwNNn #1 \q__xparse #2 #3 } }
+\cs_set_protected:Npn \__xparse_tmp:w #1
+  {
+    \cs_new:Npn \__xparse_expandable_grab_D_alt:NNwNNn ##1##2##3 \q__xparse ##4##5##6
+      {
+        \str_if_eq:nnTF {##6} {##2}
+          {
+            \str_if_eq:onTF
+              { ##1 { } ##6 ##2 ##2 }
+              { { } ##2 }
+          }
+          { \use_ii:nn }
+          {
+            ##1
+              { \__xparse_expandable_grab_D_alt:NNwn ##4 ##5 ##3 \q__xparse }
+              ##6 \ERROR
+          }
+          { ##3 {#1} \q__xparse ##4 ##5 {##6} }
+      }
+  }
+\exp_args:No \__xparse_tmp:w { \c_novalue_tl }
+\cs_new:Npn \__xparse_expandable_grab_D_alt:NNwn #1#2#3 \q__xparse #4
+  {
+    \tl_if_blank:oTF { \use_none:n #4 }
+      { \__xparse_put_arg_expandable:ow { \use_none:n #4 } }
+      {
+        \str_if_eq:eeTF
+          { \exp_not:o { \use_none:n #4 } }
+          { { \exp_not:o { \use_ii:nnn #4 \q_nil } } }
+          { \__xparse_put_arg_expandable:ow { \use_ii:nn #4 } }
+          { \__xparse_put_arg_expandable:ow { \use_none:n #4 } }
+      }
+        #3 \q__xparse #1 #2
+  }
+\cs_new:Npn \__xparse_expandable_grab_E:w #1 \q__xparse #2#3
+  { \__xparse_expandable_grab_E_aux:w #1 \q__xparse #2 #3 #3 }
+\cs_new:Npn \__xparse_expandable_grab_E_long:w #1 \q__xparse #2#3
+  { \__xparse_expandable_grab_E_aux:w #1 \q__xparse #2 #3 #2 }
+\cs_new:Npn \__xparse_expandable_grab_E_aux:w #1 \q__xparse #2#3#4
+  { #2 { \__xparse_expandable_grab_E_test:nnw #1 \q__xparse #2 #3 #4 } }
+\cs_new:Npn \__xparse_expandable_grab_E_test:nnw #1#2#3 \q__xparse #4#5#6#7
+  {
+    \__xparse_expandable_grab_E_loop:nnnNNw {#7} { } { }
+      #1 \q_nil \q_nil \q_nil \q_mark #2 \q_nil
+    #3 \q__xparse #4 #5 #6
+  }
+\cs_new:Npn \__xparse_expandable_grab_E_loop:nnnNNw
+    #1#2#3#4#5#6 \q_nil #7 \q_mark #8
+  {
+    \quark_if_nil:NTF #4
+      { \__xparse_expandable_grab_E_end:nnw {#1} {#3} }
+      {
+        \tl_if_novalue:nTF {#8}
+          { \str_if_eq:onTF { #4 { } #1 #5 } {#5} }
+          { \use_ii:nn }
+            { \__xparse_expandable_grab_E_find:w { #2 #4 #5 #6 } {#3} ~ }
+            {
+              \__xparse_expandable_grab_E_loop:nnnNNw
+                {#1} { #2 #4 #5 } { #3 {#8} }
+                #6 \q_nil #7 \q_mark
+            }
+      }
+  }
+\cs_new:Npn \__xparse_expandable_grab_E_find:w #1 \q__xparse #2#3#4
+  { #4 { \__xparse_expandable_grab_E_find:nnw #1 \q__xparse #2 #3 #4 } }
+\cs_new:Npn \__xparse_expandable_grab_E_find:nnw #1#2#3 \q_nil #4 \q__xparse #5#6#7#8
+  { \__xparse_expandable_grab_E_aux:w {#1} { #2 {#8} #3 } #4 \q__xparse #5 #6 #7 }
+\cs_new:Npn \__xparse_expandable_grab_E_end:nnw #1#2#3 \q__xparse #4#5#6
+  { #3 #2 \q__xparse #4 #5 {#1} }
+\cs_new:Npn \__xparse_expandable_grab_m:w #1 \q__xparse #2#3
+  { #3 { \__xparse_expandable_grab_m_aux:wNn #1 \q__xparse #2 #3 } }
+\cs_new:Npn \__xparse_expandable_grab_m_long:w #1 \q__xparse #2#3
+  { #2 { \__xparse_expandable_grab_m_aux:wNn #1 \q__xparse #2 #3 } }
+\cs_new:Npn \__xparse_expandable_grab_m_aux:wNn #1 \q__xparse #2#3#4
+  { #1 {#4} \q__xparse #2 #3 }
+\cs_new:Npn \__xparse_expandable_grab_R:w #1 \q__xparse #2#3
+  { #2 { \__xparse_expandable_grab_R_aux:NNNwNNn #1 \q__xparse #2#3 } }
+\cs_set_protected:Npn \__xparse_tmp:w #1
+  {
+    \cs_new:Npn \__xparse_expandable_grab_R_aux:NNNwNNn ##1##2##3##4 \q__xparse ##5##6##7
+      {
+        \str_if_eq:nnTF {##7} {##2}
+          {
+            \str_if_eq:onTF
+              { ##1 { } { } ##7 ##2 \q__xparse ##3 }
+              { { } {##2} { } }
+          }
+          { \use_ii:nn }
+          {
+            ##1
+              { \__xparse_expandable_grab_D:NNNwNNnnn ##1##2##3##4 \q__xparse ##5##6 }
+              \q_nil { } ##2 \ERROR \q__xparse \ERROR
+          }
+          {
+            \__kernel_msg_expandable_error:nnff
+              { xparse } { missing-required }
+              { \exp_args:Nf \tl_trim_spaces:n { \token_to_str:N ##5 } }
+              { \tl_to_str:n {##2} }
+            ##4 {#1} \q__xparse ##5 ##6 {##7}
+          }
+      }
+  }
+\exp_args:No \__xparse_tmp:w { \c_novalue_tl }
+\cs_new:Npn \__xparse_expandable_grab_R_alt:w #1 \q__xparse #2#3
+  { #2 { \__xparse_expandable_grab_R_alt_aux:NNwNNn #1 \q__xparse #2#3 } }
+\cs_set_protected:Npn \__xparse_tmp:w #1
+  {
+    \cs_new:Npn \__xparse_expandable_grab_R_alt_aux:NNwNNn ##1##2##3 \q__xparse ##4##5##6
+      {
+        \str_if_eq:nnTF {##6} {##2}
+          {
+            \str_if_eq:onTF
+              { ##1 { } ##6 ##2 ##2 }
+              { { } ##2 }
+          }
+          { \use_ii:nn }
+          {
+            ##1
+              { \__xparse_expandable_grab_D_alt:NNwn ##4 ##5 ##3 \q__xparse }
+              ##6 \ERROR
+          }
+          {
+            \__kernel_msg_expandable_error:nnff
+              { xparse } { missing-required }
+              { \exp_args:Nf \tl_trim_spaces:n { \token_to_str:N ##4 } }
+              { \tl_to_str:n {##2} }
+            ##3 {#1} \q__xparse ##4 ##5 {##6}
+          }
+      }
+  }
+\exp_args:No \__xparse_tmp:w { \c_novalue_tl }
+\cs_new:Npn \__xparse_expandable_grab_t:w #1 \q__xparse #2#3
+  { #2 { \__xparse_expandable_grab_t_aux:NNwn #1 \q__xparse #2 #3 } }
+\cs_new:Npn \__xparse_expandable_grab_t_aux:NNwn #1#2#3 \q__xparse #4#5#6
+  {
+    \str_if_eq:onTF { #1 { } #6 #2 } {#2}
+      { #3 { \BooleanTrue } \q__xparse #4 #5 }
+      { #3 { \BooleanFalse } \q__xparse #4 #5 {#6} }
+  }
+\cs_new_eq:NN \__xparse_expandable_grab_u:w \prg_do_nothing:
+\cs_new:Npn \__xparse_put_arg_expandable:nw #1#2 \q__xparse { #2 {#1} \q__xparse }
+\cs_generate_variant:Nn \__xparse_put_arg_expandable:nw { o }
+\cs_new_protected:Npn \__xparse_bool_reverse:N #1
+  {
+    \bool_if:NTF #1
+      { \tl_set:Nn \ProcessedArgument { \c_false_bool } }
+      { \tl_set:Nn \ProcessedArgument { \c_true_bool } }
+  }
+\seq_new:N \l__xparse_split_list_seq
+\tl_new:N \l__xparse_split_list_tl
+\cs_new_protected:Npn \__xparse_split_list:nn #1#2
+  {
+    \tl_if_single:nTF {#1}
+      {
+        \token_if_cs:NTF #1
+          { \__xparse_split_list_multi:nn {#1} {#2} }
+          { \__xparse_split_list_single:Nn #1 {#2} }
+      }
+      { \__xparse_split_list_multi:nn {#1} {#2} }
+  }
+\cs_new_protected:Npn \__xparse_split_list_multi:nn #1#2
+  {
+    \seq_set_split:Nnn \l__xparse_split_list_seq {#1} {#2}
+    \tl_clear:N \ProcessedArgument
+    \seq_map_inline:Nn \l__xparse_split_list_seq
+      { \tl_put_right:Nn \ProcessedArgument { {##1} } }
+  }
+\cs_generate_variant:Nn \__xparse_split_list_multi:nn { nV }
+\group_begin:
+\char_set_catcode_active:N \^^@
+\cs_new_protected:Npn \__xparse_split_list_single:Nn #1#2
+  {
+    \tl_set:Nn \l__xparse_split_list_tl {#2}
+    \group_begin:
+    \char_set_lccode:nn { `\^^@ } { `#1 }
+    \tex_lowercase:D
+      {
+        \group_end:
+        \tl_replace_all:Nnn \l__xparse_split_list_tl { ^^@ }
+      }   {#1}
+     \__xparse_split_list_multi:nV {#1} \l__xparse_split_list_tl
+   }
+\group_end:
+\cs_new_protected:Npn \__xparse_split_argument:nnn #1#2#3
+  {
+    \__xparse_split_list:nn {#2} {#3}
+    \exp_args:Nf \__xparse_split_argument_aux:nnnn
+      { \tl_count:N \ProcessedArgument }
+      {#1} {#2} {#3}
+  }
+\cs_new_protected:Npn \__xparse_split_argument_aux:nnnn #1#2#3#4
+  {
+    \int_compare:nNnF {#1} = { #2 + 1 }
+      {
+        \int_compare:nNnTF {#1} > { #2 + 1 }
+          {
+            \tl_set:Nx \ProcessedArgument
+              {
+                \exp_last_unbraced:NnNo
+                  \__xparse_split_argument_aux:n
+                  { #2 + 1 }
+                  \use_none_delimit_by_q_stop:w
+                  \ProcessedArgument
+                  \q_stop
+              }
+            \__kernel_msg_error:nnxxx { xparse } { split-excess-tokens }
+              { \tl_to_str:n {#3} } { \int_eval:n { #2 + 1 } }
+              { \tl_to_str:n {#4} }
+          }
+          {
+            \tl_put_right:Nx \ProcessedArgument
+              {
+                \prg_replicate:nn { #2 + 1 - (#1) }
+                  { { \exp_not:V \c_novalue_tl } }
+              }
+          }
+      }
+  }
+\cs_new:Npn \__xparse_split_argument_aux:n #1
+  { \prg_replicate:nn {#1} { \__xparse_split_argument_aux:wn } }
+\cs_new:Npn \__xparse_split_argument_aux:wn #1 \use_none_delimit_by_q_stop:w #2
+  {
+    \exp_not:n { {#2} }
+    #1
+    \use_none_delimit_by_q_stop:w
+  }
+\cs_new_protected:Npn \__xparse_trim_spaces:n #1
+  { \tl_set:Nx \ProcessedArgument { \tl_trim_spaces:n {#1} } }
+\cs_new_protected:Npn \__xparse_get_arg_spec_error:N #1
+  {
+    \bool_set_false:N \l__xparse_environment_bool
+    \tl_set:Nn \l__xparse_fn_tl {#1}
+    \__xparse_get_arg_spec_error_aux:n { \cs_if_exist:NTF #1 }
+  }
+\cs_new_protected:Npn \__xparse_get_arg_spec_error:n #1
+  {
+    \bool_set_true:N \l__xparse_environment_bool
+    \str_set:Nx \l__xparse_environment_str {#1}
+    \__xparse_get_arg_spec_error_aux:n
+      { \cs_if_exist:cTF { \l__xparse_environment_str } }
+  }
+\cs_new_protected:Npn \__xparse_get_arg_spec_error_aux:n #1
+  {
+    #1
+      {
+        \__kernel_msg_error:nnx { xparse } { non-xparse }
+          { \__xparse_environment_or_command: }
+      }
+      {
+        \__kernel_msg_error:nnx { xparse } { unknown }
+          { \__xparse_environment_or_command: }
+      }
+  }
+\cs_new_protected:Npn \__xparse_get_arg_spec:NTF #1#2#3
+  {
+    \__xparse_cmd_if_xparse:NTF #1
+      {
+        \tl_set:Nx \ArgumentSpecification { \tl_item:Nn #1 { 2 } }
+        #2
+      }
+      {#3}
+  }
+\cs_new_protected:Npn \__xparse_get_arg_spec:N #1
+  {
+    \__xparse_get_arg_spec:NTF #1 { }
+      { \__xparse_get_arg_spec_error:N #1 }
+  }
+\cs_new_protected:Npn \__xparse_get_arg_spec:n #1
+  {
+    \exp_args:Nc \__xparse_get_arg_spec:NTF
+      { environment~ \tl_to_str:n {#1} }
+      { }
+      { \__xparse_get_arg_spec_error:n {#1} }
+  }
+\tl_new:N \ArgumentSpecification
+\cs_new_protected:Npn \__xparse_show_arg_spec:N #1
+  {
+    \__xparse_get_arg_spec:NTF #1
+      { \tl_show:N \ArgumentSpecification }
+      { \__xparse_get_arg_spec_error:N #1 }
+  }
+\cs_new_protected:Npn \__xparse_show_arg_spec:n #1
+  {
+    \exp_args:Nc \__xparse_get_arg_spec:NTF
+      { environment~ \tl_to_str:n {#1} }
+      { \tl_show:N \ArgumentSpecification }
+      { \__xparse_get_arg_spec_error:n {#1} }
+  }
+\cs_new_protected:Npn \__xparse_check_definable:nNT #1
+  { \tl_trim_spaces_apply:nN {#1} \__xparse_check_definable_aux:nN }
+\group_begin:
+  \char_set_catcode_active:n { `? }
+  \cs_new_protected:Npn \__xparse_check_definable_aux:nN #1#2
+    {
+      \group_begin:
+      \tl_if_single_token:nTF {#1}
+        {
+          \int_set:Nn \tex_escapechar:D { 92 }
+          \exp_args:Nx \tl_if_empty:nTF
+            { \exp_args:No \str_tail:n { \token_to_str:N #1 } }
+            {
+              \exp_args:Nx \char_set_lccode:nn
+                { ` \str_head:n {#1} } { `? }
+              \tex_lowercase:D { \tl_if_eq:nnTF {#1} } { ? }
+                { \group_end: \use_iii:nnn }
+                { \group_end: \use_i:nnn }
+            }
+            { \group_end: \use_iii:nnn }
+        }
+        { \group_end: \use_ii:nnn }
+      {
+        \__kernel_msg_error:nnxx { xparse } { not-definable }
+          { \tl_to_str:n {#1} } { \token_to_str:N #2 }
+      }
+      {
+        \__kernel_msg_error:nnxx { xparse } { not-one-token }
+          { \tl_to_str:n {#1} } { \token_to_str:N #2 }
+      }
+    }
+\group_end:
+\cs_new_protected:Npn \__xparse_token_if_cs:NTF #1
+  {
+    \group_begin:
+      \int_set:Nn \tex_escapechar:D { 92 }
+      \exp_args:Nx \tl_if_empty:nTF
+          { \exp_args:No \str_tail:n { \token_to_str:N #1 } }
+        { \group_end: \use_ii:nn }
+        { \group_end: \use_i:nn }
+  }
+\cs_new:Npn \__xparse_tl_mapthread_function:NNN #1#2#3
+  {
+    \exp_after:wN \exp_after:wN
+    \exp_after:wN \__xparse_tl_mapthread_loop:w
+    \exp_after:wN \exp_after:wN
+    \exp_after:wN #3
+    \exp_after:wN #1
+    \exp_after:wN \q_recursion_tail
+    \exp_after:wN \q_mark
+    #2
+    \q_recursion_tail
+    \q_recursion_stop
+  }
+\cs_new:Npn \__xparse_tl_mapthread_function:nnN #1#2#3
+  {
+    \__xparse_tl_mapthread_loop:w #3
+      #1 \q_recursion_tail \q_mark
+      #2 \q_recursion_tail \q_recursion_stop
+  }
+\cs_new:Npn \__xparse_tl_mapthread_loop:w #1#2#3 \q_mark #4
+  {
+    \quark_if_recursion_tail_stop:n {#2}
+    \quark_if_recursion_tail_stop:n {#4}
+    #1 {#2} {#4}
+    \__xparse_tl_mapthread_loop:w #1#3 \q_mark
+  }
+\cs_new_protected:Npn \__xparse_cmd_if_xparse:NTF #1
+  {
+    \exp_args:Nf \str_case_e:nnTF
+      {
+        \exp_args:Nf \tl_if_empty:nT { \cs_argument_spec:N #1 }
+          {
+            \exp_last_unbraced:Nf \__xparse_cmd_if_xparse_aux:w
+              { \cs_replacement_spec:N #1 } ~ \q_stop
+          }
+      }
+      {
+        { \token_to_str:N \__xparse_start:nNNnnn } { }
+        { \token_to_str:N \__xparse_start_expandable:nNNNNn } { }
+        { \token_to_str:N \__xparse_start_env:nnnnn } { }
+      }
+  }
+\cs_new:Npn \__xparse_cmd_if_xparse_aux:w #1 ~ #2 \q_stop {#1}
+\cs_new_protected:Npn \__xparse_peek_nonspace:NTF
+  { \__xparse_peek_nonspace_aux:nNNTF { } \__xparse_peek_meaning:NTF }
+\cs_new_protected:Npn \__xparse_peek_nonspace_remove:NTF
+  { \__xparse_peek_nonspace_aux:nNNTF { } \__xparse_peek_meaning_remove:NTF }
+\cs_new_protected:Npn \__xparse_peek_nonspace_aux:nNNTF #1#2#3#4#5
+  {
+    \peek_meaning_remove:NTF \c_space_token
+      { \__xparse_peek_nonspace_aux:nNNTF { #1 ~ } #2 #3 {#4} {#5} }
+      { #2 #3 { #4 } { #5 #1 } }
+  }
+\cs_new_protected:Npn \__xparse_peek_meaning:NTF
+  { \__xparse_peek_meaning_aux:NNTF \c_false_bool }
+\cs_new_protected:Npn \__xparse_peek_meaning_remove:NTF
+  { \__xparse_peek_meaning_aux:NNTF \c_true_bool }
+\cs_new_protected:Npn \__xparse_peek_meaning_aux:NNTF #1#2#3#4
+  {
+    \tl_set:Nn \l__xparse_tmpa_tl {#3}
+    \tl_set:Nn \l__xparse_tmpb_tl {#4}
+    \peek_meaning:NTF #2
+      {
+        \token_if_eq_meaning:NNTF #2 \c_group_begin_token
+          { \__xparse_peek_true_remove:Nw #1 }
+          {
+            \__xparse_token_if_cs:NTF #2
+              { \__xparse_peek_cs_check_equal:NNN #1 #2 }
+              { \__xparse_peek_true_remove:Nw #1 }
+          }
+      }
+      { \l__xparse_tmpb_tl }
+  }
+\cs_new_protected:Npn \__xparse_peek_cs_check_equal:NNN #1#2#3
+  {
+    \str_if_eq:nnTF {#2} {#3}
+      { \__xparse_peek_true_remove:Nw #1 }
+      { \l__xparse_tmpb_tl }
+    #3
+  }
+\cs_new_protected:Npn \__xparse_peek_true_remove:Nw #1
+  {
+    \bool_if:NTF #1
+      {
+        \tex_afterassignment:D \l__xparse_tmpa_tl
+        \cs_set_eq:NN \__xparse_tmp:w
+      }
+      { \l__xparse_tmpa_tl }
+  }
+\cs_new:Npn \__xparse_environment_or_command:
+  {
+    \bool_if:NTF \l__xparse_environment_bool
+      { environment ~ ' \l__xparse_environment_str ' }
+      {
+        command ~ '
+        \exp_args:Nf \tl_trim_spaces:n
+          { \exp_after:wN \token_to_str:N \l__xparse_fn_tl }
+        '
+      }
+  }
+\tl_const:Nn \c__xparse_ignore_def_tl
+  { \\ \\ LaTeX~will~ignore~this~entire~definition. }
+\__kernel_msg_new:nnnn { xparse } { arg-after-body }
+  { In~the~definition~of~#1,~b~(body)~argument~must~be~last. }
+  {
+    The~'body'~argument~type~is~followed~by~'#2'~in~the~argument~
+    specification~of~the~#1.~This~is~not~allowed.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { bad-arg-spec }
+  { Bad~argument~specification~'#2'~for~#1. }
+  {
+    The~argument~specification~provided~was~not~valid:~
+    one~or~more~mandatory~pieces~of~information~were~missing.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { command-already-defined }
+  { Command~'#1'~already~defined! }
+  {
+    You~have~used~#2~
+    with~a~command~that~already~has~a~definition. \\ \\
+    The~existing~definition~of~'#1'~will~not~be~altered.
+  }
+\__kernel_msg_new:nnnn { xparse } { command-not-yet-defined }
+  { Command ~'#1'~not~yet~defined! }
+  {
+    You~have~used~#2~
+    with~a~command~that~was~never~defined.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { environment-already-defined }
+  { Environment~'#1'~already~defined! }
+  {
+    You~have~used~\NewDocumentEnvironment
+    with~an~environment~that~already~has~a~definition. \\ \\
+    The~existing~definition~of~'#1'~will~not~be~altered.
+  }
+\__kernel_msg_new:nnnn { xparse } { environment-not-yet-defined }
+  { Environment~'#1'~not~yet~defined! }
+  {
+    You~have~used~\RenewDocumentEnvironment
+    with~an~environment~that~was~never~defined.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { expandable-ending-optional }
+  {
+    Argument~specification~'#2'~for~expandable~command~'#1'~
+    ends~with~optional~argument.
+  }
+  {
+    Expandable~commands~must~have~a~final~mandatory~argument~
+    (or~no~arguments~at~all).~You~cannot~have~a~terminal~optional~
+    argument~with~expandable~commands.
+  }
+\__kernel_msg_new:nnnn { xparse } { inconsistent-long }
+  { Inconsistent~long~arguments~for~expandable~command~'#1'. }
+  {
+    The~arguments~for~an~expandable~command~must~not~involve~short~
+    arguments~after~long~arguments.~You~have~tried~to~mix~the~two~types.
+  }
+\__kernel_msg_new:nnnn { xparse } { invalid-command-arg }
+  { Argument~type~'#2'~not~available~for~#1. }
+  {
+    The~letter~'#2'~can~only~be~used~in~environment~argument~
+    specifications,~not~for~commands.
+    \\ \\
+    LaTeX~will~ignore~this~entire~definition.
+  }
+\__kernel_msg_new:nnnn { xparse } { invalid-expandable-argument-type }
+  { Argument~type~'#2'~not~available~for~expandable~command~'#1'. }
+  {
+    The~letter~'#2'~specifies~an~argument~type~which~cannot~be~used~
+    in~an~expandable~command.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { invalid-after-optional-expandably }
+  {
+    Argument~type~'#2'~not~available~after~optional~argument~
+    for~expandable~command~'#1'.
+  }
+  {
+    The~letter~'#2'~specifies~an~argument~type~which~cannot~be~used~
+    in~an~expandable~command~after~an~optional~argument.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { non-trailing-obey-spaces }
+  { Prefix~'!'~used~before~mandatory~argument~'#2'~of~#1. }
+  {
+    The~prefix~'!'~can~only~apply~to~trailing~optional~arguments.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { not-definable }
+  { First~argument~of~'#2'~must~be~a~command. }
+  {
+    The~first~argument~of~'#2'~should~be~the~document~command~that~will~
+    be~defined.~The~provided~argument~'#1'~is~a~character.~Perhaps~a~
+    backslash~is~missing?
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { not-one-token }
+  { First~argument~of~'#2'~must~be~a~command. }
+  {
+    The~first~argument~of~'#2'~should~be~the~document~command~that~will~
+    be~defined.~The~provided~argument~'#1'~contains~more~than~one~
+    token.~Perhaps~a~backslash~is~missing?
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { not-single-token }
+  {
+    Argument~delimiter~'#2'~for~the~#1~should~be~
+    a~single~non-space~token.
+  }
+  {
+    The~argument~specification~provided~was~not~valid:~in~a~place~
+    where~a~single~token~is~required,~LaTeX~found~'#2'.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { forbidden-implicit-group-token }
+  { Argument~delimiter~'#2'~for~the~#1~is~not~allowed. }
+  {
+    The~argument~specification~provided~was~not~valid:~the~implicit~
+    #3-group~token~'#2'~is~not~allowed~as~an~argument~delimiter.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { processor-in-expandable }
+  { Argument~processor~'>{#2}'~cannot~be~used~for~the~expandable~command~'#1'. }
+  {
+    The~argument~specification~for~#1~contains~a~processor~function:~
+    this~is~only~supported~for~standard~robust~commands.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { too-many-arguments }
+  { Too~many~arguments~in~argument~specification~'#2'~of~#1. }
+  {
+    The~argument~specification~provided~has~more~than~9~arguments.~
+    This~cannot~be~implemented.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { two-markers }
+  { Two~'#2'~apply~to~the~same~argument~in~argument~specification~of~#1. }
+  {
+    The~argument~specification~provided~has~two~markers~'#2'~applying~
+    to~the~same~argument;~these~are~redundant.
+  }
+\__kernel_msg_new:nnnn { xparse } { unknown-argument-type }
+  { Unknown~argument~type~'#2'~for~the~#1. }
+  {
+    The~letter~'#2'~does~not~specify~a~known~argument~type.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnnn { xparse } { xparse-argument-type }
+  { Deprecated~argument~type~'#2'~for~the~#1~requires~xparse. }
+  {
+    The~letter~'#2'~specifies~a~known~argument~type~that~requires~
+    the~xparse~package.
+    \c__xparse_ignore_def_tl
+  }
+\__kernel_msg_new:nnn { xparse } { if-boolean }
+  { Invalid~use~\iow_char:N\\IfBooleanTF~{#1} }
+\__kernel_msg_new:nnnn { xparse } { loop-in-defaults }
+  { Defaults~of~#1~have~circular~dependency. }
+  {
+    The~default~values~of~two~or~more~arguments~of~the~#1~
+    depend~on~each~other~in~a~way~that~cannot~be~resolved.
+  }
+\__kernel_msg_new:nnnn { xparse } { missing-required }
+  { Missing~required~argument~for~#1. }
+  {
+    The~current~#1~expects~an~argument~starting~with~'#2'.~
+    LaTeX~did~not~find~it,~and~will~insert~a~default~value~to~be~processed.
+  }
+\__kernel_msg_new:nnnn { xparse } { non-xparse }
+  { \str_uppercase:n #1~not~defined~using~xparse. }
+  {
+    You~have~asked~for~the~argument~specification~for~the~#1,~
+    but~this~was~not~defined~using~xparse.
+  }
+\__kernel_msg_new:nnnn { xparse } { split-excess-tokens }
+  { Too~many~'#1'~tokens~when~trying~to~split~argument. }
+  {
+    LaTeX~was~asked~to~split~the~input~'#3'~
+    at~each~occurrence~of~the~token~'#1',~up~to~a~maximum~of~#2~parts.~
+    There~were~too~many~'#1'~tokens.
+  }
+\__kernel_msg_new:nnnn { xparse } { unknown }
+  { Unknown~document~#1. }
+  {
+    You~have~asked~for~the~argument~specification~for~the~#1,~
+    but~it~is~not~defined.
+  }
+\__kernel_msg_new:nnnn { xparse } { verbatim-newline }
+  { Verbatim~argument~of~#1~ended~by~end~of~line. }
+  {
+    The~verbatim~argument~of~the~#1~cannot~contain~more~than~one~line,~
+    but~the~end~
+    of~the~current~line~has~been~reached.~You~may~have~forgotten~the~
+    closing~delimiter.
+    \\ \\
+    LaTeX~will~ignore~'#2'.
+  }
+\__kernel_msg_new:nnnn { xparse } { verbatim-tokenized }
+  { The~verbatim~#1~cannot~be~used~inside~an~argument. }
+  {
+    The~#1~takes~a~verbatim~argument.~
+    It~may~not~appear~within~the~argument~of~another~function.~
+    It~received~an~illegal~token \tl_if_empty:nF {#3} { ~'#3' } .
+    \\ \\
+    LaTeX~will~ignore~'#2'.
+  }
+\__kernel_msg_new:nnn { xparse } { define-command }
+  {
+    Defining~command~#1~
+    with~sig.~'#2'~\msg_line_context:.
+  }
+\__kernel_msg_new:nnn { xparse } { define-environment }
+  {
+    Defining~environment~'#1'~
+    with~sig.~'#2'~\msg_line_context:.
+  }
+\__kernel_msg_new:nnn { xparse } { redefine-command }
+  {
+    Redefining~command~#1~
+    with~sig.~'#2'~\msg_line_context:.
+  }
+\__kernel_msg_new:nnn { xparse } { redefine-environment }
+  {
+    Redefining~environment~'#1'~
+    with~sig.~'#2'~\msg_line_context:.
+  }
+\__kernel_msg_new:nnn { xparse } { optional-mandatory }
+  {
+    Since~the~mandatory~argument~'#1'~has~the~same~delimiter~'#2'~
+    as~a~previous~optional~argument,~it~will~not~be~possible~to~
+    omit~all~optional~arguments~when~calling~this~command.
+  }
+\__kernel_msg_new:nnn { xparse } { unsupported-let }
+  {
+    The~command~'#1'~was~undefined~but~not~the~associated~commands~
+    '#1~code'~and/or~'#1~defaults'.~Maybe~you~tried~using~
+    \iow_char:N\\let.~This~may~lead~to~an~infinite~loop.
+  }
+\cs_new_eq:NN \BooleanFalse \c_false_bool
+\cs_new_eq:NN \BooleanTrue  \c_true_bool
+\cs_new_protected:Npn \NewDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \NewDocumentCommand
+      {
+        \cs_if_exist:NTF #1
+          {
+            \__kernel_msg_error:nnxx { xparse } { command-already-defined }
+              { \use:nnn \token_to_str:N #1 { } }
+              { \token_to_str:N \NewDocumentCommand }
+          }
+          { \__xparse_declare_cmd:Nnn #1 {#2} {#3} }
+      }
+  }
+\cs_new_protected:Npn \RenewDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \RenewDocumentCommand
+      {
+        \cs_if_exist:NTF #1
+          { \__xparse_declare_cmd:Nnn #1 {#2} {#3} }
+          {
+            \__kernel_msg_error:nnxx { xparse } { command-not-yet-defined }
+              { \use:nnn \token_to_str:N #1 { } }
+              { \token_to_str:N \RenewDocumentCommand }
+          }
+      }
+  }
+\cs_new_protected:Npn \ProvideDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \ProvideDocumentCommand
+      { \cs_if_exist:NF #1 { \__xparse_declare_cmd:Nnn #1 {#2} {#3} } }
+ }
+\cs_new_protected:Npn \DeclareDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \DeclareDocumentCommand
+      { \__xparse_declare_cmd:Nnn #1 {#2} {#3} }
+  }
+\cs_new_protected:Npn \NewDocumentEnvironment #1#2#3#4
+  {
+    \cs_if_exist:cTF {#1}
+      { \__kernel_msg_error:nnx { xparse } { environment-already-defined } {#1} }
+      { \__xparse_declare_env:nnnn {#1} {#2} {#3} {#4} }
+  }
+\cs_new_protected:Npn \RenewDocumentEnvironment #1#2#3#4
+  {
+    \cs_if_exist:cTF {#1}
+      { \__xparse_declare_env:nnnn {#1} {#2} {#3} {#4} }
+      { \__kernel_msg_error:nnx { xparse } { environment-not-yet-defined } {#1} }
+  }
+\cs_new_protected:Npn \ProvideDocumentEnvironment #1#2#3#4
+  { \cs_if_exist:cF {#1} { \__xparse_declare_env:nnnn {#1} {#2} {#3} {#4} } }
+\cs_new_protected:Npn \DeclareDocumentEnvironment #1#2#3#4
+  { \__xparse_declare_env:nnnn {#1} {#2} {#3} {#4} }
+\cs_new_protected:Npn \NewExpandableDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \NewExpandableDocumentCommand
+      {
+        \cs_if_exist:NTF #1
+          {
+            \__kernel_msg_error:nnxx { xparse } { command-already-defined }
+              { \use:nnn \token_to_str:N #1 { } }
+              { \token_to_str:N \NewExpandableDocumentCommand }
+          }
+          { \__xparse_declare_expandable_cmd:Nnn #1 {#2} {#3} }
+      }
+  }
+\cs_new_protected:Npn \RenewExpandableDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \RenewExpandableDocumentCommand
+      {
+        \cs_if_exist:NTF #1
+          { \__xparse_declare_expandable_cmd:Nnn #1 {#2} {#3} }
+          {
+            \__kernel_msg_error:nnxx { xparse } { command-not-yet-defined }
+              { \use:nnn \token_to_str:N #1 { } }
+              { \token_to_str:N \RenewExpandableDocumentCommand }
+          }
+      }
+  }
+\cs_new_protected:Npn \ProvideExpandableDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \ProvideExpandableDocumentCommand
+      {
+        \cs_if_exist:NF #1
+          { \__xparse_declare_expandable_cmd:Nnn #1 {#2} {#3} }
+      }
+ }
+\cs_new_protected:Npn \DeclareExpandableDocumentCommand #1#2#3
+  {
+    \__xparse_check_definable:nNT {#1} \DeclareExpandableDocumentCommand
+      { \__xparse_declare_expandable_cmd:Nnn #1 {#2} {#3} }
+  }
+\cs_new:Npn \IfBooleanTF #1
+  {
+    \tl_if_single:nF {#1}
+      { \prg_break:n { \use:n } }
+    \tl_if_single_token:nF #1
+      { \prg_break:n { \use:n } }
+    \token_if_eq_meaning:NNT #1 \c_true_bool
+      { \prg_break:n { \use_ii:nnn } }
+    \token_if_eq_meaning:NNT #1 \c_false_bool
+      { \prg_break:n { \use_iii:nnn } }
+    \prg_break:n { \use:n }
+    \prg_break_point:
+    {
+      \__kernel_msg_expandable_error:nnn { xparse } { if-boolean } {#1}
+      \use_ii:nn
+    }
+  }
+\cs_new:Npn \IfBooleanT #1#2 { \IfBooleanTF {#1} {#2} { } }
+\cs_new:Npn \IfBooleanF #1 { \IfBooleanTF {#1} { } }
+\cs_new_eq:NN \IfNoValueF  \tl_if_novalue:nF
+\cs_new_eq:NN \IfNoValueT  \tl_if_novalue:nT
+\cs_new_eq:NN \IfNoValueTF \tl_if_novalue:nTF
+\cs_new:Npn \IfValueF { \tl_if_novalue:nT }
+\cs_new:Npn \IfValueT { \tl_if_novalue:nF }
+\cs_new:Npn \IfValueTF #1#2#3 { \tl_if_novalue:nTF {#1} {#3} {#2} }
+\tl_new:N \ProcessedArgument
+\cs_new_eq:NN \ReverseBoolean \__xparse_bool_reverse:N
+\cs_new_eq:NN \SplitArgument  \__xparse_split_argument:nnn
+\cs_new_eq:NN \SplitList      \__xparse_split_list:nn
+\cs_new_eq:NN \TrimSpaces     \__xparse_trim_spaces:n
+\cs_new_eq:NN \ProcessList \tl_map_function:nN
+\cs_new_protected:Npn \GetDocumentCommandArgSpec #1
+  {
+    \__xparse_check_definable:nNT {#1} \GetDocumentCommandArgSpec
+      { \__xparse_get_arg_spec:N #1 }
+  }
+\cs_new_eq:NN \GetDocumentEnvironmentArgSpec \__xparse_get_arg_spec:n
+\cs_new_protected:Npn \ShowDocumentCommandArgSpec #1
+  {
+    \__xparse_check_definable:nNT {#1} \ShowDocumentCommandArgSpec
+      { \__xparse_show_arg_spec:N #1 }
+  }
+\cs_new_eq:NN \ShowDocumentEnvironmentArgSpec \__xparse_show_arg_spec:n
+%% 
+%%
+%% End of file `xparse-2018-04-12.sty'.

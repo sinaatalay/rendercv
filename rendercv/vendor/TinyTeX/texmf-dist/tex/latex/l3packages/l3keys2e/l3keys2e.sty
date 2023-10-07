@@ -1,0 +1,145 @@
+%%
+%% This is file `l3keys2e.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% l3keys2e.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2009-2023 The LaTeX Project
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "l3packages bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: l3keys2e.dtx
+\RequirePackage{expl3}[2020/02/08]
+\@ifpackagelater{expl3}{2020/02/08}
+  {}
+  {%
+    \PackageError{l3keys2e}{Support package l3kernel too old}
+      {%
+        Please install an up to date version of l3kernel\MessageBreak
+        using your TeX package manager or from CTAN.\MessageBreak
+        \MessageBreak
+        Loading l3keys2e will abort!%
+      }%
+    \endinput
+  }
+\ProvidesExplPackage{l3keys2e}{2023-08-29}{}
+  {LaTeX2e option processing using LaTeX3 keys}
+\cs_if_exist:NT \ProcessKeysOptions
+  { \file_input_stop: }
+\cs_generate_variant:Nn \clist_put_right:Nn { Nv }
+\cs_generate_variant:Nn \keys_if_exist:nnT  { nx }
+\cs_generate_variant:Nn \keys_if_exist:nnTF { nx }
+\clist_new:N \l__keys_latexe_options_clist
+\bool_new:N \l__keys_process_class_bool
+\cs_new_protected:Npn \__keys_latexe_options:n #1
+  {
+    \clist_clear:N \l__keys_latexe_options_clist
+    \__keys_latexe_options_global:n {#1}
+    \__keys_latexe_options_local:
+    \keys_if_exist:nnF {#1} { unknown }
+      {
+        \keys_define:nn {#1}
+          {
+            unknown .code:n =
+              {
+                \msg_error:nnxx { keyvalue } { option-unknown }
+                  { \l_keys_key_str } { \@currname }
+              }
+          }
+        \AtEndOfPackage
+          { \keys_define:nn {#1} { unknown .undefine: } }
+      }
+    \clist_map_inline:Nn \l__keys_latexe_options_clist
+      {
+        \tl_set:Nn \CurrentOption {##1}
+        \keys_set:nn {#1} {##1}
+      }
+    \AtEndOfPackage { \cs_set_eq:NN \@unprocessedoptions \scan_stop: }
+  }
+\cs_new_protected:Npn \__keys_latexe_options_global:n #1
+  {
+    \cs_if_eq:NNF \@classoptionslist \scan_stop:
+      {
+        \cs_if_eq:NNTF \@currext \@clsextension
+          { \__keys_latexe_options_class:n {#1} }
+          {
+            \bool_if:NT \l__keys_process_class_bool
+             { \__keys_latexe_options_package:n {#1} }
+          }
+      }
+  }
+\cs_new_protected:Npn \__keys_latexe_options_class:n #1
+  {
+    \cs_if_free:cF { opt@ \@currname . \@currext }
+      {
+        \keys_if_exist:nnTF {#1} { unknown }
+          {
+            \clist_put_right:Nv \l__keys_latexe_options_clist
+              { opt@ \@currname . \@currext }
+          }
+          {
+            \clist_map_inline:cn { opt@ \@currname . \@currext }
+              {
+                \keys_if_exist:nxTF {#1} { \__keys_latexe_remove_equals:n {##1} }
+                  { \clist_put_right:Nn \l__keys_latexe_options_clist {##1} }
+                  { \clist_put_right:Nn \@unusedoptionlist {##1} }
+              }
+          }
+      }
+  }
+\cs_new_protected:Npn \__keys_latexe_options_package:n #1
+  {
+    \clist_map_inline:Nn \@classoptionslist
+      {
+        \keys_if_exist:nxT {#1} { \__keys_latexe_remove_equals:n {##1} }
+          {
+            \clist_put_right:Nn \l__keys_latexe_options_clist {##1}
+            \clist_remove_all:Nn \@unusedoptionlist {##1}
+          }
+      }
+  }
+\cs_new_protected:Npn \__keys_latexe_options_local:
+  {
+    \cs_if_eq:NNF \@currext \@clsextension
+      {
+        \cs_if_exist:cT { opt@ \@currname . \@currext }
+          {
+            \exp_args:NNc \clist_put_right:NV \l__keys_latexe_options_clist
+              { opt@ \@currname . \@currext }
+          }
+      }
+  }
+\cs_new:Npn \__keys_latexe_remove_equals:n #1
+  { \__keys_latexe_remove_equals:w #1 = \s__keys_stop }
+\cs_new:Npn \__keys_latexe_remove_equals:w #1 = #2 \s__keys_stop { \exp_not:n {#1} }
+\cs_new_protected:Npn \ProcessKeysOptions #1
+  {
+    \bool_set_true:N \l__keys_process_class_bool
+    \__keys_latexe_options:n {#1}
+  }
+\cs_new_protected:Npn \ProcessKeysPackageOptions #1
+  {
+    \bool_set_false:N \l__keys_process_class_bool
+    \__keys_latexe_options:n {#1}
+  }
+\@onlypreamble \ProcessKeysOptions
+\@onlypreamble \ProcessKeysPackageOptions
+\msg_new:nnnn { keyvalue } { option-unknown }
+  { Unknown~option~'#1'~for~package~#2. }
+  {
+    LaTeX~has~been~asked~to~set~an~option~called~'#1'~
+    but~the~#2~package~has~not~created~an~option~with~this~name.
+  }
+%% 
+%%
+%% End of file `l3keys2e.sty'.

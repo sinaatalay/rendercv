@@ -1,0 +1,415 @@
+% \iffalse meta-comment
+% ======================================================================
+% scrkernel-index.dtx
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrkernel-index.dtx 4052 2023-05-05 11:41:51Z kohm $
+%<option>%%%            (run: option)
+%<body>%%%            (run: body)
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2023-05-05 13:41:51 +0200 (Fr, 05. Mai 2023) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 4052 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrkernel-index.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script source
+                           (index)]%
+  }%
+\reserved@a
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\setcounter{StandardModuleDepth}{2}
+\begin{document}
+\DocInput{scrkernel-index.dtx}
+\end{document}
+%</dtx>
+% \fi
+%
+% \changes{v2.95}{2002/07/01}{new by splitting \file{scrclass.dtx}}
+% \changes{v3.36}{2022/02/15}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/02/15}{whole implementation documentation in English}
+% \changes{v3.40}{2023/04/17}{guide names changed}
+%
+% \GetFileInfo{scrkernel-index.dtx}
+% \title{Index Code of the 
+%   \href{https://komascript.de}{\KOMAScript} Classes}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   The index code of the \KOMAScript{} classes in \file{scrkernel-index.dtx}
+%   is somehow different from the code of the standard classes. It provides
+%   several options and other configuration possibilities.
+% \end{abstract}
+% \tableofcontents
+%
+% \section{User Manual}
+%
+% You can find the user documentation the commands implemented here in the
+% \KOMAScript{} manual, either the German \file{scrguide-de.pdf} or the
+% English \file{scrguide-en.pdf}.
+% 
+% \MaybeStop{\PrintIndex}
+%
+% \section{Implementation of the Index}
+%
+% The letter class \cls*{scrlttr2} does not provide an index. All other
+% classes do.
+%
+%    \begin{macrocode}
+%<*!letter>
+%    \end{macrocode}
+%
+%
+% \subsection{Options}
+%
+% \begin{option}{index}
+% \changes{v2.98c}{2008/03/04}{added}
+% \changes{v3.17}{2015/03/12}{internal value storage}
+% \changes{v3.18}{2015/06/15}{new value \opt{numbered}}
+% \changes{v3.18}{2015/06/15}{new value \opt{leveldown}}
+% \changes{v3.18}{2015/06/15}{new value \opt{standardlevel}}
+% \changes{v2.7a}{2001/01/04}{improved link generation with \cls*{scrbook} or
+%   \cls*{scrreprt} and \pkg{hyperref}}
+% \changes{v2.98c}{2008/03/04}{redefining \cs{idx@@heading} instead of
+%   \cs{idx@@heading}}
+% \changes{v3.18}{2015/06/15}{new value \opt{leveldown}}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% The option allow several values for several features:
+% \begin{labeling}{\opt{=standardlevel}:}
+% \item[\opt{=default}:]       use not numbered heading without ToC entry, but
+%   without affecting the heading level;
+% \item[\opt{=totoc}:]         use not numbered heading with ToC entry, but
+%   without affecting the heading level;
+% \item[\opt{=numbered}:]      use numbered heading (with ToC entry), but
+%   without affecting the heading level;
+% \item[\opt{=leveldown}:]     use a subheading (e.g. \cs{subsection} instead
+%   of \cs{section} in \cls*{scrartcl}), without affecting numbered or not and
+%   ToC entry or not;
+% \item[\opt{=standardlevel}:] don't use a subheading, without affecting
+%   numbered or not and ToC entry or not.
+% \end{labeling}
+% To do so, the option redefines \cs{idx@heading}.
+% \begin{macro}{\idx@@heading}
+% \changes{v2.98c}{2008/03/04}{added}
+% \changes{v3.18}{2015/06/15}{using \opt{leveldown}}
+% This is the macro to print the heading of the index (nothing else). It has
+% one mandatory argument: the text to be used as heading. There will be one
+% additional code level above this: \cs{idx@heading}, that will be defined in
+% the \texttt{body} run. \cs{idx@heading} has to be defined before, so it can
+% be redefined by the \opt{index} option. In opposite to the standard classes
+% we want to use \cs{chapter} in two column mode. This can be done, because of
+% significant changes of \cs{chapter} definition. Note: If someone uses the
+% standard classes hack of package \pkg*{scrhack} or even another headings
+% package like \pkg*{titlesec} this could fail. But this is not my problem,
+% because usage of such packages and hacks is not recommended at all.
+%    \begin{macrocode}
+%<*option>
+\newcommand*{\idx@@heading}{%
+  \ifidx@leveldown
+%<article>    \expandafter\subsection
+%<book|report>    \expandafter\section
+  \else
+%<article>    \expandafter\section
+%<book|report>    \expandafter\chapter
+  \fi*%
+}
+%    \end{macrocode}
+% \begin{macro}{\idx@@mark,\idx@@forcemark,\idx@@forcemarknumbered}
+% \changes{v3.41}{2023/05/05}{new}
+% We also need a command to do the mark for the running head to be used if a
+% sectioning command without automatic usage of \cs{chaptermark},
+% \cs{sectionmark} or \cs{subsectionmark} is used. For headings with automatic
+% usage of \cs{chaptermark}, \cs{sectionmark} or \cs{subsectionmark} it should
+% not be used, despite the fact, that this usually would result in not setting
+% both marks. The command has the same argument as \cs{idx@@heading}. This is
+% the same code, previously used in \cs{idx@heading}.
+%    \begin{macrocode}
+\newcommand*{\idx@@forcemark}[1]{%
+  \ifidx@leveldown
+%<report|book>    \addsecmark{#1}%
+%<*article>
+    \begingroup
+      \value{secnumdepth}=-\maxdimen
+      \subsectionmark{#1}%
+    \endgroup
+%</article>
+  \else
+    \@mkdouble{\MakeMarkcase{#1}}%
+  \fi
+}
+\newcommand*{\idx@@forcemarknumbered}[1]{%
+  \ifidx@leveldown
+%<report|book>    \sectionmark{#1}%
+%<article>    \subsectionmark{#1}%
+  \else
+%<report|book>    \chaptermark{#1}%
+%<article>    \sectionmark{#1}%
+  \fi
+}
+\newcommand*{\idx@@mark}{}
+\let\idx@@mark\idx@@forcemark
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\idx@leveldowntrue,\idx@leveldownfalse,\ifidx@leveldown}
+% \changes{v3.18}{2015/06/15}{added}
+% The boolean switch \cs{ididx@leveldown} is needed to distinguish the heading
+% level to be used (option values \opt{leveldown} and \opt{standardlevel}).
+%    \begin{macrocode}
+\newif\ifidx@leveldown
+\KOMA@key{index}{%
+  \KOMA@set@ncmdkey{index}{@tempa}{%
+    {notoc}{0},{nottotoc}{0},{default}{0},{plainheading}{0},%
+    {totoc}{1},{toc}{1},{notnumbered}{1},%
+    {numbered}{2},{totocnumbered}{2},{numberedtotoc}{2},{tocnumbered}{2},%
+    {numberedtoc}{2},%
+    {leveldown}{3},%
+    {standardlevel}{4}%
+  }{#1}%
+  \ifx\FamilyKeyState\FamilyKeyStateProcessed
+    \ifcase \@tempa\relax
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{noindex}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{indexnumbered}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{index}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{notoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{numbered}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{toc}%
+      \KOMA@kav@add{\KOMAClassFileName}{toc}{noindex}%
+      \KOMA@kav@add{\KOMAClassFileName}{index}{notoc}%
+      \renewcommand*{\idx@@heading}{%
+        \ifidx@leveldown
+%<article>        \expandafter\subsection
+%<book|report>        \expandafter\section
+        \else
+%<article>        \expandafter\section
+%<book|report>        \expandafter\chapter
+        \fi*%
+      }%
+      \let\idx@@mark\idx@@forcemark
+    \or
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{noindex}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{indexnumbered}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{index}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{notoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{numbered}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{toc}%
+      \KOMA@kav@add{\KOMAClassFileName}{toc}{index}%
+      \KOMA@kav@add{\KOMAClassFileName}{index}{toc}%
+      \renewcommand*{\idx@@heading}{%
+        \ifidx@leveldown
+%<article>        \expandafter\expandafter\expandafter\subsection\expandafter*%
+%<book|report>        \expandafter\addsec
+        \else
+%<article>        \expandafter\addsec
+%<book|report>        \expandafter\addchap
+        \fi
+      }%
+      \let\idx@@mark\idx@@forcemark
+    \or
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{noindex}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{indexnumbered}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{index}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{notoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{numbered}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{toc}%
+      \KOMA@kav@add{\KOMAClassFileName}{toc}{indexnumbered}%
+      \KOMA@kav@add{\KOMAClassFileName}{index}{numbered}%
+      \renewcommand*{\idx@@heading}{%
+        \ifidx@leveldown
+%<article>        \expandafter\subsection
+%<book|report>        \expandafter\section
+        \else
+%<article>        \expandafter\section
+%<book|report>        \expandafter\chapter
+        \fi
+      }%
+      \let\idx@@mark\idx@@forcemarknumbered
+    \or
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{leveldown}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{standardlevel}%
+      \KOMA@kav@add{\KOMAClassFileName}{index}{leveldown}%
+      \idx@leveldowntrue
+    \or
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{leveldown}%
+      \KOMA@kav@remove{\KOMAClassFileName}{index}{standardlevel}%
+      \KOMA@kav@add{\KOMAClassFileName}{index}{standardlevel}%
+      \idx@leveldownfalse
+    \fi
+  \fi
+}
+\KOMA@kav@add{\KOMAClassFileName}{toc}{noindex}
+\KOMA@kav@add{\KOMAClassFileName}{index}{notoc}
+\KOMA@kav@add{\KOMAClassFileName}{index}{standardlevel}
+%    \end{macrocode}
+% \end{macro}^^A \ifidx@leveldown …
+% \end{macro}^^A \idx@@heading
+% \end{option}^^A index
+%
+% \begin{option}{idxtotoc}
+% \changes{v2.3h}{1995/01/21}{new}
+% \changes{v2.98c}{2008/03/04}{obsolete}
+% \changes{v3.01a}{2008/11/20}{deprecated}
+% \changes{v3.99}{2022/11/16}{not with \KOMAScript~4}
+%    \begin{macrocode}
+%<!v4>\KOMA@DeclareDeprecatedOption{idxtotoc}{index=totoc}
+%</option>
+%    \end{macrocode}
+% \end{option}
+%
+%
+% \subsection{User commands and macros}
+%
+% \begin{command}{\setindexpreamble}
+% \changes{v2.6c}{2000/06/10}{added}
+% \changes{v2.6d}{2000/07/20}{\cs{let} replaced by \cs{newcommand*}}
+% \changes{v2.95}{2002/07/01}{\cs{let} and \cs{def}}
+% \begin{macro}{\index@preamble}
+% \changes{v2.6c}{2000/06/10}{added}
+% The index preamble is placed between the heading an the index itself. The
+% user can define it using \cs{setindexpreamble}. \cs{index@preamble} is the
+% storage. Note: \cs{setindexpreamble} does read the argument itself. This
+% makes it easier to patch the user level command. But because of this it has
+% to long.
+%    \begin{macrocode}
+%<*body>
+\newcommand*{\index@preamble}{}
+\let\index@preamble=\relax
+\newcommand{\setindexpreamble}[1]{\def\index@preamble{#1}}
+%    \end{macrocode}
+% \end{macro}
+% \end{command}
+%
+% \begin{macro}{\idx@heading}
+% \changes{v2.3h}{1995/01/21}{added}
+% \changes{v2.4c}{1996/04/04}{handling of running heads fixed}
+% \changes{v2.4g}{1996/11/04}{two-columned index with \cls*{scrartcl} fixed}
+% \changes{v2.6c}{2000/06/10}{support for index preamble after heading}
+% \changes{v2.7j}{2001/05/27}{output of preamble moved to \env{theindex}}
+% \changes{v2.9l}{2003/01/19}{\cs{if@twoside} replaced by \cs{if@openright}}
+% \changes{v2.98c}{2008/03/04}{using \cs{idx@@heading}}
+% \changes{v3.10}{2011/08/31}{using \cs{MakeMarkcase}}
+% \changes{v3.10a}{2012/03/08}{brackets from previous change fixed}
+% \changes{v3.12}{2013/09/24}{never make an index entry to the other ToC but
+%   the table of contents}
+% \changes{v3.25}{2017/10/13}{using \cs{@mkright} and \cs{@mkdouble}}
+% \changes{v3.26}{2018/09/03}{usage of \cs{addsecmark} or \cs{subsectionmark}
+%   instead of \cs{@mkright}}
+% \changes{v3.41}{2023/05/05}{using \cs{idx@@mark}}
+% \changes{v3.41}{2023/05/05}{\cs{cleardoublepage} or \cs{clearpage} only, if
+%   not \opt{leveldown}}
+% Macro to make the index heading and preamble.
+%    \begin{macrocode}
+\newcommand*{\idx@heading}{%
+%<report|book>  \ifidx@leveldown\else\if@openright\cleardoublepage\else\clearpage\fi\fi
+  \twocolumn[%
+%<report|book>    \@chaptertolistsfalse
+                  \idx@@heading{\indexname}]%
+  \idx@@mark{\indexname}%
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{environment}{theindex}
+% \changes{v2.8d}{2001/07/05}{\cs{indexpagestyle} instead of \pstyle{plain}}
+% \changes{v2.3h}{1995/01/21}{using \cs{idx@heading}}
+% \changes{v2.7j}{2001/05/27}{output of preamble added}
+% \changes{v3.19}{2015/08/25}{using \cs{indexpagestyle} only if not empty}
+% This definition is similar to the definition of the standard classes. As
+% addition it supports a preamble text, a variable heading, and resets the
+% paragraph end line fill.
+%    \begin{macrocode}
+\newenvironment{theindex}{%
+  \if@twocolumn
+    \@restonecolfalse
+  \else
+    \@restonecoltrue
+  \fi
+  \columnseprule \z@
+  \columnsep 35\p@
+%<book|report>  \setchapterpreamble{\index@preamble}%
+  \idx@heading
+%<article>  \index@preamble\par\nobreak
+  \ifx\indexpagestyle\@empty\else\thispagestyle{\indexpagestyle}\fi
+  \parindent\z@
+  \setlength{\parskip}{\z@ \@plus .3\p@}%
+  \setlength{\parfillskip}{\z@ \@plus 1fil}%
+  \let\item\@idxitem
+}{%
+  \if@restonecol\onecolumn\else\clearpage\fi
+}
+%    \end{macrocode}
+% \begin{macro}{\@idxitem}
+% A new index entry
+% \begin{command}{\subitem,\subsubitem}
+% \changes{v2.3g}{1996/01/14}{using \cs{@idxitem} saves memory}
+% sub-entry, sub-sub-entry,
+% \begin{command}{\indexspace}
+% or (vertical) distance.
+%    \begin{macrocode}
+\newcommand*\@idxitem{\par\hangindent 40\p@}
+%    \begin{macrocode}
+\newcommand*\subitem{\@idxitem \hspace*{20\p@}}
+\newcommand*\subsubitem{\@idxitem \hspace*{30\p@}}
+\newcommand*\indexspace{%
+  \par \vskip 10\p@ \@plus5\p@ \@minus3\p@\relax
+}
+%    \end{macrocode}
+% \end{command}^^A \indexspace
+% \end{command}^^A \subitem,\subsubitem
+% \end{macro}^^A \@idxitem
+% \end{environment}^^A theindex
+%
+%
+% \subsection{Language dependent terms}
+%
+% \begin{command}{\indexname}
+% \changes{v3.36}{2022/02/15}{explicit definition for English languages}
+% The name of the index (used by \cs{idx@heading}).
+%    \begin{macrocode}
+\newcommand*\indexname{Index}
+\providecaptionname{american,australian,british,canadian,english,newzealand,%
+  UKenglish,ukenglish,USenglish,usenglish}\indexname{Index}
+%</body>
+%    \end{macrocode}
+% \end{command}
+%
+%
+%    \begin{macrocode}
+%</!letter>
+%    \end{macrocode}
+%
+% \Finale
+% \PrintChanges
+% 
+\endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:
+

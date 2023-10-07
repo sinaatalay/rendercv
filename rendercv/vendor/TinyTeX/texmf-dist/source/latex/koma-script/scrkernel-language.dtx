@@ -1,0 +1,1796 @@
+% \iffalse meta-comment
+% ======================================================================
+% scrkernel-language.dtx
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrkernel-language.dtx 4032 2023-04-17 09:45:11Z kohm $
+%<option>%%%            (run: option)
+%<body>%%%            (run: body)
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2023-04-17 11:45:11 +0200 (Mo, 17. Apr 2023) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 4032 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrkernel-language.dtx}
+                          [\filedate\space\filerevision\space
+                          KOMA-Script (language)]%
+  }%
+\reserved@a
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\setcounter{StandardModuleDepth}{2}
+\begin{document}
+\DocInput{scrkernel-language.dtx}
+\end{document}
+%</dtx>
+% \fi
+%
+% \changes{v2.95}{2002/07/01}{new by splitting \file{scrclass.dtx}}
+% \changes{v3.36}{2022/02/25}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/02/25}{whole implementation documentation in English}
+% \changes{v3.40}{2023/04/17}{guide names changed}
+%
+% \GetFileInfo{scrkernel-language.dtx}
+% \title{Easy Changing of Language-Depending Terms with
+%   \href{https://komascript.de}{\KOMAScript} \pkg*{scrbase}}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   Changing or defining language-depending terms is meanwhile easy, if
+%   \pkg{babel} has been loaded. But before it has been loaded or if another
+%   language package is used, it is not as easy as it should be. \KOMAScript{}
+%   provides several commands to make it easy.
+% \end{abstract}
+% \tableofcontents
+%
+% \section{User Manual}
+%
+% You can find the user documentation the commands implemented here in the
+% \KOMAScript{} manual, either the German \file{scrguide-de.pdf} or the
+% English \file{scrguide-en.pdf}.
+% 
+% \MaybeStop{\PrintIndex}
+%
+%
+% \subsection{Commands and macros for language depending terms}
+%
+% These commands and macros provide very basic features and therefore has been
+% moved to \pkg*{scrbase} with \KOMAScript~3.00.
+%
+%    \begin{macrocode}
+%<*package&base&body>
+%    \end{macrocode}
+% 
+% \begin{command}{\defcaptionname*,\defcaptionname}
+% \changes{3.12}{2013/07/29}{added}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% With
+% \begin{quote}
+%   \cs{defcaptionname}\marg{language list}\marg{name command}\marg{term}
+% \end{quote}
+% you can define \meta{name command} for all languages given in the
+% comma-separated \meta{language list} to be \meta{term}. Note: \meta{name
+% command} has to be a command without arguments. For commands with arguments
+% you have to use the mechanisms of, e.g., \pkg{babel} directly. If the
+% \meta{name command} is already defined in \cs{extras\meta{language}}, the
+% new definition will also be added to this macro. Otherwise it will be added
+% to \cs{captions\meta{language}}. The star variant \cs{defcaptionname*}
+% always used \cs{extras\meta{language}}.
+%    \begin{macrocode}
+\newcommand*{\defcaptionname}{%
+  \kernel@ifstar\scr@def@scaptionname\scr@def@captionname
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@def@scaptionname}
+% \changes{v3.12}{2013/07/30}{added}
+% Because we are not using \pkg{xparse} we need an extra macro for the star
+% variant. The arguments are the same as for \cs{defcaptionname}.
+%    \begin{macrocode}
+\newcommand*{\scr@def@scaptionname}[3]{%
+%    \end{macrocode}
+% Because several language packages define \cs{captions\meta{language}} in
+% |\begin{document}|, we also delay the definition, if the command is used in
+% the document preamble.
+%    \begin{macrocode}
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\def#2{#3}}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+%    \end{macrocode}
+% Do a local loop over all languages in the \meta{language list}.
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+%    \begin{macrocode}
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+%    \end{macrocode}
+% Inside the loop add definition of \meta{name command} to \meta{term} to
+% \cs{extras\meta{language}}.
+%    \begin{macrocode}
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at \string\defcaptionname}%
+        \else
+          \expandafter\ifx\csname extras\scr@reserved@a\endcsname\relax
+            \expandafter\expandafter\expandafter\gdef
+          \else
+            \expandafter\expandafter\expandafter\g@addto@macro
+          \fi
+          \csname extras\scr@reserved@a\endcsname{%
+            \def#2{#3}%
+          }%
+%    \end{macrocode}
+% The redefinition of \cs{reserved@b} to not only close the group but also
+% activate the new term if \meta{language} (\cs{reserved@a}) is the current
+% language:
+%    \begin{macrocode}
+          \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@def@activateactivelanguageaftergroup}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% If the language in \cs{reserved@a} is the current language in
+% \cs{languagename} or if the language number of the language in
+% \cs{reserved@a} is the current language number \cs{language}, the definition
+% of \texttt{\#1} as \texttt{\#2} is added to \cs{reserved@b}.
+%    \begin{macrocode}
+\newcommand*{\scr@def@activateactivelanguageaftergroup}[2]{%
+  \@onelevel@sanitize\languagename
+  \@tempswafalse
+%<trace>  \typeout{comparing `\languagename' and `\scr@reserved@a'}%
+  \ifx\languagename\scr@reserved@a
+    \@tempswatrue
+  \else
+%    \end{macrocode}
+% \changes{v3.20}{2016/01/05}{special treatment of \pkg{polyglossia}}
+% With \pkg{polyglossia} all German languages are language
+% \texttt{german}. The distinction of German, Swiss and Austrian is done with
+% two boolean switches \cs{if@austrian@locale} and
+% \cs{if@swiss@local}. Additionally the distinction of old and current German
+% is done with boolean switch \cs{if@german@oldspelling}. We cannot use the
+% switches directly, because of the special handling of such switches and
+% because they are only defined with \pkg{polyglossia}. So we compare them
+% with \cs{iffalse} or \cs{iftrue} instead.
+%    \begin{macrocode}
+    \edef\scr@reserved@b{\detokenize{german}}%
+    \ifx\languagename\scr@reserved@b
+      \edef\scr@reserved@b{%
+        \expandafter\ifx\csname if@german@oldspelling\expandafter\endcsname
+        \csname iffalse\endcsname n\fi
+        \expandafter\ifx\csname if@austrian@locale\expandafter\endcsname
+        \csname iftrue\endcsname austrian\else
+          \expandafter\ifx\csname if@swiss@locale\expandafter\endcsname
+          \csname iftrue\endcsname swiss\else german\fi\fi
+      }%
+%<trace>      \typeout{comparing also `\scr@reserved@a' and `\scr@reserved@b'}%
+      \@onelevel@sanitize\scr@reserved@b
+      \ifx\scr@reserved@a\scr@reserved@b \@tempswatrue\fi
+    \fi
+    \if@tempswa\else
+      \ifcsname l@\scr@reserved@a\endcsname
+        \expandafter\ifnum\csname l@\scr@reserved@a\endcsname=\language
+          \@tempswatrue
+        \fi
+      \fi
+    \fi
+  \fi
+  \if@tempswa
+    \def\reserved@b{\endgroup
+      \PackageInfo{scrbase}{activating \languagename\space \string#1}%
+      \def#1{#2}%
+    }%
+  \fi
+} 
+%    \end{macrocode}
+% \begin{macro}{\scr@ifactivelanguageisoneof}
+% \changes{v3.27}{2019/07/10}{added}
+% \begin{quote}
+%   \cs{scr@ifactivelanguageisoneof}\marg{language list}\meta{then
+%   code}\meta{else code}
+% \end{quote}
+% If the current language is one of the comma-separated \meta{language list},
+% the \meta{then code} is executed otherwise \meta{else code}.
+%    \begin{macrocode}
+\newcommand*{\scr@ifactivelanguageisoneof}[1]{%
+  \begingroup
+    \@tempswafalse
+    \@onelevel@sanitize\languagename
+    \edef\reserved@a{#1}%
+    \@for \reserved@a:=\reserved@a\do{%
+      \scr@trim@spaces\reserved@a
+      \@onelevel@sanitize\reserved@a
+      \ifx\languagename\reserved@a
+        \@tempswatrue
+      \else
+        \edef\reserved@b{\detokenize{german}}%
+        \ifx\languagename\reserved@b
+          \edef\reserved@b{%
+            \expandafter\ifx\csname if@german@oldspelling\expandafter\endcsname
+            \csname iffalse\endcsname n\fi
+            \expandafter\ifx \csname if@austrian@locale\expandafter\endcsname
+            \csname iftrue\endcsname austrian\else
+              \expandafter\ifx\csname if@swiss@locale\expandafter\endcsname
+              \csname iftrue\endcsname swiss\else german\fi\fi
+          }%
+          \@onelevel@sanitize\reserved@b
+          \ifx\reserved@a\reserved@b \@tempswatrue\fi
+        \fi
+        \if@tempswa\else
+          \ifcsname l@\reserved@a\endcsname
+            \expandafter\ifnum \csname l@\reserved@a\endcsname=\language
+              \@tempswatrue
+            \fi
+          \fi
+        \fi
+      \fi  
+    }%
+    \if@tempswa
+      \aftergroup\@firstoftwo
+    \else
+      \aftergroup\@secondoftwo
+    \fi
+  \endgroup
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@ifactivelanguageisoneof
+% \end{macro}^^A \scr@def@activateactivelanguageaftergroup
+% \end{macro}^^A \scr@def@scaptionname
+% \begin{macro}{\scr@def@captionname}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% The non-star variant of \cs{defcaptionname} with the same arguments.
+%    \begin{macrocode}
+\newcommand*{\scr@def@captionname}[3]{%
+%    \end{macrocode}
+% Because several language packages define \cs{captions\meta{language}} in
+% |\begin{document}|, we also delay the definition, if the command is used in
+% the document preamble.
+%    \begin{macrocode}
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\def#2{#3}}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+%    \end{macrocode}
+% Do a local loop over all languages in the \meta{language list}.
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+%    \begin{macrocode}
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at \string\defcaptionname}%
+        \else
+%    \end{macrocode}
+% Test, if \meta{name command} is already defined in \cs{extras\meta{language}}.
+%    \begin{macrocode}
+          \@tempswafalse
+          \begingroup
+            \@tempswafalse
+            \ifcsname extras\scr@reserved@a\endcsname
+              \let#2\relax
+%    \end{macrocode}
+% \changes{v3.27}{2019/05/27}{\pkg{biblatex} workaround}
+% Unfortunately, \pkg{biblatex} adds \cs{abx@extras@\meta{language}} to
+% \cs{extras\meta{language}} if only \meta{language} is an redundant language
+% (see \cs{DeclareRedundantLanguages} in the \pkg{biblatex} manual) and
+% \cs{extras\meta{language}} is defined. But in this case
+% \cs{abx@extras@\meta{language}} is not defined. So calling
+% \cs{extras\meta{language}} would result in an error. As a workaround for
+% this issue, make sure, that \cs{abx@extras@\meta{language}} is defined here
+% locally.
+%    \begin{macrocode}
+              \expandafter\providecommand\expandafter*%
+              \csname abx@extras@\scr@reserved@a\endcsname{}%
+              \csname extras\scr@reserved@a\endcsname
+              \ifx #2\relax \else \aftergroup\@tempswatrue \fi
+            \fi
+          \endgroup
+%    \end{macrocode}
+% If \meta{name command} is already defined in \cs{extras\meta{language}}
+%    \begin{macrocode}
+          \if@tempswa
+%    \end{macrocode}
+% once again define it in \cs{extras\meta{language}}.
+%    \begin{macrocode}
+            \expandafter\g@addto@macro\csname extras\scr@reserved@a\endcsname{%
+              \def#2{#3}%
+            }%
+          \else
+%    \end{macrocode}
+% Otherwise define it in \cs{caption\meta{language}}.
+%    \begin{macrocode}
+           \expandafter\ifx\csname captions\scr@reserved@a\endcsname\relax
+              \expandafter\expandafter\expandafter\gdef
+            \else
+              \expandafter\expandafter\expandafter\g@addto@macro
+            \fi
+            \csname captions\scr@reserved@a\endcsname{%
+              \def#2{#3}%
+            }%
+          \fi
+%    \end{macrocode}
+% The redefinition of \cs{reserved@b} to not only close the group but also
+% activate the new term if \meta{language} (\cs{reserved@a}) is the current
+% language:
+%    \begin{macrocode}
+          \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@def@captionname
+% \end{command}^^A \defcaptionname
+%
+% \changes{v3.20}{2016/01/05}{new special treatment of \pkg{polyglossia}}%
+% With \pkg{polyglossia} the languages \texttt{austrian}, \texttt{swiss},
+% \texttt{ngerman}, \texttt{naustrian}, and \texttt{nswiss} are all mixed up
+% to \cs{captionsgerman}. To avoid activation of the language term of the
+% wrong dialect, \cs{init@extra@german} can be changed. Surely this is more or
+% less a hack. But \pkg{polyglossia} seems to not provide a better interface
+% for class and package authors.
+%    \begin{macrocode}
+\AfterPackage*{polyglossia}{%
+  \scr@ifundefinedorrelax{init@extras@german}{%
+    \AfterFile{gloss-german.ldf}%
+  }{%
+    \@firstofone
+  }%
+  {%
+    \providecommand*\captionsngerman{}%
+    \providecommand*\captionsaustrian{}%
+    \providecommand*\captionsnaustrian{}%
+    \providecommand*\captionsswiss{}%
+    \providecommand*\captionsnswiss{}%
+    \csgappto{init@extras@german}{%
+      \if@austrian@locale
+        \csuse{captions\if@german@oldspelling\else n\fi austrian}%
+      \else
+        \if@swiss@locale
+          \csuse{captions\if@german@oldspelling\else n\fi swiss}%
+        \else
+          \if@german@oldspelling\else \csuse{captionsngerman}\fi
+        \fi
+      \fi
+    }%
+  }%
+}
+%    \end{macrocode}
+%
+%
+% \begin{command}{\providecaptionname}
+% \changes{v2.8q}{2001/11/08}{added}
+% \changes{v2.9r}{2004/06/16}{immediate activation for current language}
+% \changes{v2.95}{2006/03/10}{sanitizing language test}
+% \changes{v3.00}{2008/05/02}{moved to \pkg*{scrbase}}
+% \changes{v3.01b}{2008/12/07}{missing make undefined}
+% \changes{v3.02c}{2009/02/17}{undefined test improved}
+% \changes{v3.12}{2013/07/30}{re-implemented similar to \cs{defcaptionname}}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% This is very similar to \cs{defcaptionname}, but nothing is done if a
+% \meta{language} in the \meta{language list} is unknown or \meta{name
+% command} is already defined for the \meta{language}. With this limitation
+% \cs{providecaptionname} adds \meta{name command} to
+% \cs{captions\meta{language}} always, but the star variant
+% \cs{providecaptionname*} uses \cs{extras\meta{language}}.
+%    \begin{macrocode}
+\newcommand*{\providecaptionname}{%
+  \kernel@ifstar\scr@provide@scaptionname\scr@provide@captionname
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@provide@scaptionname}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% The star variant of \cs{providecaptionname} with the same arguments.
+%    \begin{macrocode}
+\newcommand*{\scr@provide@scaptionname}[3]{%
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\providecommand*{#2}{#3}}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at
+            \string\providecaptionname}%
+        \else
+%    \end{macrocode}
+% In opposite to \cs{defcaptionname} add \meta{name command} to
+% \cs{extras\meta{language}} only, if \cs{extras\meta{language}} already
+% exists, but not yet defines \meta{name command}.
+%    \begin{macrocode}
+          \begingroup
+            \let#2\relax
+%    \end{macrocode}
+% \changes{v3.27}{2019/05/27}{\pkg{biblatex} workaround}
+% Unfortunately, \pkg{biblatex} adds \cs{abx@extras@\meta{language}} to
+% \cs{extras\meta{language}} if only \meta{language} is an redundant language
+% (see \cs{DeclareRedundantLanguages} in the \pkg{biblatex} manual) and
+% \cs{extras\meta{language}} is defined. But in this case
+% \cs{abx@extras@\meta{language}} is not defined. So calling
+% \cs{extras\meta{language}} would result in an error. As a workaround for
+% this issue, make sure, that \cs{abx@extras@\meta{language}} is defined here
+% locally.
+%    \begin{macrocode}
+            \expandafter\providecommand\expandafter*%
+            \csname abx@extras@\scr@reserved@a\endcsname{}%
+%    \end{macrocode}
+% \changes{v3.30}{2020/04/13}{\cs{renewcommand} workaround}
+% Unfortunately some users use \cs{renewcommand} to change a name even if the
+% language has not been loaded and the command has not been defined. This
+% would result in an error message. So a this point we let \cs{renewcommand}
+% be \cs{providecommand}, because we know that currently the command is
+% \cs{relax}.
+%    \begin{macrocode}
+            \let\renewcommand\providecommand
+            \csname extras\scr@reserved@a\endcsname
+            \csname captions\scr@reserved@a\endcsname
+            \ifx #2\relax \aftergroup\@firstofone
+            \else
+%<*trace>
+              \PackageInfo{scrbase}{letting \scr@reserved@a\space
+                \expandafter\string#2\MessageBreak
+                unchanged}%
+%</trace>
+              \aftergroup\@gobble
+            \fi
+          \endgroup
+          {%
+            \expandafter\ifx\csname extras\scr@reserved@a\endcsname\relax
+%<*trace>
+              \PackageInfo{scrbase}{letting 
+                \expandafter\string\csname extras\scr@reserved@a\endcsname\space
+                unused}%
+%</trace>
+              \expandafter\expandafter\expandafter\@gobbletwo
+            \else
+              \expandafter\expandafter\expandafter\g@addto@macro
+            \fi
+            \csname extras\scr@reserved@a\endcsname{%
+              \def#2{#3}%
+            }%
+            \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+          }%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@provide@scaptionname
+% \begin{macro}{\scr@provide@captionname}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% The non-star variant of \cs{providecaptionname} with the same arguments.
+%    \begin{macrocode}
+\newcommand*{\scr@provide@captionname}[3]{%
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\providecommand*{#2}{#3}}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at
+            \string\providecaptionname}%
+        \else
+%    \end{macrocode}
+% In opposite to \cs{defcaptionname} add \meta{name command} to
+% \cs{captions\meta{language}} only, if \cs{captions\meta{language}} already
+% exists, but neither \cs{extras\meta{language}} nor
+% \cs{captions\meta{language}} defines \meta{name command}.
+%    \begin{macrocode}
+          \begingroup
+            \let#2\relax
+%    \end{macrocode}
+% \changes{v3.27}{2019/05/27}{\pkg{biblatex} workaround}
+% Unfortunately, \pkg{biblatex} adds \cs{abx@extras@\meta{language}} to
+% \cs{extras\meta{language}} if only \meta{language} is an redundant language
+% (see \cs{DeclareRedundantLanguages} in the \pkg{biblatex} manual) and
+% \cs{extras\meta{language}} is defined. But in this case
+% \cs{abx@extras@\meta{language}} is not defined. So calling
+% \cs{extras\meta{language}} would result in an error. As a workaround for
+% this issue, make sure, that \cs{abx@extras@\meta{language}} is defined here
+% locally.
+% \changes{v3.30}{2020/04/13}{\cs{renewcommand} workaround}
+% Unfortunately some users use \cs{renewcommand} to change a name even if the
+% language has not been loaded and the command has not been defined. This
+% would result in an error message. So a this point we let \cs{renewcommand}
+% be \cs{providecommand}, because we know that currently the command is
+% \cs{relax}.
+%    \begin{macrocode}
+            \let\renewcommand\providecommand
+            \expandafter\providecommand\expandafter*%
+            \csname abx@extras@\scr@reserved@a\endcsname{}%
+            \csname captions\scr@reserved@a\endcsname
+            \csname extras\scr@reserved@a\endcsname
+            \ifx #2\relax \aftergroup\@firstofone
+            \else
+%<*trace>
+              \PackageInfo{scrbase}{letting \scr@reserved@a 
+                \expandafter\string#2\MessageBreak
+                unchanged}%
+%</trace>
+              \aftergroup\@gobble
+            \fi
+          \endgroup
+          {%
+            \expandafter\ifx\csname captions\scr@reserved@a\endcsname\relax
+%<*trace>
+              \PackageInfo{scrbase}{letting 
+                \expandafter\string\csname extras\scr@reserved@a\endcsname\space 
+                unused}%
+%</trace> 
+              \expandafter\expandafter\expandafter\@gobbletwo
+            \else
+              \expandafter\expandafter\expandafter\g@addto@macro
+            \fi
+            \csname captions\scr@reserved@a\endcsname{%
+              \def#2{#3}%
+            }%
+            \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+          }%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@provide@captionname
+% \end{command}^^A \providecaptionname
+%
+%
+% \begin{command}{\newcaptionname}
+% \changes{v2.8q}{2001/11/08}{added}
+% \changes{v2.9r}{2004/06/16}{immediate activation for current language}
+% \changes{v2.95}{2006/03/10}{sanitizing language test}
+% \changes{v3.00}{2008/05/02}{moved to \pkg*{scrbase}}
+% \changes{v3.01b}{2008/12/07}{missing make undefined}
+% \changes{v3.02c}{2009/02/17}{undefined test improved}
+% \changes{v3.12}{2013/07/30}{re-implemented similar to \cs{defcaptionname}}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% This is very similar to \cs{defcaptionname}, but if \meta{language} exists
+% and already defines \meta{language name} an error is reported. If the
+% \meta{language} exists but does not define the \meta{language name}, the
+% definition will be added. If the \meta{language} does not exist, it will be
+% defined. With this limitation \cs{newcaptionname} adds \meta{name command}
+% to \cs{captions\meta{language}} always, but the star variant
+% \cs{newcaptionname*} uses \cs{extras\meta{language}}.
+%    \begin{macrocode}
+\newcommand*{\newcaptionname}{%
+  \kernel@ifstar\scr@new@scaptionname\scr@new@captionname
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@new@scaptionname}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% The star variant of \cs{newcaptionname} with the same arguments.
+%    \begin{macrocode}
+\newcommand*{\scr@new@scaptionname}[3]{%
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\providecommand*{#2}{#3}}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at \string\newcaptionname}%
+        \else
+%    \end{macrocode}
+% In opposite to \cs{defcaptionname} the \meta{language name} has to be
+% undefined.
+%    \begin{macrocode}
+          \begingroup
+            \let#2\relax
+%    \end{macrocode}
+% \changes{v3.27}{2019/05/27}{\pkg{biblatex} workaround}
+% Unfortunately, \pkg{biblatex} adds \cs{abx@extras@\meta{language}} to
+% \cs{extras\meta{language}} if only \meta{language} is an redundant language
+% (see \cs{DeclareRedundantLanguages} in the \pkg{biblatex} manual) and
+% \cs{extras\meta{language}} is defined. But in this case
+% \cs{abx@extras@\meta{language}} is not defined. So calling
+% \cs{extras\meta{language}} would result in an error. As a workaround for
+% this issue, make sure, that \cs{abx@extras@\meta{language}} is defined here
+% locally.
+% \changes{v3.30}{2020/04/13}{\cs{renewcommand} workaround}
+% Unfortunately some users use \cs{renewcommand} to change a name even if the
+% language has not been loaded and the command has not been defined. This
+% would result in an error message. So a this point we let \cs{renewcommand}
+% be \cs{providecommand}, because we know that currently the command is
+% \cs{relax}.
+%    \begin{macrocode}
+            \let\renewcommand\providecommand
+            \expandafter\providecommand\expandafter*%
+            \csname abx@extras@\scr@reserved@a\endcsname{}%
+            \csname captions\scr@reserved@a\endcsname
+            \csname extras\scr@reserved@a\endcsname
+            \ifx #2\relax
+            \else
+              \PackageError{scrbase}{%
+                `\string#2' already defined\MessageBreak
+                for language `\scr@reserved@a'%
+              }{%
+                You've told me to define `\string#2' for language
+                `\scr@reserved@a',\MessageBreak
+                but is has already been defined.\MessageBreak
+                Nevertheless, if you'll continue it will be redefined.%
+              }%
+            \fi
+          \endgroup
+          \expandafter\ifx\csname extras\scr@reserved@a\endcsname\relax
+            \expandafter\expandafter\expandafter\gdef
+          \else
+            \expandafter\expandafter\expandafter\g@addto@macro
+          \fi
+          \csname extras\scr@reserved@a\endcsname{%
+            \def#2{#3}%
+          }%
+          \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@new@scaptionname
+% \begin{macro}{\scr@new@captionname}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% The non-star variant of \cs{newcaptionname} with the same arguments.
+%    \begin{macrocode}
+\newcommand*{\scr@new@captionname}[3]{%
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\providecommand*{#2}{#3}}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at \string\newcaptionname}%
+        \else
+%    \end{macrocode}
+% In opposite to \cs{defcaptionname} the \meta{language name} has to be
+% undefined.
+%    \begin{macrocode}
+          \begingroup
+            \let#2\relax
+%    \end{macrocode}
+% \changes{v3.27}{2019/05/27}{\pkg{biblatex} workaround}
+% Unfortunately, \pkg{biblatex} adds \cs{abx@extras@\meta{language}} to
+% \cs{extras\meta{language}} if only \meta{language} is an redundant language
+% (see \cs{DeclareRedundantLanguages} in the \pkg{biblatex} manual) and
+% \cs{extras\meta{language}} is defined. But in this case
+% \cs{abx@extras@\meta{language}} is not defined. So calling
+% \cs{extras\meta{language}} would result in an error. As a workaround for
+% this issue, make sure, that \cs{abx@extras@\meta{language}} is defined here
+% locally.
+% \changes{v3.30}{2020/04/13}{\cs{renewcommand} workaround}
+% Unfortunately some users use \cs{renewcommand} to change a name even if the
+% language has not been loaded and the command has not been defined. This
+% would result in an error message. So a this point we let \cs{renewcommand}
+% be \cs{providecommand}, because we know that currently the command is
+% \cs{relax}.
+%    \begin{macrocode}
+            \let\renewcommand\providecommand
+            \expandafter\providecommand\expandafter*%
+            \csname abx@extras@\scr@reserved@a\endcsname{}%
+            \csname captions\scr@reserved@a\endcsname
+            \csname extras\scr@reserved@a\endcsname
+            \ifx #2\relax
+            \else
+              \PackageError{scrbase}{%
+                `\string#2' already defined\MessageBreak
+                for language `\scr@reserved@a'%
+              }{%
+                You've told me to define `\string#2' for language
+                `\scr@reserved@a',\MessageBreak
+                but is has already been defined.\MessageBreak
+                Nevertheless, if you'll continue it will be redefined.%
+              }%
+            \fi
+          \endgroup
+          \expandafter\ifx\csname captions\scr@reserved@a\endcsname\relax
+            \expandafter\expandafter\expandafter\gdef
+          \else
+            \expandafter\expandafter\expandafter\g@addto@macro
+          \fi
+          \csname captions\scr@reserved@a\endcsname{%
+            \def#2{#3}%
+          }%
+          \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@new@captionname
+% \end{command}^^A \newcaptionname
+%
+% \begin{command}{\renewcaptionname}
+% \changes{v2.8q}{2001/11/08}{added}
+% \changes{v2.9r}{2004/06/16}{immediate activation for current language}
+% \changes{v2.95}{2006/03/10}{sanitizing language test}
+% \changes{v3.00}{2008/05/02}{moved to \pkg*{scrbase}}
+% \changes{v3.01b}{2008/12/07}{missing make undefined}
+% \changes{v3.02c}{2009/02/17}{undefined test improved}
+% \changes{v3.12}{2013/07/30}{re-implemented similar to \cs{defcaptionname}}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% This is very similar to \cs{defcaptionname}, but if the \meta{language} does
+% not exist or does not already define \meta{language name} an error is reported.
+% So for a \meta{language} that exists and defines \meta{language name},  If the
+% \meta{name command} is already defined in \cs{extras\meta{language}},
+% \cs{renewcaptioname} adds the changed definition to this macro. Otherwise it
+% will be added to \cs{captions\meta{language}}. The star variant
+% \cs{renewcaptionname*} always used \cs{extras\meta{language}}.
+%    \begin{macrocode}
+\newcommand*{\renewcaptionname}{%
+  \kernel@ifstar\scr@renew@scaptionname\scr@renew@captionname
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@renew@scaptionname}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% \changes{v3.27a}{2019/10/13}{immediate activation only for already defined terms}
+% The star variant of \cs{renewcaptionname} with the same arguments.
+%    \begin{macrocode}
+\newcommand*{\scr@renew@scaptionname}[3]{%
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\ifdefined#2\renewcommand*{#2}{#3}\fi}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at \string\renewcaptionname}%
+        \else
+%    \end{macrocode}
+% In opposite to \cs{defcaptionname} \meta{language name} has to be defined.
+%    \begin{macrocode}
+          \begingroup
+            \let#2\relax
+%    \end{macrocode}
+% \changes{v3.27}{2019/05/27}{\pkg{biblatex} workaround}
+% Unfortunately, \pkg{biblatex} adds \cs{abx@extras@\meta{language}} to
+% \cs{extras\meta{language}} if only \meta{language} is an redundant language
+% (see \cs{DeclareRedundantLanguages} in the \pkg{biblatex} manual) and
+% \cs{extras\meta{language}} is defined. But in this case
+% \cs{abx@extras@\meta{language}} is not defined. So calling
+% \cs{extras\meta{language}} would result in an error. As a workaround for
+% this issue, make sure, that \cs{abx@extras@\meta{language}} is defined here
+% locally.
+% \changes{v3.30}{2020/04/13}{\cs{renewcommand} workaround}
+% Unfortunately some users use \cs{renewcommand} to change a name even if the
+% language has not been loaded and the command has not been defined. This
+% would result in an error message. So a this point we let \cs{renewcommand}
+% be \cs{providecommand}, because we know that currently the command is
+% \cs{relax}.
+%    \begin{macrocode}
+            \let\renewcommand\providecommand
+            \expandafter\providecommand\expandafter*%
+            \csname abx@extras@\scr@reserved@a\endcsname{}%
+            \csname captions\scr@reserved@a\endcsname
+            \csname extras\scr@reserved@a\endcsname
+            \ifx #2\relax
+              \PackageError{scrbase}{%
+                `\string#2' not defined at language `\scr@reserved@a'%
+              }{%
+                You've told me to redefine `\string#2' at language
+                `\scr@reserved@a',\MessageBreak
+                but is hasn't been defined before.\MessageBreak
+                Nevertheless, if you'll continue I'll define it at
+                `\expandafter\string\csname extras\scr@reserved@a\endcsname'%
+              }%
+            \fi
+          \endgroup
+          \expandafter\ifx\csname extras\scr@reserved@a\endcsname\relax
+            \expandafter\expandafter\expandafter\gdef
+          \else
+            \expandafter\expandafter\expandafter\g@addto@macro
+          \fi
+          \csname extras\scr@reserved@a\endcsname{%
+            \def#2{#3}%
+          }%
+          \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@renew@scaptionname
+% \begin{macro}{\scr@renew@captionname}
+% \changes{v3.12}{2013/07/30}{added}
+% \changes{v3.26}{2018/08/29}{decreased number of \cs{expandafter}}
+% \changes{v3.27}{2019/07/10}{immediate activation from within document
+%   preamble}
+% \changes{v3.27a}{2019/10/13}{immediate activation only for already existing
+%   terms}
+% The non-star variant of \cs{renewcaptionname} with the same arguments.
+%    \begin{macrocode}
+\newcommand*{\scr@renew@captionname}[3]{%
+  \if@atdocument
+    \expandafter\@firstofone
+  \else
+    \scr@ifactivelanguageisoneof{#1}{\ifdefined#2\renewcommand*{#2}{#3}\fi}{}%
+    \expandafter\AtBeginDocument
+  \fi
+  {%
+    \begingroup
+      \let\reserved@b\endgroup
+      \edef\scr@reserved@a{#1}%
+      \@onelevel@sanitize\scr@reserved@a
+      \@for\scr@reserved@a:=\scr@reserved@a\do{%
+        \scr@trim@spaces\scr@reserved@a
+        \ifx\scr@reserved@a\@empty
+          \PackageWarning{scrbase}{empty language at \string\renewcaptionname}%
+        \else
+%    \end{macrocode}
+% In opposite to \cs{defcaptionname} \meta{language name} has to exist.
+%    \begin{macrocode}
+          \begingroup
+            \let#2\relax
+%    \end{macrocode}
+% \changes{v3.27}{2019/05/27}{\pkg{biblatex} workaround}
+% Unfortunately, \pkg{biblatex} adds \cs{abx@extras@\meta{language}} to
+% \cs{extras\meta{language}} if only \meta{language} is an redundant language
+% (see \cs{DeclareRedundantLanguages} in the \pkg{biblatex} manual) and
+% \cs{extras\meta{language}} is defined. But in this case
+% \cs{abx@extras@\meta{language}} is not defined. So calling
+% \cs{extras\meta{language}} would result in an error. As a workaround for
+% this issue, make sure, that \cs{abx@extras@\meta{language}} is defined here
+% locally.
+% \changes{v3.30}{2020/04/13}{\cs{renewcommand} workaround}
+% Unfortunately some users use \cs{renewcommand} to change a name even if the
+% language has not been loaded and the command has not been defined. This
+% would result in an error message. So a this point we let \cs{renewcommand}
+% be \cs{providecommand}, because we know that currently the command is
+% \cs{relax}.
+%    \begin{macrocode}
+            \let\renewcommand\providecommand
+            \expandafter\providecommand\expandafter*%
+            \csname abx@extras@\scr@reserved@a\endcsname{}%
+            \csname extras\scr@reserved@a\endcsname
+            \ifx #2\relax
+              \csname captions\scr@reserved@a\endcsname
+              \ifx #2\relax
+                \PackageError{scrbase}{%
+                  `\string#2' not defined at language `\scr@reserved@a'%
+                }{%
+                  You've told me to redefine `\string#2' at language
+                  `\scr@reserved@a',\MessageBreak
+                  but it hasn't been defined before.\MessageBreak
+                  Nevertheless, if you'll continue I'll define it at
+                  `\expandafter\string
+                  \csname captions\scr@reserved@a\endcsname'%
+                }%
+              \fi
+              \expandafter\ifx\csname captions\scr@reserved@a\endcsname\relax
+                \expandafter\expandafter\expandafter\gdef
+              \else
+                \expandafter\expandafter\expandafter\g@addto@macro
+              \fi
+              \csname captions\scr@reserved@a\endcsname{\def#2{#3}}%
+            \else
+              \expandafter\ifx\csname extras\scr@reserved@a\endcsname\relax
+                \expandafter\expandafter\expandafter\gdef
+              \else
+                \expandafter\expandafter\expandafter\g@addto@macro
+              \fi
+              \csname extras\scr@reserved@a\endcsname{\def#2{#3}}%
+            \fi
+          \endgroup
+          \scr@def@activateactivelanguageaftergroup{#2}{#3}%
+        \fi
+      }%
+    \reserved@b
+  }%
+}
+%</package&base&body>
+%    \end{macrocode}
+% \end{macro}^^A \scr@renew@captionname
+% \end{command}^^A \renewcaptionname
+%
+%
+% \subsection{Numerical or textual date within letters}
+% For letters \KOMAScript{} provides the option to use either a
+% symbolic/texual date or a numerical date.
+%
+% \begin{option}{numericaldate}
+% \changes{v2.8q}{2001/10/07}{added}
+% \changes{v2.97d}{2007/10/03}{\cs{PackageInfo} replaced by
+%   \cs{PackageInfoNoLine}}
+% \changes{v3.17}{2015/03/10}{using internal value storage}
+% \changes{v3.36}{2022/02/25}{initial storage value fixed}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% The option allows to switch between the original textual date usually
+% provided by \pkg{babel} (or another language package) and a numerical date.
+% \begin{macro}{\@orgdatefalse,\@orgdatetrue,\if@orgdate}
+% The decission is stored in a boolean switch. For compatibility with
+% \cls[https://www.ctan.org/pkg/koma-script-obsolete]{scrlettr} we are still
+% using \cs{if@orgdate} with inverse meaning.
+%    \begin{macrocode}
+%<*letter&option>
+\newif\if@orgdate\@orgdatetrue
+%    \end{macrocode}
+% \end{macro}^^A \@orgdatefalse,\@orgdatetrue,\if@orgdate
+% Currently a \cs{KOMA@inverseifkey} does not exist. So we need somemore code
+% to define the option.
+%    \begin{macrocode}
+\KOMA@key{numericaldate}[true]{%
+  \if@orgdate\@orgdatefalse\else\@orgdatetrue\fi
+  \KOMA@set@ifkey{numericaldate}{@orgdate}{#1}%
+  \KOMA@kav@replacebool{%
+%<class>    \KOMAClassFileName
+%<package&letter>    scrletter.\scr@pkgextension
+  }{numericaldate}{@orgdate}%
+  \if@orgdate\@orgdatefalse\else\@orgdatetrue\fi
+}
+\KOMA@kav@add{%
+%<class>  \KOMAClassFileName
+%<package&letter>  scrletter.\scr@pkgextension
+}{numericaldate}{true}
+%    \end{macrocode}
+% \begin{option}{scrdate,orgdate}
+% \changes{v3.01a}{2008/11/21}{deprecated}
+% \changes{v3.99}{2022/11/16}{removed from \KOMAScript~4}
+%    \begin{macrocode}
+%<*!v4>
+\KOMA@DeclareDeprecatedOption{scrdate}{numericaldate=true}
+\KOMA@DeclareDeprecatedOption{orgdate}{numericaldate=false}
+%</!v4>
+%</letter&option>
+%    \end{macrocode}
+% \end{option}^^A scrdate,orgdate
+% \end{option}^^A numericaldate
+%
+%
+% \begin{macro}{\g@addnumerical@date}
+% We need to redefine the already existing textual date of a language package
+% by a numerical one.
+%    \begin{macrocode}
+%<*letter&body>
+\newcommand*{\g@addnumerical@date}[2]{%
+  \@ifundefined{date#1}{%
+%<class>    \ClassInfo{scrlttr2}
+%<package>    \PackageInfo{scrletter}
+    {%
+      no date found for language `#1'\MessageBreak
+      --> skipped%
+    }%
+  }{%
+    \expandafter\g@addto@macro\csname date#1\endcsname{%
+      \let\sym@date=\today%
+      \def\num@date{#2}%
+      \def\today{\if@orgdate\sym@date\else\num@date\fi}%
+    }%
+  }%
+}
+%</letter&body>
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \subsection{Language dependent terms and dates in letters}
+%
+% There are also a lot of additional language dependent terms in
+% letters. Several languages are supported.
+%
+% \begin{command}{\captionsenglish,\dateenglish}
+% \begin{command}{\captionsUSenglish,\dateUSenglish}
+% \begin{command}{\captionsamerican,\dateamerican}
+% \changes{v2.4c}{1997/11/25}{american defined identical to USenglish} 
+% \begin{command}{\captionsbritish,\datebritish}
+% \changes{v2.4c}{1997/11/25}{british defined identical to english} 
+% \begin{command}{\captionsUKenglish,\dateUKenglish}
+% \changes{v2.4c}{1997/11/25}{UKenglish defined identical to english} 
+% \begin{command}{\captionsaustralian,\dateaustralian}
+% \changes{v3.13}{2014/03/19}{australian defined identical to english}
+% \changes{v3.27}{2019/06/09}{fixed}
+% \begin{command}{\captionsnewzealand,\datenewzealand}
+% \changes{v3.13}{2014/03/19}{newzealand defined identical to english}
+% \begin{command}{\captionscanadian,\datecanadian}
+% \changes{v3.13}{2014/03/19}{canadian defined identical to english}
+% \begin{command}{\captionsukenglish,\dateukenglish}
+% \changes{v3.24}{2017/05/29}{ukenglish defined identical to UKenglish} 
+% \begin{command}{\captionsusenglish,\dateusenglish}
+% \changes{v3.24}{2017/05/29}{usenglish defined identical to USenglish} 
+% \begin{command}{\captionsgerman,\dategerman}
+% \begin{command}{\captionsngerman,\datengerman}
+% \changes{v2.5}{1999/09/08}{ngerman added identical togerman}
+% \begin{command}{\captionsaustrian,\dateaustrian}
+% \begin{command}{\captionsnaustrian,\datenaustrian}
+% \changes{v3.09}{2011/03/10}{naustrian added identical toaustrian}
+% \begin{command}{\captionsfrench,\datefrench}
+% \begin{command}{\captionsitalian,\dateitalian}
+% \changes{v2.3e}{1996/05/31}{added}
+% \begin{command}{\captionsspanish,\datespanish}
+% \changes{v2.4c}{1997/11/25}{added}
+% \begin{command}{\captionscroation,\datecroatian}
+% \changes{v2.8q}{2001/05/10}{added}
+% \begin{command}{\captionsdutch,\datedutch}
+% \changes{v2.8q}{2002/02/01}{added}
+% \begin{command}{\captionsfinnish,\datefinnish}
+% \changes{v2.9u}{2005/02/07}{added}
+% \changes{v3.01c}{2008/12/29}{activation fixed}
+% \begin{command}{\captionsnorsk,\datenorsk}
+% \changes{v3.02}{2009/01/01}{added}
+% \begin{command}{\captionsswedish,\dateswedish}
+% \changes{v3.08}{2011/01/20}{added (Benjamin Hell)}
+% \begin{command}{\captionspolish,\datepolish}
+% \changes{v3.13}{2014/02/01}{added (Blandyna Bogdol)}
+% \begin{command}{\captionsczech,\dateczech}
+% \changes{v3.13}{2014/02/10}{added (Elke Schubert)}
+% \begin{command}{\dateslovak}
+% \changes{v3.13}{2014/02/28}{added (Elke Schubert)}
+% Because of problems with early versions of the code, we use
+% \cs{AtBeginDocument} and \cs{providecaptionname} to define the terms and
+% dates as late as possible. So users can define them in the document preamble
+% differently. A list of all languages (but not the dialects) can be found in
+% \autoref{tab:letterlanguages}.
+% \begin{table}
+%   \begin{minipage}{\textwidth}
+%   \centering
+%   \begin{tabular}{ll}
+%     Language & Contributor \\\hline\\[-1.6ex]
+%     German   & Frank Neukam, Markus Kohm \\
+%     English  & Frank Neukam, Michael Dewey, Markus Kohm \\
+%     Finnish  & Hannu Väisänen \\
+%     French   & Frank Neukam, Henk Jongbloets \\
+%     Dutch    & Henk Jongbloets \\
+%     Italian  & Simone Naldi \\
+%     Croatian & Branka Lon\v{c}arevi\'{c} \\
+%     Norsk    & Sveinung Heggen \\
+%     Polish   & Blandyna Bogdol \\
+%     Swedish  & Benjamin Hell\\
+%     Spanish  & Ralph J.\ Hangleiter, Alejandro L\'opez-Valencia\\
+%     Czech    & Elke Schubert\\
+%     (Slovak)\footnotemark & Elke Schubert\\
+%   \end{tabular}%
+%   \stepcounter{mpfootnote}\renewcommand*{\thempfootnote}{\arabic{mpfootnote}}%
+%   \footnotetext{Note: Slovak is only partially supported: The date
+%   exists but the language terms are still missing.}
+%   \caption{List of supported languages (but not the dialects) and the
+%     contributors}
+%   \label{tab:letterlanguages}
+%   \end{minipage}
+% \end{table}
+% English is a special case. We try to define it always also as a fallback.
+%    \begin{macrocode}
+%<*letter&body>
+\AtBeginDocument{%
+  \@ifundefined{captionsenglish}{\let\captionsenglish\@empty}{}%
+  \@ifundefined{dateenglish}{\def\dateenglish{%
+%</letter&body>
+%    \end{macrocode}
+% Defining the textual English \cs{today} it the only thing, that has do be
+% done for all classes and also the \pkg*{scrletter} package.
+%    \begin{macrocode}
+%<*(letter|class)&body>
+      \def\today{\ifcase\month\or
+        January\or February\or March\or April\or May\or June\or
+        July\or August\or September\or October\or November\or December\fi
+        \space\number\day, \number\year}%
+%</(letter|class)&body>
+%<*letter&body>
+    }%
+  }{}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\yourrefname{Your ref.}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\yourmailname{Your letter of}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\myrefname{Our ref.}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\customername{Customer no.}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\invoicename{Invoice no.}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\subjectname{Subject}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\ccname{cc}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\enclname{encl}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\headtoname{To}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\headfromname{From}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\datename{Date}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\pagename{Page}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\phonename{Phone}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\mobilephonename{Mobile phone}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\faxname{Fax}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\emailname{Email}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\wwwname{Url}%
+  \providecaptionname{american,australian,british,canadian,%
+    english,newzealand,%
+    UKenglish,ukenglish,USenglish,usenglish}\bankname{Bank account}%
+  \g@addnumerical@date{american}{\number\month/\number\day/\number\year}%
+  \g@addnumerical@date{australian}{\number\day/\number\month/\number\year}%
+  \g@addnumerical@date{british}{\number\day/\number\month/\number\year}%
+  \g@addnumerical@date{canadian}{\number\year/\number\month/\number\day}%
+  \g@addnumerical@date{english}{\number\day/\number\month/\number\year}%
+  \g@addnumerical@date{newzealand}{\number\day/\number\month/\number\year}%
+  \g@addnumerical@date{UKenglish}{\number\day/\number\month/\number\year}%
+  \g@addnumerical@date{ukenglish}{\number\day/\number\month/\number\year}%
+  \g@addnumerical@date{USenglish}{\number\month/\number\day/\number\year}%
+  \g@addnumerical@date{usenglish}{\number\month/\number\day/\number\year}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\yourrefname{Ihr Zeichen}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\yourmailname{Ihr Schreiben vom}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\myrefname{Unser Zeichen}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\customername{Kundennummer}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\invoicename{Rechnungsnummer}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\subjectname{Betrifft}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\ccname{Kopien an}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\enclname{Anlage}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\headtoname{An}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\headfromname{Von}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\datename{Datum}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\pagename{Seite}%
+  \providecaptionname{german}\phonename{Telephon}%
+  \providecaptionname{ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\phonename{Telefon}%
+  \providecaptionname{german}\mobilephonename{Mobiltelephon}%
+  \providecaptionname{ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\mobilephonename{Mobiltelefon}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\faxname{Fax}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\emailname{E-Mail}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\wwwname{URL}%
+  \providecaptionname{german,ngerman,austrian,naustrian,%
+    swissgerman,nswissgerman}\bankname{Bankverbindung}%
+  \g@addnumerical@date{german}{\number\day.\,\number\month.\,\number\year}%
+  \g@addnumerical@date{ngerman}{\number\day.\,\number\month.\,\number\year}%
+  \g@addnumerical@date{austrian}{\number\day.\,\number\month.\,\number\year}%
+  \g@addnumerical@date{naustrian}{\number\day.\,\number\month.\,\number\year}%
+  \g@addnumerical@date{swissgerman}{\number\day.\,\number\month.\,\number\year}%
+  \g@addnumerical@date{nswissgerman}{%
+    \number\day.\,\number\month.\,\number\year}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\yourrefname{Vos r\'ef\'erences}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\yourmailname{Votre lettre du}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\myrefname{Nos r\'ef\'erences}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\customername{Num\'ero de client}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\invoicename{Num\'ero de facture}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\subjectname{Concernant}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\ccname{Copie \`a}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\enclname{Annexes}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\headtoname{A}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\headfromname{De}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\datename{Date}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\pagename{Page}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\phonename{T\'el\'ephone}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\mobilephonename{Portable}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\faxname{T\'el\'efax}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\emailname{E-mail}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\wwwname{URL}%
+  \providecaptionname{%
+    acadian,canadien,francais,french}\bankname{Compte en banque}%
+  \g@addnumerical@date{acadian}{\number\day.\,\number\month.\,\number\year}%
+  \g@addnumerical@date{canadien}{\number\year/\number\month/\number\day}%
+  \g@addnumerical@date{francais}{\number\day.\,\number\month.\,\number\year}%
+  \g@addnumerical@date{french}{\number\day.\,\number\month.\,\number\year}%
+  \providecaptionname{italian}\yourrefname{Vs./Rif.}% or Vostro Riferimento
+  \providecaptionname{italian}\yourmailname{Vs.~lettera del}% or Vostra
+                                                            % lettera del
+  \providecaptionname{italian}\myrefname{Ns./Rif.}% or Nostro Riferimento
+  \providecaptionname{italian}\customername{Nr.~cliente}% or Cliente num.
+  \providecaptionname{italian}\invoicename{Nr.~fattura}% or Fattura num.
+  \providecaptionname{italian}\subjectname{Oggetto}%
+  \providecaptionname{italian}\ccname{Per conoscenza}% or Copia a
+  \providecaptionname{italian}\enclname{Allegato}% or (plural) Allegati
+  \providecaptionname{italian}\headtoname{A}%
+  \providecaptionname{italian}\headfromname{Da}%
+  \providecaptionname{italian}\datename{Data}%
+  \providecaptionname{italian}\pagename{Pagina}%
+  \providecaptionname{italian}\phonename{Telefono}%
+  \providecaptionname{italian}\mobilephonename{Telefonino}%
+  \providecaptionname{italian}\faxname{Fax}%
+  \providecaptionname{italian}\emailname{Email}%
+  \providecaptionname{italian}\wwwname{Sito Web}%
+  \providecaptionname{italian}\bankname{Conto bancario}%
+  \g@addnumerical@date{italian}{\number\day.\,\number\month.\,\number\year}%
+  \providecaptionname{spanish}\yourrefname{Su ref.}%
+  \providecaptionname{spanish}\yourmailname{Su carta de}%
+  \providecaptionname{spanish}\myrefname{Nuestra ref.}%
+  \providecaptionname{spanish}\customername{No. de cliente}%
+  \providecaptionname{spanish}\invoicename{No. de factura}%
+  \providecaptionname{spanish}\subjectname{Asunto}%
+  \providecaptionname{spanish}\ccname{Copias}%
+  \providecaptionname{spanish}\enclname{Adjunto}%
+  \providecaptionname{spanish}\headtoname{A}%
+  \providecaptionname{spanish}\headfromname{De}%
+  \providecaptionname{spanish}\datename{Fecha}%
+  \providecaptionname{spanish}\pagename{P\'agina}%
+  \providecaptionname{spanish}\phonename{Tel\'efono}%
+  \providecaptionname{spanish}\mobilephonename{M\'ovil}%
+  \providecaptionname{spanish}\faxname{Fax}%
+  \providecaptionname{spanish}\emailname{Email}% or Correo electr\'onico
+  \providecaptionname{spanish}\wwwname{URL}% or P\`agina web
+  \providecaptionname{spanish}\bankname{Cuenta bancaria}%
+  \g@addnumerical@date{spanish}{\number\day.\,\number\month.\,\number\year}%
+  \providecaptionname{croatian}\yourrefname{Va\v{s} znak}%
+  \providecaptionname{croatian}\yourmailname{Va\v{s}e pismo od}%
+  \providecaptionname{croatian}\myrefname{Na\v{s} znak}%
+  \providecaptionname{croatian}\customername{Broj kupca}%
+  \providecaptionname{croatian}\invoicename{Broj fakture}%
+  \providecaptionname{croatian}\subjectname{Predmet}%
+  \providecaptionname{croatian}\ccname{Kopija}%
+  \providecaptionname{croatian}\enclname{Privitak}%
+  \providecaptionname{croatian}\headtoname{Prima}%
+  \providecaptionname{croatian}\headfromname{\v{S}alje}%
+  \providecaptionname{croatian}\datename{Nadnevak}%
+  \providecaptionname{croatian}\pagename{Stranica}%
+  \providecaptionname{croatian}\phonename{Telefon}% 
+  \providecaptionname{croatian}\mobilphonename{Mobitel}% 
+  \providecaptionname{croatian}\faxname{Fax}% 
+  \providecaptionname{croatian}\emailname{E-Mail}%
+  \providecaptionname{croatian}\wwwname{URL}% 
+  \providecaptionname{croatian}\bankname{Bankovna veza}%
+  \g@addnumerical@date{croatian}{\number\day.\,\number\month.\,\number\year.}%
+  \providecaptionname{dutch}\yourrefname{Uw kenmerk}%
+  \providecaptionname{dutch}\yourmailname{Uw brief van}%
+  \providecaptionname{dutch}\myrefname{Ons kenmerk}%
+  \providecaptionname{dutch}\customername{Klant No.}%
+  \providecaptionname{dutch}\invoicename{Rekening No.}%
+  \providecaptionname{dutch}\subjectname{Onderwerp}%
+  \providecaptionname{dutch}\ccname{Kopie aan}%
+  \providecaptionname{dutch}\enclname{Bijlage(n)}%
+  \providecaptionname{dutch}\headtoname{Aan}%
+  \providecaptionname{dutch}\headfromname{Van}%
+  \providecaptionname{dutch}\datename{Datum}%
+  \providecaptionname{dutch}\pagename{Pagina}%
+  \providecaptionname{dutch}\phonename{Telefoon}%
+  \providecaptionname{dutch}\mobilephonename{Mobieltje}%
+  \providecaptionname{dutch}\faxname{Fax}%
+  \providecaptionname{dutch}\emailname{E--mail}%
+  \providecaptionname{dutch}\wwwname{URL}%
+  \providecaptionname{dutch}\bankname{Bankrekening}%
+  \g@addnumerical@date{dutch}{\number\day.\,\number\month.\,\number\year}%
+  \providecaptionname{finnish}\yourrefname{Viitteenne}%
+  \providecaptionname{finnish}\yourmailname{Kirjeenne}%
+  \providecaptionname{finnish}\myrefname{Viitteemme}%
+  \providecaptionname{finnish}\customername{Asiakasnumero}%
+  \providecaptionname{finnish}\invoicename{Laskun numero}%
+  \providecaptionname{finnish}\subjectname{Asia}%
+  \providecaptionname{finnish}\ccname{Jakelu}%
+  \providecaptionname{finnish}\enclname{Liitteet}%
+  \providecaptionname{finnish}\headtoname{Vastaanottaja}%
+  \providecaptionname{finnish}\headfromname{L\"ahett\"aj\"a}%
+  \providecaptionname{finnish}\datename{P\"aiv\"a}%
+  \providecaptionname{finnish}\pagename{Sivu}%
+  \providecaptionname{finnish}\phonename{Puhelin}%
+  \providecaptionname{finnish}\mobilephonename{Matkapuhelin}%
+  \providecaptionname{finnish}\faxname{Faksi}%
+  \providecaptionname{finnish}\emailname{S\"ahk\"oposti}%
+  \providecaptionname{finnish}\wwwname{URL}%
+  \providecaptionname{finnish}\bankname{Pankkitilin numero}%
+  \g@addnumerical@date{finnish}{\number\day.\number\month.\number\year}%
+  \providecaptionname{norsk}\yourrefname{Deres ref.}%
+  \providecaptionname{norsk}\yourmailname{Deres brev av:}%
+  \providecaptionname{norsk}\myrefname{V\aa{}r ref:}%
+  \providecaptionname{norsk}\customername{Kundenummer}%
+  \providecaptionname{norsk}\invoicename{Fakturanummer}%
+  \providecaptionname{norsk}\subjectname{Emne}%
+  \providecaptionname{norsk}\ccname{Kopi til}%
+  \providecaptionname{norsk}\enclname{Vedlegg}%
+  \providecaptionname{norsk}\headtoname{Til}%
+  \providecaptionname{norsk}\headfromname{Fra}%
+  \providecaptionname{norsk}\datename{Dato}%
+  \providecaptionname{norsk}\pagename{Side}%
+  \providecaptionname{norsk}\phonename{Telefon}%
+  \providecaptionname{norsk}\mobilephonename{Mobiltelefon}%
+  \providecaptionname{norsk}\faxname{Telefaks}%
+  \providecaptionname{norsk}\emailname{E-post}%
+  \providecaptionname{norsk}\wwwname{Url}%
+  \providecaptionname{norsk}\bankname{Bankkontonummer}%
+  \g@addnumerical@date{norsk}{\number\day.\number\month.\number\year}%
+  \providecaptionname{swedish}\yourrefname{Er ref}%
+  \providecaptionname{swedish}\yourmailname{Ert brev av}%
+  \providecaptionname{swedish}\myrefname{V\aa{}r ref}%
+  \providecaptionname{swedish}\customername{Kundnummer}%
+  \providecaptionname{swedish}\invoicename{Fakturanummer}%
+  \providecaptionname{swedish}\subjectname{\"Amne}%
+%    \end{macrocode}
+% ``Kopia'' or ``Kopia till''? Both would be possible. Because of using the
+% long form in German, we use it in Swedish too.
+%    \begin{macrocode}
+  \providecaptionname{swedish}\ccname{Kopia till}%
+%    \end{macrocode}
+% ``Bilaga'' would be singular. For several enclosures we need
+% ``Bilagor''. We've decided to use the plural.
+%    \begin{macrocode}
+  \providecaptionname{swedish}\enclname{Bilagor}% Singular: Bilaga
+  \providecaptionname{swedish}\headtoname{Till}%
+  \providecaptionname{swedish}\headfromname{Fr\aa{}n}%
+  \providecaptionname{swedish}\datename{Datum}%
+  \providecaptionname{swedish}\pagename{Sida}%
+  \providecaptionname{swedish}\phonename{Telefon}%
+  \providecaptionname{swedish}\mobilephonename{Mobiltelefon}%
+  \providecaptionname{swedish}\faxname{Telefax}%
+  \providecaptionname{swedish}\emailname{E-post}%
+  \providecaptionname{swedish}\wwwname{Hemsida}%
+%    \end{macrocode}
+% There are two usual terms for banking account, either ``Bankgiro'' or
+% ``PlusGiro''. It's hard to say which one is more usual.
+%    \begin{macrocode}
+  \providecaptionname{swedish}\bankname{Bankgiro}% PlusGiro
+%    \end{macrocode}
+% We use the traditional date ``18/1 2011'' instead of the also common ISO
+% date.
+%    \begin{macrocode}
+  \g@addnumerical@date{swedish}{\number\day/\number\month~\number\year}%
+  \providecaptionname{polish}\yourrefname{Wasz znak}%
+  \providecaptionname{polish}\yourmailname{Wasze pismo z dnia}%
+  \providecaptionname{polish}\myrefname{Nasz znak}%
+  \providecaptionname{polish}\customername{Numer klienta}%
+  \providecaptionname{polish}\invoicename{Numer rachunku}%
+  \providecaptionname{polish}\subjectname{Dotyczy}%
+  \providecaptionname{polish}\ccname{Rozdzielnik}%
+  \providecaptionname{polish}\enclname{Za\l\aob{}czniki}%
+  \providecaptionname{polish}\headtoname{Do}%
+  \providecaptionname{polish}\headfromname{Od}%
+  \providecaptionname{polish}\datename{Data}%
+  \providecaptionname{polish}\pagename{Strona}%
+  \providecaptionname{polish}\phonename{Telefon}%
+  \providecaptionname{polish}\mobilephonename{Numer mobilny}%
+  \providecaptionname{polish}\faxname{Fax}%
+  \providecaptionname{polish}\emailname{E-mail}%
+  \providecaptionname{polish}\wwwname{URL}%
+  \providecaptionname{polish}\bankname{Konto}%
+  \g@addnumerical@date{polish}{\number\day.\,\number\month.\,\number\year}%
+  \providecaptionname{czech}\yourrefname{Va\v{s}e zna\v{c}ka}%
+  \providecaptionname{czech}\yourmailname{V\'{a}\v{s} dopis ze dne}%
+  \providecaptionname{czech}\myrefname{Na\v{s}e zna\v{c}ka}%
+  \providecaptionname{czech}\customername{Z\'akaznick\'e \v{c}\'{\i}slo}%
+  \providecaptionname{czech}\invoicename{Fakura\v{c}n\'{\i} \v{c}\'{\i}slo}%
+  \providecaptionname{czech}\subjectname{Pr\v{e}dm\v{e}t}%
+  \providecaptionname{czech}\ccname{Kopie}%
+  \providecaptionname{czech}\enclname{P\v{r}\'{\i}loha}%
+  \providecaptionname{czech}\headtoname{Komu}%
+  \providecaptionname{czech}\headfromname{Od}%
+  \providecaptionname{czech}\datename{Datum}%
+  \providecaptionname{czech}\pagename{Strana}%
+  \providecaptionname{czech}\phonename{Telefon}%
+  \providecaptionname{czech}\mobilephonename{Mobil}%
+  \providecaptionname{czech}\faxname{Fax}%
+  \providecaptionname{czech}\emailname{E-Mail}%
+  \providecaptionname{czech}\wwwname{URL}%
+  \providecaptionname{czech}\bankname{Bankovn\'{\i} spojen\'{\i}}%
+  \g@addnumerical@date{czech}{\number\day.\,\number\month.\,\number\year}%
+  \providecaptionname{slovak}\yourrefname{Va\v{s}a zna\v{c}ka}%
+  \providecaptionname{slovak}\yourmailname{V\'{a}\v{s} list zo d\v{n}a}%
+  \providecaptionname{slovak}\myrefname{Na\v{s}a zna\v{c}ka}%
+  \providecaptionname{slovak}\customername{Z\'akazn\'{\i}cke \v{c}\'{\i}slo}%
+  \providecaptionname{slovak}\invoicename{\'{C}\'{\i}slo fakt\'ury}%
+  \providecaptionname{slovak}\subjectname{Predmet}%
+  \providecaptionname{slovak}\ccname{K\'{o}pia pre koho}%
+  \providecaptionname{slovak}\enclname{Pr\'{\i}loha}%
+  \providecaptionname{slovak}\headtoname{Komu}%
+  \providecaptionname{slovak}\headfromname{Od}%
+  \providecaptionname{slovak}\datename{D\'{a}tum}%
+  \providecaptionname{slovak}\pagename{Strana}%
+  \providecaptionname{slovak}\phonename{Telef\'{o}n}%
+  \providecaptionname{slovak}\mobilephonename{Mobil}%
+  \providecaptionname{slovak}\faxname{Fax}%
+  \providecaptionname{slovak}\emailname{E-Mail}%
+  \providecaptionname{slovak}\wwwname{URL}%
+  \providecaptionname{slovak}\bankname{Bankov\'{e} spojenie}%
+  \g@addnumerical@date{slovak}{\number\day.\,\number\month.\,\number\year}%
+%    \end{macrocode}
+% Last but not least the activation has to be done.
+% \changes{v2.2c}{1995/03/20}{missing \texttt{\quotechar=} added after
+%   \cs{language}}
+% \changes{v2.5b}{2000/01/20}{language reactivation by \cs{languagename} if
+%   possible}
+% \changes{v2.5e}{2000/07/14}{workaround for language \texttt{nohyphenation}}
+% First of all we activate English as fallback.
+%    \begin{macrocode}
+  \captionsenglish
+  \dateenglish
+%    \end{macrocode}
+% \changes{v2.9i}{2002/09/04}{workaround for \file{hyphen.cfg} bug of
+%   \pkg{babel}}
+% \changes{v2.97c}{2007/08/10}{warning message changed}
+% \changes{v3.18a}{2015/07/03}{execution \cs{extras\dots}}
+% \changes{v3.18a}{2015/07/03}{using \cs{@nameuse}}
+% If the \file{hyphen.cfg} of \pkg{babel} is used, but \pkg{babel} has not
+% been loaded, \cs{languagename} can be incorrect (depending on the
+% \pkg{babel} version used to generate the \LaTeX{} format). In this case
+% |\selectlanguage{\languagename}| would fail. So we need a workaround.
+%    \begin{macrocode}
+  \begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname date\languagename\endcsname\relax
+%<class>    \ClassWarningNoLine{scrlttr2}
+%<package>    \PackageWarningNoLine{scrletter}
+    {%
+      \string\language\space is \the\language, \string\languagename\space is
+      `\languagename'\MessageBreak
+      but \expandafter\string\csname
+      date\languagename\endcsname\space not defined!\MessageBreak
+      This seems to be a bug at you're `hyphen.cfg'.\MessageBreak
+      Undefining macro \string\languagename\space to avoid errors%
+    }%
+    \let\languagename=\undefined
+  \fi
+  \ifx\languagename\undefined
+%<class>    \ClassWarningNoLine{scrlttr2}
+%<package>    \PackageWarningNoLine{scrletter}
+    {\string\languagename\space not
+      defined, using \string\language.\MessageBreak
+      This may result in use of wrong language!\MessageBreak
+      You should use a compatible language
+      package\MessageBreak
+      (e.g. `Babel', `german', `ngerman', ...)}%
+    \ifx\l@american\undefined\else\ifnum\language=\l@american
+        \@nameuse{captionsamerican}%
+        \@nameuse{extrasamerican}%
+        \@nameuse{dateamerican}%
+    \fi\fi
+    \ifx\l@australian\undefined\else\ifnum\language=\l@australian
+        \@nameuse{captionsaustralian}%
+        \@nameuse{extrasaustralian}%
+        \@nameuse{dateaustralian}%
+    \fi\fi
+    \ifx\l@british\undefined\else\ifnum\language=\l@british
+        \@nameuse{captionsbritish}%
+        \@nameuse{extrasbritish}%
+        \@nameuse{datebritish}%
+    \fi\fi
+    \ifx\l@canadian\undefined\else\ifnum\language=\l@canadian
+        \@nameuse{captionscanadian}%
+        \@nameuse{extrascanadian}%
+        \@nameuse{datecanadian}%
+    \fi\fi
+    \ifx\l@newzealand\undefined\else\ifnum\language=\l@newzealand
+        \@nameuse{captionsnewzealand}%
+        \@nameuse{extrasnewzealand}%
+        \@nameuse{datenewzealand}%
+    \fi\fi
+    \ifx\l@UKenglish\undefined\else\ifnum\language=\l@UKenglish
+        \@nameuse{captionsUKenglish}%
+        \@nameuse{extrasUKenglish}%
+        \@nameuse{dateUKenglish}%
+    \fi\fi
+    \ifx\l@ukenglish\undefined\else\ifnum\language=\l@ukenglish
+        \@nameuse{captionsukenglish}%
+        \@nameuse{extrasukenglish}%
+        \@nameuse{dateukenglish}%
+    \fi\fi
+    \ifx\l@USenglish\undefined\else\ifnum\language=\l@USenglish
+        \@nameuse{captionsUSenglish}%
+        \@nameuse{extrasUSenglish}%
+        \@nameuse{dateUSenglish}%
+    \fi\fi
+    \ifx\l@usenglish\undefined\else\ifnum\language=\l@usenglish
+        \@nameuse{captionsusenglish}%
+        \@nameuse{extrasusenglish}%
+        \@nameuse{dateusenglish}%
+    \fi\fi
+    \ifx\l@austrian\undefined\else\ifnum\language=\l@austrian
+        \@nameuse{captionsaustrian}%
+        \@nameuse{extrasaustrian}%
+        \@nameuse{dateaustrian}%
+    \fi\fi
+    \ifx\l@naustrian\undefined\else\ifnum\language=\l@naustrian
+        \@nameuse{captionsnaustrian}%
+        \@nameuse{extrasnaustrian}%
+        \@nameuse{datenaustrian}%
+    \fi\fi
+    \ifx\l@german\undefined\else\ifnum\language=\l@german
+        \@nameuse{captionsgerman}%
+        \@nameuse{extrasgerman}%
+        \@nameuse{dategerman}%
+    \fi\fi
+    \ifx\l@ngerman\undefined\else\ifnum\language=\l@ngerman
+        \@nameuse{captionsngerman}%
+        \@nameuse{extrasngerman}%
+        \@nameuse{datengerman}%
+    \fi\fi
+    \ifx\l@swissgerman\undefined\else\ifnum\language=\l@swissgerman
+        \@nameuse{captionsswissgerman}%
+        \@nameuse{extrasswissgerman}%
+        \@nameuse{dateswissgerman}%
+    \fi\fi
+    \ifx\l@nswissgerman\undefined\else\ifnum\language=\l@nswissgerman
+        \@nameuse{captionsnswissgerman}%
+        \@nameuse{extrasnswissgerman}%
+        \@nameuse{datenswissgerman}%
+    \fi\fi
+    \ifx\l@acadian\undefined\else\ifnum\language=\l@acadian
+        \@nameuse{captionsacadian}%
+        \@nameuse{extrasacadian}%
+        \@nameuse{dateacadian}%
+    \fi\fi
+    \ifx\l@canadien\undefined\else\ifnum\language=\l@canadien
+        \@nameuse{captionscanadien}%
+        \@nameuse{extrascanadien}%
+        \@nameuse{datecanadien}%
+    \fi\fi
+    \ifx\l@francais\undefined\else\ifnum\language=\l@francais
+        \@nameuse{captionsfrancais}%
+        \@nameuse{extrasfrancais}%
+        \@nameuse{datefrancais}%
+    \fi\fi
+    \ifx\l@french\undefined\else\ifnum\language=\l@french
+        \@nameuse{captionsfrench}%
+        \@nameuse{extrasfrench}%
+        \@nameuse{datefrench}%
+    \fi\fi
+    \ifx\l@italian\undefined\else\ifnum\language=\l@italian
+        \@nameuse{captionsitalian}%
+        \@nameuse{extrasitalian}%
+        \@nameuse{dateitalian}%
+    \fi\fi
+    \ifx\l@spanish\undefined\else\ifnum\language=\l@spanish
+        \@nameuse{captionsspanish}%
+        \@nameuse{extrasspanish}%
+        \@nameuse{datespanish}%
+    \fi\fi
+    \ifx\l@croatian\undefined\else\ifnum\language=\l@croatian
+        \@nameuse{captionscroatian}%
+        \@nameuse{extrascroatian}%
+        \@nameuse{datecroatian}%
+    \fi\fi
+    \ifx\l@dutch\undefined\else\ifnum\language=\l@dutch
+        \@nameuse{captionsdutch}%
+        \@nameuse{extrasdutch}%
+        \@nameuse{datedutch}%
+    \fi\fi
+    \ifx\l@finnish\undefined\else\ifnum\language=\l@finnish
+        \@nameuse{captionsfinnish}%
+        \@nameuse{extrasfinnish}%
+        \@nameuse{datefinnish}%
+    \fi\fi
+    \ifx\l@norsk\undefined\else\ifnum\language=\l@norsk
+        \@nameuse{captionsnorsk}%
+        \@nameuse{extrasnorsk}%
+        \@nameuse{datenorsk}%
+    \fi\fi
+    \ifx\l@swedish\undefined\else\ifnum\language=\l@swedish
+        \@nameuse{captionsswedish}%
+        \@nameuse{extrasswedish}%
+        \@nameuse{dateswedish}%
+    \fi\fi
+    \ifx\l@polish\undefined\else\ifnum\language=\l@polish
+        \@nameuse{captionspolish}%
+        \@nameuse{extraspolish}%
+        \@nameuse{datepolish}%
+    \fi\fi
+    \ifx\l@czech\undefined\else\ifnum\language=\l@czech
+        \@nameuse{captionsczech}%
+        \@nameuse{extrasczech}%
+        \@nameuse{dateczech}%
+    \fi\fi
+    \ifx\l@slovak\undefined\else\ifnum\language=\l@slovak
+        \@nameuse{captionsslovak}%
+        \@nameuse{extrasslovak}%
+        \@nameuse{dateslovak}%
+    \fi\fi
+  \else
+    \edef\@tempa{nohyphenation}%
+    \ifx\languagename\@tempa
+%<class>      \ClassWarningNoLine{scrlttr2}
+%<package>      \PackageWarningNoLine{scrletter}
+      {%
+        You've selected language `\languagename'.\MessageBreak
+        Maybe your LaTeX format contains Babel extension\MessageBreak
+        but you have not selected a language using\MessageBreak
+        Babel package.\MessageBreak
+        Please select another language!\MessageBreak
+        Only as a workaround english captions and date\MessageBreak
+        will be used%
+      }%
+    \else
+%<class>      \ClassInfo{scrlttr2}
+%<package>      \PackageInfo{scrletter}
+      {%
+        trying to activate captions and date\MessageBreak
+        of language `\languagename'%
+      }%
+%    \end{macrocode}
+% \changes{v3.12}{2012/12/28}{workaround for changed \file{hyphen.cfg} in
+%   \pkg{babel}}
+% Unfortunately the workaround does not work any longer after a change of
+% \file{hyphen.cfg} in \pkg{babel}. So we need another workaround.
+%    \begin{macrocode}
+      \csname date\languagename\endcsname
+      \csname captions\languagename\endcsname
+%<class>      \ClassInfo{scrlttr2}
+%<package>      \PackageInfo{scrletter}
+      {%
+        used language is `\languagename'.\MessageBreak
+        Supported languages are: `english', `UKenglish',\MessageBreak
+        `ukenglish', `british', `american', `USenglish',\MessageBreak
+        `usenglish', `australian`,`canadian', `newzealand',\MessageBreak
+        `german', `ngerman', `austrian', `naustrian',\MessageBreak
+        `swissgerman', `nswissgermsn',\MessageBreak
+        `acadian', `canadien', `francais', `french', \MessageBreak
+        `dutch', `italian', `spanish', `polish',\MessageBreak
+        `croatian', `finnish', `norsk', `swedish',\MessageBreak
+        `czech', `slovak'%
+      }%
+    \fi
+  \fi
+}
+%</letter&body>
+%    \end{macrocode}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+% \end{command}
+%
+%
+% \Finale
+% \PrintChanges
+% 
+\endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:

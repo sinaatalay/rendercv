@@ -1,0 +1,640 @@
+% \iffalse meta-comment
+% ======================================================================
+% scrkernel-footnotes.dtx
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrkernel-footnotes.dtx 4032 2023-04-17 09:45:11Z kohm $
+%<option>%%%            (run: option)
+%<body>%%%            (run: body)
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2023-04-17 11:45:11 +0200 (Mo, 17. Apr 2023) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 4032 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrkernel-footnotes.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script source
+                           (footnotes)]
+  }%
+\reserved@a
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\setcounter{StandardModuleDepth}{2}
+\begin{document}
+\DocInput{scrkernel-footnotes.dtx}
+\end{document}
+%</dtx>
+% \fi^^A meta-comment
+%
+% \changes{v2.95}{2002/07/01}{new by splitting \file{scrclass.dtx}}
+% \changes{v3.36}{2022/02/16}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/02/16}{whole implementation documentation in English}
+% \changes{v3.40}{2023/04/17}{guide names changed}
+%
+% \GetFileInfo{scrkernel-footnotes.dtx}
+% \title{Index Code of the 
+%   \href{https://komascript.de}{\KOMAScript} Classes}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   The code for footnotes with \KOMAScript{} classes in
+%   \file{scrkernel-footnotes.dtx} is somehow different from the code of the
+%   standard classes. It provides several options and other configuration
+%   possibilities. The initial change bases on a comment in the documented
+%   \LaTeX{} kernel, \file{source2e.pdf}. But this was long ago and almost
+%   everything has been changed meanwhile.
+% \end{abstract}
+% \tableofcontents
+%
+% \section{User Manual}
+%
+% You can find the user documentation the commands implemented here in the
+% \KOMAScript{} manual, either the German \file{scrguide-de.pdf} or the
+% English \file{scrguide-en.pdf}.
+% 
+% \MaybeStop{\PrintIndex}
+%
+% \section{Implementation of Footnotes}
+%
+% \subsection{Options}
+%
+% \begin{option}{footnotes}
+% \changes{v2.98c}{2008/02/01}{new value \opt{multiple}}
+% \changes{v3.10}{2011/09/13}{\cs{let} replaced by \cs{def} fixes the using as
+%   a class option}
+% \changes{v3.12}{2013/03/05}{using \cs{FamilyKeyStateProcessed}}
+% \changes{v3.17}{2015/03/11}{internal value storage}
+% \changes{v3.28}{2019/11/18}{\cs{ifstr} renamed to \cs{Ifstr}}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% Multiple footnotes mean, that there are more than one footnote at the same
+% place in the text. Usually this would result in a sequence of numbers (or
+% other footnote signes) not seperated anyhow. So you would not be able, e.g.,
+% if 12 means footnote number 1 and footnote number 2 or footnote number 12. A
+% better solution is to add automatic separation characters between such
+% footnote marks. The functionality has been made similar and compatible with
+% \pkg{footmisc} version 5.x. So it should be compatible with that
+% package. Even switching on and off should also work in case of using the
+% package.
+%    \begin{macrocode}
+%<*option>
+\KOMA@key{footnotes}{%
+  \ifx\@footnotemark\scr@saved@footnotemark
+  \else
+    \ifx\@footnotemark\scr@footnotemark
+    \else
+%<class>      \ClassWarning{\KOMAClassName}{%
+%<package>      \PackageWarning{scrextend}{%
+        Change of `\string\@footnotemark' detected!\MessageBreak
+        Use of `footnotes=#1' may break\MessageBreak
+        another package!\MessageBreak
+        Maybe you should remove the usage of\MessageBreak
+        option `footnotes=#1'}%
+    \fi
+  \fi
+  \Ifstr{#1}{multiple}{%
+    \let\@footnotemark\scr@footnotemark
+    \def\FN@mf@prepare{\scr@mf@prepare}%
+    \def\scr@footmisc@options{multiple}%
+    \FamilyKeyStateProcessed
+    \KOMA@kav@replacevalue{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+    }{footnotes}{multiple}%
+  }{%
+    \Ifstr{#1}{nomultiple}{%
+      \let\@footnotemark\scr@saved@footnotemark
+      \let\FN@mf@prepare\relax
+      \let\scr@footmisc@options\@empty
+      \FamilyKeyStateProcessed
+      \KOMA@kav@replacevalue{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+      }{footnotes}{nomultiple}%
+    }{%
+      \KOMA@unknown@keyval{footnotes}{#1}{`multiple' and `nomultiple'}%
+    }%
+  }%
+}
+\AtBeginDocument{%
+  \ifx\@footnotemark\scr@saved@footnotemark
+    \KOMA@kav@removekey{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+    }{footnotes}%
+    \KOMA@kav@add{%
+%<class>    \KOMAClassFileName
+%<package&extend>    scrextend.\scr@pkgextension
+    }{footnotes}{nomultiple}%
+  \else\ifx\@footnotemark\scr@footnotemark
+    \KOMA@kav@removekey{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+    }{footnotes}%
+    \KOMA@kav@add{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+    }{footnotes}{multiple}%
+  \fi\fi
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@footmisc@options}
+% \changes{v2.98c}{2008/02/14}{added}
+% For better compatibility \opt{footnotes=multiple} will be passed as
+% \opt{multiple} to package \pkg{footmisc} using a \KOMAScript-internal macro.
+%    \begin{macrocode}
+\newcommand*{\scr@footmisc@options}{}
+\PassOptionsToPackage{\noexpand\scr@footmisc@options}{footmisc}
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\scr@saved@footnotemark,\scr@footnotemark}
+% \changes{v2.98c}{2008/02/01}{added}
+%    \begin{macrocode}
+\newcommand*{\scr@saved@footnotemark}{%
+  \leavevmode
+  \ifhmode\edef\@x@sf{\the\spacefactor}\nobreak\fi
+  \@makefnmark
+  \ifhmode\spacefactor\@x@sf\fi
+  \relax}
+\expandafter\CheckCommand\expandafter*\expandafter\@footnotemark
+\expandafter{\scr@saved@footnotemark}
+\newcommand*{\scr@footnotemark}{%
+  \leavevmode
+  \ifhmode\edef\@x@sf{\the\spacefactor}\FN@mf@check\nobreak\fi
+  \@makefnmark
+  \csname FN@mf@prepare\endcsname
+  \ifhmode\spacefactor\@x@sf\fi
+  \relax}
+%</option>
+%    \end{macrocode}
+% \end{macro}^^A \scr@saved@footnotemark,\scr@footnotemark
+% \end{option}^^A footnotes
+%
+%
+% \subsection{Commands and macros for footnotes}
+%
+% \begin{command}{\footnoterule}
+% \changes{v2.3a}{1995/07/08}{using \cs{@width}}
+% \changes{v2.8q}{2002/02/06}{\cs{raggedbottom} changed}
+% \changes{v2.95}{2002/01/07}{\texttt{.05fil} instead of \texttt{.005fil}}
+% \changes{v3.06}{2010/04/03}{using new length macros}
+% \changes{v3.07}{2010/09/14}{using new font element \fnt{footnoterule}}
+% \changes{v3.19}{2015/08/24}{not with \pkg*{scrextend}}
+% In case of \cs{raggedbottom} the footnote rule is moved downwards. Note,
+% that this does not work, if there is a bottom placed float. The indication
+% of using \cs{raggedbottom} is, \cs{@textbottom} is not \cs{relax}. This can
+% fail, but nevertheless is an improvement.
+%    \begin{macrocode}
+%<*body>
+%<*class>
+\renewcommand*\footnoterule{%
+  \normalsize\ftn@rule@test@values
+  \kern-\dimexpr 2.6\p@+\ftn@rule@height\relax
+  \ifx\@textbottom\relax\else\vskip \z@ \@plus.05fil\fi
+  {\usekomafont{footnoterule}{%
+      \hrule \@height\ftn@rule@height \@width\ftn@rule@width}}%
+  \kern 2.6\p@}
+%    \end{macrocode}
+% \begin{macro}{\ftn@rule@test@values}
+% \changes{v3.06}{2010/04/03}{added}
+% Plausibility test for the lengths of the rule.
+%    \begin{macrocode}
+\newcommand*{\ftn@rule@test@values}{%
+  \ifdim\ftn@rule@height <\z@
+    \ClassWarning{\KOMAClassName}{%
+      You might get into trouble, because the\MessageBreak
+      height of the footnote rule has a value\MessageBreak
+      less than 0%
+    }%
+  \else
+    \ifdim\ftn@rule@height >\dimexpr\skip\footins -2.6\p@\relax
+      \ClassWarning{\KOMAClassName}{%
+        You might get into trouble, because the\MessageBreak
+        height of the footnote rule has a value\MessageBreak
+        greater than \the\dimexpr\skip\footins -2.6\p@\relax
+      }%
+    \fi
+  \fi
+  \ifdim\ftn@rule@width <\z@
+    \ClassWarning{\KOMAClassName}{%
+      You might get into trouble, because the width\MessageBreak
+      or length of the footnote rule has a value\MessageBreak
+      less than 0pt%
+    }%
+  \else
+    \ifdim\ftn@rule@width >\columnwidth
+      \ClassWarning{\KOMAClassName}{%
+        You might get into trouble, because the width\MessageBreak
+        or length of the footnote rule has a value\MessageBreak
+        greater than \string\columnwidth
+      }%
+    \fi
+  \fi
+}
+%    \end{macrocode}
+% \end{macro}^^A \ftn@rule@test@values
+% \begin{fontelement}{footnoterule}
+% \changes{v3.07}{2010/09/14}{added}
+% \changes{v3.19}{2015/08/24}{not with \pkg*{scrextend}}
+% To be able to change the color of the rule, we are using a font element. The
+% default is empty.
+%    \begin{macrocode}
+\newkomafont{footnoterule}{}
+%    \end{macrocode}
+% \end{fontelement}
+% \begin{macro}{\ftn@rule@width}
+% \changes{v3.06}{2010/04/03}{added}
+% \changes{v3.19}{2015/08/24}{not with \pkg*{scrextend}}
+% The length of the footnote rule.
+%    \begin{macrocode}
+\newcommand*{\ftn@rule@width}{.4\columnwidth}
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\ftn@rule@height}
+% \changes{v3.06}{2010/04/03}{added}
+% \changes{v3.19}{2015/08/24}{not with \pkg*{scrextend}}
+% The height of the footnote rule (depth is always 0).
+%    \begin{macrocode}
+\newcommand*{\ftn@rule@height}{.4\p@}
+%    \end{macrocode}
+% \end{macro}
+% \begin{command}{\setfootnoterule}
+% \changes{v3.06}{2010/04/03}{added}
+% \changes{v3.19}{2015/08/24}{not with \pkg*{scrextend}}
+% \changes{v3.28}{2019/11/18}{\cs{ifstr} replaced by \cs{IfArgIsEmpty}}
+% The first optional argument (\texttt{\#1}) it the height of the line. If it
+% is missing, the height is not changed. The first mandatory argument
+% (\texttt{\#2}) is the length of the line.
+%    \begin{macrocode}
+\newcommand*{\setfootnoterule}[2][]{%
+  \IfArgIsEmpty{#1}{}{%
+    \renewcommand*{\ftn@rule@height}{#1}%
+  }%
+  \IfArgIsEmpty{#2}{}{%
+    \renewcommand*{\ftn@rule@width}{#2}%
+  }%
+  \ftn@rule@test@values
+}
+%</class>
+%    \end{macrocode}
+% \end{command}^^A \setfootnoterule
+% \end{command}^^A \footnoterule
+%
+% \begin{counter}{footnote}
+% The footnote counter is reset with every \cs{chapter}. So the numbering is
+% per chapter.
+%    \begin{macrocode}
+%<book|report>\@addtoreset{footnote}{chapter}
+%    \end{macrocode}
+% \end{counter}
+%
+% \begin{command}{\deffootnote}
+% \changes{v2.4l}{1997/02/06}{added}
+% \changes{v2.95}{2002/07/09}{paragraph indent fixed}
+% \changes{v2.9l}{2003/01/28}{\cs{edef}\cs{@tempa} replaced}
+% \changes{v2.9q}{2004/01/31}{\cs{ftn@font} does not support an argument
+%   because of compatibility with \pkg{footnote}}
+% \changes{v3.22}{2017/01/03}{completely new implementation}
+% \changes{v3.23}{2017/03/27}{using \cs{raggedfootnote}}
+% \changes{v3.36}{2022/02/16}{hooks added}
+% This command defines the formatting of footnotes. The arguments are:
+% \begin{description}
+% \item[\oarg{first indent}:] the indent of the text of the first line of the
+%   footnote,
+% \item[\marg{indent}:] the indent from the second line of the footnote,
+% \item[\marg{paragraph indent}:] the indent of the first line of a paragraph
+%   if the footnote has more than one paragraph.
+% \item[\marg{mark code}:] the code of the footnote mark in the footnote (for
+%   the mark in the text see \cs{deffootnotemark}).
+% \end{description}
+% The \meta{mark code} is additionally encapsulated in a \cs{hbox} of
+% with \meta{first indent}. If \meta{first indent} is not given it is set to
+% \meta{indent}.
+%    \begin{macrocode}
+\newcommand\deffootnote[4][]{%
+%<!v4>  \expandafter\ifnum\scr@v@is@ge{3.22}\relax
+    \long\def\@makefntext##1{%
+      \ExecuteDoHook{footnote/text/begin}%
+      \raggedfootnote
+      \leftskip #2
+      \l@addto@macro\@trivlist{%
+        \ifnum\@listdepth=\@ne\advance\leftmargin #2\relax\fi
+      }%
+      \parindent #3\noindent
+      \IfArgIsEmpty{#1}{}{%
+        \hskip \dimexpr #1-#2\relax
+      }%
+      \ftn@font\hbox to \z@{\hss\@@makefnmark}##1%
+      \ExecuteDoHook{footnote/text/end}%
+    }%
+%<*!v4>
+  \else
+%<class>    \ClassInfo{\KOMAClassName}{%
+%<package>    \PackageInfo{scrextend}{%
+      Using old \string\@makefntext\space due to compatibility
+      level\MessageBreak
+      less than 3.22}%
+    \long\def\@makefntext##1{%
+      \setlength{\@tempdimc}{#3}%
+      \def\@tempa{#1}\ifx\@tempa\@empty
+        \@setpar{\@@par
+          \@tempdima = \hsize
+          \addtolength{\@tempdima}{-#2}%
+          \parshape \@ne #2 \@tempdima}%
+      \else
+        \addtolength{\@tempdimc}{#2}%
+        \addtolength{\@tempdimc}{-#1}%
+        \@setpar{\@@par
+          \@tempdima = \hsize
+          \addtolength{\@tempdima}{-#1}%
+          \@tempdimb = \hsize
+          \addtolength{\@tempdimb}{-#2}%
+          \parshape \tw@ #1 \@tempdima #2 \@tempdimb
+        }%
+      \fi
+      \par
+      \parindent\@tempdimc\noindent
+      \ftn@font\hbox to \z@{\hss\@@makefnmark}##1%
+    }%
+  \fi
+%</!v4>
+%    \end{macrocode}
+% \begin{macro}{\@@makefnmark}
+% \changes{v2.4l}{1997/02/06}{added}
+% Used to set the mark at the beginning of the footnote. Here we add the font
+% element.
+%    \begin{macrocode}
+  \def\@@makefnmark{\hbox{\ftnm@font{#4}}}%
+%    \end{macrocode}
+% \end{macro}^^A \@@makefnmark
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+% \end{command}^^A \deffootnote
+%
+% \begin{macro}{\raggedfootnote}
+% \changes{v3.23}{2017/03/27}{added}
+% Falk requested a new feature: Being able to change the
+% alignment/justification of the footnote text. The default is to change
+% nothing.
+%    \begin{macrocode}
+\newcommand*{\raggedfootnote}{}
+%    \end{macrocode}
+% \end{macro}^^A \raggedfootnote
+%
+% \begin{fontelement}{footnotelabel,footnotetext,footnote}
+% \begin{fontelement}{footnotenumber}
+% \changes{v3.36}{2022/02/16}{real alias of \fnt{footnotelabel}}
+% \begin{macro}{\ftn@font,\scr@fnt@footnote,\ftnm@font,\scr@fnt@footnotelabel}
+% \changes{v2.8q}{2001/11/16}{added}
+% There are two new font elements with two aliases. They are not defined using
+% \cs{newkomafont}, because they have to use not the default font commands but
+% another one compatible with \pkg{footnote}.
+%    \begin{macrocode}
+\newcommand*{\ftn@font}{\normalfont}
+\newcommand*{\scr@fnt@footnote}{\ftn@font}
+\newcommand*{\ftnm@font}{}
+\aliaskomafont{footnotenumber}{footnotelabel}
+\newcommand*{\scr@fnt@footnotelabel}{\ftnm@font}
+\aliaskomafont{footnotetext}{footnote}
+%    \end{macrocode}
+% \end{macro}^^A \fnt@font,\scr@fnt@footnote … \scr@fnt@footnotelabel
+% \end{fontelement}^^A footnotenumber
+% \end{fontelement}^^A footnotelabel,footnotetext,footnote
+%
+% \begin{command}{\deffootnotemark}
+% \changes{v2.4l}{1997/02/06}{added}
+% The definition of the footnote mark in the text can also changed. The
+% default is the usual definition extended by the font element.
+%    \begin{macrocode}
+\newcommand*\deffootnotemark[1]{%
+  \def\@makefnmark{\hbox{\ftntm@font{#1}}}%
+}
+%    \end{macrocode}
+% \begin{fontelement}{footnotereference}
+% \begin{fontelement}{footnotemark,footnoteref}
+% \changes{v3.36}{2022/02/16}{real alias of \fnt{footnotereference}}
+% \begin{macro}{\ftntm@font,\scr@fnt@footnotereference}
+% \changes{v2.8q}{2001/11/16}{added}
+% The font element of the footnote mark in the text and two aliases.
+%    \begin{macrocode}
+\newcommand*{\ftntm@font}{}
+\newcommand*{\scr@fnt@footnotereference}{\ftntm@font}
+\aliaskomafont{footnoteref}{footnotereference}
+\aliaskomafont{footnotemark}{footnotereference}
+%    \end{macrocode}
+% \end{macro}^^A \ftntm@font,\scr@fnt@footnotereference
+% \end{fontelement}^^A footnotemark,footnoteref
+% \end{fontelement}^^A footnotereference
+% \begin{macro}{\FN@mf@check}
+% \changes{v2.98c}{2008/02/01}{added}
+% Detect multiple footnotes by \cs{lastkern} and add the separator.
+%    \begin{macrocode}
+%<package>\providecommand*{\FN@mf@check}{%
+%<class>\newcommand*{\FN@mf@check}{%
+  \ifdim\lastkern=\multiplefootnotemarker\relax
+    \edef\@x@sf{\the\spacefactor}%
+    \unkern\multiplefootnoteseparator
+    \spacefactor\@x@sf\relax
+  \fi
+}
+%    \end{macrocode}
+% \end{macro}^^A \FN@mf@check
+% \begin{macro}{\scr@mf@prepare}
+% \changes{v2.98c}{2008/02/01}{added}
+% Add the kern to detect multiple footnotes without change of the resulting kern.
+%    \begin{macrocode}
+\newcommand*{\scr@mf@prepare}{%
+  \kern-\multiplefootnotemarker
+  \kern\multiplefootnotemarker\relax
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@mf@prepare
+% \begin{macro}{\F@mf@prepare}
+% \changes{v2.98c}{2008/02/14}{added}
+% \changes{v3.25a}{2018/04/17}{explicit definition}
+% To stay compatible with \pkg{footmisc} we define this too (but \cs{relax}
+% and only if not defined before).
+%    \begin{macrocode}
+\@ifundefined{FN@mf@prepare}{\let\FN@mf@prepare\relax}{}
+%    \end{macrocode}
+% \end{macro}^^A \F@mf@prepare
+% \begin{macro}{\@footnotetext}
+% \changes{v3.01a}{2008/11/22}{long}
+% \begin{macro}{\scr@saved@footnotetext}
+% \changes{v2.98c}{2008/02/01}{added}
+% \changes{v3.01a}{2008/11/22}{long}
+% We have to add the multiple footnote preparation to the definition of
+% \cs{@footnotetext}.
+%    \begin{macrocode}
+\newcommand{\scr@saved@footnotetext}{}
+\let\scr@saved@footnotetext\@footnotetext
+\renewcommand{\@footnotetext}[1]{%
+  \scr@saved@footnotetext{#1}%
+  \csname FN@mf@prepare\endcsname
+}
+%    \end{macrocode}
+% And \pkg{footmisc} should not warn because of a not expected definition of
+% \cs{@footnotemark}.
+%    \begin{macrocode}
+\BeforePackage{footmisc}{%
+  \ifx\@footnotemark\scr@footnotemark
+    \let\@footnotemark\scr@saved@footnotemark
+  \fi
+  \let\@footnotetext\scr@saved@footnotetext
+}
+%    \end{macrocode}
+% \changes{v3.10}{2011/09/12}{\pkg{setspace} workaround}
+% \pkg{setspace} also needs a workaround, because it redefines
+% \cs{@footnotemark} without respect of other definitions. So we use out
+% definition instead and add a \texttt{footnote/text/begin} do-hook.
+%    \begin{macrocode}
+\BeforePackage{setspace}{%
+  \let\@footnotetext\scr@saved@footnotetext
+}
+\AfterPackage{setspace}{%
+  \let\scr@saved@footnotetext\@footnotetext
+  \renewcommand{\@footnotetext}[1]{%
+    \scr@saved@footnotetext{#1}%
+    \csname FN@mf@prepare\endcsname
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@saved@footnotetext
+% \end{macro}^^A \@footnotetext
+% \end{command}^^A \deffootnotemark
+%
+% \begin{command}{\multiplefootnoteseparator}
+% \changes{v2.98c}{2008/02/01}{added}
+% The multiple footnote separation marker with all formatting needed.
+%    \begin{macrocode}
+\newcommand*{\multiplefootnoteseparator}{%
+  \begingroup\let\thefootnotemark\multfootsep\@makefnmark\endgroup
+}
+%    \end{macrocode}
+% \end{command}
+%
+% \begin{command}{\multfootsep}
+% \changes{v2.98c}{2008/02/01}{added}
+% The \pkg{footmisc} compatible separation without formatting.
+%    \begin{macrocode}
+%<class>\newcommand*{\multfootsep}{,}
+%<package>\providecommand*{\multfootsep}{,}
+%    \end{macrocode}
+% \end{command}
+%
+% \begin{command}{\multiplefootnotemarker}
+% \changes{v2.98c}{2008/02/01}{added}
+% \changes{v3.19}{2015/08/24}{\pkg*{scrextend} uses \cs{providecommand}}
+% The kerning of the marker also \pkg{footmisc} compatible.
+%    \begin{macrocode}
+%<class>\newcommand*{\multiplefootnotemarker}{3sp}
+%<package>\providecommand*{\multiplefootnotemarker}{3sp}
+%    \end{macrocode}
+% \end{command}
+%
+% \begin{command}{\thefootnotemark}
+% \changes{v2.4l}{1997/02/06}{added}
+% User level command using \cs{@thefnmark}.
+%    \begin{macrocode}
+%<class>\newcommand*{\thefootnotemark}{\@thefnmark}
+%<package>\providecommand*{\thefootnotemark}{\@thefnmark}
+%    \end{macrocode}
+% \end{command}
+%
+% \changes{v2.4l}{1997/02/06}{initialization using \cs{deffootnotemark}}
+% \begin{macro}{\@makefnmark}
+% \changes{v3.10}{2011/09/27}{\pkg*{scrextend} redefines \cs{@makefnmark}
+%   to use \cs{thefootnotemark}}
+%    \begin{macrocode}
+%<*class>
+\deffootnote[1em]{1.5em}{1em}{\textsuperscript{\thefootnotemark}}
+%</class>
+%<*package>
+\def\reserved@a{\hbox{\@textsuperscript{\normalfont\@thefnmark}}}
+\ifx\reserved@a\@makefnmark
+%</package>
+\deffootnotemark{\textsuperscript{\thefootnotemark}}
+%<*package>
+\else
+  \IfFileExists{etoolbox.\@pkgextension}{%
+    \PackageInfo{scrextend}{%
+      unexpected definition of `\string\@makefnmark'.\MessageBreak
+      Trying to patch it%
+    }%
+    \RequirePackage{etoolbox}%
+    \patchcmd{\@makefnmark}{\@thefnmark}{\thefootnotemark}{%
+      \PackageInfo{scrextend}{patch seems to be successfull}%
+    }{%
+      \PackageWarning{scrextend}{%
+        patching `\string\@makefnmark' failed.\MessageBreak
+        Using hard coded redefinition%
+      }%
+      \deffootnotemark{\textsuperscript{\thefootnotemark}}%
+   }%
+  }{%
+    \PackageWarning{scrextend}{%
+      unexpected definition of `\string\@makefnmark'.\MessageBreak
+      Using hard coded redefintion%
+    }%
+    \deffootnotemark{\textsuperscript{\thefootnotemark}}%
+  }%
+\fi
+%</package>
+%    \end{macrocode}
+% \end{macro}
+%
+% \subsection{Referencing footnote labels}
+%
+% \begin{command}{\footref}
+% \changes{v2.98c}{2008/02/01}{added}
+% \changes{v3.33}{2021/02/24}{using \cs{providecommand} because of
+%   \LaTeX{} 2021-05-01}
+% \KOMAScript{} 3 provides this command for more more than 13 longer than
+% the \LaTeX{} kernel. It is compatible with \pkg{footmisc} but has also been
+% published for free in the Usenet.
+%    \begin{macrocode}
+\providecommand*{\footref}[1]{%
+  \begingroup
+    \unrestored@protected@xdef\@thefnmark{\ref{#1}}%
+  \endgroup
+  \@footnotemark
+}
+%</body>
+%    \end{macrocode}
+% \end{command}
+%
+%
+% \Finale
+% \PrintChanges
+% 
+\endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:

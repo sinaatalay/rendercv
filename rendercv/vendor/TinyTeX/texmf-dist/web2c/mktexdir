@@ -1,0 +1,76 @@
+#!/bin/sh
+# mktexdir (was mkinstalldirs) -- make directory hierarchy.
+# Author: Noah Friedman <friedman@prep.ai.mit.edu>, created: 1993-05-16.
+# Public domain.
+# 
+# Modified for sticky directory creation, --help, --version, more,
+# by Thomas Esser, Karl Berry, Olaf Weber, et al.
+# Maintained as part of TeX Live, http://tug.org/tex-live.
+
+version='$Id: mktexdir 42425 2016-11-02 21:34:11Z karl $'
+progname=`echo $0 | sed 's%.*/%%'`
+
+# preferentially use subprograms from our own directory.
+mydir=`echo "$0" | sed 's,/[^/]*$,,'`
+mydir=`cd "$mydir" && pwd`
+PATH="$mydir:$PATH"; export PATH
+
+usage="Usage: $0 DIR...
+  Create each DIR, including any missing leading directories."
+mt_max_args=$#
+
+# Common code for all scripts.
+: ${MT_TEXMFMAIN=`kpsewhich --expand-path='$TEXMFMAIN'`}
+: ${MT_MKTEX_OPT=`kpsewhich --format='web2c files' mktex.opt`}
+test -n "$MT_MKTEX_OPT" || MT_MKTEX_OPT="$MT_TEXMFMAIN/web2c/mktex.opt"
+if test ! -f "$MT_MKTEX_OPT"; then
+  echo "$0: Cannot find mktex.opt; check your installation." >&2
+  exit 1
+fi
+
+. "$MT_MKTEX_OPT"
+
+test -n "$MT_MKTEXDIR_OPT" && . "$MT_MKTEXDIR_OPT"
+
+test -z "$MT_APPEND_MASK" && MT_APPEND_MASK="="
+
+errstatus=0
+
+for file
+do
+   case $file in
+     /*) cd /;;
+     *) cd $KPSE_DOT;;
+   esac
+   OLDIFS=$IFS; IFS=/; set fnord `echo "./$file"`; IFS=$OLDIFS; shift
+
+   pathcomp=
+   for d
+   do
+     test -z "$d" && continue
+     pathcomp="$pathcomp$d"
+
+     if test ! -d "./$pathcomp"; then
+        # This shell stuff is not atomic, therefore ./$pathcomp
+        # may have been created in another process and this mkdir will
+        # fail despite the above test, so do it silently:
+        mkdir "./$pathcomp" >/dev/null 2>&1
+        
+        # So, if ./$pathcomp is a directory now, call it good.
+        if test ! -d "./$pathcomp"; then
+          # Otherwise, presumably it's a real error.  Do the mkdir again
+          # and let the error be seen, and quit the loop.
+          # (Report at https://bugs.debian.org/794228.)
+          mkdir "./$pathcomp" || { errstatus=$?; break; }
+        fi
+        chmod `kpsestat ${MT_APPEND_MASK} "$pathcomp"/..` "./$pathcomp"
+     fi
+
+     pathcomp="$pathcomp/"
+   done
+done
+
+exit $errstatus
+
+# P.S. We don't want to rely on mkdir -p, because of possible
+# portability programs. See current mkinstalldirs source (in Automake).

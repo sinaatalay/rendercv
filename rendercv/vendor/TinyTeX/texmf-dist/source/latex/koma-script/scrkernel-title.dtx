@@ -1,0 +1,1016 @@
+% \iffalse meta-comment
+% ======================================================================
+% scrkernel-title.dtx
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrkernel-title.dtx 4032 2023-04-17 09:45:11Z kohm $
+%<option>%%%            (run: option)
+%<body>%%%            (run: body)
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2023-04-17 11:45:11 +0200 (Mo, 17. Apr 2023) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 4032 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrkernel-title.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script source (title pages)]
+  }%
+\reserved@a
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\setcounter{StandardModuleDepth}{3}
+\begin{document}
+\DocInput{scrkernel-title.dtx}
+\end{document}
+%</dtx>
+% \fi
+%
+% \changes{v2.95}{2002/06/26}{first version after splitting \file{scrclass.dtx}}
+% \changes{v3.36}{2022/03/08}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/03/08}{whole implementation documentation in English}
+% \changes{v3.40}{2023/04/17}{guide names changed}
+%
+% \GetFileInfo{scrkernel-title.dtx}
+% \title{The Code to Implement the Extended Titles of
+%   \href{https://komascript.de}{\KOMAScript} Classes}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   \file{scrkernel-title.dtx} implements on-page titles and title pages, that
+%   are extended a lot comparing with the titles of the standard classes.
+% \end{abstract}
+% \tableofcontents
+%
+% \section{User Manual}
+%
+% You can find the user documentation the commands implemented here in the
+% \KOMAScript{} manual, either the German \file{scrguide-de.pdf} or the
+% English \file{scrguide-en.pdf}.
+%
+% \MaybeStop{\PrintIndex}
+%
+%
+% \section{Implementation of Titles}
+%
+% This kind of titles are not needed for letters.
+%
+%    \begin{macrocode}
+%<*!letter>
+%    \end{macrocode}
+% 
+% \begin{option}{titlepage}
+% \changes{v2.95c}{2006/08/21}{using \pkg*{scrkbase}}
+% \changes{v3.12}{2013/11/21}{value \opt{\quotechar=firstiscover} added}
+% \changes{v3.17}{2015/03/10}{using internal value storage}
+% \changes{v3.28}{2019/11/18}{\cs{ifstr} renamed to \cs{Ifstr}}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% \begin{macro}{\@titlepagetrue,\@titlepagefalse,\if@titlepage}
+% \begin{macro}{\@titlepageiscoverpagetrue,\@titlepageisvoerpagefalse,
+%               \if@titlepageiscoverpage}
+% \changes{v3.12}{2013/11/21}{added}
+% There is support for two kinds of titles: in-page titles also known as title
+% heads and title pages. Usually title pages are the title pages of the inner
+% book. But some users prefer to interpret them as cover instead. With
+% \KOMAScript{} this does in fact makes some sense, but only, if the user uses
+% the mock title and wants to interpret it not as mock title but as cover. So
+% we provide the following values:
+% \begin{description}
+% \item[\opt{=false}:] use a in-page title (\cs{@titlepagefalse},
+%   \cs{@titlepageiscoverpagefalse}),
+% \item[\opt{=true}:] use several title pages (\cs{@titlepagetrue},
+%   \cs{@titlepageiscoverpagefalse}),
+% \item[\opt{=firstiscover}:] use several title pages and the first one is the
+%   cover (\cs{@titlepagetrue}, \cs{@titlepageiscoverpagetrue}). We do not
+%   test, if this is was originally a mock title of a main title.
+% \end{description}
+% With package \pkg*{scrextend} this feature is defined as activatable. And
+% the initial values differ from class to class.
+%    \begin{macrocode}
+%<*option>
+%<*class>
+\newif\if@titlepage
+%<article>\@titlepagefalse
+%<report|book>\@titlepagetrue
+%</class>
+%<*package&extend>
+\scr@ext@activateable{title}{%
+  \scr@ifundefinedorrelax{if@titlepage}{%
+    \expandafter\newif\csname if@titlepage\endcsname
+    \@titlepagefalse
+  }{}%
+  \scr@ifundefinedorrelax{if@titlepageiscoverpage}{%
+    \expandafter\newif\csname if@titlepageiscoverpage\endcsname
+    \@titlepageiscoverpagefalse
+  }{}%
+%</package&extend>
+%<*class|package>
+%<class>\newif\if@titlepageiscoverpage
+\KOMA@key{titlepage}[true]{%
+%<!(package&extend)>  \Ifstr{#1}{firstiscover}{%
+%<package&extend>  \Ifstr{##1}{firstiscover}{%
+    \@titlepagetrue
+    \@titlepageiscoverpagetrue
+    \FamilyKeyStateProcessed
+    \KOMA@kav@replacevalue{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+    }{titlepage}{firstiscover}%
+  }{%
+    \def\FamilyElseValue{, `firstiscover'}%
+%<!(package&extend)>     \KOMA@set@ifkey{titlepage}{@titlepage}{#1}%
+%<package&extend>     \KOMA@set@ifkey{titlepage}{@titlepage}{##1}%
+    \ifx\FamilyKeyState\FamilyKeyStateProcessed
+      \KOMA@kav@remove{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+      }{titlepage}{firstiscover}%
+      \KOMA@kav@replacebool{%
+%<class>      \KOMAClassFileName
+%<package&extend>      scrextend.\scr@pkgextension
+      }{titlepage}{@titlepage}%
+      \@titlepageiscoverpagefalse
+    \fi
+  }%
+}
+\KOMA@kav@xadd{%
+%<class>  \KOMAClassFileName
+%<package&extend>  scrextend.\scr@pkgextension
+}{titlepage}{\if@titlepage true\else false\fi}
+%<*extend>
+%    \end{macrocode}
+% For \pkg*{scrextend} we allow to activate the feature at load time.
+%    \begin{macrocode}
+  \def\scr@ext@immediate@title{%
+    \scr@ext@activate{title}%
+    \let\scr@ext@immediate@title\relax
+  }%
+}
+%</extend>
+%</class|package>
+%    \end{macrocode}
+% \begin{option}{notitlepage}
+% \changes{v2.95c}{2006/08/21}{obsolete}
+% \changes{v3.01a}{2008/11/21}{standard not obsolete}
+%    \begin{macrocode}
+\KOMA@DeclareStandardOption%
+%<package>  [scrextend]%
+  {notitlepage}{titlepage=false}
+%</option>
+%    \end{macrocode}
+% \end{option}^^A notitlepage
+% \end{macro}^^A \if@titlepageiscoverpage
+% \end{macro}^^A \if@titlepage
+% \end{option}^^A titlepage
+%
+% \begin{command}{\extratitle}
+% \begin{macro}{\@extratitle}
+% \begin{command}{\frontispiece}
+% \changes{v3.25}{2017/11/21}{added}
+% \begin{macro}{\@frontispiece}
+% \changes{v3.25}{2017/11/21}{added}
+% \begin{command}{\titlehead}
+% \begin{macro}{\@titlehead}
+% \begin{command}{\subject}
+% \begin{macro}{\@subject}
+% \begin{command}{\subtitle}
+% \changes{v2.97c}{2007/06/20}{neue Möglichkeit}
+% \begin{macro}{\@subtitle}
+% \changes{v2.97c}{2007/06/20}{added}
+% \begin{command}{\publishers}
+% \begin{macro}{\@publishers}
+% \begin{command}{\uppertitleback}
+% \begin{macro}{\@uppertitleback}
+% \begin{command}{\lowertitleback}
+% \begin{macro}{\@lowertitleback}
+% \begin{command}{\dedication}
+% \begin{macro}{\@dedication}
+% The \LaTeX{} kernel already provides user commands \cs{title}, \cs{author},
+% \cs{date}, which store their arguments globally into macros \cs{@title},
+% \cs{@author} and \cs{@date}. But for \KOMAScript{} these are not enough for
+% several pages of title and even not for the main title. So several more
+% similar commands and macros are defined. All additional user commands but
+% \cs{subject} are long.
+% \begin{description}
+% \item[ToDo:] Make them all robust as \LaTeX{} from 2018/10/01 does. However
+%   this could be incompatible with \pkg{uni-titlepage}, so when doing the
+%   change, don't forget to also change \pkg{uni-titlepage} if needed.
+% \end{description}
+% For package \pkg*{scrextend} all the code is added to the activatable
+% \texttt{title}.
+%    \begin{macrocode}
+%<*body>
+%<package&extend>\scr@ext@addto@activateable{title}{%
+\newcommand*{\@extratitle}{}%
+\newcommand{\extratitle}[1]{\gdef\@extratitle{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\@frontispiece}{}%
+\newcommand{\frontispiece}[1]{\gdef\@frontispiece{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\@titlehead}{}%
+\newcommand{\titlehead}[1]{\gdef\@titlehead{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\@subject}{}%
+\newcommand*{\subject}[1]{\gdef\@subject{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\subtitle}[1]{\gdef\@subtitle{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\@subtitle}{}%
+\newcommand*{\@publishers}{}%
+\newcommand{\publishers}[1]{\gdef\@publishers{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\@uppertitleback}{}%
+\newcommand{\uppertitleback}[1]{\gdef\@uppertitleback{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\@lowertitleback}{}%
+\newcommand{\lowertitleback}[1]{\gdef\@lowertitleback{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+\newcommand*{\@dedication}{}%
+\newcommand{\dedication}[1]{\gdef\@dedication{%
+%<extend>    ##1%
+%<!extend>    #1%
+}}%
+%    \end{macrocode}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+% \end{macro}
+% \end{command}
+%
+% \begin{macro}{\next@tpage}
+% \changes{v2.3b}{1995/07/24}{\cs{null} removed}
+% \changes{v2.3g}{1996/01/14}{\cs{newpage} replaced by \cs{clearpage}}
+% \changes{v3.11c}{2013/02/14}{output \cs{@thanks}}
+% \changes{v3.11c}{2013/02/14}{initialize \cs{@thanks}}
+% \changes{v3.20}{2015/10/14}{\cs{setparsizes} resp. similar code added}
+% \begin{macro}{\next@tdpage}
+% \changes{v3.11c}{2013/02/14}{added}
+% \changes{v3.12}{2013/11/21}{\cs{titlepage@restore} added}
+% Because we have more than one title page but all title pages inside one
+% \env{titlepage} environment, we need a special kind of
+% \cs{newpage}/\cs{clearpage}.
+% \begin{description}
+% \item[ToDo:] Replace the original \cs{clearpage} and \cs{cleardoublepage}
+%   inside \env{titlepage} by these two macros. With this, users could also
+%   have more than one page inside a \env{titlepage} environment.
+% \end{description}
+%    \begin{macrocode}
+\newcommand*{\next@tpage}{%
+  \@thanks\global\let\@thanks\@empty
+  \clearpage
+  \csname titlepage@restore\endcsname
+%<!extend>      \setparsizes{\z@}{\z@}{\z@\@plus 1fil}\par@updaterelative
+%<extend>      \parskip\z@ \parindent\z@ \parfillskip\z@\@plus 1fil
+  \thispagestyle{empty}%
+  \let\footnote\thanks
+  \setcounter{footnote}{0}%
+}
+\newcommand*{\next@tdpage}{%
+  \next@tpage\if@twoside \ifodd\value{page}\else\null\next@tpage\fi\fi
+}
+%    \end{macrocode}
+% \end{macro}^^A \next@tdpage
+% \end{macro}^^A \next@tpage
+%
+% \begin{command}{\maketitle}
+% \changes{v2.3a}{1995/07/08}{\texttt{plus} replaced by \cs{@plus}}
+% \changes{v2.3a}{1995/07/08}{\texttt{fill} replaced by \cs{fill}}
+% \changes{v2.3a}{1995/07/08}{\cs{vfil} replaced by \cs{vfill}}
+% \changes{v2.3a}{1995/07/08}{using \cs{@makefnmark} in \cs{@makefntext}}
+% \changes{v2.3a}{1995/07/08}{\cs{@makefnmark} and \cs{@makefntext}
+%   independent from math mode}
+% \changes{v2.3b}{1995/07/24}{page break inside \cs{@extratitle} in
+%   double-sided mode fixed}
+% \changes{v2.3d}{1995/08/19}{\cs{fill} replaced by \texttt{fill}}
+% \changes{v2.3e}{1995/08/30}{support but ignore optional argument in
+%   single-sided mode}
+% \changes{v2.3g}{1996/01/14}{several \cs{null} to \cs{next@tpage} added}
+% \changes{v2.3g}{1996/01/14}{\cs{footnote} in titles fixed}
+% \changes{v2.3g}{1996/01/14}{deleting \cs{@date}, \cs{title} etc. to save memory}
+% \changes{v2.3g}{1996/01/14}{\cs{gdef} replaced by \cs{global}\cs{let}}
+% \changes{v2.4}{1996/02/25}{\cs{footnote} in titles fixed again}
+% \changes{v2.4h}{1996/11/09}{always use \cs{sectfont} followed by the side
+%   for the \cs{@title}}
+% \changes{v2.4l}{1997/02/06}{using footnote symbols with width 0}
+% \changes{v2.4l}{1997/02/06}{redefining \cs{\@makefnmark} instead of
+%   \cs{@makefntext} only}
+% \changes{v2.8d}{2001/07/05}{using \cs{titlepagestyle} for in-page title}
+% \changes{v2.8p}{2001/09/22}{\cs{sectfont} replaced by \cs{titlefont}}
+% \changes{v2.95c}{2006/08/21}{setting paragraph base values}
+% \changes{v2.97c}{2007/08/31}{interleaf pages with page style
+%   \pstyle{emmpty}}
+% \changes{v3.04a}{2009/07/14}{distinguishing in-page titles and title pages
+%   inside \cs{maketitle} instead of loading time}
+% \changes{v3.11c}{2013/02/14}{mock title moved to new macro}
+% \changes{v3.11c}{2013/02/14}{using \cs{next@tdpage}}
+% \changes{v3.12}{2013/05/29}{using font elements \fnt{titlehead},
+%   \fnt{author}, \fnt{date}, \fnt{publishers}, \fnt{dedication}}
+% \changes{v3.12}{2013/11/21}{support for
+%   \opt{titlepage\quotechar=firstiscover}}
+% \changes{v3.12}{2013/11/21}{retro page only if needed}
+% \changes{v3.12}{2013/11/21}{kill the title macros only in compatibility mode}
+% \changes{v3.12a}{2014/03/03}{orphan spaced fixed}
+% \changes{v3.12a}{2014/03/03}{output extra/mock title in one-side mode only
+%   if not empty}
+% \changes{v3.12a}{2014/03/03}{\cs{next@tdpage} removed from \cs{@maketitle}
+%   and \cs{@makeextrattitle}}
+% \changes{v3.13}{2013/10/31}{\cs{next@tdpage} replaced by
+%   \cs{cleardoubleemptypage} after dedication (last title page)}
+% \changes{v3.19}{2015/08/25}{don't use empty \cs{titlepagestyle}}
+% \changes{v3.25}{2017/11/21}{support for \cs{@frontispiece}}
+% \changes{v3.27}{2019/01/01}{warning for not empty retro page in single-sided
+%   mode}
+% \changes{v3.27}{2019/03/18}{empty \cs{@thanks} after usage}
+% \changes{v3.27}{2019/03/18}{deleting \cs{@thanks} always globally}
+% The user command that prints either the in-page title or the title pages
+% with all the title macros filled before.
+%    \begin{macrocode}
+%<package&extend>\let\maketitle\relax\let\@maketitle\relax
+\newcommand*\maketitle[1][1]{%
+%    \end{macrocode}
+% \changes{v3.39}{2022/10/25}{using \cs{scr@v@is@ge}}
+% To support several \cs{maketitle} in the same document, we have to take care
+% to use the correct \cs{and} every time. So we define it here (instead of
+% outside).
+%    \begin{macrocode}
+%<!v4>  \expandafter\ifnum \scr@v@is@ge{3.12}%
+    \def\and{%
+      \end{tabular}%
+      \hskip 1em \@plus.17fil%
+      \begin{tabular}[t]{c}%
+    }%
+%<!v4>  \fi
+%    \end{macrocode}
+% Depending on in-page titles or title pages, we have to use different
+% code. First the title pages.
+%    \begin{macrocode}
+  \if@titlepage
+    \begin{titlepage}
+      \setcounter{page}{%
+%<extend>        ##1%
+%<!extend>        #1%
+      }%
+%    \end{macrocode}
+% From \KOMAScript~3.12 we need special treatment for the case this is the
+% first title page and the first one should be the cover. The changes here has
+% to be restored later. So we locally define \cs{titlepage@restore} to restore
+% the original parameters.
+%    \begin{macrocode}
+      \if@titlepageiscoverpage
+        \edef\titlepage@restore{%
+          \noexpand\endgroup
+          \noexpand\global\noexpand\@colht\the\@colht
+          \noexpand\global\noexpand\@colroom\the\@colroom
+          \noexpand\global\vsize\the\vsize
+          \noexpand\global\noexpand\@titlepageiscoverpagefalse
+          \noexpand\let\noexpand\titlepage@restore\noexpand\relax
+        }%
+        \begingroup
+        \topmargin=\dimexpr \coverpagetopmargin-1in\relax
+        \oddsidemargin=\dimexpr \coverpageleftmargin-1in\relax
+        \evensidemargin=\dimexpr \coverpageleftmargin-1in\relax
+        \textwidth=\dimexpr
+        \paperwidth-\coverpageleftmargin-\coverpagerightmargin\relax
+        \textheight=\dimexpr
+        \paperheight-\coverpagetopmargin-\coverpagebottommargin\relax
+        \headheight=0pt
+        \headsep=0pt
+        \footskip=\baselineskip
+        \@colht=\textheight
+        \@colroom=\textheight
+        \vsize=\textheight
+        \columnwidth=\textwidth
+        \hsize=\columnwidth
+        \linewidth=\hsize
+      \else
+        \let\titlepage@restore\relax
+      \fi
+      \let\footnotesize\small
+      \let\footnoterule\relax
+      \let\footnote\thanks
+      \renewcommand*\thefootnote{\@fnsymbol\c@footnote}%
+      \let\@oldmakefnmark\@makefnmark
+      \renewcommand*{\@makefnmark}{\rlap\@oldmakefnmark}%
+      \ifx\@extratitle\@empty
+        \ifx\@frontispiece\@empty
+        \else
+          \if@twoside\mbox{}\next@tpage\fi
+          \noindent\@frontispiece\next@tdpage
+        \fi
+      \else
+        \noindent\@extratitle
+        \ifx\@frontispiece\@empty
+        \else
+          \next@tpage
+          \noindent\@frontispiece
+        \fi
+        \next@tdpage  
+      \fi
+%<!extend>      \setparsizes{\z@}{\z@}{\z@\@plus 1fil}\par@updaterelative
+%<extend>      \parskip\z@ \parindent\z@ \parfillskip\z@\@plus 1fil
+      \ifx\@titlehead\@empty \else
+        \begin{minipage}[t]{\textwidth}%
+          \usekomafont{titlehead}{\@titlehead\par}%
+        \end{minipage}\par
+      \fi
+      \null\vfill
+      \begin{center}
+        \ifx\@subject\@empty \else
+          {\usekomafont{subject}{\@subject\par}}%
+          \vskip 3em
+        \fi
+        {\usekomafont{title}{\huge \@title\par}}%
+        \vskip 1em
+        {\ifx\@subtitle\@empty\else\usekomafont{subtitle}{\@subtitle\par}\fi}%
+        \vskip 2em
+        {%
+          \usekomafont{author}{%
+            \lineskip 0.75em
+            \begin{tabular}[t]{c}
+              \@author
+            \end{tabular}\par
+          }%
+        }%
+        \vskip 1.5em
+        {\usekomafont{date}{\@date \par}}%
+        \vskip \z@ \@plus3fill
+        {\usekomafont{publishers}{\@publishers \par}}%
+        \vskip 3em
+      \end{center}\par
+      \@thanks\global\let\@thanks\@empty
+      \vfill\null
+      \if@twoside
+%    \end{macrocode}
+% \changes{v3.39}{2022/10/25}{using \cs{scr@v@is@ge}}
+% From \KOMAScript~3.12 we show the retro page only if needed. It is needed in
+% double-sided mode, if the upper and lower elements are not empty.
+%    \begin{macrocode}
+        \@tempswatrue
+%<!v4>        \expandafter\ifnum \scr@v@is@ge{3.12}%
+          \ifx\@uppertitleback\@empty\ifx\@lowertitleback\@empty
+            \@tempswafalse
+          \fi\fi
+%<!v4>        \fi
+        \if@tempswa
+          \next@tpage
+          \begin{minipage}[t]{\textwidth}
+            \@uppertitleback
+          \end{minipage}\par
+          \vfill
+          \begin{minipage}[b]{\textwidth}
+            \@lowertitleback
+          \end{minipage}\par
+          \@thanks\global\let\@thanks\@empty
+        \fi
+%    \end{macrocode}
+% In single-sided mode, we warn for used but never printed upper and lower
+% retro page variables.
+%    \begin{macrocode}
+      \else
+        \ifx\@uppertitleback\@empty\else
+%<package>          \PackageWarning{scrextend}%
+%<class>          \ClassWarning{\KOMAClassName}%
+          {%
+            non empty \string\uppertitleback\space ignored
+            by \string\maketitle\MessageBreak
+            in `twoside=false' mode%
+          }%
+        \fi
+        \ifx\@lowertitleback\@empty\else
+%<package>          \PackageWarning{scrextend}%
+%<class>          \ClassWarning{\KOMAClassName}%
+          {%
+            non empty \string\lowertitleback\space ignored
+            by \string\maketitle\MessageBreak
+            in `twoside=false' mode%
+          }%
+        \fi          
+      \fi
+      \ifx\@dedication\@empty 
+      \else
+        \next@tdpage\null\vfill
+        {\centering\usekomafont{dedication}{\@dedication \par}}%
+        \vskip \z@ \@plus3fill
+%    \end{macrocode}
+% \begin{description}
+% \item[ToDo:] Why can't we use \cs{next@tdpage} here? Would this be a
+%   problem, if we redefine \cs{cleardoublepage} to \cs{next@tdpage}?
+% \end{description}
+%    \begin{macrocode}
+        \@thanks\global\let\@thanks\@empty
+        \cleardoubleemptypage
+      \fi
+%    \end{macrocode}
+% If we are still at a cover page, we have to restore the title page.
+%    \begin{macrocode}
+      \ifx\titlepage@restore\relax\else\clearpage\titlepage@restore\fi
+    \end{titlepage}
+  \else
+%    \end{macrocode}
+% Now, the in-page title.
+%    \begin{macrocode}
+    \par
+    \@tempcnta=%
+%<extend>    ##1%
+%<!extend>    #1%
+    \relax\ifnum\@tempcnta=1\else
+%<class>      \ClassWarning{\KOMAClassName}%
+%<package>      \PackageWarning{scrextend}%
+      {%
+        Optional argument of \string\maketitle\space ignored\MessageBreak
+        in `titlepage=false' mode%
+      }%
+    \fi
+    \ifx\@uppertitleback\@empty\else
+%<class>      \ClassWarning{\KOMAClassName}%
+%<package>      \PackageWarning{scrextend}%
+      {%
+        non empty \string\uppertitleback\space ignored
+        by \string\maketitle\MessageBreak
+        in `titlepage=false' mode%
+      }%
+    \fi
+    \ifx\@lowertitleback\@empty\else
+%<class>      \ClassWarning{\KOMAClassName}%
+%<package>      \PackageWarning{scrextend}%
+      {%
+        non empty \string\lowertitleback\space ignored
+        by \string\maketitle\MessageBreak
+        in `titlepage=false' mode%
+      }%
+    \fi          
+    \begingroup
+      \let\titlepage@restore\relax
+      \renewcommand*\thefootnote{\@fnsymbol\c@footnote}%
+      \let\@oldmakefnmark\@makefnmark
+      \renewcommand*{\@makefnmark}{\rlap\@oldmakefnmark}%
+      \next@tdpage
+      \if@twocolumn
+        \ifnum \col@number=\@ne
+          \ifx\@extratitle\@empty
+            \ifx\@frontispiece\@empty\else\if@twoside\mbox{}\fi\fi
+          \else
+            \@makeextratitle
+          \fi
+          \ifx\@frontispiece\@empty
+            \ifx\@extratitle\@empty\else\next@tdpage\fi
+          \else
+            \next@tpage
+            \@makefrontispiece
+            \next@tdpage
+          \fi
+          \@maketitle
+        \else
+          \ifx\@extratitle\@empty
+            \ifx\@frontispiece\@empty\else\if@twoside\mbox{}\fi\fi
+          \else
+            \twocolumn[\@makeextratitle]%
+          \fi
+          \ifx\@frontispiece\@empty
+            \ifx\@extratitle\@empty\else\next@tdpage\fi
+          \else
+            \next@tpage
+            \twocolumn[\@makefrontispiece]%
+            \next@tdpage
+          \fi
+          \twocolumn[\@maketitle]%
+        \fi
+      \else
+        \ifx\@extratitle\@empty
+          \ifx\@frontispiece\@empty\else \mbox{}\fi
+        \else
+          \@makeextratitle
+        \fi
+        \ifx\@frontispiece\@empty
+          \ifx\@extratitle\@empty\else\next@tdpage\fi
+        \else
+          \next@tpage
+          \@makefrontispiece
+          \next@tdpage
+        \fi
+        \@maketitle
+      \fi
+      \ifx\titlepagestyle\@empty\else\thispagestyle{\titlepagestyle}\fi
+      \@thanks\global\let\@thanks\@empty
+    \endgroup
+  \fi
+  \setcounter{footnote}{0}%
+%<*!v4>
+  \expandafter\ifnum \scr@v@is@lt{3.12}%
+    \let\thanks\relax
+    \let\maketitle\relax
+    \let\@maketitle\relax
+    \global\let\@thanks\@empty
+    \global\let\@author\@empty
+    \global\let\@date\@empty
+    \global\let\@title\@empty
+    \global\let\@subtitle\@empty
+    \global\let\@extratitle\@empty
+    \global\let\@frontispiece\@empty    
+    \global\let\@titlehead\@empty
+    \global\let\@subject\@empty
+    \global\let\@publishers\@empty
+    \global\let\@uppertitleback\@empty
+    \global\let\@lowertitleback\@empty
+    \global\let\@dedication\@empty
+    \global\let\author\relax
+    \global\let\title\relax
+    \global\let\extratitle\relax
+    \global\let\titlehead\relax
+    \global\let\subject\relax
+    \global\let\publishers\relax
+    \global\let\uppertitleback\relax
+    \global\let\lowertitleback\relax
+    \global\let\dedication\relax
+    \global\let\date\relax
+  \fi
+%</!v4>
+  \global\let\and\relax
+}%
+%    \end{macrocode}
+% \begin{macro}{\@maketitle}
+% \changes{v2.95c}{2006/08/21}{default paragraph settings}
+% \changes{v3.11c}{2012/02/14}{extra/mock title moved to \cs{@makeextratitle}}
+% \changes{v3.12a}{2014/03/03}{\cs{next@tdpage} removed}
+% \begin{macro}{\@makeextratitle}
+% \changes{v3.11c}{2013/02/14}{added}
+% \changes{v3.12a}{2014/03/03}{\cs{next@tdpage} removed}
+% \begin{macro}{\@makefrontispiece}
+% \changes{v3.25}{2017/11/21}{added}
+% These do the printing of the main title, the extra or mock title and the
+% frontispiece (retro page of the mock title).
+%    \begin{macrocode}
+\newcommand*{\@makeextratitle}{%
+  \ifx\@extratitle\@empty \else
+    \noindent\@extratitle\par
+  \fi
+}
+\newcommand*{\@makefrontispiece}{%
+  \ifx\@frontispiece\@empty \else
+    \noindent\@frontispiece\par
+  \fi
+}
+\newcommand*{\@maketitle}{%
+  \global\@topnum=\z@
+%<!extend>  \setparsizes{\z@}{\z@}{\z@\@plus 1fil}\par@updaterelative
+%<extend>  \parskip\z@ \parindent\z@ \parfillskip\z@\@plus 1fil
+  \ifx\@titlehead\@empty \else
+    \begin{minipage}[t]{\textwidth}
+      \usekomafont{titlehead}{\@titlehead\par}%
+    \end{minipage}\par
+  \fi
+  \null
+  \vskip 2em%
+  \begin{center}%
+    \ifx\@subject\@empty \else
+      {\usekomafont{subject}{\@subject \par}}%
+      \vskip 1.5em
+    \fi
+    {\usekomafont{title}{\huge \@title \par}}%
+    \vskip .5em
+    {\ifx\@subtitle\@empty\else\usekomafont{subtitle}\@subtitle\par\fi}%
+    \vskip 1em
+    {%
+      \usekomafont{author}{%
+        \lineskip .5em%
+        \begin{tabular}[t]{c}
+          \@author
+        \end{tabular}\par
+      }%
+    }%
+    \vskip 1em%
+    {\usekomafont{date}{\@date \par}}%
+    \vskip \z@ \@plus 1em
+    {\usekomafont{publishers}{\@publishers \par}}%
+    \ifx\@dedication\@empty \else
+      \vskip 2em
+      {\usekomafont{dedication}{\@dedication \par}}%
+    \fi
+  \end{center}%
+  \par
+  \vskip 2em
+}%
+%    \end{macrocode}
+% \end{macro}^^A \@makefrontispiece
+% \end{macro}^^A \@makeextratitle
+% \end{macro}^^A \@maketitle
+% \end{command}^^A \maketitle
+%
+% \begin{command}{\coverpagetopmargin}
+% \changes{v3.12}{2013/11/21}{added}
+% Top margin of a cover page (\opt{titlepage=firstiscover}).
+%    \begin{macrocode}
+\newcommand*{\coverpagetopmargin}{%
+  \dimexpr \topmargin+1in\relax
+}
+%    \end{macrocode}
+% \end{command}
+%
+% \begin{command}{\coverpagebottommargin}
+% \changes{v3.12}{2013/11/21}{added}
+% Bottom margin of a cover page (\opt{titlepage=firstiscover}).
+%    \begin{macrocode}
+\newcommand*{\coverpagebottommargin}{%
+  2\dimexpr\coverpagetopmargin\relax
+}
+%    \end{macrocode}
+% \end{command}
+%
+% \begin{command}{\coverpageleftmargin}
+% \changes{v3.12}{2013/11/21}{added}
+% Left margin of a cover page (\opt{titlepage=firstiscover}).
+%    \begin{macrocode}
+\newcommand*{\coverpageleftmargin}{%
+  \dimexpr \evensidemargin+1in\relax
+}
+%    \end{macrocode}
+% \end{command}
+%
+% \begin{command}{\coverpagerightmargin}
+% \changes{v3.12}{2013/11/21}{added}
+% Right margin of a cover page (\opt{titlepage=firstiscover}).
+%    \begin{macrocode}
+\newcommand*{\coverpagerightmargin}{\coverpageleftmargin}
+%    \end{macrocode}
+% \end{command}
+%
+% \begin{environment}{titlepage}
+% \changes{v3.39}{2022/10/25}{\LaTeX{} 2.09 compatibility mode with
+%   \pkg{scrextend} only}
+% The environment to be used for title pages. Title pages are always
+% one-columned and use page style \pstyle{empty}. We have to take care to
+% reset this at the end of the title page.
+% \begin{description}
+% \item[ToDo:] Wouldn't it be better to use \cs{pagestyle} instead of
+%   \cs{thispagestyle}, because \cs{pagestyle} would also be valid, if a user
+%   uses more than one page inside a \env{titlepage} environment?
+% \item[ToDo:] See the note about \cs{next@tpage} above.
+% \end{description}
+%    \begin{macrocode}
+%<package&extend>\scr@ifundefinedorrelax{titlepage}{%
+\newenvironment{titlepage}{%
+%<report|book>  \cleardoublepage
+  \if@twocolumn
+    \@restonecoltrue\onecolumn
+  \else
+    \@restonecolfalse\newpage
+  \fi
+  \thispagestyle{empty}%
+%<package&extend>  \if@compatibility \setcounter{page}{0}\fi
+}{%
+  \if@restonecol\twocolumn \else \newpage \fi
+}%
+%<package&extend>}{}%
+%    \end{macrocode}
+% \end{environment}
+%
+% In case of package \pkg*{scrextend} the code of activatable \texttt{title}
+% is complete and should be used if activated.
+%    \begin{macrocode}
+%<package&extend>}\csname scr@ext@immediate@title\endcsname
+%    \end{macrocode}
+%
+% \begin{fontelement}{subtitle}
+% \changes{v2.97c}{2007/06/20}{added}
+%    \begin{macrocode}
+\newkomafont{subtitle}{\usekomafont{title}\large}%
+%    \end{macrocode}
+% \end{fontelement}
+%
+% \begin{fontelement}{titlehead}
+% \changes{v3.12}{2013/05/29}{added}
+%    \begin{macrocode}
+\newkomafont{titlehead}{}%
+%    \end{macrocode}
+% \end{fontelement}
+%
+% \begin{fontelement}{author}
+% \changes{v3.12}{2013/05/29}{added}
+%    \begin{macrocode}
+\newkomafont{author}{\Large}
+%    \end{macrocode}
+% \end{fontelement}
+%
+% \begin{fontelement}{date}
+% \changes{v3.12}{2013/05/29}{added}
+%    \begin{macrocode}
+\newkomafont{date}{\Large}
+%    \end{macrocode}
+% \end{fontelement}
+%
+% \begin{fontelement}{publishers}
+% \changes{v3.12}{2013/05/29}{added}
+%    \begin{macrocode}
+\newkomafont{publishers}{\Large}
+%    \end{macrocode}
+% \end{fontelement}
+%
+% \begin{fontelement}{dedication}
+% \changes{v3.12}{2013/05/29}{added}
+%    \begin{macrocode}
+\newkomafont{dedication}{\Large}
+%    \end{macrocode}
+% \end{fontelement}
+%
+% \begin{fontelement}{title}
+% \changes{v2.8o}{2001/09/14}{added}
+% \begin{macro}{\titlefont}
+% \changes{v2.8p}{2001/09/22}{added}
+% Font to be used for the title. The font element has to be defined manually,
+% because of compatibility with \KOMAScript{} up to version 2.8n and old
+% \LaTeX~2.09 style \textsc{Script 2.0}. \cs{titlefont} is a user command for
+% compatibility only. So we index it a internal macro.
+%    \begin{macrocode}
+\newcommand*\titlefont{\sectfont}%
+\newcommand*{\scr@fnt@title}{\titlefont}%
+%    \end{macrocode}           
+% \end{macro}
+% \end{fontelement}
+%
+% \begin{fontelement}{subject}
+% \changes{v2.8q}{2002/01/14}{added}
+% \changes{v2.95}{2002/06/26}{also with \cls*{scrbook}, \cls*{scrreprt},
+%   \cls*{scrartcl}}
+% \begin{macro}{\subject@font}
+% \changes{v2.8q}{2002/01/14}{added}
+% \changes{v2.95}{2002/06/26}{also defined with \cls*{scrbook},
+%   \cls*{scrreprt}, \cls*{scrartcl}}
+% This has to be defined manually, because of compatibility with \KOMAScript{}
+% up to version 2.8n and old \LaTeX~2.09 style \textsc{Script 2.0}.
+%    \begin{macrocode}
+\newcommand*{\subject@font}{\normalfont\normalcolor\bfseries\Large}%
+\newcommand*{\scr@fnt@subject}{\subject@font}%
+%</body>
+%    \end{macrocode}
+% \end{macro}
+% \end{fontelement}
+%
+%    \begin{macrocode}
+%</!letter>
+%    \end{macrocode}
+%
+% \section{Implementation of the Abstract}
+%
+% The abstract is not part of the title but related to it. But maybe it is
+% also a kind of section.
+% \begin{description}
+% \item[ToDo:] Should this be moved to \file{scrkernel-sections.dtx} or a new
+%   file \file{scrkernel-abstract.dtx}?
+% \end{description}
+% It is only defined for the classes \cls*{scrartcl} and \cls*{scrreprt} but
+% not for \cls*{scrbook}, \cls*{scrlttr2} or package \pkg*{scrextend}.
+%    \begin{macrocode}
+%<*class&(article|report)>           
+%    \end{macrocode}
+%
+% \begin{option}{abstract}
+% \changes{v2.95c}{2006/08/21}{added}
+% \begin{macro}{\@abstrttrue,\@abstrtfalse,\if@abstrt}
+% \changes{v3.17}{2015/03/10}{using \pkg*{scrkbase}}
+% \KOMAScript{} provides abstracts with and without titles and only for the
+% classes \cls*{scrartcl} and \cls*{scrreprt}. Books usually use a chapter for
+% the abstract. We just need a simple boolean option, that sets a boolean
+% switch.
+%    \begin{macrocode}
+%<*option>
+\KOMA@ifkey{abstract}{@abstrt}
+%    \end{macrocode}
+% \begin{option}{abstracton,abstractoff}
+% \changes{v2.95c}{2006/08/21}{obsolete}
+% \changes{v3.01a}{2008/11/21}{standard not obsolete}
+% \changes{v3.27}{2019/03/13}{deprecated}
+% \changes{v3.99}{2022/11/16}{removed from \KOMAScript~4}
+%    \begin{macrocode}
+%<*!v4>
+\KOMA@DeclareDeprecatedOption{abstracton}{abstract=true}
+\KOMA@DeclareDeprecatedOption{abstractoff}{abstract=false}
+%</!v4>
+%</option>
+%    \end{macrocode}
+% \end{option}^^A abstracton,abstractoff
+% \end{macro}^^A \if@abstrt
+% \end{option}^^A abstract
+%
+% \begin{environment}{abstract}
+% \changes{v2.3a}{1995/07/08}{\cs{@endparpenalty} added}
+% \changes{v2.3g}{1996/01/14}{\cs{@beginparpenalty} added}
+% \changes{v2.7a}{2001/01/04}{\cs{section*} replaced by \cs{addsec*}}
+% \changes{v3.04a}{2009/07/14}{\cs{if@titlepage} moved inside environment}
+% The abstract is different for documents with title page. We provide an
+% abstract with or without title.
+%    \begin{macrocode}
+%<*body>
+\newenvironment{abstract}{%
+  \if@titlepage
+    \titlepage
+    \null\vfil
+    \@beginparpenalty\@lowpenalty
+    \if@abstrt
+      \begin{center}
+        \normalfont\sectfont\nobreak\abstractname
+        \@endparpenalty\@M
+      \end{center}
+    \fi
+  \else
+    \if@twocolumn\if@abstrt
+        \addsec*{\abstractname}
+      \fi
+    \else
+      \if@abstrt
+        \small
+        \begin{center}
+          {\normalfont\sectfont\nobreak\abstractname
+            \vspace{-.5em}\vspace{\z@}}%
+        \end{center}
+      \fi
+      \quotation
+    \fi
+  \fi
+}{%
+  \if@titlepage
+    \par\vfil\null\endtitlepage
+  \else
+    \if@twocolumn\else\endquotation\fi
+  \fi
+}
+%    \end{macrocode}
+% \end{environment}^^A abstract
+%
+% \begin{command}{\abstractname}
+% \changes{v3.36}{2022/03/08}{explicit definition for English languages}
+% The name of the abstract (if a title is used).
+%    \begin{macrocode}
+\newcommand*\abstractname{Abstract}
+\providecaptionname{american,australian,british,canadian,english,newzealand,%
+  UKenglish,ukenglish,USenglish,usenglish}\abstractname{Abstract}
+%</body> 
+%    \end{macrocode}
+% \end{command}^^A \abstractname
+%
+%    \begin{macrocode}
+%</class&(article|report)>           
+%    \end{macrocode}
+%
+%
+% \Finale
+% \PrintChanges
+% 
+\endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:

@@ -1,0 +1,2619 @@
+% ======================================================================
+% tocbasic-en.tex
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+% Package tocbasic for Package and Class Authors
+% Maintained by Markus Kohm
+%
+% ======================================================================
+
+\KOMAProvidesFile{tocbasic-en.tex}
+                 [$Date: 2023-04-04 10:50:12 +0200 (Di, 04. Apr 2023) $
+                  KOMA-Script guide (package tocbasic)]
+
+\translator{Markus Kohm\and Arndt Schubert\and Karl Hagen}
+
+\chapter{Managing Content Lists with \Package{tocbasic}}
+\labelbase{tocbasic}
+\BeginIndexGroup%
+\BeginIndex{Package}{tocbasic}%
+\BeginIndex{}{table of contents}%
+\BeginIndex{}{content list}%
+\BeginIndex{}{file>extension}%
+The main purpose of the \Package{tocbasic} package is to give authors of
+packages and classes the ability to create their own tables or lists of
+content, content lists for short, similar to the list of figures and the list
+of tables, allowing classes and other packages some control over these lists.
+The \Package{tocbasic} package also delegates control of the
+language-dependent parts of these content lists to the
+\Package{babel}\IndexPackage{babel} package (see \cite{package:babel}). Using
+\Package{tocbasic} relieves package and class authors from the burden of
+implementing such features themselves.
+
+As a minor side effect, the package can also be used to define new floating
+environments, or floating environments like non-floating environments for
+reference objects. For more details, after you read about the basic commands
+in the next four sections, see the example in \autoref{sec:tocbasic.example},
+which is compactly summarized in \autoref{sec:tocbasic.declarenewtoc}.
+
+\KOMAScript{} itself uses \Package{tocbasic} not only for the table of
+contents but also for the already mentioned lists of figures and tables.
+
+\section{Basic Commands}
+\label{sec:tocbasic.basics}
+
+The basic commands are primarily used to handle a list of all known file
+extensions\textnote{file extension, content lists} that represent a table or
+list of contents. We call these auxiliary files\Index{auxiliary
+  file}\footnote{The term \emph{auxiliary file} here refers not to the main
+  \File{aux} file but to the other internal files used indirectly via the
+  \File{aux} file, e.\,g. the \File{toc} file, the \File{lof} file, or the
+  \File{lot} file.} TOC files\textnote{TOC file}\Index[indexmain]{TOC file}
+regardless of the file extension that is actually used. Entries to such files
+are typically written using
+\Macro{addtocontents}\important{\Macro{addtocontents},
+  \DescRef{\LabelBase.cmd.addxcontentsline}}, or
+\DescRef{\LabelBase.cmd.addxcontentsline}. There are also commands to perform
+actions on all of these file extensions. Additionally, there are commands to
+set or unset features for the file associated with a given extension.
+Typically an file extension also has an owner\textnote{file owner}. This owner
+may be a class or package, or an identifier of a category that the author of
+the class or package using \Package{tocbasic} has chosen independently. For
+example, \KOMAScript{} uses the category \texttt{float} as owner for the
+\File{lof} and \File{lot} file extensions that are associated with the list of
+figures and list of tables, respectively. For the table of contents,
+\KOMAScript{} uses the file name of the class.
+
+\begin{Declaration}
+  \Macro{Ifattoclist}\Parameter{extension}\Parameter{then code}%
+                     \Parameter{else code}
+\end{Declaration}
+This\ChangedAt{v3.28}{\Package{tocbasic}} command tests whether or not the
+\PName{extension} already exists in the list of known file extensions. If the
+\PName{extension} is already known, the \PName{then code} will be
+executed. Otherwise, the \PName{else code} will be executed.
+\begin{Example}
+  Suppose you want to know if the file name extension ``\File{foo}'' is
+  already in use in order to report an error because it cannot be used:
+\begin{lstcode}
+  \Ifattoclist{foo}{%
+    \PackageError{bar}{%
+      extension `foo' already in use%
+    }{%
+      Each extension may be used only
+      once.\MessageBreak
+      The class or another package already
+      uses extension `foo'.\MessageBreak
+      This error is fatal!\MessageBreak
+      You should not continue!}%
+  }{%
+    \PackageInfo{bar}{using extension `foo'}%
+  }
+\end{lstcode}
+\end{Example}
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{addtotoclist}\OParameter{owner}\Parameter{extension}
+\end{Declaration}
+This command adds the \PName{extension} to the list of known extensions. But
+if the \PName{extension} is known already, an error is reported to prevent
+duplicate use of the same \PName{extension}.
+
+If you specify the optional \OParameter{owner} argument, the given
+\PName{owner} for this file extension is also saved. If you omit the optional
+argument, \Package{tocbasic} tries to determine the file name of the class or
+package currently being processed and saves it as the owner.
+This\textnote{Attention!} procedure only works if you call
+\Macro{addtotoclist} while loading a class or package. It will fail if a user
+calls \Macro{addtotoclist} afterwards. In this case, the owner is empty.
+
+Note\textnote{Attention!} that passing an empty \PName{owner} argument is not
+always the same as completely omitting the optional argument, including the
+square brackets. An empty argument would always result in an empty owner.
+\begin{Example}
+  Suppose you want to add the extension ``\File{foo}'' to the list of known
+  file extensions while loading your package with the file name
+  ``\File{bar.sty}'':
+\begin{lstcode}
+  \addtotoclist{foo}
+\end{lstcode}%
+  This will add the extension ``\PValue{foo}'' with the owner
+  ``\PValue{bar.sty}'' to the list of known extensions if this extension was
+  not already in the list. If the class or another package has already added
+  the extension, you will get the error:
+\begin{lstoutput}
+  Package tocbasic Error: file extension `foo' cannot be used twice
+
+  See the tocbasic package documentation for explanation.
+  Type  H <return>  for immediate help.
+\end{lstoutput}
+  If you press the ``\texttt{h}'' key followed by return, you will get the
+  following help:
+\begin{lstoutput}
+  File extension `foo' is already used by a toc-file, while bar.sty
+  tried to use it again for a toc-file.
+  This may be either an incompatibility of packages, an error at a package,
+  or a mistake by the user.
+\end{lstoutput}
+
+  Perhaps your package also provides a command that dynamically generates a
+  content list. In this case, you should use the optional argument of
+  \Macro{addtotoclist} to specify the owner.
+\begin{lstcode}
+  \newcommand*{\createnewlistofsomething}[1]{%
+    \addtotoclist[bar.sty]{#1}%
+    % Do something more to make this content list available
+  }
+\end{lstcode}
+  Now if the user calls this command, for example with
+\begin{lstcode}
+  \createnewlistofsomething{foo}
+\end{lstcode}
+  this will add the extension ``\PValue{foo}'' with the owner
+  ``\PValue{bar.sty}'' to the list of known extension or report an error, if
+  the extension is already in use.
+\end{Example}
+You can specify any \PName{owner} you want, but it must be unique. For
+example, if you were the author of the \Package{float} package, you could
+specify the category ``\PValue{float}'' instead of ``\PValue{float.sty}'' as
+the \PName{owner}. In this case, the \KOMAScript{}
+options\important{\DescRef{maincls.option.listof}}%
+\IndexOption{listof~=\PName{setting}} for the list of figures and the list of
+tables would also affect your content lists because \KOMAScript{} associates
+the file extensions ``\PValue{lof}'' for the list of figures and
+``\PValue{lot}'' for the list of tables with the owner ``\PValue{float}'' and
+sets the options for this owner.
+
+By the way, the \hyperref[cha:scrhack]{\Package{scrhack}}%
+\IndexPackage{scrhack}\important{\hyperref[cha:scrhack]{\Package{scrhack}}}
+package contains patches for several packages, such as
+\Package{float}\IndexPackage{float} or
+\Package{listings}\IndexPackage{listings}, which provide their own content
+lists. If you use \hyperref[cha:scrhack]{\Package{scrhack}}, among other
+things, the respective file extensions will be added to the list of known file
+extensions. Their \PName{owner} is also ``\PValue{float}''. This is the basic
+building block, so to speak, allowing you to use the features of
+\Package{tocbasic} and the \KOMAScript{} classes with these content lists as
+well.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{AtAddToTocList}\OParameter{owner}\Parameter{commands}
+\end{Declaration}
+This command adds the \PName{commands} to an internal list of commands that
+will be processed whenever a file extension with the specified \PName{owner}
+is added to the list of known extensions with
+\DescRef{\LabelBase.cmd.addtotoclist}. The optional argument is handled in the
+same way as in the \DescRef{\LabelBase.cmd.addtotoclist} command. If you leave
+the optional argument blank, the commands will always be executed, regardless
+of the owner, every time a new file extension is added to the list of known
+file extensions. Furthermore, while processing the \PValue{commands},
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} is set to the
+extension of the extension currently being added.
+\begin{Example}
+  \Package{tocbasic} itself uses
+\begin{lstcode}
+  \AtAddToTocList[]{%
+    \expandafter\tocbasic@extend@babel
+    \expandafter{\@currext}%
+  }
+\end{lstcode}
+  to add every file extension to the existing \Package{tocbasic} integration 
+  with the \Package{babel} package.
+\end{Example}
+
+The two \Macro{expandafter} commands in the example are needed because the
+argument of \DescRef{\LabelBase.cmd.tocbasic@extend@babel} has to be expanded.
+See the description of \DescRef{\LabelBase.cmd.tocbasic@extend@babel} in
+\autoref{sec:tocbasic.internals},
+\DescPageRef{\LabelBase.cmd.tocbasic@extend@babel} for more information.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{removefromtoclist}\OParameter{owner}\Parameter{extension}
+\end{Declaration}
+This command removes the \PName{extension} from the list of known extensions.
+If the optional argument, \OParameter{owner}, is given, the \PName{extension}
+will only be removed if it was added by this \PName{owner}.
+% TODO: Fix new translation
+This also applies to the empty \PName{owner}.  If, on the other hand, no
+\OParameter{owner} is specified at all and the square brackets are also
+omitted, the owner is not tested and the \PName{extension} is removed
+regardless of the owner.%
+% :ODOT
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{doforeachtocfile}\OParameter{owner}\Parameter{commands}
+\end{Declaration}
+To this point, we've introduced commands provide additional security for class
+and package authors, but also more overhead. With \Macro{doforeachtocfile},
+you can reap the first benefit for this. This command lets you execute the
+specified \PName{commands} for each file extension associated with an
+\PName{owner}. While processing the \PName{commands}, \Macro{@currext} is the
+extension of the current file. If you omit the optional \OParameter{owner}
+argument, all file extensions are processed regardless of the owner. If the
+optional argument is empty, on the other hand, only extensions with an empty
+owner will be processed.
+\begin{Example}
+  If you want to output a list of all known file extensions to the terminal
+  and to the \File{log} file, you can easily accomplish this:
+\begin{lstcode}
+  \doforeachtocfile{\typeout{\@currext}}
+\end{lstcode}
+  If, on the other hand, you only want to output the extensions owned by
+  ``\PValue{foo}'', this too is easy:
+\begin{lstcode}
+  \doforeachtocfile[foo]{\typeout{\@currext}}
+\end{lstcode}
+\end{Example}
+The \KOMAScript{} classes \Class{scrbook} and \Class{scrreprt} use this
+command to optionally put a vertical skip or the chapter heading in content
+lists using the \PValue{chapteratlist} feature. You can learn how to set this
+feature in \autoref{sec:tocbasic.toc} on
+\DescPageRef{\LabelBase.cmd.setuptoc}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasicautomode}
+\end{Declaration}
+This command redefines \LaTeX{} kernel macro \Macro{@starttoc} for class and
+package authors so that every time \Macro{@starttoc} is called, the specified
+file extension is added to the list of known extensions, if it has not already
+been added. It also uses \DescRef{\LabelBase.cmd.tocbasic@starttoc} instead of
+\Macro{@starttoc}. See \autoref{sec:tocbasic.internals},
+\DescPageRef{\LabelBase.cmd.tocbasic@starttoc} for more information about
+\DescRef{\LabelBase.cmd.tocbasic@starttoc} and \Macro{@starttoc}.
+
+After you use \Macro{tocbasicautomode}, every content list created with
+\Macro{@starttoc} is automatically put under the control of
+\Package{tocbasic}. Whether or not this leads to the desired result, however,
+depends very much on the individual content list. The \Package{babel} package
+extensions, at least, will work for all those content lists. Nevertheless, it
+is preferable for the class or package authors to use \Package{tocbasic}
+explicitly. That way they can also take advantage of the other features of
+\Package{tocbasic}, which are described in the following sections.%
+\EndIndexGroup
+
+
+\section{Creating a Content List}
+\label{sec:tocbasic.toc}
+
+In the previous section, you learned how to maintain a list of known file
+extensions and how to automatically execute commands when adding new
+extensions to this list. You also saw a command that can be used to execute
+instructions for all known extensions or all extensions belonging to one
+owner. In this section, you will learn commands that apply to the files
+associated with these file extensions.
+
+\begin{Declaration}
+  \Macro{addtoeachtocfile}\OParameter{owner}\Parameter{content}
+\end{Declaration}
+The \Macro{addtoeachtocfile} command uses the \LaTeX{} kernel command
+\Macro{addtocontents} to write the \PName{content} to every TOC file\Index{TOC
+file} in the list of known file extensions that has the specified
+\PName{owner}. If you omit the optional argument, the \PName{content} is
+written to each file in the list of known file extensions. Incidentally, the
+actual file name is constructed from \Macro{jobname} and the file extension.
+While writing the \PName{content},
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} is the
+extension of the file currently being processed.
+\begin{Example}
+  You want to add a vertical space of one line to all TOC files.
+\begin{lstcode}
+    \addtoeachtocfile{%
+      \protect\addvspace{\protect\baselineskip}%
+    }
+\end{lstcode}
+  If, on the other hand, you want to do this only for the files that have the
+  owner ``\PValue{foo}'', use:
+\begin{lstcode}
+    \addtoeachtocfile[foo]{%
+      \protect\addvspace{\protect\baselineskip}%
+    }
+\end{lstcode}
+\end{Example}
+You should protect commands that should not be expanded when they are written
+by prefixing them with \Macro{protect}, in the same way as you would in
+\Macro{addtocontents}.
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{addxcontentsline}%
+  \Parameter{extension}\Parameter{level}\OParameter{section number}%
+  \Parameter{text}
+\end{Declaration}
+This command is very similar to
+\Macro{addcontentsline}\IndexCmd{addcontentsline} from the \LaTeX{} kernel.
+However, it has an additional optional argument for the \PName{section number}
+of the entry, whereas for \Macro{addcontentsline}, it is specified in the
+\PName{text} argument. It is used to include numbered or unnumbered entries in
+the content list specified by the file \PName{extension}, where \PName{level}
+is the sectioning level and \PName{text} is the content of the corresponding
+entry. The page number is determined automatically.
+
+In contrast to \Macro{addcontentsline}, \Macro{addxcontentsline} first tests
+whether the \Macro{add\PName{level}\PName{extension}entry} command is defined.
+If so, it will be used for the entry, passing the \PName{section number} as an
+optional argument and \PName{text} as a mandatory argument. You can find an
+example of such a command provided by the \KOMAScript{} classes in
+\DescRef{maincls-experts.cmd.addparttocentry} (see
+\autoref{sec:maincls-experts.toc},
+\DescPageRef{maincls-experts.cmd.addparttocentry}). If the corresponding
+command is undefined, the internal command
+\DescRef{\LabelBase.cmd.tocbasic@addxcontentsline} is used instead. This takes
+all four arguments as mandatory arguments and then uses
+\Macro{addcontentsline} to create the desired entry. You can find more about
+\DescRef{\LabelBase.cmd.tocbasic@addxcontentsline} in
+\autoref{sec:tocbasic.internals},
+\DescPageRef{\LabelBase.cmd.tocbasic@addxcontentsline}.
+
+One advantage of using \Macro{addxcontentsline} rather than
+\Macro{addcontentsline} is that the \PValue{numberline} feature is respected
+(see \DescPageRef{\LabelBase.cmd.setuptoc}). Furthermore, you can configure
+the form of the entries by defining the appropriate commands specific to the
+\PName{level} and file \PName{extension}.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{addxcontentslinetoeachtocfile}\OParameter{owner}
+                                       \Parameter{level}
+                                       \OParameter{section number}%
+                                       \Parameter{text}
+  \Macro{addcontentslinetoeachtocfile}\OParameter{owner}
+                                      \Parameter{level}\Parameter{text}%
+\end{Declaration}
+These two commands are directly related to
+\DescRef{\LabelBase.cmd.addxcontentsline}\ChangedAt{v3.12}{\Package{tocbasic}}
+explained above, or to \Macro{addcontentsline} from the \LaTeX kernel. The
+difference is that these statements write \PName{text} not just to a single
+file but to all the files of a given \PName{owner} and, if the first optional
+argument is omitted, to all files in the list of known file extensions.
+\begin{Example}
+  Suppose you are a class author and you want to write the chapter entry not
+  just in the table of contents but in all content-list files. Suppose further
+  that \PValue{\#1} currently contains the text to be written.
+\begin{lstcode}
+  \addxcontentslinetoeachtocfile{chapter}%
+                                [\thechapter]{#1}
+\end{lstcode}
+  In this case, of course, the current chapter number should be expanded
+  directly when writing to the TOC file, which is why it was not protected
+  from expansion with \Macro{protect}.
+\end{Example}
+While writing the \PName{content},
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} here is also
+the extension of the file being written to, as it is with
+\DescRef{\LabelBase.cmd.addtoeachtocfile}.%
+
+Whenever\ChangedAt{v3.12}{\Package{tocbasic}} possible, the
+\Macro{addxcontentslinetoeachtocfile} command is preferable to
+\Macro{addcontentslinetoeachtocfile} because only the former offers the
+enhancements of \DescRef{\LabelBase.cmd.addxcontentsline}. You can find more
+about these enhancements and benefits in the explanation of
+\DescRef{\LabelBase.cmd.addxcontentsline} above.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{listoftoc}\OParameter{list-of title}\Parameter{extension}%
+  \Macro{listoftoc*}\Parameter{extension}%
+  \Macro{listofeachtoc}\OParameter{owner}%
+  \Macro{listof\PName{extension}name}
+\end{Declaration}
+You can use these commands to print the content lists.
+The\important{\Macro{listoftoc*}} stared version \Macro{listoftoc*} needs only
+one argument, the \PName{extension} of the file. The command first initializes
+the vertical and horizontal spacing of paragraphs, calls the hook to execute
+commands before reading the file, then reads the file, and finally executes
+the hook to execute commands after reading the file. Thus you can think of
+\Macro{listoftoc*} as a direct replacement for the \LaTeX{} kernel macro
+\Macro{@starttoc}\IndexCmd{@starttoc}\important{\Macro{@starttoc}}.
+
+The\important{\Macro{listoftoc}} version of \Macro{listoftoc} without the star
+prints the complete content list and also creates an optional entry in the
+table of contents and the running heads. If you provide the optional
+\OParameter{list-of title} argument, it is used both as the title for the list
+and as an optional entry in the table of contents and the running head.
+If\textnote{Attention!} the \OParameter{list-of title} argument is empty, the
+title will be empty too. If, on the other hand, you completely omit the
+optional argument, including the square brackets, the
+\Macro{listof\PName{extension}name} command will be used if it is defined. If
+it is undefined, a default replacement name is used and a warning is issued.
+
+The\important{\Macro{listofeachtoc}} \Macro{listofeachtoc} command outputs all
+content lists associated with the given \PName{owner}, or of all known file
+extensions if the optional argument is omitted. To\textnote{Attention!} output
+the correct titles, \Macro{listof\PName{extension}name} should be defined.
+
+You\textnote{Hint!} should define \Macro{listof\PName{extension}name}
+appropriately for all file extensions because users may use \Macro{listoftoc}
+without the optional argument, or \Macro{listofeachtoc}, themselves.
+\begin{Example}
+ Suppose you have a new ``list of algorithms'' with the file extension
+ \PValue{loa} and want to output it. The command
+\begin{lstcode}
+  \listoftoc[List of Algorithms]{loa}
+\end{lstcode}
+  will do it for you. If, however, you want to output this list without a
+  title, you could use
+\begin{lstcode}
+  \listof*{loa}
+\end{lstcode}
+  In the second case, of course, there will be no entry in the table of
+  contents. For more information about creating entries in the table of
+  contents, see the \DescRef{\LabelBase.cmd.setuptoc} command on
+  \DescPageRef{\LabelBase.cmd.setuptoc}.
+
+  If you have defined
+\begin{lstcode}
+  \newcommand*{\listofloaname}{%
+    List of Algorithms%
+  }
+\end{lstcode}
+  already, then
+\begin{lstcode}
+  \listoftoc{loa}
+\end{lstcode}
+  will suffice to print the content list with the desired heading. It may be
+  easier for users to remember if you also define a simple list-of command:
+\begin{lstcode}
+  \newcommand*{\listofalgorithms}{\listoftoc{loa}}
+\end{lstcode}
+\end{Example}
+
+Because\textnote{Attention!} \LaTeX{} normally opens a new file for each of
+these content lists, calling each of these commands may
+result in an error like:
+\begin{lstoutput}
+  ! No room for a new \write .
+  \ch@ck ...\else \errmessage {No room for a new #3}
+                                                    \fi
+\end{lstoutput}
+if there are no more write handles left. Loading the
+\Package{scrwfile}\important{\Package{scrwfile}}\IndexPackage{scrwfile}
+package \cite{package:scrwfile} can solve this problem.
+
+Also, the \hyperref[cha:scrhack]{\Package{scrhack}}\IndexPackage{scrhack}%
+\important{\hyperref[cha:scrhack]{\Package{scrhack}}} package contains patches
+for several packages, such as \Package{float}\IndexPackage{float} or
+\Package{listings}\IndexPackage{listings}, so that their content-list commands
+can use \Macro{listoftoc}. As a result, many features of \Package{tocbasic}
+and the \KOMAScript{} classes are also available for their content lists.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{BeforeStartingTOC}\OParameter{extension}\Parameter{commands}%
+  \Macro{AfterStartingTOC}\OParameter{extension}\Parameter{commands}
+\end{Declaration}
+Sometimes it's useful to be able to execute \PName{commands} immediately
+before reading the auxiliary TOC file. With \Macro{BeforeStartingTOC} you can
+do so either for a single file \PName{extension} or for all files that are
+read using \DescRef{\LabelBase.cmd.listoftoc*},
+\DescRef{\LabelBase.cmd.listoftoc}, or \DescRef{\LabelBase.cmd.listofeachtoc}.
+You can also execute \PName{commands} after reading the file if you define
+them with \Macro{AfterStartingTOC}. If you omit the optional argument (or set
+an empty one) a general hook will be set and the commands will be applied to
+all content lists. The general before-hook is called before the individual
+one, and the general after-hook is called after the individual one. While
+executing the commands in these hooks,
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} is the
+extension of the TOC file which is about to be or has just been read.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{BeforeTOCHead}\OParameter{extension}\Parameter{commands}%
+  \Macro{AfterTOCHead}\OParameter{extension}\Parameter{commands}
+\end{Declaration}
+You can also define \PName{commands} that will be executed immediately before
+or after setting the title of a content list using
+\DescRef{\LabelBase.cmd.listoftoc*} or \DescRef{\LabelBase.cmd.listoftoc}. The
+treatment of the optional parameter and the meaning of
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} is the same as
+described for \DescRef{\LabelBase.cmd.BeforeStartingTOC} and
+\DescRef{\LabelBase.cmd.AfterStartingTOC}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{MakeMarkcase}\Parameter{text}
+\end{Declaration}
+Whenever \Package{tocbasic} sets a mark for a running head, The text of the
+mark will be an argument of \Macro{MakeMarkcase}. You can use this command to
+change the case of the running head if necessary. The \KOMAScript{} classes
+use \Macro{@firstofone}\IndexCmd{@firstofone}\important{\Macro{@firstofone}}
+by default. This means the text of the running head will be set without
+changing the capitalisation. If you use a different class,
+\Macro{MakeMarkcase} will be set to
+\Macro{MakeUppercase}\IndexCmd{MakeUppercase}%
+\important{\Macro{MakeUppercase}}. However, \Package{tocbasic} only defines
+this command if it is not already defined. It can therefore be predefined by
+another class or package and \Package{tocbasic} will use that definition
+rather than overwriting it.
+\begin{Example}
+  For some strange reason, you want to set the running heads entirely in
+  lower-case letters. To apply this change automatically for all running heads
+  set by \Package{tocbasic}, you define:
+\begin{lstcode}
+  \let\MakeMarkcase\MakeLowercase
+\end{lstcode}
+\end{Example}
+Let\textnote{Hint!} me give you some advice about
+\Macro{MakeUppercase}\IndexCmd{MakeUppercase}. First of all, this command is
+not fully expandable. This means that it can cause problems interacting with
+other commands. Beyond that, typographers agree that whenever you set whole
+words or phrases in capital letters, additional spacing is absolutely
+necessary. However, adding a fixed spacing between all letters is not an
+adequate solution. Different pairs of letters require different spaces between
+them. Additionally, some letters already create gaps in the text that must be
+taken into account. Packages like \Package{ulem} or \Package{soul} can
+scarcely achieve this, nor can \Macro{MakeUppercase}. The automatic letter
+spacing using the \Package{microtype} package is in this respect only an
+approximate solution, because it does not take into account the concrete,
+font-dependent glyphs. Because\textnote{Attention!} typesetting all-capital
+text is expert work and almost always requires manual adjustment, ordinary
+users are recommended avoid using it, or to use it only sparingly and not in
+such an exposed place as the running head.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{deftocheading}\Parameter{extension}\Parameter{definition}
+\end{Declaration}
+The \Package{tocbasic} package contains a default definition for typesetting
+the titles of content lists. You can configure this default definition through
+various features discussed in the \DescRef{\LabelBase.cmd.setuptoc} comand
+below. If those features are not enough, you can use \Macro{deftocheading}
+to define your own title for the content list with the given file
+\PName{extension}. The \PName{definition} of the title can use a single
+parameter, \PValue{\#1}. When the command is called inside
+\DescRef{\LabelBase.cmd.listoftoc} or \DescRef{\LabelBase.cmd.listofeachtoc},
+that \PValue{\#1} will be replaced by the title of this content list.
+
+Obviously, the \PName{definition} is also responsible for the interpretation
+of additional features related to the title. This is especially true
+for the features \PValue{leveldown}, \PValue{numbered} and \PValue{totoc},
+that are be explained next.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{setuptoc}\Parameter{extension}\Parameter{feature list}%
+  \Macro{unsettoc}\Parameter{extension}\Parameter{feature list}
+\end{Declaration}
+You can use these two commands to set and clear features for a TOC file
+\PName{extension} or the content list associated with it. The \PName{feature
+list} is a comma-separated list of features. The \Package{tocbasic} package
+recognizes following features:
+\begin{description}
+\item[\PValue{leveldown}] means that the content list's heading is created not
+  with the highest sectioning level below
+  \DescRef{maincls.cmd.part}\,---\,\DescRef{maincls.cmd.chapter} if available,
+  \DescRef{maincls.cmd.section} otherwise\,---\,but with a heading of the next
+  level below that. This feature is evaluated by the internal heading command.
+  On the other hand, if a user-defined heading command has been created with
+  \DescRef{\LabelBase.cmd.deftocheading}, the person defining that command is
+  responsible for evaluating the feature. The \KOMAScript{} classes set this
+  feature using the \OptionValueRef{maincls}{listof}{leveldown}%
+  important{\OptionValueRef{maincls}{listof}{leveldown}}%
+  \IndexOption{listof~=\textKValue{leveldown}} option for all file extensions
+  with the owner \PValue{float}.
+\item[\PValue{nobabel}] prevents using the language-switching features of
+  \Package{babel}\IndexPackage{babel} for the TOC file associated with the
+  this file \PName{extension}. This feature should be used only for content
+  lists that are created in a fixed language, which means that changes of the
+  language inside of the document will no longer affect the content list. The
+  \Package{scrwfile}\important{\Package{scrwfile}}\IndexPackage{scrwfile}
+  \cite{package:scrwfile} package also uses this feature for cloned
+  destinations, as because those files already inherit any language changes
+  from the cloning source.
+
+  Note\textnote{Attention!} that you must set this feature before you add a
+  file extension to the list of known extensions. Changing the feature
+  afterwards will have no effect.
+\item[\PValue{noindent}]\ChangedAt{v3.27}{\Package{tocbasic}}%
+  causes all content-list entry styles provided by \KOMAScript{} to ignore
+  the \PValue{indent} attribute (see
+  \autoref{tab:tocbasic.tocstyle.attributes},
+  \autopageref{tab:tocbasic.tocstyle.attributes.indent}) and instead to
+  deactivate the indentation.%
+\item[\PValue{noparskipfake}] prevents\ChangedAt{v3.17}{\Package{tocbasic}}
+  the insertion of a final \Length{parskip} before switched off paragraph
+  spacing for content lists. In general, this will cause documents that use
+  spacing between paragraphs to have less vertical space between the list
+  heading and first entry than between normal headings and normal text.
+  Normally, therefore, you will obtain a more uniform formatting without this
+  feature.
+\item[\PValue{noprotrusion}] prevents\ChangedAt{v3.10}{\Package{tocbasic}}
+  character protrusion, which allows optical margin alignment, from being
+  disabled in the content lists. By default, character protrusion is disabled
+  when the \Package{microtype}\IndexPackage{microtype} package, or another
+  package that supports \Macro{microtypesetup}\IndexCmd{microtypesetup}, is
+  loaded. So if you want optical margin alignment in the content lists, you
+  must set this feature. Note\textnote{Attention!}, however, that character
+  protrusion in content lists often results in incorrect results. This is a
+  known issue with character protrusion.
+\item[\PValue{numbered}] means that the heading for the content list should
+  be numbered and included in the table of contents. This feature is evaluated
+  by the internal heading command. However, if a user-defined heading command
+  has been created with \DescRef{\LabelBase.cmd.deftocheading}, the person
+  creating that definition is responsible evaluating the feature. The
+  \KOMAScript{} classes set this feature using the
+  \OptionValueRef{maincls}{listof}{numbered}%
+  \important{\OptionValueRef{maincls}{listof}{numbered}}%
+  \IndexOption{listof~=\textKValue{numbered}} option for all file extensions
+  with the owner \PValue{float}.
+\item[\PValue{numberline}] \leavevmode\ChangedAt{v3.12}{\Package{tocbasic}}%
+  means that any entries made using \DescRef{\LabelBase.cmd.addxcontentsline}
+  or \DescRef{\LabelBase.cmd.addxcontentslinetoeachtocfile}, where the
+  optional argument for the number is missing or empty, will be provided with
+  an empty \DescRef{\LabelBase.cmd.numberline} command. This usually results
+  in these entries being left-aligned not with the number but with the text of
+  the numbered entries of the same level.
+  Using\ChangedAt{v3.20}{\Package{tocbasic}} the \PValue{tocline} entry style
+  can have additional side effects. See the style attribute
+  \Option{breakafternumber} and \Option{entrynumberformat} in
+  \autoref{tab:tocbasic.tocstyle.attributes} starting on
+  \autopageref{tab:tocbasic.tocstyle.attributes}.
+
+  \KOMAScript{} classes set this feature for the file extensions with the
+  owner \PValue{float} if you use the
+  \OptionValueRef{maincls}{listof}{numberline}%
+  \important{\OptionValueRef{maincls}{listof}{numberline}}%
+  \IndexOption{listof~=\textKValue{numberline}} option and for the file
+  extension \PValue{toc} if you use the
+  \OptionValueRef{maincls}{toc}{numberline}%
+  \important{\OptionValueRef{maincls}{toc}{numberline}}%
+  \IndexOption{toc~=\textKValue{numberline}} option. Similarly, this feature
+  is reset if you use \OptionValueRef{maincls}{listof}{nonumberline}%
+  \important{\OptionValueRef{maincls}{listof}{nonumberline}}%
+  \IndexOption{listof~=\textKValue{nonumberline}} or
+  \OptionValueRef{maincls}{toc}{nonumberline}%
+  \important{\OptionValueRef{maincls}{toc}{nonumberline}}%
+  \IndexOption{toc~=\textKValue{nonumberline}}.
+\item[\PValue{onecolumn}] \leavevmode\ChangedAt{v3.01}{\Package{tocbasic}}%
+  means that this content list will automatically use \LaTeX's internal
+  one-column mode with \Macro{onecolumn}\IndexCmd{onecolumn}.
+  However\textnote{Attention!}, this applies only if this content list does
+  not use the \PValue{leveldown}\important{\PValue{leveldown}} feature. The
+  \KOMAScript{} classes \Class{scrbook} and \Class{scrreprt} activate this
+  feature with \DescRef{\LabelBase.cmd.AtAddToTocList} (see
+  \autoref{sec:tocbasic.basics}, \DescPageRef{\LabelBase.cmd.AtAddToTocList})
+  for all content lists with the owner \PValue{float} or with themselves as
+  owner. Thus, for example, the table of contents, the list of figures, and
+  the list of tables are automatically printed in a single column for both
+  these classes. The multicolumn mode of the
+  \Package{multicol}\IndexPackage{multicol} package is expressly unaffected by
+  this option.
+\item[\PValue{totoc}] means that the title of content list should be included
+  in the table of contents. This feature will be evaluated by the internal
+  heading command. However, if an user-defined heading command has been
+  created with \DescRef{\LabelBase.cmd.deftocheading}, the person defining
+  that command is responsible for evaluating this feature. The \KOMAScript{}
+  classes set this feature using the \OptionValueRef{maincls}{listof}{totoc}%
+  \important{\OptionValueRef{maincls}{listof}{totoc}}%
+  \IndexOption{listof~=\textKValue{totoc}} option for all file extensions with
+  the owner \PValue{float}.
+\end{description}
+The \KOMAScript{} classes recognize an additional feature:
+\begin{description}
+\item[\PValue{chapteratlist}] ensures that an optional subdivision is added
+  to the content list for each new chapter. By default, this subdivision is a
+  vertical space. See \DescRef{maincls.option.listof}%
+  \IndexOption{listof}\important{\DescRef{maincls.option.listof}} in
+  \autoref{sec:maincls.floats}, \DescPageRef{maincls.option.listof} for more
+  information about this option.
+\end{description}
+\begin{Example}
+  Because \KOMAScript{} classes use \Package{tocbasic} for the list of figures
+  and list of tables, there is another way to prevent chapter subdivisions in
+  these lists:
+\begin{lstcode}
+  \unsettoc{lof}{chapteratlist}
+  \unsettoc{lot}{chapteratlist}
+\end{lstcode}
+
+  If you want the chapter subdivisions for your own list that you have defined
+  with the file \PName{extension} ``\PValue{loa}'' to use the same subdivision
+  format used by the \KOMAScript{} classes, you can use
+\begin{lstcode}
+  \setuptoc{loa}{chapteratlist}
+\end{lstcode}
+  And if you also want classes that use \DescRef{maincls.cmd.chapter} as the
+  top-level structure to use the one-column mode automatically, you can
+  use
+\begin{lstcode}
+  \Ifundefinedorrelax{chapter}{}{%
+    \setuptoc{loa}{onecolumn}%
+  }
+\end{lstcode}
+  Using \DescRef{scrbase.cmd.Ifundefinedorrelax} requires the
+  \Package{scrbase} package (see \autoref{sec:scrbase.if},
+  \DescPageRef{scrbase.cmd.Ifundefinedorrelax}).
+
+  Even\textnote{Hint!} if your package will be used with another class, it
+  does not hurt to set these features. To the contrary, if another class also
+  evaluates these features, then your package would automatically use the
+  features of that class.
+\end{Example}
+As you can see, packages that use \Package{tocbasic} already support a wide
+range of options for content lists that would otherwise require a great deal
+of effort to implement and which are therefore missing in many packages.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Iftocfeature}\Parameter{extension}\Parameter{feature}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+You\ChangedAt{v3.28}{\Package{tocbasic}} can use this command to test if a
+\PName{feature} was set for the given file \PName{extension}. If so the
+\PName{then code} will be executed, otherwise the \PName{else code} will
+be. This can be useful, for example, if you define your own heading command
+using \DescRef{\LabelBase.cmd.deftocheading} but want to support the features
+\PValue{totoc}, \PValue{numbered} or \PValue{leveldown}.%
+\EndIndexGroup
+
+
+\section{Configuring Content-List Entries}
+\seclabel{tocstyle}%
+\BeginIndexGroup
+\BeginIndex{}{table of contents>entry}%
+\Index{list of contents|\see{table of contents}}
+
+Since\ChangedAt{v3.20}{\Package{tocbasic}} version~3.20, the
+\Package{tocbasic}  package has been able not only to configure the tables or
+lists of contents and their auxiliary files but also to influence their
+entries. To do so, you can define new styles or you can use and configure one
+of the predefined styles. In the medium term, \Package{tocbasic} will replace
+the experimental \Package{tocstyle} package that never became an official part
+of the \KOMAScript{} bundle. The \KOMAScript{} classes themselves have relied
+completely on the \Package{tocbasic} entry styles since version~3.20.
+
+\begin{Declaration}
+  \Counter{tocdepth}
+\end{Declaration}
+Entries to content lists are usually hierarchical. For this purpose, each
+entry level has a numerical value. The higher this value, the lower in the
+hierarchy is this level. In the standard classes, for example, parts have the
+level -1 and chapters have the value 0. The \LaTeX{} counter
+\Counter{tocdepth} determines the deepest level that should be shown in the
+table of contents and other content lists.
+
+For example, the \Class{book} class sets \Counter{tocdepth} to 2, so entries
+of the levels \PValue{part}, \PValue{chapter}, \PValue{section}, and
+\PValue{subsection} are printed. Deeper levels like \PValue{subsubsection},
+which has the numerical value 3, are not printed. Nevertheless the entries are
+part of the auxiliary file for the table of contents.
+
+Note that most \Package{tocbasic} entry styles, with the exception of
+\PValue{gobble} (see \DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}\iffree{}{,
+later in this section}) observe \Counter{tocdepth}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{numberline}\Parameter{entry number}%
+  \Macro{usetocbasicnumberline}\OParameter{code}
+\end{Declaration}
+Although\ChangedAt{v3.20}{\Package{tocbasic}} the \LaTeX{} kernel
+already defines a \Macro{numberline} command, the definition is not sufficient
+for \Package{tocbasic}. Therefore \Package{tocbasic} defines its own commands
+and sets \Macro{numberline} as needed using \Macro{usetocbasicnumberline} for
+each content-list entry. Redefining \Macro{numberline}, therefore, is often
+ineffective and may result in warnings if you use \Package{tocbasic}.
+
+You can use the definition of \Package{tocbasic} by putting
+\Macro{usetocbasicnumberline} into your document's preamble. The command first
+checks if the current definition of \Macro{numberline}
+uses certain important, internal commands of \Package{tocbasic}. If this is not
+the case, \Macro{usetocbasicnumberline} redefines \Macro{numberline} and
+executes \PName{code}. If you omit the optional argument, it issues
+a message about the redefinition with \Macro{PackageInfo}. If
+you just do not want such a message, use an empty optional argument.
+
+Note\textnote{Attention!} that \Macro{usetocbasicnumberline} can change the
+internal switch \Macro{@tempswa} globally!%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DeclareTOCStyleEntry}\OParameter{option list}\Parameter{style}%
+                              \Parameter{entry level}
+  \Macro{DeclareTOCStyleEntries}\OParameter{option list}\Parameter{style}%
+                                \Parameter{entry level list}
+\end{Declaration}
+These\ChangedAt{v3.20}{\Package{tocbasic}} commands define or configure the
+content-list entries of a given \PName{entry level}. The \PName{entry level}
+argument is a symbolic name, e.\,g. \PValue{section}, for the entry to the
+table of contents of the section level with the same name or \PValue{figure}
+for an entry of a figure to the list of figures. A \PName{style} is assigned
+to each \PName{entry level}. The \PName{style} has to be defined before using
+it as an argument of \Macro{DeclareTOCStyleEntry} or
+\Macro{DeclareTOCStyleEntries}. You can use the \PName{option list} to
+configure the various, usually \PName{style}-dependent, attributes of the
+entries.
+
+Currently, \Package{tocbasic} defines the following entry styles:
+\begin{description}
+\item[\PValue{default}] defaults to a clone of the \PValue{dottedtocline}
+  style. Class authors who use \Package{tocbasic} are encouraged to change
+  this style to the default content-list style of the class using
+  \Macro{CloneTOCStyle}. For example the \KOMAScript{} classes change
+  \PValue{default} into a clone of \PValue{tocline}.
+\item[\PValue{dottedtocline}] is similar to the style used by the standard
+  classes \Class{book} and \Class{report} for the \PValue{section} down to
+  \PValue{subparagraph} entry levels of the table of contents and for the
+  entries at the list of figures or list of tables. It supports the attributes
+  \PValue{level}, \PValue{indent}, and \PValue{numwidth}. The entries are
+  indented by the value of \PValue{indent} from the left. The width of the
+  entry number is given by the value of \PValue{numwidth}. For multi-line
+  entries, the indent will be increased by the value of \PValue{numwidth} for
+  the second and following lines. The page number is printed using
+  \Macro{normalfont}\IndexCmd{normalfont}. The entry text and the page number
+  are connected by a dotted line. \hyperref[fig:tocbasic.dottedtocline]%
+  {Figure~\ref*{fig:tocbasic.dottedtocline}} illustrates the attributes of
+  this style.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{%
+      \begin{tikzpicture}
+        \draw[color=lightgray] (0,2\baselineskip) -- (0,-2.5\baselineskip);
+        \draw[color=lightgray] (\linewidth,2\baselineskip) --
+                               (\linewidth,-2.5\baselineskip);
+        \node (dottedtocline) at (0,0) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{7em}%
+          \parbox[t]{\dimexpr\linewidth-9.55em}{%
+            \setlength{\parindent}{-3.2em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[3.2em][l]{1.1.10}%
+            Text of an entry in the table of contents with the
+            \PValue{dottedtocline} style and more than one line%
+            \leaders\hbox{$\csname m@th\endcsname
+              \mkern 4.5mu\hbox{.}\mkern 4.5mu$}\hfill\nobreak
+            \makebox[1.55em][r]{12}%
+          }%
+        };
+        \draw[|-|,color=gray,overlay] (0,0) --
+                              node [anchor=north,font=\small] {
+                                \PValue{indent}
+                              }
+                              (3.8em,0);
+        \draw[|-|,color=gray,overlay] (3.8em,\baselineskip) -- 
+                              node [anchor=south,font=\small] {
+                                \PValue{numwidth}
+                              }
+                              (7em,\baselineskip);
+        \draw[|-|,color=gray,overlay] (\linewidth,\ht\strutbox) -- 
+                              node [anchor=south,font=\small] { 
+                                \Macro{@tocrmarg} 
+                              }
+                              (\linewidth-2.55em,\ht\strutbox);
+        \draw[|-|,color=gray,overlay] (\linewidth,-\baselineskip) -- 
+                              node [anchor=north,font=\small] { 
+                                \Macro{@pnumwidth} 
+                              } 
+                              (\linewidth-1.55em,-\baselineskip);
+      \end{tikzpicture}%
+    }
+    \caption{Illustrations of some attributes of a TOC entry with the
+      \PValue{dottedtocline} style}
+    \label{fig:tocbasic.dottedtocline}
+  \end{figure}
+\item[\PValue{gobble}] is the simplest possible style. Entries in this style,
+  regardless of the setting of \DescRef{\LabelBase.counter.tocdepth}%
+  \IndexCounter{tocdepth}\important{\DescRef{\LabelBase.counter.tocdepth}},
+  will never be printed. The style simply gobbles the
+  entries, so to speak. It has the default \PValue{level} attribute, but
+  it is never evaluated.
+\item[\PValue{largetocline}] is similar to the style used by the standard
+  classes for the \PValue{part} level. It supports the \PValue{level} and
+  \PValue{indent} attributes only. The latter deviates from the standard
+  classes, which do not support an indent of the \PValue{part} entries.
+
+  A penalty is set to permit page breaks before an entry of an appropriate
+  level. The entries will be indented by the value of \PValue{indent} from the
+  left and printed with the font style \Macro{large}\Macro{bfseries}. If
+  \DescRef{\LabelBase.cmd.numberline} is used, the number width is 3\Unit{em}.
+  \DescRef{\LabelBase.cmd.numberline} is not redefined. The standard classes
+  do not use \DescRef{\LabelBase.cmd.numberline} for \PName{part} entries. The
+  value of \PName{indent} also has no effect on the indentation from the
+  second line and after in a multi-line entry.
+
+  \hyperref[fig:tocbasic.largetocline]%
+  {Figure~\ref*{fig:tocbasic.largetocline}} illustrates the characteristics of
+  this style. You will also notice that the style has adopted some
+  inconsistencies present in the standard classes, e.\,g. the missing indent
+  of the second and following lines of an entry or the different values of
+  \Macro{@pnumwidth} that results from the font-size dependency. This can
+  result, in extreme cases, in the entry text coming too close. Note that the
+  width of the entry number shown in the figure is only valid if
+  \DescRef{\LabelBase.cmd.numberline} has been used. The standard classes,
+  however, use a distance of 1\Unit{em} after the number.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{%
+      \begin{tikzpicture}
+        \draw[color=lightgray] (0,2\baselineskip) -- (0,-2.5\baselineskip);
+        \draw[color=lightgray] (\linewidth,2\baselineskip) --
+                               (\linewidth,-2.5\baselineskip);
+        \node (largetocline) at (0,0) [anchor=west,inner sep=0,outer sep=0] {%
+          \parbox[t]{\dimexpr \linewidth-1.55em\relax}{%
+            \makebox[3em][l]{\large\bfseries I}%
+            \large\bfseries
+            Text of an entry to the table of contents with the
+            \PValue{largetocline} style and more than one line%
+            \hfill
+            \makebox[0pt][l]{\normalsize\normalfont
+              \makebox[1.55em][r]{\large\bfseries 1}}%
+          }%
+        };
+        \draw[|-|,color=gray] (0,\baselineskip) -- 
+                              node [anchor=south] { 3\,em } 
+                              (3em,\baselineskip);
+        \draw[|-|,color=gray,overlay] (\linewidth,\ht\strutbox) -- 
+                              node [anchor=south] { \Macro{@pnumwidth} }
+                              (\linewidth-1.55em,\ht\strutbox);
+        \large\bfseries
+        \draw[|-|,color=gray,overlay] (\linewidth,-\baselineskip) -- 
+                              node [anchor=north,font=\normalfont\normalsize] { 
+                                \Macro{large}\Macro{@pnumwidth} 
+                              }
+                              (\linewidth-1.55em,-\baselineskip);
+      \end{tikzpicture}%
+    }
+    \caption{Illustrations of some attributes of a TOC entry with style 
+      \PValue{largetocline}}
+    \label{fig:tocbasic.largetocline}
+  \end{figure}
+\item[\PValue{tocline}] is a flexible style. The \KOMAScript{} classes use
+  this style by default for all kinds of entries. Likewise, these classes
+  define the clones \PValue{part}, \PValue{chapter}, and \PValue{section}, or
+  \PValue{section} and \PValue{subsection} using this style, but add extra
+  \PName{initial code} to the clones to change their defaults.
+
+  The style supports 20\important{\PValue{level}, \PValue{beforeskip},
+    \PValue{breakafternumber}, \PValue{dynindent}, \PValue{dynnumwidth},
+    \PValue{entryformat}, \PValue{entrynumberformat}, \PValue{indent},
+    \PValue{indentfollows}, \PValue{linefill}, \PValue{numsep},
+    \PValue{numwidth}, \PValue{onstarthigherlevel},
+    \PValue{onstartlowerlevel}, \PValue{onstartsamelevel},
+    \PValue{pagenumberbox}, \PValue{pagenumberformat},
+    \PValue{pagenumberwidth}, \PValue{raggedentrytext},
+    \PValue{raggedpagenumber}, \PValue{rightindent}} additional attributes in
+  addition to the default \PValue{level} attribute. The defaults of all these
+  attributes depend on the name of the \PName{entry level} and correspond to
+  the results of the standard classes. So after loading \Package{tocbasic},
+  you can change the style of the entries in the table of contents of the
+  standard classes into \PValue{tocline} using
+  \DescRef{\LabelBase.cmd.DeclareTOCEntryStyle} without this leading directly
+  to major changes in their appearance. Thus you can precisely change only
+  those attributes that are necessary for the desired changes. The same
+  applies to the list of figures and the list of tables for the standard
+  classes.
+
+  Because its great flexibility, this style can in principle replace the
+  \PValue{dottedtocline}, \PValue{undottedtocline}, and \PValue{largetocline}
+  styles, but this requires more effort to configure.
+
+  \hyperref[fig:tocbasic.tocline]%
+  {Figure~\ref*{fig:tocbasic.tocline}} illustrates some of the length
+  attributes of this style. The others are explained in
+  \autoref{tab:tocbasic.tocstyle.attributes} starting on
+  \autopageref{tab:tocbasic.tocstyle.attributes}.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{%
+      \begin{tikzpicture}
+        \coordinate (subsection) at (0,0);
+        \coordinate (section) at ($(subsection)+(0,2\baselineskip)$);
+        \coordinate (chapter) at ($(section)+(0,2\baselineskip)$);
+        \coordinate (part)    at ($(chapter)+(0,2.4\baselineskip+1em)$);
+
+        \draw[color=lightgray] 
+          ($(part)+(0,2\baselineskip)$) -- 
+          (0,-2.5\baselineskip);
+        \draw[color=lightgray] 
+          ($(part)+(\linewidth,2\baselineskip)$) --
+          (\linewidth,-2.5\baselineskip);
+
+        \coordinate (subsection) at (0,0);
+
+        \node at (part) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{3em}%
+          \parbox[t]{\dimexpr\linewidth-5.55em}{%
+            \setlength{\parindent}{-3em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[3em][l]{\large\bfseries I.}%
+            \textbf{\large Text of a part entry with the
+            \PValue{tocline} style and at least two lines of text}%
+            \hfill
+            \makebox[1.55em][r]{\bfseries 12}\large
+          }%
+        };
+        \draw[|-|,color=gray,overlay] 
+          (part) --
+          ($(part)+(3em,0)$)
+          node [anchor=north east,font=\small] {
+            \PValue{numwidth}
+          };
+        \draw[|-|,color=gray,overlay] 
+          ($(part)+(\linewidth,\ht\strutbox)$)
+          node [anchor=north,font=\small] { 
+            \Macro{@tocrmarg} 
+          } --
+          ($(part)+(\linewidth-2.55em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(part)+(\linewidth,-\baselineskip)$) -- 
+          node [anchor=north,font=\small] { 
+            \Macro{@pnumwidth} 
+          } 
+          ($(part)+(\linewidth-1.55em,-\baselineskip)$);
+        \node at (chapter) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{1.5em}%
+          \parbox[t]{\dimexpr\linewidth-4.05em}{%
+            \setlength{\parindent}{-1.5em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[1.5em][l]{\bfseries 1.}%
+            \textbf{Text of a chapter entry with the
+            \PValue{tocline} style and more than one line of text
+            for demonstration purposes}%
+            \hfill
+            \makebox[1.55em][r]{\bfseries 12}%
+          }%
+        };
+        \draw[|-|,color=gray,overlay]
+          ($(chapter)+(3em,\baselineskip)$) --
+          node [anchor=west,font=\small] {
+            \PValue{beforeskip}
+          }
+          ($(part)+(3em,-\baselineskip)$);
+        \draw[|-|,color=gray,overlay] 
+          (chapter) --
+          ($(chapter)+(1.5em,0)$)
+          node [anchor=north east,font=\small] {
+            \PValue{numwidth}
+          };
+        \draw[|-|,color=gray,overlay] 
+          ($(chapter)+(\linewidth,\ht\strutbox)$)
+          node [anchor=north,font=\small] { 
+            \Macro{@tocrmarg} 
+          } --
+          ($(chapter)+(\linewidth-2.55em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(chapter)+(\linewidth,-\baselineskip)$)
+          node [anchor=north,font=\small] { 
+            \Macro{@pnumwidth} 
+          } --
+          ($(chapter)+(\linewidth-1.55em,-\baselineskip)$);
+        \node at (section) [anchor=west,inner sep=0,outer sep=0]
+        {
+          \hspace*{3.8em}%
+          \parbox[t]{\dimexpr\linewidth-6.35em}{%
+            \setlength{\parindent}{-2.3em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[2.3em][l]{1.1.}%
+            Text of a section entry with the \PValue{tocline}
+            style and more than one line of text for
+            demonstration purposes%
+            \leaders\hbox{$\csname m@th\endcsname
+              \mkern 4.5mu\hbox{.}\mkern 4.5mu$}\hfill\nobreak
+            \makebox[1.55em][r]{3}%
+          }%
+        };
+        \node at (subsection) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{7em}%
+          \parbox[t]{\dimexpr\linewidth-9.55em}{%
+            \setlength{\parindent}{-3.2em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[3.2em][l]{1.1.10.}%
+            Text of a subsection entry with the \PValue{tocline}
+            and more than one line of text for demonstration
+            purposes%
+            \leaders\hbox{$\csname m@th\endcsname
+              \mkern 4.5mu\hbox{.}\mkern 4.5mu$}\hfill\nobreak
+            \makebox[1.55em][r]{12}%
+          }%
+        };
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(0,\ht\strutbox)$) -- 
+          node [anchor=north,font=\small] {
+            \PValue{indent}
+          }
+          ($(subsection)+(3.8em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(3.8em,0)$) --
+          ($(subsection)+(7em,0)$)
+          node [anchor=north east,font=\small] {
+            \PValue{numwidth}
+          };
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(\linewidth,\ht\strutbox)$)
+          node [anchor=north,font=\small] { 
+            \Macro{@tocrmarg} 
+          } --
+          ($(subsection)+(\linewidth-2.55em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(\linewidth,-\baselineskip)$) -- 
+          node [anchor=north,font=\small] { 
+            \Macro{@pnumwidth} 
+          } 
+          ($(subsection)+(\linewidth-1.55em,-\baselineskip)$);
+      \end{tikzpicture}%
+    }
+    \caption{Illustrations of some attributes of a TOC entry with the
+      \PValue{tocline} style}
+    \label{fig:tocbasic.tocline}
+  \end{figure}
+\item[\PValue{toctext}]\ChangedAt{v3.27}{\Package{tocbasic}}%
+  is a special feature. While all other styles produce one paragraph per
+  entry, this one produces one paragraph for all successive entries of this
+  style. With 14\important{\PValue{afterpar}, \PValue{beforeskip},
+    \PValue{entryformat},
+    \PValue{entrynumberformat}, \PValue{indent}, \PValue{numsep},
+    \PValue{onendentry}, \PValue{onendlastentry}, \PValue{onstartentry},
+    \PValue{onstartfirstentry}, \PValue{pagenumberformat},
+    \PValue{prepagenumber}, \PValue{raggedright}, \PValue{rightindent}}
+  attributes in addition to the default \PValue{level} attribute, there are
+  almost as many options as for \PValue{tocline}. However, this style
+  depends on the fact that an unfinished paragraph will be concluded at the
+  beginning of the entry for all other styles, as well as at the end of the
+  current content list. So it should never be combined with entries or content
+  lists that are generated outside of \Package{tocbasic}.
+\item[\PValue{undottedtocline}] is similar to the style used by the standard
+  \Class{book} and \Class{report} classes for the \PValue{chapter} entry
+  level, or by \Class{article} for the \PValue{section} entry level in the
+  table of contents. It supports\important{\PValue{level}, \PValue{indent},
+  \PValue{numwidth}} only three attributes. A penalty is inserted permitting
+  an appropriate page break before the entry, as is a vertical skip. The
+  entries are printed with an indentation of \PValue{indent} from the left and
+  in \Macro{bfseries}. This is a departure from the standard classes, which do
+  not support the indentation of these entry levels.
+  \DescRef{\LabelBase.cmd.numberline} is used unchanged. The width of the
+  entry number is determined by \PValue{numwidth}. For multi-line entries the
+  indent will be increased by the value of \PValue{numwidth} for the second
+  and following lines. \hyperref[fig:tocbasic.undottedtocline]%
+  {Figure~\ref*{fig:tocbasic.undottedtocline}} illustrates the attributes of
+  this style.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{%
+      \begin{tikzpicture}
+        \draw[color=lightgray] (0,2\baselineskip) -- (0,-2.5\baselineskip);
+        \draw[color=lightgray] (\linewidth,2\baselineskip) --
+                               (\linewidth,-2.5\baselineskip);
+        \node (undottedtocline) at (0,0) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \makebox[1.5em][l]{\bfseries 1}%
+          \parbox[t]{\dimexpr \linewidth-4.05em\relax}{%
+            \bfseries
+            Text of an entry to the table of contents with the
+            \PValue{undottedtocline} style and more than one line%
+          }%
+          \raisebox{-\baselineskip}{\makebox[2.55em][r]{\bfseries 3}}%
+        };
+        \draw[|-|,color=gray,overlay] (0,\baselineskip) -- 
+                              node [anchor=south,font=\small] {
+                                \PValue{numwidth}
+                              }
+                              (1.5em,\baselineskip);
+        \draw[|-|,color=gray,overlay] (\linewidth,\ht\strutbox) -- 
+                              node [anchor=south,font=\small] { 
+                                \Macro{@tocrmarg} 
+                              }
+                              (\linewidth-2.55em,\ht\strutbox);
+        \draw[|-|,color=gray,overlay] (\linewidth,-\baselineskip) -- 
+                              node [anchor=north,font=\small] { 
+                                \Macro{@pnumwidth} 
+                              } 
+                              (\linewidth-1.55em,-\baselineskip);
+      \end{tikzpicture}%
+    }
+    \caption{Illustration of some attributes of the \PValue{undottedtocline}
+      style with the example of a chapter title}%
+    \label{fig:tocbasic.undottedtocline}
+  \end{figure}
+\end{description}
+You can find an explanation of the attributes of all styles that
+\Package{tocbasic} defines in \autoref{tab:tocbasic.tocstyle.attributes}.
+In\ChangedAt{v3.27}{\Package{tocbasic}} addition to the usual assignment with
+\Option{\PName{key}=\PName{value}}, both commands understand an assignment in 
+the form \Option{\PName{key}:=\PName{entry level}} for all options of the
+\KOMAScript{} styles. In this case, the current setting of \PName{key} for the
+\PName{entry level} will be copied. For example, you can copy the current
+indent of the \PValue{figure} level using \OptionValue{indent:}{figure}. For
+options that expect a length or integer value, you can also use
+\Option{\PName{key}+=\PName{value}} to add \PName{value} to the current setting
+of the \PName{key}. To subtract simply, you can use a negative \PName{value}.
+For example, with \OptionValue{indent+}{1cm} you can increase the indent by
+1\Unit{cm}. For options that expect a list value, you can use
+\Option{\PName{key}+=\PName{value}} to append \PName{value} to the current
+setting of the \PName{key}.
+
+If\ChangedAt{v3.21}{\Package{tocbasic}} you use these attributes as
+options to \DescRef{\LabelBase.cmd.DeclareNewTOC} (see
+\DescPageRef{\LabelBase.cmd.DeclareNewTOC}), you must prefix the names of the
+attributes with \PValue{tocentry}, e\,g., \PValue{level} becomes
+\Option{tocentrylevel}. The copy operation with \Option{:=} described above is
+also available here. However, addition with \Option{+=} is not currently
+supported.
+
+If\ChangedAt{v3.20}{\Package{tocbasic}} you use
+these attributes as options for
+\DescRef{maincls-experts.cmd.DeclareSectionCommand}%
+\IndexCmd{DeclareSectionCommand}\IndexCmd{DeclareNewSectionCommand}%
+\IndexCmd{RedeclareSectionCommand}\IndexCmd{ProvideSectionCommand} (see
+\DescPageRef{maincls-experts.cmd.DeclareSectionCommand}) and similar commands,
+you must prefix the names of the attributes with \PValue{toc}, e\,g.
+\PValue{level} becomes \Option{toclevel}.
+At this time, neither the copy operation with \Option{:=} nor the
+addition operation with \Option{+=} is supported.
+
+Finally, using \Macro{DeclareTOCStyleEntry} will define the internal command
+\Macro{l@\PName{entry level}}.
+
+\begin{desclist}
+  \desccaption{%
+    Attributes of the predefined TOC-entry styles of \Package{tocbasic}%
+    \label{tab:tocbasic.tocstyle.attributes}%
+  }{%
+    Attributes of the TOC-entry styles (\emph{continued})%
+  }%
+  \entry{\OptionVName{afterpar}{code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    The specified \PName{code} will be executed after the end of the paragraph
+    in which an entry with the \PValue{toctext} style is printed. If several
+    entries have such settings, their code will be executed in the order of
+    the entries.%
+  }%
+  \entry{\OptionVName{beforeskip}{length}}{%
+    The  vertical distance inserted before an entry of this level in the
+    \PValue{tocline} style (see \autoref{fig:tocbasic.tocline}). The distance
+    is made using either \Macro{vskip} or \Macro{addvspace} depending on the
+    \PName{entry level}, to maintain compatibility as far as possible with the
+    standard classes and earlier versions of \KOMAScript.
+
+    For the \PValue{part} \PName{entry level}, the attribute will be
+    initialised with \texttt{2.25em plus 1pt}; for \PValue{chapter}, with
+    \texttt{1em plus 1pt}. If the \PName{chapter} \PName{entry level} is
+    undefined, \PValue{section} is initialised with \texttt{1em plus 1pt}
+    instead. The initial value for all other levels is \texttt{0pt plus
+      .2pt}.%
+
+    In\ChangedAt{v3.31}{\Package{tocbasic}} the style \PValue{toctext} the
+    vertical space is inserted before the paragraph if it is the first entry
+    in the paragraph. It is ignored for all other entries in the paragraph. If
+    the initialization takes place via this style, \texttt{0pt} is used as
+    default.%
+  }%
+  \entry{\OptionVName{breakafternumber}{switch}}{%
+    \PName{switch} is one of the values for simple switches from
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}. If the
+    switch is active in the \PValue{tocline} style, there will be a line break
+    after the number set with
+    \DescRef{\LabelBase.cmd.numberline}\IndexCmd{numberline}. The line after
+    the entry number again starts flush left with the number. The default is
+    false for the \PValue{tocline} style.
+
+    If\textnote{Attention!} the \Option{numberline} feature has been activated
+    for a content list (see \DescRef{\LabelBase.cmd.setuptoc},
+    \autoref{sec:tocbasic.toc}, \DescPageRef{\LabelBase.cmd.setuptoc}), as is
+    the case with the \KOMAScript{} classes when the
+    \OptionValueRef{maincls}{toc}{numberline}%
+    \IndexOption{toc~=\textKValue{numberline}} option is used, then the
+    unnumbered entries will nevertheless have a (by default empty) number line
+    using the formatting of \Option{entrynumberformat}.%
+  }%
+  \entry{\OptionVName{dynindent}{switch}}{%
+    \ChangedAt{v3.31}{\Package{tocbasic}}%
+    \PName{switch} is one of the values for simple switches from
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}. If the
+    switch is active with the \PValue{tocline} style, the \PValue{indent}
+    attribute only specifies a minimum value. The maximum value is determined
+    by the number width and the indentation of the levels specified via
+    \PValue{indentfollows}.%
+  }%
+  \entry{\OptionVName{dynnumwidth}{switch}}{%
+    \PName{switch} is one of the values for simple switches from
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}. If the
+    switch is active with the \PValue{tocline} style, the \PValue{numwidth}
+    attribute specifies a minimum value. If a previous \LaTeX{} run has
+    determined that the maximum width of the entry numbers of the same level
+    plus the value of \PValue{numsep} is greater than this minimum, the
+    calculated value will be used instead.%
+  }%
+  \entry{\OptionVName{entryformat}{command}}{%
+    You can use this attributes to change the format of the entry. The value
+    should be a \PName{command} with exactly one argument. This argument is
+    not necessarily fully expandable. You should not use commands like
+    \Macro{MakeUppercase}, which expects a fully expandable argument. Font
+    changes are relative to \Macro{normalfont}\Macro{normalsize}. Note that
+    the output of \Option{linefill} and the page number are independent of
+    \Option{entryformat}. See also the \Option{pagenumberformat} attribute .
+
+    The initial value of the attribute for the \PValue{part} \PName{entry
+    level} is \Macro{large}\Macro{bfseries}, and for \PValue{chapter}, it is
+    \Macro{bfseries}. If the \PValue{chapter} level is not defined,
+    \PValue{section} uses \Macro{bfseries}. All other levels print the
+    argument unchanged.%
+  }%
+  \entry{\OptionVName{entrynumberformat}{command}}{%
+    You can use this attribute to format the entry number within
+    \DescRef{\LabelBase.cmd.numberline}. The value should be a \PName{command}
+    with exactly one argument. Font changes are relative to the one of
+    attribute \Option{entryformat}.
+
+    The initial \PName{command} prints the argument unchanged. This means the
+    entry number will be printed as it is.
+
+    If\textnote{Attention!} the \Option{numberline} feature for a content list
+    has been activated (see \DescRef{\LabelBase.cmd.setuptoc},
+    \autoref{sec:tocbasic.toc}, \DescPageRef{\LabelBase.cmd.setuptoc}), as is
+    the case with the \KOMAScript{} classes using the
+    \OptionValueRef{maincls}{toc}{numberline}%
+    \IndexOption{toc~=\textKValue{numberline}} option, the unnumbered entries
+    will execute the \PName{command} as well.%
+  }%
+  \entry{%
+    \OptionVName{indent}{length}%
+    {\phantomsection\label{tab:tocbasic.tocstyle.attributes.indent}}%
+  }{%
+    For\ChangedAt{v3.27}{\Package{tocbasic}} the \PValue{toctext} style, the
+    \PName{length} is the horizontal distance of the paragraph from the left
+    margin. If different entries within the paragraph have different settings,
+    the last one is used. For the remaining styles, the \PName{length} is the
+    horizontal distance of the entry from the left margin (see
+    \autoref{fig:tocbasic.dottedtocline} and \autoref{fig:tocbasic.tocline}).
+    
+    For the styles \PValue{tocline} and \PValue{toctext}, all entry levels
+    whose names start with ``\texttt{sub}'' are initialised with the
+    \PValue{indent}+\PValue{numwidth} of the entry level of the same name
+    without this prefix. For the \PValue{dottedtocline},
+    \PValue{undottedtocline}, and \PValue{tocline} styles, the initial values
+    of levels \PValue{part} down to \PValue{subparagraph} and the levels
+    \PValue{figure}, \PValue{table} and
+    \ChangedAt{v3.39}{\Package{tocbasic}}\PValue{lstlisting} are compatible
+    with the standard classes resp. package
+    \Package{listings}\IndexPackage{listings}. All other levels do not have an
+    initial value. Therefore you have to set an explicit value for such levels
+    when they are defined first time.
+
+    If the \PValue{noindent} attribute is set for a content list via
+    \DescRef{\LabelBase.cmd.setuptoc}, the entries of all styles provided by
+    \KOMAScript{} enforce the value 0\Unit{pt} to deactivate the indent.%
+  }%
+  \entry{\OptionVName{level}{integer}}{%
+    The numerical value of the \PName{entry level}. Only those entries whose
+    numerical value is less than or equal to the
+    \DescRef{\LabelBase.counter.tocdepth}%
+    \important{\DescRef{\LabelBase.counter.tocdepth}}\IndexCounter{tocdepth}
+    counter are printed.
+
+    This attribute is mandatory for all styles and will be defined
+    automatically when the style is declared.
+
+    For the \PValue{tocline} and \PValue{toctext} styles, all entry levels
+    whose name starts with ``\texttt{sub}'' are initialised with the value of
+    the entry level of the same name without this prefix plus one. For the
+    \PValue{dottedtocline}, \PValue{largetocline}, \PValue{tocline},
+    \PValue{toctext}, and \PValue{undottedtocline} styles, the entry levels
+    from \PValue{part} to \PValue{subparagraph}, as well as \PValue{figure},
+    \PValue{table} and
+    \ChangedAt{v3.39}{\Package{tocbasic}}\PValue{lstlisting}, are initialised
+    to be compatible with the standard classes resp. package
+    \Package{listings}\IndexPackage{listings}. For all other levels, the
+    initialisation is done with the value of \Macro{\PName{entry
+        level}numdepth}, if this is defined.%
+  }%
+  \entry{\OptionVName{indentfollows}{list of levels}}{%
+    \ChangedAt{v3.31}{\Package{tocbasic}}%
+    If \Option{dynindent} is set with style \PValue{tocline}, the
+    comma-separated list of level names specified here is used to determine
+    the actual indentation. Levels whose names begin with ``\texttt{sub}''
+    will be initialized with the name without this prefix. The \KOMAScript{}
+    classes also automatically set appropriate values for the levels
+    \PValue{section} and \PValue{paragraph}.%
+  }%
+  \entry{\OptionVName{linefill}{code}}{%
+    With the \PValue{tocline} style, you can change what is used to fill the
+    space between the end of the entry text and the page number. The
+    \PName{linefill} attribute contains the \PName{code} that prints this
+    filler. For the \PValue{part} and \PValue{chapter} \PName{entry level}s,
+    the attribute is initialised with \Macro{hfill}. If no \PValue{chapter}
+    \PName{entry level} has been defined, \PValue{section} also uses
+    \Macro{hfill}. All other entry levels are initialised with
+    \DescRef{\LabelBase.cmd.TOCLineLeaderFill} (see
+    \DescPageRef{\LabelBase.cmd.TOCLineLeaderFill}).
+
+    Incidentally, if the \PName{code} specified does not automatically fill
+    the gap, you should also activate the \PValue{raggedpagenumber} attribute 
+    to avoid ``\texttt{underfull \Macro{hbox}}'' messages.%
+  }%
+  \entry{\OptionVName{numsep}{length}}{%
+    The \PValue{tocline} style tries to ensure a minimum distance of
+    \PName{length} between the entry number and the entry text. If
+    \PValue{dynnumwidth} is active, it will correct the number width to
+    achieve this. Otherwise it simply throws a warning if the condition is not
+    met.
+
+    The\ChangedAt{v3.27}{\Package{tocbasic}} \PValue{toctext} style, on the
+    other hand, always adds a horizontal space of width \PName{length} after
+    the number of the entry.
+    
+    The initial \PName{length} is 0.4\Unit{em}.%
+  }%
+  \entry{\OptionVName{numwidth}{length}}{%
+    The width reserved for the entry number (see
+    \autoref{fig:tocbasic.dottedtocline} to
+    \autoref{fig:tocbasic.undottedtocline}). With the \PValue{dottedtocline},
+    \PValue{tocline}, and \PValue{undottedtocline} styles, this \PName{length}
+    is added to the \PName{length} of attribute \PValue{indent} for the second
+    and following lines of the entry text.
+
+    With the \PValue{tocline} style, the initial \PName{length} of all entries
+    whose name starts with ``\texttt{sub}'' is the value of the level without
+    this prefix plus 0.9\Unit{em}, if such a level with corresponding
+    attributes exists. With the \PValue{dottedtocline},
+    \PValue{undottedtocline}, and \PValue{tocline} styles, the initial
+    \PName{length}s of levels from \PValue{part} to \PValue{subparagraph}, as
+    well as \PName{figure}, \PName{table} and
+    \ChangedAt{v3.39}{\Package{tocbasic}}\PName{lstlisting}, are compatible
+    with those of the standard classes resp. package
+    \Package{listings}\IndexPackage{listings}. All other levels do not have an
+    initial value. Therefore you must set \PValue{numwidth} explicitly when
+    the entry level is first used.%
+  }%
+  \entry{\OptionVName{onendentry}{code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    The \PName{code} is executed immediately after an entry with the
+    \PValue{toctext} style, if this entry is not the last one of the
+    paragraph. The user must ensure that the \PName{code} does not result in
+    the paragraph ending.
+
+    Note: In reality the \PName{code} is not executed at the end of the entry
+    but before the next entry with style \PValue{toctext}.%
+  }%
+  \entry{\OptionVName{onendlastentry}{code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    The \PName{code} is executed immediately before the end of the paragraph
+    with an entry in the \PValue{toctext} style, as long as this entry is the
+    last one in the paragraph. The user must ensure that the \PName{code} does
+    not result in the paragraph ending.%
+  }%
+  \entry{\OptionVName{onstartentry}{code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    The \PName{code} is executed immediately before an entry with the
+    \PValue{toctext} style, unless it is the first one in the paragraph. The
+    user must ensure that the \PName{code} does not result in the paragraph
+    ending.%
+  }%
+  \entry{\OptionVName{onstartfirstentry}{code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    The \PName{code} is executed immediately before an entry with the
+    \PValue{toctext} style if this entry is the first one of the paragraph. The
+    user must ensure that the \PName{code} does not result in the paragraph
+    ending.%
+  }%
+  \entry{\OptionVName{onstarthigherlevel}{code}}{%
+    The \PValue{tocline} style can execute \PName{code} at the start of an
+    entry, depending on whether the previous entry had numerical level greater
+    than, the same as, or less than the current entry. The \PName{code}
+    specified by this attribute will be executed if the current entry has a
+    greater numerical value, i.\,e. it is lower in the entry hierarchy, than
+    the previous one.
+
+    Note that detecting the level of the previous entry only works so long as
+    \Macro{lastpenalty} has not changed since the previous entry.
+
+    The initial \PName{code} is \DescRef{\LabelBase.cmd.LastTOCLevelWasLower}
+    (see \DescPageRef{\LabelBase.cmd.LastTOCLevelWasLower}).%
+  }%
+  \entry{\OptionVName{onstartlowerlevel}{code}}{%
+    The \PValue{tocline} style can execute \PName{code} at the start of an
+    entry, depending on whether the previous entry had numerical level greater
+    than, the same as, or less than the current entry. The \PName{code}
+    specified by this attribute will be executed if the current entry has a
+    lower numerical value, i.\,e. it is higher in the entry hierarchy, than
+    the previous one.
+
+    Note that detecting the level of the previous entry only works so long as
+    \Macro{lastpenalty} has not changed since the previous entry.
+
+    The initial \PName{code} is \DescRef{\LabelBase.cmd.LastTOCLevelWasHigher}
+    (see \DescPageRef{\LabelBase.cmd.LastTOCLevelWasHigher}), which usually
+    favours a page break before the entry.%
+  }%
+  \entry{\OptionVName{onstartsamelevel}{code}}{%
+    The \PValue{tocline} style can execute \PName{code} at the start of an
+    entry, depending on whether the previous entry had numerical level greater
+    than, the same as, or less than the current entry. The \PName{code}
+    specified by this attribute will be executed if the current entry has the
+    same numerical value, i.\,e. it is on the same level in the entry
+    hierarchy, as the previous one.
+
+    Note that detecting the level of the previous entry only works so long as
+    \Macro{lastpenalty} has not changed since the previous entry.
+
+    The initial \PName{code} is \DescRef{\LabelBase.cmd.LastTOCLevelWasSame}
+    (see \DescPageRef{\LabelBase.cmd.LastTOCLevelWasSame}), which usually
+    favours a page break before the entry.%
+  }%
+  \entry{\OptionVName{pagenumberbox}{command}}{%
+    By default the page number of an entry is printed flush right in a box
+    of width \Macro{@pnumwidth}. In the \PValue{tocline} style, you can
+    change the \PName{command} to print the number using this attribute. The
+    \PName{command} should expect exactly one argument, the page number.
+    
+    This attribute is initialised with the box already mentioned.%
+  }%
+  \entry{\OptionVName{pagenumberformat}{command}}{%
+    You can use this attribute to change the format of the page number of an
+    entry. The \PName{command} should expect exactly one argument, the page
+    number. Font changes are relative to the font of \Option{entryformat}
+    followed by \Macro{normalfont}\Macro{normalsize}.
+
+    The initial \PName{command} of entry level \PValue{part} prints the
+    argument in \Macro{large}\Macro{bfseries} and of entry level
+    \PValue{chapter} in \Macro{bfseries}. For classes without
+    \Macro{l@chapter} \PValue{section} also uses \Macro{bfseries}. The initial
+    \PName{command} of all other levels prints the argument in
+    \Macro{normalfont}\Macro{normalcolor}.%
+  }%
+  \entry{\OptionVName{pagenumberwidth}{length}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    You can use this attribute to locally change the width of the default box
+    for the page number of an entry with the style \PValue{tocline} from
+    \Macro{@pnumwidth} to the specified \PName{length}. Note that if you
+    change the default page number box with the \Option{pagenumberbox}
+    attribute, the specified \PName{length} will no longer be used
+    automatically.%
+  }%
+  \entry{\OptionVName{prepagenumber}{code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    The \PValue{toctext} style executes the \PName{code} between the text and
+    the page number of the entry. Usually this is used to add a horizontal
+    space or separator between text and page number.%
+
+    The default is a non-breaking space using \Macro{nonbreakspace}.%
+  }%
+  \entry{\OptionVName{raggedentrytext}{switch}}{%
+    The\ChangedAt{v3.21}{\Package{tocbasic}} \PName{switch} is one of the
+    values for simple switches from \autoref{tab:truefalseswitch},
+    \autopageref{tab:truefalseswitch}. If the switch is active, the
+    \PValue{tocline} style prints the text of an entry ragged right instead of
+    fully justified, and only words that are longer than a text line are
+    automatically hyphenated.
+
+    This \PName{switch} is false by default.%
+  }%
+ \entry{\OptionVName{raggedpagenumber}{switch}}{%
+    The \PName{switch} is one of the values for simple switches from
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}. If the
+    switch is active, the \PValue{tocline} style does not force the page
+    number to be right justified.
+
+    Depending on the value of \PValue{linefill}, setting this attribute could
+    affect only whether a warning message appears, or the formatting of the
+    page number as well. So it is important to set both attributes so that
+    they correspond.
+
+    By default the \PName{switch} is not activated and therefore corresponds
+    with an initial value of \Macro{hfill} or
+    \DescRef{\LabelBase.cmd.TOCLineLeaderFill} for the \PValue{linefill}
+    attribute.%
+  }%
+  \entry{\OptionVName{raggedright}{switch}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    The \PName{switch} is one of the values for simple switches from
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}. If the
+    switch is active for any entry with the \PValue{toctext} style inside the
+    same paragraph, the whole paragraph is printed ragged right.
+  }%
+  \entry{\OptionVName{rightindent}{length}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    You can use this attribute to locally change the right indent for the text
+    of an entry with the \PValue{tocline} style from \Macro{@tocrmarg} to the
+    specified \PName{length}.%
+  }%
+\end{desclist}
+
+While \Macro{DeclareTOCStyleEntry} defines only one \PName{entry level},
+\Macro{DeclareTOCStyleEntries}\ChangedAt{v3.26}{\Package{tocbasic}} can define
+an entire list of \PName{entry level}s in one command. Each entry level in the
+comma-separated \PName{entry-level list} is defined with the same \PName{style}
+and settings of the given \PName{option list}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DeclareTOCEntryStyle}\Parameter{style}%
+                              \OParameter{initial code}%
+                              \Parameter{command code}%
+  \Macro{DefineTOCEntryOption}\Parameter{option}\OParameter{default value}%
+                              \Parameter{code}%
+  \Macro{DefineTOCEntryBooleanOption}\Parameter{option}%
+                                     \OParameter{default value}%
+                                     \Parameter{prefix}%
+                                     \Parameter{postfix}%
+                                     \Parameter{description}%%
+                                     %\OParameter{initial code}%
+  \Macro{DefineTOCEntryCommandOption}\Parameter{option}%
+                                     \OParameter{default value}%
+                                     \Parameter{prefix}%
+                                     \Parameter{postfix}%
+                                     \Parameter{description}%%
+                                     %\OParameter{initial code}%
+  \Macro{DefineTOCEntryIfOption}\Parameter{option}%
+                                     \OParameter{default value}%
+                                     \Parameter{prefix}%
+                                     \Parameter{postfix}%
+                                     \Parameter{description}%%
+                                     %\OParameter{initial code}%
+  \Macro{DefineTOCEntryLengthOption}\Parameter{option}%
+                                     \OParameter{default value}%
+                                     \Parameter{prefix}%
+                                     \Parameter{postfix}%
+                                     \Parameter{description}%%
+                                     %\OParameter{initial code}%
+  \Macro{DefineTOCEntryNumberOption}\Parameter{option}%
+                                     \OParameter{default value}%
+                                     \Parameter{prefix}%
+                                     \Parameter{postfix}%
+                                     \Parameter{description}%
+                                     %\OParameter{initial code}%
+\end{Declaration}
+\Macro{DeclareTOCEntryStyle}\ChangedAt{v3.20}{\Package{tocbasic}} is
+one of the most complex commands in \KOMAScript. It is therefore explicitly
+intended for \LaTeX{} developers and not for ordinary \LaTeX{} users. It lets
+you define new a \PName{style} for content-list entries. Usually, entries to
+content lists are made using
+\Macro{addcontentsline}\IndexCmd{addcontentsline}, or preferably, if you use
+\Package{tocbasic}, with
+\DescRef{\LabelBase.cmd.addxcontentsline}\IndexCmd{addxcontentsline} (see
+\autoref{sec:tocbasic.basics}, \DescPageRef{\LabelBase.cmd.addxcontentsline}).
+In both cases \LaTeX{} writes a corresponding
+\Macro{contentsline}\IndexCmd{contentsline} to the appropriate auxiliary file.
+When reading this auxiliary file, \LaTeX{} then executes a
+\Macro{l@\PName{entry level}} command for each \Macro{contentsline}.
+
+If you later assign a \PName{style} to an entry level using
+\DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}, the \PName{initial code} is
+executed first, if provided, and then the \PName{command code} for the
+definition of \Macro{l@\PName{entry level}}. The \PName{command code} is the
+code that will be expanded and executed by \Macro{l@\PName{entry level}}.
+Inside \PName{command code} \texttt{\#1} is the name of the TOC entry level
+and \texttt{\#\#1} and \texttt{\#\#2} are the arguments of
+\Macro{l@\PName{entry level}}.
+
+The \PName{initial code} serves first to initialise all attributes of the
+\PName{style}. Developers should make sure that all attributes are provided
+with values here. Only then does \DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}
+work without errors if an \PName{option list} is not specified. The second
+task of the \PName{initial code} is to define all the options that this
+\PName{style} recognises. The \Option{level} option is always defined
+automatically. The value of the \Option{level} can be queried within the
+\PName{command code} with \Macro{@nameuse}\PParameter{\#1tocdepth}%
+\important{\Macro{\PName{entry level}tocdepth}}, for example, to compare it
+with the \DescRef{\LabelBase.counter.tocdepth}\IndexCounter{tocdepth} counter.
+
+To define options for the attributes of the \PName{style} inside the
+\PName{initial code}, you can use the commands
+\Macro{DefineTOCEntryBooleanOption}, \Macro{DefineTOCEntryCommandOption},
+\Macro{DefineTOCEntryIfOption}, \Macro{DefineTOCEntryLengthOption}, and
+\Macro{DefineTOCEntryNumberOption}.  These commands each define an
+\PName{option} that, when called, defines a macro named
+\Macro{\PName{prefix}\PName{entry level}\PName{postfix}} set to the given
+value or to the \PName{default value} of the option. The
+\Macro{DefineTOCEntryIfOption} command is a somewhat special case. It defines
+\Macro{\PName{prefix}\PName{entry level}\PName{postfix}} as a command with two
+arguments. If the value passed to the option is one of the activation (true)
+values from \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch},
+the command expands to the first argument. If the value to the option is a
+deactivation (false) value, the command expands to the second argument.
+
+In\ChangedAt{v3.27}{\Package{tocbasic}} addition to the usual options of the
+form \Option{\PName{key}=\PName{value}}, the five
+\Macro{DefineTOCEntry\dots Option} commands automatically define options of
+the form \Option{\PName{key}:=\PName{entry level}}. These copy the value of
+another \PName{entry level} if the value is stored in a macro with the same
+\PName{prefix} and \PName{postfix}. For the styles predefined by
+\Package{tocbasic}, this is the case for all options of the same name
+independent of the name of the style. The commands
+\Macro{DefineTOCEntryLengthOption} and \Macro{DefineTOCEntryNumberOption} also
+define options of the form \Option{\PName{key}:=\PName{value}}, which are used
+to add the new \PName{value} to the value already stored in
+\Macro{\PName{prefix}\PName{entry level}\PName{postfix}}.
+
+The \PName{description} should be a brief message that describes the sense
+of the option with some keywords. The \Package{tocbasic} package uses this text
+in error messages, warnings, and information output on the terminal and to the
+\File{log} file.
+
+The simplest style of \Package{tocbasic}, \PValue{gobble}, is defined
+using:
+\begin{lstcode}
+  \DeclareTOCEntryStyle{gobble}{}%
+\end{lstcode}
+If you now define an entry level \PValue{dummy} in this style using:
+\begin{lstcode}
+  \DeclareTOCStyleEntry[level=1]{gobble}{dummy}
+\end{lstcode}
+this would correspond, among other things, to:
+\begin{lstcode}
+  \def\dummytocdepth{1}
+  \def\l@dummy#1#2{}
+\end{lstcode}
+
+For example, within the \PValue{tocline} style,
+\begin{lstcode}
+  \DefineTOCEntryCommandOption{linefill}[\TOCLineLeaderFill]%
+  {scr@tso@}{@linefill}{filling between text and page number}%
+\end{lstcode}
+is used to define the \Option{linefill} option. By specifying 
+\DescRef{\LabelBase.cmd.TOCLineLeaderFill} as the \PName{default value},
+a call such as
+\begin{lstcode}
+  \DeclareTOCStyleEntry[linefill]{tocline}{part}
+\end{lstcode}
+would, among other things, create the definition
+\begin{lstcode}
+  \def\scr@tso@part@linefill{\TOCLineLeaderFill}
+\end{lstcode}
+
+If you want to define your own styles, you should first study the definition
+of the \PValue{dottedtocline} style. After you understand this definition, you
+can find many hints as to how to use the commands effectively in the much more
+complex definition of the \PValue{tocline} style.
+
+However, in many cases it will be sufficient to clone an existing style using
+\DescRef{\LabelBase.cmd.CloneTOCEntryStyle} and to change the initial code of
+the new style using \DescRef{\LabelBase.cmd.TOCEntryStyleInitCode} or
+\DescRef{\LabelBase.cmd.TOCEntryStyleStartInitCode}.
+
+\Macro{DefineTOCEntryOption} is merely used to define the other commands and
+you should not use it directly. Normally, there is no need for it. It is
+mentioned here only for the sake of completeness.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{CloneTOCEntryStyle}\Parameter{style}\Parameter{new style}%
+\end{Declaration}
+With\ChangedAt{v3.20}{\Package{tocbasic}} this command you can clone
+an existing \PName{style}. It defines a \PName{new style} with the same
+attributes and settings as the existing \PName{style}. The package itself uses
+\Macro{CloneTOCEntryStyle} to declare the \PValue{default} style as a clone of
+\PValue{dottedtocline}. The \KOMAScript{} classes use the command to declare
+the styles \PValue{part}, \PValue{section}, and \PValue{chapter} or
+\PValue{subsection} as clones of \PValue{tocline} and then modify them with
+\DescRef{\LabelBase.cmd.TOCEntryStyleInitCode} and
+\DescRef{\LabelBase.cmd.TOCEntryStyleStartInitCode}. The \Class{scrbook} and
+\Class{scrreprt} classes newly declare the \PValue{default} style as a clone
+of \PValue{section}, and \Class{scrartcl} declares it as a clone of
+\PValue{subsection}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{TOCEntryStyleInitCode}\Parameter{style}%
+                               \Parameter{initial code}%
+  \Macro{TOCEntryStyleStartInitCode}\Parameter{style}%
+                                    \Parameter{initial code}
+\end{Declaration}
+Every\ChangedAt{v3.20}{\Package{tocbasic}} TOC-entry style has an
+initialisation code. This is used whenever a \PName{style} is assigned to an
+TOC entry using \DescRef{\LabelBase.cmd.DeclareTOCEntryStyle}. This
+\PName{initial code} should not have global side effects, because it is also
+used for local initialisation inside other commands like
+\DescRef{\LabelBase.cmd.DeclareNewTOC}\IndexCmd{DeclareNewTOC}. The
+\PName{initial code} not only defines all attributes of a \PName{style}, but
+it also sets the defaults for those attributes.
+
+You can use \Macro{TOCEntryStyleStartInitCode} and
+\Macro{TOCEntryStyleInitCode} to extend previously existing initialisation
+code with further \PName{initial code}. \Macro{TOCEntryStyleStartInitCode}
+adds \PName{initial code} in front of the existing code.
+\Macro{TOCEntryStyleInitCode} adds the \PName{initial code} at the end of the
+existing initialisation code. The \KOMAScript{} classes, for example, use
+\Macro{TOCEntryStyleStartInitCode} to properly initialise the fill, fonts, and
+vertical spacing of the \PValue{part} style cloned from \PValue{tocline}. For
+example, the \Class{scrbook} and \Class{scrreprt} classes use
+\begin{lstcode}
+  \CloneTOCEntryStyle{tocline}{section}
+  \TOCEntryStyleStartInitCode{section}{%
+    \expandafter\providecommand%
+    \csname scr@tso@#1@linefill\endcsname
+    {\TOCLineLeaderFill\relax}%
+  }
+\end{lstcode}
+to define \PValue{section} as a modified clone of \PValue{tocline}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{LastTOCLevelWasHigher}%
+  \Macro{LastTOCLevelWasSame}%
+  \Macro{LastTOCLevelWasLower}
+\end{Declaration}
+At\ChangedAt{v3.20}{\Package{tocbasic}} the beginning of entries
+using the \PValue{tocline} style, \Package{tocbasic} executes one of these
+three commands depending on \Macro{lastpenalty}. \Macro{LastTOCLevelWasHigher}
+and \Macro{LastTOCLevelWasSame} used in vertical mode add
+\Macro{addpenalty}\PParameter{\Macro{@lowpenalty}} and therefore permit a page
+break before an entry with the same or higher hierarchical position.
+\Macro{LastTOCLevelWasLower} is empty, so a page break between an entry and
+its first sub-entry is not permitted.
+
+Users should not redefine these commands. Instead, you should change the
+behaviour of single entry levels using the \PValue{onstartlowerlevel},
+\PValue{onstartsamelevel}, and \PValue{onstarthigherlevel} attributes.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{TOCLineLeaderFill}\OParameter{leader}
+\end{Declaration}
+This\ChangedAt{v3.20}{\Package{tocbasic}} command is intended to be
+used as a value for the \Option{linefill} option of the \PName{tocline}
+TOC-entry style. It creates a connection between the end of the entry text and
+the entry's page number. You can specify the \PName{leader}, which is repeated
+at regular intervals, as an optional argument. The default is a dot.
+
+As the name suggests, the command uses \Macro{leaders} to output the
+\PName{leader}. The spacing used is defined analogously to the \LaTeX{} kernel
+command \Macro{@dottedtocline} by
+\Macro{mkern}\Macro{@dotsep}\Unit{\texttt{mu}}.%
+\EndIndexGroup
+\EndIndexGroup
+
+
+\section{Internal Commands for Class and Package Authors}
+\seclabel{internals}
+
+The \Package{tocbasic} package provides some internal commands for the use of
+class and package authors. These commands all begin with the prefix
+\Macro{tocbasic@}. But\textnote{Attention!} even class or package authors
+should not redefine them! Their inner functioning may be changed or extended
+at any time, so redefining these commands could significantly damage the
+\Package{tocbasic}'s operation.
+
+\begin{Declaration}
+  \Macro{tocbasic@extend@babel}\Parameter{extension}
+\end{Declaration}
+At every change of the current language, either at the beginning of the
+document or inside the document, the \Package{babel}\IndexPackage{babel}
+package (see \cite{package:babel}), or rather a \LaTeX{} kernel enhanced by
+\Package{babel}'s language management, writes language-switching commands to
+the files with the \File{toc}, \File{lof}, and \File{lot} extensions. The
+\Package{tocbasic} package extends this mechanism with
+\Macro{tocbasic@extend@babel} so that it also works for other file extensions.
+The \PName{extension} argument must be completely expanded! Otherwise the
+there is a risk that, for example, the meaning of the argument has already
+change at the time it is actually evaluated.
+
+This command is typically invoked by default for every file \PName{extension}
+added to the list of known extensions with
+\DescRef{\LabelBase.cmd.addtotoclist}. You can suppress this with the
+\PValue{nobabel}\important{\PValue{nobabel}} feature (see
+\DescRef{\LabelBase.cmd.setuptoc}, \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.setuptoc}). \Package{tocbasic} does this
+automatically for the extensions \File{toc}, \File{lof}, and \File{lot} to
+avoid switching languages twice in the corresponding files.
+
+There is usually no reason to call this command yourself. However, there could
+conceivably be content lists that are not under the control of
+\Package{tocbasic} and so are not in \Package{tocbasic}'s list of known file
+extensions, but which nevertheless should use \Package{babel}'s language
+switching mechanism. You can call the command explicitly for those files.
+But\textnote{Attention!} please note that this should be done only once per
+file extension!%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@starttoc}\Parameter{extension}
+\end{Declaration}
+This command is the actual replacement for the
+\Macro{@starttoc}\IndexCmd{@starttoc}\important{\Macro{@starttoc}} command
+from the \LaTeX{} kernel. It is the command behind
+\DescRef{\LabelBase.cmd.listoftoc*} (see \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.listoftoc*}). Class or package authors who want to
+take advantage of \Package{tocbasic} should at least use this command, or even
+better, \DescRef{\LabelBase.cmd.listoftoc}. The command uses
+\Macro{\@starttoc} internally, but sets
+\Length{parskip}\IndexLength{parskip}\important{\Length{parskip}\\
+\Length{parindent}\\ \Length{parfillskip}},
+\Length{parindent}\IndexLength{parindent} to 0, and \Length{parfillskip} to 0
+to infinity. Moreover,
+\Macro{@currext}\important{\Macro{@currext}}\IndexCmd{@currext} is set to the
+file extension of the current TOC file, so it can be evaluated during the
+subsequent execution of the hooks. You can find an explanation of these hooks
+below.
+
+Because\textnote{Attention!} \LaTeX{} opens a new content-list file for
+writing after reading that file, calling this command may result in an error
+message of the type
+\begin{lstoutput}
+  ! No room for a new \write .
+  \ch@ck ...\else \errmessage {No room for a new #3}
+                                                    \fi
+\end{lstoutput}
+if no more write handles are available. You can solve this problem by loading
+the \Package{scrwfile}\important{\Package{scrwfile}}\IndexPackage{scrwfile}
+package \cite{package:scrwfile} or by using \LuaLaTeX{}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@@before@hook}%
+  \Macro{tocbasic@@after@hook}
+\end{Declaration}
+The \Macro{tocbasic@@before@hook} hook is executed immediately before reading
+an auxiliary file for a content list, before executing the commands defined
+with \DescRef{\LabelBase.cmd.BeforeStartingTOC} command. You can extend this
+hook using \Macro{g@addto@macro}\IndexCmd{g@addto@macro}.
+
+Similarly, \Macro{tocbasic@@after@hook} is executed immediately after reading
+such an auxiliary file and before executing the commands defined with
+\DescRef{\LabelBase.cmd.AfterStartingTOC}. You can extend this hook using
+\Macro{g@addto@macro}\IndexCmd{g@addto@macro}.
+
+\KOMAScript{} uses these hooks to dynamically adjust content lists to the
+width of the heading numbers. Only classes and packages should use these
+hooks. Users\textnote{Attention!} should really use
+\DescRef{\LabelBase.cmd.BeforeStartingTOC} and
+\DescRef{\LabelBase.cmd.AfterStartingTOC} instead. Authors of packages should
+also prefer these commands. These hooks should not be used to generate any
+output!
+
+If neither\textnote{Attention!} \DescRef{\LabelBase.cmd.listofeachtoc} nor
+\DescRef{\LabelBase.cmd.listoftoc} nor \DescRef{\LabelBase.cmd.listoftoc*} are
+used to output the content list, the hooks should be executed explicitly.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@\PName{extension}@before@hook}%
+  \Macro{tocbasic@\PName{extension}@after@hook}
+\end{Declaration}
+These hooks are executed directly after
+\DescRef{\LabelBase.cmd.tocbasic@@before@hook} or before
+\DescRef{\LabelBase.cmd.tocbasic@@after@hook} for the TOC file with the
+corresponding file \PName{extension}. Class\textnote{Attention!} and package
+authors should never change them under any circumstances! If
+neither\textnote{Attention!} \DescRef{\LabelBase.cmd.listofeachtoc} nor
+\DescRef{\LabelBase.cmd.listoftoc} nor \DescRef{\LabelBase.cmd.listoftoc*} are
+used to output a content list, the hooks should nevertheless be called, if
+they are defined. These commands can be undefined.%
+\iffalse % With current LaTeX you can simply use \@ifundefined
+For an appropriate test, see \DescRef{scrbase.cmd.Ifundefinedorrelax}%
+\IndexCmd{Ifundefinedorrelax} in \autoref{sec:scrbase.if},
+\DescPageRef{scrbase.cmd.Ifundefinedorrelax}.%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@listhead}\Parameter{title}
+\end{Declaration}
+This command is used by \DescRef{\LabelBase.cmd.listoftoc} and
+\DescRef{\LabelBase.cmd.listofeachtoc} to set the heading of the content list.
+This can be either the default heading of the \Package{tocbasic} package or a
+custom definition. If you define your own command for the heading, you can
+also use \Macro{tocbasic@listhead}. In this case, you should define
+\Macro{@currext}\important{\Macro{@currext}}\IndexCmd{@currext} to be the file
+extension of the corresponding TOC file before using
+\Macro{tocbasic@listhead}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@listhead@\PName{extension}}\Parameter{title}
+\end{Declaration}
+This command is used in \DescRef{\LabelBase.cmd.tocbasic@listhead} to set the
+individual headings, optional table of contents entry, and running head, if it
+is defined. Otherwise, \DescRef{\LabelBase.cmd.tocbasic@listhead} defines them
+before their use.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@addxcontentsline}%
+  \Parameter{extension}\Parameter{level}\Parameter{number}\Parameter{text}%
+  \Macro{nonumberline}
+\end{Declaration}
+The\ChangedAt{v3.12}{\Package{tocbasic}} \Macro{tocbasic@addxcontentsline}
+command creates entry of the specified level in the TOC file with the given
+\PName{extension}. Whether the entry is numbered or not depends on whether or
+not the \PName{number} argument is empty. In this case the \PName{text} will
+be prefixed by \Macro{nonumberline} without any argument. Otherwise,
+\DescRef{\LabelBase.cmd.numberline} with the \PName{number} argument will used
+as usual.
+
+The \Macro{nonumberline} command is redefined inside
+\DescRef{\LabelBase.cmd.listoftoc} (see \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.listoftoc}) depending on the \PValue{numberline}
+feature (see \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.setuptoc}). As a result, changing this feature
+results in changes of the corresponding TOC immediately at the next \LaTeX{}
+run.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@DependOnPenaltyAndTOCLevel}\Parameter{entry level}%
+  \Macro{tocbasic@SetPenaltyByTOCLevel}\Parameter{entry level}
+\end{Declaration}
+The\ChangedAt{v3.20}{\Package{tocbasic}} \PValue{tocline}
+content-list style (see \autoref{sec:tocbasic.tocstyle}) sets a
+\Macro{penalty} at the end of each entry via
+\Macro{tocbasic@SetPenaltyByTOCLevel} so that no page break can occur after an
+entry. The exact value chosen depends on the \PName{entry level}.
+
+At the beginning of an entry, \Macro{tocbasic@DependOnPenaltyAndTOCLevel} is
+used to execute the value of the \Option{onstartlowerlevel}, the
+\Option{onstartsamelevel}, or the \Option{onstarthigherlevel} style option,
+depending on \Macro{lastpenalty} and the current \PName{entry level}. By
+default, the first two permit a page break when executed in vertical mode.
+
+Developers of \PValue{tocline}-compatible styles should copy this behaviour.
+To do so, they can fall back on these internal macros.%
+\EndIndexGroup
+
+
+\section{A Complete Example}
+\seclabel{example}
+
+This section provides a complete example of how to define your own floating
+environment including an associated content list and \KOMAScript{} integration
+using \Package{tocbasic}. This example uses internal commands, that is, they
+have a ``\texttt{@}'' in their name. This means\textnote{Attention}, that you
+must either put the code into a package or class or placed it between
+\Macro{makeatletter}\important[i]{\Macro{makeatletter}\\\Macro{makeatother}}%
+\IndexCmd{makeatletter} and \Macro{makeatother}\IndexCmd{makeatother}.
+
+First\textnote{environment}, we need a new floating environment.
+That's easy with the following:
+\begin{lstcode}
+  \newenvironment{remarkbox}{%
+    \@float{remarkbox}%
+  }{%
+    \end@float
+  }
+\end{lstcode}
+The new environment is named \Environment{remarkbox}.
+
+Each\textnote{placement} floating environment has a default placement. It
+consists of one or more of the well-known placement options: \PValue{b},
+ \PValue{h}, \PValue{p} and \PValue{t}.
+\begin{lstcode}
+  \newcommand*{\fps@remarkbox}{tbp}
+\end{lstcode}
+The new floating environment should be placed by default only either at
+the top of a page, at the bottom of a page, or on a separate page.
+
+Floating\textnote{type} environments also have a numerical floating
+type between 1 and 31. Environments with the same active bit at the floating type cannot change
+their order. Figures and tables normally use type~1 and 2. So a figure that
+comes later in the source code than a table may be output earlier than the
+table and vice versa.
+\begin{lstcode}
+  \newcommand*{\ftype@remarkbox}{4}
+\end{lstcode}
+The new environment has floating type~4, so it may pass figures and floats and
+may be passed by those.
+
+The\textnote{number} captions of floating environment also have numbers.
+\begin{lstcode}
+  \newcounter{remarkbox}
+  \newcommand*{\remarkboxformat}{%
+    Remark~\theremarkbox\csname autodot\endcsname}
+  \newcommand*{\fnum@remarkbox}{\remarkboxformat}
+\end{lstcode}
+Here, a new counter is defined first, which is independent of the chapters
+or the counters of other structural levels. \LaTeX{} itself also defines
+\Macro{theremarkbox} with the default output as an Arabic number.
+This is then used to define the formatted output of the
+counter. The formatted output is again defined as a floating-point
+number for use in the \DescRef{maincls.cmd.caption} command.
+
+Floating\textnote{file name extension} environments have their own content lists
+and those need an auxiliary file named \Macro{jobname} and a file 
+extension:
+\begin{lstcode}
+  \newcommand*{\ext@remarkbox}{lor}
+\end{lstcode}
+As the file extension, we use ``\File{lor}''.
+
+With this, the floating environment works. But the content list of 
+is still missing. So that we do not have to implement it ourselves, we
+use the \Package{tocbasic} package. This is loaded with
+\begin{lstcode}
+  \usepackage{tocbasic}
+\end{lstcode}
+inside of document preambles. Class or package authors would use
+\begin{lstcode}
+  \RequirePackage{tocbasic}
+\end{lstcode}
+instead.
+
+Now\textnote{extension} we register the file name extension with the
+\Package{tocbasic} package:
+\begin{lstcode}
+  \addtotoclist[float]{lor}
+\end{lstcode}
+We use \PValue{float} as the owner so that all options of \KOMAScript{}
+classes that relate to lists of floating environments also apply to the new
+content list.
+
+Next\textnote{title} we define a title or heading for this content list:
+\begin{lstcode}
+  \newcommand*{\listoflorname}{List of Remarks}
+\end{lstcode}
+When working with multiple languages, the normal practice is to define an
+English title first and then, for example with the help of the
+\Package{scrbase} package, to add titles for all the other languages you want
+to support. See \autoref{sec:scrbase.languageSupport}, starting on
+\autopageref{sec:scrbase.languageSupport}.
+
+Now\textnote{entry} all we have to do is define what a single entry in the
+content list should look like:
+\begin{lstcode}
+  \newcommand*{\l@remarkbox}{\l@figure}
+\end{lstcode}
+This specifies that entries in the list of remarks should look exactly like the
+entries in the list of figures. This would be the easiest solution. A more
+explicit definition would be something like:
+\begin{lstcode}
+  \DeclareTOCStyleEntry[level=1,indent=1em,numwidth=1.5em]%
+                       {tocline}{remarkbox}
+\end{lstcode}
+
+You\textnote{chapter entry} also want chapter entries to affect the content
+list.
+\begin{lstcode}
+  \setuptoc{lor}{chapteratlist}
+\end{lstcode}
+Setting this property allows this when you use a \KOMAScript{} class, and other class
+that supports this property. Unfortunately, the standard classes do not.
+
+This\textnote{list of remarks} should be enough. Users can now 
+select different kinds of headings using the corresponding options of
+the \KOMAScript{} classes or \DescRef{\LabelBase.cmd.setuptoc}, (e.\,g. with
+or without an entry in the table of contents, with or without numbering). But
+with a simple
+\begin{lstcode}
+  \newcommand*{\listofremarkboxes}{\listoftoc{lor}}
+\end{lstcode}
+you can simplify the usage even more.
+
+As you've seen, just five one-line commands, of which only three or four are
+really necessary, refer to the content list. Nevertheless, the new list of
+remarks already provides the ability to place both numbered and unnumbered
+entries into the table of contents.You can use a lower sectioning level for
+the headings. Running heads are set for the \KOMAScript{} classes, the
+standard classes, and all classes that explicitly support \Package{tocbasic}.
+Supporting classes even pay attention to this new list of remarks at each new
+\DescRef{maincls.cmd.chapter}. Even changes to the current language made with
+\Package{babel} are included in the list of remarks.
+
+Of course\textnote{additional features}, package authors can add more
+features. For example, they could explicitly offer options to hide
+\DescRef{\LabelBase.cmd.setuptoc} from users. Or they can refer to the
+\Package{tocbasic} manual when explaining the appropriate features. The
+advantage of this is that users automatically benefit from any future
+extensions to \Package{tocbasic}. However, if you do not want to burden the
+user with the fact that the file extension \File{lor} is used for the key
+terms, then
+\begin{lstcode}
+  \newcommand*{\setupremarkboxes}{\setuptoc{lor}}
+\end{lstcode}
+is sufficient to set a list of features passed as an argument to
+\Macro{setupremarkboxes} as a list of features for the file extension
+\File{lor}.
+
+\section{Everything with Only One Command}
+\label{sec:tocbasic.declarenewtoc}
+
+The example in the previous section has shows that \Package{tocbasic} makes it
+easy to define your own floating environments with their own content lists.
+This section shows how it can be even easier.
+
+\begin{Declaration}
+  \Macro{DeclareNewTOC}\OParameter{options}\Parameter{extension}
+\end{Declaration}
+This command declares\ChangedAt{v3.06}{\Package{tocbasic}} a new content list,
+its heading, and the description of the entries controlled by
+\Package{tocbasic} all in a single step. Optionally, you can also define
+floating and non-floating environments at the same time. Inside of both such
+environments, \DescRef{maincls.cmd.caption}%
+\important{\DescRef{maincls.cmd.caption}}\IndexCmd{caption} creates entries
+for this new content list. You can also use the \KOMAScript{} extensions
+\DescRef{maincls.cmd.captionabove}\important[i]{%
+  \DescRef{maincls.cmd.captionabove}\\
+  \DescRef{maincls.cmd.captionbelow}}, \DescRef{maincls.cmd.captionbelow}, and
+\DescRef{maincls.env.captionbeside} (see \autoref{sec:maincls.floats}).
+
+The \PName{extension} argument is the file extension of the TOC file that
+represents the content list, as explained in  \autoref{sec:tocbasic.basics}.
+This argument is mandatory and must not be empty!
+
+The \PName{options} argument is a comma-separated list, of the same type as,
+for example, \DescRef{maincls.cmd.KOMAoptions} (see
+\autoref{sec:typearea.options}). However\textnote{Attention!}, those options
+cannot be set using \DescRef{maincls.cmd.KOMAoptions}\IndexCmd{KOMAoptions}!
+You can find an overview of all available options in
+\autoref{tab:tocbasic.DeclareNewTOC-options}.
+
+If\ChangedAt{v3.20}{\Package{tocbasic}} the \Option{tocentrystyle}
+option is not used, the \PValue{default} style will be used if required. For
+information about this style, see \autoref{sec:tocbasic.tocstyle}. If you do
+not want to define a command for entries to the content list, you can use an
+empty argument, i.\,e. \OptionValue{tocentrystyle}{} or
+\OptionValue{tocentrystyle}{\PParameter{}}.
+
+Depending\ChangedAt{v3.20}{\Package{tocbasic}}%
+\ChangedAt{v3.21}{\Package{tocbasic}} on the style of the entries to
+the content list, you can set all valid attributes of the selected style as
+part of the \PName{options}. To do so, you must add the prefix
+\PValue{tocentry} to the names of the attributes given in
+\autoref{tab:tocbasic.tocstyle.attributes}, starting on
+\autopageref{tab:tocbasic.tocstyle.attributes}. You can make later changes to
+the style of the entries at any time using
+\DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}%
+\IndexCmd{DeclareTOCStyleEntry}%
+\important{\DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}}. See
+\autoref{sec:tocbasic.tocstyle},
+\DescPageRef{\LabelBase.cmd.DeclareTOCStyleEntry} for more information about
+the styles.%
+%
+\begin{desclist}
+  \renewcommand*{\abovecaptionskipcorrection}{-\normalbaselineskip}%
+  \desccaption[{Options for command \Macro{DeclareNewTOC}}]{%
+    Options for the
+    \Macro{DeclareNewTOC}\ChangedAt{v3.06}{\Package{tocbasic}} command%
+    \label{tab:tocbasic.DeclareNewTOC-options}%
+  }{%
+    Options for the \Macro{DeclareNewTOC} command (\emph{continued})%
+  }%
+  \entry{\OptionVName{atbegin}{commands}%
+    \ChangedAt{v3.09}{\Package{tocbasic}}}{%
+    The \PName{commands} will be executed at the begin of the floating or
+    non-floating environment.%
+  }%
+  \entry{\OptionVName{atend}{commands}%
+    \ChangedAt{v3.09}{\Package{tocbasic}}}{%
+    The \PName{commands} will be executed at the end of the floating or
+    non-floating environment.%
+  }%
+  \entry{\OptionVName{category}{string}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    This option can be used as a synonym for \OptionVName{owner}{string}.%
+  }%
+  \entry{\OptionVName{counterwithin}{\LaTeX{} counter}}{%
+    If you define a new floating or non-floating environment, a new counter
+    \Counter{\PName{type}} will be created as well (see option
+    \Option{type}). You can make this counter dependent on another
+    \PName{\LaTeX{} counter} in the same way, for example, that the
+    \Counter{figure} counter in the \Class{book} classes is dependent on the
+    \Counter{chapter} counter.  A\ChangedAt{v3.35}{\Package{tocbasic}} setting
+    \OptionValue{counterwithin}{chapter} is used for classes with
+    \DescRef{maincls.cmd.chapter}\IndexCmd{chapter} only in the main matter
+    (see \DescRef{maincls.cmd.frontmatter}\IndexCmd{frontmatter},
+    \DescRef{maincls.cmd.mainmatter} and
+    \DescRef{maincls.cmd.backmatter}\IndexCmd{backmatter} in
+    \autoref{sec:maincls.separation}, \DescPageRef{maincls.cmd.frontmatter})
+    and only if the counter \Counter{chapter}\IndexCounter{chapter} is greater
+    than zero at output. For classes without \DescRef{maincls.cmd.chapter}
+    this applies accordingly to the \OptionValue{counterwithin}{section}
+    setting and counter
+    \Counter{section}\IndexCounter{section}\IndexCmd{section}.%
+  }%
+  \entry{\Option{float}}{%
+    If set, defines a new content list and a floating environment, both named
+    \PName{type}, and an environment for double-column floats named
+    \PName{type*}.%
+  }%
+  \entry{\OptionVName{floatpos}{float positions}}{%
+    Each floating environment has default \PName{float positions} that can be
+    changed through the optional argument of the floating environment. The
+    syntax and semantics are identical to those of the standard floating
+    environments. If the option is not used, the default \PName{float
+      positions} are ``\texttt{tbp}'', that is \emph{top}, \emph{bottom},
+    \emph{page}.%
+  }%
+  \entry{\OptionVName{floattype}{number}}{%
+    Each floating environment has a \PName{number}. Floating environments
+    where only different bits are set can be moved past each other. The
+    floating environments \Environment{figure} and \Environment{table} usually
+    have the types 1 and 2, so they can move past each other. The numerical
+    float type can be between 1 and 31. If common bits are set, the float
+    types cannot be reordred. If no float type is given, the greatest possible
+    one-bit type, 16, will be used.%
+  }%
+  \entry{\Option{forcenames}}{%
+    If set, the names will be defined even if they were already defined
+    before.%
+  }%
+  \entry{\OptionVName{hang}{length}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \ChangedAt{v3.21}{\Package{tocbasic}}%
+    This option has been deprecated since \KOMAScript~3.20. Instead, the
+    amount of the hanging indent of entries to the content list\index{content
+      list>entry} depends on attributes of the TOC-entry style given by the
+    \Option{tocentrystyle} option. The \KOMAScript{} styles provide the
+    \PValue{numwidth} attribute. If the style used has such an attribute,
+    \Macro{DeclareNewTOC} will initialise it with a default of 1.5\Unit{em}.
+    You can easily change the \PName{value} using
+    \OptionVName{tocentrynumwidth}{value}. The \KOMAScript{} classes, for
+    example, use \OptionValue{tocentrynumwidth}{2.3em}.%
+  }%
+  \entry{\OptionVName{indent}{length}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \ChangedAt{v3.21}{\Package{tocbasic}}%
+    This option has been deprecated since \KOMAScript~3.20. Instead, the
+    amount that entries to the content list\index{content list>entry} are
+    indented depends on attributes of the TOC-entry style given by the
+    \Option{tocentrystyle} option. The \KOMAScript{} styles provide the
+    \PValue{indent} attribute. If the style used has such an attribute,
+    \Macro{DeclareNewTOC} will initialise it with a default of 1\Unit{em}. You
+    can easily change the \PName{value} using
+    \OptionVName{tocentryindent}{value}. The \KOMAScript{} classes for example
+    use \OptionValue{tocentrynumwidth}{1.5em}.%
+  }%
+  \entry{\OptionVName{level}{number}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \ChangedAt{v3.21}{\Package{tocbasic}}%
+    This option has been deprecated since \KOMAScript~3.20. Instead, the level
+    of the entries to the content list\index{content list>entry} depends on
+    attributes of the TOC-entry style given by the \Option{tocentrystyle}
+    option. Nevertheless, all styles have the \PValue{level} attrobite, and
+    \Macro{DeclareNewTOC} initialises it with a default value of 1. You can
+    easily change the \PName{value} using \OptionVName{tocentrylevel}{value}.%
+  }%
+  \entry{\OptionVName{listname}{title}}{%
+    Each content list has a heading, or title, that you can specify with this
+    option. If the option is not specified, the title will be ``List of
+    \PName{entry type}'' (see the \Option{types} option), with the first
+    character of the \PName{entry type} changed to upper case. It also defines
+    the \Macro{list\PName{entry type}name} macro with this value, which you
+    can change at any time. This macro, however, is only defined if it is not
+    already defined or if the \Option{forcenames} option is also set.%
+  }%
+  \entry{\OptionVName{name}{entry name}}{%
+    Both the optional prefix for entries in the content list and the labels in
+    floating or non-floating environments (see the \Option{float} and
+    \Option{nonfloat} options) require an \PName{entry name} for an entry to
+    the content list. If no \PName{entry name} is given, the value of the
+    \PValue{type} (see the \Option{type} option) with the first character
+    changed to upper case will be used. It also defines a \Macro{\PName{entry
+        type}name} macro with this value, which you can change at any
+    time. This macro, however, is only defined if it is not already defined or
+    if the \Option{forcenames} option is also set.%
+  }%
+  \entry{\Option{nonfloat}}{%
+    If set, defines not only a content list but also a non-floating
+    environment, \Environment{\PName{entry type}-} (see the \Option{type}
+    option), which can be used similarly to a floating environment, but which
+    does not move from the place where it is used.%
+  }%
+  \entry{\OptionVName{owner}{string}}{%
+    Every new content list has an owner in \Package{tocbasic} (see
+    \autoref{sec:tocbasic.basics}). You can specify this here. If no owner is
+    specified, the owner ``\PValue{float}'' is used. The \KOMAScript{} classes
+    use this owner for the list of figures and the list of tables.%
+  }%
+  \entry{\OptionVName{setup}{list of attributes}}{%
+    \ChangedAt{v3.25}{\Package{tocbasic}}%
+    The \PName{list of attributes} is set with
+    \DescRef{\LabelBase.cmd.setuptoc}. Note that to specify multiple
+    attributes in a comma-separated list, you must put this list between
+    braces.%
+  }%
+  \entry{\OptionVName{tocentrystyle}{TOC-entry style}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \PName{TOC-entry style} specifies the style that should be used for all
+    entries to the content list corresponding to the \PName{extension}. The
+    name of the entry level is given by the \Option{type} option. In addition
+    to the options in this table, all attributes of the \PName{TOC-entry
+      style} can be used as options. To do so, you have to prefix the name of
+    such an attribute with \PValue{tocentry}. For example, you can change the
+    numerical level of the entries using the \Option{tocentrylevel} option.
+    For more information about the styles and their attributes see
+    \autoref{sec:tocbasic.tocstyle}, starting on
+    \autopageref{sec:tocbasic.tocstyle}.%
+  }%
+  \entry{\OptionVName{tocentry\PName{style-option}}{value}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    Additional options depending on the \PName{TOC-entry style} given by
+    \Option{tocentrystyle}. See \autoref{sec:tocbasic.tocstyle},
+    \autopageref{sec:tocbasic.tocstyle} for additional information about
+    TOC-entry styles. See \autoref{tab:tocbasic.tocstyle.attributes},
+    \autopageref{tab:tocbasic.tocstyle.attributes} for information about the
+    attributes of the predefined TOC-entry styles of package
+    \Package{tocbasic} that can be used as \PName{style-option}.%
+  }%
+  \entry{\OptionVName{type}{entry type}}{%
+    Sets the type of the newly declared content list. The \PName{entry type}
+    is also used as a base name for various macros and possibly environments
+    and counters. It should therefore consist only of letters. If this option
+    is not used, the file \PName{extension} from the mandatory argument will
+    be used as the \PName{entry type}.%
+  }%
+  \entry{\OptionVName{types}{string}}{%
+    In several places, the plural form of the \PName{entry type} is required.
+    If no plural is given, the value of the \PValue{entry type} with an ``s''
+    appended will be used.%
+  }%
+  \entry{\OptionVName{unset}{list of attributes}}{%
+    \ChangedAt{v3.25}{\Package{tocbasic}}%
+    The \PName{list of attributes} is unset with
+    \DescRef{\LabelBase.cmd.unsettoc}. Note that to specify a comma-separated
+    list of attributes, you must put this list between braces.%
+  }%
+\end{desclist}
+
+\begin{Example}
+  Using \Macro{DeclareNewTOC} significantly shortens the example from
+  \autoref{sec:tocbasic.example}:
+\begin{lstcode}
+  \DeclareNewTOC[%
+    type=remarkbox,%
+    types=remarkboxes,%
+    float,% define a floating environment
+    floattype=4,%
+    name=Remark,%
+    listname={List of Remarks}%
+  ]{lor}
+  \setuptoc{lor}{chapteratlist}
+\end{lstcode}
+  In addition to the \Environment{remarkbox} and \Environment{remarkbox*} environments,
+  this also defines the \Counter{remarkbox} counter; the commands \Macro{theremarkbox},
+  \Macro{remarkboxname}, and \Macro{remarkboxformat} that are used for
+  captions; the commands \Macro{listremarkboxnames} and
+  \Macro{listofremarkboxes} that are used in the list of remarks; and some
+  internal commands that depend on the file name extension \File{lor}.
+  If the package should use a default for the floating type, the
+  Option{floattype} option can be omitted. If the \Option{nonfloat} option is specified,
+  a non-floating environment, \Environment{remarkbox-}, will
+  also be defined, inside which you can use \DescRef{maincls.cmd.caption}\IndexCmd{caption}.
+  \hyperref[tab:tocbasic.comparison]{Figure~\ref*{tab:tocbasic.comparison}}
+  compares the commands, counters, and environments of the
+  example \Environment{remarkbox} environment to the commands, counters,
+  and environments of figures.%
+  \begin{table}
+    \centering
+    \caption{Comparing the example \Environment{remarkbox} environment
+      with the \Environment{figure} environment}
+    \label{tab:tocbasic.comparison}
+    \begin{tabularx}{\textwidth}{ll>{\raggedright}p{6em}X}
+      \toprule
+      \Environment{remarkbox} & \Environment{figure}
+      & options of \Macro{DeclareNewTOC} & short description \\[1ex]
+      \midrule
+      \Environment{remarkbox} & \Environment{figure}
+      & \Option{type}, \Option{float}
+      & floating environments of the respective types\\[1ex]
+      \Environment{remarkbox*} & \Environment{figure*}
+      & \Option{type}, \Option{float}
+      & columns spanning floating environments of the respective types\\[1ex]
+      \Counter{remarkbox} & \Counter{figure}
+      & \Option{type}, \Option{float}
+      & counter used by \DescRef{maincls.cmd.caption}\\[1ex]
+      \Macro{theremarkbox} & \Macro{thefigure}
+      & \Option{type}, \Option{float}
+      & output command to the respective counters\\[1ex]
+      \Macro{remarkboxformat} & \DescRef{maincls.cmd.figureformat}
+      & \Option{type}, \Option{float}
+      & formatting command to the respective counters used by
+        \DescRef{maincls.cmd.caption}\\[1ex]
+      \Macro{remarkboxname} & \Macro{figurename}
+      & \Option{type}, \Option{float}, \Option{name}
+      & names used in the label of \DescRef{maincls.cmd.caption}\\[1ex]
+      \Macro{listofremarkboxes} & \DescRef{maincls.cmd.listoffigures}
+      & \Option{types}, \Option{float}
+      & command to show the list of the respective environments\\[1ex]
+      \Macro{listremarboxname} & \Macro{listfigurename}
+      & \Option{type}, \Option{float}, \Option{listname}
+      & heading text of the respective list \\[1ex]
+      \Macro{fps@remarkbox} & \Macro{fps@figure}
+      & \Option{type}, \Option{float}, \Option{floattype}
+      & numeric float type for order perpetuation\\[1ex]
+      \File{lor} & \File{lof}
+      &
+      & file name extension of the TOC file of the respective list \\
+      \bottomrule
+    \end{tabularx}
+  \end{table}
+
+  And here is a possible use of the example environment:
+\begin{lstcode}
+  \begin{remarkbox}
+    \centering
+    The same thing should always be typeset in the same way
+    and with the same appearance.
+    \caption{First Law of Typography}
+    \label{rem:typo1}
+  \end{remarkbox}
+\end{lstcode}
+  A snippet of a sample page with this environment might look like this:
+  \begin{center}\footnotesize
+    \begin{tabular}
+      {|!{\hspace{.1\linewidth}}p{.55\linewidth}!{\hspace{.1\linewidth}}|}
+      \\
+      \centering
+      The same thing should always be typeset in the same way
+      and with the same appearance.\\[\abovecaptionskip]
+      {%
+        \usekomafont{caption}\footnotesize{\usekomafont{captionlabel}%
+          Remark 1: }First Law of Typography
+      }\\
+    \end{tabular}%
+  \end{center}%
+\end{Example}
+
+Users of old versions of package \Package{hyperref} should always use the
+\Option{listname} option.  Otherwise they may get an error message because
+\Package{hyperref} usually has a problem with the
+\Macro{MakeUppercase}\IndexCmd{MakeUppercase} command that is needed to
+convert the first letter of \Option{types} to upper case. Better is of course
+to use an up-to-date \Package{hyperref} with an up-to-date \LaTeX.%
+\EndIndexGroup
+
+ 
+\section{Obsolete Befehle}
+\seclabel{obsolete}
+
+% TODO: new translation
+Prior releases of \Package{tocbasic} provide some commands that has been
+renamed, because of a statement of The \LaTeX{} Project Team. Those deprecated
+commands should not be used any longer.
+% :ODOT
+
+\LoadNonFree{tocbasic}{0}%
+% 
+\EndIndexGroup
+%
+\endinput
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "scrguide-en.tex"
+%%% coding: utf-8
+%%% ispell-local-dictionary: "en_GB"
+%%% eval: (flyspell-mode 1)
+%%% End:
+
+%  LocalWords:  Multiline multiline

@@ -1,0 +1,1367 @@
+%%
+%% This is file `fancyvrb.sty',
+%%
+%% COPYRIGHT 1992-1999, by Timothy Van Zandt <tvz@zandtwerk.kellogg.nwu.edu>
+%%           2000-2023 ... , by Herbert Voss <hvoss@tug.org>
+%%
+%% This package may be distributed under the terms of the LaTeX Project Public
+%% License, as described in lppl.txt in the base LaTeX distribution.
+%% Either version 1.3 or, at your option, any later version.
+%%
+%% DESCRIPTION:
+%%   fancyvrb.sty is a LaTeX style option, containing flexible
+%%   verbatim environments and commands and extensive documentation.
+%%
+\NeedsTeXFormat{LaTeX2e}
+\def\fileversion{4.5a}
+\def\filedate{2023/01/19}
+\ProvidesPackage{fancyvrb}[\filedate\space \fileversion\space verbatim text (tvz,hv)]
+%\message{Style option: `fancyvrb' v\fileversion \space  <\filedate> (tvz)}
+\csname fancyvrb@loaded\endcsname
+\let\fancyvrb@loaded\endinput
+%\ProcessOptions
+%\@ifpackageloaded{xcolor}{}{\RequirePackage{xcolor}}       % Standard LaTeX `color' package
+\def\FV@Error#1#2{%
+  \edef\@tempc{#2}\expandafter\errhelp\expandafter{\@tempc}%
+  \errmessage{FancyVerb Error:^^J\space\space #1^^J}}
+
+\def\FV@eha{Your command was ignored. Type <return> to continue.}
+%% DG/SR modification begin - Jan. 21, 1998
+%% Suggested by Bernard Gaulle to solve a compatibility problem with `french'
+%% (it introduce the restriction to put \VerbatimFootnotes AFTER the preambule)
+%%\def\VerbatimFootnotes{\let\@footnotetext\V@footnotetext}
+\let\V@footnote\footnote
+\def\VerbatimFootnotes{%
+\let\@footnotetext\V@footnotetext%
+\let\footnote\V@footnote}
+%% DG/SR modification end
+\long\def\V@footnotetext{%
+  \afterassignment\V@@footnotetext
+  \let\@tempa}
+\def\V@@footnotetext{%
+  \insert\footins\bgroup
+  \csname reset@font\endcsname
+  \footnotesize
+  \interlinepenalty\interfootnotelinepenalty
+  \splittopskip\footnotesep
+  \splitmaxdepth\dp\strutbox
+  \floatingpenalty \@MM
+  \hsize\columnwidth
+  \@parboxrestore
+  \def\@currentcounter{footnote}%
+  \edef\@currentlabel{\csname p@footnote\endcsname\@thefnmark}%
+  \@makefntext{}%
+  \rule{\z@}{\footnotesep}%
+  \bgroup
+  \aftergroup\V@@@footnotetext
+  \ignorespaces}
+\def\V@@@footnotetext{\strut\egroup}
+\RequirePackage{keyval}
+\def\define@booleankey#1#2#3#4{%
+  \@namedef{KV@#1@#2@default}{#3}%
+  \@namedef{KV@#1@#2@false}{#4}%
+  \@namedef{KV@#1@#2}##1{\KV@booleankey{##1}{#1}{#2}}}
+\def\KV@booleankey#1#2#3{%
+  \edef\@tempa{#1}\expandafter\KV@@booleankey\@tempa\relax\@nil{#2}{#3}}
+\def\KV@@booleankey#1#2\@nil#3#4{%
+  \@nameuse{KV@#3@#4@\if t#1default\else\if T#1default\else false\fi\fi}}
+\def\FV@None{none}
+\def\FV@Auto{auto}
+\def\fvset#1{\setkeys{FV}{#1}}
+\def\FV@Command#1#2{%
+  \@ifstar
+    {\def\FV@KeyValues{#1,showspaces}\FV@@Command{#2}}%
+    {\def\FV@KeyValues{#1}\FV@@Command{#2}}}
+\def\FV@@Command#1{%
+  \@ifnextchar[%
+    {\FV@GetKeyValues{\@nameuse{FVC@#1}}}%
+    {\@nameuse{FVC@#1}}}
+\def\FV@GetKeyValues#1[#2]{%
+  \expandafter\def\expandafter\FV@KeyValues\expandafter{\FV@KeyValues,#2}#1}
+\def\@CustomVerbatimCommand#1#2#3#4{%
+  \begingroup\fvset{#4}\endgroup  % If there are errors, it easier to locate.
+%% DG/SR modification begin - Jan. 13, 1998
+%%  \def\@tempa##1##2\@nil{\def\@tempa{##2}}%
+%%  \expandafter\@tempa\string#3\@empty\@nil
+%%  \@ifundefined{FVC@\@tempa}%
+  \@ifundefined{FVC@#3}%
+%% DG/SR modification end
+    {\FV@Error{Command `\string#3' is not a FancyVerb command.}\@eha}%
+    {#1{#2}{\FV@Command{#4}{#3}}}}
+\def\CustomVerbatimCommand{\@CustomVerbatimCommand\newcommand}
+\def\RecustomVerbatimCommand{\@CustomVerbatimCommand\renewcommand}
+\def\FV@Environment#1#2{%
+  \def\FV@KeyValues{#1}%
+  \catcode`\^^M=\active
+  \@ifnextchar[%
+    {\catcode`\^^M=5 \FV@GetKeyValues{\@nameuse{FVB@#2}}}%
+    {\catcode`\^^M=5 \@nameuse{FVB@#2}}}
+\def\CustomVerbatimEnvironment{\@CustomVerbatimEnvironment\newenvironment}
+\def\RecustomVerbatimEnvironment{\@CustomVerbatimEnvironment\renewenvironment}
+\def\@CustomVerbatimEnvironment#1#2#3#4{%
+  \begingroup\fvset{#4}\endgroup  % If there are errors, it easier to locate.
+  \@ifundefined{FVB@#3}%
+    {\FV@Error{`#3' is not a FancyVerb environment.}\@eha}%
+    {#1{#2}{\FV@Environment{#4}{#3}}{\@nameuse{FVE@#3}}%
+     #1{#2*}{\FV@Environment{#4,showspaces}{#3}}{\@nameuse{FVE@#3}}}}
+\def\DefineVerbatimEnvironment#1#2#3{%
+  \@namedef{#1}{\FV@Environment{#3}{#2}}%
+  \@namedef{end#1}{\@nameuse{FVE@#2}}%
+  \@namedef{#1*}{\FV@Environment{#3,showspaces}{#2}}%
+  \@namedef{end#1*}{\@nameuse{FVE@#2}}}
+\def\FV@UseKeyValues{%
+  \ifx\FV@KeyValues\@empty\else
+    \def\KV@prefix{KV@FV@}%
+    \expandafter\KV@do\FV@KeyValues,\relax,%
+    \def\FV@KeyValues{}%
+  \fi}
+\def\FV@CatCodes{%
+  \let\do\@makeother\dospecials  % The usual stuff.
+  \FV@ActiveWhiteSpace           % See below.
+  \FV@FontScanPrep               % See below.
+  \FV@CatCodesHook               % A style hook.
+  \FancyVerbCodes}               % A user-defined hook.
+\def\FV@ActiveWhiteSpace{%
+  \catcode`\^^M=\active          % End of line
+  \catcode`\ =\active            % Space
+  \catcode`\^^I=\active}         % Tab
+\def\FV@CatCodesHook{}
+\def\FV@AddToHook#1#2{%
+  \expandafter\def\expandafter#1\expandafter{#1#2\relax}}
+\define@key{FV}{codes}[]{\def\FancyVerbCodes{#1\relax}}
+\define@key{FV}{codes*}{%
+  \expandafter\def\expandafter\FancyVerbCodes\expandafter{\FancyVerbCodes#1\relax}}
+\fvset{codes}
+%
+\define@key{FV}{vspace}[\topsep]{\def\FancyVerbVspace{#1}}
+\fvset{vspace}
+%
+\define@key{FV}{commandchars}[\\\{\}]%
+  {\def\@tempa{#1}%
+    \ifx\@tempa\FV@None
+      \let\FV@CommandChars\relax
+    \else
+      \FV@DefineCommandChars#1\relax\relax\relax
+    \fi}
+\def\FV@DefineCommandChars#1#2#3{%
+  \def\FV@CommandChars{%
+    \catcode`#1=0\relax\catcode`#2=1\relax\catcode`#3=2\relax}}
+\FV@AddToHook\FV@CatCodesHook\FV@CommandChars
+\define@key{FV}{commentchar}[\%]{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@None
+    \let\FV@CommentChar\relax
+  \else
+    \def\FV@CommentChar{\catcode`#1=14}%
+  \fi}
+\FV@AddToHook\FV@CatCodesHook\FV@CommentChar
+\fvset{commandchars=none,commentchar=none}
+\define@key{FV}{firstline}{%
+  \afterassignment\FV@ParseStart\@tempcnta=0#1\relax\@nil{#1}}
+\def\FV@ParseStart#1\relax\@nil#2{%
+  \ifx\@nil#1\@nil
+    \edef\FancyVerbStartNum{\the\@tempcnta}%
+    \let\FancyVerbStartString\relax
+  \else
+    \edef\FancyVerbStartString{#2}%
+  \fi}
+\def\KV@FV@firstline@default{%
+  \let\FancyVerbStartNum\z@
+  \let\FancyVerbStartString\relax}
+%
+\def\FancyVerbStopNum{1}
+%
+\define@key{FV}{lastline}{%
+  \afterassignment\FV@ParseStop\@tempcnta=0#1\relax\@nil{#1}}
+\def\FV@ParseStop#1\relax\@nil#2{%
+  \ifx\@nil#1\@nil
+    \edef\FancyVerbStopNum{\the\@tempcnta}%
+    \let\FancyVerbStopString\relax
+  \else
+    \edef\FancyVerbStopString{#2}%
+  \fi}
+%\def\KV@FV@lastline@default{%
+%  \let\FancyVerbStopNum\z@
+%  \let\FancyVerbStopString\relax}
+\def\KV@FV@lastline@default{%
+  \let\FancyVerbStopNum\m@ne
+  \let\FancyVerbStopString\relax
+}
+\KV@FV@firstline@default
+\KV@FV@lastline@default
+\fvset{firstline,lastline}
+\newcount\FV@CodeLineNo
+\def\FV@PreProcessLine{%
+  \global\advance\FV@CodeLineNo\@ne
+  \FV@FindStartStop}
+\def\FV@@PreProcessLine{%
+  \FV@StepLineNo
+  \FV@Gobble
+  \expandafter\FV@ProcessLine\expandafter{\FV@Line}}
+\def\FV@FindStartStop{\FV@DefineFindStart\FV@FindStartStop}
+%% \def\FV@DefinePreProcessLine{%
+%%   \setcounter{FancyVerbLine}{0}%
+%%   \FV@DefineFindStart}
+\def\FV@DefineFindStart{%
+  \ifx\FancyVerbStartString\relax
+    \ifnum\FancyVerbStartNum<\tw@
+      \FV@DefineFindStop
+    \else
+      \let\FV@FindStartStop\FV@FindStartNum
+    \fi
+  \else
+    \let\FV@FindStartStop\FV@FindStartString
+  \fi}
+\def\FV@FindStartNum{%
+  \ifnum\FancyVerbStartNum>\FV@CodeLineNo\else
+    \FV@DefineFindStop
+    \expandafter\FV@@PreProcessLine
+  \fi}
+%% SR modification begin - 1996
+\def\FV@FindStartString{%
+ \expandafter\FV@@FindStartString
+{\meaning\FV@Line}%
+{\meaning\FancyVerbStartString}%
+}
+\def\FV@@FindStartString#1#2{%
+\edef\@fooA{#1}\edef\@fooB{#2}%
+  \ifx\@fooA\@fooB\FV@DefineFindStop\fi
+}
+%% SR modification end
+\def\FV@DefineFindStop{%
+  \ifx\FancyVerbStopString\relax
+    \ifnum\FancyVerbStopNum<\z@
+      \let\FV@FindStartStop\FV@@PreProcessLine
+    \else
+      \let\FV@FindStartStop\FV@FindStopNum
+    \fi
+  \else
+    \let\FV@FindStartStop\FV@FindStopString
+  \fi}
+\def\FV@FindStopNum{%
+  \ifnum\FancyVerbStopNum>\FV@CodeLineNo
+  \else
+    \let\FV@FindStartStop\relax
+    \ifeof\FV@InFile\else
+      \immediate\closein\FV@InFile
+    \fi
+  \fi
+  \ifnum\FancyVerbStopNum<\FV@CodeLineNo
+  \else
+    \FV@@PreProcessLine
+  \fi}
+%% SR modification begin - 1996
+\def\FV@FindStopString{%
+ \expandafter\FV@@FindStopString
+{\meaning\FV@Line}%
+{\meaning\FancyVerbStopString}%
+}
+\def\FV@@FindStopString#1#2{%
+\edef\@fooA{#1}\edef\@fooB{#2}%
+  \ifx\@fooA\@fooB
+    \let\FV@FindStartStop\relax
+    \ifeof\FV@InFile\else
+      \immediate\closein\FV@InFile
+    \fi
+  \else
+    \expandafter\FV@@PreProcessLine
+  \fi}
+%% SR modification end
+\def\FV@@Gobble{%
+  \expandafter\expandafter\expandafter\FV@@@Gobble
+  \expandafter\FV@@@@Gobble\FV@Line
+    \@nil\@nil\@nil\@nil\@nil\@nil\@nil\@nil\@nil\@nil\@@nil}
+\def\FV@@@Gobble#1\@nil#2\@@nil{\def\FV@Line{#1}}
+\define@key{FV}{gobble}{%
+  \@tempcnta=#1\relax
+  \ifnum\@tempcnta<\@ne
+    \let\FV@Gobble\relax
+  \else
+    \ifnum\@tempcnta>9
+      \FV@Error{gobble parameter must be less than 10}\FV@eha
+    \else
+      \renewcommand{\FV@@@@Gobble}[\@tempcnta]{}%
+      \let\FV@Gobble\FV@@Gobble
+    \fi
+  \fi}
+\def\FV@@@@Gobble{}
+\def\KV@FV@gobble@default{\let\FV@Gobble\relax}
+\fvset{gobble}
+\def\FV@Scan{%
+    \FV@CatCodes
+    \VerbatimEnvironment
+    \FV@DefineCheckEnd
+    \FV@BeginScanning}
+\def\VerbatimEnvironment{%
+  \ifx\FV@EnvironName\relax\xdef\FV@EnvironName{\@currenvir}\fi}
+\let\FV@EnvironName\relax
+\begingroup
+\catcode`\!=0
+\catcode`\[=1
+\catcode`\]=2
+!gdef!FV@CheckEnd@i#1[!FV@@CheckEnd#1\end{}!@nil]
+!gdef!FV@@CheckEnd@i#1\end#2#3!@nil[!def!@tempa[#2]!def!@tempb[#3]]
+!gdef!FV@@@CheckEnd@i[\end{}]
+\catcode`!\=12
+
+!gdef!FV@CheckEnd@ii#1[!FV@@CheckEnd#1\end{}!@nil]
+!gdef!FV@@CheckEnd@ii#1\end#2#3!@nil[!def!@tempa[#2]!def!@tempb[#3]]
+!gdef!FV@@@CheckEnd@ii[\end{}]
+!catcode`!{=12
+!catcode`!}=12
+
+!gdef!FV@CheckEnd@iii#1[!FV@@CheckEnd#1\end{}!@nil]
+!gdef!FV@@CheckEnd@iii#1\end{#2}#3!@nil[!def!@tempa[#2]!def!@tempb[#3]]
+!gdef!FV@@@CheckEnd@iii[\end{}]
+!catcode`!\=0
+
+!gdef!FV@CheckEnd@iv#1[!FV@@CheckEnd#1\end{}!@nil]
+!gdef!FV@@CheckEnd@iv#1\end{#2}#3!@nil[!def!@tempa[#2]!def!@tempb[#3]]
+!gdef!FV@@@CheckEnd@iv[\end{}]
+\endgroup
+\def\FV@BadCodes#1{%
+  \FV@Error
+    {\string\catcode\space of \expandafter\@gobble\string#1 is wrong:
+    \the\catcode`#1}%
+    {Only the following catcode values are allowed:
+    ^^J\@spaces \expandafter\@gobble\string\\ \space\space --> 0 or 12.
+    ^^J\@spaces \string{ \string} --> 1 and 2, resp., or both 12.
+    ^^JTo get this error, either you are a hacker or you got bad advice.}%
+  \def\FV@CheckEnd##1{\iftrue}}
+\def\FV@DefineCheckEnd{%
+  \ifnum\catcode`\\=\z@
+    \ifnum\catcode`\{=\@ne
+      \let\FV@CheckEnd\FV@CheckEnd@i
+      \let\FV@@CheckEnd\FV@@CheckEnd@i
+      \let\FV@@@CheckEnd\FV@@@CheckEnd@i
+    \else
+      \ifnum\catcode`\{=12
+        \let\FV@CheckEnd\FV@CheckEnd@iv
+        \let\FV@@CheckEnd\FV@@CheckEnd@iv
+        \let\FV@@@CheckEnd\FV@@@CheckEnd@iv
+      \else
+        \FV@BadCodes\{%
+      \fi
+    \fi
+  \else
+    \ifnum\catcode`\\=12
+      \ifnum\catcode`\{=\@ne
+        \let\FV@CheckEnd\FV@CheckEnd@ii
+        \let\FV@@CheckEnd\FV@@CheckEnd@ii
+        \let\FV@@@CheckEnd\FV@@@CheckEnd@ii
+      \else
+        \ifnum\catcode`\{=12
+          \let\FV@CheckEnd\FV@CheckEnd@iii
+          \let\FV@@CheckEnd\FV@@CheckEnd@iii
+          \let\FV@@@CheckEnd\FV@@@CheckEnd@iii
+        \else
+          \FV@BadCodes\{%
+        \fi
+      \fi
+    \else
+      \FV@BadCodes\\%
+    \fi
+  \fi}
+\begingroup
+\catcode`\^^M=\active
+  \gdef\FV@BeginScanning#1^^M{%
+    \def\@tempa{#1}\ifx\@tempa\@empty\else\FV@BadBeginError\fi%
+    \FV@GetLine}%
+\endgroup
+\def\FV@BadBeginError#1{%
+  \expandafter\@temptokena\expandafter{\@tempa}%
+  \FV@Error
+    {Extraneous input `\the\@temptokena' between
+      \string\begin{\FV@EnvironName}[<key=value>] and line end}%
+   {This input will be discarded. Hit <return> to continue.}}
+%% DG/SR modification begin - May. 18, 1998 (added code to turn off ligatures)
+%% \def\FV@GetLine{\expandafter\FV@CheckScan\FancyVerbGetLine}
+\def\FV@GetLine{\@noligs\expandafter\FV@CheckScan\FancyVerbGetLine}
+%% DG/SR modification end
+\begingroup
+\catcode`\^^M=\active%
+\gdef\FancyVerbGetLine#1^^M{%
+  \@nil%
+  \FV@CheckEnd{#1}%
+  \ifx\@tempa\FV@EnvironName%            % True if end is found
+    \ifx\@tempb\FV@@@CheckEnd\else\FV@BadEndError\fi%
+    \let\next\FV@EndScanning%
+  \else%
+    \def\FV@Line{#1}%
+    \def\next{\FV@PreProcessLine\FV@GetLine}%
+  \fi%
+  \next}%
+\endgroup
+\def\FV@BadEndError{%
+  \expandafter\@temptokena\expandafter{\@tempb}%
+  \FV@Error
+      {Extraneous input `\the\@temptokena' between
+        \string\end{\FV@EnvironName} and line end}%
+      {This input will be discarded. Type <return> to continue.}}
+\def\FV@EndScanning{%
+  \edef\next{\noexpand\end{\FV@EnvironName}}%
+  \global\let\FV@EnvironName\relax
+  \next}
+\@ifundefined{@currenvline}{\let\@currenvline\@empty}{}
+%\def\FV@CheckScan#1{\@ifnextchar\@nil{\@gobble}{\FV@EOF}}
+\def\FV@CheckScan#1{\ifx\@nil#1\@empty\else\expandafter\FV@EOF\fi}
+\def\FV@EOF{%
+  \FV@Error{Couldn't find `\string\end{\FV@EnvironName}' to end
+    a verbatim environment\@currenvline.}%
+    {Probably you mistyped the environment name or included an extraneous
+    ^^Jspace, or are using an improperly defined verbatim environment.
+    ^^JHit return and I will try to terminate this job.}%
+  \FV@EndScanning
+  \end{document}}
+                                % \subsection{Input}
+\newread\FV@InFile
+\def\FV@Input#1{%
+  \immediate\openin\FV@InFile #1\relax
+  \ifeof\FV@InFile
+    \FV@Error{No verbatim file #1}\FV@eha
+    \immediate\closein\FV@InFile
+  \else
+    \FV@CatCodes
+    \expandafter\FV@@Input
+  \fi}
+\def\FV@@Input{%
+  \def\FV@Line{}%
+  \FV@ReadLine
+  \ifeof\FV@InFile
+    \ifx\FV@Line\@empty\else
+      \FV@PreProcessLine
+    \fi
+    \immediate\closein\FV@InFile
+  \else
+    \FV@PreProcessLine
+    \expandafter\FV@@Input
+  \fi}
+\begingroup
+\catcode`\^^M=\active
+\gdef\FV@ReadLine{%
+  \ifeof\FV@InFile\else
+    \immediate\read\FV@InFile to\@tempa%
+    \expandafter\FV@@ReadLine\@tempa^^M\relax^^M\@nil%
+  \fi}
+\gdef\FV@@ReadLine#1^^M#2^^M#3\@nil{%
+  \expandafter\def\expandafter\FV@Line\expandafter{%
+    \FV@Line#1}%
+  \ifx\relax#2\@empty\expandafter\FV@ReadLine\fi}%
+\endgroup
+\def\FV@FormattingPrep{%
+  \global\FV@CodeLineNo\z@
+  \frenchspacing             % Cancels special punctuation spacing.
+  \FV@SetupFont              % See below.
+  \FV@DefineWhiteSpace       % See below.
+  \FancyVerbDefineActive
+  \FancyVerbFormatCom}       % A user-defined hook (formatcom parameter).
+\expandafter\ifx\csname selectfont\endcsname\relax
+\def\FV@SetupFont{%
+  \FV@BaseLineStretch
+  \ifx\@currsize\small\normalsize\else\small\fi\@currsize
+  \FV@FontSize
+  \FV@FontFamily}
+
+\else
+
+\def\FV@SetupFont{%
+  \FV@BaseLineStretch
+  \FV@FontSize
+  \FV@FontFamily
+  \FV@FontSeries
+  \FV@FontShape
+  \selectfont
+%% DG/SR modification begin - May. 18, 1998 (added code to turn off ligatures)
+  \@noligs}
+%% DG/SR modification end
+\fi
+\define@key{FV}{fontsize}{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@Auto
+    \let\FV@FontSize\relax
+  \else
+    \def\FV@FontSize{#1}%
+  \fi}
+\def\KV@FV@fontsize@default{\let\FV@FontSize\relax}
+\define@key{FV}{baselinestretch}[auto]{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@Auto
+    \let\FV@BaseLineStretch\relax
+  \else
+    \def\FV@BaseLineStretch{\def\baselinestretch{#1}}%
+  \fi}
+\def\KV@FV@baselinestretch@default{\let\FV@BaseLineStretch\relax}
+\define@key{FV}{fontfamily}{%
+  \@ifundefined{FV@fontfamily@#1}%
+    {\def\FV@FontScanPrep{}\def\FV@FontFamily{\fontfamily{#1}}}
+    {\csname FV@fontfamily@#1\endcsname}}
+\define@key{FV}{fontseries}{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@Auto
+    \let\FV@FontSeries\relax
+  \else
+    \def\FV@FontSeries{\fontseries{#1}}%
+  \fi}
+\define@key{FV}{fontshape}{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@Auto
+    \let\FV@FontShape\relax
+  \else
+    \def\FV@FontShape{\fontshape{#1}}%
+  \fi}
+\def\FV@MakeActive#1{%
+  \catcode`#1=\active
+  \def\next##1{\expandafter\def\expandafter\FV@MakeUnActive\expandafter{%
+    \FV@MakeUnActive\def##1{\string##1}}}%
+  \begingroup\lccode`~=`#1\relax\expandafter\next\expandafter~\endgroup}
+\def\FV@MakeUnActive{}
+\begingroup
+\catcode`\`=\active
+\gdef\FV@fontfamily@tt{\def\FV@FontScanPrep{\FV@MakeActive\`}\def\FV@FontFamily{\ttfamily\edef`{{\string`}}}}
+\gdef\FV@fontfamily@cmtt{\def\FV@FontScanPrep{\FV@MakeActive\`}\def\FV@FontFamily{\edef`{{\string`}}\fontfamily{cmtt}}}
+\endgroup
+\@namedef{FV@fontfamily@cmtt-spanish}{\def\FV@FontScanPrep{}\def\FV@FontFamily{\fontfamily{cmtt}}}
+\@namedef{FV@fontfamily@courier}{\def\FV@FontScanPrep{}\def\FV@FontFamily{\fontfamily{pcr}}}
+\@namedef{FV@fontfamily@helvetica}{\def\FV@FontScanPrep{}\let\FV@FontFamily\sffamily}
+%  \def\FV@FontFamily{\fontfamily{phv}}}
+\def\myFont{}
+\@namedef{FV@fontfamily@myFont}{\def\FV@FontScanPrep{}\def\FV@FontFamily{\myFont}}
+\fvset{fontfamily=tt,fontsize=auto,fontshape=auto,fontseries=auto,baselinestretch=auto}
+\begingroup
+\catcode`\ =\active
+\catcode`\^^I=\active
+\gdef\FV@DefineWhiteSpace{\def {\FV@Space}\def^^I{\FV@Tab}}%
+\endgroup
+\define@key{FV}{fileext}[.tex]{\def\FancyVerbFileExtension{#1}}
+\define@key{FV}{defineactive}[]{\def\FancyVerbDefineActive{#1\relax}}
+\define@key{FV}{defineactive*}{%
+  \expandafter\def\expandafter\FancyVerbDefineActive\expandafter{%
+    \FancyVerbDefineActive#1\relax}}
+\fvset{defineactive,fileext=.tex}
+\define@booleankey{FV}{showspaces}%
+  {\def\FV@Space{{\FancyVerbSpace}}}%
+  {\def\FV@Space{\ }}  
+%
+% new definition for \verbvisiblespace 2020-01-13
+\@ifundefined{verbvisiblespace}%
+  {%
+    \@ifundefined{textvisiblespace}%
+    {\begingroup\catcode`\ =12 \gdef\FancyVerbSpace{\tt }\endgroup}
+    {\def\FancyVerbSpace{\textvisiblespace}}
+  }%
+  {\def\FancyVerbSpace{\verbvisiblespace}} 
+%\@ifundefined{textvisiblespace}%
+%    {\begingroup\catcode`\ =12 \gdef\FancyVerbSpace{\tt }\endgroup}
+%    {\let\FancyVerbSpace\textvisiblespace}
+%
+\fvset{showspaces=false}
+\def\FV@Tab{\hbox to\FancyVerbTabSize\fontdimen2\font{\hss\FV@TabChar}}
+\define@key{FV}{tabsize}{%
+  \@tempcnta=#1\relax
+  \ifnum\@tempcnta>100
+    \FV@Error{Tab size too large: `\the\@tempcnta'. (Max size = 100)}\FV@eha
+  \else
+    \edef\FancyVerbTabSize{\the\@tempcnta}%
+  \fi}
+\define@booleankey{FV}{showtabs}%
+  {\def\FV@TabChar{\FancyVerbTab}}%
+  {\let\FV@TabChar\relax}
+\fvset{tabsize=8,showtabs=false}
+\def\FancyVerbTab{%
+    \valign{%
+      \vfil##\vfil\cr
+      \hbox{$\scriptscriptstyle-$}\cr
+      \hbox to 0pt{\hss$\scriptscriptstyle\rangle\mskip -.8mu$}\cr
+      \hbox{$\scriptstyle\mskip -3mu\mid\mskip -1.4mu$}\cr}}
+\newbox\FV@TabBox
+\def\FV@@ObeyTabsInit{%
+  \@tempdimb=\FancyVerbTabSize\fontdimen\tw@\font
+  \edef\FV@ObeyTabSize{\number\@tempdimb}%
+  \advance\@tempdimb\fontdimen\tw@\font
+  \advance\@tempdimb-\FancyVerbTabSize sp  % Allow for rounding errors.
+  \edef\FV@@ObeyTabSize{\number\@tempdimb}%
+  \let\FV@ObeyTabs\FV@@ObeyTabs
+  \let\FV@Tab\FV@TrueTab}
+\def\FV@@ObeyTabs#1{\setbox\FV@TabBox=\hbox{#1}\box\FV@TabBox}
+\let\FV@ObeyTabs\relax
+\def\FV@TrueTab{%
+  \egroup
+  \@tempdima=\FV@ObeyTabSize sp\relax
+  \@tempcnta=\wd\FV@TabBox
+  \advance\@tempcnta\FV@@ObeyTabSize\relax
+  \divide\@tempcnta\@tempdima
+  \multiply\@tempdima\@tempcnta
+  \advance\@tempdima-\wd\FV@TabBox
+  \setbox\FV@TabBox=\hbox\bgroup
+    \unhbox\FV@TabBox\kern\@tempdima\hbox to\z@{\hss\FV@TabChar}}
+\define@booleankey{FV}{obeytabs}%
+  {\let\FV@ObeyTabsInit\FV@@ObeyTabsInit}%
+  {\let\FV@ObeyTabsInit\relax}
+\fvset{obeytabs=false}
+\define@key{FV}{formatcom}[]{\def\FancyVerbFormatCom{#1\relax}}
+\define@key{FV}{formatcom*}{%
+  \expandafter\def\expandafter\FancyVerbFormatCom\expandafter{%
+    \FancyVerbFormatCom#1\relax}}
+\fvset{formatcom}
+\def\FancyVerbFormatLine#1{\FV@ObeyTabs{#1}}
+\define@key{FV}{xleftmargin}{\def\FV@XLeftMargin{#1}}
+\let\FV@XLeftMargin\z@
+\define@key{FV}{xrightmargin}{\def\FV@XRightMargin{#1}}
+\let\FV@XRightMargin\z@
+\define@booleankey{FV}{resetmargins}%
+  {\let\if@FV@ResetMargins\iftrue}
+  {\let\if@FV@ResetMargins\iffalse}
+\fvset{resetmargins=false}
+\define@key{FV}{listparameters}{\def\FV@ListParameterHook{#1}}
+\def\FV@ListParameterHook{}
+\define@key{FV}{hfuzz}{%
+  \@tempdima=#1\relax
+  \edef\FancyVerbHFuzz{\number\@tempdima sp}}
+\fvset{hfuzz=2pt}
+\define@booleankey{FV}{samepage}%
+  {\def\FV@InterLinePenalty{\interlinepenalty\@M}}%
+  {\let\FV@InterLinePenalty\relax}
+\fvset{samepage=false}
+\def\FV@List#1{%
+  \begingroup
+  \FV@UseKeyValues
+  \FV@LeaveVMode
+  \if@inlabel\else\setbox\@labels=\box\voidb@x\fi
+  \FV@ListNesting{#1}%
+  \FV@ListParameterHook
+  \FV@ListVSpace
+  \FV@SetLineWidth
+  \FV@InterLinePenalty
+  \let\FV@ProcessLine\FV@ListProcessLine@i
+  \FV@CatCodes
+  \FV@FormattingPrep
+  \FV@ObeyTabsInit
+  \FV@BeginListFrame}
+\def\FV@LeaveVMode{%
+  \if@noskipsec
+    \leavevmode
+  \else
+    \if@FV@ResetMargins\if@inlabel\leavevmode\fi\fi
+  \fi
+  \ifvmode\@noparlisttrue\else\@noparlistfalse\unskip\par\fi}
+\def\FV@ListNesting#1{%
+  \if@FV@ResetMargins
+    \@listdepth=\z@
+  \else
+    \ifnum\@listdepth>5\relax
+      \@toodeep
+    \else
+      \advance\@listdepth\@ne
+    \fi
+  \fi
+  \rightmargin\z@
+  \csname @list\romannumeral\the\@listdepth\endcsname
+  \ifnum#1=\z@
+    \rightmargin\z@
+    \leftmargin\z@
+  \fi}
+\def\FV@ListVSpace{%
+%  \@topsepadd\topsep
+  \@topsepadd=\FancyVerbVspace
+  \if@noparlist\advance\@topsepadd\partopsep\fi
+  \if@inlabel
+    \vskip\parskip
+  \else
+    \if@nobreak
+      \vskip\parskip
+      \clubpenalty\@M
+    \else
+      \addpenalty\@beginparpenalty
+      \@topsep\@topsepadd
+      \advance\@topsep\parskip
+      \addvspace\@topsep
+    \fi
+  \fi
+  \global\@nobreakfalse
+  \global\@inlabelfalse
+  \global\@minipagefalse
+  \global\@newlistfalse}
+\def\FV@SetLineWidth{%
+  \if@FV@ResetMargins\else
+    \advance\leftmargin\@totalleftmargin
+  \fi
+  \advance\leftmargin\FV@XLeftMargin\relax
+  \advance\rightmargin\FV@XRightMargin\relax
+  \linewidth\hsize
+  \advance\linewidth-\leftmargin
+  \advance\linewidth-\rightmargin
+  \hfuzz\FancyVerbHFuzz\relax}
+\def\FV@ListProcessLine#1{%
+  \hbox to \hsize{%
+    \kern\leftmargin
+    \hbox to \linewidth{%
+      \FV@LeftListNumber
+      \FV@LeftListFrame
+      \FancyVerbFormatLine{#1}\hss
+%% DG/SR modification begin - Jan. 28, 1998 (for numbers=right add-on)
+%%      \FV@RightListFrame}%
+      \FV@RightListFrame
+      \FV@RightListNumber}%
+%% DG/SR modification end
+    \hss}}
+\def\FV@ListProcessLine@i#1{%
+  \hbox{%
+    \ifvoid\@labels\else
+      \hbox to \z@{\kern\@totalleftmargin\box\@labels\hss}%
+    \fi
+    \FV@ListProcessLine{#1}}%
+  \let\FV@ProcessLine\FV@ListProcessLine@ii}
+\def\FV@ListProcessLine@ii#1{%
+  \setbox\@tempboxa=\FV@ListProcessLine{#1}%
+  \let\FV@ProcessLine\FV@ListProcessLine@iii}
+\def\FV@ListProcessLine@iii#1{%
+  {\advance\interlinepenalty\clubpenalty\penalty\interlinepenalty}%
+  \box\@tempboxa
+  \setbox\@tempboxa=\FV@ListProcessLine{#1}%
+  \let\FV@ProcessLine\FV@ListProcessLine@iv}
+\def\FV@ListProcessLine@iv#1{%
+  \penalty\interlinepenalty
+  \box\@tempboxa
+  \setbox\@tempboxa=\FV@ListProcessLine{#1}}%
+\def\FV@EndList{%
+  \FV@ListProcessLastLine
+  \FV@EndListFrame
+  \@endparenv
+  \endgroup
+  \@endpetrue}
+\def\FV@ListProcessLastLine{%
+  \ifx\FV@ProcessLine\FV@ListProcessLine@iv
+    {\advance\interlinepenalty\widowpenalty\penalty\interlinepenalty}%
+    \box\@tempboxa
+  \else
+    \ifx\FV@ProcessLine\FV@ListProcessLine@iii
+      {\advance\interlinepenalty\widowpenalty
+        \advance\interlinepenalty\clubpenalty
+        \penalty\interlinepenalty}%
+      \box\@tempboxa
+    \else
+      \ifnum\FancyVerbStopNum>\@ne
+        \ifx\FV@ProcessLine\FV@ListProcessLine@i
+          \FV@Error{Empty verbatim environment}{}%
+          \FV@ProcessLine{}%
+        \fi
+      \fi
+    \fi
+  \fi}
+\def\FV@VerbatimBegin{\FV@List\z@}
+\def\FV@VerbatimEnd{\FV@EndList}
+\def\FVB@Verbatim{\FV@VerbatimBegin\FV@Scan}
+\def\FVE@Verbatim{\FV@VerbatimEnd}
+\DefineVerbatimEnvironment{Verbatim}{Verbatim}{}
+\def\FV@UseVerbatim#1{%
+  \FV@VerbatimBegin#1\FV@VerbatimEnd
+  \@doendpe\global\@ignorefalse\ignorespaces}
+\def\VerbatimInput{\FV@Command{}{VerbatimInput}}
+\def\FVC@VerbatimInput#1{\FV@UseVerbatim{\FV@Input{#1}}}
+\def\FV@LVerbatimBegin{\FV@List\@ne}
+\def\FV@LVerbatimEnd{\FV@EndList}
+\def\FVB@LVerbatim{\FV@LVerbatimBegin\FV@Scan}
+\def\FVE@LVerbatim{\FV@LVerbatimEnd}
+\DefineVerbatimEnvironment{LVerbatim}{LVerbatim}{}
+\def\FV@LUseVerbatim#1{%
+  \FV@LVerbatimBegin#1\FV@LVerbatimEnd
+  \@doendpe\global\@ignorefalse\ignorespaces}
+\def\LVerbatimInput{\FV@Command{}{LVerbatimInput}}
+\def\FVC@LVerbatimInput#1{\FV@LUseVerbatim{\FV@Input{#1}}}
+\def\FV@Frame@none{%
+  \let\FV@BeginListFrame\relax
+  \let\FV@LeftListFrame\relax
+  \let\FV@RightListFrame\relax
+  \let\FV@EndListFrame\relax}
+\def\FV@Frame@single{%
+  \let\FV@BeginListFrame\FV@BeginListFrame@Single
+  \let\FV@LeftListFrame\FV@LeftListFrame@Single
+  \let\FV@RightListFrame\FV@RightListFrame@Single
+  \let\FV@EndListFrame\FV@EndListFrame@Single}
+\def\FV@Frame@lines{%
+  \let\FV@BeginListFrame\FV@BeginListFrame@Lines
+  \let\FV@LeftListFrame\relax
+  \let\FV@RightListFrame\relax
+  \let\FV@EndListFrame\FV@EndListFrame@Lines}
+\def\FV@Frame@topline{%
+  \let\FV@BeginListFrame\FV@BeginListFrame@Lines
+  \let\FV@LeftListFrame\relax
+  \let\FV@RightListFrame\relax
+  \let\FV@EndListFrame\relax}
+\def\FV@Frame@bottomline{%
+  \let\FV@BeginListFrame\relax
+  \let\FV@LeftListFrame\relax
+  \let\FV@RightListFrame\relax
+  \let\FV@EndListFrame\FV@EndListFrame@Lines}
+%% To define a frame with only a left line
+\def\FV@Frame@leftline{%
+  % To define the \FV@FrameFillLine macro (from \FV@BeginListFrame)
+  \ifx\FancyVerbFillColor\relax
+    \let\FV@FrameFillLine\relax
+  \else
+    \@tempdima\FV@FrameRule\relax
+    \multiply\@tempdima-\tw@
+    \edef\FV@FrameFillLine{%
+      {\noexpand\FancyVerbFillColor{\vrule\@width\number\@tempdima sp}%
+      \kern-\number\@tempdima sp}}%
+  \fi
+  \let\FV@BeginListFrame\relax
+  \let\FV@LeftListFrame\FV@LeftListFrame@Single
+  \let\FV@RightListFrame\relax
+  \let\FV@EndListFrame\relax}
+\def\FV@BeginListFrame@Single{%
+  \lineskip\z@
+  \baselineskip\z@
+  \ifx\FancyVerbFillColor\relax
+    \let\FV@FrameFillLine\relax
+  \else
+    \@tempdima\FV@FrameRule\relax
+    \multiply\@tempdima-\tw@
+    \edef\FV@FrameFillLine{%
+      {\noexpand\FancyVerbFillColor{\vrule\@width\number\@tempdima sp}%
+      \kern-\number\@tempdima sp}}%
+  \fi
+%% DG/SR modification begin - May. 19, 1998
+%%  \FV@SingleFrameLine
+  \FV@SingleFrameLine{\z@}%
+%% DG/SR modification end
+  \penalty\@M
+  \FV@SingleFrameSep
+  \penalty\@M
+}
+%% DG/SR modification begin - May. 19, 1998
+\define@key{FV}{label}{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@None
+    \let\FV@LabelBegin\relax
+    \let\FV@LabelEnd\relax
+  \else
+    \FV@Label@i#1\@nil%
+  \fi}
+\def\FV@Label@i{\@ifnextchar[{\FV@Label@ii}{\FV@Label@ii[]}}
+\def\FV@Label@ii[#1]#2\@nil{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\empty
+    \def\FV@LabelBegin{#2}%
+  \else
+    \def\FV@LabelBegin{#1}%
+    \def\FV@LabelPositionBottomLine{\@ne}%
+  \fi
+  \def\FV@LabelEnd{#2}}
+\fvset{label=none}
+\define@key{FV}{labelposition}[none]{%
+  \@ifundefined{FV@LabelPosition@#1}%
+    {\FV@Error{Label position `#1' not defined.}\FV@eha}%
+    {\@nameuse{FV@LabelPosition@#1}}}
+\def\FV@LabelPosition@none{%
+  \let\FV@LabelPositionTopLine\relax%
+  \let\FV@LabelPositionBottomLine\relax}
+\def\FV@LabelPosition@topline{%
+  \def\FV@LabelPositionTopLine{\@ne}%
+  \let\FV@LabelPositionBottomLine\relax}
+\def\FV@LabelPosition@bottomline{%
+  \let\FV@LabelPositionTopLine\relax%
+  \def\FV@LabelPositionBottomLine{\@ne}}
+\def\FV@LabelPosition@all{%
+  \def\FV@LabelPositionTopLine{\@ne}%
+  \def\FV@LabelPositionBottomLine{\@ne}}
+\fvset{labelposition=topline}
+\def\FV@SingleFrameLine#1{%
+  \hbox to\z@{%
+    \kern\leftmargin
+    \ifnum#1=\z@%   top line?
+      \let\FV@Label\FV@LabelBegin
+    \else
+      \let\FV@Label\FV@LabelEnd
+    \fi
+    \ifx\FV@Label\relax
+      \FancyVerbRuleColor{\vrule \@width\linewidth \@height\FV@FrameRule}%
+    \else
+      \ifnum#1=\z@% top line
+        \setbox\z@\hbox{\strut\enspace\FV@LabelBegin\enspace\strut}%
+      \else
+        \setbox\z@\hbox{\strut\enspace\FV@LabelEnd\enspace\strut}%
+      \fi
+      \@tempdimb=\dp\z@
+      \advance\@tempdimb -.5\ht\z@
+      \@tempdimc=\linewidth
+      \advance\@tempdimc -\wd\z@
+      \divide\@tempdimc\tw@
+      \ifnum#1=\z@              % Top line
+        \ifx\FV@LabelPositionTopLine\relax
+          \FancyVerbRuleColor{\vrule \@width\linewidth \@height\FV@FrameRule}%
+        \else
+          \FV@FrameLineWithLabel
+        \fi
+      \else                     % Bottom line
+        \ifx\FV@LabelPositionBottomLine\relax
+          \FancyVerbRuleColor{\vrule \@width\linewidth \@height\FV@FrameRule}%
+        \else
+          \FV@FrameLineWithLabel
+        \fi
+      \fi
+    \fi
+    \hss}}
+\def\FV@FrameLineWithLabel{%
+  \ht\z@\@tempdimb\dp\z@\@tempdimb%
+  \FancyVerbRuleColor{%
+    \vrule \@width\@tempdimc \@height\FV@FrameRule
+    \raise\@tempdimb\box\z@
+    \vrule \@width\@tempdimc \@height\FV@FrameRule}}
+\def\FV@BeginListFrame@Lines{%
+  \begingroup
+    \lineskip\z@skip
+    \FV@SingleFrameLine{\z@}%
+%    \kern-0.5\baselineskip\relax       %% 20220604 (hv)
+    \nointerlineskip			%% added 20220604 (hv)
+    \baselineskip\z@skip
+    \kern\FV@FrameSep\relax
+    \penalty\@M% prevent a pagebreak _after_ the line 20220602 (hv)
+  \endgroup}%
+\def\FV@EndListFrame@Lines{%
+  \begingroup
+    \baselineskip\z@skip
+    \kern\FV@FrameSep\relax
+    \nointerlineskip			%% added 20220604 (hv)
+    \penalty\@M% prevent a pagebreak _before_ the line 20220602 (hv)
+    \FV@SingleFrameLine{\@ne}%
+  \endgroup}
+\def\FV@SingleFrameSep{%
+  \hbox to \z@{%
+    \kern\leftmargin
+    \hbox to\linewidth{%
+      \FancyVerbRuleColor{%
+        \ifx\FancyVerbFillColor\relax
+          \vrule\@width 0pt\@height\FV@FrameSep\relax
+        \fi
+        \vrule\@width\FV@FrameRule\relax
+        \ifx\FancyVerbFillColor\relax
+          \hfil
+        \else
+          {\FancyVerbFillColor\leaders\hrule\@height\FV@FrameSep\hfil}%
+        \fi
+        \ifx\FancyVerbFillColor\relax
+          \vrule\@width 0pt\@height\FV@FrameSep\relax
+        \fi
+        \vrule\@width\FV@FrameRule\relax}}%
+    \hss}}
+\def\FV@LeftListFrame@Single{%
+  \strut
+  {\FancyVerbRuleColor{\vrule \@width\FV@FrameRule}}%
+  \FV@FrameFillLine
+  \ifx\FancyVerbFillColor\relax
+    \kern\FV@FrameSep
+  \else
+    {\noexpand\leavevmode\FancyVerbFillColor{\vrule\@width\FV@FrameSep}}%
+  \fi}
+\def\FV@RightListFrame@Single{%
+  \ifx\FancyVerbFillColor\relax
+    \kern\FV@FrameSep
+  \else
+    {\noexpand\leavevmode\FancyVerbFillColor{\vrule\@width\FV@FrameSep}}%
+  \fi
+  {\noexpand\leavevmode\FancyVerbRuleColor{\vrule\@width\FV@FrameRule}}}
+\def\FV@EndListFrame@Single{%
+  \penalty\@M
+  \FV@SingleFrameSep
+  \penalty\@M
+  \FV@SingleFrameLine{\@ne}}
+\define@key{FV}{framerule}{%
+  \@tempdima=#1\relax
+  \edef\FV@FrameRule{\number\@tempdima sp\relax}}
+\def\KV@FV@framerule@default{\let\FV@FrameRule\fboxrule}
+\define@key{FV}{framesep}{%
+  \@tempdima=#1\relax
+  \edef\FV@FrameSep{\number\@tempdima sp\relax}}
+\def\KV@FV@framesep@default{\let\FV@FrameSep\fboxsep}
+\fvset{framerule,framesep}
+\define@key{FV}{rulecolor}{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@None
+    \let\FancyVerbRuleColor\relax
+  \else
+    \let\FancyVerbRuleColor\@tempa
+  \fi}
+\define@key{FV}{fillcolor}{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\FV@None
+    \let\FancyVerbFillColor\relax
+  \else
+    \let\FancyVerbFillColor\@tempa
+  \fi}
+\fvset{rulecolor=none,fillcolor=none}
+\def\FV@Frame@double{%
+  \let\FV@FrameBegin\FV@FrameBegin@double
+  \let\FV@FrameLine\FV@FrameLine@double
+  \let\FV@FrameEnd\FV@FrameEnd@double}
+\define@key{FV}{frame}[none]{%
+  \@ifundefined{FV@Frame@#1}%
+    {\FV@Error{Frame style `#1' not defined.}\FV@eha}%
+    {\@nameuse{FV@Frame@#1}}}
+\fvset{frame=none}
+\newcounter{FancyVerbLine}
+\define@key{FV}{firstnumber}[auto]{%
+  \def\@tempa{#1}\def\@tempb{auto}%
+  \def\FV@FirstNumber{#1}%             added 2021-08-12
+  \ifx\@tempa\@tempb
+    \def\FV@SetLineNo{%
+      \c@FancyVerbLine\FV@CodeLineNo%
+      \advance\c@FancyVerbLine\m@ne}%
+  \else%
+    \def\@tempb{last}%
+    \ifx\@tempa\@tempb
+      \let\FV@SetLineNo\relax%
+    \else%
+      \def\FV@SetLineNo{%
+        \c@FancyVerbLine#1%
+        \advance\c@FancyVerbLine\m@ne}%
+    \fi%
+  \fi}
+\define@booleankey{FV}{numberblanklines}%
+  {\let\if@FV@NumberBlankLines\iftrue}
+  {\let\if@FV@NumberBlankLines\iffalse}
+\fvset{numberblanklines=true}
+\def\FV@refstepcounter#1{%
+  \stepcounter{#1}%
+  \protected@edef\@currentlabel{\csname p@#1\endcsname\arabic{FancyVerbLine}}%
+}
+\def\FV@StepLineNo{%
+  \FV@SetLineNo%
+  \def\FV@StepLineNo{%
+    \if@FV@NumberBlankLines%
+      \FV@refstepcounter{FancyVerbLine}%
+    \else%
+      \ifx\FV@Line\empty%
+      \else%
+        \FV@refstepcounter{FancyVerbLine}%
+      \fi%
+    \fi}%
+  \FV@StepLineNo}
+\def\theFancyVerbLine{\rmfamily\tiny\arabic{FancyVerbLine}}
+\define@key{FV}{numbers}[none]{%
+  \@ifundefined{FV@Numbers@#1}%
+    {\FV@Error{Numbers style `#1' not defined.}\FV@eha}%
+    {\@nameuse{FV@Numbers@#1}}}
+\def\FV@Numbers@none{%
+\let\FV@LeftListNumber\relax
+\let\FV@RightListNumber\relax}
+\newcount\FV@StepNumber
+\define@key{FV}{stepnumber}{\FV@StepNumber#1}
+\def\KV@FV@stepnumber@default{\FV@StepNumber\@ne}
+\fvset{stepnumber}
+\def\FV@Numbers@left{%
+  \let\FV@RightListNumber\relax
+  \def\FV@LeftListNumber{%
+  \@tempcnta=\FV@CodeLineNo
+  \@tempcntb=\FV@CodeLineNo
+  \divide\@tempcntb\FV@StepNumber
+  \multiply\@tempcntb\FV@StepNumber
+  \ifnum\@tempcnta=\@tempcntb
+      \if@FV@NumberBlankLines
+        \hbox to\z@{\hss\theFancyVerbLine\kern\FV@NumberSep}%
+      \else
+        \ifx\FV@Line\empty
+        \else
+          \hbox to\z@{\hss\theFancyVerbLine\kern\FV@NumberSep}%
+        \fi
+      \fi
+  \fi}}
+\def\FV@Numbers@right{%
+  \let\FV@LeftListNumber\relax
+  \def\FV@RightListNumber{%
+  \@tempcnta=\FV@CodeLineNo
+  \@tempcntb=\FV@CodeLineNo
+  \divide\@tempcntb\FV@StepNumber
+  \multiply\@tempcntb\FV@StepNumber
+  \ifnum\@tempcnta=\@tempcntb
+%% DG/SR modification begin - Apr. 28, 1998
+%%    \hbox to \z@{\kern\FV@NumberSep\theFancyVerbLine\hss}%
+      \if@FV@NumberBlankLines
+        \hbox to\z@{\kern\FV@NumberSep\theFancyVerbLine\hss}%
+      \else
+        \ifx\FV@Line\empty
+        \else
+          \hbox to\z@{\kern\FV@NumberSep\theFancyVerbLine\hss}%
+        \fi
+      \fi
+%% DG/SR modification end
+  \fi}}
+%% DG modification end
+\define@key{FV}{numbersep}{%
+  \@tempdima=#1\relax
+  \edef\FV@NumberSep{\number\@tempdima sp\relax}}
+\fvset{numbers=none,numbersep=12pt,firstnumber=auto}
+\def\FV@BVerbatimBegin{%
+  \begingroup
+    \FV@UseKeyValues
+    \FV@BeginVBox
+    \let\FV@ProcessLine\FV@BProcessLine
+    \FV@FormattingPrep
+    \FV@ObeyTabsInit}%
+\def\FV@BVerbatimEnd{\FV@EndVBox\endgroup}
+\def\FV@BeginVBox{%
+  \leavevmode
+  \hbox\ifx\FV@boxwidth\relax\else to\FV@boxwidth\fi\bgroup
+  \ifcase\FV@baseline\vbox\or\vtop\or$\vcenter\fi\bgroup}
+\def\FV@EndVBox{\egroup\ifmmode$\fi\hfil\egroup}
+\define@key{FV}{boxwidth}{%
+  \def\@tempa{#1}\def\@tempb{auto}%
+  \ifx\@tempa\@tempb
+    \let\FV@boxwidth\relax
+  \else
+    \@tempdima=#1\relax
+    \edef\FV@boxwidth{\number\@tempdima sp}%
+  \fi}
+\def\KV@FV@boxwidth@default{\let\FV@boxwidth\relax}
+\define@key{FV}{baseline}{%
+  \if t#1\@empty\let\FV@baseline\@ne\else
+    \if c#1\@empty\let\FV@baseline\tw@\else\let\FV@baseline\z@\fi
+  \fi}
+\fvset{baseline=b,boxwidth}
+\def\FV@BProcessLine#1{\hbox{\FancyVerbFormatLine{#1}}}
+\def\FVB@BVerbatim{\FV@BVerbatimBegin\FV@Scan}
+\def\FVE@BVerbatim{\FV@BVerbatimEnd}
+\DefineVerbatimEnvironment{BVerbatim}{BVerbatim}{}
+\def\FV@BUseVerbatim#1{\FV@BVerbatimBegin#1\FV@BVerbatimEnd}
+\def\BVerbatimInput{\FV@Command{}{BVerbatimInput}}
+\def\FVC@BVerbatimInput#1{\FV@BUseVerbatim{\FV@Input{#1}}}
+\def\SaveVerbatim{\FV@Environment{}{SaveVerbatim}}
+\def\FVB@SaveVerbatim#1{%
+  \@bsphack
+  \begingroup
+    \FV@UseKeyValues
+%%    \FV@BeginVBox
+%%    \let\FV@ProcessLine\FV@BProcessLine
+%%    \FV@FormattingPrep
+%%    \FV@ObeyTabsInit%
+%%
+    \def\SaveVerbatim@Name{#1}%
+    \gdef\FV@TheVerbatim{}%
+    \def\FV@ProcessLine##1{%
+      \expandafter\gdef\expandafter\FV@TheVerbatim\expandafter{%
+%        \FV@TheVerbatim\FV@ProcessLine{##1}}}%    2021-08-12
+%    \gdef\FV@TheVerbatim{}%
+         \FV@TheVerbatim\advance\c@FancyVerbLine\@ne\FV@ProcessLine{##1}}}%
+     \gdef\FV@TheVerbatim{%
+       \edef\@tempa{\FV@FirstNumber}%
+       \def\@tempb{auto}%
+       \ifx\@tempa\@tempb%
+         \c@FancyVerbLine\FV@CodeLineNo%
+       \else%
+         \c@FancyVerbLine\FV@FirstNumber%
+         \advance\c@FancyVerbLine\m@ne%
+       \fi%
+     }%    
+  \FV@Scan}
+\def\FVE@SaveVerbatim{%
+  \expandafter\global\expandafter\let
+  \csname FV@SV@\SaveVerbatim@Name\endcsname\FV@TheVerbatim
+%%  \expandafter\gdef
+%%    \csname FV@SV@\SaveVerbatim@Name\endcsname{\FV@TheVerbatim}
+%%    \FV@EndVBox
+%%  \endgroup}
+  \endgroup\@esphack}
+\DefineVerbatimEnvironment{SaveVerbatim}{SaveVerbatim}{}
+\def\FV@CheckIfSaved#1#2{%
+  \@ifundefined{FV@SV@#1}%
+  {\FV@Error{No verbatim text has been saved under name `#1'}\FV@eha}%
+  {#2{\csname FV@SV@#1\endcsname}}}
+\def\UseVerbatim{\FV@Command{}{UseVerbatim}}
+\def\FVC@UseVerbatim#1{\FV@CheckIfSaved{#1}{\FV@UseVerbatim}}
+\def\LUseVerbatim{\FV@Command{}{LUseVerbatim}}
+\def\FVC@LUseVerbatim#1{\FV@CheckIfSaved{#1}{\FV@LUseVerbatim}}
+\def\BUseVerbatim{\FV@Command{}{BUseVerbatim}}
+\def\FVC@BUseVerbatim#1{\FV@CheckIfSaved{#1}{\FV@BUseVerbatim}}
+\newwrite\FV@OutFile
+\def\VerbatimOut{\FV@Environment{}{VerbatimOut}}
+\def\FVB@VerbatimOut#1{%
+  \@bsphack
+  \begingroup
+    \FV@UseKeyValues
+    \FV@DefineWhiteSpace
+    \def\FV@Space{\space}%
+    \FV@DefineTabOut
+    \def\FV@ProcessLine{\immediate\write\FV@OutFile}%
+    \immediate\openout\FV@OutFile #1\relax
+    \let\FV@FontScanPrep\relax
+%% DG/SR modification begin - May. 18, 1998 (to avoid problems with ligatures)
+    \let\@noligs\relax
+%% DG/SR modification end
+    \FV@Scan}
+\def\FVE@VerbatimOut{\immediate\closeout\FV@OutFile\endgroup\@esphack}
+\DefineVerbatimEnvironment{VerbatimOut}{VerbatimOut}{}
+\def\FV@DefineTabOut{%
+  \def\FV@Tab{}%
+  \@tempcnta=\FancyVerbTabSize\relax
+  \loop\ifnum\@tempcnta>\z@
+    \edef\FV@Tab{\FV@Tab\space}%
+    \advance\@tempcnta\m@ne
+  \repeat}
+\def\SaveVerb{\FV@Command{}{SaveVerb}}
+\begingroup
+\catcode`\^^M=\active%
+\gdef\FVC@SaveVerb#1#2{%
+  \@namedef{FV@SV@#1}{}%
+  \begingroup%
+    \FV@UseKeyValues%
+    \FV@CatCodes%
+    \outer\def^^M{\FV@EOL}%
+    \global\let\@tempg\FancyVerbAfterSave%
+    \catcode`#2=12%
+    \def\@tempa{\def\FancyVerbGetVerb####1####2}%
+    \expandafter\@tempa\string#2{\endgroup\@namedef{FV@SV@#1}{##2}\@tempg}%
+    \FancyVerbGetVerb\FV@EOL}%
+\endgroup
+\def\FV@EOL{%
+  \endgroup
+  \FV@Error%
+    {Could not find the end delimiter of a short verb command}%
+    {You probably just forget the end delimiter of a \string\Verb\space or
+      \string\SaveVerb^^J%
+      command, or you broke the literal text across input lines.^^J%
+      Hit <return> to procede.}}
+\define@key{FV}{aftersave}{\def\FancyVerbAfterSave{#1}}
+\fvset{aftersave=}
+\define@key{FV}{reflabel}{\if$#1$\else\label{#1}\fi}
+%\fvset{reflabel=}
+
+\def\FV@UseVerb#1{\mbox{\FV@UseKeyValues\FV@FormattingPrep#1}}
+\DeclareRobustCommand\UseVerb{\FV@Command{}{UseVerb}}
+\def\FVC@UseVerb#1{%
+  \@ifundefined{FV@SV@#1}%
+    {\FV@Error{Short verbatim text never saved to name `#1'}\FV@eha}%
+    {\FV@UseVerb{\@nameuse{FV@SV@#1}}}}
+\def\Verb{\FV@Command{}{Verb}}
+\begingroup
+\catcode`\^^M=\active%
+\gdef\FVC@Verb#1{%
+  \begingroup%
+    \FV@UseKeyValues%
+    \FV@FormattingPrep%
+    \FV@CatCodes%
+    \outer\def^^M{}%
+    \catcode`#1=12%
+    \def\@tempa{\def\FancyVerbGetVerb####1####2}%
+    \expandafter\@tempa\string#1{\mbox{##2}\endgroup}%
+    \FancyVerbGetVerb\FV@EOL}%
+\endgroup
+\def\DefineShortVerb{\FV@Command{}{DefineShortVerb}}
+\def\FVC@DefineShortVerb#1{%
+  \@ifundefined{FV@CC@\string#1}%
+    {\FVC@@DefineShortVerb#1}%
+    {\FV@Error{`\expandafter\@gobble\string#1' is already a short
+      verb character.}\FV@eha}}
+\def\FVC@@DefineShortVerb#1{%
+  \begingroup
+    \lccode`\~=`#1%
+    \lowercase{\gdef\@tempg{\edef~}\global\let\@temph~}%
+  \endgroup
+  \expandafter\let\csname FV@AC@\string#1\endcsname\@temph
+  \expandafter\edef\csname FV@CC@\string#1\endcsname{\the\catcode`#1}%
+  \expandafter\let\csname FV@KV@\string#1\endcsname\FV@KeyValues
+  \@tempg{%
+    \let\noexpand\FV@KeyValues\expandafter\noexpand
+      \csname FV@KV@\string#1\endcsname
+    \noexpand\FVC@Verb\expandafter\@gobble\string#1}%
+  \expandafter\def\expandafter\dospecials\expandafter{\dospecials\do#1}%
+  \expandafter\def\expandafter\@sanitize\expandafter{\@sanitize\@makeother#1}%
+  \catcode`#1=\active}%
+\def\UndefineShortVerb#1{%
+  \@ifundefined{FV@CC@\string#1}%
+    {\FV@Error{`\expandafter\@gobble\string#1' is not a short
+      verb character}\FV@eha}%
+    {\FV@UndefineShortVerb#1}}
+\def\FV@UndefineShortVerb#1{%
+  \catcode`#1=\csname FV@CC@\string#1\endcsname
+%% DG/SR modification begin - Jun. 12, 1998
+  \expandafter\let\csname FV@CC@\string#1\endcsname\relax
+%% DG/SR modification end
+  \begingroup
+    \lccode`\~=`#1%
+    \lowercase{\gdef\@tempg{\let~}}%
+  \endgroup
+  \expandafter\@tempg\csname FV@AC@\string#1\endcsname
+  \def\@tempa##1\do#1##2\@nil##3\@nil##4\@@nil{##3\def\dospecials{##1##2}\fi}%
+  \expandafter\@tempa\dospecials\@nil\iftrue\@nil\do#1\@nil\iffalse\@nil\@@nil
+  \def\@tempa##1\@makeother#1##2\@nil##3\@nil##4\@@nil{%
+    ##3\def\@sanitize{##1##2}\fi}%
+  \expandafter\@tempa\@sanitize\@nil\iftrue\@nil\do#1\@nil\iffalse\@nil\@@nil}
+\def\SaveMVerb{\FV@Command{}{SaveMVerb}}
+\begingroup
+\catcode`\^^M=\active%
+\gdef\FVC@SaveMVerb#1#2{%
+  \@ifundefined{FV@SVM@#1}{}%
+    {\FV@Error{Moving verbatim name `#1' already used}%
+      {I will overwrite the old definition. Hit <return> to continue.}}%
+  \global\@namedef{FV@SVM@#1}{}%
+  \begingroup%
+    \let\FV@SavedKeyValues\FV@KeyValues%
+    \FV@UseKeyValues%
+    \FV@CatCodes%
+    \outer\def^^M{}%
+    \global\let\@tempg\FancyVerbAfterSave%
+    \catcode`#2=12%
+    \def\@tempa{\def\FancyVerbGetVerb####1####2}%
+    \expandafter\@tempa\string#2{%
+      \if@filesw
+        \FV@DefineWhiteSpace%
+        \let\FV@Space\space%
+        \let\FV@Tab\space%
+        \FV@MakeUnActive%
+        \let\protect\string
+        \immediate\write\@auxout{%
+          \noexpand\SaveGVerb[\FV@SavedKeyValues]{#1}\string#2##2\string#2}%
+      \fi
+      \endgroup%
+      \@namedef{FV@SV@#1}{##2}%
+      \@tempg}%
+    \FancyVerbGetVerb\FV@EOL}%
+\endgroup
+\def\SaveGVerb{\FV@Command{}{SaveGVerb}}
+\begingroup
+\catcode`\^^M=\active%
+\gdef\FVC@SaveGVerb#1#2{%
+  \global\@namedef{FV@SVG@#1}{}%
+  \begingroup%
+    \FV@UseKeyValues%
+    \FV@CatCodes%
+    \outer\def^^M{}%
+    \catcode`#2=12%
+    \def\@tempa{\def\FancyVerbGetVerb####1####2}%
+    \expandafter\@tempa\string#2{\endgroup\global\@namedef{FV@SVG@#1}{##2}}%
+    \FancyVerbGetVerb\FV@EOL}%
+\endgroup
+\def\UseMVerb{\protect\pUseMVerb}
+\def\pUseMVerb{\FV@Command{}{pUseMVerb}}
+\def\FVC@pUseMVerb#1{%
+  \expandafter\ifx \csname FV@SVM@#1\endcsname\relax
+    \expandafter\ifx \csname FV@SVG@#1\endcsname\relax
+      \@warning{Moving verbatim text not defined for name `#1'}\FV@eha
+      {\bf ??}%
+    \else
+      \FV@UseVerb{\@nameuse{FV@SVG@#1}}%
+    \fi
+  \else
+    \FV@UseVerb{\@nameuse{FV@SVM@#1}}%
+  \fi}
+\expandafter\ifx\csname documentclass\endcsname\relax
+  \def\lrbox#1{%
+    \edef\@tempa{%
+      \endgroup
+      \setbox#1\hbox{%
+        \begingroup\aftergroup}%
+          \def\noexpand\@currenvir{\@currenvir}}%
+          %\def\noexpand\@currenvline{\on@line}}%
+    \@tempa
+      \@endpefalse
+      \bgroup
+        \ignorespaces}
+  \def\endlrbox{\unskip\egroup}
+\fi
+%
+%%
+\InputIfFileExists{fancyvrb.cfg}{}{}
+%%
+\endinput
+%%
+%% End of file `fancyvrb.sty'.

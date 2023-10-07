@@ -1,0 +1,236 @@
+#!/bin/sh
+# original mktexlsr -- create or rebuild ls-R.
+# 
+# (If you change or delete the word `original' on the previous line,
+# installation won't write this script over yours.)
+#
+# Suitable for calling from cron, as in:
+# 0 * * * * cd /your/texmf/root && /usr/local/texlive/bin/mktexlsr
+# 
+# Originally written as `texhash' by Thomas Esser, Okt., 1994.
+# Public domain.
+
+version='$Id: mktexlsr 56842 2020-11-02 23:00:54Z karl $'
+progname=`echo $0 | sed 's%.*/%%'`
+
+usage="Usage: $progname [OPTION]... [DIR]...
+
+Rebuild ls-R filename databases used by TeX.  If one or more arguments
+DIRS are given, these are used as the directories in which to build
+ls-R. Else all directories in the search path for ls-R files
+(\$TEXMFDBS) are used.
+
+Options:
+  --dry-run  do not actually update anything
+  --help     display this help and exit 
+  --quiet    cancel --verbose
+  --silent   same as --quiet
+  --verbose  explain what is being done
+  --version  output version information and exit
+  
+If standard input is a terminal, --verbose is on by default.
+
+For more information, see the \`Filename database' section of
+Kpathsea manual available at http://tug.org/kpathsea.
+
+Report bugs to: tex-k@tug.org
+TeX Live home page: <http://tug.org/texlive/>
+"
+
+# The simple PATH-prepending approach we take in other scripts doesn't
+# handle DOS/Windows, but we don't use the shell scripts on Windows
+# anyway, and does anyone want current TL on DOS or DJGPP?  Maybe they
+# can maintain their own changes if so.  Leaving this code though, since
+# it's always been here ...
+
+# MS-DOS and MS-Windows define $COMSPEC or $ComSpec and use `;' to separate
+# directories in path lists whereas Unix uses `:'.  Make an exception for
+# Cygwin, which pretends to be UNIX.
+# Create a variable that holds the right character to be used by the scripts.
+DOSISH=no
+case `uname -s` in
+  CYGWIN*|Cygwin*|cygwin*) ;;
+  *) if test -n "$COMSPEC" || test -n "$ComSpec"; then DOSISH=yes; fi
+esac
+if test "$DOSISH" = "no"; then SEP=':'; else SEP=';';fi
+
+# Add the location of the script to the PATH if necessary.  This must
+# be done before kpsewhich can be called, and thus cannot be put into
+# mktex.opt.
+dirname=`echo $0 | sed 's%/*[^/][^/]*$%%'`
+case $dirname in
+  "") # Do nothing
+      ;;
+  /* | [A-z]:/*) # Absolute name
+      PATH="$dirname$SEP$PATH"
+      export PATH ;;
+   *)  # Relative name
+      PATH="`pwd`/$dirname$SEP$PATH"
+      export PATH ;;
+esac
+
+if tty -s >/dev/null 2>&1; then verbose=true; else verbose=false; fi
+dry_run=false
+trees=
+
+# initialize treefile by either mktemp or some random name
+# code taken from pdfjam and adjusted
+{
+  treefile=`
+    (umask 077 && mktemp "${TMPDIR-/tmp}/mktexlsrtrees.XXXXXXXXXX") 2>/dev/null
+  ` && test -n "$treefile" && test -f "$treefile"
+} || {
+  ##  We'll use awk to make random number, for portability
+  random=`awk 'END { srand(); printf ("%d\n", rand()*1000000); }' /dev/null`
+  treefile="${TMPDIR-/tmp}/mktexlsrtrees$$.$random"
+} || exit $?
+
+trap 'cd /; rm -f $treefile; test -z "$db_dir_tmp" || rm -rf "$db_dir_tmp"; 
+      exit' 0 1 2 3 7 13 15
+
+# A copy of some stuff from mktex.opt, so we can run in the presence of
+# terminally damaged ls-R files.
+while test $# -gt 0; do
+  if test "x$1" = x--help || test "x$1" = x-help; then
+    echo "$usage"
+    exit 0
+  elif test "x$1" = x--version || test "x$1" = x-version; then
+    echo "`basename $0` $version"
+    kpsewhich --version
+    exit 0
+  elif test "x$1" = x--verbose || test "x$1" = x-verbose; then
+    verbose=true
+  elif test "x$1" = x--dry-run || test "x$1" = x-n; then
+    dry_run=true
+  elif test "x$1" = x--quiet || test "x$1" = x--silent \
+       || test "x$1" = x-quiet || test "x$1" = x-silent ; then
+    verbose=false
+  elif test "x$1" = x--; then
+    :
+  elif echo "x$1" | grep '^x-' >/dev/null; then
+    echo "$progname: unknown option \`$1', try --help if you need it." >&2
+    exit 1
+  else
+    if test ! -d "$1"; then
+      echo "$progname: $1: not a directory, skipping." >&2
+      shift
+      continue
+    fi
+    # By saving the argument in a file, we can later get it back while
+    # supporting spaces in the name.  This still doesn't support
+    # newlines in the directory names, but nobody ever complains about
+    # that, and it seems much too much trouble to use \0 terminators.
+    (umask 077
+    if echo "$1" >>"$treefile"; then :; else
+      echo "$progname: $treefile: could not append to arg file, goodbye." >&2
+      exit 1
+    fi
+    )
+  fi
+  shift
+done
+
+# mktexupd and mktexlsr make sure they're coordinated via this.  A copy
+# is found mktex.opt.
+ls_R_magic='% ls-R -- filename database for kpathsea; do not change this line.'
+# The old string, which should continue to work.
+old_ls_R_magic='% ls-R -- maintained by MakeTeXls-R; do not change this line.'
+
+{
+  # Get list of directories from the explicit arguments (now saved in
+  # $treefile), or $TEXMFDBS if no explicit args.  Eliminate duplicates.
+  saveIFS=$IFS  # break only at newline
+  IFS='
+'
+  if test -s "$treefile"; then
+    set x `sort "$treefile" | uniq`
+  else
+    set x `kpsewhich --show-path=ls-R | tr : '
+' | sort | uniq`
+  fi
+  IFS=$saveIFS
+  shift
+}
+
+for TEXMFLS_R in "$@"; do
+  # Prepend cwd if the directory was relative.
+  case "$TEXMFLS_R" in
+  "") continue ;;  # Strictly speaking, it is an error if this case is taken.
+  /* | [A-z]:/*) ;;
+  *)  TEXMFLS_R="`pwd`/$TEXMFLS_R"
+  esac
+  # Allow for either ls-R and ls-r to exist.  But create ls-R if we're
+  # working from scratch.
+  if test -f "$TEXMFLS_R/ls-R"; then
+    db_file="$TEXMFLS_R/ls-R"
+  elif test -f "$TEXMFLS_R/ls-r"; then
+    db_file="$TEXMFLS_R/ls-r"
+  else
+    db_file="$TEXMFLS_R/ls-R"
+  fi
+  # Follow a possible symlink to get the right filesystem. 
+  # The '|| true' construct prevents an sh -e aborting.
+  db_readlink=`kpsereadlink "$TEXMFLS_R/ls-R" 2>/dev/null` || true
+  case "$db_readlink" in
+  "") ;;
+  /* | [A-z]:/*) db_file="$db_readlink" ;;
+  *)  db_file="$TEXMFLS_R/$db_readlink"
+  esac
+  db_dir=`echo "$db_file" | sed 's%/[^/][^/]*$%%'` # can't rely on dirname
+
+  # want to be silent if the directory doesn't exist, since the ls-R
+  # path ordinarily contains many nonexistent directories.
+  test -d "$db_dir" || continue
+  test -w "$db_dir" || { echo "$progname: $db_dir: directory not writable. Skipping..." >&2; continue; }
+
+  if test ! -f "$db_file"; then
+    cp /dev/null "$db_file"
+    # Use same permissions as parent directory, minus x,s, or t bits.
+    chmod `kpsestat -xst "$db_dir"` "$db_file"
+  elif test -s "$db_file" \
+       && test "x`sed '1s/$//;1q' \"$db_file\"`" != "x$ls_R_magic" \
+       && test "x`sed '1s/$//;1q' \"$db_file\"`" != "x$old_ls_R_magic"; then
+    echo "$progname: $db_file: no magic string, skipping..." >&2
+    continue
+  fi
+
+  # Skip if we cannot write the file:
+  kpseaccess -w "$db_file" || { echo "$progname: $db_file: no write permission, skipping..." >&2; continue; }
+
+  db_dir_tmp="$db_dir/lsR$$.tmp"
+  (umask 077 && mkdir "$db_dir_tmp" ) \
+    || { echo "$progname: $db_dir_tmp: could not create directory, skipping..." >&2; continue; }
+  db_file_tmp="$db_dir_tmp/lsR$$.tmp"
+  rm -f "$db_file_tmp"
+
+  $verbose && echo "$progname: Updating $db_file... "
+  $dry_run && continue
+  
+  echo "$ls_R_magic" >"$db_file_tmp"
+
+  # The main task. We put ./: in the output, so top-level files can be
+  # found via ls-R. Probably irrelevant in practice.  The sed command
+  # inserts the leading ./ for directory names, and removes ., .., and
+  # version control entries from the list.  Also omit contents of any
+  # the version directories; sed apparently requires that we do that
+  # operation in a separate invocation.  We do not try to support colons
+  # in directory names.
+  # 
+  echo "./:" >>"$db_file_tmp"
+  vc_dirs='\.\(bzr\|git\|hg\|svn\)\|_darcs'
+  (cd "$TEXMFLS_R" && \ls -LRa 2>/dev/null) \
+   | sed -e '/^$/{n;s%^\./%%;s%^%./%;}; /^\.$/d; /^\.\.$/d; /^'$vc_dirs'$/d;' \
+         -e '/^[\.\/]*lsR[0-9]*\.tmp:*$/d' \
+   | sed -e /$vc_dirs'.*:$/,/^$/d' \
+   >>"$db_file_tmp"
+
+  # To be really safe, a loop.
+  until PERMS=`kpsestat = "$db_file"`; do sleep 1; done
+  chmod $PERMS "$db_file_tmp"
+  rm -f "$db_file"
+  mv "$db_file_tmp" "$db_file"
+  rm -rf "$db_dir_tmp"
+done
+
+$verbose && echo "$progname: Done."
+exit 0

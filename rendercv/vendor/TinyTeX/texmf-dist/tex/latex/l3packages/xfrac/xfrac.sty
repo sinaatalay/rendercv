@@ -1,0 +1,424 @@
+%%
+%% This is file `xfrac.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% xfrac.dtx  (with options: `package')
+%% 
+%% Copyright (C) 2004,2008-2010 Morten Hoegholm
+%%           (C) 2011-2023 The LaTeX Project
+%% 
+%% It may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License (LPPL), either version 1.3c of
+%% this license or (at your option) any later version.  The latest
+%% version of this license is in the file:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% This file is part of the "l3packages bundle" (The Work in LPPL)
+%% and all files in that bundle must be distributed together.
+%% 
+%% File: xfrac.dtx
+\RequirePackage{expl3}[2018/02/21]
+\@ifpackagelater{expl3}{2018/02/21}
+  {}
+  {%
+    \PackageError{xfrac}{Support package l3kernel too old}
+      {%
+        Please install an up to date version of l3kernel\MessageBreak
+        using your TeX package manager or from CTAN.\MessageBreak
+        \MessageBreak
+        Loading xfrac will abort!%
+      }%
+    \endinput
+  }
+\RequirePackage{amstext,graphicx,l3keys2e,textcomp,xparse,xtemplate}
+\ProvidesExplPackage{xfrac}{2023-08-29}{}
+  {L3 Experimental split-level fractions}
+\keys_define:nn { xfrac }
+  {
+    cm-recommended .choice:,
+    cm-recommended /
+      false        .code:n     =
+        { \bool_set_true:N \l__xfrac_cm_std_bool },
+    cm-recommended /
+      true         .code:n     =
+        { \bool_set_false:N \l__xfrac_cm_std_bool },
+    cm-recommended .default:n  = { true },
+    cm-standard    .bool_set:N = \l__xfrac_cm_std_bool
+  }
+\ProcessKeysOptions { xfrac }
+\box_new:N \l__xfrac_slash_box
+\box_new:N \l__xfrac_tmp_box
+\cs_new:Npn \__xfrac_tmp:w { }
+\dim_new:N \l__xfrac_denominator_bot_sep_dim
+\dim_new:N \l__xfrac_numerator_bot_sep_dim
+\dim_new:N \l__xfrac_numerator_top_sep_dim
+\dim_new:N \l__xfrac_slash_left_sep_dim
+\dim_new:N \l__xfrac_slash_right_sep_dim
+\muskip_new:N \l__xfrac_slash_left_muskip
+\muskip_new:N \l__xfrac_slash_right_muskip
+\fp_new:N \l__xfrac_hscale_fp
+\fp_new:N \l__xfrac_scale_factor_fp
+\fp_new:N \l__xfrac_vscale_fp
+\tl_new:N \l__xfrac_denominator_font_tl
+\tl_new:N \l__xfrac_numerator_font_tl
+\tl_new:N \l__xfrac_phantom_tl
+\tl_new:N \l__xfrac_slash_symbol_tl
+\tl_new:N \l__xfrac_slash_symbol_font_tl
+\cs_new:Npn \__xfrac_fontscale: { }
+\cs_new:Npn \__xfrac_math:n #1 { }
+\cs_new:Npn \__xfrac_denominator_font_change: { }
+\cs_new:Npn \__xfrac_denominator_format:n #1 { }
+\cs_new:Npn \__xfrac_numerator_font_change: { }
+\cs_new:Npn \__xfrac_numerator_format:n #1 { }
+\cs_new:Npn \__xfrac_relscale: { }
+\cs_new:Npn \__xfrac_slash_symbol_font_change: { }
+\cs_new:Npn \__xfrac_slash_symbol_format:n #1 { }
+\cs_new:Npn \__xfrac_text_or_math:n #1 { }
+\DeclareObjectType { xfrac } { 3 }
+\DeclareTemplateInterface { xfrac } { text } { 3 }
+  {
+    denominator-bot-sep : length     = \c_max_dim           ,
+    denominator-font    : tokenlist  = \f@family            ,
+    denominator-format  : function 1 = #1                   ,
+    h-scale             : real       = 1                    ,
+    math-mode           : choice { false , true }
+                                   = false                  ,
+    numerator-font      : tokenlist  = \f@family            ,
+    numerator-format    : function 1 = #1                   ,
+    numerator-bot-sep   : length     = \c_max_dim           ,
+    numerator-top-sep   : length     = \c_max_dim           ,
+    phantom             : tokenlist  = 8                    ,
+    scale-factor        : real       = 0.83333              ,
+    scale-relative      : choice { false , true }
+                                     = true                 ,
+    scaling             : choice { false , true }
+                                     = true                 ,
+    slash-left-kern     : length     = 0 pt                 ,
+    slash-left-mkern    : muskip     = -2 mu                ,
+    slash-right-kern    : length     = 0 pt                 ,
+    slash-right-mkern   : muskip     = -1 mu                ,
+    slash-symbol        : tokenlist  = \textfractionsolidus ,
+    slash-symbol-font   : tokenlist  = \f@family            ,
+    slash-symbol-format : function 1 = #1                   ,
+    v-scale             : real       = 1                    ,
+  }
+\DeclareTemplateCode { xfrac } { text } { 3 }
+  {
+    denominator-bot-sep = \l__xfrac_denominator_bot_sep_dim ,
+    denominator-font    = \l__xfrac_denominator_font_tl     ,
+    denominator-format  = \__xfrac_denominator_format:n      ,
+    h-scale             = \l__xfrac_hscale_fp               ,
+    math-mode           =
+      {
+        false = \cs_set_eq:NN \__xfrac_math:n \use:n,
+        true  = \cs_set_eq:NN \__xfrac_math:n \ensuremath
+      },
+    numerator-font      = \l__xfrac_numerator_font_tl       ,
+    numerator-format    = \__xfrac_numerator_format:n        ,
+    numerator-bot-sep   = \l__xfrac_numerator_bot_sep_dim   ,
+    numerator-top-sep   = \l__xfrac_numerator_top_sep_dim   ,
+    phantom             = \l__xfrac_phantom_tl              ,
+    scale-factor        = \l__xfrac_scale_factor_fp         ,
+    scale-relative      =
+      {
+        false =
+          \cs_set:Npn \__xfrac_relscale:
+            {
+              \dim_eval:n
+                { \box_ht:N \l__xfrac_tmp_box + \box_dp:N \l__xfrac_tmp_box }
+            },
+        true  =
+          \cs_set:Npn \__xfrac_relscale:
+            { \dim_eval:n { \box_ht:N \l__xfrac_slash_box } }
+      },
+    scaling             =
+      {
+        false = \cs_set_eq:NN \__xfrac_fontscale: \prg_do_nothing:,
+        true  =
+          \cs_set:Npn \__xfrac_fontscale:
+            {
+              \fontsize
+                { \fp_to_dim:n { \l__xfrac_scale_factor_fp * \__xfrac_relscale: } }
+                { \c_zero_dim }
+              \selectfont
+            }
+      },
+    slash-left-kern     = \l__xfrac_slash_left_sep_dim      ,
+    slash-left-mkern    = \l__xfrac_slash_left_muskip       ,
+    slash-right-kern    = \l__xfrac_slash_right_sep_dim     ,
+    slash-right-mkern   = \l__xfrac_slash_right_muskip      ,
+    slash-symbol        = \l__xfrac_slash_symbol_tl         ,
+    slash-symbol-font   = \l__xfrac_slash_symbol_font_tl    ,
+    slash-symbol-format = \__xfrac_slash_symbol_format:n     ,
+    v-scale             = \l__xfrac_vscale_fp
+  }
+  {
+    \mode_if_math:TF
+      {
+        \cs_set_eq:NN \__xfrac_text_or_math:n \text
+        \cs_set:Npx \__xfrac_denominator_font_change:
+          { \tex_fam:D \l__xfrac_denominator_font_tl }
+        \cs_set:Npx \__xfrac_numerator_font_change:
+          { \tex_fam:D \l__xfrac_numerator_font_tl }
+        \cs_set:Npx \__xfrac_slash_symbol_font_change:
+          { \tex_fam:D \l__xfrac_slash_symbol_font_tl }
+      }
+      {
+        \cs_set_eq:NN \__xfrac_text_or_math:n \mbox
+        \cs_set:Npn \__xfrac_denominator_font_change:
+          {
+            \fontfamily { \l__xfrac_denominator_font_tl }
+            \selectfont
+          }
+        \cs_set:Npn \__xfrac_numerator_font_change:
+          {
+            \fontfamily { \l__xfrac_numerator_font_tl }
+            \selectfont
+          }
+        \cs_set:Npn \__xfrac_slash_symbol_font_change:
+          {
+            \fontfamily { \l__xfrac_slash_symbol_font_tl }
+            \selectfont
+          }
+      }
+    \__xfrac_text_or_math:n
+      {
+        \m@th
+        \hbox_set:Nn \l__xfrac_tmp_box
+          { \__xfrac_math:n { \vphantom { ( ) } } }
+        \hbox_set:Nn \l__xfrac_slash_box
+          {
+            \__xfrac_math:n
+              {
+                \__xfrac_slash_symbol_format:n
+                  {
+                    \__xfrac_math:n
+                      {
+                        \__xfrac_slash_symbol_font_change:
+                        \IfNoValueTF {#2}
+                          { \l__xfrac_slash_symbol_tl } {#2}
+                      }
+                  }
+              }
+          }
+        \cs_set:Npn \__xfrac_tmp:w
+          {
+            \raisebox
+              {
+                \dim_eval:n
+                  {
+                    \box_ht:N \l__xfrac_slash_box
+                    - \box_dp:N \l__xfrac_slash_box
+                    - \height
+                  }
+              }
+          }
+        \dim_compare:nNnTF
+          { \l__xfrac_numerator_top_sep_dim } = { \c_max_dim }
+          {
+            \dim_compare:nNnF
+              { \l__xfrac_numerator_bot_sep_dim } = { \c_max_dim }
+              {
+                \cs_set:Npn \__xfrac_tmp:w
+                  {
+                    \raisebox
+                      { \dim_use:N \l__xfrac_numerator_bot_sep_dim }
+                  }
+              }
+          }
+          {
+            \dim_compare:nNnTF
+              { \l__xfrac_numerator_bot_sep_dim } = { \c_max_dim }
+                {
+                  \cs_set:Npn \__xfrac_tmp:w
+                    {
+                      \raisebox
+                        {
+                          \dim_eval:n
+                            {
+                              \box_ht:N \l__xfrac_slash_box
+                              - \dim_use:N \l__xfrac_numerator_top_sep_dim
+                              - \height
+                            }
+                        }
+                    }
+                }
+                {
+                  \msg_error:nn { xfrac }
+                    { over-specified-numerator-sep }
+                }
+          }
+        \__xfrac_tmp:w
+          {
+            \__xfrac_fontscale:
+            \__xfrac_numerator_format:n
+              {
+                \scalebox
+                  { \fp_use:N \l__xfrac_hscale_fp }
+                  [ \fp_use:N \l__xfrac_vscale_fp ]
+                  {
+                    \__xfrac_math:n
+                      {
+                        \__xfrac_numerator_font_change:
+                        {
+                          \vphantom { \l__xfrac_phantom_tl }
+                          #1
+                        }
+                      }
+                  }
+              }
+          }
+        \__xfrac_math:n
+          { % THIS IS JUST WRONG!
+            \mode_if_math:TF
+              { \tex_mskip:D \l__xfrac_slash_right_muskip }
+              { \tex_hskip:D \l__xfrac_slash_right_sep_dim }
+          }
+        \box_use:N \l__xfrac_slash_box
+        \__xfrac_math:n
+          {
+            \mode_if_math:TF
+              { \tex_mskip:D \l__xfrac_slash_left_muskip }
+              { \tex_hskip:D \l__xfrac_slash_left_sep_dim }
+          }
+        \dim_compare:nNnTF
+          { \l__xfrac_denominator_bot_sep_dim } = { \c_max_dim }
+          {
+            \cs_set:Npn \__xfrac_tmp:w
+              { \raisebox { - \box_dp:N \l__xfrac_slash_box } }
+          }
+          {
+            \cs_set:Npn \__xfrac_tmp:w
+              {
+                \raisebox
+                  { \dim_use:N \l__xfrac_denominator_bot_sep_dim }
+              }
+          }
+        \__xfrac_tmp:w
+          {
+            \__xfrac_fontscale:
+            \__xfrac_denominator_format:n
+              {
+                \scalebox
+                  { \fp_use:N \l__xfrac_hscale_fp }
+                  [ \fp_use:N \l__xfrac_vscale_fp ]
+                  {
+                    \__xfrac_math:n
+                      {
+                        \__xfrac_denominator_font_change:
+                        {
+                          \vphantom { \l__xfrac_phantom_tl }
+                          #3
+                        }
+                      }
+                  }
+              }
+          }
+      }
+  }
+\DeclareRestrictedTemplate { xfrac } { text } { math }
+  {
+    numerator-font      = \number \fam ,
+    slash-symbol        = /            ,
+    slash-symbol-font   = \number \fam ,
+    denominator-font    = \number \fam ,
+    scale-factor        = 0.7          ,
+    scale-relative      = false        ,
+    scaling             = true         ,
+    denominator-bot-sep = 0 pt         ,
+    math-mode           = true         ,
+    phantom             = ( % )
+  }
+\DeclareInstance { xfrac } { default } { text } { }
+\DeclareInstance { xfrac } { mathdefault } { math }
+  { numerator-top-sep = 0pt }
+\DeclareCollectionInstance { plainmath } { xfrac } { mathdefault } { math }
+  {
+    numerator-bot-sep   = 0 pt       ,
+    numerator-top-sep   = \c_max_dim ,
+    scale-factor        = 1          ,
+    scale-relative      = false      ,
+    scaling             = true       ,
+    slash-right-mkern   = 0 mu       ,
+    slash-left-mkern    = 0 mu
+  }
+\DeclareInstance { xfrac } { cmr } { text }
+  {
+    denominator-bot-sep = 0 pt    ,
+    numerator-top-sep   = 0.2 ex  ,
+    slash-left-kern     = -0.1 em ,
+    slash-right-kern    = -0.1 em
+  }
+\DeclareInstance { xfrac } { cmss } { text }
+  {
+    denominator-bot-sep = 0 pt    ,
+    numerator-top-sep   = 0.2 ex  ,
+    slash-left-kern     = -0.1 em ,
+    slash-right-kern    = -0.1 em
+  }
+\DeclareInstance { xfrac } { cmtt } { text }
+  {
+    denominator-bot-sep = 0 pt    ,
+    numerator-top-sep   = 0.2 ex  ,
+    slash-left-kern     = -0.1 em ,
+    slash-right-kern    = -0.1 em
+  }
+\bool_if:NF \l__xfrac_cm_std_bool
+  {
+    \DeclareInstance { xfrac } { cmr } { text }
+      { slash-symbol-font = ptm }
+    \DeclareInstance { xfrac } { cmss } { text }
+      { slash-symbol-font = ptm }
+    \DeclareInstance { xfrac } { cmtt } { text }
+      { slash-symbol-font = ppl }
+  }
+\DeclareInstance { xfrac } { lmr } { text }
+  {
+    denominator-bot-sep = 0 pt     ,
+    numerator-top-sep   = 0.1 ex   ,
+    slash-left-kern     = -0.15 em ,
+    slash-right-kern    = -0.15 em
+  }
+\DeclareInstance { xfrac } { lmss } { text }
+  {
+    denominator-bot-sep = 0 pt     ,
+    numerator-top-sep   = 0 pt     ,
+    slash-left-kern     = -0.15 em ,
+    slash-right-kern    = -0.15 em
+  }
+\DeclareInstance { xfrac } { lmtt } { text }
+  {
+    denominator-bot-sep = 0 pt     ,
+    numerator-top-sep   = 0 pt     ,
+    slash-left-kern     = -0.15 em ,
+    slash-right-kern    = -0.15 em
+  }
+\NewDocumentCommand \sfrac { o m o m }
+  {
+    \mode_if_math:TF
+      {
+        \IfInstanceExistTF { xfrac } { mathfam \number \fam }
+          { \UseInstance { xfrac } { mathfam \number \fam } }
+          { \UseInstance { xfrac } { mathdefault } }
+        {#2} {#3} {#4}
+      }
+      {
+        \IfInstanceExistTF { xfrac } {#1}
+          { \UseInstance { xfrac } {#1} }
+          {
+            \IfInstanceExistTF { xfrac } { \f@family }
+              { \UseInstance { xfrac } { \f@family } }
+              { \UseInstance { xfrac } { default } }
+          }
+        {#2} {#3} {#4}
+      }
+  }
+\msg_new:nnnn { xfrac } { over-specified-numerator-sep }
+  { You~have~specified~both~"numerator-top-sep"~and~"numerator-bot-sep". }
+  { I~will~pretend~that~you~didn't~specify~either~of~them. }
+%% 
+%%
+%% End of file `xfrac.sty'.

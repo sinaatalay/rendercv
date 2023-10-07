@@ -1,0 +1,1251 @@
+% \iffalse^^A meta-comment
+% ======================================================================
+% scrlfile-patcholdlatex.dtx
+% Copyright (c) Markus Kohm, 2002-2022
+%
+% This file is part of the work `scrlfile' which is part of the LaTeX2e
+% KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrlfile-patcholdlatex.dtx 3874 2022-06-05 10:38:02Z kohm $
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2022-06-05 12:38:02 +0200 (So, 05. Jun 2022) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 3874 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrlfile-patcholdlatex.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script package source
+  }%
+\reserved@a
+%</dtx>
+%<package>\ProvidesPackage{scrlfile-patcholdlatex}[%
+%!KOMAScriptVersion
+%<package>  package 
+  (patching old LaTeX kernels)]
+%<*dtx>
+\ifx\documentclass\undefined
+  \input scrdocstrip.tex
+  \@@input scrkernel-version.dtx
+  \@@input scrstrip.inc
+  \KOMAdefVariable{COPYRIGHTFROM}{2002}
+  \generate{\usepreamble\defaultpreamble
+    \file{scrlfile-patcholdlatex.sty}{%
+      \from{scrlfile-patcholdlatex.dtx}{package}%
+      \from{scrlogo.dtx}{logo}%
+    }%
+  }
+  \@@input scrstrop.inc
+\else
+  \let\endbatchfile\relax
+\fi
+\endbatchfile
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\begin{document}
+  \DocInput{scrlfile-patcholdlatex.dtx}
+\end{document}
+%</dtx>
+% \fi^^A  meta-comment
+%
+% \changes{v2.95}{2002/06/11}{First version split from hugh scrclass.dtx}
+% \changes{v3.24}{2017/05/06}{standalone manual removed}
+% \changes{v3.32}{2020/09/02}{new (sub)-package}
+% \changes{v3.36}{2022/02/03}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/02/03}{using \file{scrlogo.dtx} to define the logo}
+%
+% \GetFileInfo{scrlfile-patcholdlatex.dtx}
+% \title{\pkg*{scrlfile} \KOMAScript{} Sub-Package \pkg*{scrlfile-patcholdlatex}}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   This package provides hooks before and after loading files, packages or
+%   classes. It also provides a hook after the last \cs{clearpage} of the
+%   document. It allowes to replace files, packages and classes by other
+%   files, packages and classes. It is inteded to be used by package and class
+%   authors but may also be used by \LaTeX{} users.
+% \end{abstract}
+% \tableofcontents
+%
+%
+% \section{User Manual}
+%
+% \pkg*{scrlfile-patcholdlatex} implements the part of \pkg*{scrlfile}
+% that patches old \LaTeX{} kernels.
+%
+% There isn't any user manual for the user level \LaTeXe{} commands in this
+% file. Please see the manual of \pkg*{scrlfile} for more information about
+% \pkg*{scrlfile-patcholdlatex}.
+%
+% \MaybeStop{\PrintIndex}
+%
+% \section{Implementation of \pkg*{scrlfile-patcholdlatex}}
+%
+%
+% \subsection{Patching \LaTeX{} Kernel Macros}
+%
+% Test whether the used \LaTeX{} is old enough.
+% \changes{v3.34}{2021/04/21}{make it more robust agains not recommended
+%   direct usage}
+% \changes{3.35}{2021/10/31}{\LaTeX{} kernel change results in new variant of
+%   \pkg*{scrfile-hook}}
+%    \begin{macrocode}
+\@ifundefined{IfFormatAtLeastTF}{}{%
+  \IfFormatAtLeastTF{2020/10/01}{%
+    \PackageError{scrlfile-hook}{LaTeX too young for this package}{%
+      It seems this package has been loaded directly using a LaTeX
+      version\MessageBreak
+      2020-10-01 or newer. This is not recommended. Please always load
+      package\MessageBreak
+      scrlfile instead of scrlfile-patcholdlatex.\MessageBreak
+      If you would continue, I will try to load scrlfile-hook%
+      \IfFormatAtLeast{2021/11/15}{}{-3.34}%
+    }%
+    \IfFormatAtLeastTF{2021/11/15}{%
+      \RequirePackage{scrlfile-hook}%
+    }{%
+      \RequirePackage{scrlfile-hook-3.34}%
+    }%
+    \endinput
+  }{}%
+}
+%    \end{macrocode}
+%
+% \begin{command}{\InputIfFileExists}
+% \changes{v2.96}{2006/07/19}{replacement code added}
+% \LaTeX{} uses this macro for loading files with
+% \cs{input}\marg{filename}, \cs{include}, \cs{LoadClass},
+% \cs{LoadClassWithOptions}, \cs{documentclass}, \cs{documentstyle},
+% \cs{RequirePackage}, \cs{usepackage}. Only
+% \cs{input}~\meta{filename} loads \meta{filename} without using
+% \cs{InputIfFileExists}.
+%
+% Because of this, it's very easy to add stuff before and after
+% loading a file. We simply change this macro and add to
+% macros\,---\,one before loading the file and one after loading the
+% file. But before we redefine the macro, we test, if the macro was
+% defined like we expected. \LaTeX{} will warn, if not.
+% \changes{v3.27}{2019/10/06}{\LaTeX{} 2019-10-01 changed the definition}
+%
+% \changes{v3.28}{2019/11/21}{support for \cls{memoir}}
+% With \cls{memoir} their is a special case. It also redefines
+% \cs{InputIfFileExists}. As shown in the source of the class it does so
+% because \pkg*{scrlfile} does it. However it does it not compatible with
+% \pkg*{scrlfile} and it does not emulate \pkg*{scrlfile} as it do for
+% other packages. So if you try to use \pkg*{scrlfile} with memoir,
+% \pkg*{scrbase} has to take care to \cls{memoir}. And in oposit to
+% \pkg*{scrlfile} \cls{memoir} does not always fix the argument order bug
+% of \LaTeX{} but do so only for the implementation of \LaTeX{} 2019-10-01.
+% So in case of \cls{memoir} we just patch every version of it without
+% testing.
+%    \begin{macrocode}
+\@ifclassloaded{memoir}{%
+  \PackageInfo{scrlfile}{class `memoir' detected.\MessageBreak
+    Using a compatible redefinition of \string\InputIfFileExists,\MessageBreak
+    but always robust and with the fix of the\MessageBreak
+    argument order bug even for old versions of the\MessageBreak
+    LaTeX kernel%
+  }%
+}{%
+  \long\def\reserved@a#1#2{%
+    \IfFileExists{#1}%
+      {#2\@addtofilelist{#1}\@@input \@filef@und}}%
+  \ifx\reserved@a\InputIfFileExists\else
+    \expandafter\CheckCommand\expandafter*\expandafter\InputIfFileExists
+    \expandafter{%
+      \expandafter\protect\csname InputIfFileExists \endcsname
+    }%
+    \expandafter\CheckCommand \csname InputIfFileExists \endcsname[2]{%
+      \IfFileExists {#1}{%
+        \expandafter \@swaptwoargs \expandafter {\@filef@und }%
+        {#2\@addtofilelist {#1}\@@input }%
+      }%
+    }%
+  \fi
+}
+%    \end{macrocode}
+% Now we can redefine the macro like described above:
+%    \begin{macrocode}
+\expandafter\renewcommand\expandafter*\expandafter\InputIfFileExists
+\expandafter{\expandafter
+  \protect\csname InputIfFileExists \endcsname}%
+\expandafter\long\expandafter\def\csname InputIfFileExists \endcsname#1#2{%
+  \begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname #1-@alias\endcsname\relax
+    \expandafter\@secondoftwo
+  \else
+    \scr@replacefile@msg{\csname #1-@alias\endcsname}{#1}%
+    \expandafter\@firstoftwo
+  \fi
+  {%
+    \expandafter\InputIfFileExists\expandafter{\csname
+      #1-@alias\endcsname}{#2}%
+  }%
+  {\IfFileExists{#1}{%
+      \expandafter\scr@input@withhook\expandafter{\@filef@und}{#1}{#2}%
+    }}%
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@input@withhook}
+% \changes{v3.27}{2019/03/28}{added}
+% \changes{v3.28}{2019/11/21}{support for \cls{memoir}}
+% We need a new internal, because of expanding \cs{@file@und} before inputting
+% the file.
+%    \begin{macrocode}
+\@ifclassloaded{memoir}{%
+  \newcommand{\scr@input@withhook}[3]{%
+    \scr@load@hook{before}{#2}%
+    #3\@addtofilelist{#2}%
+    \@ifundefined{m@matbeginf}{}{\m@matbeginf{#2}}%
+    \@@input #1%
+    \@ifundefined{m@matendf}{}{\m@matendf{#2}}%
+    \@ifundefined{killm@matf}{}{\killm@matf{#2}}%
+    \scr@load@hook{after}{#2}%
+  }%
+}{%
+  \newcommand{\scr@input@withhook}[3]{%
+    \scr@load@hook{before}{#2}%
+    #3\@addtofilelist{#2}%
+    \@@input #1%
+    \scr@load@hook{after}{#2}%
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@input@withhook
+% \end{command}^^A \InputIfFileExists
+%
+% \begin{macro}{\@loadwithoptions}
+% \changes{v2.96}{2006/07/19}{re-implementation}
+% \begin{macro}{\scr@loadwithoptions}
+% \changes{v2.96}{2006/07/19}{added}
+% \begin{macro}{\scr@@loadwithoptions}
+% \changes{v2.97a}{2007/03/07}{added}
+% \LaTeX{} uses this macro for loading classes and packages using
+% \cs{LoadClassWithOptions} or \cs{RequirePackageWithOptions}. We simply say
+% now: if the class or package should be replaced by another, try it again
+% with the replacement name. The stack is used. This will result in an
+% error if the replacements are nested too deep. This should be, because it
+% will also result in an error using ring replacements.
+%    \begin{macrocode}
+\newcommand*{\scr@@loadwithoptions}{}
+\newcommand*{\scr@loadwithoptions}{}
+\let\scr@loadwithoptions\@loadwithoptions
+\renewcommand*{\@loadwithoptions}[3]{%
+  \begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname #3.#1-@aliasname\endcsname\relax
+    \def\scr@@loadwithoptions{\scr@loadwithoptions{#1}{#2}{#3}}%
+  \else
+    \scr@replacefile@msg{\csname #3.#1-@aliasname\endcsname.#1}{#3.#1}% 
+    \def\scr@@loadwithoptions{%
+      \@loadwithoptions{#1}{#2}{\csname #3.#1-@aliasname\endcsname}%
+    }%
+  \fi
+  \scr@@loadwithoptions
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@@loadwithoptions
+% \end{macro}^^A \scr@loadwithoptions
+% \end{macro}^^A \@loadwithoptions
+%
+% \begin{macro}{\@onefilewithoption}
+% \changes{v2.96}{2006/07/19}{re-implementation}
+% \begin{macro}{\scr@onefilewithoption}
+% \changes{v2.96}{2006/07/19}{added}
+% \begin{macro}{\scr@@onefilewithoption}
+% \changes{v2.98}{2007/12/18}{added}
+% \LaTeX{} uses this macro for loading classes and packages using
+% \cs{LoadClass}, \cs{documentclass}, \cs{RequirePackage}, and
+% \cs{usepackage}. We simply say now: if the class or package should be
+% replaced by another, try it again with the replacement name. The stack is
+% used. This will result in an error if the replacements are nested too
+% deep. This should be, because it will also result in an error using ring
+% replacements.
+%    \begin{macrocode}
+\newcommand*{\scr@onefilewithoptions}{}
+\let\scr@onefilewithoptions\@onefilewithoptions
+\def\@onefilewithoptions#1[#2][#3]#4{%
+  \begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname #1.#4-@aliasname\endcsname\relax
+%    \end{macrocode}
+% Do this ridiculous definition and call outside of \cs{ifx}\dots\cs{fi}
+% because of some errornous packages like some versions of
+% \pkg{breakurl}. This does not avoid an error, but the message about
+% unclosed \cs{if} will be outside of \pkg*{scrlfile}.
+%    \begin{macrocode}
+    \def\scr@@onefilewithoptions{\scr@onefilewithoptions{#1}}%
+  \else
+    \scr@replacefile@msg{\csname #1.#4-@aliasname\endcsname.#4}{#1.#4}%
+    \edef\scr@@onefilewithoptions{%
+      \noexpand\@onefilewithoptions{\csname #1.#4-@aliasname\endcsname}}%
+  \fi 
+  \scr@@onefilewithoptions[{#2}][{#3}]{#4}%
+  \scr@load@hook{lateafter}{#1.#4}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@@onefilewithoption
+% \end{macro}^^A \scr@onefilewithoption
+% \end{macro}^^A \@onefilewithoption
+%
+%  \begin{macro}{\scr@replacefile@msg}
+% \changes{v2.96}{2006/07/19}{added}
+% \changes{v2.98}{2007/12/18}{spellfix}
+% Last but not least \pkg*{scrlfile} will write a message to the log file at
+% every replacement.
+%    \begin{macrocode}
+\newcommand*{\scr@replacefile@msg}[2]{%
+  \PackageInfo{scrlfile}{inputing `#1' instead of `#2'}%
+}
+%    \end{macrocode}
+%  \end{macro}^^A \scr@replacefile@msg
+%
+% \begin{macro}{\scr@load@hook}
+% \changes{v3.27a}{2019/10/16}{workaround for strange handling of
+%   \cs{AtEndOfPackage} hook in \cs{@onefilewithoptions}}
+% This macro simply calls a load-file-hook, either the \emph{before}
+% or the \emph{after} one, if the hook exists. After calling the hook
+% it will be deleted. First argument is the type of hook
+% (\meta{before} or \meta{after}), second argument is a filename. 
+%    \begin{macrocode}
+\newcommand*{\scr@load@hook}[2]{%
+%    \end{macrocode}
+% \begin{macro}{\scrlfile@cmp@hook}
+% \changes{v3.27a}{2019/10/23}{renamed}
+% \begin{macro}{\scrlfile@hookname}
+% \changes{v3.27a}{2019/10/23}{renamed}
+% \changes{v3.29}{2020/06/01}{do the class and package load hooks only in the
+%   document preamble}^^A --> https://komascript.de/node/2274
+% Workaround for strange handling of the \cs{AtEndOfPackage} hook in
+% \cs{@onefilewithoptions} (becomes \cs{@empty}, if the package already has
+% been loaded and is not loaded again). This workaround is not nice but
+% smart. Before loading a file it defines a marker macro and undefines it
+% later. To decide whether to define or remove the marker, two local macros
+% are used \cs{scrlfile@hookname} and \cs{scrlfile@cmp@hook}. The first has
+% the name of the current hook from the first argument. The other is a compare
+% string. The first one is also valid while processing the hook, but only in
+% the document preamble. The names are very unique, so we do not reserve them
+% using \cs{newcommand} outside. The name of the marker is less
+% unique. Nevertheless it is not reserved.
+% Note: For recursive loading of files this does not work. But this also does
+% not matter, because it is needed only for packages and classes, which are
+% never loaded recursive. For the same reason from \KOMAScript{} 3.29 this is
+% only used inside the document preamble. After the document preamble it can
+% be dangerous, e.g., inside a |tabular| or |array|.
+%    \begin{macrocode}
+  \ifx\@begindocumenthook\@undefined\else
+    \edef\scrlfile@hookname{#1}%
+    \def\scrlfile@cmp@hook{before}%
+    \ifx\scrlfile@hookname\scrlfile@cmp@hook
+      \expandafter\def\csname #2-l@ading\endcsname{#2}%
+    \fi
+    \let\scrlfile@cmp@hook\@undefined
+  \fi
+  \@ifundefined{#2-@#1}{}{%
+    \@nameuse{#2-@#1}%
+    \expandafter\let\csname #2-@#1\endcsname\relax
+  }%
+%    \end{macrocode}
+% The hook could destroy \cs{scrlfile@hookname} so define it again:
+%    \begin{macrocode}
+  \ifx\@begindocumenthook\@undefined\else
+    \edef\scrlfile@hookname{#1}%
+    \def\scrlfile@cmp@hook{after}%
+    \ifx\scrlfile@hookname\scrlfile@cmp@hook
+      \expandafter\let\csname #2-l@ading\endcsname\@undefined
+    \fi
+    \let\scrlfile@cmp@hook\@undefined
+    \let\scrlfile@hookname\@undefined
+  \fi
+}
+%    \end{macrocode}
+%  \end{macro}^^A \scrlfile@hookname
+%  \end{macro}^^A \scrlfile@cmp@hook
+%  \end{macro}^^A \scr@load@hook
+%
+% \begin{macro}{\scr@set@load@hook}
+% This command adds stuff to a load-file-hook, either the
+% \emph{before} or the \emph{after} one. First argument is the type of
+% hook (\meta{before} or \meta{after}), second is a filename. There's
+% a third argument not parsed by the macro itself but
+% \cs{g@addto@macro}. This third argument is the stuff, which will be
+% added to the hook. Because of using \cs{g@addto@macro} the hook must
+% be defined. So we define it, if it isn't.
+% \begin{description}
+% \item[ToDo:] Handling/ignoring an optional argument to make it more
+%   compatible with \LaTeX's new \cs{AddToHook}.
+% \end{description}
+%    \begin{macrocode}
+\newcommand*{\scr@set@load@hook}[2]{%
+  \@ifundefined{#2-@#1}{\@namedef{#2-@#1}{}}{}%
+  \expandafter\g@addto@macro\csname #2-@#1\endcsname
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@set@load@hook
+%
+%
+% \subsection{Before and After Commands}
+%
+% \begin{command}{\BeforeFile,\AfterFile}
+% Just add code to the \emph{before} or \emph{after} hook of a file. The
+% arguments are:
+% \begin{description}
+% \item[\meta{file name}:] mandatory argument with the file name as given by
+%   \cs{InputIfFileExists}.
+% \item[\meta{code}:] this argument is not processed by \cs{BeforeFile} or
+%   \cs{AfterFile} but the internal \cs{scr@set@load@hook}. It is the code
+%   that should be added to either the \emph{before} or the \emph{after} hook.
+% \end{description}
+%    \begin{macrocode}
+\newcommand*{\BeforeFile}{\scr@set@load@hook{before}}
+\newcommand*{\AfterFile}{\scr@set@load@hook{after}}
+%    \end{macrocode}
+% \end{command}^^A \BeforeFile,\AfterFile
+%
+% \begin{command}{\BeforeClass}
+% \changes{v3.20}{2016/04/12}{\cs{@ifnextchar} replaced by
+%   \cs{kernel@ifnextchar}}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% This is quite simple. It only has to add code to the \emph{before} hook
+% already known by \cs{BeforeFile}. The arguments are:
+% \begin{description}
+% \item[\meta{package name}:] mandatory argument.
+% \item[\meta{code}:] this argument is processed not by \cs{BeforeClass} but
+%   by the internal \cs{scr@set@load@hook} (see above), that will add the code
+%   to the \emph{before} hook of file \meta{code}\texttt{.cls} (or whatever the
+%   package extension is).
+% \end{description}
+%    \begin{macrocode}
+\newcommand*{\BeforeClass}[1]{%
+  \scr@set@load@hook{before}{#1.\@clsextension}%
+}
+%    \end{macrocode}
+% \end{command}^^A \BeforeClass
+%
+% \begin{command}{\AfterClass}
+% \changes{v3.20}{2016/04/12}{\cs{@ifnextchar} replaced by
+%   \cs{kernel@ifnextchar}}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% \changes{v3.32}{2020/09/02}{plus and exclamation mark variants removed}
+% \begin{command}{\AfterAtEndOfClass}
+% \changes{v3.32}{2020/09/02}{star variant replaces the exclamation mark
+%   variant of \cs{AfterClass}}
+% These are more complicated. There are four forms:
+% \begin{description}
+% \item[\cs{AfterClass}] corresponds to \cs{AfterFile}. So the code will be
+%   added to the usual \emph{after} hook and the code is exexuted before code
+%   added by the class itself using \cs{AtEndOfClass}. Argument procession
+%   will be done by \cs{@AfterClass}.
+% \item[\cs{AfterAtEndOfClass}] This uses the \emph{lateafter} hook, which
+%   is executed after the class has been loaded completely inclusive the
+%   execution of \cs{AtEndOfClass} code. However, the code will never be
+%   executed, if the class will not be loaded (again). But it does nothing,
+%   if the class has already been loaded. The arguments are:
+%   \begin{description}
+%   \item[\meta{class name}] mandatory argument
+%   \item[\meta{code}:] this argument is processed not by \cs{BeforeClass}
+%     but by the internal \cs{scr@set@load@hook} (see above), that will add
+%     the code to the \emph{lateafter} hook of file \meta{code}\texttt{.cls}
+%     (or whatever the class extension is), or by \cs{@gobble}.
+%   \end{description}
+% \item[\cs{AfterClass*}] like \cs{AfterClass}, but if loading of the
+%   class has already began, the code will be executed immediately. So, if
+%   the command is used inside the class it is simply
+%   \cs{@firstofone}. Argument procession will be done by \cs{@sAfterClass}.
+% \item[\cs{AfterAtEndOfClass*}] like \cs{AfterClass*}, but the code will be
+%   executed immediately only if the class already has been loaded
+%   completely. Inside \cs{AtEndOfClass} the code is executed after every all
+%   the \cs{AtEndOfClass} code. Argument procession will be done by
+%   \cs{@xAfterClass}.
+% \end{description}
+%    \begin{macrocode}
+\newcommand*{\scrlfile@AfterClass}{%
+  \kernel@ifstar \@sAfterClass\@AfterClass
+}
+\newcommand*{\AfterClass}{\scrlfile@AfterClass}
+%    \end{macrocode}
+% \begin{macro}{\@AfterClass}
+% \cs{AfterClass}\marg{class name}\marg{code}.
+% It uses \cs{scr@set@load@hook} to add \meta{code} to the
+% \emph{after} hook. The second argument will be processed by
+% \cs{scr@set@load@hook}.
+%    \begin{macrocode}
+\newcommand*{\@AfterClass}[1]{%
+  \scr@set@load@hook{after}{#1.\@clsextension}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@AfterClass
+% \begin{macro}{\@sAfterClass}
+% \changes{v3.27a}{2019/10/16}{group removed}
+% This is the internal implementation of:
+% \cs{AfterClass*}\marg{class name}\marg{code}.
+% It tests, whether or not \LaTeX{} thinks that the class
+% has already been loaded, but this only means whether or not the class
+% loading has already been started. If so, it immediately executes the next
+% argument. If not, is uses \cs{@AfterClass} to execute the \meta{code}
+% after loading the class.
+%    \begin{macrocode}
+\newcommand*{\@sAfterClass}[1]{%
+  \@ifclassloaded{#1}{%
+    \@secondoftwo
+  }{%
+    \@AfterClass
+  }%
+  {#1}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@sAfterClass
+%    \begin{macrocode}
+\newcommand*{\AfterAtEndOfClass}{%
+  \kernel@ifstar \@sAfterAtEndOfClass\@AfterAtEndOfClass
+}
+%    \end{macrocode}
+% \begin{macro}{\@AfterAtEndOfClass}
+% \changes{v3.32}{2020/09/02}{added}
+% Note that \cs{AfterAtEndOfClass} executed the \meta{code} after each try
+% to load a class, even if the class has already been loaded and you try
+% to load it again.
+%    \begin{macrocode}
+\newcommand*{\@AfterAtEndOfClass}[1]{%
+  \scr@set@load@hook{lateafter}{#1.\@clsextension}%
+}
+%    \end{macrocode}
+% \begin{macro}{\@sAfterAtEndOfClass}
+% \changes{v3.09}{2011/03/09}{added}
+% \changes{v3.27}{2019/08/26}{using inside class fixed}
+% \changes{v3.27a}{2019/10/15}{renamed from \cs{@@@AfterClass}}
+% \changes{v3.27a}{2019/10/16}{usage of \emph{l@ading} marker}
+% \changes{v3.27a}{2019/10/16}{group removed}
+% \changes{v3.32}{2020/09/02}{renamed from \cs{@xAfterClass}}
+% This is the internal implementation of:
+% \cs{AfterClass!}\marg{class name}\marg{code}. Note, that the exclamation
+% mark has not already read. So the arguments are:
+% \begin{description}
+% \item[\texttt{!}:] static exclamation mark, to be ignored.
+% \item[\meta{class name}] mandatory argument
+% \item[\meta{code}:] this argument is processed not by \cs{BeforeClass} but
+%   by the internal \cs{@sAfterClass} or \cs{@AfterClass} (see above).
+% \end{description}
+% There are two differences to \cs{@pAfterClass}:
+% \begin{enumerate}
+% \item In case of \cs{\meta{class name}.cls-l@ading} is defined (and not
+%   \cs{relax}), while loading a class, it used \cs{AfterAtEndOfClass}
+%   instead of \cs{AfterClass} to add \meta{code} to the \emph{lateafter}
+%   hook instead of the \emph{after} hook.
+% \item In case of \cs{\meta{class name}.cls-l@ading} is undefined (or
+%   \cs{relax}) it also has to test, whether or not the class has already
+%   been loaded. If so, it uses \cs{@sAfterClass} to execute the \meta{code}
+%   immediately, otherwise it uses \cs{AfterAtEndOfClass} to add the
+%   \meta{code} to the \emph{lateafter} hook.
+% \end{enumerate}
+% So it is more like (the not existing) \cs{AfterAtEndOfClass+} than
+% \cs{AfterAtEndOfClass*}.
+%    \begin{macrocode}
+\newcommand*{\@sAfterAtEndOfClass}[1]{%
+  \@ifundefined{#1.\@clsextension-l@ading}{%
+    \@ifclassloaded{#1}{%
+      \@secondoftwo
+    }{%
+      \@AfterAtEndOfClass
+    }%
+  }{%
+    \@AfterAtEndOfClass
+  }%
+  {#1}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@sAfterAtEndOfClass
+% \end{macro}^^A \@AfterAtEndOfClass
+% \end{command}^^A \AfterAtEndOfClass
+% \end{command}^^A \AfterClass
+%
+% \begin{command}{\BeforePackage}
+% This is quite simple. It only has to add code to the \emph{before} hook
+% already known by \cs{BeforeFile}. The arguments are:
+% \begin{description}
+% \item[\meta{package name}:] mandatory argument.
+% \item[\meta{code}:] this argument is processed not by \cs{BeforePackage} but
+%   by the internal \cs{scr@set@load@hook} (see above), that will add the code
+%   to the \emph{before} hook of file \meta{code}\texttt{.sty} (or whatever the
+%   package extension is).
+% \end{description}
+%    \begin{macrocode}
+\newcommand*{\BeforePackage}[1]{%
+  \scr@set@load@hook{before}{#1.\@pkgextension}%
+}
+%    \end{macrocode}
+% \end{command}^^A \BeforePackage
+%
+% \begin{command}{\AfterPackage}
+% \changes{v3.20}{2016/04/12}{\cs{@ifnextchar} replaced by
+%   \cs{kernel@ifnextchar}}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% \begin{command}{\AfterAtEndOfPackage}
+% These are more complicated. There are four forms:
+% \begin{description}
+% \item[\cs{AfterPackage}] corresponds to \cs{AfterFile}. So the code will be
+%   added to the usual \emph{after} hook and the code is exexuted before code
+%   added by the package itself using \cs{AtEndOfPackage}. Argument procession
+%   will be done by \cs{@AfterPackage}.
+% \item[\cs{AfterAtEndOfPackage}] This uses the \emph{lateafter} hook, which
+%   is executed after the package has been loaded completely inclusive the
+%   execution of \cs{AtEndOfPackage} code. However, the code will never be
+%   executed, if the package will not be loaded (again). But it does nothing,
+%   if the package has already been loaded. The arguments are:
+%   \begin{description}
+%   \item[\meta{package name}] mandatory argument
+%   \item[\meta{code}:] this argument is processed not by \cs{BeforePackage}
+%     but by the internal \cs{scr@set@loaf@hook} (see above), that will add
+%     the code to the \emph{lateafter} hook of file \meta{code}\texttt{.sty}
+%     (or whatever the package extension is), or by \cs{@gobble}.
+%   \end{description}
+% \item[\cs{AfterPackage*}] like \cs{AfterPackage}, but if loading of the
+%   package has already began, the code will be executed immediately. So, if
+%   the command is used inside the package it is simply
+%   \cs{@firstofone}..
+% \item[\cs{AfterAtEndOfPackage*}] like \cs{AfterPackage*}, but the code will
+%   be executed immediately only if the package already has been loaded
+%   completely. Inside \cs{AtEndOfPackage} the code is executed after every
+%   all the \cs{AtEndOfPackage} code.
+% \end{description}
+%    \begin{macrocode}
+\newcommand*{\scrlfile@AfterPackage}{%
+  \kernel@ifstar \@sAfterPackage\@AfterPackage
+}
+\newcommand*{\AfterPackage}{\scrlfile@AfterPackage}
+%    \end{macrocode}
+% \begin{macro}{\@AfterPackage}
+% This is the internal implementation of:
+% \cs{AfterPackage}\marg{package name}\marg{code}.
+% It uses \cs{scr@set@load@hook} to add \meta{code} to the
+% \emph{after} hook. The second argument will be processed by
+% \cs{scr@set@load@hook}.
+%    \begin{macrocode}
+\newcommand*{\@AfterPackage}[1]{%
+  \scr@set@load@hook{after}{#1.\@pkgextension}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@AfterPackage
+% \begin{macro}{\@sAfterPackage}
+% \changes{v3.27a}{2019/10/16}{group removed}
+% This is the internal implementation of:
+% \cs{AfterPackage*}\marg{package name}\marg{code}.
+% It tests, whether or not \LaTeX{} thinks that the package
+% has already been loaded, but this only means whether or not the package
+% loading has already been started. If so, it immediately executes the next
+% argument. If not, is uses \cs{@AfterPackage} to execute the \meta{code}
+% after loading the package.
+%    \begin{macrocode}
+\newcommand*{\@sAfterPackage}[1]{%
+  \@ifpackageloaded{#1}{%
+    \@secondoftwo
+  }{%
+    \@AfterPackage
+  }%
+  {#1}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@sAfterPackage
+%    \begin{macrocode}
+\newcommand*{\AfterAtEndOfPackage}{%
+  \kernel@ifstar \@sAfterAtEndOfPackage\@AfterAtEndOfPackage
+}
+%    \end{macrocode}
+% \begin{macro}{\@sAfterAtEndOfPackage}
+% \changes{v3.09}{2011/03/09}{added}
+% \changes{v3.27}{2019/08/26}{using inside package fixed}
+% \changes{v3.27a}{2019/10/15}{renamed from \cs{@@@AfterPackage}}
+% \changes{v3.27a}{2019/10/16}{usage of \emph{l@ading} marker}
+% \changes{v3.27a}{2019/10/16}{group removed}
+% \changes{v3.32}{2020/09/02}{renamed from \cs{@xAfterPackage}}
+% This is the internal implementation of:
+% \cs{AfterAtEndOfPackage*}\marg{package name}\marg{code}.
+%    \begin{macrocode}
+\newcommand*{\@sAfterAtEndOfPackage}[1]{%
+  \@ifundefined{#1.\@pkgextension-l@ading}{%
+    \@ifpackageloaded{#1}{%
+      \@secondoftwo
+    }{%
+      \@@AfterAtEndOfPackage
+    }%
+  }{%
+    \@@AfterAtEndOfPackage
+  }%
+  {#1}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@sAfterAtEndOfPackage
+% \begin{macro}{\@AfterAtEndOfPackage}
+% \changes{v3.32}{2020/09/02}{added}
+% \begin{macro}{\@@AfterAtEndOfPackage}
+% \changes{v3.27a}{2019/10/15}{added}
+% \changes{v3.27a}{2019/10/16}{group removed}
+% \changes{v3.32}{2020/09/02}{renamed from \cs{@AfterAtEndOfPackage}}
+% Note that until 3.27a \cs{AfterAtEndOfPackage} executed the \meta{code}
+% after each try to load a package, even if the package has already been
+% loaded and you've try to load it again. Since 3.27a this is the
+% functionality of \cs{@AfterAtEndOfPackage}. \cs{AfterAtEndOfPackage} now
+% does not do anything for already loaded packages or while loading the
+% package.
+%    \begin{macrocode}
+\newcommand*{\@AfterAtEndOfPackage}[1]{%
+  \@ifpackageloaded{#1}{%
+    \@ifundefined{#1.\@pkgextension-l@ading}{%
+      \@gobbletwo
+    }{%
+      \@@AfterAtEndOfPackage
+    }%
+  }{%
+    \@@AfterAtEndOfPackage
+  }%
+  {#1}%  
+}
+\newcommand*{\@@AfterAtEndOfPackage}[1]{%
+  \scr@set@load@hook{lateafter}{#1.\@pkgextension}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@@AfterAtEndOfPackage
+% \end{macro}^^A \@AfterEndOfPackage
+% \end{command}^^A \AfterAtEndOfPackage
+% \end{command}^^A \AfterPackage
+%  
+%
+% \subsection{File Substitution}
+%
+% \begin{command}{\ReplaceInput}
+% \changes{v2.96}{2006/07/19}{added}
+% \changes{v3.12}{2013/11/15}{implemented}
+% Defining the replacement by definition of \cs{\#1-@alias}.
+%    \begin{macrocode}
+\newcommand*{\ReplaceInput}[2]{%
+  \expandafter\edef\csname #1-@alias\endcsname{#2}%
+}
+%    \end{macrocode}
+% \begin{command}{\ReplaceFile}
+% \changes{v2.96}{2006/07/19}{added}
+% \changes{v3.12}{2013/11/15}{throw error}
+% Sorry, but I've implemented the wrong command some time ago.
+%    \begin{macrocode}
+\newcommand*{\ReplaceFile}{%
+  \PackageError{scrlfile}{%
+    usage of not documented command `\string\ReplaceFile'%
+  }{%
+    Command `\string\ReplaceFile' has been implemented accidentally in
+    KOMA-Script 2.96\MessageBreak
+    and replaced by `\string\ReplaceInput' in KOMA-Script 3.12.\MessageBreak
+    You should replace `\string\ReplaceFile' by `\string\ReplaceInput' to
+    avoid this error\MessageBreak
+    message%
+  }%
+  \ReplaceInput
+}
+%    \end{macrocode}
+% \end{command}^^A \ReplaceFile
+% \end{command}^^A \ReplaceInput
+%
+% \begin{command}{\UnReplaceInput}
+% \changes{v3.12}{2013/11/15}{added}
+% Do not longer replace a file.
+%    \begin{macrocode}
+\newcommand*{\UnReplaceInput}[1]{%
+  \ifcsname #1-@alias\endcsname
+    \expandafter\let\csname #1-@alias\endcsname\relax
+  \fi
+}
+%    \end{macrocode}
+% \end{command}^^A \UnReplaceInput
+%
+% \begin{command}{\ReplacePackage,\ReplaceClass}
+% \changes{v2.96}{2006/07/19}{added}
+% \begin{macro}{\@replacefilewithext}
+% \changes{v2.96}{2006/07/19}{added}
+% \changes{v3.32}{2020/09/09}{works global}
+% Note that replacing a package or class will not replace the input of the
+% file of the package or class but only the input of package or class.
+%    \begin{macrocode}
+\newcommand*{\@replacefilewithext}[3]{%
+  \expandafter\xdef\csname #1.#3-@aliasname\endcsname{#2}%
+}
+\newcommand*{\ReplacePackage}[2]{%
+  \@replacefilewithext{#1}{#2}\@pkgextension
+}
+\newcommand*{\ReplaceClass}[2]{%
+  \@replacefilewithext{#1}{#2}\@clsextension
+}
+%    \end{macrocode}
+% \end{macro}^^A \@replacefilewithext
+% \end{command}^^A\ReplacePackage,\ReplaceClass 
+%
+% \begin{command}{\UnReplacePackage,\UnReplaceClass}
+% \changes{v3.12}{2013/11/15}{added}
+% \begin{macro}{\@unreplacefilewithext}
+% \changes{v3.12}{2013/11/15}{added}
+% \changes{v3.32}{2020/09/09}{works global}
+% Do not nolonger replace a class or package.
+%    \begin{macrocode}
+\newcommand*{\@unreplacefilewithext}[2]{%
+  \ifcsname #1.#2-@aliasname\endcsname
+    \expandafter\global\expandafter\let\csname #1.#2-@aliasname\endcsname\relax
+  \fi
+}
+\newcommand*{\UnReplacePackage}[1]{%
+  \@unreplacefilewithext{#1}\@pkgextension
+}
+\newcommand*{\UnReplaceClass}[1]{%
+  \@unreplacefilewithext{#1}\@clsextension
+}
+%    \end{macrocode}
+% \end{macro}^^A \@unreplacefilewithext
+% \end{command}^^A \UnReplacePackage,\UnReplaceClass
+%
+%
+% \subsection{Prevent Package from Loading}
+%
+% \begin{command}{\PreventPackageFromLoading}
+% \changes{v3.08}{2010/11/04}{added}
+% \changes{v3.11a}{2012/06/13}{write fault error in \cs{MessageBreak} fixed}
+% \changes{v3.12}{2012/06/15}{new star version allowes empty argument with
+%   info instead of warning}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% \changes{v3.32}{2020/09/09}{works global}
+% \begin{macro}{\@PreventPackageFromLoading}
+% \changes{v3.12}{2012/06/15}{added}
+% \changes{v3.20}{2016/04/12}{\cs{@ifnextchar} replaced by
+%   \cs{kernel@ifnextchar}}
+% \begin{macro}{\@@PreventPackageFromLoading}
+% \changes{v3.12}{2013/11/22}{added}
+% \changes{v3.12}{2013/11/22}{\cs{usepackage} before \cs{documentclass}
+%   fixed}
+% \begin{macro}{\scrlfile@excludedpackages}
+% \changes{v3.08}{2010/11/04}{added}
+% \begin{macro}{\scrlfile@saved@RequirePackage}
+% \changes{v3.08}{2010/11/04}{added}
+%    \begin{macrocode}
+\newcommand*{\scrlfile@excludedpackages}{}
+\let\scrlfile@excludedpackages\@empty
+\newcommand*{\scrlfile@saved@RequirePackage}{}
+\newcommand*{\PreventPackageFromLoading}{%
+  \kernel@ifstar{\@PreventPackageFromLoading\PackageInfo}%
+          {\@PreventPackageFromLoading\PackageWarning}%
+}
+\newcommand*{\@PreventPackageFromLoading}[1]{%
+  \kernel@ifnextchar [%]
+    {\@@PreventPackageFromLoading#1}{\@@PreventPackageFromLoading#1[]}%
+}
+\newcommand*{\@@PreventPackageFromLoading}{}
+\def\@@PreventPackageFromLoading#1[#2]#3{%
+%    \end{macrocode}
+% We do nothing, if the argument was empty:
+%    \begin{macrocode}
+  \edef\reserved@b{\zap@space#3 \@empty}%
+  \ifx \reserved@b\@empty
+    #1{scrlfile}{%
+      \string\PreventPackageFromLoading\space with empty packages\MessageBreak
+      argument ignored%
+    }%
+  \else
+%    \end{macrocode}
+% If the argument was not empty we first need to patch \cs{RequirePackage} and
+% maybe \cs{usepackage} too.
+%    \begin{macrocode}
+    \ifx\scrlfile@excludedpackages\@empty
+      \global\let\scrlfile@saved@RequirePackage\RequirePackage
+      \global\let\RequirePackage\scrlfile@RequirePackage
+      \def\reserved@a##1##{%  
+        \@latex@error
+        {\noexpand \usepackage before \string\documentclass}%
+        {\noexpand \usepackage may only appear in the document
+          preamble, i.e.,\MessageBreak
+          between \noexpand\documentclass and
+          \string\begin{document}.}%
+        \@gobble}%
+      \ifx\reserved@a\usepackage\else
+        \ifx\usepackage\scrlfile@saved@RequirePackage\else
+          \PackageWarning{scrlfile}{%
+            Maybe serious problem: unexpected definition of\MessageBreak
+            \string\usepackage
+          }%
+        \fi
+        \global\let\usepackage\RequirePackage
+      \fi
+    \fi
+%    \end{macrocode}
+% We have to test, if a package was already loaded. Only not yet loaded
+% packages will be added to the exclusion list. Empty arguments will be
+% ignored.
+% \changes{v3.11a}{2012/06/11}{missing \cs{scrlfile@excludedpackages} at
+%   redefinition of \cs{scrlfile@excludedpackages} added}
+% \changes{v3.26}{2018/08/29}{spurious \cs{expandafter} removed}
+%    \begin{macrocode}
+    \@for\reserved@a:=\reserved@b\do {%
+      \ifx\reserved@a\@empty
+        #1{scrlfile}{%
+          empty package argument for
+          \string\PreventPackageFromLoading\MessageBreak
+          ignored%
+        }%
+      \else
+        \expandafter\@ifpackageloaded\expandafter{\reserved@a}{%
+          #1{scrlfile}{%
+            package `\reserved@a' already loaded.\MessageBreak
+            Cannot prevent it from beeing loaded%
+          }%
+        }{%
+          \ifx\scrlfile@excludedpackages\@empty
+            \global\let\scrlfile@excludedpackages\reserved@a
+          \else
+            \xdef\scrlfile@excludedpackages{\scrlfile@excludedpackages,%
+              \reserved@a}%
+          \fi
+          \if\relax\detokenize{#2}\relax\else
+            \@ifundefined{scrlfile@exclude@package@\reserved@a @do}{%
+              \@namedef{scrlfile@exclude@package@\reserved@a @do}{}%
+            }{}%
+            \expandafter\gdef
+            \csname scrlfile@exclude@package@\reserved@a 
+                    @do\expandafter\expandafter\expandafter\endcsname
+            \expandafter\expandafter\expandafter{%
+              \csname scrlfile@exclude@package@\reserved@a @do\endcsname 
+              #2%
+            }%
+          \fi
+        }%
+      \fi
+    }%
+%    \end{macrocode}
+% If the exclusion list is still empty (because all packages has been loaded
+% already), remove the patch:
+%    \begin{macrocode}
+    \ifx\scrlfile@excludedpackages\@empty
+      \ResetPreventPackageFromLoading
+    \fi
+  \fi
+}
+\@onlypreamble\PreventPackageFromLoading
+%    \end{macrocode}
+% \begin{command}{\ResetPreventPackageFromLoading}
+% \changes{v3.08}{2010/11/04}{added}
+% \changes{v3.32}{2020/09/09}{works global}
+% \begin{command}{\StorePreventPackageFromLoading}
+% \changes{v3.08}{2010/11/04}{added}
+% These two are very simple
+%    \begin{macrocode}
+\newcommand*{\ResetPreventPackageFromLoading}{%
+  \global\let\scrlfile@excludedpackages\@empty
+  \ifx\RequirePackage\scrlfile@RequirePackage
+    \ifx\usepackage\RequirePackage
+      \global\let\usepackage\scrlfile@saved@RequirePackage
+    \fi
+    \global\let\RequirePackage\scrlfile@saved@RequirePackage
+  \fi
+}
+\@onlypreamble\ResetPreventPackageFromLoading
+\newcommand*{\StorePreventPackageFromLoading}[1]{%
+  \let#1\scrlfile@excludedpackages
+}
+\@onlypreamble\StorePreventPackageFromLoading
+%    \end{macrocode}
+% \begin{command}{\UnPreventPackageFromLoading}
+% \changes{v3.12}{2013/11/22}{added}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} durch \cs{kernel@ifstar}
+%     ersetzt}
+% \changes{v3.32}{2020/09/09}{works global}
+% \begin{macro}{\@UnPreventPackageFromLoading}
+% \changes{v3.12}{2013/11/22}{added}
+% This removes packages from the prevent exclude list. The star variant also
+% undefines the instead code.
+%    \begin{macrocode}
+\newcommand*{\UnPreventPackageFromLoading}{%
+  \kernel@ifstar {\@tempswatrue\@UnPreventPackageFromLoading}%
+           {\@tempswafalse\@UnPreventPackageFromLoading}%
+}
+\newcommand*{\@UnPreventPackageFromLoading}[1]{%
+  \edef\reserved@b{\zap@space#1 \@empty}%
+  \if@tempswa
+    \@for\reserved@a:=\reserved@b\do {%
+      \ifx\reserved@a\@empty \else
+        \ifcsname scrlfile@exclude@package@\reserved@a @do\endcsname
+          \expandafter\let
+          \csname scrlfile@exclude@package@\reserved@a @do\endcsname
+          \undefined
+        \fi
+      \fi
+    }%
+  \fi
+  \ifcsname scrlfile@excludedpackages\endcsname
+    \let\reserved@a\scrlfile@excludedpackages
+    \let\scrlfile@excludedpackages\@empty
+    \expandafter\@for\expandafter\reserved@c
+    \expandafter:\expandafter=\reserved@a
+    \do{%
+      \ifx\reserved@c\@empty\else
+        \@expandtwoargs\in@{,\reserved@c,}{,\reserved@b,}%
+        \ifin@
+        \else
+          \ifx\scrlfile@excludepackages\@empty
+            \global\let\scrlfile@excludepackages\reserved@c
+          \else
+            \xdef\scrlfile@excludedpackages{%
+              \scrlfile@excludedpackages,\reserved@c
+            }%
+          \fi
+        \fi
+      \fi
+    }%
+    \ifx\scrlfile@excludedpackages\@empty\ResetPreventPackageFromLoading\fi
+  \fi
+}
+%    \end{macrocode}
+% \end{macro}^^A \@UnPreventPackageFromLoading
+% \end{command}^^A \UnPreventPackageFromLoading
+% \begin{macro}{\scrlfile@RequirePackage}
+% \changes{v3.08}{2010/11/04}{added}
+% \changes{v3.12}{2013/11/22}{tolerate spaces}
+% \changes{v3.12}{2013/11/22}{execute the optional argument of
+%     \cs{PreventPackageFromLoading}}
+% This macro will replace \cs{RequirePackage} whenever the exlude list is not
+% empty
+%    \begin{macrocode}
+\newcommand*{\scrlfile@RequirePackage}[2][]{%
+  \let\reserved@c\@empty
+  \let\reserved@d\@empty
+  \edef\reserved@b{\zap@space#2 \@empty}%
+  \expandafter\@for\expandafter\reserved@b\expandafter:\expandafter=\reserved@b
+  \do {%
+    \begingroup
+      \@tempswatrue
+      \@for\reserved@a:=\scrlfile@excludedpackages\do {%
+        \ifx\reserved@a\reserved@b
+          \@tempswafalse
+        \fi
+      }%
+      \if@tempswa
+        \xdef\reserved@c{\reserved@c,\reserved@b}%
+      \else
+        \ifx\reserved@b\@empty\else
+          \PackageInfo{scrlfile}{Excluding package `\reserved@b'\MessageBreak
+            from loading}%
+          \@ifundefined{scrlfile@exclude@package@\reserved@b @do}{%
+          }{%
+            \expandafter\g@addto@macro\expandafter\reserved@d
+            \csname scrlfile@exclude@package@\reserved@b @do\endcsname
+          }%
+        \fi
+      \fi
+    \endgroup
+  }%
+  \ifx\reserved@c\@empty
+    \let\reserved@a\scr@gobbleopt
+  \else
+    \edef\reserved@a{\noexpand\scrlfile@saved@RequirePackage[#1]{%
+        \expandafter\@gobble\reserved@c\@empty}}%
+  \fi
+  \expandafter\reserved@d
+  \reserved@a
+}
+%    \end{macrocode}
+% \end{macro}^^A \scrlfile@RequirePackage
+% \end{command}^^A \StorePreventPackageFromLoading
+% \end{command}^^A \ResetPreventPackageFromLoading
+% \end{macro}^^A \scrlfile@saved@RequirePackage
+% \end{macro}^^A \scrlfile@excludedpackages
+% \end{macro}^^A \@@PreventPackageFromLoading
+% \end{macro}^^A \@PreventPackageFromLoading
+% \end{command}^^A \PreventPackageFromLoading
+%
+% \begin{macro}{\scr@gobbleopt}
+% \changes{v3.08}{2010/11/04}{added}
+% \changes{v3.08a}{2011/02/11}{\cs{@gobbleopt} renamed due to compaibility
+%   problems with \texttt{ntheorem}}
+% Eat the optional argument if it exists.
+%    \begin{macrocode}
+\providecommand{\scr@gobbleopt}[1][]{}
+%    \end{macrocode}
+% \end{macro}^^A \scr@gobbleopt
+%
+% \begin{macro}{\kernel@ifstar}
+% \changes{v3.20}{2016/04/12}{added}
+% I hope, the \LaTeX{} kernel will define this command in future. But
+% nevertheless, there are \LaTeX{} kernels in real live without this
+% command. So I do it again if needed:
+%    \begin{macrocode}
+\providecommand*\kernel@ifstar[1]{\kernel@ifnextchar*{\@firstoftwo{#1}}}
+%    \end{macrocode}
+% \end{macro}^^A \kernel@ifstar
+%
+%
+% \subsection{Extra Document Hooks}
+%
+% \begin{command}{\BeforeClosingMainAux}
+% \changes{v2.95}{2002/09/03}{added}
+% \begin{command}{\AfterReadingMainAux}
+% \changes{v3.03}{2009/03/25}{added}
+% These are completly different. First we have to establish a new hook
+% at \cs{end\{document\}}, just after closing the group and after the
+% final \cs{clearpage}.
+% \begin{description}
+% \item[ToDo:] Handling/ignoring an optional argument to make them more
+%   compatible with \LaTeX's new \cs{AddToHook}.
+% \end{description}
+%    \begin{macrocode}
+\AtEndDocument{%
+  \let\scr@saved@checkend=\@checkend
+  \renewcommand*{\@checkend}[1]{%
+    \def\reserved@a{#1}\def\reserved@b{document}%
+    \scr@saved@checkend{#1}%
+    \ifx\reserved@a\reserved@b
+      \let\scr@saved@clearpage=\clearpage
+      \renewcommand*{\clearpage}{\scr@saved@clearpage
+        \scr@hook@bcma
+        \scr@restore@newpage
+        \let\clearpage=\scr@saved@clearpage}%
+    \fi%
+    \let\scr@saved@dofilelist\@dofilelist
+    \def\@dofilelist{%
+      \scr@hook@acma
+      \let\@dofilelist\scr@saved@dofilelist
+      \scr@saved@dofilelist
+    }%
+  }%
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@saved@checkend}
+% \changes{v2.95}{2002/09/03}{added}
+% \begin{macro}{\scr@saved@dofilelist}
+% \changes{v3.03}{2009/03/25}{added}
+% You may see above, that we need save-to macros.
+%    \begin{macrocode}
+\newcommand*{\scr@saved@checkend}{}
+\newcommand*{\scr@saved@dofilelist}{}
+%    \end{macrocode}
+% \end{macro}^^A \scr@saved@dofilelist
+% \end{macro}^^A \scr@saved@checkend
+% \begin{macro}{\scr@redefine@newpage}
+% \changes{v3.00}{2008/07/09}{added}
+%   Some classes (e.g. \cls{letter}) write output to the aux file.
+%   Because of this, redefinition of \cs{newpage} will only be done, if
+%   \cs{BeforeClosingMainAux} is used.
+% \begin{macro}{\scr@saved@newpage}
+% \changes{v3.00}{2008/07/09}{added}
+%   And \cs{newpage} will be restored after the hook.
+% \begin{macro}{\scr@restore@newpage}
+%    \begin{macrocode}
+\newcommand*{\scr@redefine@newpage}{%
+  \let\scr@saved@newpage\newpage
+  \def\scr@restore@newpage{%
+    \renewcommand*{\newpage}{%
+      \PackageWarningNoLine{%
+        scrlfile%
+      }{%
+        \string\newpage\space at main aux file!\MessageBreak
+        You have output material at the main aux file.\MessageBreak
+        Note, that the \string\BeforeClosingMainAux\space commands\MessageBreak
+        are processed before the output from aux file%
+      }%
+      \let\newpage\scr@saved@newpage
+      \newpage
+    }%
+  }%
+  \renewcommand*{\newpage}{%
+    \PackageError{%
+      scrlfile%
+    }{%
+      \string\newpage\space at \string\BeforeClosingMainAux
+    }{%
+      You should never use \string\newpage\space or
+      \string\clear(double)page or other output material at the\MessageBreak
+      argument of \string\BeforeClosingMainAux!\MessageBreak
+      If you'll continue, the \string\newpage\space will be ignored to
+      avoid corruption of\MessageBreak
+      every prior use of \string\BeforeClosingMainAux.
+    }%
+  }%
+}
+\newcommand*{\scr@restore@newpage}{}
+%    \end{macrocode}
+% \end{macro}^^A \scr@restore@newpage
+% \end{macro}^^A \scr@saved@newpage
+% \end{macro}^^A \scr@redefine@newpage
+% \begin{macro}{\scr@hook@bcma}
+% \changes{v2.95}{2002/09/03}{added}
+% \begin{macro}{\scr@hook@acma}
+% \changes{v3.03}{2009/03/25}{added}
+% We also need macros, that saves the commands at the hooks and are
+% extendable using \cs{g@addto@macro}.
+%    \begin{macrocode}
+\newcommand*{\scr@hook@bcma}{}
+\newcommand*{\scr@hook@acma}{}
+%    \end{macrocode}
+%  \end{macro}^^A \scr@hook@acma
+%  \end{macro}^^A \scr@hook@bcma
+% Now we are able to write the user command. Here we also warn, if we detect
+% one more \cs{newpage}\,---\,maybe at a \cs{clearpage} or
+% \cs{cleardoublepage}.
+%    \begin{macrocode}
+\newcommand*{\BeforeClosingMainAux}{%
+  \ifx\scr@hook@bcma\@empty
+    \gdef\scr@hook@bcma{%
+      \renewcommand*{\BeforeClosingMainAux}[1]{####1}%
+      \let\protected@write\protected@immediate@write
+      \scr@redefine@newpage
+    }%
+  \fi
+  \g@addto@macro\scr@hook@bcma%
+}
+\newcommand*{\AfterReadingMainAux}{%
+  \ifx\scr@hook@acma\@empty
+    \gdef\scr@hook@acma{%
+      \renewcommand*{\AfterReadingMainAux}[1]{####1}%
+      \let\protected@write\protected@immediate@write
+    }%
+  \fi
+  \g@addto@macro\scr@hook@acma%
+}
+%    \end{macrocode}
+% \end{command}^^A \AfterReadingMainAux
+% \end{command}^^A \BeforeClosingMainAux
+%
+% \begin{macro}{\protected@immediate@write}
+% Like \LaTeX{} kernel's |\protected@write| but using |\immediate\write|. In
+% this case it is even not a good idea to protect |\thepage|!
+%    \begin{macrocode}
+\long\def\protected@immediate@write#1#2#3{%
+  \begingroup
+    #2%
+    \let\protect\@unexpandable@protect
+    \edef\reserved@a{\immediate\write#1{#3}}%
+    \reserved@a
+  \endgroup
+  \if@nobreak\ifvmode\nobreak\fi\fi
+}
+%    \end{macrocode}
+% \end{macro}
+%
+%
+% \Finale
+% \PrintChanges
+% \endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:

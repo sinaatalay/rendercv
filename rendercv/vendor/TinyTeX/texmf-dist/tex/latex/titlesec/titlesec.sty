@@ -1,0 +1,1724 @@
+%
+% Copyright (C) 1998-2021 Javier Bezos http://www.texnia.com
+%
+% This file may be distributed and/or modified under the conditions of
+% the MIT License. A version can be found at the end of this file.
+%
+% Repository: https://github.com/jbezos/titlesec
+%
+% Notes
+% ~~~~~
+%
+% The following tags are used:
+% ttl@  : the generic tag used through the style
+% ttlh@ : a shape definition
+% ttlf@ : a macro containing the title format
+% ttls@ : id. the title space
+% ttlp@ : page key related macros
+% ttll@ : level number
+%
+% The ttlf@ and ttls@ contains data in the form {..}{..}.
+% Perhaps in future releases they should be converted
+% to a prop-like list, similar to that proposed by the
+% latex team.
+%
+% Admittedly, the current implementation seems too
+% complicated, but that's necessary in order to provide
+% certain compatibility with the sections as defined by the
+% used class. Other packages opt for providing the sections
+% as defined by standard classes ignoring the class; for
+% instance sectsty which does a simple task in a simple and
+% nice way. However, that was not my goal.
+%
+% Release
+% ~~~~~~~
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{titlesec}[2021/07/05 v2.14 Sectioning titles]
+
+% Initialization
+% ~~~~~~~~~~~~~~
+
+\newif\ifttl@ps
+\ttl@psfalse
+
+% The \ttl@label switch is used when printing the label in titles.
+% A numberless variant makes it to true.
+% There is a \ttl@toclabel as well, which is true iff the
+% title is numbered; used in toc entries (except default part
+% and chapter) and marks (only in titlesec pagestyles).
+
+\newif\ifttl@label
+\newif\ifttl@toclabel
+
+\newbox\ttl@box
+
+% A provision for the report style:
+
+\@ifundefined{if@mainmatter}
+  {\let\if@mainmatter\iftrue}{}
+
+\@ifundefined{if@openright}
+  {\let\if@openright\iftrue}{}
+
+% and the ams styles as well
+
+\@ifundefined{@chapapp}
+  {\let\@chapapp\chaptername}{}
+
+\def\ttl@trylist{\ttl@try{}}
+
+\def\ttl@getkeys#1#2{%
+  \if\expandafter @\@gobble#1@\@empty
+    \edef\ttl@b{\expandafter\@gobble\string#1}%
+    \let\ttl@a\ttl@b
+  \else
+    \ttl@keys
+    \ttl@getkeys{#1}{#2}%
+  \fi}
+
+% A more meaningful error for \@notdefinable
+
+\expandafter\AtEndOfPackage\expandafter{\expandafter
+  \gdef\expandafter\@notdefinable\expandafter{\@notdefinable}}
+
+\def\@notdefinable{%
+  \PackageError{titlesec}%
+    {Incompatible package}%
+    {Titlesec cannot continue defining its own macros 
+         because\MessageBreak
+     \@backslashchar\reserved@a\space is already used by other package,
+         the class\MessageBreak
+     or the document.}}
+
+%               +-----------------+
+%               |  C L A S S E S  |
+%               +-----------------+
+
+\def\ttl@useclass#1#2{%
+  \@ifstar
+    {\ttl@labelfalse#1{#2}[]}%
+    {\ttl@labeltrue\@dblarg{#1{#2}}}}
+
+\def\ttl@straightclass{\ttl@useclass\ttl@straight@i}
+\def\ttl@partclass{\ttl@useclass\ttl@part@i}
+\def\ttl@topclass{\ttl@useclass\ttl@top@i}
+\def\ttl@pageclass{\ttl@useclass\ttl@page@i}
+
+% Here \scantokens is used to make sure the unescaped name
+% has `letters' and no `others'. Mainly for hyperref, so there
+% should be no problems.
+
+\newcommand\titleclass[1]{%
+  \edef\ttl@a{\expandafter\@gobble\string#1}%
+  \ifx\scantokens\@undefined\else
+    \scantokens\expandafter{\expandafter
+      \def\expandafter\ttl@a\expandafter{\ttl@a}}%
+  \fi
+  \@ifnextchar[{\@tempswatrue\ttl@class@i{#1}}%
+               {\@tempswafalse\ttl@class@ii{#1}}}
+
+\def\ttl@class@i#1[#2]{%
+  \@namedef{ttll@\ttl@a}{#2}%
+  \expandafter\providecommand\csname\ttl@a title\endcsname{}%%%%
+  \@ifundefined{ttl@toplevel}{}%
+    {\expandafter\let\csname ttlss@\ttl@a\expandafter\endcsname
+       \csname ttlss@\ttl@toplevel\endcsname}%
+  \edef\ttl@toplevel{\ttl@a}%
+  \ttl@class@ii{#1}}
+
+\def\ttl@class@ii#1#2{%
+  \@ifundefined{ttl@#2class}%
+    {\PackageError{titlesec}{Unknown sectioning class}%
+       {Valid names are top, page and straight}}%
+    {\expandafter\let\csname ttl@compat\ttl@a\endcsname\relax
+     \@ifundefined{\ttl@a mark}%
+       {\@namedef{\ttl@a mark}{\@gobble}}%
+       {}%
+     \edef#1{%
+       \expandafter\noexpand\csname ttl@#2class\endcsname{\ttl@a}}}%
+  \if@tempswa
+    \expandafter\@gobble
+  \else  
+    \expandafter\@firstofone
+  \fi
+    {\@ifnextchar[%
+       {\ttl@class@iii}%
+       {\@ifundefined{ttll@\ttl@a}%
+          {\PackageError{titlesec}{Unknown sectioning level}%
+            {\string\titleclass\space with no optional arguments\MessageBreak
+             only changes the class of an *existing* level}}}}}
+
+\def\ttl@class@iii[#1]{%
+  \edef\ttl@b{\expandafter\@gobble\string#1}%
+  \expandafter\let\csname ttlss@\ttl@a\expandafter\endcsname
+     \csname ttlss@\ttl@b\endcsname
+  \expandafter\edef\csname ttlss@\ttl@b\endcsname{\ttl@a}%
+  \let\ttl@a\ttl@toplevel
+  \count@\csname ttll@\ttl@toplevel\endcsname
+  \ttl@class@iv}
+
+\def\ttl@class@iv{%
+  \@ifundefined{ttlss@\ttl@a}{}%
+    {\advance\count@\@ne
+     \edef\ttl@a{\csname ttlss@\ttl@a\endcsname}%
+     \expandafter\edef\csname ttll@\ttl@a\endcsname{\the\count@}%
+     \ttl@class@iv}}
+
+% Typesetting Classes: General tools
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% The following command handles the *n spacing
+% Some tricks are necessary to multiply a
+% skip by a non integer number
+
+\newskip\beforetitleunit
+\beforetitleunit=1ex\@plus.3ex\@minus.06ex
+\newskip\aftertitleunit
+\aftertitleunit=1ex\@plus.1ex
+
+\newdimen\ttl@plus
+\newdimen\ttl@minus
+
+\def\ttl@assign#1{%
+  \@ifstar
+    {\ttl@assign@i{#1}}%
+    {\ttl@assign@d{#1}}}
+
+\def\ttl@assign@i#1#2\relax#3{%
+  \ttl@plus\z@
+  \ttl@minus\z@
+  \afterassignment\ttl@assign@ii
+  \dimen@\the#3, % <- space 
+  #1 =     #2\dimen@
+     plus  #2\ttl@plus
+     minus #2\ttl@minus}
+
+\def\ttl@assign@ii#1 {% <- space
+  \if#1,\else\afterassignment\ttl@assign@ii\fi
+  \csname ttl@\string#1\endcsname}
+
+\def\ttl@assign@d#1#2\relax#3{\setlength#1{#2}}
+
+% To be used with \v/vspace to make them calc-savvy
+
+\def\ttl@calc#1#2{%
+  {\setlength\@tempskipa{#2}%
+   #1\@tempskipa}}
+
+\def\ttl@calcneg#1#2{%
+  {\setlength\@tempskipa{#2}%
+   #1{-\@tempskipa}}}
+
+% Gets from ttls@ and passes the spacing parameters:
+
+\def\ttl@startargs#1#2{% Get the first arguments, with the spacing
+  \@ifundefined{ttlp@#2}%
+     {\let\ttl@key@page\@empty}%
+     {\ttlp@fetch{#2}}%
+  \begingroup
+    \def\ttl@b{ttls@#2}%
+    \edef\ttl@key@numberless{\ifttl@label//\else/*\fi}%
+    \def\ttl@a##1{\csname ttl@key@##1\endcsname}%  Used as elt in try
+    \ttl@trylist
+    \xdef\ttl@b{\ttl@c}%
+  \endgroup
+  \ifx\ttl@b\@empty
+    \PackageError{titlesec}{Format/spacing not found}%
+      {I was unable to find the format corresponding to #2.\MessageBreak
+       Maybe you haven't set it with \string\titleformat\space and
+       \string\titlespacing}
+  \fi
+  \expandafter#1\ttl@b{#2}}
+
+% Used in ttl@select
+
+\def\ttl@savefn#1[#2]#3{%
+  \ifcase#1%
+    \footnotemark[#2]%
+    \gdef\ttl@fn{\footnotetext[#2]{#3}}%
+  \else
+    \footnotemark
+    \gdef\ttl@fn{\footnotetext{#3}}%
+  \fi}
+
+\def\ttl@nest@error{%
+  \PackageError{titlesec}{Nested titles}{Titles must not be nested}}
+
+\def\ttl@hmode@error{%
+  \PackageError{titlesec}{Entered in horizontal mode}
+    {The <format> argument cannot contain horizontal material\MessageBreak
+     such as text, \string\noindent, \string\makebox, etc.}}
+
+% \ttl@select not only selects the right version to be
+% used. It also take steps to ensure that a mark
+% is not lost inside a box by saving it into \ttl@mk,
+% which in turn is used by the sect and chap commands.
+
+% As of 2019 and due the LaTex
+% kernel modifies \markboth, we consider two possibilities (2.13).
+
+\newif\ifttl@explicit
+
+\def\ttl@gmk#1{\gdef\ttl@mk{#1}}
+
+\def\ttl@select#1#2#3#4{%
+  \ttl@Hy@saveanchor
+  \global\let\ttl@mk\@empty  % global because of rigidchapters
+  \global\let\ttl@fn\@empty
+  \begingroup
+   \if@inlabel\else % Keep item's \everypar
+      \everypar{\setbox\z@\lastbox\ttl@strut}%
+   \fi
+   \let\ttl@straight@i\ttl@nest@error
+   \let\ttl@top@i     \ttl@nest@error
+   \let\ttl@part@i    \ttl@nest@error
+   \let\ttl@page@i    \ttl@nest@error
+   \let\ttl@newpage\newpage
+   \def\newpage{\ttl@savewrite\ttl@newpage}%
+   \expandafter\ifx\csname markboth \endcsname\relax
+     \def\markboth##1##2{\protect\ttl@gmk{\protect\markboth{##1}{##2}}}%
+     \def\markright##1{\protect\ttl@gmk{\protect\markright{##1}}}%
+   \else
+     \@namedef{markboth }##1##2{\protect\ttl@gmk{\markboth{##1}{##2}}}%
+     \@namedef{markright }##1{\protect\ttl@gmk{\markright{##1}}}%
+   \fi
+   \def\@mkboth##1##2{\protect\ttl@gmk{\protect\@mkboth{##1}{##2}}}%
+   \def\footnote{\@ifnextchar[%
+     {\ttl@savefn\z@}{\ttl@savefn\@ne[]}}%
+   \edef\ttl@key@numberless{\ifttl@label//\else/*\fi}%
+   \def\ttl@b{ttlf@#1}%
+   \def\ttl@a##1{\csname ttl@key@##1\endcsname}% Used as elt in try
+   \ttl@trylist
+   \ifx\ttl@c\@empty
+     \PackageError{titlesec}{No format for this command}%
+       {If you (re)set the class of a sectioning command, you may\MessageBreak
+        you may need to (re)define its format with \string\titleformat}%
+   \fi
+   \ifttl@explicit
+     \def\ttl@passexplicit{\ttl@case{#4}}%
+     \ttl@c{#4}{#2}{#3}{}% ttl@c is returned by ttl@try with ttlf@...
+   \else     
+     \let\ttl@passexplicit\ttl@case
+     \ttl@c{#2}{#3}{#4}% ttl@c is returned by ttl@try with ttlf@...
+   \fi
+  \endgroup}
+
+\let\ttl@savewrite\@empty
+
+\def\ttl@finmarks{%
+  \ttl@savewrite
+  \ttl@mk  % Contains a possible mark, returned by \ttl@select
+  \ttl@fn} % And a footnote
+
+\def\ttl@try#1{%
+  \edef\ttl@c{#1}%  #1 is a list in the form \ttl@a{key}\ttl@a{key}
+  \@ifundefined{\ttl@b\ttl@c}{}{%
+    \edef\ttl@c{\expandafter\noexpand\csname\ttl@b\ttl@c\endcsname}%
+    \def\ttl@a##1{\csname ttl@extra@##1\endcsname}%
+    #1%
+    \let\ttl@try\@gobble}} % locally modified to `break' testings
+
+% \ttl@write writes marks and toc. tocdepth is taken care of when
+% the toc is typesetted and not here.  Used always through
+% ttl@savewrite, which is reset to \@empty to avoid duplicated
+% calls. 
+
+\def\ttl@write#1#2{%
+  \ttl@blinemarks
+  \csname#1mark\endcsname{#2}%
+  \def\ttl@a{\protect\numberline{\@nameuse{the#1}}}%
+  \@nameuse{ttl@toc#1}% eg, \ttl@tocpart modifies \ttl@a
+  \ttl@addcontentsline{#1}{#2}% Depends on toctitles, uses \ttl@a
+  \ttl@elinemarks
+  \global\ttl@toclabelfalse
+  \global\let\ttl@savewrite\@empty}
+
+\newif\ifttl@premark % to be used in ttlps.def
+\ttl@premarkfalse
+
+% 2019-06-20. Added the \lastskip stuff, because a mark 'forgets' the
+% last skip.
+  
+\def\ttl@premark#1#2{%
+  \let\ttl@lastskip\relax
+  \ifvmode
+    \ifdim\lastskip=\z@\else
+      \edef\ttl@lastskip{\the\lastskip}% 
+      \vskip-\ttl@lastskip\relax
+    \fi
+  \fi
+  \protected@xdef\ttl@prevmarks{\ttl@marks}%
+  \ttl@blinemarks
+  \csname#1mark\endcsname{#2}%
+  \ttl@elinemarks
+  \ifx\ttl@lastskip\relax\else
+    \vskip\ttl@lastskip\relax
+  \fi
+  \gdef\ttl@prevmarks{\ttl@marks}}
+
+% Must be preceded by a default \ttl@savewrite, which is used
+% in starred variants--\@empty in top and straight classes.
+% In straight class, it is preceded by the setting of
+% prev marks to provide a "fixed" top mark. Otherwise,
+% the default prev mark (= curr mark) is used (restored
+% after ttl@labelling in straight). This is the command
+% to be hacked if you want to change the behaviour of
+% starred variants.
+
+\def\ttl@labelling#1#2{%
+  \let\ttl@Hy@saveanchor\@empty
+  \ifttl@label  %  1st - if star
+    \def\ttl@savewrite{\ttl@write{#1}{#2}}%
+    \@nameuse{ttl@#1label}%  eg, sets if mainmatter in chapter.
+    \ifttl@label  % 2nd - eg, if not main matter
+      \ifnum\@nameuse{ttll@#1}>\c@secnumdepth\relax
+        \ttl@labelfalse     % 3rd - if too deep
+      \else
+        \ttl@Hy@refstepcounter{#1}%
+        \@nameuse{ttl@#1out}%
+      \fi
+    \fi
+  \fi
+  \let\ifttl@toclabel\ifttl@label
+  \ifx\ttl@savewrite\@empty\else % If marks
+    \ifttl@ps
+      \ifttl@premark
+        \global\ttl@premarkfalse
+      \else % if no \pretitlemark
+        \ttl@premark{#1}{#2}%
+      \fi
+    \fi
+    \ifttl@label\else\ttl@Hy@steplink{#1}\fi
+  \fi}
+
+% Executed by ttl@labelling if the name of section is chapter:
+
+\def\ttl@chapterlabel{\if@mainmatter\else\ttl@labelfalse\fi}
+
+% Executed by ttl@labelling if chapter has a number. Note
+% you can define messages for other sectioning levels (eg,
+% \ttl@sectionout).
+
+\def\ttl@chapterout{\typeout{\chaptertitlename\space\thechapter.}}
+
+% Straight class
+% ~~~~~~~~~~~~~
+% Default for nobottomtitles. Changed by nobottomtitles*
+
+\def\ttl@addstretch{\advance\@tempskipa-\pagestretch}
+
+% 1:name 2:level 3:indent 4:before 5:after 6:afind [7]:cap 8:title
+% The second argument of ttl@sect is the level, which
+% is empty if the star version is used. In this case
+% neither the toc nor the marks are written.
+
+\def\ttl@straight@i#1[#2]#3{%
+  \def\@currentlabelname{#2}% for nameref
+  \gdef\ttl@savemark{\csname#1mark\endcsname{#3}}%
+  \let\ttl@savewrite\@empty
+  \def\ttl@savetitle{#3}%
+  \gdef\thetitle{\csname the#1\endcsname}%
+  \if@noskipsec \leavevmode \fi
+  \par
+  \ttl@labelling{#1}{#2}%
+  \ttl@startargs\ttl@straight@ii{#1}{#3}}
+
+% 1:left 2:right 3:before 4:after 5:afterindent 6:name 7:title
+
+\def\ttl@straight@ii#1#2#3#4#5#6#7{%
+  \ttl@assign\@tempskipa#3\relax\beforetitleunit
+  \@ifundefined{ttl@ps@#6}{}%
+    {\PackageWarning{titlesec}{Page style in straight class ignored}}%
+  \if@nobreak
+    \ttl@titlespace{\@tempskipa}%
+  \else
+    \@ifundefined{#6break}%
+      {\addpenalty{\@secpenalty}}%
+      {\csname#6break\endcsname}%
+    \addvspace{\@tempskipa}%
+    \ifdim\bottomtitlespace<\z@
+    \else
+      \begingroup
+       \@tempskipb\pagegoal
+       \@tempskipa\pagegoal
+       \ttl@addstretch  % \relax if nobottomtitle*
+       \advance\@tempskipa-\bottomtitlespace\relax % not a register
+       \pagegoal\@tempskipa
+       \def\@textbottom{\vskip\z@\@plus.0001fil}%
+       \penalty9999
+       \pagegoal\@tempskipb
+      \endgroup
+    \fi
+  \fi
+  \@afterindenttrue
+  \ifcase#5 \@afterindentfalse\fi
+  \ttl@assign\@tempskipb#4\relax\aftertitleunit
+  \ttl@select{#6}{#1}{#2}{#7}%
+  \ttl@finmarks
+  \@ifundefined{ttlp@#6}{}{\ttlp@write{#6}}%
+  \if@noskipsec
+    \global\@nobreakfalse
+    \everypar{%
+      \if@noskipsec
+        \global\@noskipsecfalse
+        \clubpenalty\@M
+        \hskip-\parindent
+        \begingroup
+          \@svsechd\unskip{\hspace{\@tempskipb}}%
+        \endgroup
+      \else
+        \clubpenalty\@clubpenalty\everypar{}%
+      \fi}%
+  \else
+    \par\nobreak
+    \vspace{\@tempskipb}%
+    \@afterheading
+  \fi
+  \ignorespaces}
+
+% Part class
+% ~~~~~~~~~~
+
+\providecommand\partmark[1]{\markboth{}{}}
+
+\def\ttl@part@i#1[#2]#3{%
+  \gdef\ttl@savemark{\csname#1mark\endcsname{#3}}%
+  \ifx\ttl@notocparts\@undefined
+    \def\ttl@savewrite{\ttl@write{#1}{#3}}% Not #2!
+  \else
+    \let\ttl@savewrite\@empty
+  \fi
+  \def\ttl@savetitle{#3}%
+  \ttl@labelling{#1}{#2}%
+  \ttl@startargs\ttl@part@ii{#1}{#3}}
+
+\def\ttl@part@ii#1#2#3#4#5#6#7{%
+  \ttl@assign\@tempskipa#3\relax\beforetitleunit
+  \vspace*{\@tempskipa}%
+  \@ifundefined{ttl@ps@#6}{}%
+    {\PackageWarning{titlesec}{Page style in part class ignored}}%
+  \global\@afterindenttrue
+  \ifcase#5 \global\@afterindentfalse \fi
+  \ttl@assign\@tempskipb#4\relax\aftertitleunit 
+  \ttl@select{#6}{#1}{#2}{#7}%
+  \ttl@finmarks
+  \@ifundefined{ttlp@#6}{}{\ttlp@write{#6}}%
+  \par\nobreak
+  \vspace{\@tempskipb}%
+  \@afterheading}
+
+% Page class
+% ~~~~~~~~~~
+
+\def\ttl@page@i#1[#2]#3{%
+  \gdef\ttl@savemark{\csname#1mark\endcsname{#3}}%
+  \ifx\ttl@notocparts\@undefined
+    \def\ttl@savewrite{\ttl@write{#1}{#3}}% Not #2!
+  \else
+    \let\ttl@savewrite\@empty
+  \fi
+  \def\ttl@savetitle{#3}%
+  \ttl@labelling{#1}{#2}%
+  \ttl@startargs\ttl@page@ii{#1}{#3}}
+
+\def\ttl@page@ii#1#2#3#4#5#6#7{%
+  \ttl@assign\@tempskipa#3\relax\beforetitleunit
+  \if@openright
+    \cleardoublepage
+  \else
+    \clearpage
+  \fi
+  \@ifundefined{ttl@ps@#6}%
+    {\thispagestyle{plain}}%
+    {\thispagestyle{\@nameuse{ttl@ps@#6}}}%
+  \if@twocolumn
+    \onecolumn
+    \@tempswatrue
+  \else
+    \@tempswafalse
+  \fi
+  \vspace*{\@tempskipa}%
+  \@afterindenttrue
+  \ifcase#5 \@afterindentfalse\fi
+  \ttl@assign\@tempskipb#4\relax\aftertitleunit
+  \ttl@select{#6}{#1}{#2}{#7}%
+  \ttl@finmarks
+  \@ifundefined{ttlp@#6}{}{\ttlp@write{#6}}%
+  \vspace{\@tempskipb}%
+  \newpage
+  \if@twoside
+    \if@openright
+      \null
+      \@ifundefined{ttl@ps@#6}%
+        {\thispagestyle{empty}}%
+        {\thispagestyle{\@nameuse{ttl@ps@#6}}}%
+      \newpage
+    \fi
+  \fi
+  \if@tempswa
+    \twocolumn
+  \fi
+  \ignorespaces}
+
+% Top class and some makechapterhead stuff
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%
+% \ttl@mkchap is the new make(s)chapterhead.
+
+\def\ttl@mkchap#1#2#3#4#5#6#7{%
+  \gdef\ttl@savemark{\csname#6mark\endcsname{#7}}%
+  \let\ttl@savewrite\@empty
+  \let\ttl@Hy@saveanchor\@empty
+  \@ifundefined{ttl@ps@#6}{}%
+    {\thispagestyle{\@nameuse{ttl@ps@#6}}}%
+  \let\ifttl@toclabel\ifttl@label
+  \ttl@mkchap@i{#1}{#2}{#3}{#4}{#5}{#6}{#7}}
+
+% But \ttl@mkchap@i is used by both makechapterhead and
+% the top class.
+
+\def\ttl@mkchap@i#1#2#3#4#5#6#7{%
+  \ttl@assign\@tempskipa#3\relax\beforetitleunit
+  \vspace*{\@tempskipa}%
+  \global\@afterindenttrue
+  \ifcase#5 \global\@afterindentfalse\fi
+  \ttl@assign\@tempskipb#4\relax\aftertitleunit
+  \ttl@topmode{\@tempskipb}{%
+    \ttl@select{#6}{#1}{#2}{#7}}%
+  \ttl@finmarks  % Outside the box!
+  \@ifundefined{ttlp@#6}{}{\ttlp@write{#6}}}
+
+\def\ttl@top@i#1[#2]#3{%
+  \gdef\ttl@savemark{\csname#1mark\endcsname{#3}}%
+  \let\ttl@savewrite\@empty
+  \def\ttl@savetitle{#3}%
+  \ttl@labelling{#1}{#2}%
+  \ttl@startargs\ttl@top@ii{#1}{#3}}
+
+\def\ttl@top@ii#1#2#3#4#5#6#7{%
+  \@ifundefined{#6break}%
+    {\if@openright
+       \cleardoublepage
+     \else
+       \clearpage
+     \fi}%
+    {\csname#6break\endcsname}%
+  \@ifundefined{ttl@ps@#6}%
+    {\thispagestyle{plain}}%
+    {\thispagestyle{\@nameuse{ttl@ps@#6}}}%
+  \global\@topnum\z@
+  \@ifundefined{#6tolists}%
+    {\addtocontents{lof}{\protect\ttl@tocsep}%
+     \addtocontents{lot}{\protect\ttl@tocsep}}
+    {\@nameuse{#6tolists}}%
+  \if@twocolumn
+    \@topnewpage[\ttl@mkchap@i{#1}{#2}{#3}{#4}{#5}{#6}{#7}]%
+  \else
+    \ttl@mkchap@i{#1}{#2}{#3}{#4}{#5}{#6}{#7}%
+    \@afterheading
+  \fi
+  \ignorespaces}
+
+%     \def\ttl@noskipsectrue{%
+%       \if@noskipsec
+%     \PackageError{titlesec}{Invalid shape for top class}%
+%        {The selected shape only makes sense when merged into\MessageBreak
+%         a paragraph. That is impossible in the top class}%
+%   \else
+
+\newcommand\chaptertitlename{\@chapapp}
+\def\ttl@tocsep{\addvspace{10\p@}}
+
+%               +-----------------+
+%               |   S H A P E S   |
+%               +-----------------+
+%               
+% Reformatting Titles: Interface
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+% The surrounding space is stored in a macro
+% named \ttls@<section> whose content is
+% {left}{right}{before}{after}{afterindent}.
+% But if there is the page key, the name is
+% \ttls@<section>/<page>
+
+\newcommand\titlespacing{%
+  \@ifstar{\ttl@spacing@i{\z@}}{\ttl@spacing@i{\@ne}}}
+
+\def\ttl@spacing@i#1#2#3#4#5{%
+  \ttl@getkeys{#2}{titlesec}%
+  \@ifnextchar[{%
+     \ttl@spacing@ii{#1}{#3}{#4}{#5}%
+   }{%
+     \ttl@spacing@ii{#1}{#3}{#4}{#5}[\z@]}}
+
+\def\ttl@spacing@ii#1#2#3#4[#5]{%
+   \expandafter\def\csname ttls@\ttl@a\endcsname
+       {{#2}{#5}{#3}{#4}{#1}}}
+
+% The section name is built in \ttl@a.
+% The format is stored in a macro named \ttlf@<section>,
+% or \ttlf@<section>/<page> if there is the page spec,
+% or \ttlf@.../* if numberless is true
+% whose content is
+%  \ttl@<shape>{format}{label}{sep}{before}{after}
+
+\newtoks\ttl@toksa
+
+\newcommand\titleformat{%
+  \@ifstar{\ttl@format@s}%
+          {\ttl@format@i}}
+
+\def\ttl@format@s#1#2{%
+  \edef\ttl@a{\expandafter\@gobble\string#1}%
+  \@ifundefined{ttlf@\ttl@a}%
+    {\PackageError{titlesec}{Not allowed in `easy' settings}
+       {The sectiong command you are trying to redefine\MessageBreak
+        is not handled by the starred variant (eg, \string\part)}}{}
+  \expandafter\expandafter\expandafter
+  \ttl@format@si\csname ttlf@\ttl@a \endcsname
+  {#2}}
+
+\def\ttl@format@si#1#2#3#4#5#6#7{%
+  \@namedef{ttlf@\ttl@a}{#1{#7}{#3}{#4}{#5}{#6}}}
+
+\def\ttl@format@i#1{%
+  \@ifnextchar[{\ttl@format@ii{#1}}{\ttl@format@ii{#1}[hang]}}
+
+\def\ttl@format@ii#1[#2]#3#4#5#6{%
+  \ttl@getkeys{#1}{titlesec}%
+  \ttl@toksa{{#3}{#4}{#5}{#6}}% Save  arguments
+  \@ifnextchar[{%
+    \ttl@format@iii{#2}%
+  }{%
+    \ttl@format@iii{#2}[]}}
+
+% First, we get the shape -- if not defined it loads
+% the corresponding file.
+
+\def\ttl@format@iii#1[#2]{%
+  \@ifundefined{ttlh@#1}{%
+    \begingroup
+    \makeatletter
+    \InputIfFileExists{#1.tss}{}{%
+      \@ifundefined{ttlhx@#1}%
+        {\PackageError{titlesec}{Unknown shape}%
+           {Shapes are defined in files with extension tss\MessageBreak
+            Either you have misspelled the shape\MessageBreak
+            or there is no a #1.tss file}}%
+        {\global\expandafter
+         \let\csname ttlh@#1\expandafter\endcsname
+           \csname ttlhx@#1\endcsname}}%
+    \endgroup}{}%
+  \@temptokena{#2}%
+  \ifttl@explicit
+    \edef\ttl@b{%
+      \def\expandafter\noexpand\csname ttlf@\ttl@a\endcsname####1%
+      {\expandafter\noexpand\csname ttlh@#1\endcsname
+       \the\ttl@toksa{\the\@temptokena}}}%
+  \else
+    \edef\ttl@b{%
+      \def\expandafter\noexpand\csname ttlf@\ttl@a\endcsname
+      {\expandafter\noexpand\csname ttlh@#1\endcsname
+       \the\ttl@toksa{\the\@temptokena}}}%
+  \fi
+  \ttl@b
+  \csname ttl@compat\ttl@a\endcsname}
+
+% Styles
+% ~~~~~~
+
+% 1:global 2:label 3:sep 4:style 5:after 6:left 7:right 8:title
+% \ttl@<shape> and \ttlh@<shape> take the following eight
+% arguments:
+% {format}{label}{sep}{before}{after}{left}{right}{title}
+% where before and after refer to the format.
+% With the option explicit, #4 contains the title and #8 is
+% empty.
+
+\def\ttl@strut{\strut}
+
+\def\ttlh@display#1#2#3#4#5#6#7#8{%
+  \gdef\ttl@makeline##1{\ttl@calc\hspace{#6}##1\ttl@calc\hspace{#7}}%
+  \setlength\leftskip{#6}%
+  \setlength\rightskip{#7}%
+  \interlinepenalty\@M
+  \ttl@changecentercr
+  \ttl@defnostruts
+  \ttl@beginlongest
+    #1\ifhmode\ttl@hmode@error\fi
+    \ttl@glcmds
+    \parindent\z@
+    \ifttl@label
+      {#2\ttl@strut\@@par}\nobreak\ttl@calc\vspace{#3}%
+    \fi
+    #4{#8}%
+   \kern\z@\ttl@strut\@@par
+   \nobreak\ttl@midlongest#5\@@par
+  \ttl@endlongest}
+
+\def\ttlh@hang#1#2#3#4#5#6#7#8{%
+  \gdef\ttl@makeline##1{\ttl@calc\hspace{#6}##1\ttl@calc\hspace{#7}}%
+  \setlength\leftskip{#6}%
+  \setlength\rightskip{#7}%
+  \interlinepenalty\@M
+  \ttl@changecentercr
+  \ttl@defnostruts
+  \ttl@beginlongest
+  #1{\ifhmode\ttl@hmode@error\fi
+     \ttl@glcmds
+     \parindent\z@
+     \begingroup
+       \ifttl@label
+          \noindent
+          \sbox\z@{#2\ttl@strut\ttl@calc\hspace{#3}}%
+          \hangindent\wd\z@
+          \box\z@
+       \fi
+       #4{#8}%
+       \kern\z@\ttl@strut\@@par
+     \endgroup
+     \nobreak\ttl@midlongest#5\@@par}%
+  \ttl@endlongest}
+
+\def\ttlh@runin#1#2#3#4#5#6#7#8{%
+  \global\@noskipsectrue
+  \gdef\ttl@makeline##1{##1}%
+  \ttl@changecentercr
+  \ttl@defnostruts
+  #1{\ifhmode\ttl@hmode@error\fi
+     \global\sbox\ttl@box{%
+       \ttl@calc\hspace{#6}%
+       \ifttl@label{\ttl@strut#2}\ttl@calc\hspace{#3}\fi
+       #4{#8}#5\unskip}}%
+    \gdef\@svsechd{\unhbox\ttl@box}}
+
+% ----------
+
+\gdef\ttlhx@block#1#2#3#4#5#6#7#8{%
+  \gdef\ttl@makeline##1{\ttl@calc\hspace{#6}##1\ttl@calc\hspace{#7}}%
+  \setlength\leftskip{#6}%
+  \setlength\rightskip{#7}%
+  \interlinepenalty\@M
+  \ttl@changecentercr
+  \ttl@defnostruts
+  \ttl@beginlongest
+    #1% \ifhmode\ttl@hmode@error\fi
+    \ttl@glcmds
+    \parindent\z@
+    \leavevmode
+    \ifttl@label
+       {#2}%
+       \setlength\@tempskipa{#3}%
+       \ifdim\@tempskipa=\z@\else\ttl@calc\hspace{#3}\fi
+    \fi
+    #4{#8}%
+    \kern\z@\ttl@strut\@@par
+    \nobreak\ttl@midlongest#5\@@par
+  \ttl@endlongest}
+  
+
+\gdef\ttlhx@frame#1#2#3#4#5#6#7#8{%
+  \def\ttl@filleft##1{\hfill}%
+  \def\ttl@filright##1{\hfill}%
+  \gdef\ttl@makeline##1{%
+    \ttl@calc\hspace{#6}##1\ttl@calc\hspace{#7}}%
+  \interlinepenalty\@M
+  \ttl@changecentercr
+  \ttl@defnostruts
+  #1\ifhmode\ttl@hmode@error\fi
+  \parindent\z@
+  \leavevmode
+  \@tempdima\fboxrule
+  \addtolength\@tempdima{#3}%
+  \setlength\leftskip{#6}%
+  \setlength\rightskip{#7}%
+  \lower\@tempdima\hbox{%
+    \everypar{}%
+    \setbox\z@\hbox{#2}%  
+    \addtolength\hsize{-#6}%
+    \addtolength\hsize{-#7}%
+    \@tempdima\dp\z@ %  2002/3/22
+    \advance\@tempdima.5\ht\z@
+    \vbox{%
+        \hbox to \hsize{%
+          \leaders\hrule\@height\fboxrule\ttl@filleft{#3}%
+          \ifttl@label\lower.5\ht\z@\box\z@\fi
+          \leaders\hrule\@height\fboxrule\ttl@filright{#3}}%
+        \vskip-\lineskip
+        \ifttl@label\vskip-\@tempdima\fi
+        \hbox{%
+          \vrule\@width\fboxrule
+          \kern-\fboxrule
+          \vbox{%
+             \ttl@calc\vspace{#3}%
+             \leavevmode
+	         \addtolength\leftskip {#3}\addtolength\leftskip{-#6}%
+	         \addtolength\rightskip{#3}\addtolength\rightskip{-#7}%
+	         \ttl@strut#4{#8}\kern\z@\ttl@strut\@@par
+             \ttl@calc\vspace{#3}}%
+          \kern-\fboxrule
+          \vrule\@width\fboxrule}%
+       \hrule\@height\fboxrule}}%
+	   \@@par\nobreak#5\@@par}
+
+\gdef\ttlhx@leftmargin#1#2#3#4#5#6#7#8{%
+  \global\@noskipsectrue
+  \addtolength\@tempskipb{#6}%
+  \xdef\ttl@makeline##1{\hskip-\the\@tempskipb\relax##1}%
+  \leftskip\z@skip
+  \rightskip\z@skip
+  \ttl@changecentercr
+  \ttl@defnostruts
+  #1\ifhmode\ttl@hmode@error\fi
+  \parindent\z@
+  \global\setbox\ttl@box\vtop{%
+    \setlength\hsize{#6}%
+    \linewidth\hsize
+    \everypar{}%
+    \color@begingroup
+    \ifttl@label{\ttl@strut#2\ttl@strut}\ttl@calc\hspace{#3}\fi
+	   \ttl@strut#4{#8}\kern\z@\ttl@strut\@@par
+    \color@endgroup}%
+  \advance\@tempskipa\ht\ttl@box
+  \advance\@tempskipa\dp\ttl@box
+  \advance\@tempskipa-\pagegoal
+  \advance\@tempskipa\pagestretch
+  \@tempskipb\pagegoal
+  \pagegoal-\@tempskipa
+  \ifdim\bottomtitlespace<\z@\else
+    \def\@textbottom{\vskip\z@\@plus.0001fil}%
+  \fi
+  \penalty9999
+  \pagegoal\@tempskipb
+  \dp\ttl@box=\z@
+  \gdef\@svsechd##1##2{%   
+    \llap{\box\ttl@box##2}%
+    \if@afterindent\hskip\parindent\fi
+    #5}}
+
+\let\ttlhx@margin\ttlhx@leftmargin
+
+\gdef\ttlhx@rightmargin#1#2#3#4#5#6#7#8{%
+  \global\@noskipsectrue
+  \addtolength\@tempskipb{#6}%
+  \xdef\ttl@makeline##1{##1\hskip-\the\@tempskipb}%
+  \leftskip\z@skip
+  \rightskip\z@skip
+  \ttl@changecentercr
+  \ttl@defnostruts
+  #1\ifhmode\ttl@hmode@error\fi
+  \parindent\z@
+  \global\setbox\ttl@box\vtop{%
+     \setlength\hsize{#6}%
+     \linewidth\hsize
+     \everypar{}%
+     \color@begingroup
+     \ifttl@label{\ttl@strut#2\ttl@strut}\ttl@calc\hspace{#3}\fi
+	    \ttl@strut#4{#8}\kern\z@\ttl@strut\@@par
+     \color@endgroup}%
+  \advance\@tempskipa\ht\ttl@box
+  \advance\@tempskipa\dp\ttl@box
+  \advance\@tempskipa-\pagegoal
+  \advance\@tempskipa\pagestretch
+  \@tempskipb\pagegoal
+  \pagegoal-\@tempskipa
+  \ifdim\bottomtitlespace<\z@\else
+    \def\@textbottom{\vskip\z@\@plus.0001fil}%
+  \fi
+  \penalty9999
+  \pagegoal\@tempskipb
+  \dp\ttl@box=\z@  
+  \gdef\@svsechd##1##2{%
+    \rlap{\hskip\textwidth##2\box\ttl@box}%
+    \if@afterindent\hskip\parindent\fi}}
+
+\gdef\ttlhx@wrap#1#2#3#4#5#6#7#8{%
+  \global\@noskipsectrue
+  \gdef\ttl@makeline##1{##1}%
+  \ttl@changecentercr
+  \ttl@defnostruts
+  \begingroup
+    #1\ifhmode\ttl@hmode@error\fi
+    \titlewidth\z@
+    \def\\{\@ifstar{\@ifnextchar[{\ttl@bs}{\newline}}%
+                   {\@ifnextchar[{\ttl@bs}{\newline}}}%
+    \def\ttl@bs[##1]{\newline}%
+    \let\@centercr\\%
+    \advance\rightskip 1\leftskip plus 1fil
+    \leftskip=\z@
+    \parindent\z@
+    \let\iftitlemeasuring\@firstoftwo
+    \global\setbox\ttl@box\vtop{\setlength\hsize{#6}%
+      \color@begingroup
+      \ifttl@label{#2}\ttl@calc\hspace{#3}\fi
+      #4{#8}\kern\z@\ttl@strut
+      \@@par
+      \color@endgroup}%
+    \let\iftitlemeasuring\@secondoftwo
+    \ttl@boxprocess
+    \global\titlewidth\titlewidth
+    \global\titlewidthfirst\titlewidthfirst
+    \global\titlewidthlast\titlewidthlast
+  \endgroup
+  \edef\ttl@maxdimen{\the\titlewidth}%
+  #1\ifhmode\ttl@hmode@error\fi
+  \global\setbox\ttl@box\vtop{\setlength\hsize{\ttl@maxdimen}%
+    \color@begingroup
+    \ifttl@label{#2}\ttl@calc\hspace{#3}\fi#4{#8}\kern\z@\ttl@strut
+    \@@par
+    \color@endgroup}%
+  \advance\@tempskipa1.5\baselineskip
+  \advance\@tempskipa\ht\ttl@box
+  \advance\@tempskipa\dp\ttl@box
+  \advance\@tempskipa-\pagegoal
+  \advance\@tempskipa\pagestretch
+  \@tempskipb\pagegoal
+  \pagegoal-\@tempskipa
+  \ifdim\bottomtitlespace<\z@\else
+    \def\@textbottom{\vskip\z@\@plus.0001fil}%
+  \fi
+  \penalty9999
+  \pagegoal\@tempskipb
+  \@tempdima\ht\ttl@box \advance\@tempdima\dp\ttl@box
+  \@tempdimb\@tempdima
+  \divide\@tempdima\baselineskip \count@\@tempdima
+  \advance\count@
+    \ifdim\@tempdimb<\the\count@.5\baselineskip\@ne\else\tw@\fi
+  \dp\ttl@box=\z@
+  \xdef\@svsechd##1##2{%
+    \noexpand\llap{\box\ttl@box##2}%
+    \setbox\z@\hbox{\hskip\ttl@maxdimen\relax##2}%
+    \global\hangindent\wd\z@
+    \global\hangafter-\the\count@\relax}}
+
+\gdef\ttlhx@drop#1#2#3#4#5#6#7#8{%
+  \global\@noskipsectrue
+  \gdef\ttl@makeline##1{##1}%
+  \ttl@changecentercr
+  \ttl@defnostruts
+  #1\ifhmode\ttl@hmode@error\fi
+  \parindent\z@
+  \global\setbox\ttl@box\vtop{\setlength\hsize{#6}%
+    \color@begingroup
+    \ifttl@label{#2}\ttl@calc\hspace{#3}\fi
+    #4{#8}\kern\z@\ttl@strut
+    \@@par
+    \color@endgroup}%
+  \advance\@tempskipa1.5\baselineskip
+  \advance\@tempskipa\ht\ttl@box
+  \advance\@tempskipa\dp\ttl@box
+  \advance\@tempskipa-\pagegoal
+  \advance\@tempskipa\pagestretch
+  \@tempskipb\pagegoal
+  \pagegoal-\@tempskipa
+  \ifdim\bottomtitlespace<\z@\else
+    \def\@textbottom{\vskip\z@\@plus.0001fil}%
+  \fi
+  \penalty9999
+  \pagegoal\@tempskipb
+  \@tempdima\ht\ttl@box \advance\@tempdima\dp\ttl@box
+  \@tempdimb\@tempdima
+  \divide\@tempdima\baselineskip \count@\@tempdima
+  \advance\count@
+  \ifdim\@tempdimb<\the\count@.5\baselineskip\@ne\else\tw@\fi
+  \dp\ttl@box=\z@
+  \xdef\@svsechd##1##2{%
+    \noexpand\llap{\box\ttl@box##2}%
+    \setbox\z@\hbox{\noexpand\ttl@calc\noexpand\hspace{#6}\relax##2}%
+    \global\hangindent\wd\z@
+    \global\hangafter-\the\count@\relax}}
+
+%               +-----------------+
+%               |    T O O L S    |
+%               +-----------------+
+%
+% calcwidth
+% ~~~~~~~~~
+% Implemented after code from soul (but much modified...)
+
+\newdimen\titlewidth
+\newdimen\titlewidthlast
+\newdimen\titlewidthfirst
+
+\let\ttl@glcmds\relax
+\let\ttl@beginlongest\@empty
+\let\ttl@midlongest\@empty
+\let\ttl@endlongest\@empty
+\let\iftitlemeasuring\@secondoftwo
+
+\def\ttl@xbeginlongest#1\ttl@endlongest{%
+  \titlewidth\z@
+  \titlewidthlast\z@
+  \let\iftitlemeasuring\@firstoftwo
+  \setbox\ttl@box\vbox{%
+    \def\ttl@glcmds{%
+      \def\\{\@ifstar{\@ifnextchar[{\ttl@bs}{\newline}}%
+                     {\@ifnextchar[{\ttl@bs}{\newline}}}%
+      \def\ttl@bs[####1]{\newline}%
+      \let\@centercr\\%
+      \def\ttl@midlongest####1\@@par{}% Very dirty...
+      \advance\rightskip 1\leftskip plus 1fil
+      \leftskip=\z@}%
+    #1}%
+  \let\iftitlemeasuring\@secondoftwo
+  \ttl@boxprocess
+  #1}
+
+\def\ttl@boxprocess{%
+  \setbox\ttl@box=\vbox{%
+    \unvcopy\ttl@box
+    \unskip\unpenalty
+    \global\setbox\@ne=\lastbox}%
+  \ifvoid\@ne
+  \else
+    \setbox\tw@=\hbox{\hskip-\leftskip\unhbox\@ne\hskip-\rightskip}%
+    \titlewidthfirst\wd\tw@
+    \ifdim\titlewidth<\titlewidthfirst
+	  \titlewidth\titlewidthfirst
+	\fi
+    \ifdim\titlewidthlast=\z@
+      \titlewidthlast\titlewidthfirst
+    \fi
+    \expandafter\ttl@boxprocess
+  \fi}
+
+% Rules
+% ~~~~~
+
+\providecommand\titleline{%
+  \@ifstar{\ttl@line@i{\hb@xt@\titlewidth}}%
+          {\ttl@line@i{}}}
+
+\def\ttl@line@i#1{%
+  \@ifnextchar[{\ttl@line{#1}}{\ttl@line{#1}[s]}}
+
+\def\ttl@line#1[#2]#3{%
+  \vskip\topskip
+  \hrule \@height \z@
+  \nobreak
+  \vskip-\topskip
+  \begingroup
+    \parindent\z@
+    \everypar{}%
+    \leftskip\z@
+    \rightskip\z@   %  #1 is either \hb@xt@\titlewidth or empty:
+    \@makebox[\hsize][#2]{\ttl@makeline{#1{#3}}}%
+    \par
+  \endgroup
+  \hrule height \z@
+  \nobreak}
+
+\providecommand\titlerule{\@ifstar{\ttl@row}{\ttl@rule}}
+
+\let\ttl@leaders\xleaders % For titletoc compatibility
+
+\def\ttl@row{\@ifnextchar[{\ttl@row@i}{\ttl@row@i[\wd\z@]}}
+\def\ttl@row@i[#1]#2{%
+  \ifvmode\expandafter\titleline\fi
+  {\sbox\z@{#2}%
+   \ttl@calcneg\hspace{#1}%
+   \hskip\wd\z@
+   \ttl@leaders\hb@xt@#1{\hss\box\z@}%
+   \hfill\kern\z@}}
+
+\def\ttl@rule{\@ifnextchar[{\ttl@rule@i}{\ttl@rule@i[.4\p@]}}
+\def\ttl@rule@i[#1]{%
+  \ifvmode\expandafter\titleline\fi
+  {\leaders\hrule height #1\hfill\kern\z@}}
+
+% Par shapes and space
+% ~~~~~~~~~~~~~~~~~~~~
+
+\providecommand\filright{%
+  \gdef\ttl@filleft##1{\hskip##1}%
+  \gdef\ttl@filright##1{\hfill}%
+  \let\\\@centercr
+  \advance\rightskip\z@ \@plus 1fil\relax}
+\providecommand\filleft{%
+  \gdef\ttl@filleft##1{\hfill}%
+  \gdef\ttl@filright##1{\hskip##1}%
+  \let\\\@centercr
+  \advance\leftskip\z@ \@plus 1fil
+  \parfillskip\z@}
+\providecommand\filcenter{\filleft\filright
+  \gdef\ttl@filleft##1{\hfill}}
+\providecommand\fillast{%
+  \gdef\ttl@filleft##1{\hfill}%
+  \gdef\ttl@filright##1{\hfill}%
+  \let\\\@centercr
+  \filleft\advance\rightskip\z@ \@plus -1fil
+  \parfillskip\z@ \@plus 2fil\relax}
+\newcommand\filinner{%
+  \if@twoside
+    \ifodd\count\z@\filleft\else\filright\fi
+  \else
+    \filleft
+  \fi}
+\newcommand\filouter{%
+  \if@twoside
+    \ifodd\count\z@\filright\else\filleft\fi
+  \else
+    \filright
+  \fi}
+
+\newcommand\wordsep{\fontdimen\tw@\font \@plus
+  \fontdimen\thr@@\font \@minus \fontdimen4\font}
+
+% Struts.
+% ~~~~~~
+% A way to remove the struts added by styles. May be redefined below
+% with option nostruts.
+
+\def\ttl@defnostruts{\def\nostruts{\let\ttl@strut\@empty}}
+
+%               +-----------------+
+%               |  O P T I O N S  |
+%               +-----------------+
+
+\DeclareOption{pagestyles}{\let\sectiontitle\@empty}
+\DeclareOption{extramarks}{\let\ttl@fetchmark\@empty}
+\DeclareOption{floatps}{%
+  \ifx\sectiontitle\@empty
+    \let\ttl@replace\space
+  \else
+    \PackageWarning{titlesec}{Ignoring `floatps' without 
+      `pagestyles'. This option is now deprecated.}%
+  \fi}
+\DeclareOption{psfloats}{%
+  \ifx\sectiontitle\@empty
+    \let\ttl@replace\@empty
+  \else
+    \PackageWarning{titlesec}{Ignoring `psfloats' without 
+      `pagestyles'}%
+  \fi}
+
+\DeclareOption{loadonly}{\let\ttl@extract\@empty}
+
+\DeclareOption{outermarks}{%
+  \def\ttl@titlemarks{\outertitlemarks}}
+\DeclareOption{topmarks}{
+  \def\ttl@titlemarks{\toptitlemarks}}
+\DeclareOption{botmarks}{%
+  \def\ttl@titlemarks{\bottitlemarks}}
+\DeclareOption{innermarks}{%
+  \def\ttl@titlemarks{\innertitlemarks}}
+
+\DeclareOption{footmarks}{} % Backward compat
+
+\DeclareOption{explicit}{\ttl@explicittrue}
+
+\DeclareOption{clearempty}{%
+  \def\cleardoublepage{%
+    \clearpage{\ps@empty\if@twoside\ifodd\c@page\else
+    \hbox{}\newpage\if@twocolumn\hbox{}\newpage\fi\fi\fi}}}
+
+\DeclareOption{rigidchapters}{%
+  \def\ttl@topmode#1#2{\vbox to #1{#2\vfil}}%
+  \def\ttl@chapafter{.26\textheight}}
+\DeclareOption{rubberchapters}{%
+  \def\ttl@topmode#1#2{{#2}\ttl@calc\vspace{#1}}%
+  \def\ttl@chapafter{40\p@}}
+
+\DeclareOption{bottomtitles}{%
+  \def\bottomtitlespace{-1\p@}}
+\DeclareOption{nobottomtitles}{%
+  \def\bottomtitlespace{.2\textheight}}
+\DeclareOption{nobottomtitles*}{%
+  \let\ttl@addstretch\relax
+  \def\bottomtitlespace{.2\textheight}}
+
+\DeclareOption{calcwidth}{%
+  \let\ttl@beginlongest\ttl@xbeginlongest}
+
+\DeclareOption{aftersep}{%
+  \let\ttl@titlespace\@gobble}
+\DeclareOption{largestsep}{%
+  \let\ttl@titlespace\addvspace}
+
+\DeclareOption{oldparttoc}{%
+  \def\ttl@tocpart{\def\ttl@a{\thepart\hspace{1em}}}}
+\DeclareOption{newparttoc}{%
+  \let\ttl@tocpart\relax}
+\DeclareOption{notocpart*}{%
+  \let\ttl@notocparts\@empty}
+
+\DeclareOption{rm}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\rmfamily}}
+\DeclareOption{sf}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\sffamily}}
+\DeclareOption{tt}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\ttfamily}}
+\DeclareOption{md}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\mdseries}}
+\DeclareOption{bf}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\bfseries}}
+\DeclareOption{up}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\upshape}}
+\DeclareOption{it}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\itshape}}
+\DeclareOption{sl}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\slshape}}
+\DeclareOption{sc}{%
+  \protected@xdef\ttl@fonts{\ttl@fonts\protect\scshape}}
+
+\DeclareOption{big}{%
+  \gdef\ttl@sizes#1{\ifcase#1\relax\Huge\or\Large\or\large
+       \or\normalsize\or\or\or\huge\fi}}
+\DeclareOption{medium}{%
+  \gdef\ttl@sizes#1{\ifcase#1\relax\huge\or\Large\or\large
+       \or\normalsize\or\or\or\LARGE\fi}}
+\DeclareOption{small}{%
+  \gdef\ttl@sizes#1{\ifcase#1\relax\LARGE\or\large
+       \or\normalsize\or\normalsize\or\or\or\Large\fi}}
+\DeclareOption{tiny}{%
+  \gdef\ttl@sizes#1{\ifcase#1\relax\large\or\normalsize\or
+    \normalsize\or\normalsize\or\or\or\normalsize\fi}}
+
+\DeclareOption{raggedleft}{%
+  \gdef\ttl@fil{\filleft}}
+\DeclareOption{center}{%
+  \gdef\ttl@fil{\filcenter}}
+\DeclareOption{raggedright}{%
+  \gdef\ttl@fil{\filright}}
+
+\DeclareOption{uppercase}{%
+  \gdef\ttl@case{\MakeUppercase}}
+
+\DeclareOption{compact}{%
+  \gdef\ttl@space{1}%
+  \gdef\ttl@chapafter{30\p@}}
+
+% Deprecated. To be remmoved in a major upgrade (3.0)
+\DeclareOption{indentfirst}{%
+  \gdef\@afterindentfalse{\let\if@afterindent\iftrue}%
+  \@afterindenttrue
+  \def\titlespacing{%
+    \@ifstar{\ttl@spacing@i{\@ne}}{\ttl@spacing@i{\@ne}}}}
+\DeclareOption{nonindentfirst}{%
+  \def\titlespacing{%
+    \@ifstar{\ttl@spacing@i{\z@}}{\ttl@spacing@i{\z@}}}}
+
+% New names
+\DeclareOption{indentafter}{%
+  \gdef\@afterindentfalse{\let\if@afterindent\iftrue}%
+  \@afterindenttrue
+  \def\titlespacing{%
+    \@ifstar{\ttl@spacing@i{\@ne}}{\ttl@spacing@i{\@ne}}}}
+\DeclareOption{noindentafter}{%
+  \def\titlespacing{%
+    \@ifstar{\ttl@spacing@i{\z@}}{\ttl@spacing@i{\z@}}}}
+
+% newlinetospace
+\let\ttl@blinemarks\relax
+\let\ttl@elinemarks\relax
+
+\DeclareRobustCommand\ttl@linetosp{%
+  \@ifstar{\ttl@linetosp@i}{\ttl@linetosp@i}}%
+
+\def\ttl@linetosp@i{%
+  \ifdim\lastskip>\z@\else\space\fi
+  \ignorespaces}
+
+\DeclareOption{newlinetospace}{%
+  \def\ttl@blinemarks{%
+    \let\ttl@e\\%
+    \def\\{\ttl@linetosp}}%
+  \def\ttl@elinemarks{\let\\\ttl@e}}%
+
+% toctitles
+\def\ttl@addcontentsline#1#2{%
+  \addcontentsline{toc}{#1}{\ifttl@toclabel\ttl@a\fi#2}%
+  \nobreak}
+
+\DeclareOption{toctitles}{%
+  \def\ttl@addcontentsline#1#2{%
+    \addcontentsline{toc}{#1}{\ifttl@toclabel\ttl@a\fi\ttl@savetitle}%
+    \nobreak}}
+
+% pageatnewline
+
+\def\ttl@changecentercr{%
+  \let\ttl@centercr\@centercr
+  \def\@centercr{\@ifstar{\ttl@centercr*}{\ttl@centercr*}}}
+
+\DeclareOption{pageatnewline}{\let\ttl@changecentercr\relax}
+
+\def\ttl@fonts{}
+
+% nostruts
+
+\DeclareOption{nostruts}{%
+  \let\ttl@strut\@empty
+  \def\ttl@defnostruts{%
+    \let\ttl@strut\@empty
+    \def\nostruts{\let\ttl@strut\@empty}}}
+
+\ExecuteOptions{rubberchapters,bottomtitles,aftersep,oldparttoc,%
+  innermarks}
+
+\ProcessOptions
+
+%               +-----------------+
+%               | H Y P E R R E F |
+%               +-----------------+
+%
+% These two commands are provided by hyperref. But if they
+% are not defined at \begin{document} hyperref has not been
+% loaded or it is an old version.
+
+\AtBeginDocument{%
+  \ifx\ttl@Hy@steplink\@undefined
+    \let\ttl@Hy@steplink\@gobble
+    \let\ttl@Hy@refstepcounter\refstepcounter
+  \fi}
+
+%               +-----------------+
+%               |   PAGE STYLES   |
+%               +-----------------+
+%
+% This is generic:
+
+\newcommand\assignpagestyle[2]{%
+  \@namedef{ttl@ps@\expandafter\@gobble\string#1}{#2}}
+
+% Old pagestyles
+% ~~~~~~~~~~~~~~
+
+\providecommand\newpagestyle{%
+  \let\ttl@compatps\@empty % marks the ``old interface''
+  \let\ttl@coreps\@empty
+  \makeatletter
+  \edef\ttl@d{%
+    \noexpand\input{titleps.sty}%
+    \catcode`\noexpand\@=\the\catcode`\@}%
+  \ttl@d
+  \newpagestyle}
+  
+\providecommand\renewpagestyle{%
+  \let\ttl@compatps\@empty % marks the ``old interface''
+  \let\ttl@coreps\@empty
+  \makeatletter
+  \edef\ttl@d{%
+    \noexpand\input{titleps.sty}%
+    \catcode`\noexpand\@=\the\catcode`\@}%
+  \ttl@d
+  \renewpagestyle}
+
+\providecommand\widenhead{%
+  \let\ttl@compatps\@empty % marks the ``old interface''
+  \let\ttl@coreps\@empty
+  \makeatletter
+  \edef\ttl@d{%
+    \noexpand\input{titleps.sty}%
+    \catcode`\noexpand\@=\the\catcode`\@}%
+  \ttl@d
+  \widenhead}
+
+% New pagestyles
+% ~~~~~~~~~~~~~~
+
+\@ifundefined{sectiontitle}{}{%
+  \let\ttl@coreps\@empty
+  \input{titleps.sty}}
+
+%               +-----------------+
+%               |     K E Y S     |
+%               +-----------------+
+
+\def\ttl@keys{%
+  \let\ttl@keys\relax
+  \@ifundefined{define@key}{\RequirePackage{keyval}}{}%
+  \def\ttl@getkeys##1##2{%
+    \let\ttl@a\@empty
+    \if\expandafter @\@gobble##1@\@empty % if there is a single token
+      \edef\ttl@b{\expandafter\@gobble\string##1}%
+      \let\ttl@a\ttl@b
+    \else
+      \ttl@labelfalse  %  A temporary flag: true if there is page key
+      \setkeys{##2}{##1}%
+      \ifttl@label
+        \@ifundefined{ttlp@\ttl@b}{%
+          \expandafter\let\csname ttlp@\ttl@b\endcsname\@empty}{}%
+      \fi
+      \edef\ttl@a{\ttl@b\ttl@a}%
+    \fi}%
+  %
+  \define@key{titlesec}{name}{%
+    \edef\ttl@b{\expandafter\@gobble\string##1}}%
+  \define@key{titlesec}{numberless}[true]{%
+    \csname @tempswa##1\endcsname
+    \if@tempswa
+      \edef\ttl@a{\ttl@a/*}%
+    \fi}%
+  \define@key{titlesec}{page}{%
+    \ttl@labeltrue  % Used as flag
+    \edef\ttl@a{/##1\ttl@a}}%
+  %
+  \def\ttl@extra@numberless{\ttl@labeltrue}% The actual meaning
+  \let\ttl@key@numberless\@empty
+  %\let\ttl@key@matter\@empty
+  \let\ttlp@append\@gobbletwo
+  \def\ttl@setkeys##1{%
+    \def\ttl@trylist{\ttl@try{}}%
+    \@for\ttl@b:=##1\do{%
+      \begingroup
+        \let\ttl@a\relax
+        \def\ttl@try####1{%
+          \noexpand\ttl@try{####1\ttl@a{\ttl@b}}%
+          \noexpand\ttl@try{####1}}%
+        \xdef\ttl@trylist{\ttl@trylist}%
+      \endgroup}}%
+  \ttl@setkeys{page,numberless}% matter
+  %
+  \if@twoside
+    \newcounter{ttlp@side}%
+    \newcount\ttlp@side
+    \def\ttlp@theside{\ifodd\c@page o\else e\fi}%
+    \def\ttlp@append##1##2{%
+     {\let\@elt\relax
+      \expandafter\xdef\csname ttlp@##1\endcsname{%
+         \csname ttlp@##1\endcsname\@elt ##2}}}%
+    \def\ttlp@write##1{%
+      {\let\ttlp@theside\relax
+       \protected@write\@auxout{}%
+         {\string\ttlp@append{##1}{\ttlp@theside}}}}%
+    \def\ttlp@fetch##1{%
+       \stepcounter{ttlp@side}%
+       \global\advance\ttlp@side\@ne
+       \@whilenum\ttlp@side<\c@ttlp@side\do{%
+          \expandafter\@next\expandafter\@tempa\csname ttlp@##1\endcsname{}{}%
+          \global\advance\ttlp@side\@ne}%
+       \expandafter\@next\expandafter\ttl@b\csname ttlp@##1\endcsname{%
+          \xdef\ttl@key@page{/\if\ttl@b oodd\else even\fi}%
+       }{%
+          \xdef\ttl@key@page{/\ifodd\c@page odd\else even\fi}%
+       \@@warning{Unsynchronized `##1' title on page \thepage}}}%
+  \else
+    \let\ttlp@write\@gobble
+    \def\ttlp@fetch##1{\gdef\ttl@key@page{/odd}}%
+  \fi}
+
+%               +-----------------+
+%               |   C O M P A T   |
+%               +-----------------+
+% Easy setup, i.e., that of package options, is
+% taken care of, if necessary.
+
+\renewcommand\secdef[2]{%
+  \@ifstar
+    {\ttl@labelfalse
+     #2}
+    {\ttl@labeltrue
+     \ifx#1\@chapter
+       \if@mainmatter\else\ttl@labelfalse\fi
+       \ifnum\ttll@chapter>\c@secnumdepth\ttl@labelfalse\fi
+     \else\ifx#1\@part
+       \ifnum\ttll@part>\c@secnumdepth\ttl@labelfalse\fi
+     \fi\fi
+     \let\ifttl@toclabel\ifttl@label
+     \@dblarg{#1}}}
+
+\@ifundefined{ttl@extract}{}{\endinput}
+
+\newcommand\titlelabel[1]{%
+  \def\@seccntformat##1{#1}}
+
+\expandafter\ifx\csname chapter\endcsname\relax
+
+  \def\ttl@compatpart{\titleclass{\part}{part}\relax}
+
+\else
+
+  \def\ttl@compatchapter{%
+    \def\@makechapterhead{%
+      \ttl@labeltrue
+      \if@mainmatter\else\ttl@labelfalse\fi
+      \ifnum\ttll@chapter>\c@secnumdepth\ttl@labelfalse\fi
+      \ttl@startargs\ttl@mkchap{chapter}}%
+    \def\@makeschapterhead{%
+      \ttl@labelfalse
+      \if@mainmatter\else\ttl@labelfalse\fi
+      \ifnum\ttll@chapter>\c@secnumdepth\ttl@labelfalse\fi
+      \ttl@startargs\ttl@mkchap{chapter}}}
+
+  \def\ttl@compatpart{\titleclass{\part}{page}\relax}
+
+\fi
+
+\def\ttl@@extract#1\@startsection#2#3#4#5#6#7#8{%
+  \@tempskipa=#5
+  \@tempskipb=#6
+  \ifdim\@tempskipa<\z@
+    \toks@{\titlespacing*#8{#4}}%
+    \@tempskipa-\@tempskipa
+  \else
+    \toks@{\titlespacing#8{#4}}%
+  \fi
+  \@ifundefined{ttl@space}{}{%
+    \ttl@assign\@tempskipa*\ttl@space\relax\beforetitleunit}%
+  \ifdim\@tempskipb<\z@
+    \if@tempswa
+      \titleformat#8[runin]%
+         {\ttl@fonts\ttl@sizes{#3}}{\@seccntformat{#2}}%
+         {\z@}\ttl@passexplicit
+    \else
+      \titleformat#8[runin]%
+         {#7}{\@seccntformat{#2}}%
+         {\z@}\ttl@passexplicit
+    \fi
+    \@tempskipb-\@tempskipb
+  \else
+    \if@tempswa
+      \titleformat#8%
+        {\ttl@fil\ttl@fonts\ttl@sizes{#3}}{\@seccntformat{#2}}%
+        {\z@}\ttl@passexplicit 
+    \else
+      \titleformat#8%
+        {#7}{\@seccntformat{#2}}%
+        {\z@}\ttl@passexplicit
+    \fi
+    \@ifundefined{ttl@space}{}{%
+      \ttl@assign\@tempskipb*\ttl@space\relax\aftertitleunit}%
+  \fi
+  \edef\ttl@a{\the\toks@{\the\@tempskipa}{\the\@tempskipb}}
+  \ttl@a}
+
+\def\ttl@extract#1{%
+  \ifx#1\@undefined
+    \let#1\relax % Avoid error if undefined
+  \fi
+  \expandafter\in@\expandafter\@startsection\expandafter{#1}%
+  \ifin@
+    \expandafter\ttl@@extract#1#1%
+  \else
+    \PackageWarningNoLine{titlesec}%
+      {Non standard sectioning command \string#1\MessageBreak
+       detected. Using default spacing and no format}%
+    \titlespacing*#1{\z@}{*3}{*2}%
+  \fi}
+
+\@tempswafalse
+
+\ifx\ttl@fonts\@empty
+  \def\ttl@fonts{\bfseries}
+\else
+  \@tempswatrue
+\fi
+
+\expandafter\ifx\csname ttl@sizes\endcsname\relax
+  \gdef\ttl@sizes#1{\ifcase#1\relax\Huge\or\Large\or\large
+       \or\normalsize\or\or\or\huge\fi}
+\else
+  \@tempswatrue
+\fi
+
+\expandafter\ifx\csname ttl@fil\endcsname\relax
+  \let\ttl@fil\@empty
+\else
+  \@tempswatrue
+\fi
+
+\expandafter\ifx\csname ttl@case\endcsname\relax
+  \let\ttl@case\@firstofone
+\else
+  \@tempswatrue
+\fi
+
+\if@tempswa
+
+  \expandafter\ifx\csname chapter\endcsname\relax\else
+   \titleformat\chapter[display]%
+    {\@ifundefined{ttl@fil}{\raggedright}{\ttl@fil}\ttl@fonts\ttl@sizes6}
+    {\@chapapp\space\thechapter}{.8\baselineskip}{\ttl@sizes\z@\ttl@passexplicit}
+  \fi
+
+\fi
+
+\ttl@extract\section
+\ttl@extract\subsection
+\ttl@extract\subsubsection
+\ttl@extract\paragraph
+\ttl@extract\subparagraph
+
+\let\ttl@extract\@undefined
+\let\ttl@@extract\@undefined
+
+\def\ttl@toplevel{part}
+
+\expandafter\ifx\csname chapter\endcsname\relax
+
+  \@namedef{ttll@part}{0}
+  \titleclass{\section}{straight}[\part]
+
+  \titlespacing*{\part}
+    {\z@}
+    {4ex}
+    {3ex}
+
+\else
+
+  \let\ttl@save@mkchap\@makechapterhead
+  \let\ttl@save@mkschap\@makeschapterhead
+
+  \def\@makechapterhead#1{%
+    \gdef\ttl@savemark{\chaptermark{#1}}%
+    \ttl@save@mkchap{#1}%
+    \@ifundefined{ttl@ps@chapter}{}%
+      {\thispagestyle{\@nameuse{ttl@ps@chapter}}}}
+
+  \def\@makeschapterhead#1{%
+    \gdef\ttl@savemark{\chaptermark{#1}}%
+    \ttl@save@mkschap{#1}%
+    \@ifundefined{ttl@ps@chapter}{}%
+      {\thispagestyle{\@nameuse{ttl@ps@chapter}}}}
+
+  \@namedef{ttll@part}{-1}
+  \@namedef{ttlss@part}{chapter}
+  \@namedef{ttll@chapter}{0}
+  \titleclass{\section}{straight}[\chapter]
+
+% The following is unoperant, unless when \chapter / \part
+% format is redefined
+
+  \titlespacing*{\part}
+    {\z@}
+    {\z@\@plus1fil}
+    {\z@\@plus1fil}
+    
+  \titlespacing*\chapter
+    {\z@}%
+    {50\p@}%
+    {\ttl@chapafter}%
+
+\fi
+
+\titleclass{\subsection}   {straight}[\section]
+\titleclass{\subsubsection}{straight}[\subsection]
+\titleclass{\paragraph}    {straight}[\subsubsection]
+\titleclass{\subparagraph} {straight}[\paragraph]
+
+\endinput
+
+MIT License
+-----------
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

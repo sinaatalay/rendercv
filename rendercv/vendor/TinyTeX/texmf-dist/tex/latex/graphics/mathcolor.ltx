@@ -1,0 +1,92 @@
+%%
+%% This is file `mathcolor.ltx',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% mathcolor.dtx  (with options: `code')
+%% 
+%% The source is maintained by the LaTeX Project team and bug
+%% reports for it can be opened at https://latex-project.org/bugs/
+%% (but please observe conditions on bug reports sent to that address!)
+%% 
+%% 
+%% File: mathcolor.dtx (C) Copyright 2021-2022
+%%% From File: mathcolor.dtx
+\def\mathcolorversion{v1.0c}
+\def\mathcolordate{2022/07/25}
+\ifcsname mathcolor\endcsname \endinput \fi
+\ExplSyntaxOn
+\seq_new:N \g__mathcolor_seq
+\DeclareDocumentCommand \mathcolor { o m m }
+  {
+    \mode_if_math:F { \non@alpherr {\mathcolor\space} }
+    \seq_gpush:No \g__mathcolor_seq \current@color
+    \group_insert_after:N \use_none:n
+    \IfValueTF {#1} { \color[#1]{#2} } { \color{#2} }
+    #3
+    \__mathcolor_scan_for_scripts:w
+  }
+\cs_new_protected:Npn \__mathcolor_scan_for_scripts:w
+  {
+    \peek_remove_filler:n
+      {
+        \group_align_safe_begin:
+        \token_case_catcode:NnTF \l_peek_token
+          {
+            \c_math_subscript_token { }
+            \c_math_superscript_token { }
+          }
+          { \__mathcolor_handle_scripts:Nw }
+          {
+            \token_case_meaning:NnTF \l_peek_token
+              {
+                \limits   { \limits }
+                \nolimits { \nolimits }
+                \displaylimits { \displaylimits }
+              }
+              {
+                \group_align_safe_end:                          % case 4
+                \__mathcolor_scan_for_scripts:w \use_none:n
+              }
+              {
+                \token_if_eq_meaning:NNTF \l_peek_token '
+                  {
+                    \__mathcolor_handle_scripts:Nw ^
+                    \c_group_begin_token
+                      \exp_after:wN \prim@s \use_none:n
+                  }
+                  {
+                    \group_align_safe_end:                      % case 1
+                    \reset@color
+                    \seq_gpop:NN \g__mathcolor_seq \current@color
+                  }
+              }
+          }
+      }
+  }
+\cs_new_protected:Npn \__mathcolor_handle_scripts:Nw #1
+  {
+    #1 \c_group_begin_token \c_group_begin_token
+    \seq_get:NN \g__mathcolor_seq \current@color
+    \set@color
+    \group_insert_after:N \c_group_end_token
+    \group_insert_after:N \__mathcolor_scan_for_scripts:w
+    \peek_remove_filler:n
+      {
+        \token_if_eq_meaning:NNTF \l_peek_token \c_group_begin_token
+          {
+            \group_align_safe_end:                              % case 2
+            \peek_catcode_remove:NT \c_group_begin_token { }
+          }
+          {
+            \exp_after:wN \group_align_safe_end:                % case 3
+              \use_ii_i:nn \c_group_end_token
+          }
+      }
+  }
+\ExplSyntaxOff
+%%%%%%%%%%%%%%%%
+\endinput
+%%
+%% End of file `mathcolor.ltx'.

@@ -1,0 +1,144 @@
+%%
+%% This is file `fancyvrb-ex.sty',
+%%
+%% COPYRIGHT 2018,2019-, by Herbert Voss <hvoss@tug.org>
+%%
+%% This package may be distributed under the terms of the LaTeX Project Public
+%% License, as described in lppl.txt in the base LaTeX distribution.
+%% Either version 1.3 or, at your option, any later version.
+%%
+%% DESCRIPTION:
+%%   fancyvrb.sty is a LaTeX style option, containing flexible
+%%   verbatim environments and commands and extensive documentation.
+%%   it is based on the work of Denis Girou
+%%
+\NeedsTeXFormat{LaTeX2e}
+\def\fileversion{0.01}
+\def\filedate{2018/11/01}
+\ProvidesPackage{fancyvrb-ex}[\filedate]
+\message{Style option: `fancyvrb-ex' v\fileversion \space  <\filedate> (tvz)}
+\csname fancyvrb-ex@loaded\endcsname
+\expandafter\let\csname fancyvrb-ex@loaded\endcsname\endinput
+\newif\ifEX@pstricks \EX@pstricksfalse
+\DeclareOption{pstricks}{\EX@pstrickstrue}
+\newif\ifEX@color\EX@colorfalse
+\DeclareOption{color}{\global\EX@colortrue}
+\ProcessOptions
+\RequirePackage{fancyvrb}       % Standard LaTeX `color' package
+\RequirePackage{xcolor}       % Standard LaTeX `color' package
+\def\FV@Error#1#2{%
+  \edef\@tempc{#2}\expandafter\errhelp\expandafter{\@tempc}%
+  \errmessage{FancyVerb Error:^^J\space\space #1^^J}}
+
+\def\FV@eha{Your command was ignored. Type <return> to continue.}
+
+% The exa part of fancyvrb
+%
+\def\Highlight@Attributes{}   % Default=nothing
+\def\NoHighlight@Attributes{} % Default=nothing
+\ifEX@color
+  \RequirePackage{hcolor}      % Color version
+\else
+  \RequirePackage{hbaw}      % black and white version
+\fi
+\ifEX@pstricks\RequirePackage{pstricks}\fi
+%
+%\fvset{gobble=0}
+\newif\ifFvrbEx@Grid
+%
+\def\Example{%
+\catcode`\^^M=\active
+\@ifnextchar[{\catcode`\^^M=5\Example@}{\catcode`\^^M=5\Begin@Example}}
+%
+\def\endExample{%
+\end{VerbatimOut}%
+\Below@Example{\input{\jobname.tmp}}}
+%
+\def\Example@[#1]{\fvset{#1}\Begin@Example}
+%
+\def\CenterExample{%
+\catcode`\^^M=\active
+\@ifnextchar[{\catcode`\^^M=5\Example@}{\catcode`\^^M=5\Begin@Example}}
+%
+\def\endCenterExample{%
+\end{VerbatimOut}%
+\center
+\Below@Example{\input{\jobname.tmp}}
+\endcenter}
+%
+\def\SideBySideExample{%
+\catcode`\^^M=\active
+\@ifnextchar[{\catcode`\^^M=5\Example@}%
+             {\catcode`\^^M=5\Begin@Example}}
+\def\endSideBySideExample{%
+\end{VerbatimOut}%
+\SideBySide@Example{\input{\jobname.tmp}}}
+\newcommand\Begin@Example{%
+\parindent=0pt
+\multiply\topsep by 2
+\VerbatimEnvironment
+\begin{VerbatimOut}[codes={\catcode`\^^a3=12\catcode`\^^a7=12\catcode`\^^b5=12%
+                           \catcode`\^^b6=12}]{\jobname.tmp}}
+\newcommand\Below@Example[1]{%
+\VerbatimInput[gobble=0,commentchar=^^a3,commandchars=^^a7^^b5^^b6,numbersep=3pt]%
+              {\jobname.tmp}
+\catcode`\^^a3=9\relax%
+\NoHighlight@Attributes % To suppress possible highlighting
+\ifFvrbEx@Grid\vspace{5pt}\fi
+#1%
+\ifFvrbEx@Grid\vspace{5pt}\fi
+\par}
+\newcommand{\SideBySide@Example}[1]{%
+\@tempdimb=\FV@XRightMargin
+\advance\@tempdimb -5mm
+\begin{minipage}[c]{\@tempdimb}
+  \fvset{xrightmargin=0pt}
+  \catcode`\^^a3=9\relax%
+  \NoHighlight@Attributes % To suppress possible highlighting
+  #1
+\end{minipage}%
+\@tempdimb=\textwidth
+\advance\@tempdimb -\FV@XRightMargin
+\advance\@tempdimb 5mm
+\begin{minipage}[c]{\@tempdimb}
+  \VerbatimInput[gobble=0,commentchar=^^a3,commandchars=^^a7^^b5^^b6,numbersep=3pt,
+                 xleftmargin=5mm,xrightmargin=0pt]{\jobname.tmp}
+\end{minipage}}
+\ifx\PSTricksLoaded\endinput
+  \newcommand\showgrid{\FvrbEx@Gridtrue}
+  \newpsobject{FvrbExGrid}{psgrid}{subgriddiv=0,griddots=10,gridlabels=7pt}
+  \def\PCenterExample{\@ifnextchar[{\Pst@Example}{\Pst@@Example}}
+  \def\endPCenterExample{%
+    \end{VerbatimOut}%
+    \Below@Example{%
+      \center
+      \expandafter\pspicture\Picture@Size
+      \ifFvrbEx@Grid\FvrbExGrid\fi\relax
+      \input{\jobname.tmp}%
+      \endpspicture
+      \endcenter
+      \smallskip}}
+  \def\PSideBySideExample{\@ifnextchar[{\Pst@Example}{\Pst@@Example}}
+  \def\endPSideBySideExample{%
+    \end{VerbatimOut}%
+    \SideBySide@Example{%
+      \ifFvrbEx@Grid\vspace{5pt}\fi
+      \expandafter\pspicture\Picture@Size
+      \ifFvrbEx@Grid\FvrbExGrid\fi\relax
+      \input{\jobname.tmp}%
+      \endpspicture
+      \ifFvrbEx@Grid\vspace{5pt}\fi
+      \smallskip}}
+  \def\Pst@Example[#1]{\fvset{#1}\Pst@@Example}
+  \def\Pst@@Example#1(#2,#3){%
+    \catcode`\^^M=\active
+    \@ifnextchar({\catcode`\^^M=5\Pst@@@Example(#2,#3)}
+                 {\catcode`\^^M=5\Pst@@@Example(0,0)(#2,#3)}}
+  \def\Pst@@@Example(#1,#2)(#3,#4){%
+    \def\Picture@Size{(#1,#2)(#3,#4)}%
+    \Begin@Example}
+\fi                             % End \ifx\PSTricksLoaded
+%%
+\endinput
+%%
+%% End of file `fancyvrb-ex.sty'.

@@ -1,0 +1,736 @@
+% \iffalse meta-comment
+% ======================================================================
+% scrkernel-paragraphs.dtx
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrkernel-paragraphs.dtx 4032 2023-04-17 09:45:11Z kohm $
+%<option>%%%            (run: option)
+%<body>%%%            (run: body)
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2023-04-17 11:45:11 +0200 (Mo, 17. Apr 2023) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 4032 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrkernel-paragraphs.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script
+                           (paragraphs)]
+  }%
+\reserved@a
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\setcounter{StandardModuleDepth}{3}
+\begin{document}
+\DocInput{scrkernel-paragraphs.dtx}
+\end{document}
+%</dtx>
+% \fi
+%
+% \changes{v2.95}{2002/06/25}{first version after splitting \file{scrclass.dtx}}
+% \changes{v3.36}{2022/03/07}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/03/07}{whole implementation documentation in English}
+% \changes{v3.40}{2023/04/17}{guide names changed}
+%
+% \GetFileInfo{scrkernel-paragraphs.dtx}
+% \title{The Code Related to Paragraph Building and Page Building of
+%   \href{https://komascript.de}{\KOMAScript} Classes}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   \file{scrkernel-paragraphs.dtx} does all the things about configuration of
+%   paragraphs and page breaking. Some of them are very special for
+%   \KOMAScript.
+% \end{abstract}
+% \tableofcontents
+%
+% \section{User Manual}
+%
+% You can find the user documentation the commands implemented here in the
+% \KOMAScript{} manual, either the German \file{scrguide-de.pdf} or the
+% English \file{scrguide-en.pdf}.
+%
+% \MaybeStop{\PrintIndex}
+%
+% \section{Implementation of Paragraphs and Pages}
+%
+% Almost all of this code is for the classes only.
+%    \begin{macrocode}
+%<*class>
+%    \end{macrocode}
+%
+% \subsection{Options and macros to handle the paragraph layout}
+%
+% Already from version 2.8i \KOMAScript can handle paragraph skips instead of
+% indenting paragraphs. But the corresponding code has changed a lot over the
+% years.
+%
+% \begin{command}{\setparsizes}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v3.17}{2015/03/10}{support for internal option value storage}
+% \changes{v3.19}{2015/07/29}{\cs{par@update} should not reset itself to
+%   \cs{default@par@update} in the document preamble}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% \begin{macro}{\f@parindent}
+% \changes{v2.95}{2004/11/05}{added}
+% \begin{macro}{\f@parskip,\f@parfillskip}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v2.95}{2004/11/05}{meaning changed}
+% \begin{macro}{\scr@parindent}
+% \changes{v2.95}{2004/11/05}{added}
+% \begin{macro}{\scr@parskip,\scr@parfillskip}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v2.95}{2004/11/05}{meaning changed}
+% Command
+% \begin{quote}
+%   \cs{setparsizes}\marg{indent}\marg{skip}\marg{fill}
+% \end{quote}
+% not only sets the three main paragraph parameters of \TeX: \len{parskip},
+% \len{parindent}, \len{parfillskip}. Because of option \opt{parskip=relative}
+% it has to use a kind of delayed setting of these parameters at least at the
+% document preamble. So these settings are not activated until
+% \cs{selectfont}. To do so, not the \TeX{} parameters are changed, but the
+% current values of the \TeX{} parameters are stored to \cs{f@parindent},
+% \cs{f@parskip} and \cs{f@parfillskip} and the new values are stored to
+% \cs{scr@parindent}, \cs{scr@parskip} and \cs{scr@parfillskip}
+% only. Additionally \cs{par@update} is used to activate these new
+% values. Later we will use a hook to automatically execute \cs{par@update}
+% with every \cs{selectfont}. The current value storage is initialized twice:
+% First immediately and second inside at the end of the class.
+% \begin{description}
+% \item[ToDo:] Is the second initialization really needed? Wouldn't it be done
+%   with the class options? Here user changes are not to be expected, because
+%   we are still inside the class and therefore there is no user interaction.
+% \end{description}
+% \begin{macro}{\par@update}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v3.20}{2016/02/22}{\cs{AtBeginDocument} code added}
+% \begin{macro}{\default@par@update}
+% \changes{v2.95}{2004/11/05}{added}
+% \begin{macro}{\par@updaterelative}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v3.36}{2022/03/07}{using \cs{reserved@a} instead of \cs{@tempa}}
+% \begin{macro}{\parindent@update,\parskip@update,\parfillskip@update}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v3.36}{2022/03/07}{using \cs{reserved@a} and \cs{reserved@b}
+%   instead if \cs{@tempa} and \cs{@tempb}}
+% The initial \cs{par@update} action is to do nothing. But with
+% \opt{parskip=relative} it always and after \cs{setparsizes} it once (or in
+% the document preamble also always) has to reactivate the new values. This is
+% done using \cs{default@par@update} and
+% \cs{par@updaterelative}. \cs{default@par@update} is either a do nothing
+% (\opt{parskip=absolute}) or \cs{par@updaterelative}
+% (\opt{parskip=relative}). \cs{par@updaterelative} does the real update.
+% \begin{description}
+% \item[ToDo:] Sometimes internally \cs{par@updaterelative} is used instead of
+%   \cs{selectfont} to do an immediate update after \cs{setparsizes}. But is
+%   this correct? Wouldn't be \cs{selectfont} the correct action, to also
+%   reset the definition of \cs{par@update}?
+% \item[ToDO:] Does the \cs{AtBeginCode} execution of \cs{par@update} make
+%   sense? The \cs{par@update} is done after the initial \cs{normalsize} and
+%   the initial \cs{selectfont}. So shouldn't this be enough?
+% \end{description}
+%    \begin{macrocode}
+%<*option>
+\newcommand*{\setparsizes}[3]{%
+  \edef\f@parindent{\the\parindent}%
+  \edef\f@parskip{\the\parskip}%
+  \edef\f@parfillskip{\the\parfillskip}%
+  \def\scr@parindent{#1}%
+  \def\scr@parskip{#2}%
+  \def\scr@parfillskip{#3}%
+  \def\par@update{%
+    \if@atdocument\let\par@update\default@par@update\fi
+    \par@updaterelative
+  }%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{false}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{never}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{full}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{full-}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{full+}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{full*}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{half}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{half-}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{half+}%
+  \KOMA@kav@remove{\KOMAClassFileName}{parskip}{half*}%
+}
+\newcommand*{\f@parindent}{\the\parindent}
+\newcommand*{\f@parskip}{\the\parskip}
+\newcommand*{\f@parfillskip}{\the\parfillskip}
+\newcommand*{\scr@parindent}{1em}
+\newcommand*{\scr@parskip}{\z@}
+\newcommand*{\scr@parfillskip}{\z@ \@plus 1fil}
+\AtEndOfClass{%
+  \edef\f@parindent{\the\parindent}%
+  \edef\f@parskip{\the\parskip}%
+  \edef\f@parfillskip{\the\parfillskip}%
+}
+\newcommand*{\par@update}{}
+\let\par@update\relax
+\newcommand*{\default@par@update}{}
+\let\default@par@update\relax
+\AtBeginDocument{\par@update}
+%</option>
+%    \end{macrocode}
+% Because of the currently complicated initialization, i.e., when switching
+% between \cs{parskip=absolute} and \cs{parskip=relative}, we currently define
+% \cs{par@updaterelative} not before the class options has been processed. New
+% values are only set, if between the last \cs{setparsizes} and the current
+% \cs{par@updaterelative} (e.g. inside \cs{selectfont}) the user has not
+% changed the \TeX{} variables. If he has changed the \TeX{} variables instead
+% of using \cs{setparsizes} we think, he does not want any other change. And
+% because of to be able to do the tests inside a group without permanent
+% change of \cs{reserved@a} we use three additional helpers.
+%    \begin{macrocode}
+%<*body>
+\newcommand*{\par@updaterelative}{%
+  \begingroup
+    \edef\reserved@a{\the\parindent}\ifx\reserved@a\f@parindent
+      \aftergroup\parindent@update
+%<*trace>
+    \else
+      \ClassInfo{\KOMAClassName}{\string\parindent\space not changed}%
+%</trace>
+    \fi
+    \edef\reserved@a{\the\parskip}\ifx\reserved@a\f@parskip
+      \aftergroup\parskip@update
+%<*trace>
+    \else
+      \ClassInfo{\KOMAClassName}{\string\parskip\space not changed}%
+%</trace>
+    \fi
+    \edef\reserved@a{\the\parfillskip}\ifx\reserved@a\f@parfillskip
+      \aftergroup\parfillskip@update
+%<*trace>
+    \else
+      \ClassInfo{\KOMAClassName}{\string\parfillskip\space not changed}%
+%</trace>
+    \fi
+  \endgroup
+}
+\newcommand*{\parindent@update}{%
+  \scr@defaultunits\parindent\scr@parindent
+  \begingroup
+    \let\reserved@b\endgroup
+    \edef\reserved@a{\the\parindent}\ifx\reserved@a\f@parindent\else
+      \def\reserved@b{\endgroup\edef\f@parindent{\the\parindent}}%
+%<trace>      \ClassInfo{\KOMAClassName}{\string\parindent=\the\parindent}%
+    \fi
+  \reserved@b
+}
+\newcommand*{\parskip@update}{%
+  \scr@defaultunits\parskip\scr@parskip
+  \begingroup
+    \let\reserved@b\endgroup
+    \edef\reserved@a{\the\parskip}\ifx\reserved@a\f@parskip\else
+      \def\reserved@b{\endgroup\edef\f@parskip{\the\parskip}}%
+%<trace>      \ClassInfo{\KOMAClassName}{\string\parskip=\the\parskip}%
+    \fi
+  \reserved@b
+}
+\newcommand*{\parfillskip@update}{%
+  \scr@defaultunits\parfillskip\scr@parfillskip
+  \begingroup
+    \let\reserved@b\endgroup
+    \edef\reserved@a{\the\parfillskip}\ifx\reserved@a\f@parfillskip\else
+      \def\reserved@b{\endgroup\edef\f@parfillskip{\the\parfillskip}}%
+%<trace>      \ClassInfo{\KOMAClassName}{\string\parfillskip=\the\parfillskip}%
+    \fi
+  \reserved@b
+}
+%</body>
+%    \end{macrocode}
+% \end{macro}^^A \parindent@update,\parskip@update,\parfillskip@update}
+% \end{macro}^^A \par@updaterelative
+% \end{macro}^^A \default@par@update
+% \end{macro}^^A \par@update
+% \end{macro}^^A \scr@parskip,\scr@parfillskip
+% \end{macro}^^A \scr@parindent
+% \end{macro}^^A \f@parskip,\f@parfillskip
+% \end{macro}^^A \f@parindent
+% \end{command}^^A \setparsizes
+%
+% \begin{option}{parskip}
+% \changes{v2.8i}{2001/07/22}{added}
+% \changes{v2.95}{2006/03/11}{changed into \pkg{keyval} option}
+% \changes{v3.08}{2010/12/14}{value \opt{\quotechar=never} added}
+% \changes{v3.12}{2013/03/05}{using \cs{FamilyKeyState}.}
+% \changes{v3.17}{2015/03/10}{using value storage}
+% \changes{v3.25}{2017/09/27}{typo fix in \cs{FamilyKeyStateUnknownValue}}
+% \changes{v3.26b}{2019/02/01}{\cs{baselineskip} replaced by 1\cs{baselineskip}}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% \begin{option}{parindent,parskip-,parskip+,parskip*,
+%                halfparskip,halfparskip-,halfparskip+,halfparskip*}
+% \changes{v2.8i}{2001/07/22}{added}
+% \changes{v2.95}{2006/03/11}{obsolete}
+% \changes{v2.97d}{2007/10/03}{\cs{PackageInfo} replaced by
+%   \cs{PackageInfoNoLine}}
+% \changes{v3.01a}{2008/11/20}{deprecated}
+% \changes{v3.99}{2022/11/16}{removed from \KOMAScript~4}
+% Originally we have had nine options for all the paragraph indent and skip
+% settings. Using \pkg*{scrbase} we have only one option with additional
+% settings for relative and absolute values and paragraph indent without glue
+% for paragraph skip.
+%    \begin{macrocode}
+%<*option>
+\KOMA@key{parskip}[true]{%
+  \begingroup
+    \KOMA@set@ncmdkey{parskip}{@tempa}{%
+      {never}{0},%
+      {false}{1},{off}{1},{no}{1},%
+      {full-}{2},%
+      {half-}{3},%
+      {full}{4},{true}{4},{on}{4},{yes}{4},%
+      {half}{5},%
+      {full+}{6},%
+      {half+}{7},%
+      {full*}{8},%
+      {half*}{9},%
+      {relative}{10},%
+      {absolute}{11}%
+    }{#1}%
+    \ifx\FamilyKeyState\FamilyKeyStateProcessed
+      \aftergroup\FamilyKeyStateProcessed
+      \ifcase\number\@tempa% 0
+        \endgroup
+        \setparsizes{1em}{\z@}{\z@ \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{never}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 1
+        \endgroup
+        \setparsizes{1em}{\z@ \@plus \p@}{\z@ \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{false}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 2
+        \endgroup
+        \setparsizes{\z@}{1\baselineskip \@plus .1\baselineskip}{%
+          \z@ \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{full-}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 3
+        \endgroup
+        \setparsizes{\z@}{.5\baselineskip \@plus .5\baselineskip}{%
+          \z@ \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{half-}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 4
+        \endgroup
+        \setparsizes{\z@}{1\baselineskip \@plus .1\baselineskip}{%
+          1em \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{full}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 5
+        \endgroup
+        \setparsizes{\z@}{.5\baselineskip \@plus .5\baselineskip}{%
+          1em \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{half}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 6
+        \endgroup
+        \setparsizes{\z@}{1\baselineskip \@plus .1\baselineskip}{%
+          .3333\linewidth\@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{full+}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 7
+        \endgroup
+        \setparsizes{\z@}{.5\baselineskip \@plus .5\baselineskip}{%
+          .3333\linewidth \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{half+}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 8
+        \endgroup
+        \setparsizes{\z@}{1\baselineskip \@plus .1\baselineskip}{%
+          .25\linewidth \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{full*}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 9
+        \endgroup
+        \setparsizes{\z@}{.5\baselineskip \@plus .5\baselineskip}{%
+          .25\linewidth \@plus 1fil}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{half*}%
+        \if@atdocument\AfterKOMAoptions{\selectfont}\fi
+      \or% 10
+        \endgroup
+        \KOMA@kav@remove{\KOMAClassFileName}{parskip}{absolute}%
+        \KOMA@kav@remove{\KOMAClassFileName}{parskip}{relative}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{relative}%
+        \ifx\par@updaterelative\undefined
+          \expandafter\AtEndOfClass
+        \else
+          \expandafter\@firstofone
+        \fi
+        {%
+          \ifx\par@update\default@par@update
+            \let\par@update\par@updaterelative
+          \fi
+          \let\default@par@update=\par@updaterelative
+        }%
+      \or%11
+        \endgroup
+        \KOMA@kav@remove{\KOMAClassFileName}{parskip}{absolute}%
+        \KOMA@kav@remove{\KOMAClassFileName}{parskip}{relative}%
+        \KOMA@kav@add{\KOMAClassFileName}{parskip}{absolute}%
+        \ifx\par@updaterelative\undefined
+          \expandafter\AtEndOfClass
+        \else
+          \expandafter\@firstofone
+        \fi
+        {%
+          \ifx\par@update\default@par@update
+            \let\par@update\relax
+          \fi
+          \let\default@par@update=\relax
+        }%
+      \else% should never be
+        \endgroup
+    \fi
+  \else
+    \endgroup
+    \FamilyKeyStateUnknownValue
+  \fi
+}
+%<*!v4>
+\KOMA@DeclareDeprecatedOption{parskip-}{parskip=full-}
+\KOMA@DeclareDeprecatedOption{parskip+}{parskip=full+}
+\KOMA@DeclareDeprecatedOption{parskip*}{parskip=full*}
+\KOMA@DeclareDeprecatedOption{halfparskip}{parskip=half}
+\KOMA@DeclareDeprecatedOption{halfparskip-}{parskip=half-}
+\KOMA@DeclareDeprecatedOption{halfparskip+}{parskip=half+}
+\KOMA@DeclareDeprecatedOption{halfparskip*}{parskip=half*}
+\KOMA@DeclareDeprecatedOption{parindent}{parskip=false}
+%</!v4>
+\KOMA@kav@add{\KOMAClassFileName}{parskip}{false}
+\KOMA@kav@add{\KOMAClassFileName}{parskip}{absolute}
+%</option>
+%    \end{macrocode}
+% \end{option}^^A parindent … halfparskip*
+% \end{option}^^A parskip
+%
+% \changes{v2.8i}{2001/07/22}{don't change \cs{baselinestretch}}
+%
+% \begin{length}{\lineskip,\normallineskip}
+% The minimum line skip.
+%    \begin{macrocode}
+%<*body>
+\setlength{\lineskip}{\p@}
+\setlength{\normallineskip}{\p@}
+%    \end{macrocode}
+% \end{length}
+%
+% \begin{command}{\selectfont}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v3.33}{2021/01/21}{from \LaTeX{} 2021/06/01 use hook instead of
+%   patch}
+% \begin{macro}{\scr@selectfont,\scr@new@selectfont}
+% \changes{v2.95}{2006/04/14}{added}
+% \changes{v3.10}{2010/09/28}{\pkg{everysel} support fixed}
+% \changes{v3.10}{2010/09/28}{\pkg{tracefnt} supported}
+% \changes{v3.10b}{2011/03/13}{\pkg{everysel} can be loaded inside
+%   \cs{begin\{document\}}}
+% Because of \opt{parskip=relative} we need a hook to activate the changes of
+% the paragraph values. A good place to do so is \cs{selectfont}. With
+% \KOMAScript{} 3.00 we needed to patch this command. But from \LaTeX{}
+% 2021/06/01 we can use a new generic hook.
+% \begin{description}
+% \item[Note:] We use 2021/05/01 instead of the official \LaTeX{} release date,
+%   because there were relevant earlier \LaTeX{} developer releases with that
+%   date.
+% \end{description}
+%    \begin{macrocode}
+\IfLTXAtLeastTF{2021/05/01}{%
+  \AddToHook{selectfont}{\par@update}%
+  \AfterPackage{everysel}{%
+    \IfPackageAtLeastTF{everysel}{2021/01/18}{}{%
+      \ClassError{\KOMAClassName}{%
+        incompatible `everysel' detected
+      }{%
+        You are using an old version of `everysel' in combination with a
+        LaTeX\MessageBreak
+        version >= 2021/06/01 and KOMA-Script >= 3.33. This combination
+        is\MessageBreak
+        not supported.\MessageBreak
+        You could switch back to an older LaTeX using package
+        `latexrelease'.\MessageBreak
+        But I recommend to update `everysel'%
+      }%
+    }%
+  }%
+  \AfterPackage{tracefnt}{%
+    \IfPackageAtLeastTF{tracefnt}{2020/12/22}{}{%
+      \ClassError{\KOMAClassName}{%
+        incompatible `tracefnt' detected
+      }{%
+        `tracefnt' is a LaTeX base package and therefore should be updated
+        together\MessageBreak
+        with LaTeX kernel. So this should never happen! Please check
+        your\MessageBreak
+        LaTeX installation%
+      }%
+    }%
+  }%
+}{%
+  \newcommand*{\scr@selectfont}{}
+  \expandafter\let\expandafter\scr@selectfont\csname selectfont \endcsname
+  \BeforePackage{everysel}{%
+    \AtBeginDocument{%
+      \expandafter\ifx\csname selectfont \endcsname\scr@new@selectfont\else
+        \ClassWarningNoLine{\KOMAClassName}{%
+          discard change of \string\selectfont}%
+      \fi
+      \expandafter\let\csname selectfont \endcsname\scr@selectfont
+    }%
+  }%
+  \AfterPackage{everysel}{%
+    \scr@ifundefinedorrelax{@EverySelectfont@Init}{%
+      \expandafter\ifx\csname selectfont \endcsname\scr@new@selectfont
+        \ClassWarningNoLine{\KOMAClassName}{%
+          \string\selectfont\space already changed}%
+      \else
+        \expandafter\g@addto@macro\csname selectfont \endcsname{\par@update}%
+        \expandafter\let\expandafter\scr@new@selectfont
+          \csname selectfont \endcsname
+      \fi
+    }{%
+      \g@addto@macro\@EverySelectfont@Init{%
+        \expandafter\g@addto@macro\csname selectfont \endcsname{\par@update}%
+        \expandafter\let\expandafter\scr@new@selectfont
+          \csname selectfont \endcsname
+      }%
+    }%
+  }%
+  \AfterPackage{tracefnt}{%
+    \expandafter\let\expandafter\scr@selectfont\csname selectfont \endcsname
+    \expandafter\g@addto@macro\csname selectfont \endcsname{\par@update}%
+    \expandafter\let\expandafter\scr@new@selectfont\csname selectfont \endcsname
+  }%
+  \expandafter\g@addto@macro\csname selectfont \endcsname{\par@update}
+  \newcommand*{\scr@new@selectfont}{}
+  \expandafter\let\expandafter\scr@new@selectfont\csname selectfont \endcsname
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@selectfont,\scr@new@selectfont
+% \end{command}^^A \selectfont
+%
+% \begin{macro}{\scr@defaultunits}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v3.19}{2015/08/22}{\cs{setlength} replaced because of \pkg{tikz}}
+% \begin{macro}{\scr@@defaultunits}
+% \changes{v2.95}{2004/11/05}{added}
+% \begin{macro}{\scr@@@defaultunits}
+% \changes{v2.95}{2004/11/05}{added}
+% \changes{v3.19}{2015/08/22}{\cs{setlength} and \cs{addtolength} replaced
+%   because of \pkg{tikz}}
+% Above we've already used \cs{scr@defaultunits} inside
+% \cs{par@updaterelative}. This is very similar to the \LaTeX{} kernel macro
+% \cs{@defaultunits}, but accepts dimensions or skips as first and second
+% value.
+%    \begin{macrocode}
+\newcommand*{\scr@defaultunits}[2]{%
+  \begingroup
+    \edef\@tempa{#2}%
+    \expandafter\scr@@defaultunits\expandafter#1\@tempa plusplus\@nnil
+    \edef\@tempa{\noexpand\endgroup\noexpand#1\the\glueexpr #1\relax}%
+  \@tempa
+}
+\newcommand*{\scr@@defaultunits}{}
+\def\scr@@defaultunits#1#2plus#3plus#4\@nnil{%
+  \ifx\relax#3\relax
+    \scr@@@defaultunits#1{}#2minusminus\@nnil
+  \else
+    \scr@@@defaultunits#1{#2}#3minusminus\@nnil
+  \fi
+}
+\newcommand*{\scr@@@defaultunits}{}
+\def\scr@@@defaultunits#1#2#3minus#4minus#5\@nnil{%
+  \ifx\relax#2\relax
+    \@defaultunits\@tempskipa#3pt\relax\@nnil
+    #1\@tempskipa
+  \else
+    \@defaultunits\@tempskipa\z@\@plus#3pt\relax\@nnil
+    #1\@tempskipa
+    \@defaultunits\@tempskipa#2pt\relax\@nnil
+    \advance#1\@tempskipa
+  \fi
+  \ifx\relax#4\relax\else
+    \@defaultunits\@tempskipa\z@\@minus #4pt\relax\@nnil
+    \advance#1\@tempskipa
+  \fi
+}
+%</body>
+%    \end{macrocode}
+% \end{macro}^^A \scr@@@defaultunits
+% \end{macro}^^A \scr@@defaultunits
+% \end{macro}^^A \scr@defaultunits
+%
+% \subsection{Extra list code}
+%
+% \begin{macro}{\@list@extra}
+% \changes{v2.8q}{2001/11/06}{added}
+% \changes{v2.95c}{2006/08/03}{\len{parsep} fixed}
+% \begin{macro}{\add@extra@listi}
+% \changes{v2.9h}{2002/09/03}{added}
+% Some parameters of lists have to change, depending on the settings for
+% paragraphs.
+% \begin{description}
+% \item[ToDo:] Move this code to \file{scrkernel-listsandtabulars.dtx} or
+%   \file{scrkernel-fontsizes.dtx}.
+% \end{description}
+%    \begin{macrocode}
+%<*body>
+\newcommand*{\@list@extra}{%
+  \ifdim\parskip>\z@\topsep\z@\parsep\parskip\itemsep\z@\fi
+}
+\newcommand*{\add@extra@listi}[1]{%
+  \expandafter\let\csname #1@listi\endcsname=\@listi
+  \def\@listi{\csname #1@listi\endcsname\@list@extra}%
+}
+%</body>
+%    \end{macrocode}
+% \end{macro}^^A \@list@extra
+% \end{macro}^^A \add@extra@listi
+%
+% \subsection{Patching other packages}
+%
+% \begin{macro}{\deferred@thm@head}
+% \changes{v3.27}{2019/02/10}{new patch of \textsf{amsthm}}
+% Unfortunatly \pkg{amsthm} has a problem if a class handles \len{topsep}
+% this way, because it is only prepared for the case, that \len{parskip} and
+% \len{parsep} are changed manually without influence to \len{topsep}. So the
+% initial distance is missing. To avoid this problem, we need to patch the
+% package's internal command \cs{deferred@thm@head}. This is not nice, but
+% unfortunaltly needed.
+% \begin{description}
+% \item[ToDo:] Move this code to the package patch code of
+%   \file{scrkernel-miscellaneous.dtx} resp. a new file as noted there.
+% \end{description}
+%    \begin{macrocode}
+%<*body>
+\AfterPackage{amsthm}{%
+  \RequirePackage{xpatch}%
+  \xpatchcmd{\deferred@thm@head}{\addvspace{-\parskip}}{}{%
+    \ClassInfoNoLine{\KOMAClassName}{%
+      amsthm's \string\deferred@thm@head\space patched}%
+  }{%
+    \ClassWarningNoLine{\KOMAClassName}{%
+      cannot patch amsthm's \string\deferred@thm@head.\MessageBreak
+      This could result in wrong spacing before theorem\MessageBreak
+      environments defined by package `amsthm'%
+    }%
+  }%
+}
+%</body>
+%    \end{macrocode}
+% \end{macro}
+% 
+% \subsection{Extra code for font sizes}
+%
+% \begin{description}
+% \item[ToDo:] Move this to \file{scrkernel-fontsizes.dtx}.
+% \end{description}
+%    \begin{macrocode}
+%    \end{macrocode}
+%
+% \changes{v2.98c}{2008/03/26}{changed to be used in font size files}
+% \changes{v3.17}{2015/03/25}{update of paragraph settings}
+% \begin{macro}{\@listi}
+% \changes{v2.98c}{2008/03/27}{\cs{g@addto@macro} replaced by \cs{l@addto@macro}}
+% \changes{v3.01}{2008/11/13}{\cs{@listi} wird auf jeden Fall ausgeführt}
+% \begin{macro}{\@listI}
+% \begin{macro}{\@listii,\@listiii}
+% \changes{v2.98c}{2008/03/27}{\cs{g@addto@macro} replaced by \cs{l@addto@macro}}
+% \begin{command}{\footnotesize,\small}
+% \changes{v2.9h}{2002/09/03}{improved}
+% \changes{v2.98c}{2008/03/27}{\cs{g@addto@macro} replaced by \cs{l@addto@macro}}
+%    \begin{macrocode}
+%</class>
+%<*class|clo>
+%<*body|10pt|11pt|12pt>
+%<*10pt|11pt|12pt>
+\@ifundefined{@list@extra}{}{%
+  \scr@ifundefinedorrelax{scr@v@is@ge}{\par@updaterelative}{%
+    \expandafter\ifnum\scr@v@is@ge{3.17}\par@updaterelative\fi
+  }%  
+%</10pt|11pt|12pt> 
+  \l@addto@macro{\@listi}{\@list@extra}%
+  \let\@listI=\@listi
+  \l@addto@macro{\@listii}{\@list@extra}%
+  \l@addto@macro{\@listiii}{\@list@extra}%
+  \l@addto@macro{\footnotesize}{\protect\add@extra@listi{ftns}}%
+  \l@addto@macro{\small}{\protect\add@extra@listi{sml}}%
+%<10pt|11pt|12pt>}
+%<10pt|11pt|12pt>\@listi
+%</body|10pt|11pt|12pt>
+%</class|clo>
+%<*class>
+%    \end{macrocode}
+% \end{command}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+%
+% \subsection{Page layout parameters}
+%
+% \begin{length}{\columnsep,\columnseprule}
+% Initial column separation. Note, we do not support two column letters. So
+% this is not initialized for the letter class.
+%    \begin{macrocode}
+%<*!letter&body>
+\setlength{\columnsep}{10\p@}
+\setlength{\columnseprule}{\z@}
+%</!letter&body>
+%    \end{macrocode}
+% \end{length}
+%
+%
+% \subsection{Penalties}
+%
+% The initial values for the penalties are the same as for the standard classes.
+%    \begin{macrocode}
+%<*body>
+\@lowpenalty  = 51
+\@medpenalty  =151
+\@highpenalty =301
+%</body>
+%    \end{macrocode}
+%
+%
+%    \begin{macrocode}
+%</class>
+%    \end{macrocode}
+% 
+% \Finale
+% \PrintChanges
+% 
+\endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:
+

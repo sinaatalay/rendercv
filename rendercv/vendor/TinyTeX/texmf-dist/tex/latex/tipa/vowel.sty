@@ -1,0 +1,530 @@
+% vowel.sty -- for drawing vowel diagrams.
+% Copyright 2002 FUKUI Rei
+%
+% This program may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.2
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.2 or later is part of all distributions of LaTeX 
+% version 1999/12/01 or later.
+%
+% This program consists of all files listed in Manifest.txt.
+%
+% Version 1.0 1996/06/10
+% Version 1.1 2002/08/08
+%  
+% This file is distributed with TIPA.
+%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{vowel}[2002/08/08 VOWEL Package version 1.1]
+
+% The following macros are defined in `tipa' so that they are defined
+% only if `tipa' has not been loaded.
+
+\@ifundefined{super}{\let\super\textsuperscript}{}
+
+% The following parameters can be overrided by the user.
+% -\p@ is used as the initial value instead of \z@ because a user can
+% specify 0pt, for example, for \vowelsep. This initial value is later
+% used to find out whether or not the user has modified it.
+
+\newdimen\vowelhunit \vowelhunit-\p@
+\newdimen\vowelvunit \vowelvunit-\p@
+\newdimen\vowelsep \vowelsep-\p@
+\newdimen\vowelline \vowelline.4pt
+\newcommand\vowelsymbol{\lower.72ex\hbox{\textsuperscript{$\bullet$}}}
+\newcommand\diagrate{.4}
+
+% Internal registers, etc.
+
+\newcount\@vwlcnt \@vwlcnt\@ne
+\newdimen\@vwltopsep \@vwltopsep\z@
+\newdimen\@vwlbotsep \@vwlbotsep\z@
+\newdimen\@vwllftsep \@vwllftsep\z@
+\newdimen\@vwlrtsep \@vwlrtsep\z@
+\newif\if@notouch
+\newif\if@tmpnoerase \@tmpnoerasefalse
+\newif\if@vline \@vlinefalse
+
+% \@dgmtype 0:plain, 1:simple, 2:standard, 3:ipanew (default)
+\newcount\@dgmtype \@dgmtype=3
+% \@dgmaligh 0: default(mid), 1: top, 2: bot
+\newcount\@dgmalign \@dgmalign=0
+\newif\ifrectdgm \rectdgmfalse
+\newif\iftriangledgm \triangledgmfalse
+\newif\ifthreelevel \threelevelfalse
+\newif\ifnoerase \noerasefalse
+
+\newcommand\incrz@{\advance\dimen\z@}
+\newcommand\incr@ne{\advance\dimen\@ne}
+
+\def\@ipanewdgm{ipanew}
+\def\@stddgm{standard}
+\def\@simpledgm{simple}
+\def\@plaindgm{plain}
+\def\@threelevel{three}
+\def\@rectdgm{rectangle}
+\def\@triangledgm{triangle}
+\def\@noerase{noerase}
+\def\@dgmtopalign{t}
+\def\@dgmbotalign{b}
+
+% Definition of the vowel environment.
+
+\newenvironment{vowel}{\@ifnextchar[{\@vowel}{\@vowel[]}}{\@@vowel}
+
+\def\@vowel[#1]{\leavevmode
+  \@for\@vwloption:=#1\do{%
+    \ifx\@vwloption\@ipanewdgm\else 
+    \ifx\@vwloption\@stddgm \@dgmtype=2\else
+    \ifx\@vwloption\@simpledgm \@dgmtype=1\else
+    \ifx\@vwloption\@plaindgm \@dgmtype=0\else
+    \ifx\@vwloption\@rectdgm \rectdgmtrue\else
+    \ifx\@vwloption\@triangledgm \triangledgmtrue\else
+    \ifx\@vwloption\@threelevel \threeleveltrue\else
+    \ifx\@vwloption\@noerase \noerasetrue\else
+    \ifx\@vwloption\@dgmtopalign \@dgmalign=1\else
+    \ifx\@vwloption\@dgmbotalign \@dgmalign=2\else
+    \errmessage{vowel: no such option [\@vwloption]}%
+    \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}\relax
+%
+% If \vowelhunit, \vowelvunit, and \vowelsep are not overrided by a user,
+% use default values.
+%
+  \ifdim\vowelhunit=-\p@ \vowelhunit2em\fi
+  \ifdim\vowelvunit=-\p@ \vowelvunit=\ifthreelevel1.5\fi\vowelhunit\fi
+  \ifdim\vowelsep=-\p@ \vowelsep.16em\fi
+  \dimen\@ne=4\vowelhunit
+  \edef\@vwldgmwd{\the\dimen\@ne}%
+  \edef\@vwldgmht{\ifthreelevel2\else3\fi\vowelvunit}%
+  \edef\c@rdhposii{\ifrectdgm\z@\else\ifthreelevel\else.667\fi\vowelhunit\fi}%
+  \edef\c@rdhposiii{\ifrectdgm\z@\else1.333\vowelhunit\fi}%
+  \edef\c@rdhposiv{\ifrectdgm\z@\else2\vowelhunit\fi}%
+  \edef\c@rdhposx{\ifrectdgm2\else2.333\fi\vowelhunit}%
+  \edef\c@rdhposxi{\ifrectdgm2\else2.5\fi\vowelhunit}%
+  \edef\c@rdhposxii{\ifrectdgm2\else2.667\fi\vowelhunit}%
+  \edef\c@rdhposxiii{\ifrectdgm\else1.25\fi\vowelhunit}%
+  \edef\c@rdhposxiv{\ifrectdgm3\else3.083\fi\vowelhunit}%
+  \edef\c@rdhposxv{\ifrectdgm2\else2.833\fi\vowelhunit}%
+  \edef\c@rdhposxvi{\ifrectdgm\z@\else1.667\vowelhunit\fi}%
+}
+
+\newcommand\@vwldgmhline[2]{%
+  \kern-.5\vowelline
+  \dimen\z@\@vwldgmwd
+  \iftriangledgm \incrz@-#1\fi
+  \edef\@vwltmpi{\the\dimen\z@}%
+  \hb@xt@ \@vwldgmwd{\@bgline{#1}\@vwltmpi{#2}\relax\hss}%
+  \kern.5\vowelline
+}
+
+% This is the main macro.
+\newcommand\@@vowel{%
+  \ifcase\@dgmalign
+    \advance\@vwltopsep4pt \advance\@vwlbotsep4pt \or
+    \advance\@vwltopsep-1ex  \advance\@vwlbotsep4pt \or
+    \advance\@vwltopsep4pt \fi
+  \def\@lasthpos{\z@}%
+  \dimen\z@\@vwldgmht
+  \incrz@ \vowelline
+  \incrz@ \@vwltopsep
+  \incrz@ \@vwlbotsep
+  \dimen\@ne\dimen\z@
+  \ifcase\@dgmalign
+    \dimen\z@.5\dimen\z@ \dimen\@ne.5\dimen\@ne \or
+    \dimen\z@\z@ \or
+    \dimen\@ne\z@ \fi
+  \hbox{\kern\@vwllftsep
+    \vrule \@height\dimen\z@ \@depth\dimen\@ne \@width\z@
+    \ifnum\@dgmalign=1\vtop\else\vbox\fi to\dimen\z@{%
+      \hsize\@vwldgmwd\offinterlineskip
+      \kern\@vwltopsep
+      \@drawvowel{\the\@vwlcnt}%
+%
+      \vtop to\z@{\hb@xt@ \@vwldgmwd{%
+        {\@vlinetrue
+          \ifrectdgm \@bgline\z@\@vwldgmht\z@\relax
+          \else \@bgline\z@\@vwldgmht\z@\c@rdhposiv \fi
+%
+          \ifnum \@dgmtype=3% ipanew
+            \ifrectdgm \@bgline\z@\@vwldgmht\c@rdhposx\relax
+            \else\iftriangledgm \@bgline\z@\@vwldgmht\c@rdhposiv\relax
+            \else \@bgline\z@\@vwldgmht\c@rdhposiv{3\vowelhunit}\fi\fi
+          \else \ifnum\@dgmtype=2% standard
+            \@bgline\z@{2.5\vowelvunit}{1.167\vowelhunit}\c@rdhposxv
+            \@bgline\z@{2.5\vowelvunit}\c@rdhposiv\c@rdhposxv
+            \@bgline\z@{2.5\vowelvunit}\c@rdhposxv\relax
+          \fi\fi
+%
+          \iftriangledgm
+            \@bgline\z@\@vwldgmht\@vwldgmwd\c@rdhposiv
+          \else
+            \@bgline\z@\@vwldgmht\@vwldgmwd\relax \fi
+          }\hss}\vss}%
+%
+      \@vwldgmhline\z@\z@
+      \kern\vowelvunit
+      \ifnum\@dgmtype>0\kern-\vowelline
+        \@vwldgmhline\c@rdhposii\vowelvunit\fi
+      \kern\vowelvunit
+      \ifthreelevel\else
+        \ifnum\@dgmtype>0\kern-\vowelline
+          \@vwldgmhline\c@rdhposiii{2\vowelvunit}\fi
+        \kern\vowelvunit\fi
+      \kern-\vowelline
+      \@vwldgmhline\c@rdhposiv\@vwldgmht
+      \kern\@vwlbotsep
+      \vss}%
+    \kern\@vwlrtsep}%
+}
+
+% Commands for placing vowels on the vowel diagram.
+
+\newcommand\putvowel{\@ifnextchar[{\@putdotvowel}{\@putvowel}}
+
+% Put a vowel on a specified point.
+\newcommand\@putvowel[3]{%
+  \setbox\z@\hbox{#1\global\dimen4=.5ex}%
+  \setbox\z@\hbox{#1}\dimen\@ne\wd\z@\incr@ne 2\vowelsep
+%
+  \dimen\z@#2\incrz@ -.5\dimen\@ne
+  \expandafter\xdef\csname vwlxi\the\@vwlcnt\endcsname{\the\dimen\z@}%
+  \ifdim\dimen\z@<\z@ \dimen\z@-\dimen\z@
+    \ifdim\dimen\z@>\@vwllftsep \@vwllftsep\dimen\z@\fi\fi
+%
+  \dimen\z@#2\incrz@ .5\dimen\@ne
+  \expandafter\xdef\csname vwlxii\the\@vwlcnt\endcsname{\the\dimen\z@}%
+  \dimen\@ne\@vwldgmwd \incr@ne-\dimen\z@
+  \ifdim\dimen\@ne<\z@ \dimen\@ne-\dimen\@ne
+    \ifdim\dimen\@ne>\@vwlrtsep \@vwlrtsep\dimen\@ne\fi\fi
+%
+  \dimen\z@#3\dimen\tw@=\ht\z@\advance\dimen\tw@ -\dimen4%.5ex%
+  \incrz@ -\dimen\tw@ \incrz@ -\vowelsep
+  \expandafter\xdef\csname vwlyi\the\@vwlcnt\endcsname{\the\dimen\z@}%
+  \ifdim\dimen\tw@>\@vwltopsep \@vwltopsep\dimen\tw@\fi
+%
+  \dimen\z@#3\dimen\tw@=\dp\z@\advance\dimen\tw@ \dimen4%.5ex%
+  \incrz@ \dimen\tw@ \incrz@ \vowelsep
+  \expandafter\xdef\csname vwlyii\the\@vwlcnt\endcsname{\the\dimen\z@}%
+  \ifdim\dimen\tw@>\@vwlbotsep \@vwlbotsep\dimen\tw@\fi
+%
+  \expandafter\gdef\csname vwlsym\the\@vwlcnt\endcsname{#1}%
+  \expandafter\xdef\csname tmpnoerase\the\@vwlcnt\endcsname{%
+    \if@tmpnoerase1\else0\fi}%
+  \advance\@vwlcnt \@ne
+  \ignorespaces}
+
+\def\@putdotvowel[#1]#2#3#4{%
+  \if x#1\@putvowel{#2}{#3}{#4}\else
+  \@tmpnoerasetrue\@putvowel\vowelsymbol{#3}{#4}\@tmpnoerasefalse
+  \setbox\z@\hbox{#2}\setbox\@ne\hbox{\vowelsymbol}%
+  \dimen\z@=#3\dimen\@ne=#4\dimen\tw@=.5\wd\z@
+  \advance\dimen\tw@.5\wd\@ne \advance\dimen\tw@.5\vowelsep
+%
+  \if l#1%
+    \incrz@-\dimen\tw@
+  \else
+    \if r#1\incrz@\dimen\tw@
+    \else \errmessage{put(c)vowel: no such option [#1]}%
+    \fi
+  \fi
+%
+  \edef\@vwltmpi{\the\dimen\z@}%
+  \@putvowel{#2}\@vwltmpi{#4}\fi}
+
+% Put a vowel on a cardinal position
+\newcommand\putcvowel{\@ifnextchar[{\@putcvowel}{\@putcvowel[x]}}
+
+\def\@putcvowel[#1]#2#3{%
+  \ifcase#3\or
+    \@putdotvowel[#1]{#2}\z@\z@\or
+    \@putdotvowel[#1]{#2}\c@rdhposii\vowelvunit\or
+    \@putdotvowel[#1]{#2}\c@rdhposiii{2\vowelvunit}\or
+    \@putdotvowel[#1]{#2}\c@rdhposiv\@vwldgmht\or
+    \@putdotvowel[#1]{#2}\@vwldgmwd\@vwldgmht\or
+    \@putdotvowel[#1]{#2}\@vwldgmwd{2\vowelvunit}\or
+    \@putdotvowel[#1]{#2}\@vwldgmwd\vowelvunit\or
+    \@putdotvowel[#1]{#2}\@vwldgmwd\z@\or
+    \@putdotvowel[#1]{#2}{2\vowelhunit}\z@\or
+    \@putdotvowel[#1]{#2}\c@rdhposx\vowelvunit\or
+    \@putdotvowel[#1]{#2}\c@rdhposxi{1.5\vowelvunit}\or
+    \@putdotvowel[#1]{#2}\c@rdhposxii{2\vowelvunit}\or
+    \@putdotvowel[#1]{#2}\c@rdhposxiii{.5\vowelvunit}\or
+    \@putdotvowel[#1]{#2}\c@rdhposxiv{.5\vowelvunit}\or
+    \@putdotvowel[#1]{#2}\c@rdhposxv{2.5\vowelvunit}\or
+    \@putdotvowel[#1]{#2}\c@rdhposxvi{2.5\vowelvunit}\else\fi
+}
+
+\newcommand\@getvwldim[1]{%
+  \edef\@vwlyi{\csname vwlyi\the#1\endcsname}%
+  \edef\@vwlyii{\csname vwlyii\the#1\endcsname}%
+  \edef\@vwlxi{\csname vwlxi\the#1\endcsname}%
+  \edef\@vwlxii{\csname vwlxii\the#1\endcsname}%
+  \edef\@tmpnoerase{\csname tmpnoerase\the#1\endcsname}%
+  \if@vline
+    \let\@lineposi\@vwlxi \let\@lineposii\@vwlxii
+    \let\@vwlposi\@vwlyi \let\@vwlposii\@vwlyii
+  \else
+    \let\@lineposi\@vwlyi \let\@lineposii\@vwlyii
+    \let\@vwlposi\@vwlxi \let\@vwlposii\@vwlxii
+  \fi
+}
+
+\newcommand\@drawvowel[1]{{%
+  \@vwlcnt#1\relax
+  \loop
+    \advance\@vwlcnt\m@ne
+    \ifnum \@vwlcnt>\z@
+      \@getvwldim\@vwlcnt
+      \dimen\z@\@vwlxi \incrz@\vowelsep
+      \incrz@ .5\vowelline
+      \vtop to \z@{%
+        \kern\@vwlyi
+        \kern\vowelsep
+        \hb@xt@\z@{\kern\dimen\z@\csname vwlsym\the\@vwlcnt\endcsname\hss}%
+        \vss}%
+  \repeat
+}}
+
+{\catcode`\p=12\catcode`\t=12\gdef\@chreal#1.#2pt{#1}}
+
+\newcount\@x@ \newcount\@y@ \newcount\@z@
+
+\newcommand\@dimdivide[2]{{%
+  \dimen\z@#1\dimen\@ne#2\def\@sign{}%
+  \ifdim\dimen\z@<\z@ \dimen\z@-\dimen\z@
+    \ifdim\dimen\@ne<\z@ \dimen\@ne-\dimen\@ne \else \def\@sign{-}\fi
+  \else
+    \ifdim\dimen\@ne<\z@ \dimen\@ne-\dimen\@ne \def\@sign{-}\fi
+  \fi
+  \ifdim\dimen\z@>100pt\def\@enl@rge{10}\else
+  \ifdim\dimen\@ne>100pt\def\@enl@rge{10}\else
+  \ifdim\dimen\z@>10pt\def\@enl@rge{100}\else
+  \ifdim\dimen\@ne>10pt\def\@enl@rge{100}\else
+  \def\@enl@rge{\@m}\fi\fi\fi\fi
+  \dimen\z@=\@enl@rge\dimen\z@ \dimen\@ne\@enl@rge\dimen\@ne
+  \@x@=\expandafter\@chreal\the\dimen\z@
+  \@y@=\expandafter\@chreal\the\dimen\@ne
+  \divide\@x@ \@y@ \edef\@dimrate{\the\@x@.}%
+  \@z@=\@x@ \multiply\@z@ \@y@
+  \@x@=\expandafter\@chreal\the\dimen\z@ \advance\@x@ -\@z@
+  \multiply\@x@ 10 \edef\@vwltmpi{\the\@x@}%
+  \divide\@x@ \@y@ \edef\@dimrate{\@dimrate\the\@x@}%
+  \@@dimdivide\@@dimdivide\@@dimdivide
+  \xdef\@dimrate{\@sign\@dimrate}%
+}}
+
+\newcommand\@@dimdivide{%
+  \@z@=\@x@ \multiply\@z@ \@y@
+  \@x@=\@vwltmpi \advance\@x@ -\@z@
+  \multiply\@x@ 10 \edef\@vwltmpi{\the\@x@}%
+  \divide\@x@ \@y@ \edef\@dimrate{\@dimrate\the\@x@}}
+
+\newcommand\@drawhline[3]{{%
+  \dimen\z@#1\dimen\@ne#2\incr@ne-\dimen\z@
+  \hb@xt@\z@{%
+    \kern\dimen\z@
+    \kern.5\vowelline
+    \vrule \@height\vowelline \@depth\z@ \@width\dimen\@ne \hss}%
+}}
+
+\newcommand\@drawvline[3]{{%
+  \dimen\z@#1\dimen\@ne#2\dimen\tw@#3%
+  \incr@ne -\dimen\z@
+  \hb@xt@ \z@{\kern\dimen\tw@\vtop to\z@{%
+    \kern\dimen\z@
+    \hrule \@height\dimen\@ne \@depth\z@ \@width\vowelline \vss}\hss}%
+}}
+
+\newcommand\@drawdiagline[4]{{%
+  \dimen\z@#1\dimen\@ne#2%
+  \incr@ne -\dimen\z@
+  \dimen\tw@#3\dimen\thr@@#4%
+  \ifdim\dimen\tw@>\dimen\thr@@
+    \dimen\tw@#4\dimen\thr@@#3%
+    \advance\dimen\thr@@ -\dimen\tw@
+    \dimen\thr@@-\dimen\thr@@
+  \else
+    \advance\dimen\thr@@ -\dimen\tw@
+  \fi
+  \hb@xt@ \z@{\kern\dimen\tw@\vtop to\z@{%
+    \kern\dimen\z@
+    \diagline{\the\dimen\@ne}{\the\dimen\thr@@}%
+    \vss}\hss}%
+}}
+
+% This is the memory-eater.
+
+\newcommand\diagline[2]{%
+  \@dimdivide{#1}{#2}\dimen\@ne=\diagrate\vowelline
+  \ifdim\dimen\@ne>.4pt\dimen\@ne=.4pt\fi
+  \dimen4=-\@dimrate\dimen\@ne \dimen\z@=\z@
+  \dimen\tw@=#2\relax \ifdim\dimen\tw@<\z@ \dimen\tw@-\dimen\tw@\fi
+  \advance\dimen\tw@ -.25\vowelline
+  \setbox\@ne\hbox{}%
+  \loop \setbox\z@\hbox{\unhcopy\@ne}%
+    \ifdim\wd\z@<\dimen\tw@
+       \setbox\@ne\hbox{\unhbox\z@\raise\dimen\z@\hb@xt@ \z@{%
+        \vrule\@width\vowelline\@height\vowelline\hss}%
+        \kern\dimen\@ne}%
+      \global\incrz@ \dimen4
+  \repeat
+  \box\@ne}
+
+% Macros for background lines:
+%
+% The next macros are the most interesting ones in this package. They
+% are used to draw horizontal, vertical or diagonal lines, recursively 
+% checking the positions of all the \hboxes and if an \hbox is on the
+% line, that part of the line is erased.
+%
+% `\@bgline' is simply an interface to the main macros, `\@@bgline' and
+% `\@@bgdline'. The former is used to draw horizontal or vertical
+% lines, and the latter diagonal lines. The main macros are defined
+% without parameters, because a recursive macro with many parameters
+% is likely to eat up TeX's parameter stack. (This annoyed the author
+% indeed at the first stage of the development of this package.
+
+\newcommand\@bgline[4]{{%
+  \edef\@starti{#1}\edef\@endi{#2}%
+  \edef\@startii{#3}\edef\@endii{#4}%
+  \ifx#4\relax
+    \ifnoerase
+      \if@vline \@drawvline\@starti\@endi\@startii
+      \else \@drawhline\@starti\@endi\@startii\fi
+    \else \@@bgline\fi
+  \else
+    \@setupdiag
+    \ifnoerase \@drawdiagline\@starti\@endi\@startii\@endii
+    \else \@@bgdline\fi
+  \fi}}
+
+\newcommand\@@bgline{%
+  \@notouchfalse
+  \advance\@vwlcnt \m@ne
+  \ifnum \@vwlcnt < \@ne
+    \if@vline \@drawvline\@starti\@endi\@startii
+    \else \@drawhline\@starti\@endi\@startii\fi
+  \else
+    \@getvwldim\@vwlcnt
+    \ifnum\@tmpnoerase=0\relax
+      \ifdim \@lineposi<\@startii
+        \ifdim \@lineposii>\@startii
+          \ifdim \@vwlposii<\@starti\relax
+            \@notouchtrue
+          \else
+            \ifdim \@vwlposi>\@endi\relax
+              \@notouchtrue
+            \else
+              \ifdim \@vwlposi>\@starti
+                \ifdim \@vwlposii<\@endi
+                  {\edef\@endi{\@vwlposi}\@@bgline}% split
+                  {\edef\@starti{\@vwlposii}\@@bgline}%
+                \else
+                  {\edef\@endi{\@vwlposi}\@@bgline}%
+                \fi
+              \else
+                \ifdim \@vwlposii<\@endi
+                  {\edef\@starti{\@vwlposii}\@@bgline}\fi
+              \fi
+            \fi
+          \fi
+        \else
+          \@notouchtrue
+        \fi
+      \else
+        \@notouchtrue
+      \fi
+    \else
+      \@notouchtrue
+    \fi
+  \fi
+  \if@notouch \@@bgline\fi
+}
+
+\newcommand\@setupdiag{%
+  \dimen\z@\@endii\dimen\@ne\@startii\incrz@-\dimen\@ne
+  \dimen\@ne\@endi\dimen\tw@\@starti\incr@ne-\dimen\tw@
+  \edef\@vwltmpi{\the\dimen\z@}\edef\@vwltmpii{\the\dimen\@ne}%
+  \@dimdivide\@vwltmpi\@vwltmpii\edef\@xrate{\@dimrate}%
+  \@dimdivide\@vwltmpii\@vwltmpi\edef\@yrate{\@dimrate}%
+  \edef\@diagxoffset{\@startii}%
+}
+
+\newcommand\@getx[2]{%
+  \dimen\z@#1\dimen\@ne\@xrate\dimen\z@
+  \incr@ne\@diagxoffset
+  \edef#2{\the\dimen\@ne}}
+
+\newcommand\@gety[2]{%
+  \dimen\z@#1\incrz@-\@diagxoffset
+  \dimen\@ne\@yrate\dimen\z@
+  \edef#2{\the\dimen\@ne}}
+
+\newcommand\@checktouch[4]{%
+  \dimen\tw@#2\dimen\thr@@#3\@getx{#1}#4%
+  \ifdim \dimen\@ne<\dimen\tw@ \def#4{}\fi
+  \ifdim \dimen\@ne>\dimen\thr@@ \def#4{}\fi
+}
+     
+\newcommand\@dimswap[2]{%
+  \ifdim \@xrate pt<\z@
+    \edef\@vwltmpi{#1}\edef#1{#2}\edef#2{\@vwltmpi}\fi}
+
+\newcommand\@@bgdline{%
+  \dimen\z@\@endi \dimen\@ne\@starti \incrz@-\dimen\@ne
+  \ifdim \dimen\z@<\vowelsep\else % ignore short line
+    \@notouchfalse
+    \advance\@vwlcnt \m@ne
+    \ifnum \@vwlcnt < \@ne
+      \@drawdiagline\@starti\@endi\@startii\@endii
+    \else
+      \@getvwldim\@vwlcnt
+      \ifnum\@tmpnoerase=0\relax
+        \@dimswap\@startii\@endii
+        \ifdim \@lineposi<\@endii
+          \ifdim \@lineposii>\@startii
+          \else \@notouchtrue \fi
+        \else \@notouchtrue \fi
+        \@dimswap\@startii\@endii
+        \ifdim \@vwlposi>\@endi\relax \@notouchtrue \fi
+        \ifdim \@vwlposii<\@starti\relax \@notouchtrue \fi
+%
+        \if@notouch\else
+          \@checktouch\@vwlposi\@lineposi\@lineposii\@topx
+          \@checktouch\@vwlposii\@lineposi\@lineposii\@botx
+          \@dimswap\@lineposi\@lineposii
+          \ifx\empty\@topx\empty
+            \ifx\empty\@botx\empty \@notouchtrue
+            \else \@gety\@lineposi\@vwlposi \edef\@topx{\@lineposi}\fi
+          \else
+            \ifx\empty\@botx\empty
+              \@gety\@lineposii\@vwlposii \edef\@botx{\@lineposii}\fi
+          \fi
+        \fi
+%
+        \dimen\z@\@vwlposii \dimen\@ne\@vwlposi \incrz@-\dimen\@ne
+        \ifdim \dimen\z@<2\vowelsep \@notouchtrue \fi % ignore tiny line break
+%
+        \if@notouch\else
+          \ifdim \@vwlposi>\@starti
+            \ifdim \@vwlposii<\@endi
+              {\edef\@endi{\@vwlposi}\edef\@endii{\@topx}\@@bgdline}% split
+              {\edef\@starti{\@vwlposii}\edef\@startii{\@botx}\@@bgdline}%
+            \else
+              {\edef\@endi{\@vwlposi}\edef\@endii{\@topx}\@@bgdline}%
+            \fi
+          \else
+            \ifdim \@vwlposii<\@endi
+              {\edef\@starti{\@vwlposii}\edef\@startii{\@botx}\@@bgdline}\fi
+          \fi\fi
+%
+      \else \@notouchtrue
+      \fi
+    \fi
+    \if@notouch \@@bgdline\fi
+  \fi
+}
+
+\endinput

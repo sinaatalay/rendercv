@@ -1,0 +1,1788 @@
+% ======================================================================
+% typearea-en.tex
+% Copyright (c) Markus Kohm, 2001-2022
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+% Chapter about typearea of the KOMA-Script guide
+% Maintained by Markus Kohm
+%
+% ======================================================================
+
+\KOMAProvidesFile{typearea-en.tex}%
+                 [$Date: 2022-06-05 12:40:11 +0200 (So, 05. Jun 2022) $
+                  KOMA-Script guide (chapter: typearea)]
+\translator{Markus Kohm\and Gernot Hassenpflug\and Krickette Murabayashi\and
+	Karl Hagen}
+
+\chapter{Calculating the Page Layout with \Package{typearea}}
+\labelbase{typearea}
+
+\BeginIndexGroup%
+\BeginIndex{Package}{typearea}%
+Many {\LaTeX} classes\iffree{, including the standard classes,}{} present the
+user with a largely fixed configuration of margins and page layout. In the
+standard classes, the choice is limited to selecting a font size.
+There are separate packages, such as \Package{geometry}\IndexPackage{geometry}
+(see \cite{package:geometry}), which give the user complete control over, but
+also full responsibility for, setting the type area and margins.
+
+\KOMAScript{} takes a somewhat different approach with the \Package{typearea}
+package. Users are offered ways to adjust the design and algorithms based on
+established typographic standards, making it easier for them to make good
+choices.
+
+\iffalse% Umbruchoptimierung!!!
+  Note that the \Package{typearea} package makes use of the \Package{scrbase}
+  package. The latter is explained in the expert section of this
+  \iffree{guide}{book} in \autoref{cha:scrbase} on \autopageref{cha:scrbase}.
+  However, most of the features documented there are directed not to users but
+  to class and package authors.
+\fi
+
+\section{Fundamentals of Page Layout}
+\seclabel{basics}
+
+\begin{Explain}
+  At first glance, a single page of a book or other printed material
+  consists of the margins,
+  \iffalse% Umbruchkorrekturtext
+  \footnote{The author and the editor have considered the question as to 
+    whether, since a page has only one periphery, the term should be
+	``the margin.'' However, since \LaTeX{} logically divides this one
+	margin into several margins, which are determined separately, we
+    use the term ``the margins'' here.}%
+  \fi%
+  a header, a body of text, and a footer. More precisely, there 
+  is also a space between the header area and the text
+  body, as well as between the body and the footer. The text body is
+  called, in the jargon of typographers and typesetters, the \emph{type area}.
+  The division of these areas, as well as their relations to each other and
+  to the paper, is called the \emph{page layout}.\Index[indexmain]{page layout}
+
+  Various algorithms and heuristic methods for constructing an appropriate
+  type area have been discussed in the literature%
+  \iffree{ \cite{DANTE:TK0402:MJK}}{. A short introduction to the basics may
+    be found at \autoref{cha:typeareaconstruction}}.
+  These rules are known as the ``canons of page construction.'' One approach
+  often mentioned involves diagonals and their intersections. The result is
+  that the aspect ratio of the type area corresponds to the proportions of the
+  \emph{page}. In a one-sided document,\Index{one-sided} the left and right
+  margins should have equal widths, while the ratio of the top and bottom
+  margins should be 1:2. In a two-sided document\Index{two-sided} (e.\,g. a
+  book), however, the entire inner margin (the margin at the spine) should be
+  the same size as each of the two outer margins; in other words, a single
+  page contributes only half of the inner margin.
+
+  In the previous paragraph, we mentioned and emphasised \emph{the page}. It
+  is often mistakenly thought that the format of the page is the same as the
+  format of the paper.\Index[indexmain]{page>format}%
+  \Index[indexmain]{paper>format} However, if you look at
+  a bound document, you can see that part of the paper disappears in the
+  binding\Index[indexmain]{binding} and is no longer part of the visible page.
+  For the type area, however, it is not the format of the paper which is
+  important; it is the impression of the visible page to the reader. Thus, it
+  is clear that the calculation of the type area must account for the ``lost''
+  paper in the binding and add this amount to the width of the inner margin.
+  This is called the \emph{binding correction}.\Index[indexmain]{binding
+	correction} The binding correction is therefore calculated as part of the
+  \emph{gutter}\Index[indexmain]{gutter} but not the visible inner margin.
+
+  The binding correction depends on the production process and cannot be
+  defined in general terms. It is therefore a parameter that must be redefined
+  for each project. In professional printing, this value plays only a minor
+  role, since printing is done on larger sheets of paper and then cropped to
+  the right size. The cropping is done so that the above relations for the
+  visible, two-sided page are maintained.
+
+  So now we know how the individual parts of a page relate to each other.
+  However, we do not yet know how wide and high the type area is. Once we know
+  one of these two dimensions, we can calculate all the other dimensions from
+  the paper format and the page format or the binding correction.
+  \begin{align*}
+    \Var{type~area~height}\Index{type area} : \Var{type~area~width} &=
+    \Var{page~height}\Index{page} : \Var{page~width}\\
+    \Var{top~margin}\Index{margin} : \Var{footer~margin} &=
+      \text{1} : \text{2} \\
+%
+    \Var{left~margin} : \Var{right~margin} &=  \text{1} : \text{1} \\
+%
+    \Var{half~inner~margin} : \Var{outer~margin} &= \text{1} : \text{2} \\
+%
+   \Var{page~width} &= 
+      \Var{paper~width}\Index{paper} - 
+      \Var{binding~correction}\Index{binding correction}\\
+%
+    \Var{top~margin} + \Var{bottom~margin} &=
+    \Var{page~height} - \Var{type~area~height} \\
+%
+    \Var{left~margin} + \Var{right~margin} &=
+    \Var{page~width} - \Var{type~area~width} \\
+%
+    \Var{half~inner~margin} + \Var{outer~margin} &=
+    \Var{page~width} - \Var{type~area~width} \\
+%
+    \Var{half~inner~margin} + \Var{binding~correction} &=
+    \Var{gutter}\Index{gutter}
+  \end{align*}
+  \Index[indexmain]{margin}%
+  The values \Var{left~margin} and \Var{right~margin} only exist in a
+  one-sided document while \Var{half~inner~margin} and \Var{outer~margin} only
+  exist in a two-sided document. We use \Var{half~inner~margin} in these
+  equations, since the full inner margin is an element of the whole two-page
+  spread. Thus, only half of the inner margin, \Var{half~inner~margin},
+  belongs to a single page.
+
+  The question of the width of the type area is also discussed in the
+  literature. The optimum width depends on several factors:
+  \begin{itemize}
+  \item the size, width, and type of font used,
+  \item the line spacing,
+  \item the word length,
+  \item the available space.
+  \end{itemize}
+  The importance of the font becomes clear once you realize what serifs are
+  for. Serifs\Index[indexmain]{serifs} are small strokes that finish off the
+  lines of letters. Letters with vertical lines touching the text baseline
+  disturb the flow rather than keeping the eye on the line. It is precisely
+  with these letters that the serifs lie horizontally on the baseline and thus
+  enhance the horizontal effect of the font. The eye can better follow the
+  line of text, not only when reading the words but also when jumping back to
+  the beginning of the next line. Thus, the line length can actually be
+  slightly longer for a serif font than for a sans serif font.
+
+  Leading\Index[indexmain]{leading}\textnote{leading} refers to the vertical
+  distance between individual lines of text. In \LaTeX{}, the leading is set
+  at about 20\% of the font size. With commands like
+  \Macro{linespread}\IndexCmd{linespread}, or better, packages like
+  \Package{setspace}\IndexPackage{setspace} (see \cite{package:setspace}), you
+  can change the leading. A wider leading makes it easy for the eye to follow
+  the line. A very wide leading, however, disturbs reading because the eye has
+  to travel long distances between the lines. In addition, the reader becomes
+  uncomfortable because of the visible striped effect. The uniform grey value
+  of the page is thereby spoiled. Nevertheless, the lines can be longer with a
+  wider leading.
+
+  The literature gives different values for good line
+  lengths\Index[indexmain]{line length}, depending on the author. To some
+  extent, this is related to the author's native language. Since the eye
+  usually jumps from word to word, short words make this task easier. Across
+  all languages and fonts, a line length of 60 to 70 characters, including
+  spaces and punctuation, forms a usable compromise. This requires well-chosen
+  leading, but {\LaTeX}'s default is usually good enough. Longer line lengths
+  should only be considered for highly-developed readers who spend many hours
+  a day reading. But even then, line lengths beyond 80 characters are
+  unacceptable. In each case, the leading must be appropriately chosen. An
+  extra 5\% to 10\% is recommended as a good rule of thumb. For typefaces like
+  Palatino, which require more than 5\% leading for normal line lengths, even
+  more can be required.
+
+  Before looking at the actual construction of the page layout, there are a
+  few minor points you should know. {\LaTeX} does not start the first line in
+  the text area of a page at the upper edge of the text area but sets the
+  baseline at a defined distance from the top of the text area. Also, {\LaTeX}
+  recognizes the commands
+  \DescRef{maincls.cmd.raggedbottom}\IndexCmd{raggedbottom} and
+  \DescRef{maincls.cmd.flushbottom}\IndexCmd{flushbottom}.
+  \DescRef{maincls.cmd.raggedbottom} specifies that the last line of a page
+  should be positioned wherever it was calculated. This means that the
+  position of this line can be different on each page, up to the height of one
+  line\,---\, even more when the end of the page coincides with headings,
+  figures, tables, or the like. In two-sided documents that is usually
+  undesirable. The second command, \DescRef{maincls.cmd.flushbottom}, makes
+  sure that the last line is always at the lower edge of the text area. To
+  achieve this vertical compensation, {\LaTeX} may have to stretch vertical
+  glue beyond what is normally allowed. Paragraph skip is such a stretchable,
+  vertical glue, even when set to zero.  To avoid stretching on normal pages
+  where paragraph spacing is the only stretchable glue, the height of the text
+  area should be a multiple of the height of the text line, including the
+  distance of the first line from the top of the text area.
+
+\iffalse% Umbruchkorrektur
+  This explains all the basics of the type area calculation that play a role
+  in {\KOMAScript}.
+\else
+  This concludes the fundamentals.
+\fi
+\iffalse% Umbruchkorrektur
+  Below are two methods of construction offered by \KOMAScript{}.
+\else 
+\iffalse% Umbruchkorrektur
+  Now, we can begin with the actual construction.
+\else
+  In the following two sections, the methods of construction offered by
+  {\KOMAScript} are presented in detail.
+\fi
+\fi
+\end{Explain}
+
+
+\section{Constructing the Type Area by Division}
+\seclabel{divConstruction}
+
+\begin{Explain}
+  The easiest way to make sure that the text area has the same ratio as the 
+  page is as follows:
+  \begin{itemize}
+  \item First, subtract the \Var{BCOR} required for the binding
+    correction\Index{binding correction} from the inner edge of the paper, and
+    divide the rest of the page vertically into \Var{DIV} rows of equal
+    height.
+  \item Next, divide the page horizontally into the same number (\Var{DIV}) of
+    columns of equal width.
+  \item Then, take the uppermost row as the upper margin and the two lowermost
+    rows as the lower margin. If you are printing two-sided, you similarly
+    take the innermost column as the inner margin and the two outermost
+    columns as the outer margin.
+  \item Then add the binding correction \Var{BCOR} to the inner margin.
+  \end{itemize}
+  What remains within the page is the text area.\Index{text area} The width
+  and height of the text area and margins result automatically from the
+  number of rows and columns, \Var{DIV}. Since the margins always need three
+  stripes, \Var{DIV} must be greater than three. In order that the
+  text area occupy at least twice as much space as the margins, \Var{DIV}
+  should really be at least nine. With this value, the design
+  is also known as the \emph{classical nine-part division} (see
+  \autoref{fig:typearea.nineparts}).
+
+  \begin{figure}
+%    \centering
+    \KOMAoption{captions}{bottombeside}%
+    \setcapindent{0pt}%
+    \setlength{\columnsep}{.6em}%
+    \begin{captionbeside}[{%
+        Two-sided layout with the box construction of the classical
+        nine-part division, after subtracting a binding correction%
+      }]{%
+        \label{fig:typearea.nineparts}%
+        \hspace{0pt plus 1ex}%
+        Two-sided layout with the box construction of the classical
+        nine-part division, after subtracting a binding correction%
+      }
+      [l]
+    \setlength{\unitlength}{.25mm}%
+    \definecolor{komalight}{gray}{.75}%
+    \definecolor{komamed}{gray}{.6}%
+    \definecolor{komadark}{gray}{.3}%
+    \begin{picture}(420,297)
+      % BCOR
+      \put(198,0){\color{komalight}\rule{24\unitlength}{297\unitlength}}
+      \multiput(198,2)(0,20){15}{\thinlines\line(0,1){10}}
+      \multiput(222,2)(0,20){15}{\thinlines\line(0,1){10}}
+      % the paper
+      \put(0,0){\thicklines\framebox(420,297){}}
+%      \put(210,0){\thicklines\framebox(210,297){}}
+      % the page layout
+      \put(44,66){\color{komamed}\rule{132\unitlength}{198\unitlength}}
+      \put(244,66){\color{komamed}\rule{132\unitlength}{198\unitlength}}
+      % helper lines
+      \multiput(0,33)(0,33){8}{\thinlines\line(1,0){198}}
+      \multiput(222,33)(0,33){8}{\thinlines\line(1,0){198}}
+      \multiput(22,0)(22,0){8}{\thinlines\line(0,1){297}}
+      \multiput(244,0)(22,0){8}{\thinlines\line(0,1){297}}
+      % annotations
+      \put(198,0){\color{white}\makebox(24,297)[c]{%
+          \rotatebox[origin=c]{-90}{binding correction}}}
+      \put(44,66){\color{white}\makebox(132,198)[c]{page layout left}}
+      \put(244,66){\color{white}\makebox(132,198)[c]{page layout right}}
+      % box numbers
+      \makeatletter
+      \multiput(1,27)(0,33){9}{\footnotesize\makebox(0,0)[l]{\the\@multicnt}}
+      \multiput(177,291)(-22,0){9}{%
+        \footnotesize\makebox(0,0)[l]{\the\@multicnt}}
+      \multiput(419,27)(0,33){9}{%
+        \footnotesize\makebox(0,0)[r]{\the\@multicnt}}
+      \multiput(243,291)(22,0){8}{%
+        \footnotesize\makebox(0,0)[r]{\the\numexpr\@multicnt+1\relax}}
+      \makeatother
+    \end{picture}
+    \end{captionbeside}
+%    \caption{Two-sided layout with the box construction of the classical
+%      nine-part division, after subtracting a binding correction}
+%    \label{fig:typearea.nineparts}
+  \end{figure}
+
+  In {\KOMAScript}, this kind of design is implemented with the
+  \Package{typearea} package, where the bottom margin may drop any fractions
+  of a line in order to comply with the constraint for the height of the type
+  area mentioned in the previous paragraph and thereby reduce the problem
+  mentioned with \Macro{flushbottom}. For A4 paper, \Var{DIV} is predefined
+  according to the font size (see \autoref{tab:typearea.div},
+  \autopageref{tab:typearea.div}). If there is no binding correction
+  (\(\Var{BCOR} = 0\Unit{pt}\)), the results roughly match the values of
+  \autoref{tab:typearea.typearea}, \autopageref{tab:typearea.typearea}.
+
+  In addition to the predefined values, you can specify \Var{BCOR} and
+  \Var{DIV} as options when loading the package (see
+  \autoref{sec:typearea.options}, starting on
+  \autopageref{sec:typearea.typearea}). There is also a command to calculate
+  the type area explicitly by providing these values as parameters (see also
+  \autoref{sec:typearea.options}, \DescPageRef{typearea.cmd.typearea}).
+
+  The \Package{typearea} package can automatically determine the optimal value
+  of \Var{DIV} for the font and leading used. Again, see
+  \autoref{sec:typearea.options}, \DescPageRef{typearea.option.DIV.calc}.
+\end{Explain}
+
+
+\section{Constructing the Type Area by Describing a Circle}
+\seclabel{circleConstruction}
+
+\begin{Explain}
+  In addition to the construction method for the type area\Index{type area}
+  described above, there is an even more traditional, or even medieval, method
+  found in the literature. The aim of this method is not just to have the same 
+  ratios between page size and type area; it is considered optimal when the 
+  height of the text area corresponds to the width of the page. This means 
+  that a circle can be drawn that will touch both the sides of the page and 
+  the top and bottom of the text area. The exact procedure can be found in 
+  \cite{JTsch87}.
+
+  A disadvantage of this late-medieval canon of page construction is that the
+  width of the text area no longer depends on the font. One no longer chooses
+  the text area to match the font. Instead, the author or typesetter must 
+  choose the appropriate font for the text area.
+%
+\iftrue
+% Umbruchkorrekturtext
+ This should be considered mandatory.
+\fi
+
+  In the \Package{typearea} package, this construction is modified to
+  determine the \Var{DIV} value by selecting a special (normally meaningless)
+  \Var{DIV} value or a special, symbolic indication of the \Var{DIV} value so
+  that the resulting type area comes as close as possible to the late-medieval
+  page canon. Hence it relies in turn on the method of constructing the type
+  area by division.
+%
+\iffalse
+% Umbruchkorrekturtext
+  If you choose a good font, the result often coincides with the search for
+  the optimal \Var{DIV} value. See also \autoref{sec:typearea.options},
+  \DescPageRef{typearea.option.DIV.calc}.
+%
+\fi
+\end{Explain}
+
+\LoadCommonFile{options}% \section{Early or late Selection of Options}
+
+\LoadCommonFile{compatibility}% \section{Compatibility with Earlier Versions of \KOMAScript}
+
+\section{Adjusting the Type Area and Page Layout}
+\seclabel{typearea}
+
+The \Package{typearea} package offers two different user interfaces to
+influence the construction of the type area. The most important method is to
+specify options when loading the package. For information on how to setup
+options with \KOMAScript, please refer to \autoref{sec:\LabelBase.options}.
+
+In\textnote{Note!} this section the classes used in the examples are not
+existing {\KOMAScript} classes but hypothetical ones. This
+\iffree{guide}{book} assumes that ideally an appropriate class is available
+for each task.
+
+\begin{Declaration}
+  \OptionVName{BCOR}{correction}
+\end{Declaration}%
+Use the \OptionVName{BCOR}{correction}\ChangedAt{v3.00}{\Package{typearea}}
+option to specify the absolute value of the binding correction\Index{binding
+  correction}\textnote{binding correction}, i.\,e. the width of the area lost
+from the paper during the binding process. This value is then automatically
+taken into account when constructing the page layout and is added back to the
+inner (or left) margin during output. In the value of the \PName{correction},
+you can specify any measurement unit understood by \TeX{}.
+
+\begin{Example}
+  Suppose you create a financial report. The whole thing should be printed out
+  one-sided on A4 paper and then stapled in a binder folder. The clip of the
+  folder covers 7.5\Unit{mm}. The stack of pages is very thin, so at most
+  another 0.75\Unit{mm} will be lost from bending and the sheets themselves.
+  Therefore, you can write:
+\begin{lstcode}
+  \documentclass[a4paper]{report}
+  \usepackage[BCOR=8.25mm]{typearea}
+\end{lstcode}
+  with \OptionValue{BCOR}{8.25mm} as an option to \Package{typearea} or
+\begin{lstcode}
+  \documentclass[a4paper,BCOR=8.25mm]{report}
+  \usepackage{typearea}
+\end{lstcode}
+  when using \OptionValue{BCOR}{8.25mm} as a global option.
+
+  When using a {\KOMAScript} class, you do not need to load the
+  \Package{typearea} package explicitly:
+\begin{lstcode}
+  \documentclass[BCOR=8.25mm]{scrreprt}
+\end{lstcode}
+  You can omit the \Option{a4paper} option  with \Class{scrreprt}, since this
+  is the default for all {\KOMAScript} classes.
+
+  If you want to set the option to a new value later, you can, for example,
+  use the following:
+\begin{lstcode}
+  \documentclass{scrreprt}
+  \KOMAoptions{BCOR=8.25mm}
+\end{lstcode}
+  Defaults are initialized when the \Class{scrreprt} class is loaded.
+  Changing a setting with the \DescRef{\LabelBase.cmd.KOMAoptions} or
+  \DescRef{\LabelBase.cmd.KOMAoption} commands will automatically calculate a
+  new type area with new margins.
+\end{Example}
+
+Note\textnote{Attention!} you must pass this option as a class option when
+loading one of the {\KOMAScript} classes, as in the example above, or via
+\DescRef{\LabelBase.cmd.KOMAoptions} or \DescRef{\LabelBase.cmd.KOMAoption}
+after loading the class. When you use a {\KOMAScript} class, you should not
+load the \Package{typearea} package explicitly with
+\DescRef{\LabelBase.cmd.usepackage}, nor should you specify it as an optional
+argument when loading the package if you are using another class. If the
+option is changed with \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption} after loading the package, the type area
+and margins are automatically recalculated.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{DIV}{factor}
+\end{Declaration}%
+The \OptionVName{DIV}{factor}\ChangedAt{v3.00}{\Package{typearea}} option
+specifies the number of strips into which the page is divided horizontally and
+vertically during the construction of the type area. The exact construction
+method is found in \autoref{sec:typearea.divConstruction}. It's important to
+realise that the larger the \PName{factor}, the larger the text block and the
+smaller the margins. Any integer value greater than 4 is valid for
+\PName{factor}. Note, however, that large values can cause violations in the
+constraints on the margins of the type area, depending on how you set other
+options. In extreme cases, the header may fall outside of the page. When you
+use the \OptionVName{DIV}{factor} option, you are responsible for complying
+with the margin constraints and for choosing a typographically pleasing line
+length.
+
+In \autoref{tab:typearea.typearea}, you will find the sizes of the type areas
+for several \Option{DIV} factors for the A4 page with no binding correction. In
+this case, the other constraints that are dependent on the font size are not
+taken into account.
+
+\begin{table}
+%  \centering
+  \KOMAoptions{captions=topbeside}%
+  \setcapindent{0pt}%
+  \begin{captionbeside}
+%  \caption
+  [{Type area dimensions dependent on \Option{DIV} for A4}]
+  {\label{tab:typearea.typearea}Type area dimensions dependent on \Option{DIV}
+    	for A4 regardless of \Length{topskip} or \Option{BCOR}}
+  [l]
+  \begin{tabular}[t]{ccccc}
+    \toprule
+    & 
+    \multicolumn{2}{c}{Type area} & \multicolumn{2}{c}{Margins}\\
+    %\raisebox{1.5ex}[0pt]{
+      \Option{DIV}
+    %} 
+       & width & height & top & inner \\
+    \midrule
+    6  & 105.00 & 148.50 & 49.50 & 35.00 \\
+    7  & 120.00 & 169.71 & 42.43 & 30.00 \\
+    8  & 131.25 & 185.63 & 37.13 & 26.25 \\
+    9  & 140.00 & 198.00 & 33.00 & 23.33 \\
+    10 & 147.00 & 207.90 & 29.70 & 21.00 \\
+    11 & 152.73 & 216.00 & 27.00 & 19.09 \\
+    12 & 157.50 & 222.75 & 24.75 & 17.50 \\
+    13 & 161.54 & 228.46 & 22.85 & 16.15 \\
+    14 & 165.00 & 233.36 & 21.21 & 15.00 \\
+    15 & 168.00 & 237.60 & 19.80 & 14.00 \\
+    \bottomrule
+    \multicolumn{5}{r}{\small (all lengths in mm)}
+  \end{tabular}
+  \end{captionbeside}
+\end{table}
+
+
+\begin{Example}
+  Suppose you are writing up the minutes of a meeting using the
+  \Class{minutes} class. The whole thing should be two-sided. Your company
+  uses 12\Unit{pt} Bookman font. This font, which is one of the standard
+  PostScript fonts, is enabled in {\LaTeX} with the command
+  \verb|\usepackage{bookman}|. Bookman is a very wide font, meaning that the
+  individual characters are relatively wide compared to their height.
+  Therefore, the default setting for \Option{DIV} in \Package{typearea} is too
+  small. After thoroughly studying this entire chapter, you conclude that a
+  value of 15, instead of 12, is most suitable. The minutes will not be bound
+  but punched and kept in a folder, and thus no binding correction is
+  necessary. So you write:
+\begin{lstcode}
+    \documentclass[a4paper,twoside]{minutes}
+    \usepackage{bookman}
+    \usepackage[DIV=15]{typearea}
+\end{lstcode}
+  When you're done, you become aware that the minutes will from now on be
+  collected and bound together as a book at the end of the quarter. The
+  binding is to be a simple glue binding because this is only being done to
+  conform to ISO\,9000 and nobody is actually going to read them. The binding,
+  including space lost in folding the pages, requires an average of
+  12\Unit{mm} You change the options of the \Package{typearea} package
+  accordingly and use the class for minutes that conform to ISO\,9000
+  regulations:
+\begin{lstcode}
+  \documentclass[a4paper,twoside]{iso9000p}
+  \usepackage{bookman}
+  \usepackage[DIV=15,BCOR=12mm]{typearea}
+\end{lstcode}
+  Of course, it is equally possible to use a {\KOMAScript} class here:
+\begin{lstcode}
+  \documentclass[twoside,DIV=15,BCOR=12mm]{scrartcl}
+  \usepackage{bookman}
+\end{lstcode}
+  The \Option{a4paper} option can be left out when using the
+  \Class{scrartcl} class, as it is predefined in all {\KOMAScript}
+  classes.
+\end{Example}
+
+Note\textnote{Attention!} that when using this option with one of the
+{\KOMAScript} classes, as in the example above, it must be passed either as a
+class option, or via \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption} after loading the class. When using a
+{\KOMAScript} class, the \Package{typearea} package should not be loaded
+explicitly with \DescRef{\LabelBase.cmd.usepackage}, nor should the option be
+given as an optional argument thereto. If the option is changed via
+\DescRef{\LabelBase.cmd.KOMAoptions} or \DescRef{\LabelBase.cmd.KOMAoption}
+after loading the package, the type area and margins are automatically
+recalculated.%
+\EndIndexGroup
+
+\begin{Declaration}
+  \OptionValue{DIV}{calc}%
+  \OptionValue{DIV}{classic}
+\end{Declaration}%
+As\ChangedAt{v3.00}{\Package{typearea}} already mentioned in
+\autoref{sec:typearea.divConstruction}, there are fixed defaults for
+\Option{DIV} when using A4 paper. These can be found in \autoref{tab:typearea.div}.
+However, such fixed values have the disadvantage that they do not take into
+account the letter spacing of the font used. With A4 and fairly narrow fonts,
+this can quickly lead to an unpleasantly high number of characters per line.
+See the considerations in \autoref{sec:typearea.basics}. If you choose a
+different paper size, \Package{typearea} will calculate an appropriate
+\Option{DIV} value for you. Of course, you can also apply this same calculation
+to A4. To do so, simply use \OptionValue{DIV}{calc}%
+\important{\OptionValue{DIV}{calc}} in place of
+\OptionVNameRef{\LabelBase}{DIV}{factor}. Of course, you can also specify this
+option explicitly for all other paper sizes. If you want automatic
+calculation, this specification is useful, as it is possible to set different
+preferences in a configuration file (see \autoref{sec:typearea-experts.cfg}).
+Explicitly specifying the \OptionValue{DIV}{calc} option overrides such
+configuration settings.
+
+\begin{table}
+%  \centering
+  \KOMAoptions{captions=topbeside}%
+  \setcapindent{0pt}%
+  \begin{captionbeside}
+  %\caption
+    [{\PName{DIV} defaults for A4}]
+    {\label{tab:typearea.div}\PName{DIV} defaults for A4}
+    [l]
+  \begin{tabular}[t]{lccc}
+    \toprule
+    base font size: & 10\Unit{pt} & 11\Unit{pt} & 12\Unit{pt} \\
+    \Option{DIV}:   &   8         &  10         &  12  \\
+    \bottomrule
+  \end{tabular}
+  \end{captionbeside}
+\end{table}
+
+You can also select the traditional page layout mentioned in
+\autoref{sec:typearea.circleConstruction}, the medieval page canon. Instead of
+the \OptionVName{\DescRef{\LabelBase.option.DIV}}{factor} or
+\OptionValue{DIV}{calc} option, simply use the \OptionValue{DIV}{classic}
+option. A \Option{DIV} value which is as close as possible to the medieval page
+canon is then chosen.
+
+\begin{Example}
+  In the example using the Bookman font and the
+  \OptionVNameRef{\LabelBase}{DIV}{factor} option, the problem was to select a
+  \Option{DIV} value that better matched the font. Modifying that example, you
+  can simply leave the calculation of this value to \Package{typearea}:
+\begin{lstcode}
+  \documentclass[a4paper,twoside]{protocol}
+  \usepackage{bookman}
+  \usepackage[DIV=calc]{typearea}
+\end{lstcode}
+\end{Example}
+\iffree{\par%
+  Note\textnote{Attention!} that when using this option with one of the
+  \KOMAScript{} classes%
+  \iftrue , as in the example above, \fi%
+  it must be passed either as a class option, or via
+  \DescRef{\LabelBase.cmd.KOMAoptions} or \DescRef{\LabelBase.cmd.KOMAoption}
+  after loading the class. When using a {\KOMAScript} class, the
+  \Package{typearea} package should not be loaded explicitly with
+  \DescRef{\LabelBase.cmd.usepackage}, nor should the option be given as an
+  optional argument. If the option is changed via
+  \DescRef{\LabelBase.cmd.KOMAoptions} or \DescRef{\LabelBase.cmd.KOMAoption}
+  after loading the package, the type area and margins are automatically
+  recalculated.%
+}{%
+\vskip-\dp\strutbox% Wegen Code im Beispiel am Ende
+}%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionValue{DIV}{current}
+  \OptionValue{DIV}{last}
+\end{Declaration}%
+If\ChangedAt{v3.00}{\Package{typearea}} you've been following the
+examples closely, you already know how to calculate a \Option{DIV} value 
+based on the font you chose when using a {\KOMAScript} class together 
+with a font package.
+
+\begin{Explain}
+  The difficulty with doing so is that the {\KOMAScript} class already loads
+  the \Package{typearea} package itself. Thus, it is not possible to pass
+  options as optional arguments to \DescRef{\LabelBase.cmd.usepackage}. It
+  would also be pointless to specify the
+  \OptionValueRef{\LabelBase}{DIV}{calc} option as an optional argument to
+  \DescRef{\LabelBase.cmd.documentclass}.  This option would be evaluated
+  immediately on loading the \Package{typearea} package and as a result the
+  type area and margins would be calculated for the standard {\LaTeX} font and
+  not for the font loaded later.
+
+  However, it is possible to recalculate the type area and margins after
+  loading the font with the aid of \DescRef{\LabelBase.cmd.KOMAoptions}%
+  \PParameter{\OptionValueRef{\LabelBase}{DIV}{calc}} or
+  \DescRef{\LabelBase.cmd.KOMAoption}%
+  \PParameter{\DescRef{\LabelBase.option.DIV}}\PParameter{calc}. The option
+  \OptionValue{DIV}{calc} will then request a \Option{DIV} value for an
+  appropriate line length.
+
+  As it is often more convenient to set the \Option{DIV} option not after
+  loading the font but at a more noticeable point, such as when loading the
+  class, the \Package{typearea} package offers two further symbolic values for
+  this option.
+\end{Explain}
+
+The option \OptionVName{DIV}{current}\ChangedAt{v3.00}{\Package{typearea}}
+recalculates the type area and margins using the current \Option{DIV} value. 
+This is less important for recalculating the type area after loading a 
+different font. Instead, it is useful if, for example, you change the
+leading while keeping the \Option{DIV} value the same and want to ensure the 
+margin constraint that \Length{textheight} minus \Length{topskip} is a 
+multiple of \Length{baselineskip}.
+
+The option \OptionVName{DIV}{last}\ChangedAt{v3.00}{\Package{typearea}} will
+recalculate the type area and margins using exactly the same settings as the
+last calculation.
+
+By the way, if the last typeset area calculation before using
+\OptionValue{DIV}{last} or \OptionValue{DIV}{current} was done using
+\DescRef{\LabelBase.cmd.areaset}\IndexCmd{areaset}, the recalculation will be
+done using \DescRef{\LabelBase.cmd.areaset} again. It then corresponds to
+\DescRef{\LabelBase.cmd.areaset}\POParameter{current}\IndexLength{textwidth}%
+\PParameter{\Length{textwidth}}{\Length{textheight}}\IndexLength{textheight}.
+
+\begin{Example}
+  Let's suppose again that we need to calculate an appropriate line length for
+  a type area using the Bookman font. At the same time, a {\KOMAScript} class
+  is used. This is very easy with the symbolic value \PValue{last} and the
+  command \DescRef{\LabelBase.cmd.KOMAoptions}:
+\begin{lstcode}
+  \documentclass[BCOR=12mm,DIV=calc,twoside]{scrartcl}
+  \usepackage{bookman}
+  \KOMAoptions{DIV=last}
+\end{lstcode}
+  If you decide later that you need a different \Option{DIV} value, just
+  change the setting of the optional argument to
+  \DescRef{\LabelBase.cmd.documentclass}.
+\end{Example}
+
+For a summary of all possible symbolic values for the \Option{DIV} option, see
+\autoref{tab:symbolicDIV}. Note that the use of the
+\Package{fontenc}\IndexPackage{fontenc} package may also cause \LaTeX{} to
+load a different font.
+
+\begin{table}
+  \caption[{%
+  	Symbolic values for the \DescRef{typearea.option.DIV} option and the
+  	\PName{DIV} argument to \DescRef{\LabelBase.cmd.typearea}%
+  }]{%
+    Available symbolic values for the \DescRef{typearea.option.DIV} option or
+    the \PName{DIV} argument to
+    \DescRef{typearea.cmd.typearea}\OParameter{BCOR}\Parameter{DIV}%
+  }
+  \label{tab:symbolicDIV}
+  \begin{desctabular}
+    \pventry{areaset}{Recalculate page
+      layout.\IndexOption{DIV~=\textKValue{areaset}}}%
+    \pventry{calc}{Recalculate type area including choice of appropriate
+      \Option{DIV} value.\IndexOption{DIV~=\textKValue{calc}}}%
+    \pventry{classic}{Recalculate type area using medieval book design canon
+      (circle-based calculation).\IndexOption{DIV~=\textKValue{classic}}}%
+    \pventry{current}{Recalculate type area using current \Option{DIV}
+      value.\IndexOption{DIV~=\textKValue{current}}}%
+    \pventry{default}{Recalculate type area using the standard value for the
+      current page format and current font size. If no standard value exists,
+      \PValue{calc} is used.\IndexOption{DIV~=\textKValue{default}}}%
+    \pventry{last}{Recalculate type area using the same \PName{DIV} argument
+      as was used in the last call.\IndexOption{DIV~=\textKValue{last}}}%
+  \end{desctabular}
+\end{table}
+
+Frequently\textnote{Attention!}, the type area must be recalculated in
+combination with a change in the line spacing (\emph{leading})\Index{leading}.
+Since the type area should be calculated in such a way that a whole number of
+lines fits in the text block, a change in the leading normally requires a
+recalculation of the type area.
+ 
+\begin{Example}
+  Suppose that you require a 10\Unit{pt} font and a spacing of 1.5 lines for a
+  dissertation. By default, {\LaTeX} sets the leading for 10\Unit{pt} fonts at
+  2\Unit{pt}, in other words 1.2 lines. Therefore, you must use an additional
+  stretch factor of 1.25. Suppose also that you need a binding correction of
+  \(12\Unit{mm}\). Then the solution to the problem might look like this:
+\begin{lstcode}
+  \documentclass[10pt,twoside,BCOR=12mm,DIV=calc]{scrreprt}
+  \linespread{1.25}
+  \KOMAoptions{DIV=last}
+\end{lstcode}\IndexCmd{linespread}
+  Since \Package{typearea} always executes the \Macro{normalsize} command
+  itself when calculating a new type area, it is not strictly necessary to
+  set the chosen leading with \Macro{selectfont} after \Macro{linespread},
+  since this will already be done in the recalculation.
+
+  When using the \Package{setspace}\IndexPackage{setspace}%
+  \important{\Package{setspace}} package (see \cite{package:setspace}), the
+  same example would appear as follows:
+\begin{lstcode}
+  \documentclass[10pt,twoside,BCOR=12mm,DIV=calc]{scrreprt}
+  \usepackage[onehalfspacing]{setspace}
+  \KOMAoptions{DIV=last}
+\end{lstcode}
+\end{Example}
+
+As\textnote{Hint!} you can see from the example, the \Package{setspace}
+package saves you from needing to know the correct stretch value. However,
+this only applies to the standard font sizes 10\Unit{pt}, 11\Unit{pt}, and
+12\Unit{pt}.  For all other font sizes, the package uses an approximate value.
+
+At\textnote{Attention!} this point, note that the line spacing for the title
+page should be reset to the normal value, and the indexes should be set with
+the normal line spacing as well.
+\begin{Example}
+  Here\IndexPackage{setspace} is a complete example:
+\begin{lstcode}
+  \documentclass[10pt,twoside,BCOR=12mm,DIV=calc]
+                {scrreprt}
+  \usepackage{setspace}
+  \onehalfspacing
+  \AfterTOCHead{\singlespacing}
+  \KOMAoptions{DIV=last}
+  \begin{document}
+  \title{Title}
+  \author{Markus Kohm}
+  \begin{spacing}{1}
+    \maketitle
+  \end{spacing}
+  \tableofcontents
+  \chapter{Ok}
+  \end{document}
+\end{lstcode}
+  Also see the notes in \autoref{sec:typearea.tips}. The 
+  \DescRef{tocbasic.cmd.AfterTOCHead}\IndexCmd{AfterTOCHead} command is
+  described in \autoref{cha:tocbasic} of \autoref{part:forExperts} on
+  \DescPageRef{tocbasic.cmd.AfterTOCHead}.
+\end{Example}
+Note also that changing the line spacing can also affect the page's header and
+footer. For example, if you are using the \Package{scrlayer-scrpage} package,
+you have to decide for yourself whether you prefer to have the normal or the
+changed leading. See the \DescRef{scrlayer.option.singlespacing} option in
+\autoref{cha:scrlayer}\important{\hyperref[cha:scrlayer]{\Package{scrlayer}}}%
+\IndexPackage{scrlayer}\IndexOption{singlespacing},
+\DescPageRef{scrlayer.option.singlespacing}.
+
+Note\textnote{Attention!} that when using this option with one of the
+{\KOMAScript} classes, as in the example above, it must be passed either as a
+class option, or via \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption} after loading the class. When using a
+{\KOMAScript} class, the \Package{typearea} package should not be loaded
+explicitly with \DescRef{\LabelBase.cmd.usepackage}, nor should the option be
+given as an optional argument thereto. If the option is changed via
+\DescRef{\LabelBase.cmd.KOMAoptions} or \DescRef{\LabelBase.cmd.KOMAoption}
+after loading the package, the type area and margins are automatically
+recalculated.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{typearea}\OParameter{BCOR}\Parameter{DIV}%
+  \Macro{recalctypearea}
+\end{Declaration}%
+\begin{Explain}
+  If the \DescRef{\LabelBase.option.DIV} option or the
+  \DescRef{\LabelBase.option.BCOR} option is set after loading the
+  \Package{typearea} package, the \Macro{typearea} command will be called
+  internally. When setting the \DescRef{\LabelBase.option.DIV} option, the
+  symbolic value \PValue{current} is used internally for \PName{BCOR}, which
+  for reasons of completeness is also found in \autoref{tab:symbolicBCOR}.
+  When setting the \DescRef{\LabelBase.option.BCOR} option, the symbolic value
+  \PValue{last} is used internally for \PName{DIV}. If instead you want the
+  type area and margins to be recalculated using the symbolic value
+  \PValue{current} for \PName{DIV}, you can use
+  \Macro{typearea}\POParameter{current}\PParameter{current} directly.
+\end{Explain}
+
+\begin{table}
+  \caption[{%
+    Symbolic \PName{BCOR} arguments for \DescRef{typearea.cmd.typearea}%
+  }]{%
+    Available symbolic \PName{BCOR} arguments for
+    \Macro{typearea}\OParameter{BCOR}\Parameter{DIV}%
+  }
+  \label{tab:symbolicBCOR}
+  \begin{desctabular}
+    \pventry{current}{Recalculate type area with the currently valid
+      \PName{BCOR} value.\IndexOption{BCOR~=\textKValue{current}}}
+  \end{desctabular}
+\end{table}
+
+If you change both \PName{BCOR} and \PName{DIV}, you should use
+\Macro{typearea}, since then the type area and margins are recalculated only
+once. With \DescRef{\LabelBase.cmd.KOMAoptions}%
+\PParameter{\OptionVNameRef{\LabelBase}{DIV}{factor},%
+  \OptionVNameRef{\LabelBase}{BCOR}{correction}} the type area and margins are
+recalculated once for the change to \DescRef{\LabelBase.option.DIV} and again
+for the change to \DescRef{\LabelBase.option.BCOR}.
+
+\begin{Explain}
+  The command \Macro{typearea} is currently defined so as to make it possible
+  to change the type area in the middle of a document. However, several
+  assumptions about the structure of the {\LaTeX} kernel are made, and
+  internal definitions and sizes of the kernel are changed. Since changes are
+  only made to the {\LaTeX} kernel to fix bugs, there is a high likelihood,
+  though no guarantee, that this will still work in future versions of
+  \LaTeXe{}. When used within the document, a page break will result.
+\end{Explain}
+
+Since\important{\Macro{recalctypearea}} \DescRef{\LabelBase.cmd.KOMAoption}%
+\PParameter{\hyperref[desc:\LabelBase.option.DIV.last]{\Option{DIV}}}%
+\PParameter{\hyperref[desc:\LabelBase.option.DIV.last]{last}},
+\DescRef{\LabelBase.cmd.KOMAoptions}%
+\PParameter{\OptionValueRef{\LabelBase}{DIV}{last}}, or
+\Macro{typearea}\POParameter{current}\PParameter{last} is frequently needed 
+to recalculate the type area and margins, there is a convenience command, 
+\Macro{recalctypearea}\ChangedAt{v3.00}{\Package{typearea}}.
+\begin{Example}
+  If you find the notation
+\begin{lstcode}
+  \KOMAoptions{DIV=last}
+\end{lstcode}
+  or
+\begin{lstcode}
+  \typearea[current]{last}
+\end{lstcode}
+  too cumbersome for recalculating text area and margins because of
+  the many special characters, you can simply use
+\begin{lstcode}
+  \recalctypearea
+\end{lstcode}
+\end{Example}%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{twoside}{simple switch}%
+  \OptionValue{twoside}{semi}
+\end{Declaration}%
+As explained in \autoref{sec:typearea.basics}, the distribution of the margins
+depends on whether the document is to be printed one-sided or two-sided. For
+one-sided printing, the left and right margins are the same width, whereas for
+two-sided printing the inner margin of one page is only half as wide as the
+corresponding outer margin. To invoke two-sided printing, you must give the
+\Package{typearea} package the \Option{twoside} option. For the
+\PName{simple switch}, you can use any of the standard values for
+simple switches in \autoref{tab:truefalseswitch}. If the option is passed
+without a value, the value \PValue{true} is assumed, so two-sided printing is
+enabled. Deactivating the option leads to one-sided printing.
+
+\begin{table}
+  \centering
+  \caption{Standard values for simple switches in \KOMAScript}
+  \begin{tabular}{ll}
+    \toprule
+    Value & Description \\
+    \midrule
+    \PValue{true} & activates the option \\
+    \PValue{on}   & activates the option \\
+    \PValue{yes}  & activates the option \\
+    \PValue{false}& deactivates the option \\
+    \PValue{off}  & deactivates the option \\
+    \PValue{no}   & deactivates the option \\
+    \bottomrule
+  \end{tabular}
+  \label{tab:truefalseswitch}
+\end{table}
+
+In addition to the values in \autoref{tab:truefalseswitch}, you can also use
+the value \PValue{semi}\ChangedAt{v3.00}{\Package{typearea}}. This value
+results in two-sided printing with one-sided margins and one-sided, that is
+non-alternating, marginal notes.
+Beginning\ChangedAt{v3.12}{\Package{typearea}} with \KOMAScript{} version
+3.12, binding corrections (see \DescRef{\LabelBase.option.BCOR},
+\DescPageRef{typearea.option.BCOR}) will be part of the left margin on odd
+pages but part of the right margin on even pages. But if you switch on
+compatibility with a prior
+version\important{\OptionValueRef{\LabelBase}{version}{3.12}} of \KOMAScript{}
+(see \autoref{sec:typearea.compatibilityOptions},
+\autopageref{sec:typearea.compatibilityOptions}), the binding correction will
+be part of the left margin on both pages while using
+\OptionValue{twoside}{semi}.
+
+The option can also be passed as class option in
+\DescRef{\LabelBase.cmd.documentclass}, as a package option with
+\DescRef{\LabelBase.cmd.usepackage}, or even after loading
+\Package{typearea} with \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption}. Using this option after loading
+\Package{typearea} automatically\textnote{automatic recalculation} results in
+the recalculation of the type area using 
+\DescRef{\LabelBase.cmd.recalctypearea} (see
+\DescPageRef{typearea.cmd.recalctypearea}). If the two-sided mode was active
+before the option was set, a page break is made to the next odd page before
+the recalculation.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{twocolumn}{simple switch}
+\end{Declaration}
+To compute an appropriate type area with the help of
+\OptionValueRef{\LabelBase}{DIV}{calc}, it is useful to know in advance if the
+document is to be typeset in one or two columns. Since the considerations
+about line length in \autoref{sec:typearea.basics} apply to each column, the
+type area in two-column documents can be up to twice as wide as in one-column
+documents.
+
+To make this distinction, you must tell \Package{typearea} if the document is
+to be set with two columns using the \Option{twocolumn} option. Since this is
+a \PName{simple switch}, any of the standard values for simple switches
+from \autoref{tab:truefalseswitch} are valid. If the option is passed without
+a value, the value \PValue{true}\important{\OptionValue{twocolumn}{true}} is
+used, i.\,e. the two-column setting. Deactivating the option returns you to
+the default one-column setting.
+
+The option can also be passed as a class option in
+\DescRef{\LabelBase.cmd.documentclass}, as a package option to
+\DescRef{\LabelBase.cmd.usepackage}, or even after loading \Package{typearea}
+with \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption}. Using this option after loading
+\Package{typearea} will\textnote{automatic recalculation} automatically
+recalculate the type area using \DescRef{\LabelBase.cmd.recalctypearea} (see
+\DescPageRef{typearea.cmd.recalctypearea}).%
+%
+\EndIndexGroup
+
+\begin{Declaration}
+  \OptionVName{headinclude}{simple switch}%
+  \OptionVName{footinclude}{simple switch}
+\end{Declaration}%
+\begin{Explain}%
+  So far we have discussed how the type area is calculated\Index{type area}
+  and the relationship of the margins\Index{margins} to one another and
+  between margins and body of the text. But one important question has not
+  been answered: What exactly are \emph{the margins}?
+
+  At first glance the question appears trivial: Margins are those parts on the
+  right, left, top, and bottom of the page which remain empty. But this is
+  only half the story. Margins are not always empty. Sometimes there can be
+  marginal notes, for example (see the \DescRef{maincls.cmd.marginpar} command
+  in \cite{lshort} or \autoref{sec:maincls.marginNotes}).
+
+  For the top and bottom margins, the question becomes how to handle
+  headers\Index{page header} and footers\Index{page footer}. Do these two
+  belong to the text body or to their respective margins? This question is not
+  easy to answer. Clearly an empty footer or header belongs to the margins,
+  since it cannot be distinguished from the rest of the margins. A footer that
+  contains only the
+  pagination\Index[indexmain]{pagination}\textnote{pagination} %
+  \iffalse %
+  \unskip\footnote{Pagination refers to the indication of the page number,
+    either inside or outside the type area, and usually appears in either the
+    header or the footer of the page.} %
+  \fi %
+  looks more like a margin and should therefore be counted as such. It is
+  irrelevant for the visual effect whether headers or footers are easily
+  recognized as such when reading or skimming. The decisive factor is how a
+  well-filled page appears when viewed \emph{out of focus}. For this purpose,
+  you could, for example, steal the glasses of a far-sighted grandparent and
+  hold the page about half a meter from the tip of your nose. If you lack an
+  available grandparent, you can also adjust your vision to infinity and look
+  at the page with one eye only. Those who wear glasses have a clear advantage
+  here. If the footer contains not only the pagination but also other material
+  like a copyright notice, it looks more like a slightly detached part of the
+  body of the text. This needs to be taken into account when calculating the
+  type area.
+
+  For the header, this is even more complicated. The header often contains
+  running heads\Index[indexmain]{running heads}\textnote{running heads}. %
+  \iffalse%
+  \unskip\footnote{Running heads refer to the repetition of a title, in
+    titling font, which usually appears in the page header, or rarely in the
+    page footer.} %
+  \fi If you use the current chapter and section titles in your running head
+  and these titles are long, the header itself will necessarily be very
+  long. In this case, the header again acts like a detached part of the text
+  body and less like an empty margin. This effect is reinforced if the header
+  contains not only the chapter or section title but also the pagination. With
+  material on the right and left side, the header no longer appears as an
+  empty margin. It is more difficult if the pagination is in the footer and
+  the length of the running titles varies, so that the header may look like
+  part of the margin on one page and part of the text body on another. Under
+  no circumstances should you treat the pages differently. That would lead to
+  vertically jumping headers, which is not suitable even for a flip book. In
+  this case it is probably best to count the header as part of the text body.
+
+  The decision is easy when the header or footer is separated from the actual
+  text body by a line. This will give a ``closed'' appearance and the header
+  or footer should be calculated as part of the text body.  Remember: It is
+  irrelevant that the line improves the optical separation of text and header
+  or footer; only the appearance when viewed out of focus is important.
+\end{Explain}
+
+The \Package{typearea} package cannot determine on its own whether
+to count headers and footers\important{\OptionValue{headinclude}{true}
+	\OptionValue{headinclude}{false} \OptionValue{footinclude}{true}
+	\OptionValue{footinclude}{false}} as part of the text body or the
+margin. The \Option{headinclude} and \Option{footinclude} options cause
+the header or footer to be counted as part of the text.  These
+options, being \PName{simple switch}es\ChangedAt{v3.00}{\Package{typearea}},
+accept the standard values for simple switches in
+\autoref{tab:truefalseswitch}. You can use the options without
+specifying a value, in which case the value \PValue{true} is used for
+the \PName{simple}, i.\,e. the header or footer is counted as part of
+the text.
+
+If you are unsure what the correct setting should be, reread the explanations
+above. The default is usually \OptionValue{headinclude}{false} and
+\OptionValue{footinclude}{false}, but this can change in the {\KOMAScript}
+classes or in other {\KOMAScript} packages depending on the options used (see
+\autoref{sec:maincls.options} and \autoref{cha:scrlayer-scrpage}).
+
+Note\textnote{Attention!} that these options must be passed as class options
+when using one of the {\KOMAScript} classes, or after loading the class with
+\DescRef{\LabelBase.cmd.KOMAoptions} or \DescRef{\LabelBase.cmd.KOMAoption}.
+Changing these options after loading the \Package{typearea} package does not
+automatically recalculate the type area. Instead, the changes only take effect
+the next time the type area is recalculated. For recalculation of the type
+area, see the \hyperref[desc:\LabelBase.option.DIV.last]{\Option{DIV}} option
+with the values \hyperref[desc:\LabelBase.option.DIV.last]{\PValue{last}} or
+\hyperref[desc:\LabelBase.option.DIV.current]{\PValue{current}} (see
+\DescPageRef{typearea.option.DIV.last}) or the
+\DescRef{\LabelBase.cmd.recalctypearea} command (see
+\DescPageRef{typearea.cmd.recalctypearea}).%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{mpinclude}{simple switch}
+\end{Declaration}
+In addition to\ChangedAt{v2.8q}{\Class{scrbook}\and \Class{scrreprt}\and
+  \Class{scrartcl}} documents where the header and footer are more likely to
+be part of the text body than the margins, there are also documents where
+marginal notes should be considered part of the text body as well. The option
+\Option{mpinclude} does exactly this. The option, as a \PName{simple
+  switch}\ChangedAt{v3.00}{\Package{typearea}}, accepts the standard values
+for simple switches in \autoref{tab:truefalseswitch}. You can also pass this
+option without specifying a value, in which case \PValue{true} is assumed.
+
+The effect of \OptionValue{mpinclude}{true}%
+\important{\OptionValue{mpinclude}{true}} is that a width-unit is removed from
+the main text body and used as the area for marginal notes. With the
+\OptionValue{mpinclude}{false} option, which is the default setting, part of
+the normal margin is used for marginal notes. The width of that area is one or
+one-and-a-half width units, depending on whether you have chosen one-sided or
+two-sided printing. The \OptionValue{mpinclude}{true} option is mainly for
+experts and so is not recommended.
+  
+\begin{Explain}
+  In most cases where the option \Option{mpinclude} makes sense, you also
+  require a wider area for marginal notes. Often, however, only a part of the
+  marginal note's width should be part of the text area, not the whole width,
+  for example if the margin is used for quotations. Such quotations are
+  usually set as unjustified text, with the flush edge against the text area. 
+  Since the unjustified text gives no homogeneous optical impression, these
+  lines can protrude partially into the margin. You can accomplish that by
+  using the option \Option{mpinclude} and by increasing the length
+  \Length{marginparwidth} after the type area has been set up. The length can
+  be easily enlarged with the command \Macro{addtolength}. How much the length
+  has to be increased depends on the individual situation and it requires a
+  certain amount of sensitivity. This is another reason the \Option{mpinclude}
+  option is primarily intended for experts. Of course you can specify, for
+  example, that the marginal notes should project a third of the way into the
+  normal margin by using the following:
+\begin{lstcode}
+	\setlength{\marginparwidth}{1.5\marginparwidth}
+\end{lstcode}
+
+Currently there is no option to enlarge the space for marginal notes within
+the text area. There is only one way to accomplish this: first, either omit
+the \Option{mpinclude} option or set it to \PValue{false}, and then, after the
+type area has been calculated, reduce \Length{textwidth} (the width of the
+text body) and increase \Length{marginparwidth} (the width of the marginal
+notes) by the same amount. Unfortunately, this procedure cannot be combined
+with automatic calculation of the \PName{DIV} value. In contrast,
+\Option{mpinclude} is taken into account with
+\OptionValueRef{\LabelBase}{DIV}{calc}\IndexOption{DIV~=calc} (see
+\DescPageRef{typearea.option.DIV.calc}).
+\end{Explain}
+
+Note\textnote{Attention!} that these options must be passed as class options
+when using one of the {\KOMAScript} classes, or after loading the class with
+\DescRef{\LabelBase.cmd.KOMAoptions} or \DescRef{\LabelBase.cmd.KOMAoption}.
+Changing these options after loading the \Package{typearea} package does not
+automatically recalculate the type area. Instead, the changes only take effect
+the next time the type area is recalculated. For recalculation of the type
+area, see the \hyperref[desc:\LabelBase.option.DIV.last]{\Option{DIV}} option
+with the values \hyperref[desc:\LabelBase.option.DIV.last]{\PValue{last}} or
+\hyperref[desc:\LabelBase.option.DIV.current]{\PValue{current}} (see
+\DescPageRef{typearea.option.DIV.last}) or the
+\DescRef{\LabelBase.cmd.recalctypearea} command (see
+\DescPageRef{typearea.cmd.recalctypearea}).%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{headlines}{number of lines}
+  \OptionVName{headheight}{height}
+\end{Declaration}%
+\BeginIndex{}{header>height}%
+We have seen how to calculate the type area using the \Package{typearea}
+package and how to specify whether the header and footer are part of the text
+or the margins. However, especially for the header, we still have to specify
+the height. This is achieved with the options \Option{headlines} and
+\Option{headheight}\ChangedAt{v3.00}{\Package{typearea}}.
+
+The \Option{headlines}\important{\Option{headlines}} option specifies the
+number of lines of text in the header. The \Package{typearea} package uses a
+default of 1.25. This is a compromise: large enough for underlined headers
+(see \autoref{sec:maincls.pagestyle}) and small enough that the relative
+weight of the top margin is not affected too much when the header is not
+underlined. Thus the default value will usually be adequate. In special cases,
+however, you may need to adjust the header height more precisely to your
+actual requirements.
+
+\begin{Example}
+  Suppose you want to create a two-line header. Normally this would result in
+  {\LaTeX} issuing the warning ``\texttt{overfull} \Macro{vbox}'' for each
+  page. To prevent this from happening, you tell the \Package{typearea}
+  package to calculate an appropriate type area:
+\begin{lstcode}
+  \documentclass[a4paper]{article}
+  \usepackage[headlines=2.1]{typearea}
+\end{lstcode}
+  If you use a {\KOMAScript} class, you should pass this option directly to
+  the class:
+\begin{lstcode}
+  \documentclass[a4paper,headlines=2.1]{scrartcl}
+\end{lstcode}
+  Commands that can be used to define the contents of a two-line header
+  can be found in \autoref{cha:scrlayer-scrpage}.
+\end{Example}
+
+In some cases it is useful to be able to specify the header height not in
+lines but directly as a length. This is accomplished with the alternative
+option \Option{headheight}\important{\Option{headheight}}. All lengths and
+sizes that \LaTeX{} understands are valid for \PName{height}.
+Note\textnote{Attention!}, however, that if you use a \LaTeX{} length such as
+\Length{baselineskip}, its value is not fixed at the time the option is set.
+The value that will be used will be the one current at the time the type area
+and margins are calculated. Also\textnote{Attention!}, \LaTeX{} lengths like
+\Length{baselineskip} should  never be used in the optional argument of
+\DescRef{\LabelBase.cmd.documentclass} or \DescRef{\LabelBase.cmd.usepackage}.
+
+Please be sure to note\textnote{Attention!} that these options must be passed
+as class options when using one of the {\KOMAScript} classes, or after loading
+the class with \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption}. Changing these options after loading the
+\Package{typearea} package does not\textnote{no automatic recalculation}
+automatically recalculate the type area. Instead, the changes only take effect
+the next time the type area is recalculated. For recalculation of the type
+area, see the \hyperref[desc:\LabelBase.option.DIV.last]{\Option{DIV}} option
+with the values \hyperref[desc:\LabelBase.option.DIV.last]{\PValue{last}} or
+\hyperref[desc:\LabelBase.option.DIV.current]{\PValue{current}} (see
+\DescPageRef{typearea.option.DIV.last}) or the
+\DescRef{\LabelBase.cmd.recalctypearea} command (see
+\DescPageRef{typearea.cmd.recalctypearea}).%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{footlines}{number of lines}%
+  \OptionVName{footheight}{height}%
+  \Length{footheight}%
+\end{Declaration}
+\BeginIndex{}{footer>height}%
+Like\ChangedAt{v3.12}{\Package{typearea}} the header, the footer also requires
+an indication of how high it should be. But unlike the height of the header,
+the \LaTeX{} kernel does not provide a length for the height of the footer. So
+\Package{typearea} defines a new length,
+\Length{footheight}\IndexLength[indexmain]{footheight}, if it does not already
+exist. Whether this length will be used by classes or packages to design the
+headers and footers depends on the individual classes and packages. The
+\KOMAScript{} package
+\hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}%
+\important{\hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}}%
+\IndexPackage{scrlayer-scrpage} incorporates
+\Length{footheight} and actively cooperates with \Package{typearea}. The
+\KOMAScript{} classes, on the other hand, do not recognize \Length{footheight}
+because without the help of packages they offer only page styles with
+single-line page footers.
+
+You can use \Option{footlines}\important{\Option{footlines}} to set the number
+of lines in the footer, similar to \DescRef{\LabelBase.option.headlines} for
+the number of lines in the header. By default the \Package{typearea} package
+uses 1.25 footer lines. This value is a compromise: large enough to
+accommodate an overlined or underlined footer (see
+\autoref{sec:maincls.pagestyle}), and small enough that the relative weight of
+the bottom margin is not affected too much when the footer lacks a dividing
+line. Thus the default value will usually be adequate. In special cases,
+however, you may need to adjust the footer height more precisely to your
+actual requirements.
+
+\begin{Example}
+  Suppose you need to place a two-line copyright notice in the footer.
+  Although there is no test in \LaTeX{} itself to check the space available
+  for the footer, exceeding the designated height will likely result in
+  unbalanced distribution of type area and margins. Moreover, a package such
+  as \hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}%
+  \important{\hyperref[cha:scrlayer-scrpage]{\Package{scrlayer-scrpage}}}%
+  \IndexPackage{scrlayer-scrpage}, which can be used to define such a footer,
+  performs the appropriate test and will report any overruns. So it makes
+  sense to specify the required footer height when calculating of the type
+  area:
+\begin{lstcode}
+  \documentclass[a4paper]{article}
+  \usepackage[footlines=2.1]{typearea}
+\end{lstcode}
+  Again, if you use a \KOMAScript{} class, you should pass this
+  option directly to the class:
+\begin{lstcode}
+  \documentclass[footlines=2.1]{scrartcl}
+\end{lstcode}
+  Commands that can be used to define the contents of a two-line footer
+  are described in \autoref{cha:scrlayer-scrpage}.
+\end{Example}
+
+In some cases it is useful to be able to specify the footer height not in
+lines but directly as a length. This is accomplished with the alternative
+option \Option{footheight}\important{\Option{footheight}}. All lengths and
+sizes that \LaTeX{} understands are valid for \PName{height}. Note, however,
+that if you use a \LaTeX{} length such as \Length{baselineskip}, its value is
+not fixed at the time the option is set. The value that will be used will be
+the one current at the time the type area and margins are calculated.
+Also\textnote{Attention!}, \LaTeX{} lengths like \Length{baselineskip} should
+never be used in the optional argument of
+\DescRef{\LabelBase.cmd.documentclass} or \DescRef{\LabelBase.cmd.usepackage}.
+
+Please be sure to note\textnote{Attention!} that these options must be passed
+as class options when using one of the {\KOMAScript} classes, or after loading
+the class with \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption}. Changing these options after loading
+\Package{typearea} does not\textnote{no automatic recalculation} automatically
+recalculate the type area. Instead, the changes only take effect the next time
+the type area is recalculated. For recalculation of the type area, see the
+\hyperref[desc:\LabelBase.option.DIV.last]{\Option{DIV}} option with the
+values \hyperref[desc:\LabelBase.option.DIV.last]{\PValue{last}} or
+\hyperref[desc:\LabelBase.option.DIV.current]{\PValue{current}} (see
+\DescPageRef{typearea.option.DIV.last}) or the
+\DescRef{\LabelBase.cmd.recalctypearea} command (see
+\DescPageRef{typearea.cmd.recalctypearea}).%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{areaset}\OParameter{BCOR}\Parameter{width}\Parameter{height}
+\end{Declaration}%
+So far, we have seen how to create a nice type area\Index{type area} for
+standard situations and how the \Package{typearea} package makes it easier to
+accomplish this while still giving the freedom to adapt the layout. However,
+there are cases where the text body has to adhere precisely to specific
+dimensions. At the same time, the margins should be distributed as nicely as
+possible and, if necessary, a binding correction should be taken into account.
+The \Package{typearea} package offers the command \Macro{areaset} for this
+purpose. This command takes as parameters the width and height of the text
+body, as well as the binding correction as an optional parameter. The width
+and position of the margins are then calculated automatically, taking account
+of the options \DescRef{\LabelBase.option.headinclude},
+\OptionValueRef{\LabelBase}{headinclude}{false},
+\DescRef{\LabelBase.option.footinclude} and
+\OptionValueRef{\LabelBase}{footinclude}{false} where needed.  On the other
+hand, the options
+\DescRef{\LabelBase.option.headlines}\IndexOption{headlines},
+\DescRef{\LabelBase.option.headheight}\IndexOption{headheight},
+\DescRef{\LabelBase.option.footlines}\IndexOption{footlines}, and
+\DescRef{\LabelBase.option.footheight}\IndexOption{footheight} are ignored!
+For more information, see \DescRef{typearea-experts.cmd.areaset} on
+\DescPageRef{typearea-experts.cmd.areaset} of
+\autoref{sec:typearea-experts.experimental}.
+
+The default for \PName{BCOR} is 0\Unit{pt}. If you want to preserve the
+current binding correction, for example the value set by option
+\DescRef{\LabelBase.option.BCOR}\IndexOption{BCOR}, you can use the symbolic
+value \PValue{current} at an optional argument.
+
+\begin{Example}
+  Suppose a text on A4 paper needs a width of exactly 60 characters in a
+  typewriter font and a height of exactly 30 lines per page. You can
+  accomplish this with the following preamble:
+\begin{lstcode}
+  \documentclass[a4paper,11pt]{article}
+  \usepackage{typearea}
+  \newlength{\CharsLX}% Width of 60 characters
+  \newlength{\LinesXXX}% Height of 30 lines
+  \settowidth{\CharsLX}{\texttt{1234567890}}
+  \setlength{\CharsLX}{6\CharsLX}
+  \setlength{\LinesXXX}{\topskip}
+  \addtolength{\LinesXXX}{29\baselineskip}
+  \areaset{\CharsLX}{\LinesXXX}
+\end{lstcode}
+  The factor is 29 rather than 30 because the baseline of the topmost line of
+  text is \Macro{topskip} below the top margin of the type area, as long as
+  the height of the topmost line is less than \Macro{topskip}. So we don't
+  need to add any height for the first line. The descenders of characters on
+  the lowermost line, on the other hand, protrude below the dimensions of the
+  type area.
+
+\iffalse % Umbruchkorrekturtext
+  If instead you want to set a book of poetry in which the text area is
+  exactly square with a side length of 15\Unit{cm}, with a binding correction
+  of 1\Unit{cm} taken into account, you can achieve this as follows:%
+\else%
+  To set a book of poetry with a square text area with a side length of
+  15\Unit{cm} and a binding correction of 1\Unit{cm}, the following is
+  possible:%
+\fi
+\begin{lstcode}
+  \documentclass{poetry}
+  \usepackage{typearea}
+  \areaset[1cm]{15cm}{15cm}
+\end{lstcode}
+\end{Example}
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionValue{DIV}{areaset}
+\end{Declaration}%
+In\ChangedAt{v3.00}{\Package{typearea}} rare cases it is useful to be able to
+realign the current type area. This is possible with the option
+\OptionValue{DIV}{areaset}, where
+\DescRef{\LabelBase.cmd.KOMAoptions}\PParameter{\OptionValue{DIV}{areaset}}
+corresponds to the
+\begin{lstcode}
+  \areaset[current]{\textwidth}{\textheight}
+\end{lstcode}
+command. The same result is obtained if you use
+\OptionValueRef{\LabelBase}{DIV}{last} and the typearea was last set with
+\DescRef{\LabelBase.cmd.areaset}.%
+%
+\EndIndexGroup
+
+\iftrue% Umbruchkorrekturtext: Alternativen
+  If you have concrete specifications for the margins, \Package{typearea} is
+  not suitable. In this case, you should use the
+  \Package{geometry}\IndexPackage{geometry}%
+  \important{\Package{geometry}} package (see \cite{package:geometry}).%
+\fi%
+\iffalse%
+  The \Package{typearea} package is not designed to set up predefined margins.
+  If you have to do so, the \Package{geometry}\IndexPackage{geometry} package
+  (see \cite{package:geometry}) is recommended.%
+\fi
+
+
+\section{Selecting the Paper Size}
+\seclabel{paperTypes}%
+\BeginIndexGroup
+
+The paper size is a key feature of a document. As already mentioned in the
+description of the supported page layout constructions (see
+\autoref{sec:typearea.basics} to \autoref{sec:typearea.circleConstruction}
+starting on \autopageref{sec:typearea.basics}), the layout of the page, and
+hence the entire document, depends on the paper size. Whereas the {\LaTeX}
+standard classes are limited to a few formats, {\KOMAScript} supports even
+unusual paper sizes in conjunction with the \Package{typearea} package.
+
+
+\begin{Declaration}
+  \OptionVName{paper}{size}
+  \OptionVName{paper}{orientation}
+\end{Declaration}%
+The \Option{paper}\ChangedAt{v3.00}{\Package{typearea}} option is the central
+element for paper-size selection\important[i]{%
+  \begin{tabular}[t]{@{}l@{}l@{}}
+	\KOption{paper} & \PValue{letter}, \\
+	& \PValue{legal}, \\
+	& \PValue{executive}, \\
+	& \PValue{A0}, \PValue{A1}, \PValue{A2} \dots\\
+	& \PValue{B0}, \PValue{B1}, \PValue{B2} \dots\\
+	& \PValue{C0}, \PValue{C1}, \PValue{C2} \dots\\
+	& \PValue{D0}, \PValue{D1}, \PValue{D2} \dots\end{tabular}} %
+in \KOMAScript. \PName{Size} supports the American formats \Option{letter},
+\Option{legal}, and \Option{executive}. In addition, it supports the ISO
+formats of the series A, B, C, and D, for example \PValue{A4} or\,---\,written
+in lower case\,---\,\PValue{a4}.
+
+Landscape orientations\important{%
+	\begin{tabular}[t]{@{}l@{}l@{}}
+		\KOption{paper} & \PValue{landscape}, \\
+		& \PValue{seascape}
+	\end{tabular}%
+} are supported by specifying the option one more time
+with the value \PValue{landscape}\Index{paper>orientation} or
+\PValue{seascape}\ChangedAt{v3.02c}{\Package{typearea}}. The only difference
+between \PValue{landscape} and \PValue{seascape} is that that the application
+\File{dvips} rotates \PValue{landscape} pages by -90\Unit{\textdegree}, while
+it rotates \PValue{seascape} pages by +90\Unit{\textdegree}. Thus
+\PValue{seascape} is particularly useful whenever a PostScript viewer shows
+landscape pages upside-down. In order for the difference to have an effect,
+you must not deactivate the \DescRef{\LabelBase.option.pagesize}%
+\IndexOption{pagesize}\important{\DescRef{\LabelBase.option.pagesize}} option
+described below.
+
+Additionally, the \PName{size} can also be specified either in the form
+\PName{width}\texttt{:}\PName{height}\ChangedAt{v3.01b}{\Package{typearea}}%
+\important{\OptionVName{paper}{width\textup{:}height}} or in the form
+\PName{height}\texttt{:}\PName{width}\ChangedAt{v3.22}{\Package{typearea}}%
+\important{\OptionVName{paper}{height\textup{:}width}}. Which value is taken
+as the \PName{height} and which as the \PName{width} depends on the
+orientation of the paper. With \OptionValue{paper}{landscape} or
+\OptionValue{paper}{seascape}, the smaller value is the \PName{height} and the
+larger one is the \PName{width}. With
+\OptionValue{paper}{portrait}\important{\OptionValue{paper}{portrait}}, the
+smaller value is the \PName{width} and the larger one is the \PName{height}.
+
+Note\textnote{Attention!} that until version~3.01a the first value was always
+the \PName{height} and the second one the \PName{width}. From version~3.01b
+through version~3.21, the first value was always the \PName{width} and the
+second one the \PName{height}. This is important if you use compatibility
+settings (see option \DescRef{\LabelBase.option.version}%
+\IndexOption{version}\important{\DescRef{\LabelBase.option.version}},
+\autoref{sec:typearea.compatibilityOptions},
+\DescPageRef{typearea.option.version}).
+
+\begin{Example}
+ Suppose you want to print an ISO-A8 index card in landscape orientation. The
+ margins should be very small and no header or footer will be used.
+\begin{lstcode}
+  \documentclass{article}
+  \usepackage[headinclude=false,footinclude=false,
+              paper=A8,landscape]{typearea}
+  \areaset{7cm}{5cm}
+  \pagestyle{empty}
+  \begin{document}
+  \section*{Supported Paper Sizes}
+  letter, legal, executive, a0, a1 \dots\ %
+  b0, b1 \dots\ c0, c1 \dots\ d0, d1 \dots
+  \end{document}
+\end{lstcode}
+  If the file cards have the special format (height:width)
+  5\Unit{cm}\,:\,3\Unit{cm}, this can be achieved using the following:
+\begin{lstcode}
+  \documentclass{article}
+  \usepackage[headinclude=false,footinclude=false,%
+              paper=landscape,paper=5cm:3cm]{typearea}
+  \areaset{4cm}{2.4cm}
+  \pagestyle{empty}
+  \begin{document}
+  \section*{Supported Paper Sizes}
+  letter, legal, executive, a0, a1 \dots\ %
+  b0, b1 \dots\ c0, c1 \dots\ d0, d1 \dots
+  \end{document}
+\end{lstcode}
+\end{Example}
+
+By default, {\KOMAScript} uses A4 paper in portrait orientation. This is in
+contrast\textnote{\KOMAScript{} vs. standard classes} to the standard classes,
+which by default use the American letter paper format.
+
+Please note\textnote{Attention!} that these options must be passed as class
+options when using one of the {\KOMAScript} classes, or after loading the
+class with \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption}. Changing the paper size or orientation
+with \DescRef{\LabelBase.cmd.KOMAoptions} or
+\DescRef{\LabelBase.cmd.KOMAoption} does not\textnote{no automatic
+recalculation} automatically recalculate the type area. Instead, the changes
+only take effect the next time the type area is recalculated. For
+recalculation of the type area, see the
+\hyperref[desc:\LabelBase.option.DIV.last]{\Option{DIV}} option with the
+values \hyperref[desc:\LabelBase.option.DIV.last]{\PValue{last}} or
+\hyperref[desc:\LabelBase.option.DIV.current]{\PValue{current}} (see
+\DescPageRef{typearea.option.DIV.last}) or the
+\DescRef{\LabelBase.cmd.recalctypearea} command (see
+\DescPageRef{typearea.cmd.recalctypearea}).%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{pagesize}{output driver}
+\end{Declaration}%
+\begin{Explain}%
+  The above-mentioned mechanisms for choosing the paper format only affect the
+  output insofar as internal {\LaTeX} lengths are set. The \Package{typearea}
+  package then uses them in dividing the page into type area and margins. 
+  The specification of the DVI formats\Index{DVI}, however, does not include
+  any indication of paper size. %
+  \iffree{%
+    When outputting directly from the DVI format to a low-level printer
+    language such as PCL%
+    \iftrue% Umbruchkorrektur
+      \footnote{PCL is a family of printer languages that HP uses for its
+        inkjet and laser printers.}%
+    \fi \ or ESC/P2%
+    \iftrue% Umbruchkorrektur
+      \footnote{ESC/P2 is the printer language that EPSON uses for its
+        dot-matrix, and older inkjet or laser printers.}%
+    \fi \ or ESC/P-R%
+    \iftrue% Umbruchkorrektur
+      \footnote{ESC/P-R is the printer language that EPSON currently uses for
+        inkjet and laser printers.}%
+    \fi, this is usually not an issue%
+  }{%
+    In the past, when DVI was printed directly into a low-level printer
+    language, it did not matter%
+  }, since with these formats the reference zero-position is at the top left,
+  as in DVI. But nowadays, the output is normally translated into languages
+  such as PostScript\Index{PostScript} or PDF\Index{PDF}, in which the
+  zero-position is at a different point, and in which the paper format should
+  be specified in the output file, which is missing this information. To solve
+  this problem, the corresponding driver uses a default paper size, which the
+  user can change either by an option or by specifying it in the {\TeX} source
+  file. When using the DVI driver \File{dvips} or \File{dvipdfm}, the
+  information can be given in the form of a \Macro{special} command. When
+  using {pdf\TeX}, {lua\TeX}, {\XeTeX} or {V\TeX} their paper-size lengths are
+  set appropriately.
+\end{Explain}
+With the \Option{pagesize} option, you can select an output driver for writing
+the paper size into the destination document. Supported output drivers are
+listed at \autoref{tab:typearea.outputdriver}\iffalse%
+, \autopageref{tab:typearea.outputdriver}\fi. The
+default\ChangedAt{v3.17}{\Package{typearea}} is \Option{pagesize}. Using this
+option without providing a value is equivalent to \OptionValue{pagesize}{auto}.
+%
+\begin{table}
+  \caption{Output driver for option \OptionVName{pagesize}{output driver}}
+  \begin{desctabular}
+    \pventry{auto}{Uses output driver \PValue{pdftex} if the pdf\TeX-specific
+      lengths \Macro{pdfpagewidth}\IndexLength{pdfpagewidth} and
+      \Macro{pdfpageheight}\IndexLength{pdfpageheight} or the lua\TeX-specific
+      lengths \Macro{pagewidth}\IndexLength{pagewidth} and
+      \Macro{pageheight}\IndexLength{pageheight} are defined. In addition, the
+      output driver \PValue{dvips} will also be used. This setting is in
+      principle also suitable for \XeTeX{}.%
+      \IndexOption{pagesize~=\textKValue{auto}}}%
+    \pventry{automedia}{Almost the same as \PValue{auto} but if the
+      \mbox{V\TeX}-specific lengths
+      \Macro{mediawidth}\IndexLength{mediawidth} and
+      \Macro{mediaheight}\IndexLength{mediaheight} are defined, they will be
+      set as well.\IndexOption{pagesize~=\textKValue{automedia}}}%
+    \entry{\PValue{false}, \PValue{no}, \PValue{off}}{%
+      Does not set any output driver and does not send page size information to
+      the output driver.\IndexOption{pagesize~=\textKValue{false}}}%
+    \pventry{dvipdfmx}{\ChangedAt{v3.05a}{\Package{typearea}} Writes the paper
+      size into DVI files using
+      \Macro{special}\PParameter{pagesize=\PName{width},\PName{height}}. The
+      name of the output driver is \PValue{dvipdfmx} because the application
+      \File{dvipdfmx} handles such specials not just in the preamble but
+      in the document body too.\IndexOption{pagesize~=\textKValue{dvipdfmx}}}%
+    \pventry{dvips}{Using this option in the preamble sets the paper size
+      using
+      \Macro{special}\PParameter{pagesize=\PName{width},\PName{height}}. Since
+      the \File{dvips} driver cannot handle changes of paper size in the
+      inner document pages, a hack is required to achieve such changes. Use
+      changes of paper size after \Macro{begin}\PParameter{document} at your
+      own risk, if you are using
+      \PValue{dvips}!\IndexOption{pagesize~=\textKValue{dvips}}}%
+    \entry{\PValue{pdftex}, \PValue{luatex}}{%
+      \ChangedAt{v3.20}{\Package{typearea}}Sets paper size using the
+      pdf\TeX-specific lengths
+      \Macro{pdfpagewidth}\IndexLength{pdfpagewidth} and
+      \Macro{pdfpageheight}\IndexLength{pdfpageheight} or the
+      lua\TeX-specific lengths \Macro{pagewidth}\IndexLength{pagewidth}
+      and \Macro{pageheight}\IndexLength{pageheight}. You can do this at any
+      time in your document.%
+      \IndexOption{pagesize~=\textKValue{pdftex}}%
+      \IndexOption{pagesize~=\textKValue{luatex}}}%
+  \end{desctabular}
+  \label{tab:typearea.outputdriver}
+\end{table}
+
+\begin{Example}
+  Suppose a document should be available both as a DVI data file
+  and in PDF format for on-line viewing. The preamble might begin
+  as follows:
+\begin{lstcode}[%
+	aboveskip=.5\baselineskip plus .1\baselineskip minus .1\baselineskip,%
+	belowskip=.4\baselineskip plus .1\baselineskip minus .1\baselineskip]
+  \documentclass{article}
+  \usepackage[paper=A4,pagesize]{typearea}
+\end{lstcode}
+  If the {pdf\TeX} engine is used \emph{and} PDF output is enabled, the
+  lengths \Macro{pdfpagewidth} and \Macro{pdfpageheight} are set
+  appropriately. If, however, a DVI data file is created\,---\, whether by
+  {\LaTeX} or by {pdf\LaTeX}\,---\,then a \Macro{special} is written at the
+  start of this data file.
+\end{Example}%
+\iffree{% The recommendation is actually outdated. Those who use such old
+  % versions of typearea are the ones at fault.
+  If you use an older version of \Package{typearea}, you
+  should\textnote{Attention!} always specify the \Option{pagesize} option,
+  because older versions of \Package{typearea} did not set them by default. As
+  a rule, the method without an \PName{output driver} or with \PValue{auto} or
+  \PValue{automedia} is convenient.%
+}{%
+  \vskip-1\ht\strutbox plus
+  .75\ht\strutbox% Wegen Beispiel am Ende der Erklaerung
+}%
+\EndIndexGroup
+%
+\EndIndexGroup
+
+
+\section{Tips}
+\seclabel{tips}
+
+For theses and dissertations, many rules exist that violate even the most
+elementary rules of typography.\textnote{formatting rules vs. good typography}
+The reasons for such rules include the typographical incompetence of those who
+issue them, but also the fact that they were originally meant for mechanical
+typewriters. With a typewriter or a primitive text processor from the early
+1980s, it was not possible to produce typographically correct output without
+extreme effort. So rules were created that appeared to be easy to follow and
+were still accommodating to a proofreader. These include margins that lead to
+usable line lengths for one-sided printing with a typewriter. To avoid
+extremely short lines, which are made worse by unjustified text, the margins
+were kept narrow and the leading was increased to 1.5 lines to allow space for
+corrections. Before the advent of modern text processing systems, single
+spacing would have been the only alternative\,---\,except with \TeX. In such a
+single-spaced document, even correction signs would have been difficult to
+add. When computers became more widely available for text processing, some
+students showed their playful side and tried to spice up their work by using
+an ornamental font to make their work look better than it really was. They did
+not consider that such fonts are often more difficult to read and therefore
+unsuitable for this purpose. Thus, two font families found their way
+into the regulations which are neither compatible nor particularly suitable
+for the job in the case of Times. Times is a relatively narrow typeface
+designed at the beginning of the 20th century for the narrow columns of
+British newspapers. Modern versions usually are somewhat improved. But still
+the Times font, which is often required, does not really fit the prescribed
+margins.
+
+{\LaTeX} already uses adequate line spacing, and the margins are wide enough
+for corrections. Thus a page will look spacious, even when quite full of text.
+
+Often these typographically questionable rules are difficult to implement in
+{\LaTeX}. A fixed number of characters per line can be achieved only when a
+non-proportional font is used. There are very few good non-proportional fonts
+available. Hardly any text typeset in this way looks really good. In many
+cases font designers try to increase the serifs on the `i' or `l' to
+compensate for the different character widths. This does not work and results
+in a fragmented and agitated-looking text. If you use {\LaTeX} for your
+thesis, some of these rules have to be either ignored or at least interpreted
+generously. For example, ``60 characters per line'' can be interpreted not as
+a fixed but as an average or maximum value.%
+
+As implemented, typesetting rules are usually intended to obtain a useful
+result even if the author does not know what needs to be considered.
+\emph{Useful} frequently means readable and correctable. In my opinion the
+type area of a text set with {\LaTeX} and the \Package{typearea} package meets
+these criteria well from the outset. So if you are confronted with regulations
+which deviate substantially from it, I recommend that you present a sample of
+the text to your advisor and ask whether you can submit the work despite
+deviations in the format.  If necessary the type area can be adapted somewhat
+by changing the \DescRef{\LabelBase.option.DIV}%
+\important{\DescRef{\LabelBase.option.DIV}} option. I advise against
+using \DescRef{\LabelBase.cmd.areaset} for this purpose, however. In the
+worst case, use the \Package{geometry} package%
+\important{\Package{geometry}}\IndexPackage{geometry} (see
+\cite{package:geometry}), which is not part of \KOMAScript, or change the page
+layout parameters of \LaTeX{} yourself. You can find the values as determined
+by \Package{typearea} in the \File{log} file of your document. The
+\DescRef{typearea-experts.option.usegeometry}%
+\important{\DescRef{typearea-experts.option.usegeometry}} option, which you
+can find in \autoref{part:forExperts}, can also improve the interactions
+between \Package{typearea} and \Package{geometry}. This should allow modest
+adjustments. However, make sure that the proportions of the text area match
+those of the page, taking the binding correction into account.
+
+If it is absolutely necessary to set the text with a line spacing of 1.5, do
+not under any circumstances redefine \Macro{baselinestretch}.  Although this
+procedure is recommended all too frequently, it has been obsolete since the
+introduction of {\LaTeXe} in 1994. In the worst case, use the
+\Macro{linespread} command. I recommend the package
+\Package{setspace}\important{\Package{setspace}}\IndexPackage{setspace} (see
+\cite{package:setspace}), which is not part of \KOMAScript. You should also
+let \Package{typearea} recalculate a new type area after changing the line
+spacing. However, you should switch back to the normal line spacing for the
+title, and preferably for the table of contents and various lists\,---\,as
+well as the bibliography and the index. For details, see the explanation of
+\OptionValueRef{\LabelBase}{DIV}{current}%
+\important{\OptionValueRef{\LabelBase}{DIV}{current}}.
+
+The \Package{typearea} package, even with option
+\OptionValueRef{\LabelBase}{DIV}{calc}%
+\important{\OptionValueRef{\LabelBase}{DIV}{calc}}, calculates a very generous
+text area. Many conservative typographers will find that the resulting line
+length is still excessive. The calculated \Option{DIV} value may be found in the
+\File{log} file for each document. So you can easily choose a smaller value
+after the first {\LaTeX} run.
+
+Not\textnote{What is better?} infrequently I am asked why I dwell on type area
+calculations for an entire chapter, when it would be much easier just to
+provide a package with which you can adjust the margins as in a word
+processor. Often it is said that such a package would be a better solution in
+any case, since everyone knows how to choose appropriate margins, and that the
+margins calculated by {\KOMAScript} are not that good anyway. I would like to
+quote Hans Peter Willberg and Friedrich Forssmann, two of the most respected
+contemporary typographers \cite{TYPO:ErsteHilfe}. (You can find the original
+German in the German guide.)
+\begin{quote}
+  \phantomsection\seclabel{tips.cite}%
+  \textit{The\textnote{Quote!} practice of doing things oneself has long been
+    widespread, but the results are often dubious because amateur typographers
+    do not see what is wrong and cannot know what is important. This is how
+    you get used to incorrect and poor typography.} [\dots] \textit{Now the
+    objection could be made that typography is a matter of taste. When it
+    comes to decoration, one could perhaps accept that argument, but since
+    typography is primarily about information, not only can mistakes irritate,
+    but they may even cause damage.}
+\end{quote}
+%
+\EndIndexGroup
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "scrguide-en.tex"
+%%% coding: utf-8
+%%% ispell-local-dictionary: "en_GB"
+%%% eval: (flyspell-mode 1)
+%%% End: 

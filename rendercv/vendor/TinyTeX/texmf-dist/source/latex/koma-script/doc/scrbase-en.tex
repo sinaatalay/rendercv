@@ -1,0 +1,1932 @@
+% ======================================================================
+% scrbase-en.tex
+% Copyright (c) Markus Kohm, 2002-2022
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+% Package scrbase for Package and Class Authors
+% Maintained by Markus Kohm
+%
+% ======================================================================
+
+\KOMAProvidesFile{scrbase-en.tex}
+                 [$Date: 2022-07-17 11:19:00 +0200 (So, 17. Jul 2022) $
+                  KOMA-Script package scrbase]
+\translator{Markus Kohm\and Melvin Hendrix\and Karl Hagen}
+
+\chapter{Basic Functions in the \Package{scrbase} Package}
+\labelbase{scrbase}
+\BeginIndexGroup
+\BeginIndex{Package}{scrbase}%
+
+The \Package{scrbase} package provides basic features intended for use by
+authors of packages and classes. Its use is not limited merely to wrapper
+classes which in turn load a \KOMAScript{} class. Authors of classes that
+otherwise have nothing to do with \KOMAScript{} can also benefit from the
+functionality of \Package{scrbase}.
+
+\section{Loading the Package}
+\seclabel{loadit}
+
+Whereas users load packages with \Macro{usepackage}, authors of packages or
+classes should use \Macro{RequirePackage}\IndexCmd{RequirePackage}. Authors of
+wrapper packages can also use \Macro{RequirePackageWithOptions}. The
+\Macro{RequirePackage} command has the same optional argument for package
+options as \Macro{usepackage}. In contrast, \Macro{RequirePackageWithOptions}
+does not have an optional argument but passes to this package all the options
+that were previously given when loading the wrapper package or class. See
+\cite{latex:clsguide} for more information about these commands.
+
+The \Package{scrbase} package needs the functionality of the
+\Package{keyval}\IndexPackage{keyval} package internally. This can also be
+provided by the \Package{xkeyval} package. If needed, \Package{scrbase} itself
+loads \Package{keyval}.
+
+The \Package{keyval} package lets you define keys and assign values to them.
+The options provided by \Package{scrbase} also use \Package{keyval} syntax:
+\PName{key}\texttt{=}\PName{value}.
+
+
+\section{Keys as Attributes of Families and Their Members}
+\seclabel{keyvalue}
+
+As already mentioned in \autoref{sec:scrbase.loadit}, \Package{scrbase} uses
+the \Package{keyval} package to set keys and their values. However,
+\Package{scrbase} extends this functionality. Whereas with \Package{keyval} a
+key belongs to only one family, \Package{scrbase} also recognizes family
+members. A key can therefore belong to both a family and one or more family
+members. Additionally, you can assign a value to the key of a family member,
+to the key of a family, or to the keys of all family members.
+
+\begin{Declaration}
+  \Macro{DefineFamily}\Parameter{family}%
+  \Macro{DefineFamilyMember}\OParameter{member}\Parameter{family}%
+\end{Declaration}
+\Package{scrbase} needs to know the members of a family for various reasons.
+Therefore, you must first define a new family using \Macro{DefineFamily},
+which produces an empty member list. If the family has already been defined,
+nothing happens. Therefore an existing member list will not be overwritten.
+
+Next, you can add a new member to the family using \Macro{DefineFamilyMember}.
+If the family does not exist, this will result in an error message. If the
+member already exists, nothing happens. If the optional \PName{member} is
+omitted, the default value
+``\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}'' is used. While
+the class or package is being loaded, \Macro{@currname} and \Macro{@currext}
+together represent the file name of the class or package.
+
+Theoretically, it is possible, to define a member without a name using an
+empty optional \PName{member} argument. But this is the same as the family
+itself. You should use only letters and digits for the \PName{family} name,
+and the first character of \PName{member} should be something else, preferably
+a point. Otherwise, it could happen that the members of one family will clash
+with the members of other families.
+
+\Package{scrbase} assigns the family ``\PValue{KOMA}'' to itself and adds the
+member ``\PValue{.scrbase.sty}''. The values ``\PValue{KOMA}'' and
+``\PValue{KOMAarg}'' are reserved for \KOMAScript{}. If you are creating a
+bundle of packages, you should use the name of the bundle as \PName{family}
+and the name of each package as \PName{member} of that \PName{family}.
+%
+\begin{Example}
+  Suppose you are writing a bundle called ``master butcher''. Within that
+  bundle, you have the packages \File{salami.sty}, \File{mettwurst.sty},
+  and \File{kielbasa.sty}. Therefore, you decide to use family name
+  ``\PValue{butcher}'' and you add the lines
+\begin{lstcode}
+  \DefineFamily{butcher}
+  \DefineFamilyMember{butcher}
+\end{lstcode}
+  to each of the package files. When loading the three packages, this will
+  add the members ``\PValue{.salami.sty}'', ``\PValue{.mettwurst.sty}'',
+  and ``\PValue{.kielbasa.sty}'' to the family ``\PValue{butcher}''. After
+  loading all three packages, all three members will be defined.
+\end{Example}
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DefineFamilyKey}\OParameter{member}\Parameter{family}%
+                         \Parameter{key}%
+                         \OParameter{default}\Parameter{action}%
+  \Macro{FamilyKeyState}%
+  \Macro{FamilyKeyStateUnknown}%
+  \Macro{FamilyKeyStateProcessed}%
+  \Macro{FamilyKeyStateUnknownValue}%
+  \Macro{FamilyKeyStateNeedValue}
+\end{Declaration}
+The \Macro{DefineFamilyKey} command defines a \PName{key}. If you specify a
+\PName{member}, the \PName{key} becomes an attribute of that member in the
+given \PName{family}. If you do not specify a \PName{member}, the member
+``\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}'' is assumed. If you
+later assign a value to the \PName{key}, the \PName{action} will be
+executed and the value made an argument of \PName{action}. Within
+\PName{action}, ``\lstinline{#1}'' stands for that value. If you omit the value,
+the \PName{default} is used instead. If you do not specify a \PName{default},
+the \PName{key} then always requires you to pass an explicit value.
+
+%\begin{Explain}
+  \phantomsection\label{explain:scrbase.macro.DefineFamilyKey}%
+  Ultimately,
+\begin{lstcode}[escapeinside=`']
+  \DefineFamilyKey[`\PName{member}']{`\PName{family}'}{`\PName{key}'}
+                  [`\PName{default}']{`\PName{action}'}
+\end{lstcode}
+  results in a call to
+\begin{lstcode}[moretexcs={define@key},escapeinside=`']
+  \define@key{`\PName{family\,member}'}{`\PName{key}'}
+             [`\PName{default}']{`\PName{extended action}'}
+\end{lstcode}
+  where \Macro{define@key} is provided by the
+  \Package{keyval}\IndexPackage{keyval} package (see \cite{package:keyval}).
+  However, there are some additional precautions taken with the call to
+  \Macro{define@key}, and the \PName{action} will be extended to include these
+  precautions.
+%\end{Explain}
+
+Success\ChangedAt{v3.12}{\Package{scrbase}} or failure in executing the
+\PName{action} should be reported back to \Package{scrbase} through
+\Macro{FamilyKeyState} so that the package itself can take further action as
+needed. This could be, for example, an error message or merely warning of an
+unknown option. You should not report errors directly!
+
+The default state of \PName{action} before execution is
+\Macro{FamilyKeyStateUnknown}. This indicates that it is not known whether or
+not the key could be processed successfully. If this state remains unchanged
+after the \PName{action} has been executed, \Package{scrbase} writes a
+message to the \File{log} file and assumes the that state is
+\Macro{FamilyKeyStateProcessed}.
+
+The \Macro{FamilyKeyStateProcessed} state indicates that the key and the value
+assigned to it have been successfully processed and everything is OK. You can
+switch to this state by calling \Macro{FamilyKeyStateProcessed} itself.
+
+The \Macro{FamilyKeyStateUnknownValue} state indicates that the key has been
+processed but that the value passed to it was either unknown or not allowed.
+For example, \hyperref[cha:typearea]{\Package{typearea}} reports this
+condition if you try to set the \DescRef{typearea.option.twoside} option to
+\PValue{unknown}. You can set this state by simply calling
+\Macro{FamilyKeyStateUnknownValue}.
+
+The \Macro{FamilyKeyStateNeedValue} state indicates that the key could not be
+processed because it expects a value, but it was called without such a value.
+This state is set automatically if you use a key that does not have a
+\PName{default} value without assigning a value. Theoretically, you could
+set this state explicitly with \Macro{FamilyKeyStateNeedValue}, but you should
+not need to set it yourself.
+
+In addition, you can define additional error conditions by redefining
+\Macro{FamilyKeyState} with a short text message. Generally, however, the four
+predefined states should be sufficient.
+
+\begin{Example}
+  Suppose each of the three packages from the previous example should have a
+  key named \PValue{coldcuts}. When used, a switch should be set in each of
+  the packages. For the \Package{salami} package, for example, this could look
+  like this:
+\begin{lstcode}
+  \newif\if@salami@coldcuts
+  \DefineFamilyKey{butcher}%
+                  {coldcuts}[true]{%
+    \expandafter\let\expandafter\if@salami@coldcuts
+    \csname if#1\endcsname
+    \FamilyKeyStateProcessed
+  }
+\end{lstcode}
+  When called, the value will therefore be either \PValue{true} or
+  \PValue{false}. This example does not test for illegal values. Instead,
+  it is always reported that the key was processed completely and correctly.
+  If the key is used later, one of the permitted values, or no value, must be
+  used. In the second case, the default \PName{true} value will be used.
+
+  The definitions for the other packages are nearly identical. Only the string
+  ``\texttt{salami}'' has to be replaced.
+\end{Example}
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{RelaxFamilyKey}\OParameter{member}\Parameter{family}%
+  \Parameter{key}
+\end{Declaration}
+If\ChangedAt{v3.15}{\Package{scrbase}} a \PName{key} has been previously
+defined as a \PName{member} of a \PName{family}, that definition will be
+cancelled. Afterwards the \PName{key} will no longer be defined for this
+\PName{member} of the \PName{family}. You can use \Macro{RelaxFamilyKey} for a
+\PName{key} that is not defined for this \PName{member} of the \PName{family}.
+
+If you do not specify a \PName{member}, then the member
+``\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}'' is assumed, just as
+with \DescRef{\LabelBase.cmd.DefineFamilyKey}. However, \Macro{RelaxFamilyKey}
+is only rarely used while loading a package rather than at runtime. Therefore
+the \PName{member} should usually be specified explicitly as well.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyProcessOptions}\OParameter{member}\Parameter{family}
+\end{Declaration}
+In essence, extending keys from families to both families and family members
+means that either keys or key-value pairs can be used as normal class or
+package options. The \Macro{FamilyProcessOptions} command is an extension of
+\Macro{ProcessOption*} from the \LaTeX{} kernel (see \cite{latex:clsguide},
+which processes not only options declared with \Macro{DeclareOption}, but also
+all keys of the given member. If you omit the optional argument
+\PName{member}, the member
+``\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}'' is used.
+
+One feature worth noting is that keys which are attached not to a family
+member but to a family have an empty family member. Such keys are set before
+the keys of the members.
+\begin{Example}
+  If, in the packages from the previous example, you add the line
+\begin{lstcode}
+  \FamilyProcessOptions{butcher}
+\end{lstcode}
+  after you define the key, you can specify the \Option{coldcuts} option when
+  loading the package. If you specify the option globally in
+  \Macro{documentclass}, the option will be passed automatically to all three
+  packages if they are loaded later.
+\end{Example}
+Note\textnote{Attention!} that packages always process global options
+before local options. While unknown global options result in an entry in the
+\File{log} file and the option being otherwise ignored, unknown local
+options result in an error message.
+
+You can think of \Macro{FamilyProcessOptions} as an extension of either 
+\Macro{ProcessOption*} or the \PName{key=value} mechanism
+of \Package{keyval}. Ultimately, with the help of
+\Macro{FamilyProcessOptions}, \PName{key=value} pairs become options.%
+
+As with\textnote{Attention!} \Macro{ProcessOptions},
+\Macro{FamilyProcessOptions} must not be used while executing options code.
+In particular, you cannot load packages while processing options.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{BeforeFamilyProcessOptions}\OParameter{member}\Parameter{family}%
+                                    \Parameter{code}%
+\end{Declaration}
+Authors\ChangedAt{v3.18}{\Package{scrbase}} of wrapper classes in particular
+sometimes need a hook to execute \PName{code} before
+\DescRef{\LabelBase.cmd.FamilyProcessOptions}. The \Package{scrbase} package
+provides such a hook, and you can add \PName{code} to it with
+\Macro{BeforeFamilyProcessOptions}. The \PName{member} and \PName{family}
+parameters are same as those of \DescRef{\LabelBase.cmd.FamilyProcessOptions}.
+However, you can also add \PName{code} to the hook for families or members
+that have not yet been defined.
+
+Note that the hook of a family member is automatically deleted after it is
+executed. But if you use an empty \PName{member}, this hook\Index{hook} will
+be executed for every member of the \PName{family} and will not be deleted.
+
+\begin{Example}
+  You are writing a \Package{smokedsausage} package that loads
+  \Package{mettwurst}. But you do not want to be able to set the
+  \Option{coldcut} option with this package. So you use
+  \Macro{BeforeFamilyProcessOptions} to deactivate that option before you load
+  the package:
+\begin{lstcode}
+  \RequirePackage{scrbase}
+  \BeforeFamilyProcessOptions[.mettwurst.sty]{butcher}{%
+    \RelaxFamilyKey[.mettwurst.sty]{butcher}{coldcut}%
+  }
+  \RequirePackageWithOptions{mettwurst}
+\end{lstcode}
+  If a user tries to load your package with the \Option{coldcut} option, the
+  \Package{mettwurst} package will throw an undefined option error. If
+  \Option{coldcut} is used as a global option, the \Package{mettwurst}
+  package will ignore it. But default settings inside \Package{mettwurst},
+  for example using \DescRef{\LabelBase.cmd.FamilyExecuteOptions} before
+  \DescRef{\LabelBase.cmd.FamilyProcessOptions} are not affected. Of course,
+  you can also insert your own default for \Package{smokedsausage} via
+  \Macro{BeforeFamilyProcessOptions} in \Package{mettwurst}.
+\end{Example}
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyExecuteOptions}\OParameter{member}\Parameter{family}%
+  \Parameter{options list}
+\end{Declaration}
+This command is an extension of \Macro{ExecuteOptions} from the \LaTeX{}
+kernel (see \cite{latex:clsguide}). The command processes not only options
+defined with \Macro{DeclareOption} but also all keys of the given
+\PName{family}. If you omit the optional argument \Macro{member},
+``\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}'' is used.
+
+One feature worth noting is that keys which are attached not to a family
+member but to a family have an empty family member. Such keys are set before
+the keys of the members.
+\begin{Example}
+  Suppose the \Option{coldcuts} option should be set by default in the
+  previous examples. In this case only line
+\begin{lstcode}
+  \FamilyExecuteOptions{butcher}{coldcuts}
+\end{lstcode}
+  has to be added.
+\end{Example}
+
+If\ChangedAt{v3.20}{\Package{scrbase}} you call \Macro{FamilyExecuteOptions}
+with an unknown option inside the \PName{options list}, you will get an error.
+An exception to this rule occurs when the \PName{member} has an option called
+\Option{@else@}. In this case, the \Option{@else@} option will be used instead
+of the unknown one. The value passed to the \Option{@else@} option is the
+unknown option with the value specified in the call. \KOMAScript{} itself uses
+this feature, for example inside the definition of sectioning commands,
+to evaluate the style option before all other attributes.
+
+You can also use this command inside the code executed when processing the
+option.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyOptions}\Parameter{family}\Parameter{options list}%
+\end{Declaration}
+Unlike normal options defined with \Macro{DeclareOption}, the \PName{key}s can
+also be set after loading a class or package. To do this, you call
+\Macro{FamilyOptions}. The \PName{options list} has the form
+\begin{flushleft}\vskip\dp\strutbox\begin{tabular}{l}
+    \PName{key}\texttt{=}\PName{value}\texttt{,}%
+    \PName{key}\texttt{=}\PName{value}\dots
+\end{tabular}\vskip\dp\strutbox\end{flushleft}
+after which the value assignment can be omitted for \PName{key}s that have a
+defined default.
+
+The statement sets the keys of all members of the specified family. If a
+\PName{key} also exists as an attribute of the family itself, then the family
+key is set first, followed by the member keys in the order in which they were
+defined. If a given \PName{key} does not exist, either for the family or for
+any member of the family, then \Macro{FamilyOptions} will throw an error. An
+error also occurs if a \PName{key} exists for some members but each of those
+members returns an error through \DescRef{\LabelBase.cmd.FamilyKeyState}.
+\begin{Example}
+  You extend your butcher project with a \Package{sausagesalad} package. If
+  this package has been loaded, all sausage packages should generate cold
+  cuts:
+\begin{lstcode}
+  \ProvidesPackage{sausagesalad}%
+                  [2008/05/06 nonsense package]
+  \DefineFamily{butcher}
+  \DefineFamilyMember{butcher}
+  \FamilyProcessOptions{butcher}\relax
+  \FamilyOptions{butcher}{coldcuts}
+\end{lstcode}
+  If no sausage package has yet been loaded, the undefined option
+  \Option{coldcuts} leads to an error message. You can avoid this by defining
+  a corresponding key for the package before the last line of the code above:
+\begin{lstcode}
+  \DefineFamilyKey{butcher}%
+                  {coldcuts}[true]{}%
+\end{lstcode}
+  However, sausage packages loaded after \Package{sausagesalad} still do not
+  produce cold cuts. You can correct this by replacing the previous command
+  with:
+\begin{lstcode}
+  \AtBeginDocument{%
+    \DefineFamiyKey[.sausagesalad.sty]%
+                   {butcher}%
+                   {coldcuts}[true]{}%
+  }
+  \DefineFamilyKey{butcher}%
+                  {coldcuts}[true]{%
+    \AtBeginDocument{\FamilyOptions{butcher}%
+                                   {coldcuts=#1}}%
+  }%
+\end{lstcode}
+  Thus, the option is defined during \Macro{begin}\PParameter{document} so
+  that it no longer functions for the \Package{sausagesalad} package. Because
+  \Macro{@currname} and \Macro{@currext} no longer contain the file name of
+  the package, you must use the optional argument of
+  \DescRef{\LabelBase.cmd.DefineFamilyKey}.
+
+  But until this redefinition is performed, it uses a definition that executes
+  the option again for the family and all its members during
+  \Macro{begin}\PParameter{document}, thus setting it for other sausage
+  packages. The delay in executing \Macro{FamilyOptions} is crucial here. For
+  one thing, it includes only the packages loaded afterwards. For another, it
+  ensures that its own \Option{coldcuts} option has already been redefined.
+  This avoids endless recursion.
+\end{Example}
+
+Like\ChangedAt{v3.27}{\Package{scrbase}}
+\DescRef{\LabelBase.cmd.FamilyExecuteOptions}, \Macro{FamilyOptions} offers
+special handling for an option named
+\Option{@else@}\important{\Option{@else@}}. If a family member has such an
+option, it will be executed whenever an option in the \PName{option list} is
+unrecognized by the member. If the family itself defines an option
+\Option{@else@}, it will only be called if neither the family nor any of its
+members were able to fully process the given option by executing
+\DescRef{\LabelBase.cmd.FamilyKeyStateProcessed}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyOption}\Parameter{family}%
+                      \Parameter{option}\Parameter{value list}%
+\end{Declaration}
+In addition to options that have mutually exclusive values, there may be
+options that can take multiple values at the same time. To use
+\DescRef{\LabelBase.cmd.FamilyOptions} for that type of option, it would be
+necessary to invoke the same option several times with different value
+assignments. Instead, you can easily assign a whole list of values to a single
+\PName{option} using \Macro{FamilyOption}. The \PName{value list} is a comma
+separated list of values, also known as \emph{csv}:
+%\begin{flushleft}\begin{tabular}{l}
+    \PName{value}\texttt{,}\PName{value}\dots
+%\end{tabular}\end{flushleft}
+Note in this context that you can use a comma in a value by putting the value
+inside braces. This command's other functionality is the same previously
+described for \DescRef{\LabelBase.cmd.FamilyOptions}.
+\begin{Example}
+  The \Package{sausagesalad} package should have one more option to add
+  additional ingredients. Each of the ingredients sets a switch, as was done
+  previously for the cold cuts.
+\begin{lstcode}
+  \newif\if@saladwith@onions
+  \newif\if@saladwith@gherkins
+  \newif\if@saladwith@chillies
+  \DefineFamilyKey{butcher}{ingredient}{%
+    \csname @saladwith@#1true\endcsname
+  }
+\end{lstcode}
+  Here the three ingredients ``onions'', ``gherkins'', and ``chillies'' have
+  been defined. There is no error message for unknown ingredients.
+
+  For a salad with onions and gherkins, you can use
+\begin{lstcode}
+  \FamilyOptions{butcher}{%
+    ingredient=onions,ingredient=gherkins}
+\end{lstcode}
+  or simply
+\begin{lstcode}
+  \FamilyOption{butcher}
+               {ingredient}{onions,gherkins}
+\end{lstcode}
+\end{Example}
+
+An\ChangedAt{v3.27}{\Package{scrbase}} \Option{@else@} option is processed
+in the same manner as with \DescRef{\LabelBase.cmd.FamilyOptions}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{AtEndOfFamilyOptions}\Parameter{action}%
+  \Macro{AtEndOfFamilyOptions*}\Parameter{action}%
+\end{Declaration}
+Sometimes\ChangedAt{v3.12}{\Package{scrbase}} it is useful to delay the
+execution of an \PName{action} that is part of a value assignment to a key
+until all assignments inside one
+\DescRef{\LabelBase.cmd.FamilyProcessOptions}\IndexCmd{FamilyProcessOptions},
+\DescRef{\LabelBase.cmd.FamilyExecuteOptions}\IndexCmd{FamilyExecuteOptions},
+\DescRef{\LabelBase.cmd.FamilyOptions}\IndexCmd{FamilyOptions}, or
+\DescRef{\LabelBase.cmd.FamilyOption}\IndexCmd{FamilyOptions} is finished.
+You can do this using \Macro{AtEndOfFamilyOptions} or its starred
+variant\ChangedAt{v3.23}{\Package{scrbase}} inside an option definition.
+However, reporting failure states of \PName{action} is not possible with this
+command, nor should it be used outside an option definition.
+
+The two variants differ in case there are nested option definitions, when
+executing an option requires further option calls. In this case all actions
+specified by \Macro{AtEndOfFamilyOptions} will be executed when the innermost
+option call returns. In contrast, the actions of \Macro{AtEndOfFamilyOptions*}
+are not executed until the outermost option call returns.
+However,\textnote{Attention!} the order of the actions of both commands is
+emphatically undefined! It is not guaranteed that the action requested first
+will be executed first, nor the converse.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyBoolKey}\OParameter{member}\Parameter{family}%
+                       \Parameter{key}\Parameter{switch name}%
+  \Macro{FamilySetBool}\Parameter{family}%
+                       \Parameter{key}\Parameter{switch name}\Parameter{value}
+\end{Declaration}
+Boolean switches have been used several times in the previous examples. In the
+example with \Option{coldcuts} option, the user had to assign either
+\PValue{true} or \PValue{false} as a value. There was no error message if the
+user provided the wrong value. Because boolean switches are a common use case,
+you can easily define them with \Package{scrbase} using \Macro{FamilyBoolKey}.
+The \PName{member}, \PName{family}, and \PName{key} arguments are the same as
+those used by \DescRef{\LabelBase.cmd.DefineFamilyKey} (see
+\DescPageRef{scrbase.cmd.DefineFamilyKey}). The \PName{switch name} is the
+name of the switch without the prefix \Macro{if}. If a switch with this name
+does not exist already, \Macro{FamilyBoolKey} will define it and initialize it
+to \PName{false}. Internally, \Macro{FamilyBooKey} uses \Macro{FamilySetBool}
+as the \PName{action} of \DescRef{\LabelBase.cmd.DefineFamilyKey}. The
+\PName{default} for such an option is always \PValue{true}.
+
+\Macro{FamilySetBool}, on the other hand, accepts \PValue{on} and
+\PValue{yes}, in addition to \PName{true}, to turn the switch on, and
+\PName{off} and \PName{no}, in addition to \PName{false}, to turn it off.
+Unknown values will result in a call to
+\DescRef{\LabelBase.cmd.FamilyUnknownKeyValue} with the arguments
+\PName{family}, \PName{key}, and \PName{value}, which sets
+\DescRef{\LabelBase.cmd.FamilyKeyState} accordingly. As a result, an error
+message about an unknown value assignment is printed if necessary (see also
+\DescPageRef{scrbase.cmd.FamilyUnknownKeyValue} and
+\DescPageRef{scrbase.cmd.FamilyKeyState}).
+\begin{Example}
+  The key \Option{coldcuts} should be defined more robustly in the sausage
+  packages. Additionally, all sausage packages should use the same key, so
+  that either all sausage packages will produce cold cuts or none will.
+\begin{lstcode}
+  \FamilyBoolKey{butcher}{coldcuts}%
+                         {@coldcuts}
+\end{lstcode}
+  A test of whether to produce cold cuts would look like this:
+\begin{lstcode}
+  \if@coldcuts
+     ...
+  \else
+     ...
+  \fi
+\end{lstcode}
+  This would be the same in all three sausage packages, thereby
+  defining the attribute ``coldcuts'' as a family option:
+\begin{lstcode}[moretexcs={define@key}]
+  \@ifundefined{if@coldcuts}{%
+    \expandafter\newif\csname if@coldcuts\endcsname
+  }{}%
+  \DefineFamilyKey[]{butcher}{coldcuts}[true]{%
+    \FamilySetBool{butcher}{coldcuts}%
+                           {@coldcuts}%
+                           {#1}%
+  }
+\end{lstcode}
+  or shorter:
+\begin{lstcode}
+  \FamilyBoolKey[]{butcher}{coldcuts}%
+                           {@coldcuts}
+\end{lstcode}
+  taking advantage of the treatment of empty family members as opposed to
+  omitting the optional argument explained on
+  \autopageref{explain:scrbase.macro.DefineFamilyKey}, which applies not only
+  to \DescRef{\LabelBase.cmd.DefineFamilyKey} but also for
+  \Macro{FamilyBoolKey}.
+
+  Since \DescRef{\LabelBase.cmd.FamilyKeyState} is already set by
+  \Macro{FamilySetBool}, you can check its status with the help of
+  \DescRef{\LabelBase.cmd.DefineFamilyKey}. For example, in the first case you
+  could add an equivalence test to \Macro{FamilySetBool} to perform additional
+  actions depending on whether \Macro{FamilySetBool} succeeded or not:
+  \begin{lstcode}
+    \ifx\FamilyKeyState\FamilyKeyStateProcessed
+        ...
+    \else
+        ...
+    \fi   
+  \end{lstcode}
+  Note\textnote{Attention!} that it is essential to perform the test with
+  \Macro{ifx} at this point. Fully expanding tests like \Macro{ifstr} should
+  be avoided here. Depending on the current status and the comparison status,
+  they can lead to different error messages as well as incorrect results.
+\end{Example}%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{FamilyInverseBoolKey}\OParameter{member}\Parameter{family}
+                              \Parameter{key}\Parameter{switch name}
+  \Macro{FamilySetInverseBool}\Parameter{family}
+                              \Parameter{key}\Parameter{switch name}
+                              \Parameter{value}
+\end{Declaration}
+These\ChangedAt{v3.27}{\Package{scrbase}} two commands differ from
+\DescRef{\LabelBase.cmd.FamilyBoolKey} and
+\DescRef{\LabelBase.cmd.FamilySetBool}, respectively, only in that the
+logic is inverted. This means that the values \PValue{true}, \PValue{yes}, and
+\PValue{on} set the boolean switch given by \PName{switch name} to
+\Macro{iffalse} and therefore deactivate it. The values \PValue{false},
+\PValue{no}, and \PValue{off} set the boolean switch to \Macro{iftrue} and
+therefore activate it.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyNumericalKey}\OParameter{member}\Parameter{family}%
+                            \Parameter{key}%
+                            \OParameter{default}\Parameter{command}%
+                            \Parameter{value list}%
+  \Macro{FamilySetNumerical}\Parameter{family}\Parameter{key}%
+                            \Parameter{command}\Parameter{value list}%
+                            \Parameter{value}
+\end{Declaration}
+While switches can accept only two values, there are also keys that recognize
+several values. For example an alignment can be not just left or not-left, but
+left, centred, or right. Internally, such differentiation is often made using
+\Macro{ifcase}. This \TeX{} command expects a numerical value. Therefore in
+\Package{scrbase} the command to define a macro by a \PName{key} has been
+named \Macro{FamilyNumericalKey}. The \PName{value list} has the form:
+%\begin{flushleft}\vskip\dp\strutbox\begin{tabular}{l}
+  \Parameter{value}\Parameter{definition}\texttt{,}\linebreak[1]%
+  \Parameter{value}\Parameter{definition}\texttt{,}~\dots
+%\end{tabular}\vskip\dp\strutbox\end{flushleft}
+The \PName{value list} defines not just the values permitted for the
+\PName{key}. For each \PName{value}, the \PName{definition} of the macro
+\Macro{\PName{command}} also is given. Usually, the \PName{definition} is just
+a numerical value. Although other content is possible, there is currently a
+restriction that the \PName{definition} must be fully expandable, and it will
+be expanded during the assignment.
+\begin{Example}
+  The sausage for the sausage salad can be cut differently. For example, the
+  cold cuts could simply remain uncut or be cut into thick or thin slices.
+  This information should be stored in the command \Macro{cuthow}.
+\begin{lstcode}
+  \FamilyNumericalKey{butcher}%
+                     {saladcut}{cuthow}{%
+                       {none}{none},{no}{none},{not}{none}%
+                       {thick}{thick},%
+                       {thin}{thin}%
+                     }
+\end{lstcode}
+  Not cutting anything can be selected by
+\begin{lstcode}
+  \FamilyOptions{butcher}{saladcut=none}
+\end{lstcode}
+  or
+\begin{lstcode}
+  \FamilyOptions{butcher}{saladcut=no}
+\end{lstcode}
+  or
+\begin{lstcode}
+  \FamilyOptions{butcher}{saladcut=not}
+\end{lstcode}
+  In all three cases \Macro{cuthow} would be defined with the content
+  \PValue{none}. It can be useful to provide several values for the same
+  result, as shown in this example.
+
+  Now it's very likely that the manner of cutting will not be printed but
+  should be evaluated later. In this case, a textual definition would be
+  rather impractical. If the key is defined like this:
+\begin{lstcode}
+  \FamilyNumericalKey{butcher}%
+                     {saladcut}{cuthow}{%
+                       {none}{0},{no}{0},{not}{0}%
+                       {thick}{1},%
+                       {thin}{2}%
+                     }
+\end{lstcode}
+  then you can use a condition like the following:
+\begin{lstcode}
+  \ifcase\cuthow
+    % uncut
+  \or
+    % thickly cut
+  \else
+    % thinly cut
+  \fi
+\end{lstcode}
+\end{Example}
+Internally, \Macro{FamilyNumericalKey} uses \Macro{FamilySetNumerical} as the
+\PName{action} of \DescRef{\LabelBase.cmd.DefineFamilyKey}. If an unknown
+value is assigned to such a key, \Macro{FamilySetNumerical} will call
+\DescRef{\LabelBase.cmd.FamilyUnknownKeyValue} with the \PName{family},
+\PName{key} and \PName{value} arguments. This leads to an error signalled with
+the \DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue} status in
+\DescRef{\LabelBase.cmd.FamilyKeyState}. Similarly, when calling
+\Macro{FamilySetNumerical} the success is signalled via
+\DescRef{\LabelBase.cmd.FamilyKeyStateProcessed} in
+\DescRef{\LabelBase.cmd.FamilyKeyState}.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyCounterKey}\OParameter{member}\Parameter{family}%
+                          \Parameter{key}%
+                          \OParameter{default}\Parameter{\LaTeX{} counter}%
+  \Macro{FamilySetCounter}\Parameter{family}%
+  \Parameter{key}\Parameter{\LaTeX{} counter}\Parameter{value}
+\end{Declaration}
+While\ChangedAt{v3.12}{\Package{scrbase}}
+\DescRef{\LabelBase.cmd.FamilyNumericalKey} defines a macro in which a numeric
+value corresponds to a symbolic value, there are, of course, circumstances
+when a \PName{key} directly represents a \PName{\LaTeX{} counter} to which a
+numeric value should be assigned immediately. For this case, you can use
+\Macro{FamilyCounterKey}, which calls \Macro{FamilySetCounter} internally.
+There are some basic tests of the \PName{value} argument to determine if the
+\PName{value} argument appears to be suitable for assignment to a counter. The
+assignment will only be made if these tests succeed. However, not all errors
+can be detected here, so an incorrect assignment can also lead to an error
+message from \TeX{} itself. Errors that are detected, however, are signalled
+by \DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue}.
+
+If\ChangedAt{v3.15}{\Package{scrbase}} the value is omitted, the
+\PName{default} is used instead. If there is no \PName{default}, the
+\PName{key} can be used only with an explicit value.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyCounterMacroKey}\OParameter{member}\Parameter{family}%
+                               \Parameter{key}%
+                               \OParameter{default}\Parameter{macro}%
+  \Macro{FamilySetCounterMacro}\Parameter{family}%
+  \Parameter{key}\Parameter{macro}\Parameter{value}%
+\end{Declaration}
+These\ChangedAt{v3.12}{\Package{scrbase}} two commands differ from the
+previously described \DescRef{\LabelBase.cmd.FamilyCounterKey} and
+\DescRef{\LabelBase.cmd.FamilySetCounter} only by the fact that they do not
+assign a \PName{value} to a \LaTeX{} counter, but define a \Macro{macro} with
+the \PName{value}. This \PName{value} is locally assigned to a counter and
+then its expanded value is used. Therefore, its value at the time the option
+is called applies.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyLengthKey}\OParameter{member}\Parameter{family}
+                         \Parameter{key}
+                         \OParameter{default}\Parameter{length}
+  \Macro{FamilySetLength}\Parameter{family}
+                         \Parameter{key}\Parameter{length}\Parameter{value}
+  \Macro{FamilyLengthMacroKey}\OParameter{member}\Parameter{family}
+                              \Parameter{key}
+                              \OParameter{default}\Parameter{macro}
+  \Macro{FamilySetLengthMacro}\Parameter{family}
+                              \Parameter{key}\Parameter{macro}
+                              \Parameter{value}
+  \Macro{FamilyUseLengthMacroKey}\OParameter{member}\Parameter{family}
+                                 \Parameter{key}
+                                 \OParameter{default}\Parameter{macro}
+  \Macro{FamilySetUseLengthMacro}\Parameter{family}
+                                 \Parameter{key}\Parameter{macro}
+                                 \Parameter{value}
+\end{Declaration}
+With\ChangedAt{v3.12}{\Package{scrbase}} \Macro{FamilyLengthKey}, you can
+define a \PName{key} that represents a \PName{length}. It does not matter
+whether the \PName{length} is a \LaTeX{} length, a \TeX{} skip, or a \TeX{}
+dimension. Internally the \PName{length} will be set to the \PName{value}
+using \Macro{FamilySetLength}. There are some basic tests to decide whether
+this \PName{value} is valid to assign to \PName{length}. The assignment will
+only take place if these tests succeed. However, not all errors can be
+detected, so an inaccurate \PName{value} can still result in a \TeX{} error.
+Errors that are detected, however, are signalled by
+\DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue}.
+
+If\ChangedAt{v3.15}{\Package{scrbase}} the value is omitted, the
+\PName{default} is used instead. If there is no \PName{default}, the
+\PName{key} can be used only with an explicit value.
+
+When you use \Macro{FamilyLengthMacroKey} and \Macro{FamilySetLengthMacroKey},
+or \Macro{FamilySetLengthMacro} and \Macro{FamilySetUseLengthMacro}, the
+\PName{value} is stored not in a \PName{length} but in a
+\PName{macro}. \Macro{FamilyLengthMacroKey} and
+\Macro{FamilySetLengthMacroKey} define the \PName{macro} to be the
+\PName{value} as evaluated at the point of definition, similar to 
+\Macro{setlength}. In contrast,
+\Macro{FamilyUseLengthMacroKey}\ChangedAt{v3.20}{\Package{scrbase}} and
+\Macro{FamilySetUseLengthMacroKey} store the \PName{value} directly, and
+so the \PName{value} is reevaluated each time the \PName{macro} is used.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyStringKey}\OParameter{member}\Parameter{family}%
+                         \Parameter{key}%
+                         \OParameter{default}\Parameter{command}
+  \Macro{FamilyCSKey}\OParameter{member}\Parameter{family}%
+                         \Parameter{key}%
+                         \OParameter{default}\Parameter{command name}
+\end{Declaration}
+This defines\ChangedAt{v3.08}{\Package{scrbase}} a \PName{key} that accepts
+any value. The value will be stored in the specified \Macro{command}. If there
+is no optional argument for the \PName{default}, \Macro{FamilyStringKey} is
+the same as:
+\begin{lstcode}[escapeinside=`']
+  \DefineFamilyKey[`\PName{member}']{`\PName{family}'}{`\PName{key}'}
+                  {\def`\PName{command}'{#1}}
+\end{lstcode}
+If you use the optional argument \PName{default}, \Macro{FamilyStringKey}
+corresponds to:
+\begin{lstcode}[escapeinside=`']
+  \DefineFamilyKey[`\PName{member}']{`\PName{family}'}{`\PName{key}'}
+                  [`\PName{default}']
+                  {\def`\PName{command}'{#1}\FamilyKeyStateProcessed}
+\end{lstcode}
+
+\begin{Example}
+  By default 250\Unit{g} of sausage salad should be produced. However, the
+  amount should be configurable by an option. To do so, the quantity to be
+  created is stored in the macro \Macro{saladweight}. The option to change
+  the weight should also be called \PValue{saladweight}:
+\begin{lstcode}
+  \newcommand*{\saladweight}{250g}
+  \FamilyStringKey{butcher}%
+                  {saladweight}[250g]{\saladweight}
+\end{lstcode}
+  To switch back to the default weight after changing it, you can simply
+  call the option without the weight:
+\begin{lstcode}
+  \FamilyOptions{butcher}{saladweight}
+\end{lstcode}
+  This is possible because the default quantity was also set as the default
+  value in the definition.
+\end{Example}
+In this case, there are no unknown values because all values are simply used
+for a macro definition. Note, however, that paragraph breaks are not allowed
+when assigning a value to the key.
+
+In contrast\ChangedAt{v3.25}{\Package{scrbase}} to \Macro{FamilyStringKey},
+the \Macro{FamilyCSKey} command expects for the final argument not a macro but
+only the name of a command, for example \PParameter{saladweight} instead of
+\PParameter{\Macro{saladweight}}.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyUnknownKeyValue}\Parameter{family}\Parameter{key}%
+                               \Parameter{value}\Parameter{value list}%
+\end{Declaration}
+The command \Macro{FamilyUnknownKeyValue} throws an error message due to an
+unknown or illegal values by means of \DescRef{\LabelBase.cmd.FamilyKeyState}.
+The \PName{value list} is a comma separated list of permissible values in the
+form
+%\begin{flushleft}\vskip\dp\strutbox\begin{tabular}{l}
+  `\PName{value}'\texttt{,} `\PName{value}' \dots
+%\end{tabular}\vskip\dp\strutbox\end{flushleft}
+However\ChangedAt{v3.12}{\Package{scrbase}}, the \PName{value list} is
+currently not evaluated by \Package{scrbase}.
+\begin{Example}
+  The user should now also be able to select whether the cold cuts should be
+  cut thick or thin. Thick should be the default setting, which should be used
+  even if the user does not specify how to cut the coldcuts.
+\begin{lstcode}
+  \@ifundefined{if@thincut}{%
+    \expandafter
+    \newif\csname if@thincut\endcsname}{}%
+  \@ifundefined{if@coldcuts}{%
+    \expandafter
+    \newif\csname if@coldcuts\endcsname}{}
+  \DefineFamilyKey{butcher}%
+                  {coldcuts}[true]{%
+    \FamilySetBool{butcher}{coldcuts}%
+                                    {@coldcuts}%
+                                    {#1}%
+    \ifx\FamilyKeyState\FamilyKeyStateProcessed
+      \@thincutfalse
+    \else      
+      \Ifstr{#1}{thin}{%
+        \@coltcutstrue
+        \@finecuttrue
+        \FamilyKeyStateProcessed
+      }{%
+        \FamilyUnknownKeyValue{butcher}%
+                              {coldcuts}%
+                              {#1}{%
+                                `true', `on', `yes',
+                                `false`, `off`, `no',
+                                `thin'%
+                              }%
+      }%
+    \fi
+  }%
+\end{lstcode}
+  First we try to set the boolean coldcuts switch using
+  \DescRef{\LabelBase.cmd.FamilySetBool}. If this succeeds, i.\,e. if
+  \DescRef{\LabelBase.cmd.FamilyKeyState} corresponds to
+  \DescRef{\LabelBase.cmd.FamilyKeyStateProcessed}, thincut will be
+  deactivated. Otherwise, we check if the value is equal to \PValue{thin}
+  rather than one of the valid values for a boolean switch. In this case, both
+  coldcuts and thincut are activated and the state will be switched to
+  \DescRef{\LabelBase.cmd.FamilyKeyStateProcessed}. If the previous test
+  fails, the error state signalled by \DescRef{\LabelBase.cmd.FamilySetBool}
+  is reset to \DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue}. The list of
+  the permissible values will be added to it. However, since this list is no
+  longer used, it would have been easy to skip the call to
+  \Macro{FamilyUnknownKeyValue} in the example and thus assume the error
+  status of \DescRef{\LabelBase.cmd.FamilySetBool}.
+
+  The \Macro{ifstr} command used in the test is explained on
+  \DescPageRef{scrbase.cmd.Ifstr} in \autoref{sec:scrbase.if}.
+\end{Example}
+%
+\EndIndexGroup
+
+
+\section{Conditional Execution}
+\seclabel{if}
+
+The \Package{scrbase} package provides several commands for conditional
+execution. Mostly it does not rely on the \TeX{} syntax of conditionals such
+as
+\begin{lstcode}
+  \iftrue
+    ...
+  \else
+    ...
+  \fi
+\end{lstcode}
+but uses the \LaTeX{} syntax with arguments similar to those used by \LaTeX{}
+commands like \Macro{IfFileExists}, \Macro{@ifundefined},
+\Macro{@ifpackageloaded}, and many others.
+
+% TODO: Fix translation (note: this text does not really correspond to the
+%       German manual but there is a similar note at the (not free) German book
+From \KOMAScript~3.28, following a recommendation from \LaTeX{} team members,
+\Package{scrbase} does not longer use \Macro{if\dots} but \Macro{If\dots} for
+commands that expect an argument instead of using the \TeX{}
+syntax. Some commands from prior versions of \KOMAScript{} have been
+removed. You may use package \Package{iftex} (see \cite{package:iftex}) to
+replace the functionality. Others have been renamed.
+% :ODOT
+
+\begin{Declaration}
+  \Macro{Ifundefinedorrelax}%
+  \Parameter{name}\Parameter{then code}\Parameter{else code}
+\end{Declaration}
+This\ChangedAt{v3.28}{\Package{scrbase}} command works like
+\Macro{@ifundefined} from the \LaTeX{} kernel (see \cite{latex:source2e}). So
+the \PName{then code} is executed if \PName{name} is the name of a
+command that is currently either not defined or \Macro{relax}. Otherwise, the
+\PName{else code} is executed. Unlike \Macro{@ifundefined}, no hash
+memory is allocated nor is \Macro{\PName{Name}} set to \Macro{relax} if
+\Macro{\PName{name}} was previously undefined.%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{Ifnotundefined}\Parameter{name}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.28}{\Package{scrbase}} the command with the given name has
+already been defined, the \PName{then code} is executed. Otherwise, the
+\PName{else code} is executed.  Since \eTeX{} already has a primitive
+\Macro{ifdefined}, this somewhat unwieldy name, unfortunately, had to be
+chosen. There is no corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifstr}\Parameter{string 1}\Parameter{string 2}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+Both\ChangedAt{v3.28}{\Package{scrbase}} \PName{string} arguments are expanded
+and then compared. If the expansions are the same, the \PName{then code} is
+executed. Otherwise the \PName{else code} is executed. There is no
+corresponding internal command.
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifstrstart}\Parameter{string 1}\Parameter{string 2}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+Both\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{string} arguments are expanded and then compared. If \PName{string 1},
+apart from white space, begins with \PName{string 2}, the \PName{then code} is
+executed. Otherwise, the \PName{else code} is executed. There is no
+corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{IfArgIsEmpty}\Parameter{argument}
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.19}{\Package{scrbase}} the \PName{argument} is empty, the
+\PName{then code} is executed, otherwise the \PName{else code} is
+executed. Even one whitespace character is considered non-empty. Since the
+\PName{argument} is not expanded, macros that expand to an empty result are
+also considered to be a non-empty \PName{argument}. The same applies to
+\Macro{relax} or undefined macros.%
+\EndIndexGroup
+
+
+\iffalse % internal
+\begin{Declaration}
+  \Macro{scr@ifluatex}
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.21}{\Package{scrbase}} you use lua\TeX{}, the \PName{then
+code} will be executed. Otherwise, the \PName{else code} will be executed.
+\iftrue% Umbruchkorrekturtext
+This test is rarely useful. %
+\fi%
+As a rule, it is better to test directly for the command you want.
+There\textnote{Attention!} is no user equivalent for this instruction. Use the
+\Package{ifluatex}\important{\Package{ifluatex}} package instead (see
+\cite{package:ifluatex}).%
+\EndIndexGroup
+\fi
+
+
+\iffalse% It makes no sense to document this instruction yet
+\begin{Declaration}
+  \Macro{scr@ifpdforluatex}
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+Until lua\TeX~0.85, it was mostly irrelevant whether you used pdf\TeX{} or
+lua\TeX{}. This command, which executes the \PName{then code} in both cases,
+derives from that fact. If neither pdf\TeX{} nor lua\TeX{} is used, the
+\PName{else code} will be executed. Since version~0.85, lua\TeX{} has given up
+compatibility with many of its commands. Therefore this distinction is no
+longer useful in practice and is no longer used by \KOMAScript{} itself. There
+is no user equivalent of this statement.%
+\EndIndexGroup
+\fi
+
+\iffalse % internal
+\begin{Declaration}
+  \Macro{scr@ifpdftex}%
+  \Parameter{then code}\Parameter{else code}%
+\end{Declaration}
+If you use pdf\TeX{}, the \PName{then code} will be executed. Otherwise, the
+\PName{else code} will be executed. It does not matter whether a PDF-file is
+actually generated or not. This test is rarely useful. As a rule, you should
+test directly for the command you want instead.%
+\EndIndexGroup
+\fi
+
+\iffalse % internal
+\begin{Declaration}
+  \Macro{scr@ifVTeX}%
+  \Parameter{then code}\Parameter{else code}%
+\end{Declaration}
+If you use V\TeX{}, the \PName{then code} is executed. Otherwise, the
+\PName{else code} is executed. This test is seldom useful. As a rule,
+you should test directly for the command you want instead.%
+%
+\EndIndexGroup
+\fi
+
+
+\begin{Declaration}
+  \Macro{Ifpdfoutput}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.28}{\Package{scrbase}} a PDF file is generated, the
+\PName{then code} is executed. Otherwise, the \PName{else code} is
+executed. It does not matter whether PDF file is created using lua\TeX{},
+pdf\TeX{}, or V\TeX{}, or \XeTeX{}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifpsoutput}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.28}{\Package{scrbase}} a PostScript file is generated, the
+\PName{then code} is executed.  Otherwise, the \PName{else code} is
+executed. V\TeX{} can generate PostScript directly, which is recognized
+here. However, if V\TeX{} is not used but the switch \Macro{if@dvips} has been
+defined, the decision depends on that switch. \KOMAScript{} provides
+\Macro{if@dvips} in
+\hyperref[cha:typearea]{\Package{typearea}}\IndexPackage{typearea}%
+\IndexCmd{if@dvips}.
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifdvioutput}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.28}{\Package{scrbase}} a DVI-file is generated, the
+\PName{then code} is executed. Otherwise, the \PName{else code} is
+executed. A DVI file is always assumed to be generated if no direct output of
+a PDF file or a PostScript file can be detected.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisdimen}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to a \Macro{dimen}, i.\,e. a \TeX{} length
+register, the \PName{then code} is executed. Otherwise the \PName{else
+  code} is executed. The command is not completely expandable, and there
+is no corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisdimension}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to something syntactically equivalent to a length,
+the \PName{then code} is executed.  Otherwise the \PName{else code} is
+executed. Note\textnote{Attention!}  that unknown units and missing units
+cause an error message. The command is not completely expandable, and there is
+no corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifdimen}\Parameter{string}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+The \PName{then code}\ChangedAt{v3.28}{\Package{scrbase}} is executed if
+the first-order expansion of \PName{string} consists of digits and a valid
+length unit. Otherwise, the \PName{else code} is used. There is no
+corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisdimexpr}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to an \eTeX{} \Macro{dimexpr}\IndexCmd{dimexpr},
+the \PName{then code} is executed.  Otherwise, the \PName{else code} is
+executed. Note\textnote{Attention!}  that illegal expressions result in
+error messages. The command is not completely expandable, and there is no
+corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisskip}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to a \Macro{skip}, i.\,e. a \TeX{} distance, the
+\PName{then code} is executed. Otherwise, the \PName{else code} is
+executed. The command is not completely expandable, and there is no
+corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisglue}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to something syntactically equivalent of the value
+of a skip, the \PName{then code} is executed. Otherwise, the \PName{else code}
+is executed.  Note\textnote{Attention!} that invalid units and missing units
+cause an error message.  The command is not completely expandable, and
+there is no corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisglueexpr}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to a \Macro{glueexpr}, i.\,e. an \eTeX{} distance
+expression, the \PName{then code} is executed. Otherwise, the \PName{else
+  code} is executed.  Note,\textnote{Attention!} that illegal expressions
+result in error messages. The command is not completely expandable, and
+there is no corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifiscounter}\Parameter{counter}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{counter} is defined as a \LaTeX{} counter, the \PName{then code} is
+executed. Otherwise, the \PName{else code} is executed. The command is
+not completely expandable, and there is no corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifiscount}\Parameter{count}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{count} expands to a \Macro{count}, i.\,e. a \TeX{} counter, the
+\PName{then code} is executed. Otherwise, the \PName{else code} is
+executed. The command is not completely expandable, and there is no
+corresponding internal command. For tests of \LaTeX{} counters, see
+\DescRef{\LabelBase.cmd.Ifiscounter}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisinteger}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to something syntactically equivalent to of the
+value of a counter, i.\,e. a negative or positive integer, the \PName{then
+  code} is executed. Otherwise, the \PName{else code} is
+executed. The command is not completely expandable, and there is no
+corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifnumber}\Parameter{string}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+The\ChangedAt{v3.28}{\Package{scrbase}} \PName{then code} is executed if
+the first-order expansion of \PName{string} consists only of
+digits. Otherwise, the \PName{else code} is used. There is no
+corresponding internal command.
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisnumexpr}\Parameter{expression}%
+  \Parameter{then code}\Parameter{else code}
+\end{Declaration}
+If\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{expression} expands to a \Macro{numexpr}, i.\,e. an \eTeX{} number
+expression, the \PName{then code} is executed. Otherwise, the \PName{else
+  code} is executed.  Note\textnote{Attention!} that illegal expressions
+result in error messages. The command is not completely expandable, and
+there is no corresponding internal command.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{IfActiveMkBoth}\Parameter{then code}\Parameter{else code}
+\end{Declaration}
+The\ChangedAt{v3.27}{\Package{scrbase}} \LaTeX{} kernel uses
+\DescRef{scrlayer.cmd.@mkboth}\important{\Macro{@mkboth}}\IndexCmd{@mkboth} to
+distinguish between automatic and manual running heads. Usually, it sets both
+marks with automatic running heads. With manual running heads, it does not set
+any mark. To determine whether automatic running heads are active, many
+packages compare \DescRef{scrlayer.cmd.@mkboth} with either
+\DescRef{maincls.cmd.markboth}\IndexCmd{markboth} or \Macro{@gobbletwo}. But
+this does not account for all cases in which \DescRef{scrlayer.cmd.@mkboth}
+may be redefined. Therefore \Macro{IfActiveMkBoth} tests if
+\DescRef{scrlayer.cmd.@mkboth} would actually set a mark, even when
+\Macro{marks} appears in the definition of \DescRef{scrlayer.cmd.@mkboth}. If
+such an active \DescRef{scrlayer.cmd.@mkboth} is detected, the
+\PName{then code} is executed. In all other cases, the \PName{else code} is
+used.%
+\begin{Example}
+  For example, suppose you want to set the right mark if and only if
+  automatic running heads are used, e.\,g., the pagestyle
+  \PageStyle{headings}\IndexPagestyle{headings}. For a first attempt,
+  you might use:
+\begin{lstcode}
+  \ifx\@mkboth\markboth \markright{running head}\fi
+\end{lstcode}
+  Later you discover that some package does not use the usual
+\begin{lstcode}
+  \let\@mkboth\markboth
+\end{lstcode}
+  but
+\begin{lstcode}
+  \renewcommand{\@mkboth}{\markboth}
+\end{lstcode}
+  to activate automatic running heads. Because of this, your comparison always
+  fails and never calls \DescRef{maincls.cmd.markright}. To solve this, you
+  try the following change:
+\begin{lstcode}
+  \ifx\@mkboth\@gobbletwo\else \markright{running head}\fi
+\end{lstcode}
+  Unfortunately, now \DescRef{maincls.cmd.markright} is also called for
+  manual running heads, because someone has defined
+\begin{lstcode}
+  \renewcommand{\@mkboth}[2]{%
+    \typeout{DEBUG: ignoring running head setting}%
+  }
+\end{lstcode}
+  for this case.
+
+  Fortunately, both problems are easy to solve with \Package{scrbase}:
+\begin{lstcode}
+  \IfActiveMkBoth{\markright{Kolumnentitel}}{}
+\end{lstcode}%
+\end{Example}
+By the way, an even simpler solution for the problem in the example
+would be to use \DescRef{scrlayer.cmd.@mkright} from package
+\hyperref[cha:scrlayer]{\Package{scrlayer}} (see
+\autoref{sec:scrlayer.pagestyle.content},
+\DescPageRef{scrlayer.cmd.@mkright}).%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{if@atdocument}\ \PName{then code}\ %
+  \textMacro{else}\ \PName{else code}\ \textMacro{fi}
+\end{Declaration}
+This conditional command intentionally exists only as an internal command. In
+the document preamble, \Macro{if@atdocument} corresponds to \Macro{iffalse}.
+After \Macro{begin}\PParameter{document}, it corresponds to \Macro{iftrue}.
+Authors of classes and packages may find this command useful if a command
+should behave differently depending on whether it is used in the preamble or
+inside document body. Note\textnote{Attention!} that this command is a
+condition using \TeX{} syntax and not \LaTeX{}
+syntax. From\ChangedAt{v3.37}{\Package{scrbase}} \LaTeX{} 2020/10/01
+\Package{scrbase} does \Macro{@atdocumentrue} already with the generic
+\LaTeX{} hook \texttt{begindocument/before}. Therefore for code with
+\Macro{AtBeginDocument} the state of \Macro{if@atdocument} is already
+\Macro{iftrue} for all packages and classes. For using \Macro{if@atdocument}
+with the generic \LaTeX{} hook \texttt{begindocument/before} you would need an
+additional hook rule to have a definite state.%
+\EndIndexGroup
+
+
+\section{Defining Language-Dependent Terms}
+\seclabel{languageSupport}
+\BeginIndexGroup
+\BeginIndex{}{language>definition}
+\index{language>dependent terms|see{language definition}}
+\index{terms>language-dependent|see{language definition}}
+
+Beginners often find it difficult to change language-dependent terms
+\Macro{listfigurename}\IndexCmd{listfigurename}, by default usually ``List of
+Figures.'' For example, if these are simply redefined with
+\Macro{renewcommand} in the document preamble, they will not survive a later
+change of language. If you use \Package{babel}\IndexCmd{babel}, the
+redefinition in the preamble is overwritten with
+\Macro{begin}\PParameter{document}.
+
+To define or change language-dependent terms, you normally have to redefine
+commands like \Macro{captionsenglish} so that the new or redefined terms are
+defined in addition to the previous terms. This is made more difficult by the
+fact that some packages like \Package{babel}\IndexPackage{babel} or
+\Package{polyglossia}\IndexPackage{polyglossia} also redefine those
+commands. These definitions, unfortunately, occur in a way that undoes all the
+previous changes. For this reason, it makes sense to delay changes until
+\Macro{begin}\PParameter{document} by using \Macro{AtBeginDocument}, that is,
+after all packages have been loaded. A user can also use
+\Macro{AtBeginDocument} or redefine the language-dependent terms not in the
+preamble but after \Macro{begin}\PParameter{document}.
+
+Adding further to the difficulty, some packages define additional
+language-dependent terms in \Macro{captions\PName{language}}, while others use
+\Macro{extras\PName{language}}. So the user must understand the commands very
+well in order to use the correct one in the right way.
+
+The \Package{scrbase} package therefore provides additional commands to define
+or modify language-dependent terms, relieving the user of many of these
+problems. These commands also let you simultaneously define or change the
+language-dependent terms of several dialects or forms of a language.
+
+\begin{Declaration}
+  \Macro{defcaptionname}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}%
+  \Macro{providecaptionname}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}%
+  \Macro{newcaptionname}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}%
+  \Macro{renewcaptionname}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}%
+  \Macro{defcaptionname*}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}%
+  \Macro{providecaptionname*}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}%
+  \Macro{newcaptionname*}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}%
+  \Macro{renewcaptionname*}%
+    \Parameter{language list}\Parameter{term}\Parameter{definition}
+\end{Declaration}
+With these four commands and their starred variants, you can assign a
+\PName{definition} for a particular language to a \PName{term}. Several
+languages can be concatenated with comma in the \PName{language list}.
+
+The \PName{term} is always a macro. The commands differ depending on whether a
+given language or a \PName{term} within a given language is already defined at
+the time the command is called.
+
+If a language is not defined, \Macro{providecaptionname} does nothing other
+than write a message to the log file. This happens only once for each
+language. If a language is defined but does not yet contain a corresponding
+\PName{term}, it will be defined using \PName{definition}. However, the
+\PName{term} will not be redefined if the language already has such a
+definition; instead, an appropriate message is written to the log file.
+
+On the other hand, if a language has not yet been defined,
+\Macro{newcaptionname} defines a new language command will be created. For the
+language \PValue{USenglish}, for example, this would be the language command
+\Macro{captionsUSenglish}. This definition will also be noted in the log file.
+If \PName{term} is not yet defined in this language, it will be defined using
+\PName{definition}. If the \PName{term} already exists in a language, an error
+message is issued.
+
+The \Macro{renewcaptionname} command behaves still differently. If a language
+is undefined, an error message is issued. If the \PName{term} is not defined
+in this language, an error message is also issued. If the \PName{term} is
+defined in the language, it will be redefined to \PName{definition}.
+
+The\ChangedAt{v3.12}{\Package{scrbase}} \Macro{defcaptionname} command always
+defines the \PName{term}, thus overwriting any previous definition. As with
+\Macro{providecaptionname}, the language specified need not be previously
+defined.
+
+\KOMAScript{} itself uses \Macro{providecaptionname} to define the commands in
+\autoref{sec:scrlttr2-experts.languages}.
+\DescPageRef{scrlttr2-experts.cmd.yourrefname}.
+
+\begin{Example}
+  If you prefer ``fig.'' instead of ``figure'' in \PValue{USenglish}, you can
+  achieve this using:
+\begin{lstcode}
+  \renewcaptionname{USenglish}{\figurename}{fig.}
+\end{lstcode}
+  If you want the same change not only in \PValue{USenglish} but also in
+  \PValue{UKenglish}, you do not need an additional:
+\begin{lstcode}
+  \renewcaptionname{UKenglish}{\figurename}{fig.}
+\end{lstcode}
+  but can simply extend the \PName{language list}:
+\begin{lstcode}
+  \renewcaptionname{USenglish,UKenglish}{\figurename}{fig.}
+\end{lstcode}
+  You can extend the \PName{language list} in the same manner with
+  \PValue{american}, \PValue{australian}, \PValue{british}, \PValue{canadian},
+  and \PValue{newzealand}.
+\end{Example}
+
+Since \KOMAScript~3.12\ChangedAt{v3.12}{\Package{scrbase}}, you no longer need
+to delay the definition or redefinition until
+\Macro{begin}\PParameter{document} using \Macro{AtBeginDocument} because
+\Package{scrbase} does this itself if the commands are called in the
+document's preamble. Additionally, \Package{scrbase} now checks if a term
+should be redefined in \Macro{extras\PName{language}} instead of
+\Macro{captions\PName{language}}. The new starred variants of the commands
+always use \Macro{extras\PName{language}}. So redefining language-dependent
+terms for packages like \Package{hyperref} that use
+\Macro{extras\PName{language}} should work as expected.
+
+Language-dependent terms that are commonly defined by classes and language
+packages are described in \autoref{tab:scrbase.commonNames}.
+
+\begin{desclist}
+  \renewcommand*{\abovecaptionskipcorrection}{-\normalbaselineskip}%
+  \desccaption[{%
+    Overview of common language-dependent terms%
+  }]{%
+    Overview of language-dependent terms of typical language packages%
+    \label{tab:scrbase.commonNames}%
+  }{%
+    Overview of common language dependent terms
+    (\emph{continued})%
+  }%
+  \entry{\Macro{abstractname}}{%
+    heading of the abstract%
+    \IndexCmd{abstractname}%
+  }%
+  \entry{\Macro{alsoname}}{%
+    ``see also'' in additional cross references of the index%
+    \IndexCmd{alsoname}%
+  }%
+  \entry{\Macro{appendixname}}{%
+    ``appendix'' in the heading of an appendix chapter%
+    \IndexCmd{appendixname}%
+  }%
+  \entry{\Macro{bibname}}{%
+    heading of the bibliography%
+    \IndexCmd{bibname}%
+  }%
+  \entry{\Macro{ccname}}{%
+    prefix heading for the distribution list of a letter%
+    \IndexCmd{ccname}%
+  }%
+  \entry{\Macro{chaptername}}{%
+    ``chapter'' in the heading of a chapter%
+    \IndexCmd{chaptername}%
+  }%
+  \entry{\Macro{contentsname}}{%
+    heading of the table of contents%
+    \IndexCmd{contentsname}%
+  }%
+  \entry{\Macro{enclname}}{%
+    prefix heading for the enclosures of a letter%
+    \IndexCmd{enclname}%
+  }%
+  \entry{\Macro{figurename}}{%
+    prefix heading of figure captions%
+    \IndexCmd{figurename}%
+  }%
+  \entry{\Macro{glossaryname}}{%
+    heading of the glossary%
+    \IndexCmd{glossaryname}%
+  }%
+  \entry{\Macro{headtoname}}{%
+    ``to'' in header of letter pages%
+    \IndexCmd{headtoname}%
+  }%
+  \entry{\Macro{indexname}}{%
+    heading of the index%
+    \IndexCmd{indexname}%
+  }%
+  \entry{\Macro{listfigurename}}{%
+    heading of the list of figures%
+    \IndexCmd{listfigurename}%
+  }%
+  \entry{\Macro{listtablename}}{%
+    heading of the list of tables%
+    \IndexCmd{listtablename}%
+  }%
+  \entry{\Macro{pagename}}{%
+    ``page'' in the pagination of letters%
+    \IndexCmd{pagename}%
+  }%
+  \entry{\Macro{partname}}{%
+    ``part'' in the heading of a part%
+    \IndexCmd{partname}%
+  }%
+  \entry{\Macro{prefacename}}{%
+    heading of the preface%
+    \IndexCmd{prefacename}%
+  }%
+  \entry{\Macro{proofname}}{%
+    prefix heading of mathematical proofs%
+    \IndexCmd{proofname}%
+  }%
+  \entry{\Macro{refname}}{%
+    heading of the list of references%
+    \IndexCmd{refname}%
+  }%
+  \entry{\Macro{seename}}{%
+    ``see'' in cross references of the index%
+    \IndexCmd{seename}%
+  }%
+  \entry{\Macro{tablename}}{%
+    prefix heading at table captions%
+    \IndexCmd{tablename}%
+  }%
+\end{desclist}
+%
+\EndIndexGroup
+%
+\EndIndexGroup
+
+
+\section{Identifying \KOMAScript}
+\seclabel{identify}
+
+Although\,---\,or especially because\,---\,\Package{scrbase} is generally
+designed as a package for authors of classes and packages, it is of course
+used by the \KOMAScript{} classes and most \KOMAScript{} packages. It
+therefore contains a that is present in all \KOMAScript{} classes
+and all basic \KOMAScript{} packages.
+
+\begin{Declaration}
+  \Macro{KOMAScriptVersion}
+\end{Declaration}
+\KOMAScript{} defines the major version of \KOMAScript{} in this command. It
+has the form ``\PName{date} \PName{version} \texttt{KOMA-Script}''. This major
+version is same for all \KOMAScript{} classes and all \KOMAScript{} packages
+used by the classes. For this reason, it can be queried after you
+load \Package{scrbase}, too. For example, this guide was made using
+\KOMAScript{} version ``\KOMAScriptVersion''.
+%
+\EndIndexGroup
+
+
+\section{Extensions to the \LaTeX{} Kernel}
+\seclabel{latexkernel}
+
+Sometimes the \LaTeX{} kernel itself provides commands but lacks other very
+similar commands that would often be useful. A few such commands are provided
+by \Package{scrbase} for authors of packages and classes.
+
+\begin{Declaration}
+  \Macro{ClassInfoNoLine}\Parameter{class name}\Parameter{information}%
+  \Macro{PackageInfoNoLine}\Parameter{package name}\Parameter{information}%
+\end{Declaration}%
+The \LaTeX{} kernel already provides authors of classes and packages commands
+like \Macro{ClassInfo} and \Macro{PackageInfo} to write information, along
+with the current line number, to the log file. In addition to
+\Macro{PackageWarning} and \Macro{ClassWarning}, which throw warning messages
+with line numbers, it also provides \Macro{PackageWarningNoLine} and
+\Macro{ClassWarningNoLine} for warning messages without line numbers. However
+the obvious commands \Macro{ClassInfoNoLine} and \Macro{PackageInfoNoLine},
+for writing information without line numbers into the log file, are missing.
+The \Package{scrbase} package provides them.
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{l@addto@macro}\Parameter{command}\Parameter{extension}%
+\end{Declaration}%
+The \LaTeX{} kernel provides an internal command \Macro{g@addto@macro} to
+extend the definition of macro \Macro{command} globally with
+\PName{extension}. This works in this form only for macros that have no
+arguments. However, sometimes you may need a command like this that works
+locally within the current group. The \Package{scrbase} package provides such
+a command with \Macro{l@addto@macro}. An alternative is to use the
+\Package{etoolbox}\IndexPackage{etoolbox} or
+\Package{xpatch}\IndexPackage{xpatch} package, which offers a whole range of
+such commands for different purposes (see \cite{package:etoolbox} or
+\cite{package:xpatch}).%
+\EndIndexGroup
+
+
+\section{Extensions to the Mathematical Features of \eTeX}
+\seclabel{etex}
+
+\eTeX{}, which is used by \LaTeX{} and loaded by \KOMAScript{}, has extended
+capabilities for calculating simple arithmetic with \TeX{} counters and
+integers using \Macro{numexpr}\IndexCmd{numexpr}. The four basic arithmetic
+operations and parentheses are supported. Division is rounded
+correctly. Sometimes additional operators would be useful.
+
+\begin{Declaration}
+  \Macro{XdivY}\Parameter{dividend}\Parameter{divisor}%
+  \Macro{XmodY}\Parameter{dividend}\Parameter{divisor}%
+\end{Declaration}%
+The\ChangedAt{v3.05a}{\Package{scrbase}} \Macro{XdivY} command returns the
+value of the integer quotient, with the \Macro{XmodY} command giving the value
+of the remainder. This type of of division is defined by the equation
+\[
+\textit{dividend} = \textit{divisor} \cdot
+\textit{integer quotient} + \textit{remainder}
+\]
+where \textit{dividend}, \textit{divisor}, and \textit{remainder} are
+integers, \textit{remainder} is greater or equal to 0 and less than
+\textit{divisor}, and \textit{divisor} is a natural number greater than 0.
+
+You can assign the value to a counter or use it directly within an expression
+using \Macro{numexpr}. To output the value as an Arabic number, you must
+prefix it with \Macro{the}.%
+%
+\EndIndexGroup
+
+
+\section[{General Mechanism for Multi-Level Hooks}]
+{General Mechanism for Multi-Level
+  Hooks\ChangedAt[2019/01]{v3.27}{\Package{scrbase}}}
+\seclabel{hooks}
+
+\BeginIndexGroup
+\BeginIndex{}{Hooks}
+The \LaTeX{} kernel provides a few \emph{hooks} in the processing of
+a document where additional code can be inserted. Class and package authors
+should be very familiar with \Macro{AtBeginDocument} and
+\Macro{AtEndDocument}. \KOMAScript{} offers similar features in some places,
+for example to hook code into the execution of 
+\hyperref[sec:maincls.structure]{sectioning commands}. Over the years, there
+have been two problems:
+\begin{itemize}
+  \item There are never enough hooks.
+  \item There is some code that should only be executed once, as if it almost
+  drops off the hook, as well as code that must be executed each time the
+  hook is encountered, thus remaining permanently on the hook.
+\end{itemize}
+Usually, to define a single hook you must define a command that collects the
+code for each hook. This code is then stored in another internal macro, which
+must be inserted at the point where the collected code is executed. The more
+hooks you insert, the more such commands there are. To allow for both
+single-use code and permanent code may even require two hooks, and therefore
+twice the number of commands to be defined.
+
+The example of sectioning commands shows that the first problem can sometimes
+be exacerbated by having only a single point for code execution. One package
+author may need only one way to execute the same code for all sectioning
+commands. Another package author would prefer to execute different code for
+certain sectioning commands only. Meeting both these demands would require a
+general hook as well as a hook for each sectioning command. These requirements
+are doubled again because of the second problem.
+
+\KOMAScript{} therefore offers a generalized hook mechanism in
+\Package{scrbase} that provides multi-level hooks for both single-use and
+persistent code. These hooks are named \emph{do-hooks} because of their
+implementation. From this also comes the names of the instructions by which
+they are controlled.
+
+\begin{Declaration}
+  \Macro{ExecuteDoHook}\Parameter{specifier}
+\end{Declaration}
+Hooks\ChangedAt[2019/01]{v3.27}{\Package{scrbase}} are implemented with this
+command. The \PName{specifier} determines the name or names of the hook. The
+\PName{specifier} is always completely expanded for analysis.
+
+The \PName{specifier} generally consists of strings separated by forward
+slashes (``/''). Initially, \Macro{ExecuteDoHook} divides the string at the
+first slash. The first part is the name. The remainder (without the slash) is
+the argument. Then the code for the hook with this name is executed. Next the
+first part of the remaining string is divided again from the remainder,
+combined with a slash after the name to form a new name, and the code with
+this name is executed. This process continues until the code for the hook with
+the name \PName{specifier} has been executed and the argument is empty.
+
+In the simplest case, the \PName{specifier} consists of a single name. In this
+case, the persistent code is executed first, with an empty argument, for
+exactly one hook specified by this name.
+
+At each stage of execution, single-use code is also executed after the hook's
+persistent code, and then the single-use code is globally removed from the
+hook.
+
+\begin{Example}
+  By inserting \DescRef{\LabelBase.cmd.ExecuteDoHook}%
+  \PParameter{heading/begingroup/\PName{name}} into the execution of each
+  sectioning command defined with
+  \DescRef{maincls-experts.cmd.DeclareSectionCommand}, the \KOMAScript{}
+  classes ultimately have six hooks inserted at that code-point, executed in
+  this order:
+  \begin{enumerate}
+    \item \PValue{heading} with the argument \PValue{begingroup/}\PName{name}
+    for persistent code,
+    \item \PValue{heading} with the argument \PValue{begingroup/}\PName{name}
+    for single-use code,
+    \item \PValue{heading/begingroup} with the argument \PName{name} for
+    persistent code,
+    \item \PValue{heading/begingroup} with the argument \PName{name} for
+    single-use code,
+    \item \PValue{heading/begingroup/}\PName{name} with an empty argument for
+    persistent code,
+    \item \PValue{heading/begingroup/}\PName{name} with an empty argument for
+    single-use code.
+  \end{enumerate}
+  The \PName{name} is the name of section level specified in
+  \DescRef{maincls-experts.cmd.DeclareSectionCommand},
+  \DescRef{maincls-experts.cmd.DeclareNewSectionCommand} or
+  \DescRef{maincls-experts.cmd.ProvideSectionCommand}, or the sectioning
+  command specified by it, for example \PValue{chapter} or
+  \PValue{subparagraph}. Looking at the list above, and considering that there
+  are various sectioning commands, it becomes clear that the \PValue{heading}
+  and \PValue{heading/begingroup} hooks will be called multiple times for each
+  sectioning command.%
+\end{Example}%
+%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{AddtoDoHook}\Parameter{name}\Parameter{command}
+  \Macro{AddtoOneTimeDoHook}\Parameter{name}\Parameter{command}
+\end{Declaration}
+\Macro{AddtoDoHook}\ChangedAt[2019/01]{v3.27}{\Package{scrbase}} appends
+persistent code to the hook named \PName{name}. The code to be added is the
+\PName{command}, to which the argument mentioned in the description of
+\DescRef{\LabelBase.cmd.ExecuteDoHook} is appended as a parameter.
+\begin{Example}
+  Suppose you want to count how many times the \Macro{section} command is
+  executed. This would be simple, continuing the previous example:
+\begin{lstcode}
+  \newcounter{sectionCounter}
+  \AddtoDoHook{heading/begingroup/section}
+              {\stepcounter{sectionCounter}}
+\end{lstcode}
+  However, in reality, \Macro{stepcounter}\PParameter{sectionCounter}%
+  \PParameter{} would be executed. Remember that an argument is always appended
+  as a parameter. In the case of the hook named
+  \PValue{heading/begingroup/section}, this argument is empty. Since an empty
+  parameter becomes an empty group here, it is better to consume this empty
+  parameter:
+\begin{lstcode}
+  \newcommand*{\stepcountergobble}[2]{%
+    \stepcounter{#1}%
+  }
+  \AddtoDoHook{heading/begingroup/section}
+              {\stepcountergobble{sectionCounter}}
+\end{lstcode}
+  Here, the appended, empty parameter of \Macro{stepcountergobble} is read but
+  not used.
+  
+  If instead of \Macro{section}, you want to count all sectioning commands, you
+  only need to change the hook name:
+\begin{lstcode}
+  \AddtoDoHook{heading/begingroup}
+              {\stepcountergobble{sectionCounter}}
+\end{lstcode}
+  By the way, the appended parameter is not empty in this case but contains the
+  name of the sectioning level or sectioning command. If you wanted to count
+  the sectioning commands individually, you could just use this:
+\begin{lstcode}
+  \newcommand*{\stepCounter}[1]{%
+    \stepcounter{#1Counter}%
+  }
+  \AddtoDoHook{heading/begingroup}
+              {\stepCounter}
+\end{lstcode}
+  Of course, you must also define the counters \Counter{partCounter},
+  \Counter{chapterCounter} down to \Counter{subparagraphCounter}.
+\end{Example}
+
+The \Macro{AddtoOneTimeDoHook} command works similarly but adds the
+\PName{command} to the single-use code. This code will be globally removed
+after the first execution.%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{ForDoHook}\Parameter{specification}\Parameter{command}
+\end{Declaration}
+While\ChangedAt[2019/01]{v3.27}{\Package{scrbase}}
+\DescRef{\LabelBase.cmd.ExecuteDoHook} executes the commands previously stored
+with \DescRef{\LabelBase.cmd.AddtoDoHook} or
+\DescRef{\LabelBase.cmd.AddtoOneTimeDoHook} for the hook given by the
+\PName{specifier}, this macro executes the \PName{command} immediately. There
+are two parameters added to the \PName{command}. The first is the hook's name;
+the second, the hook's argument.
+
+This command is a byproduct of the implementation of 
+\DescRef{\LabelBase.cmd.ExecuteDoHook}. Normally, neither end users nor package
+authors should need this command.%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{SplitDoHook}\Parameter{specifier}\Parameter{head macro}
+                     \Parameter{remainder macro}
+\end{Declaration}
+As\ChangedAt[2019/01]{v3.27}{\Package{scrbase}} can be seen from the preceding
+explanations, the parameter of a \PName{command} added with
+\DescRef{\LabelBase.cmd.AddtoDoHook} or
+\DescRef{\LabelBase.cmd.AddtoOneTimeDoHook} can also be a multi-part
+\PName{specifier}. You can use \Macro{SplitDoHook} to divide a
+\PName{specifier} into the front element and the remainder. The
+\PName{head macro} will be set to the front element. The \PName{remainder
+macro} will be set to the rest. If there is no remainder left, the
+\PName{remainder macro} is set to empty. If the \PName{specifier} was already
+empty, a warning is issued and both the \PName{head macro} and the
+\PName{remainder macro} are set to empty.
+
+\begin{Example}
+  If you want to increase a counter at the start of a group in which a heading
+  is issued but decrease it at the end, you can do this with two hooks:
+\begin{lstcode}
+  \AddtoDoHook{heading/begingroup}
+              {\stepCounter}
+  \newcommand*{\restepCounter}[1]{%
+    \addtocounter{#1Counter}{-1}%
+  }
+  \AddtoDoHook{heading/endgroup}
+              {\restepCounter}
+\end{lstcode}
+  But you could also use a single hook and split its parameters:
+\begin{lstcode}
+  \newcommand*{\changeCounter}[1]{%
+    \SplitDoHook{#1}{\Group}{\Level}%
+    \Ifstr{\Group}{begingroup}{%
+      \stepcounter{\Level Counter}%
+    }{%
+      \Ifstr{\Group}{endgroup}{%
+        \addtocounter{\Level Counter}{-1}%
+      }{}%
+    }%
+  }
+  \AddtoDoHook{heading}
+              {\changeCounter}
+\end{lstcode}
+  As you can see, the first solution is much simpler. In addition, it would
+  be easy to overlook including the empty group for the second false-case in
+  the second example. That would be fatal, however, as there make be other
+  hooks with named \PValue{heading} but with different arguments.
+\end{Example}
+
+Strictly speaking, this command is a byproduct of the implementation of
+\DescRef{\LabelBase.cmd.ForDoHook}.%
+\EndIndexGroup
+%
+\EndIndexGroup
+
+\section{Obsolete Options and Commands}
+\seclabel{obsolete}
+
+% TODO: Fix new translation
+Prior release of \Package{scrbase} provided some options and commands that has
+been removed or replaced meanwhile. Those are documented in this section only
+for completeness but shouldn't be used any longer.
+% :ODOT
+
+% \LoadNonFree{scrbase}{0}% not available in English
+\begin{Explain}
+  \begin{Declaration}
+    \Macro{FamilyElseValues}
+  \end{Declaration}
+  Since version 3.12 the command is deprecated.  Nevertheless,
+  \Package{scrbase} detects its use and issues a message requesting that you
+  update the code accordingly.%
+  \EndIndexGroup%
+
+
+  \begin{Declaration}
+    \OptionVName{internalonly}{value}
+  \end{Declaration}
+  Since version 3.28 this option is deprecated. For compatibility it is
+  processed (see \DescRef{\LabelBase.cmd.FamilyKeyStateProcessed}) but
+  ignored.%
+  \EndIndexGroup%
+\end{Explain}%
+%
+\EndIndexGroup
+
+\endinput
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "scrguide-en.tex"
+%%% coding: utf-8
+%%% ispell-local-dictionary: "en_GB"
+%%% eval: (flyspell-mode 1)
+%%% End:

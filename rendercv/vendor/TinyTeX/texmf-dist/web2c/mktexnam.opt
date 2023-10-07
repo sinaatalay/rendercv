@@ -1,0 +1,107 @@
+# mktexnam.opt to determine various manipulations of the filenames.
+# Sourced from mktexnam.
+# 
+# Primarily written by Thomas Esser, Karl Berry, and Olaf Weber.
+# Public domain.
+# $Id: mktexnam.opt 18383 2010-05-20 18:31:24Z karl $
+
+# Get 8.3 filenames like dpiNNN/NAME.pk.
+case "$MT_FEATURES" in
+  *dosnames*) MT_PKBASE='dpi$DPI/$NAME.pk';;
+esac
+
+# Omit the mode directory (e.g., ljfour):
+case "$MT_FEATURES" in
+  *nomode*) MODE="";;
+esac
+
+###########################################################################
+# Use this feature if you wish to use the alias files from the 
+# ftp://ftp.tug.org/tex/fontname.tar.gz distribution.
+###########################################################################
+case "$MT_FEATURES" in
+*fontmaps*)
+    MT_NAMEPART='$MT_SUPPLIER/$MT_TYPEFACE'
+    MT_PKDESTREL='pk/$MT_MODE/$MT_NAMEPART'
+    MT_TFMDESTREL='tfm/$MT_NAMEPART'
+    MT_MFDESTREL='source/$MT_NAMEPART'
+    SPECIALMAP=`kpsewhich special.map`
+    TYPEFACEMAP=`kpsewhich typeface.map`
+    SUPPLIERMAP=`kpsewhich supplier.map`
+    if test -r "$SPECIALMAP"; then
+      set x `awk \
+    '{if ($1 == NAME || (substr (NAME, 1, length ($1)) == $1 \
+                      && substr (NAME, length (NAME), 1) ~ /[0-9]/ \
+                      && substr ($1, length ($1), 1) ~ /[^0-9]/)) \
+     { print $2 " " $3; exit; }}' NAME=$NAME "$SPECIALMAP"`
+      shift; SUPPLIER=$1; TYPEFACE=$2
+    
+      if test -z "$SUPPLIER"; then
+        # Try the normal case. Source first.
+        # $NAME might be raw.
+        name=`echo $NAME | sed 's/^r//'`
+        s_abbrev=`echo $name | sed 's/^\(.\).*$/\1/'`
+        SUPPLIER=`awk '{ if ($1 == s_abbrev) { print $2; exit; }}' \
+                   s_abbrev=$s_abbrev "$SUPPLIERMAP"`
+        if test -n "$SUPPLIER"; then
+          # We found the source. Try for the typeface.
+          t_abbrev=`echo $name | sed 's/^.//;s/\(..\).*$/\1/'`
+          TYPEFACE=`awk '{ if ($1 == t_abbrev) { print $2; exit; }}' \
+                       t_abbrev=$t_abbrev "$TYPEFACEMAP"`
+        fi
+      fi
+    fi
+    
+    if test -z "$SUPPLIER"; then
+      echo "$0: Could not map source abbreviation $s_abbrev for $NAME." >&2
+      echo "$0: Need to update $SPECIALMAP?" >&2
+    else
+      MT_SUPPLIER="$SUPPLIER"
+      if test -z "$TYPEFACE"; then
+        echo "$0: Could not map typeface abbreviation $t_abbrev for $NAME." >&2
+        echo "$0: Need to update $SPECIALMAP?" >&2
+      else
+        MT_TYPEFACE="$TYPEFACE"
+      fi
+    fi
+esac
+
+###########################################################################
+# Use this feature to strip the "supplier" part (e.g. ams)
+# of the target name:
+###########################################################################
+
+case "$MT_FEATURES" in
+*stripsupplier*)
+    MT_SUPPLIER=""
+esac
+
+###########################################################################
+# Use this feature to strip the "typeface" part (e.g. euler)
+# of the target name:
+###########################################################################
+
+case "$MT_FEATURES" in
+*striptypeface*)
+    MT_TYPEFACE=""
+esac
+
+# Put new fonts into the directory named by the VARTEXFONTS environment
+# variable or config file value.  (A default value for VARTEXFONTS is
+# already set in the default texmf.cnf, q.v.)
+# 
+# A user can override this setting in either direction by setting
+# USE_VARTEXFONTS to 1 or 0.
+case "$MT_FEATURES" in
+  *varfonts*) test "$USE_VARTEXFONTS" != 0 && USE_VARTEXFONTS=1;;
+esac
+
+# Force generated files that would go into a system tree (as defined by
+# SYSTEXMF) into TEXMFVAR. Starting with teTeX-3.0, the variable TEXMFVAR
+# is always set.  The varfonts feature takes precedence if also set.
+#
+# A user can override this setting in either direction by setting
+# USE_TEXMFVAR to 1 or 0.
+case "$MT_FEATURES" in
+  *texmfvar*) test "$USE_TEXMFVAR" != 0 && USE_TEXMFVAR=1;;
+esac

@@ -1,0 +1,809 @@
+%%
+%% This is file `syntax.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% syntax.dtx  (with options: `package')
+%% doafter.dtx  (with options: `macro')
+%% 
+%% IMPORTANT NOTICE
+%%
+%% syntax package -- typesetting syntax descriptions
+%% Copyright (c) 1996 Mark Wooding
+%%
+%% This program is free software; you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or
+%% (at your option) any later version.
+%%
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%%
+%% You should have received a copy of the GNU General Public License
+%% along with this program; if not, write to the Free Software
+%% Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{syntax}
+                [1996/05/17 1.07 Syntax typesetting (MDW)]
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+%%
+\DeclareOption{rounded}{\sd@roundtrue}
+\DeclareOption{square}{\sd@roundfalse}
+\DeclareOption{nounderscore}{\@uscorefalse}
+\newif\ifsd@round
+\newif\if@uscore\@uscoretrue
+\ExecuteOptions{square}
+\ProcessOptions
+\def\addspecial#1{%
+  \remspecial{#1}%
+  \expandafter\def\expandafter\dospecials\expandafter{\dospecials\do#1}%
+  \expandafter\def\expandafter\@santize\expandafter{%
+    \@sanitize\@makeother#1}%
+}
+\def\remspecial#1{%
+  \def\do##1{\ifnum`#1=`##1 \else\noexpand\do\noexpand##1\fi}%
+  \edef\dospecials{\dospecials}%
+  \def\@makeother##1{\ifnum`#1=`##1 \else%
+    \noexpand\@makeother\noexpand##1\fi}%
+  \edef\@sanitize{\@sanitize}%
+  \def\@makeother##1{\catcode`##112}%
+}
+\def\underscore{%
+  \leavevmode%
+  \kern.06em%
+  \vbox{%
+    \hrule\@width.6em\@depth.4ex\@height-.34ex%
+  }%
+  \ifdim\fontdimen\@ne\font=\z@%
+    \kern.06em%
+  \fi%
+}
+\let\usc@builtindischyphen\-
+\def\@uscore.{%
+  \ifmmode%
+    \expandafter\@firstoftwo%
+  \else%
+    \expandafter\@secondoftwo%
+  \fi%
+  \sb%
+  {\textunderscore\@ifnextchar_{}{\usc@builtindischyphen}}%
+}
+\if@uscore
+  \AtBeginDocument{%
+    \catcode`\_\active%
+    \begingroup%
+    \lccode`\~`\_%
+    \lowercase{\endgroup\def~{\protect\@uscore.}}%
+  }
+\fi
+\expandafter\let\csname?\string\textunderscore\endcsname\underscore
+\def\shortverb#1{%
+  \@ifundefined{cc@\string#1}{%
+    \addspecial#1%
+    \begingroup%
+    \lccode`\~`#1%
+    \lowercase{%
+      \endgroup%
+      \expandafter\let\csname mn@\string#1\endcsname~%
+      \expandafter\edef\csname cc@\string#1\endcsname{%
+        \catcode`\noexpand#1\the\catcode`#1%
+        \let\noexpand~\expandafter\noexpand%
+          \csname mn@\string#1\endcsname%
+        \noexpand\remspecial\noexpand#1%
+        \let\csname cc@\string#1\endcsname\relax%
+      }%
+      \def~{\verb~\syn@ttspace}%
+    }%
+    \catcode`#1\active%
+  }{%
+    \PackageWarning{syntax}{Character `\expandafter\@gobble\string#1'
+                            is already a verbatim\MessageBreak
+                            delimiter}%
+  }%
+}
+\def\unverb#1{%
+  \@ifundefined{cc@\string#1}{%
+    \PackageWarning{syntax}{Character `\expandafter\@gobble\string#1'
+                            is not a verbatim\MessageBreak
+                            delimiter}%
+  }{%
+    \csname cc@\string#1\endcsname%
+  }%
+}
+\newcommand{\syntleft}{$\langle$\normalfont\itshape}
+\newcommand{\syntright}{$\rangle$}
+\newcommand{\ulitleft}{\normalfont\ttfamily\syn@ttspace\frenchspacing}
+\newcommand{\ulitright}{}
+\newcommand{\litleft}{`\bgroup\ulitleft}
+\newcommand{\litright}{\ulitright\egroup'}
+\def\synt#1{\mbox{\syntleft{#1\/}\syntright}}
+\def\lit{\@ifstar{\lit@i\ulitleft\ulitright}{\lit@i\litleft\litright}}
+\def\lit@i#1#2#3{\mbox{#1{#3\/}#2}}
+\def\syn@ttspace@{\spaceskip.35em\@plus.2em\@minus.15em\relax}
+\def\ttthinspace{\let\syn@ttspace\syn@ttspace@}
+\def\ttthickspace{\let\syn@ttspace\@empty}
+\ttthinspace
+\def\readupto#1#2#3{%
+  \bgroup%
+  \verb@eol@error%
+  \let\do\@makeother\dospecials%
+  #2%
+  \catcode`#1\active%
+  \lccode`\~`#1%
+  \gdef\verb@balance@group{\verb@egroup%
+     \@latex@error{\noexpand\verb illegal in command argument}\@ehc}%
+  \def\@vhook{\verb@egroup#3}%
+  \aftergroup\verb@balance@group%
+  \lowercase{\let~\@vhook}%
+}
+\def\syn@assist#1#2#3#4#5{%
+  \mbox\bgroup%
+  \chardef\\`\\%
+  \chardef\>`\>%
+  \chardef\'`\'%
+  \chardef\"`\"%
+  \chardef\ `\ %
+  \def\ch##1{\char`##1}%
+  \def\act##1{%
+    \catcode`##1\active%
+    \begingroup%
+    \lccode`\~`##1%
+    \lowercase{\endgroup\def~}%
+  }%
+  #1%
+  \begingroup%
+  \readupto#3{%
+    \catcode`\\0%
+    \catcode`\ 10%
+    #2%
+  }{%
+    \/\endgroup#4\egroup#5%
+  }%
+}
+\begingroup
+\catcode`\<\active
+\catcode`\|\active
+\catcode`\"\active
+\catcode`\`\active
+\gdef\syn@shorts#1#2{%
+  \def<{%
+    #1%
+    \syn@assist%
+      \syntleft%
+      {\act_{\@uscore.}}%
+      >%
+      \syntright%
+      {#2}%
+  }%
+  \def`{%
+    #1%
+    \syn@assist%
+      \litleft%
+      \relax%
+      '%
+      \litright%
+      {#2}%
+  }%
+  \def"{%
+    #1%
+    \syn@assist%
+      \ulitleft%
+      \relax%
+      "%
+      \ulitright%
+      {#2}%
+  }%
+  \def|{\textbar}%
+}
+\endgroup
+\def\syntaxShortcuts#1#2{%
+  \syn@shorts{#1}{#2}%
+  \addspecial\`%
+  \addspecial\<%
+  \addspecial\|%
+  \addspecial\"%
+  \catcode`\|\active%
+  \catcode`\<\active%
+  \catcode`\"\active%
+  \catcode`\`\active%
+}
+\def\synshorts{\syntaxShortcuts\relax\relax}
+\def\synshortsoff{%
+  \catcode`\|12%
+  \catcode`\<12%
+  \catcode`\"12%
+  \catcode`\`12%
+}
+\def\syntax#{\bgroup\syntaxShortcuts\relax\relax\let\@let@token}
+\newskip\grammarparsep
+  \grammarparsep8\p@\@plus\p@\@minus\p@
+\newdimen\grammarindent
+  \grammarindent2em
+\newcommand{\grammarlabel}[2]{%
+  \synt{#1} \hfill#2%
+}
+\def\gr@implitem<#1> #2 {%
+  \sbox\z@{\hskip\labelsep\grammarlabel{#1}{#2}}%
+  \strut\@@par%
+  \vskip-\parskip%
+  \vskip-\baselineskip%
+  \hrule\@height\z@\@depth\z@\relax%
+  \item[\unhbox\z@]%
+  \catcode`\<\active%
+}
+\newenvironment{grammar}{%
+  \list{}{%
+    \labelwidth\grammarindent%
+    \leftmargin\grammarindent%
+    \advance\grammarindent\labelsep
+    \itemindent\z@%
+    \listparindent\z@%
+    \parsep\grammarparsep%
+  }%
+  \let\\\@normalcr
+  \syntaxShortcuts\relax\relax%
+  \def\alt{\\\llap{\textbar\quad}}%
+  \def\gr@setpar{%
+    \def\par{%
+      \parshape\@ne\@totalleftmargin\linewidth%
+      \@@par%
+      \catcode`\<12%
+      \everypar{%
+        \everypar{}%
+        \catcode`\<\active%
+        \gr@implitem%
+      }%
+    }%
+  }%
+  \gr@setpar%
+  \par%
+  \let\gr@leftsq\[%
+  \let\gr@rightsq\]%
+  \def\gr@endsyntdiag]{\end{syntdiag}\gr@setpar\par}%
+  \def\[{\@ifnextchar[{\begin{syntdiag}\@gobble}\gr@leftsq}%
+  \def\]{\@ifnextchar]\gr@endsyntdiag\gr@rightsq}%
+}{%
+  \@newlistfalse%
+  \everypar{}%
+  \endlist%
+}
+\newskip\sdstartspace
+\newskip\sdendspace
+\newskip\sdmidskip
+\newskip\sdtokskip
+\newskip\sdfinalskip
+\newdimen\sdrulewidth
+\newdimen\sdcirclediam
+\newdimen\sdindent
+\dimendef\sd@lower\z@
+\dimendef\sd@upper\tw@
+\dimendef\sd@mid4
+\dimendef\sd@topcirc6
+\dimendef\sd@botcirc8
+\def\sd@setsize{%
+  \sd@mid\ht\strutbox%
+  \advance\sd@mid-\dp\strutbox%
+  \sd@mid.5\sd@mid%
+  \sd@upper\sdrulewidth%
+    \advance\sd@upper\sd@mid%
+  \sd@lower\sdrulewidth%
+    \advance\sd@lower-\sd@mid%
+  \sd@topcirc-.5\sdcirclediam%
+    \advance\sd@topcirc\sd@mid%
+  \sd@botcirc-.5\sdcirclediam%
+    \advance\sd@botcirc-\sd@mid%
+}
+\newcommand{\sdsize}{%
+  \small%
+}
+\newcommand{\sdlengths}{%
+  \setlength{\sdstartspace}{1em minus 10pt}%
+  \setlength{\sdendspace}{1em minus 10pt}%
+  \setlength{\sdmidskip}{0.5em plus 0.0001fil}%
+  \setlength{\sdtokskip}{0.25em plus 0.0001fil}%
+  \setlength{\sdfinalskip}{0.5em plus 10000fil}%
+  \setlength{\sdrulewidth}{0.2pt}%
+  \setlength{\sdcirclediam}{8pt}%
+  \setlength{\sdindent}{0pt}%
+}
+\newif\ifsd@base
+\newif\ifsd@top
+\newif\ifsd@toplayer
+\newif\ifsd@backwards
+\def\sd@err{\PackageError{syntax}}
+\def\sd@arrow{%
+  \ht\tw@\z@%
+  \dp\tw@\z@%
+  \raise\sd@mid\box\tw@%
+  \egroup%
+}
+\def\sd@rightarr{%
+  \bgroup%
+  \setbox\tw@\hbox{\kern-6\p@\@linefnt\char'55}%
+  \sd@arrow%
+}
+\def\sd@leftarr{%
+  \bgroup%
+  \raise\sd@mid\hbox{\@linefnt\char'33\kern-6\p@}%
+  \sd@arrow%
+}
+\def\sd@uparr{%
+  \bgroup%
+  \setbox\tw@\hb@xt@\z@{\kern-\sdrulewidth\@linefnt\char'66\hss}%
+  \setbox\tw@\hbox{\lower10\p@\box\tw@}%
+  \sd@arrow%
+}
+\def\sd@downarr{%
+  \bgroup%
+  \setbox\tw@\hb@xt@\z@{\kern-\sdrulewidth\@linefnt\char'77\hss}%
+  \sd@arrow%
+}
+\def\sd@circ#1{%
+  \@getcirc\sdcirclediam%
+  \advance\@tempcnta#1%
+  \setbox\tw@\hbox{\lower\sdrulewidth%
+    \hbox{\@circlefnt\char\@tempcnta}}%
+  \wd\tw@\z@%
+  \leavevmode%
+}
+\def\sd@tlcirc{{%
+  \sd@circ3%
+  \ht\tw@\sdrulewidth%
+  \dp\tw@.5\sdcirclediam%
+  \kern-\tw@\sdrulewidth%
+  \raise\sd@mid\box\tw@%
+  \kern.5\sdcirclediam%
+}}
+\def\sd@trcirc{{%
+  \sd@circ0%
+  \ht\tw@\sdrulewidth%
+  \dp\tw@.5\sdcirclediam%
+  \kern.5\sdcirclediam%
+  \raise\sd@mid\box\tw@%
+}}
+\def\sd@blcirc{{%
+  \sd@circ2%
+  \ht\tw@.5\sdcirclediam%
+  \dp\tw@\sdrulewidth%
+  \kern-\tw@\sdrulewidth%
+  \raise\sd@mid\box\tw@%
+  \kern.5\sdcirclediam%
+}}
+\def\sd@brcirc{{%
+  \sd@circ1%
+  \ht\tw@.5\sdcirclediam%
+  \dp\tw@\sdrulewidth%
+  \kern.5\sdcirclediam%
+  \raise\sd@mid\box\tw@%
+}}
+\def\sd@llc#1{%
+  \hb@xt@.5\sdcirclediam{%
+    \sd@rule\hskip.5\sdcirclediam%
+    \hss%
+    #1%
+  }%
+}
+\def\sd@rlc#1{%
+  \hb@xt@.5\sdcirclediam{%
+    #1%
+    \hss%
+    \sd@rule\hskip.5\sdcirclediam%
+  }%
+}
+\def\sd@rule{\leaders\hrule\@height\sd@upper\@depth\sd@lower}
+\def\sd@gap#1{%
+  \ifsd@base%
+    \skip@#1%
+      \divide\skip\z@\tw@%
+    \nobreak\sd@rule\hskip\skip@%
+    \discretionary{%
+      \sd@qarrow{->}%
+    }{%
+      \hbox{%
+        \sd@qarrow{>-}%
+        \sd@rule\hskip\sdstartspace%
+        \sd@rule\hskip3.5\p@%
+      }%
+    }{%
+    }%
+    \nobreak\sd@rule\hskip\skip@%
+  \else%
+    \sd@rule\hskip#1%
+  \fi%
+}
+\def\syntdiag{%
+  \syntaxShortcuts\sd@tok@i\sd@tok@ii%
+  \@ifnextchar[\syntdiag@i{\syntdiag@i[]}%
+}
+\def\syntdiag@i[#1]{%
+  \sdsize\sdlengths%
+  #1%
+  \sd@setsize%
+  \list{}{%
+    \leftmargin\sdindent%
+    \rightmargin\leftmargin%
+    \labelsep\z@%
+    \labelwidth\z@%
+  }%
+  \item[]%
+  \parfillskip\z@%
+  \noindent%
+  \sd@qarrow{>>-}%
+  \nobreak\sd@rule\hskip\sdstartspace%
+  \sd@basetrue%
+  \sloppy%
+  \interlinepenalty100%
+  \hyphenpenalty0%
+  \catcode`\ 9%
+  \catcode`\^^M9%
+  \let\\\sd@newline%
+  \ignorespaces%
+}
+\def\endsyntdiag{%
+  \unskip%
+  \nobreak\sd@rule\hskip\sdmidskip%
+  \sd@rule\hskip\sdfinalskip%
+  \sd@qarrow{-><}%
+  \endlist%
+}
+\@namedef{syntdiag*}{%
+  \syntaxShortcuts\sd@tok@i\sd@tok@ii%
+  \@ifnextchar[\syntdiag@s@i{\syntdiag@s@i[]}%
+}
+\def\syntdiag@s@i[#1]{%
+  \@ifnextchar[{\syntdiag@s@ii{#1}}{\syntdiag@s@iii{#1}{\hbox}}%
+}
+\def\syntdiag@s@ii#1[#2]{\syntdiag@s@iii{#1}{\hb@xt@#2}}
+\def\syntdiag@s@iii#1#2{%
+  \leavevmode%
+  #2\bgroup%
+  \let\@@left\left%
+  \let\@@right\right%
+  \def\left##1{\def\sd@startarr{##1}}%
+  \def\right##1{\def\sd@endarr{##1}}%
+  \left{>-}\right{->}%
+  \sdsize\sdlengths%
+  #1%
+  \sd@setsize%
+  \let\left\@@left%
+  \let\right\@@right%
+  \sd@qarrow\sd@startarr%
+  \sd@rule\hskip\sdmidskip%
+  \sd@basefalse%
+  \catcode`\ 9%
+  \catcode`\^^M9%
+  \ignorespaces%
+}
+\@namedef{endsyntdiag*}{%
+  \unskip%
+  \sd@rule\hskip\sdmidskip%
+  \sd@rule\hskip\sdfinalskip%
+  \sd@qarrow\sd@endarr%
+  \egroup%
+}
+\def\sd@qarrow#1{%
+  \begingroup%
+  \lccode`\~=`\<\lowercase{\def~{<}}%
+  \hbox{\csname sd@arr@#1\endcsname}%
+  \endgroup%
+}
+\@namedef{sd@arr@>>-}{\sd@rightarr\kern-.5\p@\sd@rightarr\kern-\p@}
+\@namedef{sd@arr@>-}{\sd@rightarr\kern-\p@}
+\@namedef{sd@arr@->}{\sd@rightarr}
+\@namedef{sd@arr@-><}{\sd@rightarr\kern-\p@\sd@leftarr}
+\@namedef{sd@arr@...}{$\cdots$}
+\@namedef{sd@arr@-}{}
+\def\sd@newline{\@ifstar{\vadjust{\penalty\@M}\sd@nl@i}\sd@nl@i}
+\def\sd@nl@i{\@ifnextchar[\sd@nl@ii\sd@nl@iii}
+\def\sd@nl@ii[#1]{\vspace{#1}\sd@nl@iii}
+\def\sd@nl@iii{%
+  \nobreak\sd@rule\hskip\sdmidskip%
+  \sd@rule\hskip\sdfinalskip%
+  \kern-3\p@%
+  \sd@rightarr%
+  \newline%
+  \sd@rightarr%
+  \nobreak\sd@rule\hskip\sdstartspace%
+  \sd@rule\hskip3.5\p@%
+}
+\def\sdbox#1{%
+  \@tempskipa#1\relax%
+  \sd@gap\@tempskipa%
+  \setbox\z@\hbox\bgroup%
+    \begingroup%
+    \catcode`\ 10%
+    \catcode`\^^M5%
+    \synshortsoff%
+}
+\def\endsdbox{%
+    \endgroup%
+  \egroup%
+  \@tempdima\ht\z@%
+  \advance\@tempdima-\dp\z@%
+  \advance\@tempdima-\tw@\sd@mid%
+  \lower.5\@tempdima\box\z@%
+  \sd@gap\@tempskipa%
+}
+\def\sd@tok@i{%
+  \sdbox\sdtokskip%
+  \strut%
+  \space%
+}
+\def\sd@tok@ii{%
+  \space%
+  \endsdbox%
+}
+\def\tok#{%
+  \sdbox\sdtokskip%
+  \strut%
+  \enspace%
+  \syntaxShortcuts\relax\relax%
+  \doafter\sd@tok%
+}
+\def\sd@tok{%
+  \enspace%
+  \endsdbox%
+}
+\newcommand\stack[1][t]{%
+  \sd@gap\sdmidskip%
+  \begingroup\sd@basefalse%
+  \sd@toplayertrue%
+  \let\\\sd@stackcr%
+  \if#1t%
+    \let\@tempa\vtop%
+    \sd@toptrue%
+    \ifsd@round\llap{\sd@trcirc\kern\tw@\sdrulewidth}\fi%
+  \else\if#1b%
+    \let\@tempa\vbox%
+    \sd@topfalse%
+    \ifsd@round\llap{\sd@brcirc\kern\tw@\sdrulewidth}\fi%
+  \else%
+    \sd@err{Bad position argument passed to stack}%
+           {The positioning argument must be one of `t' or `b'.  I%
+            have^^Jassumed you meant to type `t'.}%
+    \let\@tempa\vtop%
+  \fi\fi%
+  \@tempa\bgroup%
+  \offinterlineskip%
+  \ialign\bgroup%
+    ##\cr%
+  \setbox\z@\hbox\bgroup%
+    \strut%
+}
+\def\endstack{%
+  \egroup%
+  \ifsd@toplayer%
+    \sd@dostack\sd@upper\sd@lower\relax\relax%
+  \else%
+    \ifsd@round%
+      \ifsd@top%
+        \sd@dostack{\ht\z@}\sd@botcirc\sd@blcirc\sd@brcirc%
+      \else%
+        \sd@dostack{\ht\z@}\sd@botcirc\relax\relax%
+      \fi%
+    \else%
+      \sd@dostack{\ht\z@}\sd@lower\relax\relax%
+    \fi%
+  \fi%
+  \egroup%
+  \egroup%
+  \ifsd@round%
+    \ifsd@top
+      \rlap{\kern\tw@\sdrulewidth\sd@tlcirc}%
+    \else%
+      \rlap{\kern\tw@\sdrulewidth\sd@blcirc}%
+    \fi%
+  \fi%
+  \endgroup\sd@gap\sdmidskip%
+}
+\def\sd@stackcr{%
+  \egroup%
+  \ifsd@toplayer%
+    \ifsd@round%
+      \ifsd@top%
+        \sd@dostack\sd@topcirc{\dp\z@}\relax\relax%
+      \else%
+        \sd@dostack\sd@topcirc{\dp\z@}\sd@tlcirc\sd@trcirc%
+      \fi%
+    \else%
+      \sd@dostack\sd@upper{\dp\z@}\relax\relax%
+    \fi%
+  \else%
+    \ifsd@round%
+      \ifsd@top%
+        \sd@dostack{\ht\z@}{\dp\z@}\sd@blcirc\sd@brcirc%
+      \else%
+        \sd@dostack{\ht\z@}{\dp\z@}\sd@tlcirc\sd@trcirc%
+      \fi%
+    \else%
+      \sd@dostack{\ht\z@}{\dp\z@}\relax\relax%
+    \fi%
+  \fi%
+  \sd@toplayerfalse%
+  \setbox\z@\hbox\bgroup%
+    \strut%
+}
+\def\sd@dostack#1#2#3#4{%
+  \@tempdima#1%
+  \@tempdimb#2%
+  \kern-\tw@\sdrulewidth%
+  \vrule\@height\@tempdima\@depth\@tempdimb\@width\tw@\sdrulewidth%
+  #3%
+  \sd@rule\hfill%
+  \sd@gap\sdtokskip%
+  \unhbox\z@%
+  \sd@gap\sdtokskip%
+  \sd@rule\hfill%
+  #4%
+  \vrule\@height\@tempdima\@depth\@tempdimb\@width\tw@\sdrulewidth%
+  \kern-\tw@\sdrulewidth%
+  \cr%
+}
+\newcommand\rep[1][t]{%
+  \sd@gap\sdmidskip%
+  \begingroup\sd@basefalse%
+  \ifsd@backwards\sd@backwardsfalse\else\sd@backwardstrue\fi%
+   \let\\\sd@loop%
+  \if#1t%
+    \let\@tempa\vbox%
+    \sd@toptrue%
+  \else\if#1b%
+    \let\@tempa\vtop%
+    \sd@topfalse%
+  \else%
+    \sd@err{Bad position argument passed to loop}%
+           {The positioning argument must be `t' or `b'.  I have^^J%
+            assumed you meant to type `t'.}%
+    \let\@tempa\vbox%
+    \sd@toptrue%
+  \fi\fi%
+  \@tempa\bgroup%
+  \setbox\tw@\copy\strutbox%
+  \setbox\z@\hbox\bgroup\strut%
+}
+\def\endrep{%
+  \egroup%
+  \ifsd@top%
+    \ifsd@round%
+      \sd@doloop\tw@\z@\relax\relax%
+        \sd@tlcirc\sd@trcirc{\sd@rlc\sd@blcirc}{\sd@llc\sd@brcirc}%
+    \else%
+      \sd@doloop\tw@\z@\relax\sd@downarr\relax\relax\relax\relax%
+    \fi%
+  \else%
+    \ifsd@round%
+      \sd@doloop\z@\tw@\relax\relax%
+        {\sd@rlc\sd@tlcirc}{\sd@llc\sd@trcirc}\sd@blcirc\sd@brcirc%
+    \else%
+      \sd@doloop\z@\tw@\sd@uparr\relax\relax\relax\relax\relax%
+    \fi%
+  \fi%
+  \egroup%
+  \endgroup\sd@gap\sdmidskip%
+}
+\def\sd@loop{%
+  \egroup%
+  \def\\{\sd@err{Too many \string\\\space commands in loop}\@ehc}%
+  \setbox\tw@\hbox\bgroup\strut%
+}
+\def\sd@doloop#1#2#3#4#5#6#7#8{%
+  \@tempdima\dp#1\relax%
+  \@tempdimb\ht#2\relax%
+  \offinterlineskip%
+  \ialign{%
+    ##\cr%
+    \ifsd@round%
+      \sd@doloop@i#1#3\sd@topcirc\@tempdima{#5}{#6}%
+      \sd@doloop@i#2#4\@tempdimb\sd@botcirc{#7}{#8}%
+    \else%
+      \sd@doloop@i#1#3\sd@upper\@tempdima{#5}{#6}%
+      \sd@doloop@i#2#4\@tempdimb\sd@lower{#7}{#8}%
+    \fi%
+  }%
+}
+\def\sd@doloop@i#1#2#3#4#5#6{%
+  \ifsd@backwards#2\fi%
+  \kern-\tw@\sdrulewidth%
+  \vrule\@height#3\@depth#4\@width\tw@\sdrulewidth%
+  #5%
+  \sd@rule\hfill%
+  \sd@gap\sdtokskip%
+  \unhbox#1%
+  \sd@gap\sdtokskip%
+  \sd@rule\hfill%
+  #6%
+  \vrule\@height#3\@depth#4\@width\tw@\sdrulewidth%
+  \ifsd@backwards\else#2\fi%
+  \kern-\tw@\sdrulewidth%
+  \cr%
+}
+%%
+%% doafter package -- insert a token really after a group
+%% Copyright (c) 1996 Peter Schmitt and Mark Wooding
+%%
+\let\@@aftergroup\aftergroup
+\def\doafter#1{%
+  \def\@tempa{\@@aftergroup#1}%
+  \afterassignment\doafter@i\let\@let@token%
+}
+\def\doafter@i{%
+  \@let@token%
+  \let\aftergroup\@my@aftergroup%
+  \@@aftergroup\@prepare@after\@tempa%
+}
+\def\ag@cnt@local{0 }
+\let\ag@cnt@global\ag@cnt@local
+\def\@my@aftergroup{%
+  \begingroup%
+    \count@\ag@cnt@local%
+    \advance\count@\@ne%
+    \xdef\ag@cnt@global{\the\count@\space}%
+  \endgroup%
+  \let\ag@cnt@local\ag@cnt@global%
+  \@@aftergroup\@after@token\@@aftergroup%
+}
+\def\@after@token{%
+  \@start@after@group%
+  \@after@token%
+}
+\def\@start@after@group{%
+  \begingroup%
+  \count@\ag@cnt@global%
+  \clubpenalty\ag@cnt@local%
+  \let\@after@token\@after@token@i%
+}
+\def\@after@token@i{%
+  \advance\count@\m@ne%
+  \ifnum\count@=\clubpenalty%
+    \global\let\ag@cnt@global\ag@cnt@local%
+    \expandafter\@after@aftertoken\expandafter\@after@all%
+  \else%
+    \expandafter\@@aftergroup%
+  \fi%
+}
+\let\@after@all\endgroup
+\def\@prepare@after{%
+  \ifx\ag@cnt@local\ag@cnt@global\else%
+    \expandafter\@prepare@after@i%
+  \fi%
+}
+\def\@prepare@after@i#1{%
+  \@start@after@group%
+  \def\@after@all{\@@aftergroup#1\endgroup}%
+}
+\def\@after@aftertoken#1{%
+  \let\bgroup\relax\let\egroup\relax%
+  \toks@{#1}%
+  \futurelet\@let@token\@after@aftertoken@i%
+}
+\def\@after@aftertoken@i{%
+  \ifcat\noexpand\@let@token{%
+    \@@aftergroup{%
+  \else\ifcat\noexpand\@let@token}%
+    \@@aftergroup}%
+  \else%
+    \def\@tempa##1{\@@aftergroup##1\the\toks@}%
+    \expandafter\expandafter\expandafter\@tempa%
+  \fi\fi%
+}
+\endinput
+%%
+%% End of file `syntax.sty'.

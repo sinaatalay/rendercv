@@ -1,0 +1,194 @@
+% Copyright 2018--2022 Marcel Krueger
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3c
+% of this license or (at your option) any later version.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status `maintained'.
+% 
+% The Current Maintainer of this work is Marcel Krueger
+%
+\RequirePackage{expl3}
+\ProvidesExplPackage{fontawesome5}{2022/05/02}{5.15.4}{Font Awesome 5}
+
+\msg_new:nnnn{fontawesome5}{incompatible-version}
+  {Incompatible~version~of~Font~Awesome~already~loaded}
+  {You~tried~to~load~the~fontawesome5~package~but~there~are~already~some~icons~
+    from~Font~Awesome~defined~in~your~document.~This~probably~means~that~a~
+    package~for~another~version~of~Font~Awesome~(likely~the~fontawesome~package~
+    for~Font~Awesome~4)~is~already~loaded.~Loading~multiple~versions~is~not~
+    supported.~Please~remove~all~but~one~version~of~Font~Awesome~from~your~
+    document.}
+\AddToHook{package/fontawesome/before}{\msg_error:nn {fontawesome5} {incompatible-version}}
+\cs_if_free:NF \faHome {\msg_error:nn {fontawesome5} {incompatible-version}}
+
+\RequirePackage{l3keys2e}
+
+\keys_define:nn{fontawesome5}
+{
+  pro .value_forbidden:n = true,
+  pro .tl_set:N = \c__fontawesome_kind_tl,
+  pro .default:n = pro,
+  free .value_forbidden:n = true,
+  free .tl_set:N = \c__fontawesome_kind_tl,
+  free .default:n = free,
+  fixed .bool_set:N = \c__fontawesome_fixed_bool,
+  fixed .default:n = true
+}
+\keys_set:nn{fontawesome5}{free}
+
+\ProcessKeysOptions{fontawesome5}
+
+\RequirePackage{xparse}
+
+\str_new:N\l_fontawesome_style_str
+
+\str_case:onTF\c_sys_engine_str{
+  {luatex}{}
+  {xetex}{}
+}{
+  \RequirePackage{fontawesome5-utex-helper}
+}{
+  \RequirePackage{fontawesome5-generic-helper}
+}
+
+\msg_new:nnnn{fontawesome5}{icon-not-found}
+  {The~requested~icon~#1~was~not~found.}
+  {Maybe~you~mistyped~the~icon~name~or~you~are~using~the~wrong~version~of~Font~Awesome~5.~
+    Please~check~the~Font~Awesome~Cheatsheet~to~verify~the~spelling~of~#1.~
+    If~you~want~to~use~a~Pro~icon,~you~need~to~have~Font~Awesome~5~Pro~installed~and~
+    use~XeLaTeX~or~LuaLaTeX.~Then~you~can~activate~Pro~with~the~[pro]~option.~
+    If~you~use~XeLaTeX~or~LuaLaTeX,~you~can~also~try~updating~the~Font~Awesome~5~font~files~
+    to~make~icons~of~newer~versions~of~Font~Awesome~available.}
+\msg_new:nnnn{fontawesome5}{style-substitution}
+  {The~requested~icon~#1~has~been~replaced~by~the~solid~version}
+  {The~icon~#1~is~not~available~in~the~style~#2.~The~solid~version~will~be~used~instead.~
+    To~use~a~#2~style~#1~icon,~you~probably~need~Font~Awesome~5~Pro.~
+    To~use~Pro,~you~need~to~have~Font~Awesome~5~Pro~installed~and~
+    use~XeLaTeX~or~LuaLaTeX.~Then~you~can~activate~Pro~with~the~[pro]~option.}
+
+\NewDocumentCommand\faPreselectedIcon{m s O{\str_use:N\l_fontawesome_style_str}}{
+  \fontawesome_use_icon:nn{#3}{#1\IfBooleanT{#2}{-alt}}
+}
+\NewDocumentCommand\faIcon{s O{\str_use:N\l_fontawesome_style_str} m}{
+  \fontawesome_use_icon:nn{#2}{#3\IfBooleanT{#1}{-alt}}
+}
+\cs_new_protected:Npn\fontawesome_set_style:n{
+  \str_set:Nn\l_fontawesome_style_str
+}
+
+\NewDocumentCommand\faStyle{m}{
+  \fontawesome_set_style:n{#1}
+}
+
+\cs_new_protected:Npn\faH#1{\faPreselectedIcon{h#1}}
+\NewDocumentCommand\faRepeat{t{1}}{
+  \faPreselectedIcon{repeat\IfBooleanT{#1}{-1}}
+}
+\cs_new_protected:Npn\fa__select_ii:nnn#1#2#3{
+  \cs_if_exist_use:cF {fa__#1_#2#3:} {
+    \faPreselectedIcon{#1}#2#3
+  }
+}
+\cs_new_protected:Npn\fa__select:nn#1#2{
+  \cs_if_exist_use:cF {fa__#1_#2:} {
+    \peek_catcode:NTF 0 {
+      \fa__select_ii:nnn {#1}{#2}
+    }{
+      \faPreselectedIcon{#1}#2
+    }
+  }
+}
+\cs_new_protected:Npn\fa__select:nw#1{
+  \peek_catcode:NTF 0 {\fa__select:nn {#1}} {\faPreselectedIcon{#1}}
+}
+
+\cs_new_protected:cpn{fa__dice_1:}{\faPreselectedIcon{dice-one}}
+\cs_new_protected:cpn{fa__dice_2:}{\faPreselectedIcon{dice-two}}
+\cs_new_protected:cpn{fa__dice_3:}{\faPreselectedIcon{dice-three}}
+\cs_new_protected:cpn{fa__dice_4:}{\faPreselectedIcon{dice-four}}
+\cs_new_protected:cpn{fa__dice_5:}{\faPreselectedIcon{dice-five}}
+\cs_new_protected:cpn{fa__dice_6:}{\faPreselectedIcon{dice-six}}
+\RenewDocumentCommand\faDice{}{
+  \fa__select:nw {dice}
+}
+
+\cs_new_protected:cpn{fa__dice-d_4:}{\faPreselectedIcon{dice-d4}}
+\cs_new_protected:cpn{fa__dice-d_6:}{\faPreselectedIcon{dice-d6}}
+\cs_new_protected:cpn{fa__dice-d_8:}{\faPreselectedIcon{dice-d8}}
+\cs_new_protected:cpn{fa__dice-d_10:}{\faPreselectedIcon{dice-d10}}
+\cs_new_protected:cpn{fa__dice-d_12:}{\faPreselectedIcon{dice-d12}}
+\cs_new_protected:cpn{fa__dice-d_20:}{\faPreselectedIcon{dice-d20}}
+\NewDocumentCommand\faDiceD{}{
+  \fa__select:nw {dice-d}
+}
+
+\cs_new_protected:cpn{fa__wifi_0:}{\faPreselectedIcon{wifi-slash}}
+\cs_new_protected:cpn{fa__wifi_1:}{\faPreselectedIcon{wifi-1}}
+\cs_new_protected:cpn{fa__wifi_2:}{\faPreselectedIcon{wifi-2}}
+\cs_new_protected:cpn{fa__wifi_3:}{\faPreselectedIcon{wifi}}
+\NewDocumentCommand\faWifi{}{
+  \fa__select:nw {wifi}
+}
+
+\cs_new_protected:cpn{fa__signal_0:}{\faPreselectedIcon{signal-slash}}
+\cs_new_protected:cpn{fa__signal_1:}{\faPreselectedIcon{signal-1}}
+\cs_new_protected:cpn{fa__signal_2:}{\faPreselectedIcon{signal-2}}
+\cs_new_protected:cpn{fa__signal_3:}{\faPreselectedIcon{signal-3}}
+\cs_new_protected:cpn{fa__signal_4:}{\faPreselectedIcon{signal-4}}
+\cs_new_protected:cpn{fa__signal_5:}{\faPreselectedIcon{signal}}
+
+\cs_new_protected:cpn{fa__signal-alt_0:}{\faPreselectedIcon{signal-alt-slash}}
+\cs_new_protected:cpn{fa__signal-alt_1:}{\faPreselectedIcon{signal-alt-1}}
+\cs_new_protected:cpn{fa__signal-alt_2:}{\faPreselectedIcon{signal-alt-2}}
+\cs_new_protected:cpn{fa__signal-alt_3:}{\faPreselectedIcon{signal-alt-3}}
+\cs_new_protected:cpn{fa__signal-alt_4:}{\faPreselectedIcon{signal-alt}}
+
+\NewDocumentCommand\faSignalAlt{}{
+  \fa__select:nw {signal-alt}
+}
+\NewDocumentCommand\faSignal{s}{
+  \fa__select:nw {signal\IfBooleanT{#1}{-alt}}
+}
+
+\cs_new_protected:cpn{fa__transporter_0:}{\faPreselectedIcon{transporter}}
+\cs_new_protected:cpn{fa__transporter_1:}{\faPreselectedIcon{transporter-1}}
+\cs_new_protected:cpn{fa__transporter_2:}{\faPreselectedIcon{transporter-2}}
+\cs_new_protected:cpn{fa__transporter_3:}{\faPreselectedIcon{transporter-3}}
+\cs_new_protected:cpn{fa__transporter_4:}{\faPreselectedIcon{transporter-empty}}
+\NewDocumentCommand\faTransporter{}{
+  \fa__select:nw {transporter}
+}
+
+\cs_new_protected:cpn{fa__stopwatch_20:}{\faPreselectedIcon{stopwatch-20}}
+\NewDocumentCommand\faStopwatch{}{
+  \fa__select:nw {stopwatch}
+}
+
+% The following list is special: These are icons which are *not* part of the free version,
+% but their -alt version is free.
+\cs_set_protected:Npn\faArrows{\faPreselectedIcon{arrows}}
+\cs_set_protected:Npn\faCloudDownload{\faPreselectedIcon{cloud-download}}
+\cs_set_protected:Npn\faCloudUpload{\faPreselectedIcon{cloud-upload}}
+\cs_set_protected:Npn\faExchange{\faPreselectedIcon{exchange}}
+\cs_set_protected:Npn\faExpandArrows{\faPreselectedIcon{expand-arrows}}
+\cs_set_protected:Npn\faExternalLink{\faPreselectedIcon{external-link}}
+\cs_set_protected:Npn\faExternalLinkSquare{\faPreselectedIcon{external-link-square}}
+\cs_set_protected:Npn\faLevelDown{\faPreselectedIcon{level-down}}
+\cs_set_protected:Npn\faLevelUp{\faPreselectedIcon{level-up}}
+\cs_set_protected:Npn\faPencil{\faPreselectedIcon{pencil}}
+\cs_set_protected:Npn\faShield{\faPreselectedIcon{shield}}
+\cs_set_protected:Npn\faSignIn{\faPreselectedIcon{sign-in}}
+\cs_set_protected:Npn\faSignOut{\faPreselectedIcon{sign-out}}
+\cs_set_protected:Npn\faSquareRoot{\faPreselectedIcon{square-root}}
+\cs_set_protected:Npn\faTachometer{\faPreselectedIcon{tachometer}}
+\cs_set_protected:Npn\faTicket{\faPreselectedIcon{ticket}}
+% The following list is even more special: These are icons which do *not* actually exists, not even in pro,
+% but they still have a free -alt version???
+\cs_set_protected:Npn\faCompressArrows{\faPreselectedIcon{compress-arrows}}
+
+\fontawesome_set_style:n{solid}

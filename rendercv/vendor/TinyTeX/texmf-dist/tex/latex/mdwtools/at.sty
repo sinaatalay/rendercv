@@ -1,0 +1,203 @@
+%%
+%% This is file `at.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% at.dtx  (with options: `package')
+%% 
+%% IMPORTANT NOTICE
+%%
+%% at package -- support for `@' commands'
+%% Copyright (c) 1996 Mark Wooding
+%%
+%% This program is free software; you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or
+%% (at your option) any later version.
+%%
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%%
+%% You should have received a copy of the GNU General Public License
+%% along with this program; if not, write to the Free Software
+%% Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{at}
+                [1996/05/02 1.3 @-command support (MDW)]
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+%%
+\def\atallowdigits{\let\ifat@digits\iftrue}
+\def\atdisallowdigits{\let\ifat@digits\iffalse}
+\DeclareOption{digits}{\atallowdigits}
+\DeclareOption{nodigits}{\atdisallowdigits}
+\ExecuteOptions{nodigits}
+\ProcessOptions
+\begingroup
+\catcode`\<1
+\catcode`\>2
+\catcode`\{12
+\catcode`\}12
+\gdef\at@lb<{>
+\gdef\at@rb<}>
+\gdef\at@spc< >
+\endgroup
+\def\at@test#1\then{%
+  #1\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi%
+}
+\def\at@ifcat#1{\at@test\ifcat#1\noexpand\@let@token\then}
+\def\at@ifletter#1#2{%
+  \at@ifcat x%
+    {\at@ifletter@ii{#1}}%
+    {\at@ifcat 0%
+      {\at@ifletter@i{#1}{#2}}%
+      {#2}%
+    }%
+}
+\def\at@ifletter@i#1#2#3{%
+  \at@test\if%
+    \ifat@digits1\else0\fi%
+    \ifnum`#3<`0x\else\ifnum`#3>`9x\else1\fi\fi%
+  \then%
+    {\at@ifletter@ii{#1}{#3}}%
+    {#2#3}%
+}
+\def\at@ifletter@ii#1#2{\toks@\expandafter{\the\toks@#2}#1}
+\def\at@read@name#1{%
+  \let\at@next=#1%
+  \toks@{}%
+  \futurelet\@let@token\at@rn@i%
+}
+\def\at@rn@i{%
+  \def\@tempa{\afterassignment\at@rn@iv\let\@let@token= }%
+  \at@ifletter%
+    {\futurelet\@let@token\at@rn@iii}%
+    {\at@ifcat\bgroup%
+      {\toks@\expandafter{\at@lb}\@tempa}%
+      {\at@ifcat\egroup%
+        {\toks@\expandafter{\at@rb}\@tempa}%
+        {\at@ifcat\at@spc%
+          {\toks@{ }\@tempa}%
+          {\at@rn@ii}%
+        }%
+      }%
+    }%
+}
+\def\at@rn@ii#1{%
+  \toks@\expandafter{\string#1}%
+  \at@rn@iv%
+}
+\def\at@rn@iii{%
+  \at@ifletter%
+    {\futurelet\@let@token\at@rn@iii}%
+    {\@ifnextchar.\at@rn@iv\at@rn@iv}%
+}
+\def\at@rn@iv{%
+  \let\@let@token\relax%
+  \expandafter\at@next\csname at.\the\toks@\endcsname%
+}
+\def\at@cmdname#1{\expandafter\at@cmdname@i\string#1\@@foo}
+\def\at@cmdname@i#1.#2\@@foo{#2}
+\def\at@decode#1{%
+  \at@test\ifx#1\relax\then{%
+    \PackageError{at}{Unknown @-command `@\at@cmdname#1'}{%
+      The @-command you typed wasn't recognised, so I've ignored it.
+    }%
+  }{%
+    #1%
+  }%
+}
+\def\@at{%
+  \def\@tempa{\at@read@name\at@decode}%
+  \ifmmode\ifx\Iat\not@@defined\else%
+    \let\@tempa\Iat%
+  \fi\fi%
+  \@tempa%
+}
+\def\at@buildcmd#1#2{%
+  \expandafter\def\csname\expandafter
+    \@gobble\string#1@decode\endcsname##1{#2##1}%
+  \edef#1{%
+    \noexpand\at@read@name%
+    \expandafter\noexpand%
+      \csname\expandafter\@gobble\string#1@decode\endcsname%
+  }%
+}
+\at@buildcmd\newatcommand\newcommand
+\at@buildcmd\renewatcommand\renewcommand
+\at@buildcmd\provideatcommand\providecommand
+\at@buildcmd\atdef\def
+\at@buildcmd\atshow\show
+\def\atlet{%
+  \begingroup%
+  \@makeother\@%
+  \at@read@name\atlet@i%
+}
+\def\atlet@i#1{%
+  \def\at@temp{#1}%
+  \@ifnextchar=\atlet@ii{\atlet@ii=}%
+}
+\def\atlet@ii#1{\afterassignment\atlet@iii\global\let\at@gnext=}
+\def\atlet@iii{%
+  \if @\noexpand\at@gnext%
+    \expandafter\at@read@name\expandafter\atlet@iv%
+  \else%
+    \expandafter\endgroup%
+    \expandafter\let\at@temp= \at@gnext%
+  \fi%
+}
+\def\atlet@iv#1{%
+  \expandafter\endgroup%
+  \expandafter\let\at@temp=#1%
+}
+\def\at{\ifx\protect\@typeset@protect\else\at@protect\fi\@at}
+\def\at@protect\fi#1{%
+  \fi%
+  \ifx\protect\string%
+    \expandafter\at@protect@string%
+  \else%
+    \expandafter\at@protect@noexpand%
+  \fi%
+}
+\def\at@protect@string{@\string}
+\def\at@protect@noexpand{\noexpand\@at@ @\noexpand}
+\def\@at@#1{\at}
+\def\aton{%
+  \ifnum\catcode`\@=\active\else%
+    \edef\atoff{\catcode`\noexpand\@\the\catcode`\@}%
+    \catcode`\@\active%
+    \lccode`\~`\@%
+    \lowercase{\let~\at}%
+  \fi%
+}
+\def\atoff{\catcode`\@12}
+\let\makeatother\aton
+\AtBeginDocument{\aton}
+\expandafter\def\expandafter\dospecials\expandafter{\dospecials\do\@}
+\expandafter\def\expandafter\@sanitize\expandafter{%
+  \@sanitize\@makeother\@}
+\expandafter\chardef\csname at.@\endcsname=`\@
+\atdef*#1*{\ifmmode\mathbf{#1}\else\textbf{#1}\fi}
+\atdef/#1/{\ifmmode\mathit{#1}\else\emph{#1}\fi}
+\atlet i=\index
+\atdef I#1{#1\index{#1}}
+\endinput
+%%
+%% End of file `at.sty'.

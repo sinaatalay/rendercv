@@ -1,0 +1,2886 @@
+% ======================================================================
+% tocbasic-de.tex
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+% Package tocbasic for Package and Class Authors
+% Maintained by Markus Kohm
+%
+% ======================================================================
+
+\KOMAProvidesFile{tocbasic-de.tex}
+                 [$Date: 2023-04-04 10:50:12 +0200 (Di, 04. Apr 2023) $
+                  KOMA-Script guide (package tocbasic)]
+
+\chapter{Verzeichnisse verwalten mit Hilfe von \Package{tocbasic}}
+\labelbase{tocbasic}
+
+\BeginIndexGroup
+\BeginIndex{Package}{tocbasic}%
+\BeginIndex{}{Verzeichnis}%
+\BeginIndex{}{Dateierweiterung}%
+\index{Dateiendung|see{Dateierweiterung}}%|
+Der Hauptzweck des Pakets \Package{tocbasic} besteht darin, Paket- und
+Klassenautoren die Möglichkeit zu geben, eigene Verzeichnisse vergleichbar mit
+dem Abbildungs- und Tabellenverzeichnis zu erstellen und dabei Klassen und
+anderen Paketen einen Teil der Kontrolle über diese Verzeichnisse zu
+erlauben. Dabei sorgt das Paket \Package{tocbasic} auch dafür, dass diese
+Verzeichnisse von \Package{babel}\IndexPackage{babel} (siehe
+\cite{package:babel}) bei der Sprachumschaltung mit berücksichtigt
+werden. Durch Verwendung von \Package{tocbasic} soll dem Paketautor die Mühe
+genommen werden, selbst solche Anpassungen an andere Pakete oder an Klassen
+vornehmen zu müssen.
+
+Als kleiner Nebeneffekt kann das Paket auch verwendet werden, um neue
+Gleitumgebungen oder den Gleitumgebungen ähnliche nicht gleitende Umgebungen
+für Konsultationsobjekte zu definieren. Näheres dazu wird nach der Erklärung
+der grundlegenden Anweisungen in den folgenden vier Abschnitten durch ein
+Beispiel in \autoref{sec:tocbasic.example} verdeutlicht, das in kompakter Form
+noch einmal in \autoref{sec:tocbasic.declarenewtoc} aufgegriffen wird.
+
+\KOMAScript{} verwendet \Package{tocbasic} sowohl für das Inhaltsverzeichnis
+als auch für die bereits erwähnten Verzeichnisse für Abbildungen und Tabellen.
+
+
+\section{Grundlegende Anweisungen}
+\seclabel{basics}
+
+Die grundlegenden Anweisungen dienen in erster Linie dazu, eine Liste aller
+bekannten Dateierweiterungen\textnote{Dateierweiterung, Verzeichnis}, die für
+Verzeichnisse stehen, zu verwalten. Einträge in Dateien mit solchen
+Dateierweiterungen werden typischerweise mit
+\Macro{addtocontents}\important{\Macro{addtocontents},
+  \DescRef{\LabelBase.cmd.addxcontentsline}} oder
+\DescRef{\LabelBase.cmd.addxcontentsline} vorgenommen. Darüber hinaus gibt es
+Anweisungen, mit denen Aktionen für all diese Dateierweiterungen durchgeführt
+werden können. Außerdem gibt es Anweisungen, um Einstellungen für die Datei
+vorzunehmen, die zu einer gegebenen Dateierweiterung gehört. Typischerweise
+hat so eine Dateierweiterung auch einen
+Besitzer\textnote{Dateibesitzer}. Dieser Besitzer kann eine Klasse oder ein
+Paket oder die Bezeichnung einer Kategorie sein, die der Autor der Klasse oder
+des Pakets, das \Package{tocbasic} verwendet, frei gewählt hat. \KOMAScript{}
+selbst verwendet beispielsweise die Kategorie \PValue{float} für die
+Dateierweiterungen \File{lof} und \File{lot}, die für das Abbildungs- und das
+Tabellenverzeichnis stehen. Für das Inhaltsverzeichnis verwendet \KOMAScript{}
+als Besitzer den Dateinamen der Klasse.
+
+\begin{Declaration}
+  \Macro{Ifattoclist}\Parameter{Dateierweiterung}
+                     \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Mit\ChangedAt{v3.28}{\Package{tocbasic}} dieser Anweisung wird überprüft, ob
+die \PName{Dateierweiterung} bereits in der Liste der bekannten
+Dateierweiterungen vorhanden ist oder nicht. Ist die \PName{Dateierweiterung}
+bereits über diese Liste bekannt, so wird der \PName{Dann-Teil}
+ausgeführt. Anderenfalls wird der \PName{Sonst-Teil} ausgeführt.
+\begin{Example}
+  Angenommen, Sie wollen wissen, ob die Dateierweiterung »\File{foo}« bereits
+  verwendet wird, um in diesem Fall eine Fehlermeldung auszugeben, weil diese
+  damit nicht mehr verwendet werden kann:
+\begin{lstcode}
+  \Ifattoclist{foo}{%
+    \PackageError{bar}{%
+      extension `foo' already in use%
+    }{%
+      Each extension may be used only
+      once.\MessageBreak
+      The class or another package already
+      uses extension `foo'.\MessageBreak
+      This error is fatal!\MessageBreak
+      You should not continue!}%
+  }{%
+    \PackageInfo{bar}{using extension `foo'}%
+  }
+\end{lstcode}
+\end{Example}
+\EndIndexGroup%
+\ExampleEndFix
+
+
+\begin{Declaration}
+  \Macro{addtotoclist}\OParameter{Besitzer}\Parameter{Dateierweiterung}
+\end{Declaration}
+Diese Anweisung fügt die \PName{Dateierweiterung} der Liste der bekannten
+Dateierweiterungen hinzu. Ist die \PName{Dateierweiterung} bereits bekannt, so
+wird hingegen ein Fehler gemeldet, um die doppelte Verwendung derselben
+\PName{Dateierweiterung} zu verhindern.
+
+Wenn das optionale Argument \OParameter{Besitzer} angegeben wurde, wird der
+angegebene \PName{Besitzer} für diese Dateierweiterung mit gespeichert. Wurde
+das optionale Argument weggelassen, dann versucht \Package{tocbasic} den
+Dateinamen der aktuell abgearbeiteten Klasse oder des Pakets herauszufinden
+und als \PName{Besitzer} zu speichern. Dies\textnote{Achtung!} funktioniert
+nur, wenn \Macro{addtotoclist} während des Ladens der Klasse oder des Pakets
+aufgerufen wird. Es funktioniert nicht, wenn \Macro{addtotoclist} erst später
+aufgrund der Verwendung einer Anweisung durch den Benutzer aufgerufen wird. In
+diesem Fall wird ein leerer \PName{Besitzer} eingetragen. 
+
+Beachten\textnote{Achtung!} Sie, dass ein leeres Argument \PName{Besitzer}
+nicht immer das Gleiche ist wie das Weglassen des kompletten optionalen
+Arguments einschließlich der eckigen Klammern. Ein leeres Argument würde immer
+einen leeren \PName{Besitzer} ergeben.
+\begin{Example}
+  Angenommen, Sie wollen die Dateierweiterung »\File{foo}« der Liste der
+  bekannten Dateierweiterungen hinzufügen, während Ihr Paket mit dem
+  Dateinamen »\File{bar.sty}« geladen wird:
+\begin{lstcode}
+  \addtotoclist{foo}
+\end{lstcode}
+  Dies fügt die Dateierweiterung »\PValue{foo}« mit dem Besitzer
+  »\PValue{bar.sty}« der Liste der bekannten Dateierweiterung hinzu, wenn diese
+  Erweiterung nicht bereits in der Liste ist. Wenn die verwendete
+  Klasse oder ein anderes Paket diese Dateierweiterung schon angemeldet hat,
+  erhalten Sie den Fehler:
+\begin{lstoutput}[breakatwhitespace]
+  Package tocbasic Error: file extension `foo' cannot be used twice
+
+  See the tocbasic package documentation for explanation.
+  Type H <return> for immediate help.
+\end{lstoutput}
+  Wenn Sie dann tatsächlich die Taste »\texttt{H}«, gefolgt von der
+  Eingabe-Taste drücken, erhalten Sie als Hilfe:
+\begin{lstoutput}[breakatwhitespace]
+  File extension `foo' is already used by a toc-file, while bar.sty
+  tried to use it again for a toc-file.
+  This may be either an incompatibility of packages, an error at a package,
+  or a mistake by the user.
+\end{lstoutput}
+
+  Vielleicht stellt Ihr Paket auch eine Anweisung bereit, die ein
+  Verzeichnis dynamisch erzeugt. In diesem Fall sollten Sie das
+  optionale Argument von \Macro{addtotoclist} verwenden, um den
+  \PName{Besitzer} anzugeben:
+\begin{lstcode}
+  \newcommand*{\createnewlistofsomething}[1]{%
+    \addtotoclist[bar.sty]{#1}%
+    % Weitere Aktionen, um dieses Verzeichnis 
+    % verfügbar zu machen
+  }
+\end{lstcode}
+  Wenn jetzt der Anwender diese Anweisung aufruft, beispielsweise mit
+\begin{lstcode}
+  \createnewlistofsomething{foo}
+\end{lstcode}
+  dann wird die Dateierweiterung »\PValue{foo}« ebenfalls mit dem Besitzer
+  »\PValue{bar.sty}« zur Liste der bekannten Dateierweiterungen hinzugefügt
+  oder aber ein Fehler gemeldet, wenn diese Dateierweiterung bereits verwendet
+  wird. 
+\end{Example}
+
+Sie können als \PName{Besitzer} angeben, was immer Sie wollen, aber es sollte
+eindeutig sein! Wenn Sie beispielsweise der Autor des Pakets \Package{float}
+wären, könnten Sie als \PName{Besitzer} auch die Kategorie »\PValue{float}«
+anstelle von »\PValue{float.sty}« angeben. In diesem Fall würden die
+\KOMAScript-Optionen\important{\DescRef{maincls.option.listof}}%
+\IndexOption{listof~=\PName{Einstellung}} für das Verzeichnis der Abbildungen
+und das Verzeichnis der Tabellen auch Ihre Verzeichnisse betreffen. Das liegt
+daran, dass \KOMAScript{} die Dateierweiterungen »\PValue{lof}« für das
+Abbildungsverzeichnis und »\PValue{lot}« für das Tabellenverzeichnis mit der
+Kategorie »\PValue{float}« als \PName{Besitzer} anmeldet und die Optionen für
+diesen Besitzer setzt.
+
+Das Paket \hyperref[cha:scrhack]{\Package{scrhack}}\IndexPackage{scrhack}%
+\important{ \hyperref[cha:scrhack]{\Package{scrhack}}} enthält übrigens
+Patches für mehrere Pakete wie \Package{float}\IndexPackage{float} oder
+\Package{listings}\IndexPackage{listings}, die eigene Verzeichnisse
+bereitstellen. Bei Verwendung von \hyperref[cha:scrhack]{\Package{scrhack}}
+wird unter anderem die jeweilige Dateierweiterung der Liste der bekannten
+Dateierweiterungen hinzugefügt. Dabei wird als \PName{Besitzer}
+»\PValue{float}« verwendet. Dies ist sozusagen der grundlegende Baustein, um
+die Möglichkeiten von \Package{tocbasic} und der \KOMAScript-Klassen auch für
+diese Verzeichnisse automatisch nutzen zu können.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{AtAddToTocList}\OParameter{Besitzer}\Parameter{Anweisungen}
+\end{Declaration}
+Auf diese Weise können die \PName{Anweisungen} zu einer internen Liste von
+Anweisungen hinzugefügt werden, die immer dann auszuführen sind, wenn eine
+Dateierweiterung mit dem angegebenen \PName{Besitzer} zur Liste der bekannten
+Dateierweiterungen hinzugefügt wird. Bezüglich des optionalen Arguments wird
+wie in der Erklärung von \DescRef{\LabelBase.cmd.addtotoclist} beschrieben
+verfahren. Wird das optionale Argument leer gelassen, werden in diesem Fall
+die Aktionen unabhängig vom Besitzer immer ausgeführt, wenn die
+Dateierweiterung zu der Liste der bekannten Dateierweiterungen hinzugefügt
+wird. Während der Ausführung der \PName{Anweisungen} ist außerdem
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} die
+Dateierweiterung, die gerade hinzugefügt wird.
+\begin{Example}
+  \Package{tocbasic} selbst verwendet
+  % Umbruchkorrektur (schließende Klammer verschoben)
+\begin{lstcode}
+  \AtAddToTocList[]{%
+    \expandafter\tocbasic@extend@babel
+    \expandafter{\@currext}}
+\end{lstcode}
+  um jede Dateierweiterung zu der in \Package{tocbasic} vorhandenen
+  Erweiterung für das Paket \Package{babel} hinzuzufügen. 
+\end{Example}
+
+Die\textnote{Achtung!} zweimalige Verwendung von \Macro{expandafter} ist im
+Beispiel erforderlich, weil das Argument von
+\DescRef{\LabelBase.cmd.tocbasic@extend@babel} zwingend bereits expandiert
+sein muss. Siehe dazu auch die Erklärung zu
+\DescRef{\LabelBase.cmd.tocbasic@extend@babel} in
+\autoref{sec:tocbasic.internals},
+\DescPageRef{\LabelBase.cmd.tocbasic@extend@babel}.
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{removefromtoclist}\OParameter{Besitzer}\Parameter{Dateierweiterung}
+\end{Declaration}
+Man kann eine \PName{Dateierweiterung} auch wieder aus der Liste der bekannten
+Dateierweiterungen entfernen. Ist das optionale Argument \OParameter{Besitzer}
+angegeben, so wird die Dateierweiterung nur entfernt, wenn sie für den
+angegebenen \PName{Besitzer} angemeldet wurde. Das gilt auch für den leeren
+\PName{Besitzer}. Wird dagegen gar kein \OParameter{Besitzer} angegeben,
+entfallen also auch die eckigen Klammern, findet kein Besitzertest statt,
+sondern die \PName{Dateierweiterung} wird unabhängig vom Besitzer entfernt.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{doforeachtocfile}\OParameter{Besitzer}\Parameter{Anweisungen}
+\end{Declaration}
+Bisher haben Sie nur Anweisungen kennengelernt, die für Klassen- und
+Paketautoren zwar zusätzliche Sicherheit, aber auch eher zusätzlichen Aufwand
+bedeuten. Mit \Macro{doforeachtocfile} kann man die erste Ernte dafür
+einfahren. Diese Anweisung erlaubt es, die angegebenen \PName{Anweisungen} für
+jede mit dem \PName{Besitzer} angemeldete Dateierweiterung
+auszuführen. Während der Ausführung der \PName{Anweisungen} ist
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} die aktuell
+verarbeitete Dateierweiterung. Wird das optionale Argument
+\OParameter{Besitzer} weggelassen, so werden alle Dateierweiterungen
+unabhängig vom Besitzer abgearbeitet. Ein leeres optionales Argument würde
+hingegen nur die Dateierweiterungen mit leerem Besitzer verarbeiten.
+\begin{Example}
+  Wenn Sie die Liste aller bekannten Dateierweiterungen auf das Terminal und
+  in die \File{log}-Datei ausgeben wollen, ist dies einfach mit
+\begin{lstcode}
+  \doforeachtocfile{\typeout{\@currext}}
+\end{lstcode}
+  möglich. Sollen hingegen nur die Dateierweiterungen des Besitzers
+  »\PValue{foo}« ausgegeben werden, geht das einfach mit:
+\begin{lstcode}
+  \doforeachtocfile[foo]{\typeout{\@currext}}
+\end{lstcode}
+\end{Example}
+Die \KOMAScript-Klassen \Class{scrbook} und \Class{scrreprt} verwenden die
+Anweisung, um für Verzeichnisse, für die Eigenschaft \PValue{chapteratlist}
+gesetzt ist, optional einen vertikalen Abstand oder die Kapitelüberschrift in
+das Verzeichnis einzutragen. Wie Sie diese Eigenschaft setzen können, ist
+in \autoref{sec:tocbasic.toc} ab \DescPageRef{\LabelBase.cmd.setuptoc} zu
+finden.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasicautomode}
+\end{Declaration}
+Diese Anweisung definiert das vom \LaTeX-Kern für Klassen- und Paketautoren
+bereitgestellte
+\Macro{@starttoc}\IndexCmd{@starttoc}\important{\Macro{\@starttoc}} so um,
+dass bei jedem Aufruf von \Macro{@starttoc} die dabei angegebene
+Dateierweiterung in die Liste der bekannten Dateierweiterungen eingefügt wird,
+soweit sie dort noch nicht vorhanden ist. Außerdem wird dann
+\DescRef{\LabelBase.cmd.tocbasic@starttoc} anstelle von \Macro{@starttoc}
+verwendet. Näheres zu \DescRef{\LabelBase.cmd.tocbasic@starttoc} und
+\Macro{@starttoc} ist \autoref{sec:tocbasic.internals},
+\DescPageRef{\LabelBase.cmd.tocbasic@starttoc} zu entnehmen.
+
+Mit Hilfe von \Macro{tocbasicautomode} wird also jedes Verzeichnis, das mit
+Hilfe von \Macro{@starttoc} erstellt wird, automatisch unter die Kontrolle von
+\Package{tocbasic} gestellt. Ob das zum gewünschten Ergebnis führt, hängt
+jedoch sehr von den jeweiligen Verzeichnissen ab. Immerhin funktioniert damit
+schon einmal die Erweiterung für das \Package{babel}-Paket für alle
+Verzeichnisse. Es ist jedoch vorzuziehen, wenn der Paketautor selbst
+\Package{tocbasic} explizit verwendet. Er kann dann auch die weiteren Vorteile
+nutzen, die ihm das Paket bietet und die in den nachfolgenden Abschnitten
+beschrieben werden.%
+\EndIndexGroup
+
+
+\section{Erzeugen eines Verzeichnisses}
+\seclabel{toc}
+
+Im vorherigen Abschnitt haben Sie erfahren, wie eine Liste bekannter
+Dateierweiterungen verwaltet werden kann\iffree{ und wie automatisch Anweisungen
+  beim Hinzufügen von Dateierweiterungen zu dieser Liste ausgeführt werden
+  können}{}. Des Weiteren haben Sie eine Anweisung kennengelernt, mit der man
+für jede einzelne bekannte Dateierweiterung oder einen spezifischen Teil davon
+Anweisungen ausführen kann. In diesem Abschnitt werden Sie Anweisungen
+kennenlernen, die sich auf die Datei beziehen, die mit dieser Dateierweiterung
+verbunden ist.
+
+
+\begin{Declaration}
+  \Macro{addtoeachtocfile}\OParameter{Besitzer}\Parameter{Inhalt}
+\end{Declaration}
+Die Anweisung \Macro{addtoeachtocfile} schreibt \PName{Inhalt} mit Hilfe von
+\Macro{addtocontents}\IndexCmd{addtocontents}\important{\Macro{addtocontents}}%
+\iffree{ aus dem \LaTeX-Kern}{} in jede Datei, die mit dem angegebenen
+\PName{Besitzer} in der Liste der bekannten Dateierweiterungen \iffree{zu
+  finden ist}{steht}. Wird das optionale Argument weggelassen, wird in jede
+Datei aus der Liste der bekannten Dateierweiterungen geschrieben.\iffree{ Der
+  konkrete Dateiname setzt sich dabei übrigens aus \Macro{jobname} und der
+  Dateierweiterung zusammen.}{} Während des Schreibens von \PName{Inhalt} ist
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} die
+Dateierweiterung der Datei, in die aktuell geschrieben wird.
+\begin{Example}
+  Sie wollen einen vertikalen Abstand von einer Zeile in alle Dateien aus der
+  Liste der bekannten Dateierweiterungen schreiben.
+\begin{lstcode}
+  \addtoeachtocfile{%
+    \protect\addvspace{\protect\baselineskip}%
+  }%
+\end{lstcode}
+  Wenn Sie das hingegen nur für die Dateien mit dem definierten Besitzer
+  »\PValue{foo}« machen wollen, verwenden Sie:
+\begin{lstcode}
+  \addtoeachtocfile[foo]{%
+    \protect\addvspace{\protect\baselineskip}%
+  }
+\end{lstcode}%
+\end{Example}%
+\iffree{Anweisungen, die nicht bereits beim Schreiben expandiert werden
+  sollen, sind wie bei \Macro{addtocontents} mit \Macro{protect} zu
+  schützen.}{\ExampleEndFix}%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{addxcontentsline}\Parameter{Dateierweiterung}\Parameter{Ebene}
+                          \OParameter{Gliederungsnummer}\Parameter{Inhalt}
+\end{Declaration}
+Diese\ChangedAt{v3.12}{\Package{tocbasic}} Anweisung ähnelt sehr der Anweisung
+\Macro{addcontentsline}\IndexCmd{addcontentsline} aus dem
+\LaTeX-Kern. Allerdings besitzt sie ein zusätzliches optionales Argument für
+die \PName{Gliederungsnummer} des Eintrags, während diese bei
+\Macro{addcontentsline} im Argument \PName{Inhalt} mit angegeben wird. Sie
+wird verwendet, um nummerierte oder nicht nummerierte Einträge in das über die
+\PName{Dateierweiterung} spezifizierte Verzeichnis aufzunehmen. Dabei ist
+\PName{Ebene} der symbolische Name der Gliederungsebene und \PName{Inhalt} der
+entsprechende Eintrag. Die Seitenzahl wird automatisch bestimmt.
+
+Im Unterschied zu \Macro{addcontentsline} testet \Macro{addxcontentsline}
+zunächst, ob Anweisung \Macro{add\PName{Ebene}\PName{Dateierweiterung}entry}
+definiert ist. In diesem Fall wird sie für den Eintrag verwendet, wobei
+\PName{Gliederungsnummer} als optionales Argument und \PName{Inhalt} als
+obligatorisches Argument übergeben wird. Ein Beispiel für eine solche
+Anweisung, die von den \KOMAScript-Klassen bereitgestellt wird, wäre
+\DescRef{maincls-experts.cmd.addparttocentry} (siehe
+\autoref{sec:maincls-experts.toc},
+\DescPageRef{maincls-experts.cmd.addparttocentry}). Ist die entsprechende
+Anweisung nicht definiert, wird stattdessen die interne Anweisung
+\DescRef{\LabelBase.cmd.tocbasic@addxcontentsline} verwendet. Diese erhält
+alle vier Argumente als obligatorische Argumente und verwendet dann
+ihrerseits \Macro{addcontentsline}, um den gewünschten Eintrag
+vorzunehmen. Näheres zu \DescRef{\LabelBase.cmd.tocbasic@addxcontentsline} ist
+\autoref{sec:tocbasic.internals},
+\DescPageRef{\LabelBase.cmd.tocbasic@addxcontentsline} zu entnehmen.
+
+Ein Vorteil der Verwendung von \Macro{addxcontentsline} gegenüber
+\Macro{addcontentsline} ist zum einen, dass die Eigenschaft
+\PValue{numberline} (siehe \DescPageRef{\LabelBase.cmd.setuptoc}) beachtet
+wird. Zum anderen kann die Form der Einträge über die Definition
+entsprechender, für die \PName{Ebene} und \PName{Dateierweiterung}
+spezifischer Anweisungen konfiguriert werden.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{addxcontentslinetoeachtocfile}\OParameter{Besitzer}
+                                       \Parameter{Ebene}
+                                       \OParameter{Gliederungsnummer}%
+                                       \Parameter{Inhalt}
+  \Macro{addcontentslinetoeachtocfile}\OParameter{Besitzer}
+                                      \Parameter{Ebene}\Parameter{Inhalt}%
+\end{Declaration}
+Diese beiden Anweisungen stehen in direkter Beziehung zu dem oben erklärten
+\DescRef{\LabelBase.cmd.addxcontentsline}\ChangedAt{v3.12}{\Package{tocbasic}}
+beziehungsweise zum im \LaTeX-Kern definierten \Macro{addcontentsline}. Der
+Unterschied besteht darin, dass diese Anweisungen \PName{Inhalt} nicht nur in
+eine einzelne Datei, sondern in alle Dateien eines angegebenen
+\PName{Besitzers} und bei Verzicht auf das erste optionale Argument in alle
+Dateien aus der Liste der bekannten Dateierweiterungen schreibt.
+\begin{Example}
+  Angenommen, Sie sind Klassen-Autor und wollen den Kapiteleintrag nicht nur in
+  das Inhaltsverzeichnis, sondern in alle Verzeichnisdateien schreiben. Nehmen
+  wir weiter an, dass aktuell \PValue{\#1} den Titel enthält, der geschrieben
+  werden soll.
+\begin{lstcode}
+  \addxcontentslinetoeachtocfile{chapter}%
+                                [\thechapter]{#1}
+\end{lstcode}
+  In diesem Fall soll natürlich die aktuelle Kapitelnummer direkt beim
+  Schreiben in die Verzeichnisdatei expandiert werden, weshalb sie nicht mit
+  \Macro{protect} vor der Expansion geschützt wurde.
+\end{Example}
+Während des Schreibens von \PName{Inhalt} ist auch hier, wie schon bei
+\DescRef{\LabelBase.cmd.addtoeachtocfile},
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} die
+Dateierweiterung der Datei, in die aktuell geschrieben wird.%
+
+Die Anweisung\ChangedAt{v3.12}{\Package{tocbasic}}
+\Macro{addxcontentslinetoeachtocfile} ist gegenüber
+\Macro{addcontentslinetoeachtocfile} möglichst vorzuziehen, da die
+Erweiterungen von \DescRef{\LabelBase.cmd.addxcontentsline} nur damit
+Anwendung finden. Näheres zu diesen Erweiterungen und Vorteilen ist in der
+vorausgehenden Erklärung von \DescRef{\LabelBase.cmd.addxcontentsline} zu
+finden.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{listoftoc}\OParameter{Titel}\Parameter{Dateierweiterung}
+  \Macro{listoftoc*}\Parameter{Dateierweiterung}
+  \Macro{listofeachtoc}\OParameter{Besitzer}
+  \Macro{listof\PName{Dateierweiterung}name}
+\end{Declaration}
+Mit diesen Anweisungen werden die Verzeichnisse
+ausgegeben. Die\important{\Macro{listoftoc*}} Sternvariante \Macro{listoftoc*}
+benötigt als einziges Argument die \PName{Dateierweiterung} der Datei mit den
+Daten zu dem Verzeichnis. Die Anweisung setzt zunächst die vertikalen und
+horizontalen Abstände, die innerhalb von Verzeichnissen gelten sollen, führt
+die Anweisungen aus, die vor dem Einlesen der Datei ausgeführt werden sollen,
+liest dann die Datei und führt zum Schluss die Anweisungen aus, die nach dem
+Einlesen der Datei ausgeführt werden sollen. Damit kann \Macro{listoftoc*} als
+direkter Ersatz der \LaTeX-Kern-Anweisung
+\Macro{@starttoc}\IndexCmd{@starttoc}\important{\Macro{@starttoc}} verstanden
+werden.
+
+Die\important{\Macro{listoftoc}} Version von \Macro{listoftoc} ohne Stern
+setzt das komplette Verzeichnis und veranlasst auch einen optionalen Eintrag
+in das Inhaltsverzeichnis und den Kolumnentitel. Ist das optionale Argument
+\OParameter{Titel} gegeben, so wird diese Angabe sowohl als Überschrift als
+auch als optionaler Eintrag in das Inhaltsverzeichnis und den Kolumnentitel
+verwendet. Ist das Argument \PName{Titel} lediglich leer, so wird auch eine
+leere Angabe verwendet. Wird\textnote{Achtung!} hingegen das komplette
+Argument einschließlich der eckigen Klammern weggelassen, so wird die
+Anweisung \Macro{listof\PName{Dateierweiterung}name} verwendet, wenn diese
+definiert ist. Ist sie nicht definiert, wird ein Standard-Ersatzname verwendet
+und eine Warnung ausgegeben.
+
+Die\important{\Macro{listofeachtoc}} Anweisung \Macro{listofeachtoc} gibt alle
+Verzeichnisse mit dem angegebenen Besitzer oder alle Verzeichnisse aller
+bekannten Dateinamenerweiterungen aus. Damit\textnote{Achtung!} dabei der
+korrekte Titel ausgegeben werden kann, sollte
+\Macro{listof\PName{Dateierweiterung}name} passend definiert sein.
+Da\textnote{Tipp!} eventuell auch der Anwender selbst \Macro{listoftoc} ohne
+optionales Argument oder \Macro{listofeachtoc} verwenden könnte, wird dies
+ohnehin empfohlen.
+\begin{Example}
+  Angenommen, Sie haben ein neues »Verzeichnis der Algorithmen« mit der
+  Dateierweiterung »\PValue{loa}« und wollen dieses anzeigen lassen:
+\begin{lstcode}
+  \listoftoc[Verzeichnis der Algorithmen]{loa}
+\end{lstcode}
+  erledigt das für Sie. Wollen Sie das Verzeichnis hingegen ohne Überschrift
+  ausgegeben haben, dann genügt:
+\begin{lstcode}
+  \listoftoc*{loa}
+\end{lstcode}
+  Im zweiten Fall würde natürlich auch ein optional aktivierter Eintrag in das
+  Inhaltsverzeichnis nicht gesetzt. Näheres zur Eigenschaft des Eintrags in
+  das Inhaltsverzeichnis ist bei der Anweisung
+  \DescRef{\LabelBase.cmd.setuptoc}, \DescPageRef{\LabelBase.cmd.setuptoc} zu
+  finden.
+
+  Wenn Sie zuvor
+\begin{lstcode}
+  \newcommand*{\listofloaname}{%
+    Verzeichnis der Algorithmen%
+  }
+\end{lstcode}
+  definiert haben, genügt auch:
+\begin{lstcode}
+  \listoftoc{loa}
+\end{lstcode}
+  um ein Verzeichnis mit der gewünschten Überschrift zu erzeugen. Für den
+  Anwender ist es eventuell einprägsamer, wenn Sie dann außerdem noch
+\begin{lstcode}
+  \newcommand*{\listofalgorithms}{\listoftoc{loa}}
+\end{lstcode}
+  als einfache Verzeichnisanweisung definieren.
+\end{Example}
+
+Da\textnote{Achtung!} \LaTeX{} bei der Ausgabe eines Verzeichnisses auch
+gleich eine neue Verzeichnisdatei zum Schreiben öffnet, kann der Aufruf jeder
+dieser Anweisungen zu einer Fehlermeldung der Art
+\begin{lstoutput}
+  ! No room for a new \write .
+  \ch@ck ...\else \errmessage {No room for a new #3}
+                                                    \fi   
+\end{lstoutput}
+führen, wenn keine Schreibdateien mehr zur Verfügung stehen. Abhilfe kann in
+diesem Fall das Laden von Paket
+\Package{scrwfile}\important{\Package{scrwfile}}\IndexPackage{scrwfile}
+\cite{package:scrwfile} oder die Verwendung von \LuaLaTeX{} bieten.
+
+Das Paket \hyperref[cha:scrhack]{\Package{scrhack}}\IndexPackage{scrhack}%
+\important{ \hyperref[cha:scrhack]{\Package{scrhack}}} enthält übrigens
+Patches für mehrere Pakete wie \Package{float}\IndexPackage{float} oder
+\Package{listings}\IndexPackage{listings}, damit deren Verzeichnisbefehle
+\Macro{listoftoc} verwenden. Dadurch stehen viele Möglichkeiten von
+\Package{tocbasic} und den \KOMAScript-Klassen auch für deren Verzeichnisse
+zur Verfügung.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{BeforeStartingTOC}\OParameter{Dateierweiterung}
+                           \Parameter{Anweisungen}
+  \Macro{AfterStartingTOC}\OParameter{Dateierweiterung}\Parameter{Anweisungen}
+\end{Declaration}
+Manchmal ist es nützlich, wenn unmittelbar vor dem Einlesen der Datei mit den
+Verzeichnisdaten \PName{Anweisungen} ausgeführt werden können. Mit Hilfe von
+\Macro{BeforeStartingTOC} können Sie eine solche Ausführung
+wahlweise für eine einzelne \PName{Dateierweiterung} oder alle Dateien, die
+mit Hilfe von \DescRef{\LabelBase.cmd.listoftoc*},
+\DescRef{\LabelBase.cmd.listoftoc} oder \DescRef{\LabelBase.cmd.listofeachtoc}
+eingelesen werden, erreichen. Ebenso können Sie \PName{Anweisungen} nach dem
+Einlesen der Datei ausführen, wenn Sie diese mit \Macro{AfterStartingTOC}
+definieren. Während der Ausführung der \PName{Anweisungen} ist
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} die
+Dateierweiterung der Datei, die eingelesen wird bzw. gerade eingelesen wurde.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{BeforeTOCHead}\OParameter{Dateierweiterung}\Parameter{Anweisungen}
+  \Macro{AfterTOCHead}\OParameter{Dateierweiterung}\Parameter{Anweisungen}
+\end{Declaration}
+Es können auch \PName{Anweisungen} definiert werden, die unmittelbar vor oder
+nach dem Setzen der Überschrift bei Verwendung von
+\DescRef{\LabelBase.cmd.listoftoc} oder \DescRef{\LabelBase.cmd.listofeachtoc}
+ausgeführt werden. Bezüglich des optionalen Arguments und der Bedeutung von
+\Macro{@currext}\IndexCmd{@currext}\important{\Macro{@currext}} gilt, was
+bereits bei \DescRef{\LabelBase.cmd.BeforeStartingTOC} und
+\DescRef{\LabelBase.cmd.AfterStartingTOC} oben erklärt wurde.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{MakeMarkcase}
+\end{Declaration}
+Wann immer \Package{tocbasic} eine Marke für einen Kolumnentitel setzt,
+erfolgt dies als Argument der Anweisung \Macro{MakeMarkcase}. Diese Anweisung
+ist dazu gedacht, bei Bedarf die Groß-/Kleinschreibung des Kolumnentitels zu
+ändern. In der Voreinstellung ist diese Anweisung bei Verwendung einer
+\KOMAScript-Klasse
+\Macro{@firstofone}\IndexCmd{@firstofone}\important{\Macro{@firstofone}}, also
+das unveränderte Argument selbst. Bei Verwendung einer anderen Klasse ist
+\Macro{MakeMarkcase} im Gegensatz dazu
+\Macro{MakeUppercase}\IndexCmd{MakeUppercase}\important{\Macro{MakeUppercase}}.
+Die Anweisung wird von \Package{tocbasic} jedoch nur definiert, wenn sie
+nicht bereits definiert ist. Sie kann also in einer Klasse in der gewünschten
+Weise vorbelegt werden und wird dann von \Package{tocbasic} nicht umdefiniert,
+sondern wie vorgefunden verwendet.
+\begin{Example}
+  Sie wollen aus unerfindlichen Gründen, dass die Kolumnentitel in Ihrer
+  Klasse in Kleinbuchstaben ausgegeben werden. Damit dies auch für die
+  Kolumnentitel gilt, die von \Package{tocbasic} gesetzt werden, definieren
+  Sie:
+\begin{lstcode}
+  \let\MakeMarkcase\MakeLowercase
+\end{lstcode}
+\end{Example}
+
+Erlauben\textnote{Tipp!} Sie mir einen Hinweis zu \Macro{MakeUppercase}. Diese
+Anweisung ist zum einen nicht voll expandierbar. Das bedeutet, dass sie im
+Zusammenspiel mit anderen Anweisungen zu Problemen führen kann. Zum anderen
+sind sich alle Typografen einig, dass beim Versalsatz, also beim Satz
+kompletter Wörter oder Passagen in Großbuchstaben, Sperrung unbedingt
+notwendig ist. Dabei darf jedoch kein fester Abstand zwischen den Buchstaben
+verwendet werden. Vielmehr muss zwischen unterschiedlichen Buchstaben auch ein
+unterschiedlicher Abstand gesetzt werden, weil sich unterschiedliche
+Buchstabenkombinationen unterschiedlich verhalten. Gleichzeitig bilden einige
+Buchstaben von sich aus bereits Löcher, was bei der Sperrung ebenfalls zu
+berücksichtigen ist. Pakete wie \Package{ulem} oder \Package{soul} können das
+ebenso wenig leisten wie der Befehl \Macro{MakeUppercase} selbst. Auch die
+automatische Sperrung mit Hilfe des \Package{microtype}-Pakets ist
+diesbezüglich nur eine näherungsweise Notlösung, da die von der konkreten
+Schrift abhängige Form der Buchstaben auch hier nicht näher betrachtet
+wird. Da\textnote{Empfehlung} Versalsatz also eher etwas für absolute
+Experten ist und fast immer Handarbeit bedeutet, wird Laien empfohlen, darauf
+zu verzichten oder ihn nur vorsichtig und nicht an so exponierter Stelle
+wie dem Kolumnentitel zu verwenden.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{deftocheading}\Parameter{Dateierweiterung}\Parameter{Definition}
+\end{Declaration}
+Das Paket \Package{tocbasic} enthält eine Standarddefinition für das Setzen
+von Überschriften von Verzeichnissen. Diese Standarddefinition ist durch
+verschiedene Eigenschaften, die bei der Anweisung
+\DescRef{\LabelBase.cmd.setuptoc} erläutert werden, konfigurierbar. Sollte
+diese Möglichkeit einmal nicht ausreichen, so besteht die Möglichkeit, mit
+\Macro{deftocheading} eine alternative Überschriftenanweisung für ein
+Verzeichnis mit einer bestimmten \PName{Dateierweiterung} zu definieren. Die
+Definition kann als einzigen Parameter \PValue{\#1} enthalten. Beim Aufruf der
+Anweisung innerhalb von \DescRef{\LabelBase.cmd.listoftoc} oder
+\DescRef{\LabelBase.cmd.listofeachtoc} wird für dieses Argument der Titel
+des Verzeichnisses übergeben.
+
+Die \PName{Definition} ist dann selbstverständlich auch für die Auswertung
+weiterer Eigenschaften, die sich auf die Überschrift beziehen,
+verantwortlich. Das gilt insbesondere für die nachfolgend erklärten
+Eigenschaften \PValue{leveldown}, \PValue{numbered} und \PValue{totoc}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{setuptoc}\Parameter{Dateierweiterung}
+                  \Parameter{Liste von Eigenschaften}
+  \Macro{unsettoc}\Parameter{Dateierweiterung}
+                  \Parameter{Liste von Eigenschaften}
+\end{Declaration}
+Mit diesen beiden Anweisungen können \PName{Eigenschaften} für eine
+\PName{Dateierweiterung} bzw. das Verzeichnis, das dazu gehört, gesetzt und
+gelöscht werden. Die \PName{Liste von Eigenschaften} ist dabei eine durch
+Komma getrennte Folge von \PName{Eigenschaften}. Das Paket
+\Package{tocbasic} wertet folgende Eigenschaften aus:
+\begin{description}\setkomafont{descriptionlabel}{}%
+\item[\PValue{leveldown}] bedeutet, dass das Verzeichnis nicht mit der
+  obersten Gliederungsebene unterhalb von \DescRef{maincls.cmd.part} -- wenn
+  vorhanden \DescRef{maincls.cmd.chapter}, sonst \DescRef{maincls.cmd.section}
+  -- erstellt wird, sondern mit einer Überschrift der nächsttieferen
+  Gliederungsebene. Diese Eigenschaft wird von der internen
+  Überschriftenanweisung ausgewertet. Wird\textnote{Achtung!}  hingegen eine
+  eigene Überschriftenanweisung mit \DescRef{\LabelBase.cmd.deftocheading}
+  definiert, liegt die Auswertung der Eigenschaft in der Verantwortung dessen,
+  der die Definition vornimmt. Die \KOMAScript-Klassen setzen diese
+  Eigenschaft bei Verwendung der Option
+  \OptionValueRef{maincls}{listof}{leveldown}%
+  \important{\OptionValueRef{maincls}{listof}{leveldown}}%
+  \IndexOption{listof~=\textKValue{leveldown}} für alle Dateierweiterungen mit
+  dem Besitzer \PValue{float}.
+\item[\PValue{nobabel}] bedeutet, dass die normalerweise automatisch
+  verwendete Erweiterung für die Sprachumschaltung mit
+  \Package{babel}\IndexPackage{babel} für diese Dateierweiterung nicht
+  verwendet wird. Diese Eigenschaft sollte nur für Verzeichnisse verwendet
+  werden, die nur in einer festen Sprache erstellt werden, in denen also
+  Sprachumschaltungen im Dokument nicht zu berücksichtigen sind. Sie wird
+  außerdem vom Paket
+  \Package{scrwfile}\important{\Package{scrwfile}}\IndexPackage{scrwfile}
+  \cite{package:scrwfile} für Klonziele verwendet, da die Erweiterungen dort
+  bereits durch das Klonen selbst aus der Klonquelle übernommen werden.
+
+  Es ist zu beachten\textnote{Achtung!}, dass die Eigenschaft bereits vor dem
+  Hinzufügen der Dateierweiterung zu der Liste der bekannten
+  Dateierweiterungen gesetzt sein muss, damit sie eine Wirkung hat.
+\item[\PValue{noindent}]\ChangedAt{v3.27}{\Package{tocbasic}} veranlasst alle
+  von \KOMAScript{} bereitgestellten Verzeichniseintragsstile ihre Eigenschaft
+  \PValue{indent} (siehe \autoref{tab:tocbasic.tocstyle.attributes},
+  \autopageref{tab:tocbasic.tocstyle.attributes.indent}) zu ignorieren und
+  stattdessen den Einzug zu deaktivieren.
+\item[\PValue{noparskipfake}] verhindert\ChangedAt{v3.17}{\Package{tocbasic}},
+  dass vor dem Abschalten des Absatzabstandes für die Verzeichnisse ein
+  letztes Mal ein expliziter Absatzabstand eingefügt wird. Dies führt in der
+  Regel dazu, dass bei Dokumenten mit Absatzabstand der Abstand zwischen
+  Überschrift und erstem Verzeichniseintrag\index{Verzeichnis>Eintrag} kleiner
+  wird als zwischen Überschriften und normalem Text. %
+  \iffalse% Umbruchkorrektur
+  Normalerweise erhält man daher ohne diese Eigenschaft eine einheitlichere
+  Formatierung.%
+  \else%
+  Ohne diese Eigenschaft wirkt die Formatierung daher meist einheitlicher.%
+  \fi%
+\item[\PValue{noprotrusion}] verhindert\ChangedAt{v3.10}{\Package{tocbasic}}
+  das Abschalten des optischen Randausgleichs in den Verzeichnissen. Optischer
+  Randausgleich wird standardmäßig abgeschaltet, wenn das Paket
+  \Package{microtype}\IndexPackage{microtype} oder ein anderes Paket, das die
+  Anweisung \Macro{microtypesetup}\IndexCmd{microtypesetup} bereitstellt,
+  geladen ist. Wenn also optischer Randausgleich in den Verzeichnissen
+  gewünscht wird, dann muss diese Eigenschaft aktiviert
+  werden. Es\textnote{Achtung!} ist jedoch zu beachten, dass der optische
+  Randausgleich in Verzeichnissen häufig zu einem falschen Ergebnis
+  führt. Dies ist ein bekanntes Problem des optischen Randausgleichs.
+\item[\PValue{numbered}] bedeutet, dass das Verzeichnis nummeriert und damit
+  ebenfalls in das Inhaltsverzeichnis aufgenommen werden soll. Diese
+  Eigenschaft wird von der internen Überschriftenanweisung ausgewertet. Wird
+  hingegen eine eigene Überschriftenanweisung mit
+  \DescRef{\LabelBase.cmd.deftocheading} definiert, liegt die Auswertung der
+  Eigenschaft in der Verantwortung dessen, der die Definition vornimmt.  Die
+  \KOMAScript-Klassen setzen diese Eigenschaft bei Verwendung der Option
+  \OptionValueRef{maincls}{listof}{numbered}%
+  \important{\OptionValueRef{maincls}{listof}{numbered}}%
+  \IndexOption{listof~=\textKValue{numbered}} für alle Dateierweiterungen mit 
+  dem Besitzer \Package{float}.
+\item[\PValue{numberline}] \ChangedAt{v3.12}{\Package{tocbasic}}%
+  bedeutet, dass all diejenigen Einträge, die mit Hilfe der Anweisung
+  \DescRef{\LabelBase.cmd.addxcontentsline} oder der Anweisung
+  \DescRef{\LabelBase.cmd.addxcontentslinetoeachtocfile} vorgenommen werden,
+  wobei das optionale Argument für die Nummer fehlt oder leer ist, mit einer
+  leeren \DescRef{\LabelBase.cmd.numberline}-Anweisung versehen werden. Das
+  führt in der Regel dazu, dass diese Einträge nicht linksbündig mit der
+  Nummer, sondern mit dem Text der nummerierten Einträge gleicher Ebene
+  gesetzt werden. Bei\ChangedAt{v3.20}{\Package{tocbasic}} Verwendung des
+  Verzeichniseintragsstils \PValue{tocline} kann die Eigenschaft weitere
+  Auswirkungen haben. Siehe dazu die Stil-Eigenschaften
+  \Option{breakafternumber} und \Option{entrynumberformat} in
+  \autoref{tab:tocbasic.tocstyle.attributes} ab
+  \autopageref{tab:tocbasic.tocstyle.attributes}.
+
+  Die \KOMAScript-Klassen setzen diese Eigenschaft bei Verwendung der Option
+  \OptionValueRef{maincls}{listof}{numberline}%
+  \important{\OptionValueRef{maincls}{listof}{numberline}\\
+    \OptionValueRef{maincls}{toc}{numberline}%
+  }%
+  \IndexOption{listof~=\textKValue{numberline}} für die Dateierweiterungen mit
+  dem Besitzer \PValue{float} und bei Verwendung der Option
+  \OptionValueRef{maincls}{toc}{numberline}%
+  \IndexOption{toc~=\textKValue{numberline}} für die Dateierweiterung
+  \PValue{toc}. Entsprechend
+  wird die Eigenschaft bei Verwendung von Option
+  \OptionValueRef{maincls}{listof}{nonumberline}%
+  \important{%
+    \OptionValueRef{maincls}{listof}{nonumberline}\\
+    \OptionValueRef{maincls}{toc}{nonumberline}%
+  }\IndexOption{listof~=\textKValue{nonumberline}} oder
+  \OptionValueRef{maincls}{toc}{nonumberline}%
+  \IndexOption{toc~=\textKValue{nonumberline}} wieder zurückgesetzt.
+\item[\PValue{onecolumn}] \leavevmode\ChangedAt{v3.01}{\Package{tocbasic}}%
+  bedeutet, dass für dieses Verzeichnis automatisch der \LaTeX-interne
+  Einspaltenmodus mit \Macro{onecolumn}\IndexCmd{onecolumn} verwendet
+  wird. Das\textnote{Achtung!} gilt jedoch nur, falls dieses Verzeichnis
+  nicht mit der oben beschriebenen Eigenschaft
+  \PValue{leveldown}\important{\PValue{leveldown}} um eine Gliederungsebene
+  nach unten verschoben wurde. Die \KOMAScript-Klassen \Class{scrbook} und
+  \Class{scrreprt} setzen die Eigenschaft per
+  \DescRef{\LabelBase.cmd.AtAddToTocList} (siehe
+  \DescPageRef{\LabelBase.cmd.AtAddToTocList}) für alle Verzeichnisse mit dem
+  Besitzer \PValue{float} oder mit sich selbst als Besitzer. Damit werden
+  beispielsweise das Inhaltsverzeichnis, das Abbildungsverzeichnis und das
+  Tabellenverzeichnis bei diesen beiden Klassen automatisch einspaltig
+  gesetzt. Der Mehrspaltenmodus des
+  \Package{multicol}-Pakets\IndexPackage{multicol} ist von der Eigenschaft
+  ausdrücklich nicht betroffen.
+\item[\PValue{totoc}] bedeutet, dass der Titel des Verzeichnisses in das
+  Inhaltsverzeichnis aufgenommen werden soll. Diese Eigenschaft wird von der
+  internen Überschriftenanweisung ausgewertet. Wird\textnote{Achtung!} mit
+  \DescRef{\LabelBase.cmd.deftocheading}\important{\DescRef{\LabelBase.cmd.deftocheading}}%
+  \IndexCmd{deftocheading} hingegen eine eigene Überschriftenanweisung
+  definiert, liegt die Auswertung der Eigenschaft in der Verantwortung dessen,
+  der die Definition vornimmt. Die \KOMAScript-Klassen setzen diese
+  Eigenschaft bei Verwendung der Option
+  \OptionValueRef{maincls}{listof}{totoc}%
+  \important{\OptionValueRef{maincls}{listof}{totoc}}%
+  \IndexOption{listof~=\textKValue{totoc}} für alle Dateierweiterungen mit dem
+  Besitzer \Package{float}.
+\end{description}
+Die \KOMAScript-Klassen kennen eine weitere Eigenschaft:
+\begin{description}\setkomafont{descriptionlabel}{}
+\item[\PValue{chapteratlist}] sorgt dafür, dass in dieses Verzeichnis bei
+  jedem neuen Kapitel eine optionale Gliederung eingefügt wird. In der
+  Voreinstellung ist diese Untergliederung dann ein vertikaler
+  Abstand. Näheres zu den Möglichkeiten ist Option
+  \DescRef{maincls.option.listof}%
+  \IndexOption{listof~=\PName{Einstellung}}%
+  \important{\DescRef{maincls.option.listof}} in
+  \autoref{sec:maincls.floats}, \DescPageRef{maincls.option.listof} zu
+  entnehmen.
+\end{description}
+\begin{Example}
+  \iffalse% Umbruchkorrektur
+  Da \KOMAScript{} für das Abbildungs- und das Tabellenverzeichnis auf
+  \Package{tocbasic} aufbaut, gibt es nun eine weitere Möglichkeit, jegliche
+  Kapiteluntergliederung dieser Verzeichnisse zu verhindern:
+\begin{lstcode}
+  \unsettoc{lof}{chapteratlist}
+  \unsettoc{lot}{chapteratlist}
+\end{lstcode}
+
+  \fi%
+  Wollen Sie\iffalse hingegen\fi, dass das von Ihnen definierte Verzeichnis
+  mit der Dateierweiterung »\PValue{loa}« ebenfalls von der
+  Kapiteluntergliederung der \KOMAScript-Klassen betroffen ist, so verwenden
+  Sie
+\begin{lstcode}
+  \setuptoc{loa}{chapteratlist}
+\end{lstcode}
+Wollen Sie außerdem, dass bei Klassen, die \DescRef{maincls.cmd.chapter} als
+oberste Gliederungsebene verwenden, das Verzeichnis automatisch einspaltig
+gesetzt wird, so verwenden Sie zusätzlich
+\begin{lstcode}
+  \Ifundefinedorrelax{chapter}{}{%
+    \setuptoc{loa}{onecolumn}%
+  }
+\end{lstcode}
+  Die Verwendung von \DescRef{scrbase.cmd.Ifundefinedorrelax}
+  setzt das Paket \Package{scrbase} voraus (siehe
+  \autoref{sec:scrbase.if},
+  \DescPageRef{scrbase.cmd.Ifundefinedorrelax}).
+
+  Sollte\textnote{Tipp!} Ihr Paket mit einer anderen Klasse verwendet werden,
+  so schadet es trotzdem nicht, dass Sie diese Eigenschaften setzen, im
+  Gegenteil: Wertet eine andere Klasse diese Eigenschaften ebenfalls aus, so
+  nutzt Ihr Paket automatisch die Möglichkeiten jener Klasse.
+\end{Example}
+Wie Sie hier sehen, unterstützt ein Paket, das \Package{tocbasic} verwendet,
+bereits ohne nennenswerten Aufwand diverse Möglichkeiten für die dadurch
+realisierten Verzeichnisse, die sonst einigen Implementierungsaufwand
+bedeuten würden und deshalb in vielen Paketen leider fehlen.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Iftocfeature}\Parameter{Dateierweiterung}\Parameter{Eigenschaft}
+                      \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Hiermit\ChangedAt{v3.28}{\Package{tocbasic}} kann man für jede
+\PName{Eigenschaft} feststellen, ob sie für eine \PName{Dateierweiterung}
+gesetzt ist. Ist dies der Fall, wird der \PName{Dann-Teil} ausgeführt,
+anderenfalls der \PName{Sonst-Teil}. Das kann beispielsweise nützlich sein,
+wenn Sie eigene Überschriftenanweisungen mit
+\DescRef{\LabelBase.cmd.deftocheading} definieren, aber die oben beschriebenen
+Eigenschaften \PValue{totoc}, \PValue{numbered} oder \PValue{leveldown}
+unterstützen wollen.
+%
+\EndIndexGroup
+
+
+\section{Konfiguration von Verzeichniseinträgen}
+\seclabel{tocstyle}
+\BeginIndexGroup
+\BeginIndex{}{Verzeichnis>Eintrag}
+
+Neben\ChangedAt{v3.20}{\Package{tocbasic}} den eigentlichen
+Verzeichnissen und den zugehörigen Hilfsdateien kann man mit dem Paket
+\Package{tocbasic} ab Version~3.20 auch Einfluss auf die Verzeichniseinträge
+nehmen. Dazu können neue Stile definiert werden. Es stehen aber auch mehrere
+vordefinierte Stile zur Verfügung. Damit soll \Package{tocbasic} auch das
+nie offiziell gewordene \KOMAScript-Paket \Package{tocstyle} ablösen. Die
+\KOMAScript-Klassen selbst bauen seit Version~3.20 ebenfalls vollständig auf
+die von \Package{tocbasic} bereitgestellten Stile für Verzeichniseinträge.
+
+\begin{Declaration}
+  \Counter{tocdepth}
+\end{Declaration}
+Verzeichniseinträge sind normalerweise hierarchisch geordnet. Dazu wird jeder
+Eintragsebene ein numerischer Wert zugeordnet. Je höher dieser Wert, desto
+tiefer in der Hierarchie liegt die Ebene. Bei den Standardklassen hat die
+Ebene für Teile beispielsweise den Wert -1 und die Ebene für Kapitel den Wert
+0. Über den \LaTeX-Zähler \Counter{tocdepth} wird bestimmt, bis zu welcher
+Ebene Einträge im Verzeichnis ausgegeben werden. 
+
+Bei \Class{book} ist \Counter{tocdepth} beispielsweise mit 2 voreingestellt,
+es werden also die Einträge der Ebenen \PValue{part}, \PValue{chapter},
+\PValue{section} und \PValue{subsection} ausgeben. Tiefere Ebenen wie
+\PValue{subsubsection}, deren numerischer Wert 3 ist, werden nicht
+ausgegeben. Trotzdem sind die Einträge in der Hilfsdatei für das
+Inhaltsverzeichnis vorhanden.
+
+Die von \Package{tocbasic} definierten Eintragsstile beachten, abgesehen von
+\PValue{gobble} (siehe
+\DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}\iffree{}{, weiter unten in
+  diesem Abschnitt}), ebenfalls \Counter{tocdepth}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{numberline}\Parameter{Gliederungsnummer}
+  \Macro{usetocbasicnumberline}\OParameter{Code}
+\end{Declaration}
+Zwar\ChangedAt{v3.20}{\Package{tocbasic}} definiert bereits der
+\LaTeX-Kern eine Anweisung \Macro{numberline}, diese ist allerdings für die
+Anforderungen von \Package{tocbasic} nicht ausreichend. Deshalb definiert
+\Package{tocbasic} eigene Anweisungen und setzt \Macro{numberline} bei Bedarf
+mit Hilfe von \Macro{usetocbasicnumberline} für die einzelnen
+Verzeichniseinträge entsprechend. Eine Umdefinierung von \Macro{numberline}
+ist daher bei Verwendung von \Package{tocbasic} oftmals wirkungslos und führt
+teilweise auch zu Warnungen.
+
+Man kann auch die Definition von \Package{tocbasic} generell nutzen, indem man
+bereits in der Dokumentpräambel \Macro{usetocbasicnumberline} aufruft. Die
+Anweisung versucht zunächst zu ermitteln, ob in der aktuellen Definition
+wichtige interne Anweisungen von \Package{tocbasic} verwendet werden. Ist dies
+nicht der Fall, wird \Macro{numberline} entsprechend umdefiniert und zusätzlich
+\PName{Code} ausgeführt. Ist kein optionales Arguments angegeben, wird
+stattdessen via \Macro{PackageInfo} eine Meldung über die erfolgte
+Umdefinierung ausgegeben. Diese Meldung kann man einfach unterdrücken, indem
+ein leeres optionales Argument angegeben wird.
+
+Es\textnote{Achtung!} ist zu beachten, dass \Macro{usetocbasicnumberline} den
+internen Schalter \Macro{if@tempswa} global verändern kann!%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DeclareTOCStyleEntry}\OParameter{Optionenliste}\Parameter{Stil}
+                              \Parameter{Eintragsebene}
+  \Macro{DeclareTOCStyleEntries}\OParameter{Optionenliste}\Parameter{Stil}
+                                \Parameter{Liste von Eintragsebenen}
+\end{Declaration}
+Über\ChangedAt{v3.20}{\Package{tocbasic}} diese Anweisungen werden
+die Verzeichniseinträge für bestimmte \PName{Eintragsebenen} deklariert
+oder konfiguriert. Dabei ist die \PName{Eintragsebene} der Name der jeweiligen
+Eintragsebene, beispielsweise \PValue{section} für einen zur gleichnamigen
+Gliederungsebene gehörenden Eintrag ins Inhaltsverzeichnis oder
+\PValue{figure} für den Eintrag einer Abbildung ins
+Abbildungsverzeichnis. Jeder \PName{Eintragsebene} wird ein bestimmter
+\PName{Stil} zugeordnet, der zum Zeitpunkt der Deklaration bereits definiert
+sein muss. Über die \PName{Optionenliste} können die verschiedenen, meist vom
+\PName{Stil} abhängenden Eigenschaften des Eintrags festgelegt werden.
+
+Derzeit werden von \Package{tocbasic} die folgenden Eintragsstile definiert:
+\begin{description}\setkomafont{descriptionlabel}{}
+\item[\PValue{default}] ist in der Voreinstellung ein Klon von Stil
+  \PValue{dottedtocline}. Klassenautoren, die \Package{tocbasic} verwenden,
+  wird empfohlen, diesen Stil mit Hilfe von
+  \DescRef{\LabelBase.cmd.CloneTOCEntryStyle} auf den
+  Standardverzeichniseintragsstil der Klasse zu ändern. Bei den
+  \KOMAScript-Klassen wird \PValue{default} beispielsweise zu einem Klon von
+  Stil \PValue{tocline}.
+\item[\PValue{dottedtocline}] entspricht dem Stil, der von den Standardklassen
+  \Class{book} und \Class{report} für die Inhaltsverzeichniseinträge der
+  Ebenen \PValue{section} bis \PValue{subparagraph} und bei allen
+  Standardklassen für die Einträge in das Abbildungs- und das
+  Tabellenverzeichnis bekannt ist. Er kennt nur drei\important{\PValue{level},
+    \PValue{indent}, \PValue{numwidth}} Eigenschaften. Die Einträge werden
+  um \PValue{indent} von links eingezogen in der aktuellen Schrift
+  ausgegeben. \DescRef{\LabelBase.cmd.numberline} wird nicht umdefiniert. Die
+  Breite der Nummer wird von \PValue{numwidth} bestimmt. Bei mehrzeiligen
+  Einträgen wird der Einzug ab der zweiten Zeile um \PValue{numwidth}
+  erhöht. Die Seitenzahl wird mit \Macro{normalfont} ausgegeben. Eintragstext
+  und Seitenzahl werden durch eine punktierte Linie
+  verbunden. \autoref{fig:tocbasic.dottedtocline} illustriert die
+  Eigenschaften des Stils.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{%
+      \begin{tikzpicture}
+        \draw[color=lightgray] (0,2\baselineskip) -- (0,-2.5\baselineskip);
+        \draw[color=lightgray] (\linewidth,2\baselineskip) --
+                               (\linewidth,-2.5\baselineskip);
+        \node (dottedtocline) at (0,0) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{7em}%
+          \parbox[t]{\dimexpr\linewidth-9.55em}{%
+            \setlength{\parindent}{-3.2em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[3.2em][l]{1.1.10}%
+            Überschrift im Verzeichniseintragsstil \PValue{dottedtocline} mit
+            mehr als einer Zeile%
+            \leaders\hbox{$\csname m@th\endcsname
+              \mkern 4.5mu\hbox{.}\mkern 4.5mu$}\hfill\nobreak
+            \makebox[1.55em][r]{12}%
+          }%
+        };
+        \draw[|-|,color=gray,overlay] (0,0) --
+                              node [anchor=north,font=\small] {
+                                \PValue{indent}
+                              }
+                              (3.8em,0);
+        \draw[|-|,color=gray,overlay] (3.8em,\baselineskip) -- 
+                              node [anchor=south,font=\small] {
+                                \PValue{numwidth}
+                              }
+                              (7em,\baselineskip);
+        \draw[|-|,color=gray,overlay] (\linewidth,\ht\strutbox) -- 
+                              node [anchor=south,font=\small] { 
+                                \Macro{@tocrmarg} 
+                              }
+                              (\linewidth-2.55em,\ht\strutbox);
+        \draw[|-|,color=gray,overlay] (\linewidth,-\baselineskip) -- 
+                              node [anchor=north,font=\small] { 
+                                \Macro{@pnumwidth} 
+                              } 
+                              (\linewidth-1.55em,-\baselineskip);
+      \end{tikzpicture}%
+    }
+    \caption{Illustration einiger Attribute des Verzeichniseintragsstils
+      \PValue{dottedtocline}}
+    \label{fig:tocbasic.dottedtocline}
+  \end{figure}
+\item[\PValue{gobble}] ist der denkbar einfachste Stil. Einträge in diesem
+  Stil werden unabhängig von allen Einstellungen für
+  \DescRef{\LabelBase.counter.tocdepth}%
+  \IndexCounter{tocdepth}\important{\DescRef{\LabelBase.counter.tocdepth}}
+  nicht ausgegeben, sondern sozusagen verschluckt. Dennoch verfügt er über die
+  Standardeigenschaft \PValue{level}, die jedoch nie ausgewertet wird.
+\item[\PValue{largetocline}] entspricht dem Stil, der von den Standardklassen
+  für die Ebene \PValue{part} bekannt ist. Er kennt
+  nur\important{\PValue{level}, \PValue{indent}} die Eigenschaften
+  \PName{level} und \PName{indent}. Letzteres ist gleichsam eine Abweichung
+  von den Standardklassen, die selbst keinen Einzug der \PValue{part}-Einträge
+  unterstützen.
+
+  Vor dem Eintrag wird ein Seitenumbruch erleichtert. Die Einträge werden um
+  \PValue{indent} von links eingezogen und mit den Schrifteinstellungen
+  \Macro{large}\Macro{bfseries} ausgegeben. Sollte
+  \DescRef{\LabelBase.cmd.numberline} verwendet werden, so ist die
+  Nummernbreite fest auf 3\Unit{em}
+  eingestellt. \DescRef{\LabelBase.cmd.numberline} wird nicht umdefiniert. Die
+  Standardklassen verwenden für \PName{part}-Einträge kein
+  \DescRef{\LabelBase.cmd.numberline}. Der Wert hat bei mehrzeiligen Einträgen
+  auch keine Auswirkung auf den Einzug ab der zweiten Zeile.
+
+  \autoref{fig:tocbasic.largetocline} illustriert die
+  Eigenschaften
+  des Stils. Dabei wird auch auf"|fällig, dass der Stil einige Ungereimtheiten
+  der Standardklassen übernommen hat, beispielsweise den fehlenden Einzug ab
+  der zweiten Zeile bei mehrzeiligen Einträgen und zwei unterschiedliche Werte
+  für \Macro{@pnumwidth}, die aus einer Abhängigkeit von der Schriftgröße
+  resultieren. Daraus resultiert auch der Umstand, dass im Extremfall der Text
+  der Überschrift der Seitenzahl zu nahe kommen kann.  Es ist zu beachten, dass
+  die in der Abbildung gezeigte Breite der Gliederungsnummer nur dann
+  Verwendung findet, wenn auch tatsächlich \DescRef{\LabelBase.cmd.numberline}
+  verwendet wird. Die Standardklassen setzen hingegen einen festen Abstand von
+  1\Unit{em} nach der Nummer.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{%
+      \begin{tikzpicture}
+        \draw[color=lightgray] (0,2\baselineskip) -- (0,-2.5\baselineskip);
+        \draw[color=lightgray] (\linewidth,2\baselineskip) --
+                               (\linewidth,-2.5\baselineskip);
+        \node (largetocline) at (0,0) [anchor=west,inner sep=0,outer sep=0] {%
+          \parbox[t]{\dimexpr \linewidth-1.55em\relax}{%
+            \makebox[3em][l]{\large\bfseries I}%
+            \large\bfseries
+            Überschrift im Verzeichniseintragsstil \PValue{largetocline} mit
+            mehr als einer Zeile\hfill 
+            \makebox[0pt][l]{\normalsize\normalfont
+              \makebox[1.55em][r]{\large\bfseries 1}}%
+          }%
+        };
+        \draw[|-|,color=gray] (0,\baselineskip) -- 
+                              node [anchor=south] { 3\,em } 
+                              (3em,\baselineskip);
+        \draw[|-|,color=gray,overlay] (\linewidth,\ht\strutbox) -- 
+                              node [anchor=south] { \Macro{@pnumwidth} }
+                              (\linewidth-1.55em,\ht\strutbox);
+        \large\bfseries
+        \draw[|-|,color=gray,overlay] (\linewidth,-\baselineskip) -- 
+                              node [anchor=north,font=\normalfont\normalsize] { 
+                                \Macro{large}\Macro{@pnumwidth} 
+                              }
+                              (\linewidth-1.55em,-\baselineskip);
+      \end{tikzpicture}%
+    }
+    \caption{Illustration einiger Attribute des Verzeichniseintragsstils
+      \PValue{largetocline}}
+    \label{fig:tocbasic.largetocline}
+  \end{figure}
+\item[\PValue{tocline}] ist ein flexibler Stil, der in der Voreinstellung für
+  alle Einträge der \KOMAScript-Klassen verwendet wird. Entsprechend
+  definieren diese Klassen auch die Klone \PValue{part}, \PValue{chapter} und
+  \PValue{section} beziehungsweise \PValue{section} und \PValue{subsection}
+  mit Hilfe dieses Stils, ändern dann jedoch den \PName{Initialisierungscode}
+  der Klone so ab, dass sie unterschiedliche Voreinstellungen besitzen.
+
+  Der Stil kennt neben der Standardeigenschaft \PValue{level} noch
+  20\important{\PValue{level}, \PValue{beforeskip}, \PValue{breakafternumber},
+    \PValue{dynindent},
+    \PValue{dynnumwidth}, \PValue{entryformat}, \PValue{entrynumberformat},
+    \PValue{indent}, \PValue{indentfollows},
+    \PValue{linefill}, \PValue{numsep}, \PValue{numwidth},
+    \PValue{onstarthigherlevel}, \PValue{onstartlowerlevel},
+    \PValue{onstartsamelevel}, \PValue{pagenumberbox},
+    \PValue{pagenumberformat}, \PValue{pagenumberwidth},
+    \PValue{raggedentrytext}, \PValue{raggedpagenumber}, \PValue{rightindent}}
+  weitere Eigenschaften. Die Voreinstellungen all dieser Eigenschaften werden
+  abhängig vom Namen der \PName{Eintragsebene} bestimmt und orientieren sich
+  dann an den Ergebnissen der Standardklassen. Es ist daher möglich, nach
+  Laden von \Package{tocbasic} den Stil der Inhaltsverzeichniseinträge der
+  Standardklassen mit \DescRef{\LabelBase.cmd.DeclareTOCEntryStyle} in
+  \PValue{tocline} zu ändern, ohne dass dies unmittelbar zu größeren
+  Veränderungen im Aussehen der Inhaltsverzeichniseinträge führt. So kann man
+  gezielt nur die Eigenschaften ändern, die für erwünschte Änderungen
+  notwendig sind.  Dasselbe gilt für Abbildungs- und Tabellenverzeichnis der
+  Standardklassen.%
+
+  Aufgrund der hohen Flexibilität kann dieser Stil prinzipiell die Stile
+  \PValue{dottedtocline}, \PValue{undottedtocline} und \PValue{largetocline}
+  ersetzen, bedarf dann jedoch teilweise eines höheren Aufwands bei der
+  Konfiguration. 
+
+  \autoref{fig:tocbasic.tocline} illustriert einige Längen-Eigenschaften des
+  Stils. Die weiteren sind in \autoref{tab:tocbasic.tocstyle.attributes}, ab
+  \autopageref{tab:tocbasic.tocstyle.attributes} erklärt.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{\hspace{-2em}% Leicht nach links schieben
+      \begin{tikzpicture}
+        \coordinate (subsection) at (0,0);
+        \coordinate (section) at ($(subsection)+(0,2\baselineskip)$);
+        \coordinate (chapter) at ($(section)+(0,2\baselineskip)$);
+        \coordinate (part)    at ($(chapter)+(0,2.4\baselineskip+1em)$);
+
+        \draw[color=lightgray] 
+          ($(part)+(0,2\baselineskip)$) -- 
+          (0,-2.5\baselineskip);
+        \draw[color=lightgray] 
+          ($(part)+(\linewidth,2\baselineskip)$) --
+          (\linewidth,-2.5\baselineskip);
+
+        \coordinate (subsection) at (0,0);
+
+        \node at (part) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{3em}%
+          \parbox[t]{\dimexpr\linewidth-5.55em}{%
+            \setlength{\parindent}{-3em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[3em][l]{\large\bfseries I.}%
+            \textbf{\large Überschrift eines Teil-Eintrags im Stil
+            \PValue{tocline} zur Demonstration mit mehr als einer Zeile}%
+            \hfill
+            \makebox[1.55em][r]{\bfseries 12}\large
+          }%
+        };
+        \draw[|-|,color=gray,overlay] 
+          (part) --
+          ($(part)+(3em,0)$)
+          node [anchor=north east,font=\small] {
+            \PValue{numwidth}
+          };
+        \draw[|-|,color=gray,overlay] 
+          ($(part)+(\linewidth,\ht\strutbox)$)
+          node [anchor=north,font=\small] { 
+            ~\PValue{rightindent} 
+          } --
+          ($(part)+(\linewidth-2.55em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(part)+(\linewidth,-\baselineskip)$) -- 
+          node [anchor=north,font=\small] { 
+            \PValue{pagenumberwidth}
+          } 
+          ($(part)+(\linewidth-1.55em,-\baselineskip)$);
+        \node at (chapter) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{1.5em}%
+          \parbox[t]{\dimexpr\linewidth-4.05em}{%
+            \setlength{\parindent}{-1.5em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[1.5em][l]{\bfseries 1.}%
+            \textbf{Überschrift eines Kapiteleintrags im Stil
+            \PValue{tocline} zur Demonstration mit mehr als einer Zeile}%
+            \hfill
+            \makebox[1.55em][r]{\bfseries 12}%
+          }%
+        };
+        \draw[|-|,color=gray,overlay]
+          ($(chapter)+(3em,\baselineskip)$) --
+          node [anchor=west,font=\small] {
+            \PValue{beforeskip}
+          }
+          ($(part)+(3em,-\baselineskip)$);
+        \draw[|-|,color=gray,overlay] 
+          (chapter) --
+          ($(chapter)+(1.5em,0)$)
+          node [anchor=north east,font=\small] {
+            \PValue{numwidth}
+          };
+        \draw[|-|,color=gray,overlay] 
+          ($(chapter)+(\linewidth,\ht\strutbox)$)
+          node [anchor=north,font=\small] { 
+            ~\PValue{rightindent}
+          } --
+          ($(chapter)+(\linewidth-2.55em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(chapter)+(\linewidth,-\baselineskip)$)
+          node [anchor=north west,font=\small] {
+            \hspace*{-3.1em}\PValue{pagenumberwidth}
+          } --
+          ($(chapter)+(\linewidth-1.55em,-\baselineskip)$);
+        \node at (section) [anchor=west,inner sep=0,outer sep=0]
+        {
+          \hspace*{3.8em}%
+          \parbox[t]{\dimexpr\linewidth-6.35em}{%
+            \setlength{\parindent}{-2.3em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[2.3em][l]{1.1.}%
+            Überschrift eines Abschnitteintrags im Stil
+            \PValue{tocline} zur Demonstration mit mehr als einer Zeile%
+            \leaders\hbox{$\csname m@th\endcsname
+              \mkern 4.5mu\hbox{.}\mkern 4.5mu$}\hfill\nobreak
+            \makebox[1.55em][r]{3}%
+          }%
+        };
+        \node at (subsection) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \hspace*{7em}%
+          \parbox[t]{\dimexpr\linewidth-9.55em}{%
+            \setlength{\parindent}{-3.2em}%
+            \addtolength{\parfillskip}{-2.55em}%
+            \makebox[3.2em][l]{1.1.10.}%
+            Überschrift eines Unterabschnitteintrags im Stil
+            \PValue{tocline} mit mehr als einer Zeile%
+            \leaders\hbox{$\csname m@th\endcsname
+              \mkern 4.5mu\hbox{.}\mkern 4.5mu$}\hfill\nobreak
+            \makebox[1.55em][r]{12}%
+          }%
+        };
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(0,\ht\strutbox)$) -- 
+          node [anchor=north,font=\small] {
+            \PValue{indent}
+          }
+          ($(subsection)+(3.8em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(3.8em,0)$) --
+          ($(subsection)+(7em,0)$)
+          node [anchor=north east,font=\small] {
+            \PValue{numwidth}
+          };
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(\linewidth,\ht\strutbox)$)
+          node [anchor=north,font=\small] { 
+            ~\PValue{rightindent}
+          } --
+          ($(subsection)+(\linewidth-2.55em,\ht\strutbox)$);
+        \draw[|-|,color=gray,overlay] 
+          ($(subsection)+(\linewidth,-\baselineskip)$) -- 
+          node [anchor=north,font=\small] { 
+            \PValue{pagenumberwidth}
+          } 
+          ($(subsection)+(\linewidth-1.55em,-\baselineskip)$);
+      \end{tikzpicture}%
+    }
+    \caption{Illustration einiger Attribute des Verzeichniseintragsstils
+      \PValue{tocline}}
+    \label{fig:tocbasic.tocline}
+  \end{figure}
+\item[\PValue{toctext}]\ChangedAt{v3.27}{\Package{tocbasic}}%
+  stellt eine Besonderheit dar. Während alle anderen Stile je Eintrag einen
+  Absatz\important{\PValue{level}, \PValue{afterpar}, \PValue{beforeskip},
+    \PValue{entryformat},
+    \PValue{entrynumberformat}, \PValue{indent}, \PValue{numsep},
+    \PValue{onendentry}, \PValue{onendlastentry}, \PValue{onstartentry},
+    \PValue{onstartfirstentry}, \PValue{pagenumberformat},
+    \PValue{prepagenumber}, \PValue{raggedright}, \PValue{rightindent}}
+  erzeugen, wird hier für alle aufeinanderfolgenden Einträge dieses Stils nur
+  ein einziger Absatz erzeugt.  Für die Konfigurierung stehen neben der
+  Standardeigenschaft \PValue{level} mit 14 weiteren Eigenschaften fast so
+  viele Möglichkeiten wie bei \PValue{tocline} zur Verfügung. Dieser Stil ist
+  aber zwingend darauf angewiesen, dass am Anfang aller anderen Stile und auch
+  am Ende des Verzeichnisses ein noch nicht beendeter Absatz tasächlich
+  beendet wird. Daher sollten Einträge dieses Stils nicht mit Einträgen oder
+  Verzeichnissen kombiniert werden, die an \Package{tocbasic} vorbei erzeugt
+  werden.
+\item[\PValue{undottedtocline}] entspricht dem Stil, der von den
+  Standardklassen \Class{book} und \Class{report} für die Ebene
+  \PValue{chapter} und von \Class{article} für die Ebene \PValue{section}
+  bekannt ist. Er kennt\important{\PValue{level}, \PValue{indent},
+    \PValue{numwidth}} nur drei Eigenschaften.
+  Vor dem Eintrag wird ein Seitenumbruch erleichtert und ein vertikaler
+  Abstand eingefügt. Die Einträge werden um \PValue{indent} von links
+  eingezogen in \Macro{bfseries} ausgegeben. Dies ist gleichsam eine
+  Abweichung von den Standardklassen, die selbst keinen Einzug für Einträge
+  der genannten Ebenen bieten. \DescRef{\LabelBase.cmd.numberline} wird nicht
+  umdefiniert. Die Breite der Nummer wird von \PValue{numwidth} bestimmt. Bei
+  mehrzeiligen Einträgen wird der Einzug ab der zweiten Zeile um
+  \PValue{numwidth} erhöht. \autoref{fig:tocbasic.undottedtocline} illustriert
+  die Eigenschaften des Stils.
+  \begin{figure}
+    \centering
+    \resizebox{.8\linewidth}{!}{%
+      \begin{tikzpicture}
+        \draw[color=lightgray] (0,2\baselineskip) -- (0,-2.5\baselineskip);
+        \draw[color=lightgray] (\linewidth,2\baselineskip) --
+                               (\linewidth,-2.5\baselineskip);
+        \node (undottedtocline) at (0,0) [anchor=west,inner sep=0,outer sep=0]
+        {%
+          \makebox[1.5em][l]{\bfseries 1}%
+          \parbox[t]{\dimexpr \linewidth-4.05em\relax}{%
+            \bfseries
+            Überschrift im Verzeichniseintragsstil \PValue{undottedtocline} mit
+            mehr als einer Zeile%
+          }%
+          \raisebox{-\baselineskip}{\makebox[2.55em][r]{\bfseries 3}}%
+        };
+        \draw[|-|,color=gray,overlay] (0,\baselineskip) -- 
+                              node [anchor=south,font=\small] {
+                                \PValue{numwidth}
+                              }
+                              (1.5em,\baselineskip);
+        \draw[|-|,color=gray,overlay] (\linewidth,\ht\strutbox) -- 
+                              node [anchor=south,font=\small] { 
+                                \Macro{@tocrmarg} 
+                              }
+                              (\linewidth-2.55em,\ht\strutbox);
+        \draw[|-|,color=gray,overlay] (\linewidth,-\baselineskip) -- 
+                              node [anchor=north,font=\small] { 
+                                \Macro{@pnumwidth} 
+                              } 
+                              (\linewidth-1.55em,-\baselineskip);
+      \end{tikzpicture}%
+    }
+    \caption{Illustration einiger Attribute des Verzeichniseintragsstils
+      \PValue{undottedtocline} am Beispiel einer Kapitelüberschrift}
+    \label{fig:tocbasic.undottedtocline}
+  \end{figure}
+\end{description}
+Eine Erklärung zu den Eigenschaften der von \Package{tocbasic} definierten
+Stile findet sich in \autoref{tab:tocbasic.tocstyle.attributes}.
+Neben\ChangedAt{v3.27}{\Package{tocbasic}} der normalen Zuweisung eines Wertes
+in der Form \Option{\PName{Schlüssel}=\PName{Wert}} verstehen beide Befehle
+für alle Optionen der durch \KOMAScript{} definierten Stile auch die
+Zuweisungen in der Form \Option{\PName{Schlüssel}:=\PName{Eintragsebene}}. In
+diesem Fall wird die aktuell gültige Einstellung für \PName{Eintragsebene}
+kopiert, soweit diese verfügbar ist. Es kann also beispielsweise mit
+\OptionValue{indent:}{figure} der Einzug für \PValue{figure}-Einträge kopiert
+werden. Für Optionen, die eine Länge oder einen Integer als \PName{Wert}
+erwarten, gibt es außerdem die Möglichkeit mit
+\Option{\PName{Schlüssel}+=\PName{Wert}} den \PName{Wert} zur aktuell gültigen
+Einstellung zu addieren. Für eine Substraktion kann ein negativer \PName{Wert}
+verwendet werden. Mit \OptionValue{indent+}{1cm} könnte so beispielsweise der
+Einzug um 1\Unit{cm} erhöht werden. Für Optionen, die eine
+Liste\ChangedAt{v3.31}{\Package{tocbasic}} als \PName{Wert} erwarten, kann mit
+\Option{\PName{Schlüssel}+=\PName{Wert}} der neue \PName{Wert} an den bereits
+vorhandenen angehängt werden.
+
+Bei\ChangedAt{v3.21}{\Package{tocbasic}} Verwendung der Eigenschaften als
+Optionen für Anweisung
+\DescRef{\LabelBase.cmd.DeclareNewTOC}\IndexCmd{DeclareNewTOC} (siehe
+\DescPageRef{\LabelBase.cmd.DeclareNewTOC}) sind die Namen der Eigenschaften
+mit dem Präfix \PValue{tocentry} zu verwenden, also beispielsweise
+\Option{tocentrylevel} anstelle von \PValue{level}. Die zuvor beschriebene
+Kopiermöglichkeit mit \Option{:=} ist hierbei ebenfalls verfügbar. Die
+Addition mit Hilfe von \Option{+=} wird derzeit jedoch nicht unterstützt.
+
+Bei\ChangedAt{v3.20}{\Package{tocbasic}} Verwendung als Optionen für
+\DescRef{maincls-experts.cmd.DeclareSectionCommand}%
+\IndexCmd{DeclareSectionCommand}\IndexCmd{DeclareNewSectionCommand}%
+\IndexCmd{RedeclareSectionCommand}\IndexCmd{ProvideSectionCommand} (siehe
+\DescPageRef{maincls-experts.cmd.DeclareSectionCommand}) und verwandten
+Anweisungen sind die Namen der Eigenschaften mit dem Präfix \PValue{toc} zu
+versehen, also beispielsweise \Option{toclevel} anstelle von
+\PValue{level}. Hierbei existiert derzeit weder die Kopiermöglichkeit mit
+\Option{:=} noch die Addition mit \Option{+=}.
+
+Letztlich führt der Aufruf von \Macro{DeclareTOCStyleEntry} zur Definition der
+Anweisung \Macro{l@\PName{Eintragsebene}}.
+
+Während \Macro{DeclareTOCStyleEntry} nur eine \PName{Eintragsebene}
+definiert, kann über
+\Macro{DeclareTOCStyeEntries}\ChangedAt{v3.26}{\Package{tocbasic}} auf einen
+Schlag eine ganze \PName{Liste von Eintragsebenen} definiert werden. Die durch
+Komma voneinander getrennt angegebenen Eintragsebenen der Liste werden dabei
+alle mit demselben \PName{Stil} und den über \PName{Optionenliste}
+angegebenen Einstellungen definiert.%
+%
+\begin{desclist}
+  \desccaption{%
+    Attribute für die vordefinierten Verzeichniseintragsstile von
+    \Package{tocbasic}%
+    \label{tab:tocbasic.tocstyle.attributes}%
+  }{%
+    Attribute der Verzeichniseintragsstile (\emph{Fortsetzung})%
+  }%
+  \entry{\OptionVName{afterpar}{Code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Der angegebene \PName{Code} wird nach dem Ende des Absatzes ausgeführt, in
+    dem ein Eintrag mit dem Stil \PValue{toctext} ausgegeben wird. Verfügen
+    mehrere Einträge über solche Einstellungen, so werden diese in der
+    Reihenfolge der Einträge ausgeführt.%
+  }%
+  \entry{\OptionVName{beforeskip}{Länge}}{%
+    Vertikaler Abstand, der vor einem Eintrag dieser Ebene im Stil
+    \PValue{tocline} eingefügt wird (siehe
+    \autoref{fig:tocbasic.tocline}). Der Abstand wird je nach Ebene mit
+    \Macro{vskip} oder \Macro{addvspace} eingefügt, so dass diesbezüglich
+    möglichst Kompatibilität zu den Standardklassen und früheren Versionen von
+    \KOMAScript{} besteht.
+
+    Bei der \PName{Eintragsebene} \PValue{part} wird das Attribut mit
+    \texttt{2.25em plus 1pt} initialisiert, bei \PValue{chapter} mit
+    \texttt{1em plus 1pt}. Ist noch keine \PName{Eintragsebene}
+    \PValue{chapter} bekannt, wird stattdessen für \PValue{section}
+    \texttt{1em plus 1pt} verwendet. Ansonsten wird es für \PValue{section}
+    wie für alle
+    anderen Ebenen mit \texttt{0pt plus .2pt} initialisiert.
+    
+    Im\ChangedAt{v3.31}{\Package{tocbasic}} Stil \PValue{toctext} wird der
+    vertikale Abstand vor dem Absatz eingefügt, wenn es sich um den ersten
+    Eintrag im Absatz handelt. Bei allen weiteren Einträgen des Absatzes wird
+    er ignoriert. Findet die Initialisierung über diesen Stil statt, so wird
+    als Voreinstellung \texttt{0pt} verwendet.%
+  }%
+  \entry{\OptionVName{breakafternumber}{Schalter}}{%
+    \PName{Schalter} ist einer der Werte für einfache Schalter aus
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}.  Ist der
+    Schalter beim Stil \PValue{tocline} aktiviert, so wird nach der mit
+    \DescRef{\LabelBase.cmd.numberline}\IndexCmd{numberline} gesetzten Nummer
+    eine neue Zeile begonnen, die erneut linksbündig mit der Nummer beginnt.
+
+    In der Voreinstellung ist die Eigenschaft im Stil \PValue{tocline} nicht
+    gesetzt.
+
+    Ist %\textnote{Achtung!}
+    für ein Verzeichnis mit \DescRef{\LabelBase.cmd.setuptoc} die Eigenschaft
+    \Option{numberline} gesetzt (siehe \autoref{sec:tocbasic.toc},
+    \DescPageRef{\LabelBase.cmd.setuptoc}), wie das bei den
+    \KOMAScript-Klassen und Verwendung deren Option
+    \OptionValueRef{maincls}{toc}{numberline}%
+    \IndexOption{toc~=\textKValue{numberline}} der Fall ist, führt dies auch
+    dazu, dass bei nicht nummerierten Einträgen dennoch die Zeile mit der dann
+    leeren Nummer in der Formatierung von \Option{entrynumberformat} gesetzt
+    wird.%
+  }%
+  \entry{\OptionVName{dynindent}{Schalter}}{%
+    \ChangedAt{v3.31}{\Package{tocbasic}}%
+    \PName{Schalter} ist einer der Werte für einfache Schalter aus
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}. Ist der
+    Schalter beim Stil \PValue{tocline} aktiviert, gibt die Eigenschaft
+    \PValue{indent} nur noch einen Minimalwert an. Der Maximalwert wird durch
+    die Nummernbreite und den Einzug der via \Option{indentfollows}
+    vorgegebenen Ebenen bestimmt.%
+  }%
+  \entry{\OptionVName{dynnumwidth}{Schalter}}{%
+    \PName{Schalter} ist einer der Werte für einfache Schalter aus
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}. Ist der
+    Schalter beim Stil \PValue{tocline} aktiviert, gibt die Eigenschaft
+    \PValue{numwidth} nur noch einen Minimalwert an. Übertrifft die beim
+    letzten \LaTeX-Lauf ermittelte maximale Breite der Eintragsnummern
+    gleicher Ebene zuzüglich des Wertes von \PValue{numsep} diesen
+    Minimalwert, so wird stattdessen der ermittelte Wert verwendet.%
+  }%
+  \entry{\OptionVName{entryformat}{Befehl}}{%
+    Über diese Eigenschaft kann die Formatierung des gesamten Eintrags
+    verändert werden. Der dabei als Wert angegebene \PName{Befehl} hat genau
+    ein Argument zu erwarten. Dieses Argument ist nicht zwingend voll
+    expandierbar. Befehle wie \Macro{MakeUppercase}, die ein voll
+    expandierbares Argument erwarten, dürfen an dieser Stelle also nicht
+    verwendet werden. Font-Änderungen über \Option{entryformat} erfolgen
+    ausgehend von \Macro{normalfont}\Macro{normalsize}. Es wird darauf
+    hingewiesen, dass die Ausgabe von \Option{linefill} und der Seitenzahl
+    unabhängig von \Option{entryformat} ist. Siehe dazu auch die Eigenschaft
+    \Option{pagenumberformat}.
+
+    Initialisiert wird die Eigenschaft für die \PName{Eintragsebene}
+    \PValue{part} mit der Ausgabe des übergebenen Argument in
+    \Macro{large}\Macro{bfseries} und für \PValue{chapter} in
+    \Macro{bfseries}. Falls bei der Initialisierung von \PValue{section} noch
+    keine Ebene \PValue{chapter} existiert, wird auch für diese Ebene
+    \Macro{bfseries} verwendet. Bei allen anderen Ebenen wird das Argument
+    unverändert ausgegeben.%
+  }%
+  \entry{\OptionVName{entrynumberformat}{Befehl}}{%
+    Über diese Eigenschaft kann die Formatierung der mit
+    \DescRef{\LabelBase.cmd.numberline} gesetzten Eintragsnummer verändert
+    werden. Der dabei als Wert angegebene \PName{Befehl} hat genau ein
+    Argument zu erwarten. Font-Änderungen erfolgen ausgehend von der
+    Eigenschaft \Option{entryformat}.
+
+    Initialisiert wird die Eigenschaft mit der Ausgabe des übergebenen
+    Arguments. Die Eintragsnummer wird also unverändert ausgegeben.
+
+    Ist %\textnote{Achtung!}
+    für ein Verzeichnis mit \DescRef{\LabelBase.cmd.setuptoc} die Eigenschaft
+    \Option{numberline} gesetzt (siehe \autoref{sec:tocbasic.toc},
+    \DescPageRef{\LabelBase.cmd.setuptoc}), wie dies bei den
+    \KOMAScript-Klassen und Verwendung deren Option
+    \OptionValueRef{maincls}{toc}{numberline}%
+    \IndexOption{toc~=\textKValue{numberline}} der Fall ist, führt dies auch
+    dazu, dass bei nicht nummerierten Einträgen \PName{Befehl} dennoch
+    ausgeführt wird.%
+  }%
+  \entry{%
+    \OptionVName{indent}{Länge}%
+    {\phantomsection\label{tab:tocbasic.tocstyle.attributes.indent}}%
+  }{%
+    Beim\ChangedAt{v3.27}{\Package{tocbasic}} Stil \PValue{toctext} ist
+    \PName{Länge} der horizontale Abstand des Absatzes vom linken Rand. Haben
+    die unterschiedlichen Einträge des Absatzes unterschiedliche
+    Einstellungen, so gewinnt der letzte Eintrag. Bei den übrigen Stilen ist
+    \PValue{Länge} entsprechend der horizontale Abstand des Eintrags vom
+    linken Rand (siehe \autoref{fig:tocbasic.dottedtocline} und
+    \autoref{fig:tocbasic.tocline}).
+
+    Bei den Stilen \PValue{tocline} und \PValue{toctext} wird für alle
+    Eintragsebenen, deren Name mit »\texttt{sub}« beginnt, eine
+    Initialisierung mit \PValue{indent}+\PValue{numwidth} der gleichnamigen
+    Eintragsebene ohne diesen Präfix vorgenommen, falls eine solche Ebene mit
+    entsprechenden Eigenschaften existiert. Bei den Stilen
+    \PValue{dottedtocline}, \PValue{undottedtocline} und \PValue{tocline}
+    findet für die Eintragsebenen \PValue{part} bis \PValue{subparagraph}
+    sowie \PValue{figure}, \PValue{table} und
+    \ChangedAt{v3.39}{\Package{tocbasic}}\PValue{lstlisting} eine
+    Initialisierung mit Werten entsprechend der Standardklassen
+    beziehungsweise des Paket \Package{listings}\IndexPackage{listings}
+    statt. Alle anderen Ebenen erhalten keine Initialisierung. Für sie ist
+    eine explizite Angabe daher bei der ersten Verwendung zwingend.
+
+    Ist für ein Verzeichnis die Eigenschaft \PValue{noindent} via
+    \DescRef{\LabelBase.cmd.setuptoc} gesetzt, so ignorieren die Einträge bei
+    allen von \KOMAScript{} bereitgestellten Stilen diesen Wert und verwenden
+    stattdessen 0\Unit{pt}. Der Einzug wird also deaktiviert.%
+  }%
+  \entry{\OptionVName{indentfollows}{Ebenenliste}}{%
+    \ChangedAt{v3.31}{\Package{tocbasic}}%
+    Ist \Option{dynindent} beim Stil \PValue{tocline} gesetzt, so dient die
+    hier angegebene durch Komma separierte Liste an Ebenennamen dazu, den
+    tatsächlichen Einzug zu ermitteln. Dabei findet bei Ebenen, deren Name mit
+    »\texttt{sub}« beginnt, eine Initialisierung mit dem Namen ohne diesen
+    Präfix statt. Die \KOMAScript-Klassen setzen außerdem automatisch passende
+    Werte für die Ebenen \PValue{section} und \PValue{paragraph}.%
+  }%
+  \entry{\OptionVName{level}{Integer}}{%
+    Numerischer Wert der \PName{Eintragsebene}. Tatsächlich angezeigt werden
+    nur Einträge, deren numerische Ebene nicht größer als Zähler
+    \DescRef{\LabelBase.counter.tocdepth}%
+    %\important{\DescRef{\LabelBase.counter.tocdepth}}
+    \IndexCounter{tocdepth}
+    ist.
+
+    Diese Eigenschaft ist für alle Stile zwingend und wird bei der
+    Definition eines Stils automatisch definiert.
+    
+    Bei den Stilen \PValue{tocline} und \PValue{toctext} findet für alle
+    Eintragsebenen, deren Name mit »\texttt{sub}« beginnt, eine
+    Initialisierung entsprechend dem um eins erhöhten Wert einer gleichnamigen
+    Eintragsebene ohne diesen Präfix statt, falls eine solche Ebene
+    existiert. Bei den Stilen \PValue{dottedtocline}, \PValue{largetocline},
+    \PValue{tocline}, \PValue{toctext} und \PValue{undottedtocline} findet für
+    die \PName{Eintragsebene} \PValue{part}, \PValue{chapter},
+    \PValue{section}, \PValue{subsection}, \PValue{subsubsection},
+    \PValue{paragraph}, \PValue{subparagraph}, \PValue{figure}, \PValue{table}
+    und \ChangedAt{v3.39}{\Package{tocbasic}}\PValue{lstlisting} automatisch
+    eine Initialisierung aufgrund des Namens statt. Für andere Ebenen findet
+    eine Initialisierung mit dem Wert der Gliederungsebene statt, falls
+    kompatibel zu den \KOMAScript-Klassen
+    \Macro{\PName{Eintragsebene}numdepth} definiert ist. Als letzter Ausweg
+    kann auch das interne \Package{hyperref}-Makro
+    \Macro{toclevel@\PName{Eintragsebene}} herangezogen werden.%
+  }%
+  \entry{\OptionVName{linefill}{Code}}{%
+    Beim Stil \PValue{tocline} kann zwischen dem Ende des Eintragstextes und
+    der Seitenzahl die Art der Füllung verändert werden. Die Eigenschaft
+    \PName{linefill} erhält als Wert direkt den gewünschten \PName{Code}.  Für
+    \PName{Eintragsebene} \PValue{part} und \PValue{chapter} wird die
+    Eigenschaft mit \Macro{hfill} initialisiert. Dadurch rückt die Seitenzahl
+    an den rechten Rand. Ist bisher keine \PName{Eintragsebene}
+    \PValue{chapter} definiert, so gilt dies auch für \PValue{section}. Alle
+    anderen Ebenen werden mit \DescRef{\LabelBase.cmd.TOCLineLeaderFill}
+    (siehe \DescPageRef{\LabelBase.cmd.TOCLineLeaderFill}) initialisiert.
+
+    Wird \PName{Code} angegeben, der nicht automatisch zu einer Füllung des
+    Abstandes führt, sollte übrigens auch die Eigenschaft
+    \PValue{raggedpagenumber} gesetzt werden, damit es nicht zu
+    »\texttt{underfull \Macro{hbox}}«-Meldungen kommt.%
+  }%
+  \entry{\OptionVName{numsep}{Länge}}{%
+    Der Stil \PValue{tocline} versucht sicherzustellen, dass zwischen der
+    Nummer und dem Text eines Eintrags mindestens ein Abstand von
+    \PName{Länge} eingehalten wird. Bei aktiviertem \PValue{dynnumwidth} kann
+    die für die Nummer reservierte Breite \PValue{numwidth} entsprechend
+    korrigiert werden. Bei nicht aktiviertem \PValue{dynnumwidth} wird
+    hingegen lediglich eine Warnung ausgegeben, wenn diese Bedingung nicht
+    eingehalten wird.
+
+    Der\ChangedAt{v3.27}{\Package{tocbasic}} Stil \PValue{toctext} fügt
+    dagegen immer einen Abstand dieser \PName{Länge} nach der Nummer des
+    Eintrags ein.
+
+    Die Eigenschaft wird mit einem Wert von 0,4\Unit{em} initialisiert.%
+  }%
+  \entry{\OptionVName{numwidth}{Länge}}{%
+    Für die Nummer eines Eintrags reservierte Breite (siehe
+    \autoref{fig:tocbasic.dottedtocline} bis
+    \autoref{fig:tocbasic.undottedtocline}). Dieser Wert wird bei den
+    Stilen \PValue{dottedtocline}, \PValue{tocline} und
+    \PValue{undottedtocline} ab der zweiten Zeile eines Eintrags zum linken
+    Einzug hinzugerechnet.
+
+    Beim Stil \PValue{tocline} wird für alle Eintragsebenen, deren Name mit
+    »\texttt{sub}« beginnt, eine Initialisierung mit dem Wert der
+    gleichnamigen Eintragsebene ohne diesen Präfix zuzüglich 0,9\Unit{em}
+    vorgenommen, falls eine solche Ebene mit entsprechender Eigenschaft
+    existiert. Bei den Stilen \PValue{dottedtocline}, \PValue{undottedtocline}
+    und \PValue{tocline} findet für die Eintragsebenen \PValue{part} bis
+    \PValue{subparagraph} sowie \PValue{figure}, \PValue{table} und
+    \ChangedAt{v3.39}{\Package{tocbasic}}\PValue{lstlisting} eine
+    Initialisierung mit Werten entsprechend der Standardklassen
+    beziehungsweise des Pakets \Package{listings}\IndexPackage{listings}
+    statt. Alle anderen Ebenen erhalten keine Initialisierung. Für sie ist
+    eine explizite Angabe daher bei der ersten Verwendung zwingend.%
+  }%
+  \entry{\OptionVName{onendentry}{Code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Führt den angegebenen \PName{Code} unmittelbar nach einem Eintrag im Stil
+    \PValue{toctext} aus, sofern es nicht der letzte Eintrag im Absatz
+    ist. Der Anwender muss unbedingt sicherstellen, dass \PName{Code} auf
+    keinen Fall zum Beenden des Absatzes führt.
+
+    Hinweis: Tatsächlich wird der \PName{Code} gar nicht am Ende des Eintrags,
+    sondern vor dem nächsten Eintrag im Stil \PValue{toctext} ausgeführt.%
+  }%
+  \entry{\OptionVName{onendlastentry}{Code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Führt den angegebenen \PName{Code} unmittelbar vor dem Ende des Absatzes
+    mit dem Eintrag im Stil \PValue{toctext} aus, sofern es sich um den
+    letzten Eintrag im Absatz handelt. Der Anwender sollte sicherstellen, dass
+    \PName{Code} nicht zum Beenden des Absatzes führt.%
+  }%
+  \entry{\OptionVName{onstartentry}{Code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Führt den angegebenen \PName{Code} unmittelbar vor dem Eintrag im Stil
+    \PValue{toctext} aus, sofern es sich nicht um den ersten Eintrag im Absatz
+    handelt. Der Anwender muss unbedingt sicherstellen, dass \PName{Code} auf
+    keinen Fall zum Beenden des Absatzes führt.%
+  }%
+  \entry{\OptionVName{onstartfirstentry}{Code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Führt den angegebenen \PName{Code} unmittelbar vor dem Eintrag im Stil
+    \PValue{toctext} aus, sofern es sich um den ersten Eintrag im Absatz
+    handelt. Der Anwender muss unbedingt sicherstellen, dass \PName{Code} auf
+    keinen Fall zum Beenden des bereits begonnen Absatzes führt.%
+  }%
+  \entry{\OptionVName{onstarthigherlevel}{Code}}{%
+    Der Stil \PValue{tocline} kann zu Beginn eines Eintrags eine Aktion in
+    Abhängigkeit davon ausführen, ob der zuletzt gesetzte Eintrag einen
+    höheren, denselben oder einen niedrigeren \PName{level}-Wert hatte. Im
+    Falle, dass der aktuelle Eintrag einen größeren \PName{level}-Wert
+    besitzt, in der Hierarchie der Einträge also tiefer steht, wird der über
+    diese Eigenschaft angegebene \PName{Code} ausgeführt.
+
+    Die Erkennung funktioniert übrigens nur, solange sich \Macro{lastpenalty}
+    seit dem letzten Eintrag nicht geändert hat.
+
+    Initialisiert wird die Eigenschaft mit
+    \DescRef{\LabelBase.cmd.LastTOCLevelWasLower} (siehe
+    \DescPageRef{\LabelBase.cmd.LastTOCLevelWasLower}).%
+  }%
+  \entry{\OptionVName{onstartlowerlevel}{Code}}{%
+    Der Stil \PValue{tocline} kann zu Beginn eines Eintrags eine Aktion in
+    Abhängigkeit davon ausführen, ob der zuletzt gesetzte Eintrag einen
+    höheren, denselben oder einen niedrigeren \PName{level}-Wert hatte. Im
+    Falle, dass der aktuelle Eintrag einen kleineren \PName{level}-Wert
+    besitzt, in der Hierarchie der Einträge also höher steht, wird der über
+    diese Eigenschaft angegebene \PName{Code} ausgeführt.
+
+    Die Erkennung funktioniert übrigens nur, solange sich \Macro{lastpenalty}
+    seit dem letzten Eintrag nicht geändert hat.
+
+    Initialisiert wird die Eigenschaft mit
+    \DescRef{\LabelBase.cmd.LastTOCLevelWasHigher} (siehe
+    \DescPageRef{\LabelBase.cmd.LastTOCLevelWasHigher}), was normalerweise
+    dazu führt, dass ein Umbruch vor dem Eintrag begünstigt wird.%
+  }%
+  \entry{\OptionVName{onstartsamelevel}{Code}}{%
+    Der Stil \PValue{tocline} kann zu Beginn eines Eintrags eine Aktion in
+    Abhängigkeit davon ausführen, ob der zuletzt gesetzte Eintrag einen
+    höheren, denselben oder einen niedrigeren \PName{level}-Wert hatte. Im
+    Falle, dass der aktuelle Eintrag denselben \PName{level}-Wert besitzt, in
+    der Hierarchie der Einträge also gleich gestellt ist, wird der über diese
+    Eigenschaft angegebene \PName{Code} ausgeführt.
+
+    Die Erkennung funktioniert übrigens nur, solange sich \Macro{lastpenalty}
+    seit dem letzten Eintrag nicht geändert hat.
+
+    Initialisiert wird die Eigenschaft mit
+    \DescRef{\LabelBase.cmd.LastTOCLevelWasSame} (siehe
+    \DescPageRef{\LabelBase.cmd.LastTOCLevelWasSame}), was normalerweise dazu
+    führt, dass ein Umbruch vor dem Eintrag begünstigt wird.%
+  }%
+  \entry{\OptionVName{pagenumberbox}{Befehl}}{%
+    Normalerweise wird die zu einem Eintrag gehörende Seitenzahl rechtsbündig
+    in eine Box der Breite \Macro{@pnumwidth} gesetzt. Beim Stil
+    \PValue{tocline} kann der Befehl, der dazu verwendet wird, über diese
+    Eigenschaft konfiguriert werden. Der dabei anzugebende \PName{Befehl} hat
+    genau ein Argument zu erwarten.
+
+    Initialisiert wird die Eigenschaft mit der bereits erwähnten Box.%
+  }%
+  \entry{\OptionVName{pagenumberformat}{Befehl}}{%
+    Über diese Eigenschaft kann die Formatierung der Seitenzahl des Eintrags
+    verändert werden. Der dabei als Wert angegebene \PName{Befehl} hat genau
+    ein Argument zu erwarten. Font-Änderungen über \Option{entryformat}
+    erfolgen ausgehend von \Option{entryformat}, gefolgt von
+    \Macro{normalfont}\Macro{normalsize}.
+
+    Initialisiert wird die Eigenschaft für die \PName{Eintragsebene}
+    \PValue{part} mit der Ausgabe des übergebenen Arguments in
+    \Macro{large}\Macro{bfseries}. Für die \PName{Eintragsebene}
+    \PValue{chapter} wird nur \Macro{bfseries} verwendet. Bei Klassen
+    ohne vordefiniertes \Macro{l@chapter} geschieht dies auch für die
+    \PName{Eintragsebene} \PValue{section}. Für alle anderen Ebenen erfolgt
+    die Ausgabe in \Macro{normalfont}\Macro{normalcolor}.%
+  }%
+  \entry{\OptionVName{pagenumberwidth}{Länge}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Mit dieser Eigenschaft kann die Breite der Standardbox für die Seitenzahl
+    eines Eintrags im Stil \PValue{tocline} von \Macro{@pnumwidth} in die
+    angegebene \PName{Länge} geändert werden. Es ist zu beachten, dass bei
+    Änderung des Befehls für die Box über die Eigenschaft
+    \Option{pagenumberbox} die angegebene \PName{Länge} nicht mehr automatisch
+    Anwendung findet.%
+  }%
+  \entry{\OptionVName{prepagenumber}{Code}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Im Stil \PValue{toctext} wird zwischen dem Eintragstext und der Seitenzahl
+    \PName{Code} ausgeführt. Dies dient in erster Linie dazu, Abstand oder
+    Trennzeichen zwischen Text und Seitenzahl einzufügen.%
+
+    Voreingestellt ist mit \Macro{nonbreakspace} ein nicht umbrechbares
+    Leerzeichen.%
+  }%
+  \entry{\OptionVName{raggedentrytext}{Schalter}}{%
+    \ChangedAt{v3.21}{\Package{tocbasic}}%
+    \PName{Schalter} ist einer der Werte für einfache Schalter aus
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}.
+    Ist der Schalter beim Stil \PValue{tocline} aktiviert, so wird der Text
+    des Eintrags nicht im Blocksatz, sondern im Flattersatz gesetzt. Dabei
+    werden nur noch Wörter getrennt, die länger als eine Zeile sind.
+
+    In der Voreinstellung ist dieser Schalter nicht gesetzt.%
+  }%
+  \entry{\OptionVName{raggedpagenumber}{Schalter}}{%
+    \PName{Schalter} ist einer der Werte für einfache Schalter aus
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}.
+    Ist der Schalter beim Stil \PValue{tocline} aktiviert, so wird die
+    Seitenzahl nicht zwingend rechtsbündig gesetzt.
+
+    Je nach Wert der Eigenschaft \PValue{linefill} kann sich das
+    Setzen dieses Schalters nur im Erscheinen oder Verschwinden einer Warnung
+    oder auch konkret in der Formatierung der Einträge auswirken. Es ist also
+    wichtig, diese beiden Eigenschaften zueinander passend zu setzen.
+
+    In der Voreinstellung ist dieser Schalter nicht gesetzt und passt damit
+    zur Initialisierung von \PValue{linefill} sowohl mit \Macro{hfill} als
+    auch mit \DescRef{\LabelBase.cmd.TOCLineLeaderFill}.%
+  }%
+  \entry{\OptionVName{raggedright}{Schalter}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    \PName{Schalter} ist einer der Werte für einfache Schalter aus
+    \autoref{tab:truefalseswitch}, \autopageref{tab:truefalseswitch}.
+    Ist der Schalter innerhalb eines Absatzes bei irgendeinem Eintrag im Stil
+    \PValue{toctext} gesetzt, so wird der komplette Absatz in linksbündigem
+    Flattersatz gesetzt.%
+  }%
+  \entry{\OptionVName{rightindent}{Länge}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Mit dieser Eigenschaft kann der rechte Rand für den Text eines Eintrags im
+    Stil \PValue{tocline} von \Macro{@tocrmarg} in die angegebene
+    \PName{Länge} geändert werden. Beim Stil \PValue{toctext} wird
+    entsprechend der rechte Rand für den kompletten Absatz eingestellt.%
+  }%
+\end{desclist}
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{DeclareTOCEntryStyle}\Parameter{Stil}
+                              \OParameter{Initialisierungscode}
+                              \Parameter{Befehlscode}
+  \Macro{DefineTOCEntryOption}\Parameter{Option}
+                              \OParameter{Säumniswert}
+                              \Parameter{Code}
+  \Macro{DefineTOCEntryBooleanOption}\Parameter{Option}
+                                     \OParameter{Säumniswert}
+                                     \Parameter{Präfix}
+                                     \Parameter{Postfix}
+                                     \Parameter{Erklärung}
+                                     %\OParameter{Initialisierungscode}
+  \Macro{DefineTOCEntryCommandOption}\Parameter{Option}
+                                     \OParameter{Säumniswert}
+                                     \Parameter{Präfix}
+                                     \Parameter{Postfix}
+                                     \Parameter{Erklärung}
+                                     %\OParameter{Initialisierungscode}
+  \Macro{DefineTOCEntryIfOption}\Parameter{Option}
+                                \OParameter{Säumniswert}
+                                \Parameter{Präfix}%
+                                \Parameter{Postfix}
+                                \Parameter{Erklärung}
+                                % \OParameter{Initialisierungscode}
+  \Macro{DefineTOCEntryLengthOption}\Parameter{Option}
+                                    \OParameter{Säumniswert}
+                                    \Parameter{Präfix}
+                                    \Parameter{Postfix}
+                                    \Parameter{Erklärung}
+                                    % \OParameter{Initialisierungscode}
+  \Macro{DefineTOCEntryNumberOption}\Parameter{Option}
+                                    \OParameter{Säumniswert}
+                                    \Parameter{Präfix}
+                                    \Parameter{Postfix}
+                                    \Parameter{Erklärung}
+                                    % \OParameter{Initialisierungscode}
+\end{Declaration}
+\Macro{DeclareTOCEntryStyle}\ChangedAt{v3.20}{\Package{tocbasic}} ist
+eine der komplexesten Anweisungen in \KOMAScript. Sie richtet sich daher
+ausdrücklich an \LaTeX-Entwickler und nicht an \LaTeX-Anwender. Mit ihrer
+Hilfe ist es möglich, einen neuen \PName{Stil} für Verzeichniseinträge zu
+definieren. Üblicherweise werden Verzeichniseinträge mit
+\Macro{addcontentsline}\IndexCmd{addcontentsline} oder bei Verwendung von
+\Package{tocbasic} vorzugsweise mit
+\DescRef{\LabelBase.cmd.addxcontentsline}\IndexCmd{addxcontentsline} (siehe
+\autoref{sec:tocbasic.basics}, \DescPageRef{\LabelBase.cmd.addxcontentsline})
+erzeugt. Dabei schreibt \LaTeX{} eine zugehörige Anweisung
+\Macro{contentsline}\IndexCmd{contentsline} in die jeweilige Hilfsdatei. Beim
+Einlesen dieser Hilfsdatei führt \LaTeX{} dann für jedes \Macro{contentsline}
+eine Anweisung \Macro{l@\PName{Eintragsebene}} aus.
+
+Wird später einer \PName{Eintragsebene} über
+\DescRef{\LabelBase.cmd.DeclareTOCStyleEntry} ein \PName{Stil} zugewiesen, so
+wird zunächst \PName{Initialisierungscode} ausgeführt, falls angegeben, und
+dann \PName{Befehlscode} für die Definition von
+\Macro{l@\PName{Eintragsebene}} verwendet. \PName{Befehlscode} ist also
+letztlich der Code, der bei \Macro{l@\PName{Eintragsebene}} ausgeführt
+wird. Dabei ist \texttt{\#1} der Name der Eintragsebene, während
+\texttt{\#\#1} und \texttt{\#\#2} Platzhalter für die beiden Argumente von
+\Macro{l@\PName{Eintragsebene}} sind.
+
+Der \PName{Initialisierungscode} dient einerseits dazu, die Einstellungen
+eines Stils zu initialisieren. Entwickler\textnote{Empfehlung!} sollten darauf
+achten, dass wirklich alle Einstellungen hier bereits einen Wert erhalten. Nur
+dann funktioniert \DescRef{\LabelBase.cmd.DeclareTOCStyleEntry} auch ohne
+Angabe einer \PName{Optionenliste} fehlerfrei. Darüber hinaus hat der
+\PName{Initialisierungscode} auch alle Optionen, die der jeweilige Stil
+versteht, zu definieren. Zwingend vordefiniert wird lediglich
+\Option{level}. Der eingestellte Wert für \Option{level} kann in
+\PName{Befehlscode} mit \Macro{@nameuse}\PParameter{\#1tocdepth}%
+\important{\Macro{\PName{Eintragsebene}tocdepth}} abgefragt werden, um ihn
+beispielsweise mit dem Wert des Zählers
+\DescRef{\LabelBase.counter.tocdepth}\IndexCounter{tocdepth} zu vergleichen.
+
+Zur Definition neuer Optionen für die Eigenschaften einer
+Eintragsebene existieren nur innerhalb von \PName{Initialisierungscode} die
+Anweisungen \iffree{\Macro{DefineTOCEntryBooleanOption},
+\Macro{DefineTOCEntryCommandOption}, \Macro{DefineTOCEntryIfOption},
+\Macro{DefineTOCEntryLengthOption} und
+\Macro{DefineTOCEntryNumberOption}}{\Macro{DefineTOCEntry\dots Option}}.
+Diese Anweisungen definieren jeweils eine \PName{Option}, die bei ihrem
+Aufruf eine Anweisung
+\Macro{\PName{Präfix}\PName{Eintragsebene}\PName{Postfix}} mit dem übergebenen
+Wert oder bei Fehlen einer Wertzuweisung mit dem \PName{Säumniswert}
+definieren. Eine Besonderheit stellt \Macro{DefineTOCEntryIfOption} dar. Diese
+definiert \Macro{\PName{Präfix}\PName{Eintragsebene}\PName{Postfix}} immer als
+Anweisung mit zwei Argumenten. Ist der an die Option übergebene Wert einer der
+Aktivierungswerte aus \autoref{tab:truefalseswitch},
+\autopageref{tab:truefalseswitch}, so expandiert die Anweisung zum ersten
+Argument. Ist der an die Option übergebene Wert hingegen ein
+Deaktivierungswert, so expandiert die Anweisung zum zweiten Argument.
+
+Neben\ChangedAt{v3.27}{\Package{tocbasic}} den normalen Optionen der Form
+\Option{\PName{Schlüssel}=\PName{Wert}} werden von allen fünf
+\Macro{DefineTOCEntry\dots Option}-Anweisungen automatisch Optionen der Form
+\Option{\PName{Schlüssel}:=\PName{Eintragsebene}} definiert. Diese dienen
+dazu, den Wert einer anderen \PName{Eintragsebene} zu kopieren, sofern der
+Wert in einem Makro mit gleichem \PName{Präfix} und \PName{Postfix}
+gespeichert ist. Bei den von \Package{tocbasic} vordefinierten Stilen ist das
+für gleichnamige Optionen über Stilgrenzen hinweg der Fall.
+
+Vergleichbar dazu werden von \Macro{DefineTOCEntryLengthOption} und
+\Macro{DefineTOCEntryNumberOption} jeweils zusätzliche Optionen der Form
+\Option{\PName{Schlüssel}+=\PName{Wert}} mitdefiniert, die dazu dienen, zu
+dem in \Macro{\PName{Präfix}\PName{Eintragsebene}\PName{Postfix}} bereits
+gespeicherten Wert den neuen \PName{Wert} zu addieren.
+
+Die \PName{Erklärung} sollte ein möglichst kurzer Text sein, der den Sinn der
+Option mit wenigen Schlagworten beschreibt. Er wird von \Package{tocbasic} bei
+Fehlermeldungen, Warnungen und Informationen auf dem Terminal und in der
+\File{log}-Datei ausgegeben.
+\begin{Example}
+Der einfachste Stil von \Package{tocbasic}, \PValue{gobble}, wurde mit
+\begin{lstcode}
+  \DeclareTOCEntryStyle{gobble}{}%
+\end{lstcode}
+definiert. Würde man nun mit
+\begin{lstcode}
+  \DeclareTOCStyleEntry[level=1]{gobble}{dummy}
+\end{lstcode}
+eine Eintragsebene \PValue{dummy} in diesem Stil definieren, so würde das%
+\iffalse unter anderem\fi% Umbruchkorrektur
+\begin{lstcode}
+  \def\dummytocdepth{1}
+  \def\l@dummy#1#2{}
+\end{lstcode}
+entsprechen.
+
+Innerhalb von Stil \PValue{tocline} wird beispielsweise
+\begin{lstcode}
+  \DefineTOCEntryCommandOption{linefill}%
+    [\TOCLineLeaderFill]{scr@tso@}{@linefill}%
+    {filling between text and page number}%
+\end{lstcode}
+verwendet, um Option \Option{linefill} zu definieren. Durch die Angabe von
+\DescRef{\LabelBase.cmd.TOCLineLeaderFill} als \PName{Säumniswert} würde ein
+Aufruf wie
+\begin{lstcode}
+  \DeclareTOCStyleEntry[linefill]{tocline}{part}
+\end{lstcode}
+unter anderem die Definition
+\begin{lstcode}
+  \def\scr@tso@part@linefill{\TOCLineLeaderFill}
+\end{lstcode}
+vornehmen.
+\end{Example}
+Wer\textnote{Tipp!} sich selbst einen Stil definieren möchte, dem sei
+empfohlen, zunächst die Definition des Stils \PValue{dottedtocline} zu
+studieren. Nachdem dessen Definition verstanden wurde, gibt dann die deutlich
+komplexere Definition von Stil \PValue{tocline} viele Hinweise darauf, wie die
+Anweisungen sinnvoll zu verwenden sind.
+
+In\textnote{Tipp!} vielen Fällen wird es jedoch auch ausreichen, einen der
+vorhandenen Stile mit \DescRef{\LabelBase.cmd.CloneTOCEntryStyle} zu klonen
+und dann dessen Initialisierungscode mit Anweisung
+\DescRef{\LabelBase.cmd.TOCEntryStyleInitCode} oder
+\DescRef{\LabelBase.cmd.TOCEntryStyleStartInitCode} abzuändern.
+
+\Macro{DefineTOCEntryOption} dient eher der Definition der übrigen
+Anweisungen und sollte in der Regel nicht direkt verwendet
+werden. Normalerweise besteht dafür auch keine Notwendigkeit. Sie sei hier
+nur der Vollständigkeit halber erwähnt.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{CloneTOCEntryStyle}\Parameter{Stil}\Parameter{neuer Stil}%
+\end{Declaration}
+Mit\ChangedAt{v3.20}{\Package{tocbasic}} dieser Anweisung kann ein
+existierender \PName{Stil} geklont werden. Dabei wird ein \PName{neuer Stil}
+mit denselben Eigenschaften und Voreinstellungen wie der existierende
+\PName{Stil} deklariert. Das Paket selbst verwendet
+\Macro{CloneTOCEntryStyle}, um den Stil \PValue{default} als Klon von
+\PValue{dottedtocline} zu deklarieren. Die \KOMAScript-Klassen verwenden die
+Anweisung um die Stile \PValue{part}, \PValue{section} und \PValue{chapter}
+oder \PValue{subsection} als Klon von \PValue{tocline} zu deklarieren und dann
+mit \DescRef{\LabelBase.cmd.TOCEntryStyleInitCode} und
+\DescRef{\LabelBase.cmd.TOCEntryStyleStartInitCode} abzuändern. Der Stil
+\PValue{default} wird von \Class{scrbook} und \Class{scrreprt} neu als Klon
+von \PValue{section} und von \Class{scrartcl} als Klon von \PValue{subsection}
+deklariert.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{TOCEntryStyleInitCode}\Parameter{Stil}%
+                               \Parameter{Initialisierungscode}
+  \Macro{TOCEntryStyleStartInitCode}\Parameter{Stil}%
+                                    \Parameter{Initialisierungscode}
+\end{Declaration}
+Jeder\ChangedAt{v3.20}{\Package{tocbasic}} Verzeichniseintragsstil
+verfügt über einen Initialisierungscode. Dieser wird immer dann aufgerufen,
+wenn einer Verzeichnisebene der entsprechende \PName{Stil} mit
+\DescRef{\LabelBase.cmd.DeclareTOCEntryStyle}\IndexCmd{DeclareTOCEntryStyle}
+zugewiesen wird. Dieser\textnote{Achtung!} \PName{Initialisierungscode} sollte
+keine globalen Seiteneffekte aufweisen, da er auch für lokale
+Initialisierungen innerhalb anderer Anweisungen wie
+\DescRef{\LabelBase.cmd.DeclareNewTOC}\IndexCmd{DeclareNewTOC} verwendet
+wird. Der \PName{Initialisierungscode} dient einerseits dazu, Eigenschaften
+für den jeweiligen \PName{Stil} zu definieren. Er setzt aber auch die
+Standardeinstellungen für diese Eigenschaften.
+
+Mit Hilfe der Anweisungen \Macro{TOCEntryStyleStartInitCode} und
+\Macro{TOCEntryStyleInitCode} kann der für einen \PName{Stil} bereits
+definierte Initialisierungscode um weiteren \PName{Initialisierungscode}
+erweitert werden. Dabei fügt \Macro{TOCEntryStyleStartInitCode} den neuen
+\PName{Intialisierungscode} vorn an, während \Macro{TOCEntryStyleInitCode} den
+\PName{Initialisierungscode} hinten an den vorhandenen Code anfügt. Dies wird
+beispielsweise von den \KOMAScript-Klassen verwendet, um für den von
+\PValue{tocline} geklonten Stil \PValue{part} Füllung, Schrift und vertikalen
+Abstand passend zu initialisieren.
+\begin{Example}
+Die Klassen \Class{scrbook} und
+\Class{scrreprt} verwenden
+\begin{lstcode}
+  \CloneTOCEntryStyle{tocline}{section}
+  \TOCEntryStyleStartInitCode{section}{%
+    \expandafter\providecommand%
+    \csname scr@tso@#1@linefill\endcsname
+    {\TOCLineLeaderFill\relax}%
+  }
+\end{lstcode}
+um den Stil \PValue{section} als abgewandelten Klon von \PValue{tocline} zu
+definieren.%
+\end{Example}%
+\EndIndexGroup
+\ExampleEndFix
+
+
+\begin{Declaration}
+  \Macro{LastTOCLevelWasHigher}
+  \Macro{LastTOCLevelWasSame}
+  \Macro{LastTOCLevelWasLower}
+\end{Declaration}
+Bei\ChangedAt{v3.20}{\Package{tocbasic}} Einträgen im Stil
+\PValue{tocline} wird am Anfang abhängig vom Wert von
+\Macro{lastpenalty}\IndexCmd{lastpenalty} eine dieser drei Anweisungen
+ausgeführt. Dabei fügen \Macro{LastTOCLevelWasHigher} und
+\Macro{LastTOCLevelWasSame} im vertikalen Modus
+\Macro{addpenalty}\PParameter{\Macro{@lowpenalty}} ein und ermöglichen so
+einen Umbruch vor Einträgen gleicher oder übergeordneter
+Ebene. \Macro{LastTOCLevelWasLower} ist hingegen bisher leer definiert, so
+dass zwischen einem Eintrag und seinem ersten Untereintrag normalerweise ein
+Umbruch untersagt ist.
+
+Anwender sollten diese Anweisungen nicht umdefinieren. Stattdessen können und
+sollten Änderungen bei Zuweisung des Stils an eine Eintragsebene gezielt über
+die Eigenschaften \PValue{onstartlowerlevel}, \PValue{onstartsamelevel} und
+\PValue{onstarthigherlevel} vorgenommen werden.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{TOCLineLeaderFill}\OParameter{Füllzeichen}
+\end{Declaration}
+Die\ChangedAt{v3.20}{\Package{tocbasic}} Anweisung ist dazu gedacht,
+als Wert für Eigenschaft \Option{linefill} des Verzeichniseintragsstils
+\PName{tocline} verwendet zu werden. Sie erzeugt dann eine Verbindung zwischen
+dem Ende des Textes eines Eintrags und der zugehörigen Seitenzahl. Das
+\PName{Füllzeichen}, das dazu in regelmäßigem Abstand wiederholt wird, kann
+als optionales Argument angegeben werden. Voreinstellung ist ein
+Punkt.\textnote{Voreinstellung}
+
+Wie der Name schon vermuten lässt, werden die Füllzeichen mit Hilfe von
+\Macro{leaders} gesetzt. Als Abstand wird wie bei der \LaTeX-Kern-Anweisung
+\Macro{@dottedtocline} vor und nach dem Füllzeichen
+\Macro{mkern}\Macro{@dotsep}\Unit{\texttt{mu}} verwendet.%
+\EndIndexGroup
+%
+\EndIndexGroup
+
+
+\section{Interne Anweisungen für Klassen- und Paketautoren}
+\seclabel{internals}
+
+Das Paket \Package{tocbasic} bietet einige interne Anweisungen, deren
+Benutzung durch Klassen- und Paketautoren freigegeben ist. Diese Anweisungen
+beginnen alle mit \Macro{tocbasic@}. Aber\textnote{Achtung!} auch Klassen- und
+Paketautoren sollten diese Anweisungen \iffalse nur verwenden und \fi nicht
+etwa umdefinieren!\iffalse Ihre interne Funktion kann jederzeit geändert oder
+erweitert werden, so dass jede Umdefinierung der Anweisungen die Funktion von
+\Package{tocbasic} erheblich beschädigen könnte!\fi% Umbruchkorrektur
+
+
+\begin{Declaration}
+  \Macro{tocbasic@extend@babel}\Parameter{Dateierweiterung}
+\end{Declaration}
+Das Paket \Package{babel}\IndexPackage{babel} (siehe \cite{package:babel})
+bzw. ein \LaTeX-Kern, der um die Sprachverwaltung von \Package{babel}
+erweitert wurde, schreibt bei jeder Sprachumschaltung am Anfang oder innerhalb
+eines Dokuments in die Dateien mit den Dateierweiterungen \File{toc},
+\File{lof} und \File{lot} Anweisungen, um diese Sprachumschaltung in diesen
+Dateien mit zu führen. \Package{tocbasic} erweitert diesen Mechanismus so,
+dass mit Hilfe von \Macro{tocbasic@extend@babel} auch andere
+\PName{Dateierweiterungen} davon profitieren. Das Argument
+\PName{Dateierweiterung} sollte dabei vollständig expandiert sein!
+Anderenfalls besteht die Gefahr, dass etwa die Bedeutung eines Makros zum
+Zeitpunkt der tatsächlichen Auswertung bereits geändert wurde.
+
+In der Voreinstellung wird diese Anweisung normalerweise für alle
+\PName{Dateierweiterungen}, die mit \DescRef{\LabelBase.cmd.addtotoclist} zur
+Liste der bekannten Dateierweiterungen hinzugefügt werden, aufgerufen. Über
+die Eigenschaft \PValue{nobabel}\important{\PValue{nobabel}} (siehe
+\DescRef{\LabelBase.cmd.setuptoc}, \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.setuptoc}) kann das unterdrückt werden. Für die
+Dateinamenerweiterungen \File{toc}, \File{lof} und \File{lot} unterdrückt
+\Package{tocbasic} dies bereits selbst, %
+\iftrue% Umbruchvarianten
+da \Package{babel} sie von sich aus vornimmt.%
+\else%
+damit die Umschaltung nicht mehrfach in die zugehörigen Dateien
+eingetragen wird.%
+\fi
+\iffalse% Umbruchkorrektur
+Normalerweise gibt es keinen Grund, diese Anweisung selbst aufzurufen. Es sind
+allerdings Verzeichnisse denkbar, die nicht unter der Kontrolle von
+\Package{tocbasic} stehen, also nicht in der Liste der bekannten
+Dateierweiterungen geführt werden, aber trotzdem die Spracherweiterung für
+\Package{babel} nutzen sollen. Für derartige Verzeichnisse wäre die Anweisung
+explizit aufzurufen. Bitte\textnote{Achtung!} achten Sie jedoch darauf, dass
+dies für jede Dateierweiterung nur einmal geschieht!%
+\fi
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@starttoc}\Parameter{Dateierweiterung}
+\end{Declaration}
+Diese Anweisung ist der eigentliche Ersatz der Anweisung
+\Macro{@starttoc}\IndexCmd{@starttoc}\important{\Macro{@starttoc}} aus dem
+\LaTeX-Kern. Es ist die Anweisung, die sich hinter
+\DescRef{\LabelBase.cmd.listoftoc*} (siehe \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.listoftoc*}) verbirgt. Klassen- oder Paketautoren,
+die Vorteile von \Package{tocbasic} nutzen wollen, sollten zumindest diese
+Anweisung, besser jedoch \DescRef{\LabelBase.cmd.listoftoc} verwenden. Die
+Anweisung baut selbst auf \Macro{@starttoc} auf, setzt allerdings zuvor
+\Length{parskip}\IndexLength{parskip}\important[i]{\Length{parskip},
+  \Length{parindent}, \Length{parfillskip}} und
+\Length{parindent}\IndexLength{parindent} auf 0 und
+\Length{parfillskip}\IndexLength{parfillskip} auf 0 bis unendlich. Außerdem
+wird \Macro{@currext}\important{\Macro{@currext}}\IndexCmd{@currext} auf die
+aktuelle Dateierweiterung gesetzt, damit diese in den nachfolgend ausgeführten
+Haken\Index{Haken} ausgewertet werden kann. Die Erklärungen der Haken finden
+Sie im Anschluss.
+
+Da\textnote{Achtung!} \LaTeX{} bei der Ausgabe eines Verzeichnisses auch
+gleich eine neue Verzeichnisdatei zum Schreiben öffnet, kann der Aufruf dieser
+Anweisung zu einer Fehlermeldung der Art
+\begin{lstoutput}
+  ! No room for a new \write .
+  \ch@ck ...\else \errmessage {No room for a new #3}
+                                                    \fi   
+\end{lstoutput}
+führen, wenn keine Schreibdateien mehr zur Verfügung stehen. Abhilfe kann in
+diesem Fall das Laden des Pakets
+\Package{scrwfile}\important{\Package{scrwfile}}\IndexPackage{scrwfile}
+\cite{package:scrwfile} oder die Verwendung von \LuaLaTeX{} bieten.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@@before@hook}
+  \Macro{tocbasic@@after@hook}
+\end{Declaration}
+Der Haken\Index{Haken} \Macro{tocbasic@@before@hook} wird unmittelbar vor dem
+Einlesen der Verzeichnisdatei, noch vor den mit
+\DescRef{\LabelBase.cmd.BeforeStartingTOC} definierten Anweisungen
+ausgeführt. Es ist erlaubt, diesen Haken mit Hilfe von
+\Macro{g@addto@macro}\IndexCmd{g@addto@macro} zu erweitern.
+
+Ebenso wird \Macro{tocbasic@@after@hook} unmittelbar nach der
+Verzeichnisdatei, aber noch vor den mit
+\DescRef{\LabelBase.cmd.AfterStartingTOC} definierten Anweisungen
+ausgeführt. Es ist erlaubt, diesen Haken mit Hilfe von
+\Macro{g@addto@macro}\IndexCmd{g@addto@macro} zu erweitern.
+
+\KOMAScript{} nutzt diese Haken, um Verzeichnisse mit dynamischer Anpassung an
+die Breite der Gliederungsnummern zu ermöglichen. Ihre Verwendung ist Klassen
+und Paketen vorbehalten. Anwender\textnote{Achtung!} sollten sich auf
+\DescRef{\LabelBase.cmd.BeforeStartingTOC} und
+\DescRef{\LabelBase.cmd.AfterStartingTOC} beschränken. Paketautoren sollten
+ebenfalls vorzugsweise diese beiden Anwenderanweisungen verwenden!  Ausgaben
+innerhalb der beiden Haken sind nicht gestattet!
+
+Wird keine\textnote{Achtung!} der Anweisungen
+\DescRef{\LabelBase.cmd.listofeachtoc}, \DescRef{\LabelBase.cmd.listoftoc} und
+\DescRef{\LabelBase.cmd.listoftoc*} für die Ausgabe der Verzeichnisse
+verwendet, sollten die Anweisungen für die Haken\Index{Haken} trotzdem
+aufgerufen werden.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tb@\PName{Dateierweiterung}@before@hook}
+  \Macro{tb@\PName{Dateierweiterung}@after@hook}
+\end{Declaration}
+Diese Anweisungen werden direkt nach
+\DescRef{\LabelBase.cmd.tocbasic@@before@hook} bzw. vor
+\DescRef{\LabelBase.cmd.tocbasic@@after@hook} für das jeweilige Verzeichnis
+mit der entsprechenden \PName{Dateierweiterung}
+ausgeführt. Sie\textnote{Achtung!}  dürfen keinesfalls von Klassen- und
+Paketautoren verändert werden. Werden für die Ausgabe der Verzeichnisse die
+Anweisungen \DescRef{\LabelBase.cmd.listoftoc},
+\DescRef{\LabelBase.cmd.listoftoc*} und \DescRef{\LabelBase.cmd.listofeachtoc}
+nicht verwendet, sollten die beiden Anweisungen für die Haken\Index{Haken}
+trotzdem aufgerufen werden, soweit sie definiert sind. Die Anweisungen können
+auch undefiniert sein.%
+\iffalse% Umbruchkorrektur / inzwischen passt auch \@ifundefined
+\ Für einen entsprechenden Test siehe
+\DescRef{scrbase.cmd.scr@ifundefinedorrelax}\IndexCmd{scr@ifundefinedorrelax}
+in \autoref{sec:scrbase.if},
+\DescPageRef{scrbase.cmd.scr@ifundefinedorrelax}.%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@listhead}\Parameter{Titel}
+\end{Declaration}
+Diese Anweisung wird von \DescRef{\LabelBase.cmd.listoftoc} und
+\DescRef{\LabelBase.cmd.listofeachtoc} verwendet, um die Anweisung zum Setzen
+der Überschrift eines Verzeichnisses aufzurufen. Das kann entweder die
+vordefinierte Anweisung des Pakets \Package{tocbasic} oder eine individuelle
+Anweisung sein. Wenn Sie Ihre eigene Anweisung für die Überschrift definieren,
+können Sie ebenfalls \Macro{tocbasic@listhead} verwenden. In diesem Fall
+sollte vor dem Aufruf von \Macro{tocbasic@listhead} die Anweisung
+\Macro{@currext}\important{\Macro{@currext}}\IndexCmd{@currext} auf die
+Dateinamenerweiterung, die zu diesem Verzeichnis gehört, gesetzt werden.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@listhead@\PName{Dateierweiterung}}\Parameter{Titel}
+\end{Declaration}
+Ist diese individuelle Anweisung für das Setzen einer Verzeichnisüberschrift
+definiert, so verwendet \DescRef{\LabelBase.cmd.tocbasic@listhead}
+sie. Anderenfalls definiert \DescRef{\LabelBase.cmd.tocbasic@listhead} diese
+vor der Verwendung.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@addxcontentsline}\Parameter{Dateierweiterung}
+                                   \Parameter{Ebene}
+                                   \Parameter{Gliederungsnummer}
+                                   \Parameter{Eintrag}
+  \Macro{nonumberline}
+\end{Declaration}
+Anweisung\ChangedAt{v3.12}{\Package{tocbasic}}
+\Macro{tocbasic@addxcontentsline} nimmt einen \PName{Eintrag} der angegebenen
+\PName{Ebene} in das über die \PName{Dateierweiterung} spezifizierte
+Verzeichnis vor. Ob der Eintrag nummeriert wird\iffree{ oder
+  nicht}{}% Umbruchvarianten
+, hängt davon ab, ob das Argument \PName{Gliederungsnummer} leer ist oder
+nicht. Im Falle eines leeren Argument wird dem \PName{Eintrag} ein
+\Macro{nonumberline} ohne Argument vorangestellt. Anderenfalls wird wie
+gewohnt \DescRef{\LabelBase.cmd.numberline} mit \PName{Gliederungsnummer} als
+Argument verwendet.
+
+Die Anweisung \Macro{nonumberline} wird innerhalb
+\DescRef{\LabelBase.cmd.listoftoc} (siehe \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.listoftoc}) entsprechend der Eigenschaft
+\PValue{numberline} (siehe \autoref{sec:tocbasic.toc},
+\DescPageRef{\LabelBase.cmd.setuptoc}) umdefiniert. Dadurch wirkt sich das
+Setzen oder Löschen dieser Eigenschaft \iffree{bereits beim nächsten
+  \LaTeX-Lauf}{unmittelbar} % Umbruchvarianten
+aus.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{tocbasic@DependOnPenaltyAndTOCLevel}\Parameter{Eintragsebene}
+  \Macro{tocbasic@SetPenaltyByTOCLevel}\Parameter{Eintragsebene}
+\end{Declaration}
+Der\ChangedAt{v3.20}{\Package{tocbasic}} Verzeichniseintragsstil
+\PValue{tocline} (siehe \autoref{sec:tocbasic.tocstyle}) setzt am Ende jedes
+Eintrags über \Macro{tocbasic@SetPenaltyByTOCLevel} \Macro{penalty} so, dass
+nach einem Eintrag kein Seitenumbruch erfolgen darf. Der genaue Wert wird
+dabei abhängig von der \PName{Eintragsebene} gewählt.
+
+% \begin{sloppypar}
+\begingroup%
+\emergencystretch=2em\relax%
+Über \Macro{tocbasic@DependOnPenaltyAndTOCLevel} wird am Anfang eines
+Eintrags, abhängig von \Macro{lastpenalty} und \PName{Eintragsebene}, die über
+die Eigenschaft \Option{onstartlowerlevel} im internen Makro
+\Macro{scr@tso@\PName{Eintragsebene}@LastTOCLevelWasHigher}, über die
+Eigenschaft \Option{onstartsamelevel} im zugehörigen, internen Makro
+\Macro{scr@tso@\PName{Eintragsebene}@LastTOCLevelWasSame} oder über die
+Eigenschaft \Option{onstarthigherlevel} im zugehörigen, internen Makro
+\Macro{scr@tso@\PName{Eintragsebene}@LastTOCLevelWasLower} gespeicherte Aktion
+ausgeführt. In der Voreinstellung\textnote{Voreinstellung} erlauben die ersten
+beiden einen Umbruch, wenn sie im vertikalen Modus ausgeführt werden.\par%
+\endgroup
+%\end{sloppypar}
+
+Entwicklern, die eigene Stile kompatibel mit \PValue{tocline} erstellen
+wollen, sei empfohlen, dieses Verhalten zu kopieren. Zu diesem Zweck dürfen
+sie auf diese eigentlich internen Makros zurückgreifen.%
+\EndIndexGroup
+
+
+\section{Ein komplettes Beispiel}
+\seclabel{example}
+
+In diesem Abschnitt finden Sie ein komplettes Beispiel, wie eine eigene
+Gleitumgebung einschließlich Verzeichnis und \KOMAScript-Integration mit Hilfe
+von \Package{tocbasic} definiert werden kann. In diesem Beispiel werden
+interne Anweisungen, also solche mit »\texttt{@}« im Namen
+verwendet. Das\textnote{Achtung!}  bedeutet, dass die Anweisungen entweder in
+einem eigenen Paket, einer Klasse oder zwischen
+\Macro{makeatletter}\important[i]{\Macro{makeatletter}\\\Macro{makeatother}}%
+\IndexCmd{makeatletter} und \Macro{makeatother}\IndexCmd{makeatother}
+verwendet werden müssen.
+
+Als\textnote{Umgebung} erstes wird eine Umgebung benötigt, die diese neue
+Gleitumgebung \iftrue% Umbruchkorrektur (siehe auch nach dem Code)
+namens \Environment{remarkbox} bereitstellt:%
+\else%
+bereitstellt. Das geht ganz einfach mit:%
+\fi%
+\begin{lstcode}
+  \newenvironment{remarkbox}%
+    {\@float{remarkbox}}%
+    {\end@float}
+\end{lstcode}
+\iffalse Die neue Umgebung heißt also \Environment{remarkbox}.\fi % siehe oben
+
+Jede\textnote{Platzierung} Gleitumgebung hat eine Standardplatzierung. Diese
+setzt sich aus einer oder mehreren der bekannten Platzierungsoptionen
+\PValue{b}, \PValue{h}, \PValue{p} und \PValue{t} zusammen:
+\begin{lstcode}
+  \newcommand*{\fps@remarkbox}{tbp}
+\end{lstcode}
+Die neue Gleitumgebung soll also in der Voreinstellung nur oben, unten oder
+auf einer eigenen Seite platziert werden dürfen.
+
+Gleitumgebungen\textnote{Gleittyp} haben außerdem einen numerischen Gleittyp
+zwischen 1 und 31. Umgebungen, bei denen das gleiche Bit
+im Gleittyp gesetzt ist, dürfen sich nicht gegenseitig überholen. Abbildungen
+und Tabellen haben normalerweise den Typ~1 und 2. Abbildungen dürfen also
+Tabellen überholen und umgekehrt.
+\begin{lstcode}
+  \newcommand*{\ftype@remarkbox}{4}
+\end{lstcode}
+Die neue Umgebung hat den Typ~4, darf also Tabellen und Abbildungen überholen
+und von diesen überholt werden.
+
+Gleitumgebungen\textnote{Nummer} haben außerdem eine Nummer.
+\begin{lstcode}
+  \newcounter{remarkbox}
+  \newcommand*{\remarkboxformat}{%
+    Merksatz~\theremarkbox\csname autodot\endcsname
+  }
+  \newcommand*{\fnum@remarkbox}{\remarkboxformat}
+\end{lstcode}
+Hier wird zunächst ein neuer Zähler definiert, der unabhängig von Kapiteln
+oder sonstigen Gliederungszählern ist. Dabei definiert \LaTeX{} auch gleich
+\Macro{theremarkbox} mit der Standardausgabe als arabische Zahl. Diese wird
+dann in der Definition der formatierten Ausgabe verwendet. Die formatierte
+Ausgabe wird wiederum als Gleitumgebungsnummer für die Verwendung in
+\DescRef{maincls.cmd.caption} definiert.
+
+Gleitumgebungen\textnote{Dateierweiterung} haben Verzeichnisse und diese haben
+eine Datei mit dem Namen \Macro{jobname} und einer Dateierweiterung.
+\begin{lstcode}
+  \newcommand*{\ext@remarkbox}{lor}
+\end{lstcode}
+Als Dateierweiterung verwenden wir also »\File{lor}«.
+
+Die\important{\Package{tocbasic}} Umgebung selbst steht damit. Es fehlt
+allerdings das Verzeichnis. Damit wir dabei möglichst wenig selbst machen
+müssen, verwenden wir das Paket \Package{tocbasic}. Dieses wird in Dokumenten
+mit
+\begin{lstcode}
+  \usepackage{tocbasic}
+\end{lstcode}
+geladen. Ein Klassen- oder Paketautor würde hingegen
+\begin{lstcode}
+  \RequirePackage{tocbasic}
+\end{lstcode}
+verwenden.
+
+Nun\textnote{Dateierweiterung} machen wir die neue Dateierweiterung dem Paket
+\Package{tocbasic} bekannt.
+\begin{lstcode}
+  \addtotoclist[float]{lor}
+\end{lstcode}
+Dabei verwenden wir als Besitzer \PValue{float}. Damit beziehen sich
+automatisch alle Optionen, die von den \KOMAScript-Klassen für Verzeichnisse
+von Gleitumgebungen angeboten werden, auch auf das neue Verzeichnis.
+
+Jetzt\textnote{Verzeichnistitel} definieren wir noch einen Titel für dieses
+Verzeichnis:
+\begin{lstcode}
+  \newcommand*{\listoflorname}{Verzeichnis der Merksätze}
+\end{lstcode}
+Normalerweise würde man in einem Paket übrigens zunächst einen englischen
+Titel definieren und dann beispielsweise mit Hilfe des Pakets
+\Package{scrbase} Titel für alle weiteren Sprachen, die man unterstützen
+will. Siehe dazu \autoref{sec:scrbase.languageSupport}, ab
+\autopageref{sec:scrbase.languageSupport}.
+
+Jetzt\textnote{Verzeichniseintrag}\index{Verzeichnis>Eintrag} müssen wir nur
+noch definieren, wie ein einzelner Eintrag in dem Verzeichnis aussehen soll:
+\begin{lstcode}
+  \newcommand*{\l@remarkbox}{\l@figure}
+\end{lstcode}
+Weil das die einfachste Lösung ist, wurde hier festgelegt, dass Einträge in
+das Verzeichnis der Merksätze genau wie Einträge in das Abbildungsverzeichnis
+aussehen sollen. Man hätte stattdessen auch die Einstellungen selbst kopieren
+können:
+\begin{lstcode}
+  \DeclareTOCStyleEntry[level:=figure,%
+                        indent:=figure,%
+                        numwidth:=figure]%
+                       {tocline}{remarkbox}
+\end{lstcode}
+Selbstverständlich wären auch explizite Festlegungen möglich:
+\begin{lstcode}
+  \DeclareTOCStyleEntry[level=1,%
+                        indent=1.5em,%
+                        numwidth=2.3em]%
+                       {tocline}{remarkbox}
+\end{lstcode}
+
+Außerdem\textnote{Kapiteleintrag} wollen Sie, dass sich Kapiteleinträge auf das
+Verzeichnis auswirken.
+\begin{lstcode}
+  \setuptoc{lor}{chapteratlist}
+\end{lstcode}
+Das Setzen dieser Eigenschaft ermöglicht dies bei Verwendung einer
+\KOMAScript-Klasse und jeder anderen Klasse, die diese Eigenschaft
+unterstützt. Leider gehören die Standardklassen nicht dazu.
+
+Das\textnote{Verzeichnis} genügt schon. Der Anwender kann nun bereits
+wahlweise mit Hilfe der Optionen einer \KOMAScript-Klasse oder
+\DescRef{\LabelBase.cmd.setuptoc} verschiedene Formen der Überschrift (ohne
+Inhaltsverzeichniseintrag, mit Inhaltsverzeichniseintrag, mit Nummerierung)
+wählen und das Verzeichnis mit
+\DescRef{\LabelBase.cmd.listoftoc}\PParameter{lor} ausgeben. Mit einem
+schlichten
+\begin{lstcode}
+  \newcommand*{\listofremarkboxes}{\listoftoc{lor}}
+\end{lstcode}
+kann man die Anwendung noch etwas vereinfachen.
+
+Wie Sie gesehen haben, beziehen sich gerade einmal fünf einzeilige
+Anweisungen, von denen nur drei bis vier wirklich notwendig sind, auf das
+Verzeichnis selbst. Trotzdem bietet dieses Verzeichnis bereits die
+Möglichkeit, es zu nummerieren oder auch nicht nummeriert in das
+Inhaltsverzeichnis aufzunehmen. Es kann sogar per Eigenschaft bereits eine
+tiefere Gliederungsebene gewählt werden. Kolumnentitel werden für \KOMAScript,
+die Standardklassen und alle Klassen, die \Package{tocbasic} explizit
+unterstützen, angepasst gesetzt. Unterstützende Klassen beachten das neue
+Verzeichnis sogar beim Wechsel zu einem neuen Kapitel. Sprachumschaltungen
+durch \Package{babel} werden in dem Verzeichnis ebenfalls berücksichtigt.
+
+Natürlich\textnote{Verzeichniseigenschaften} kann ein Paketautor weiteres
+hinzufügen. So könnte er explizit Optionen anbieten, um die Verwendung von
+\DescRef{\LabelBase.cmd.setuptoc} vor dem Anwender zu verbergen. Andererseits
+kann er auch auf diese Anleitung zu \Package{tocbasic} verweisen, wenn es
+darum geht, die entsprechenden Möglichkeiten zu erklären. Vorteil ist dann,
+dass der Anwender automatisch von etwaigen zukünftigen Erweiterungen von
+\Package{tocbasic} profitiert. Soll der Anwender aber nicht mit der Tatsache
+belastet werden, dass für die Merksätze die Dateierweiterung \File{lor}
+verwendet wird, so genügt
+\begin{lstcode}
+  \newcommand*{\setupremarkboxes}{\setuptoc{lor}}
+\end{lstcode}
+\iftrue% Umbruchkorrektur
+um eine als Argument an \Macro{setupremarkboxes} übergebene Liste von
+Eigenschaften direkt als Liste von %
+\else%
+um über \Macro{setupremarkboxes}
+\fi
+Eigenschaften für \File{lor} zu setzen.
+
+
+\section{Alles mit einer Anweisung}
+\seclabel{declarenewtoc}
+
+Das Beispiel aus dem vorherigen Abschnitt hat gezeigt, dass es mit mit
+\Package{tocbasic} recht einfach ist, eigene Gleitumgebungen mit eigenen
+Verzeichnissen zu definieren. In diesem Abschnitt wird gezeigt, dass es sogar
+noch einfacher gehen kann.
+
+\begin{Declaration}
+  \Macro{DeclareNewTOC}\OParameter{Optionenliste}
+                       \Parameter{Dateierweiterung}
+\end{Declaration}%
+Mit\ChangedAt{v3.06}{\Package{tocbasic}} dieser Anweisung wird in einem
+einzigen Schritt ein neues Verzeichnis, dessen Überschrift und die Bezeichnung
+für die Einträge unter Kontrolle von \Package{tocbasic} definiert. Optional
+können dabei gleichzeitig gleitende oder nicht gleitende Umgebungen definiert
+werden, innerhalb derer \DescRef{maincls.cmd.caption}%
+\important{\DescRef{maincls.cmd.caption}}\IndexCmd{caption} Einträge für
+dieses neue Verzeichnis erzeugt. Auch die Erweiterungen
+\DescRef{maincls.cmd.captionabove}\important[i]{%
+  \DescRef{maincls.cmd.captionabove}\\
+  \DescRef{maincls.cmd.captionbelow}}, \DescRef{maincls.cmd.captionbelow} und
+\DescRef{maincls.env.captionbeside} aus den \KOMAScript-Klassen (siehe
+\autoref{sec:maincls.floats}, ab \DescPageRef{maincls.cmd.captionabove})
+können dann verwendet werden.
+
+\PName{Dateierweiterung} definiert dabei die Dateiendung der Hilfsdatei, die
+das Verzeichnis repräsentiert, wie dies in \autoref{sec:tocbasic.basics}, ab
+\autopageref{sec:tocbasic.basics} bereits erläutert
+wurde. Dieser\textnote{Achtung!} Parameter muss angegeben werden und darf
+nicht leer sein!
+
+\PName{Optionenliste} ist eine durch Komma getrennte Liste, wie dies auch von
+\DescRef{maincls.cmd.KOMAoptions} (siehe \autoref{sec:typearea.options},
+\DescPageRef{typearea.cmd.KOMAoptions}) bekannt ist. Diese
+Optionen\textnote{Achtung!} können jedoch \emph{nicht} mit
+\DescRef{maincls.cmd.KOMAoptions}\IndexCmd{KOMAoptions} gesetzt werden! Eine
+Übersicht über die möglichen Optionen bietet
+\autoref{tab:tocbasic.DeclareNewTOC-options}\iffalse ab
+\autopageref{tab:tocbasic.DeclareNewTOC-options}\fi.
+
+Wird\ChangedAt{v3.20}{\Package{tocbasic}} Option
+\Option{tocentrystyle} nicht gesetzt, so wird bei Bedarf der Stil
+\PValue{default} verwendet. Näheres zu diesem Stil ist
+\autoref{sec:tocbasic.tocstyle} zu entnehmen. Soll kein Befehl für
+Verzeichniseinträge definiert werden, so kann ein leeres Argument, also
+wahlweise \OptionValue{tocentrystyle}{}\iffree{}{\unskip} oder
+\OptionValue{tocentrystyle}{\PParameter{}} verwendet werden.
+
+Abhängig\ChangedAt{v3.21}{\Package{tocbasic}} vom Stil der
+Verzeichniseinträge können auch alle für diesen Stil gültigen Eigenschaften
+gesetzt werden, indem die entsprechenden in
+\autoref{tab:tocbasic.tocstyle.attributes} ab
+\autopageref{tab:tocbasic.tocstyle.attributes} aufgeführten Namen, mit dem
+Präfix \PValue{tocentry} versehen, in der \PName{Optionenliste} angegeben
+werden. Nachträgliche Änderungen am Stil sind mit
+\DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}%
+\IndexCmd{DeclareTOCStyleEntry}%
+\important{\DescRef{\LabelBase.cmd.DeclareTOCStyleEntry}} jederzeit
+möglich. Siehe dazu \autoref{sec:tocbasic.tocstyle},
+\DescPageRef{\LabelBase.cmd.DeclareTOCStyleEntry}.
+
+% Umbruchoptimierung: Tabelle verschoben.
+\begin{desclist}
+  \renewcommand*{\abovecaptionskipcorrection}{-\normalbaselineskip}%
+  \desccaption[{%
+    Optionen für die Anweisung \Macro{DeclareNewTOC}%
+    }]{%
+    Optionen für die Anweisung
+    \Macro{DeclareNewTOC}\ChangedAt{v3.06}{\Package{tocbasic}}%
+    \label{tab:tocbasic.DeclareNewTOC-options}%
+  }{%
+    Optionen für die Anweisung \Macro{DeclareNewTOC} (\emph{Fortsetzung})%
+  }%
+  \entry{\OptionVName{atbegin}{Code}\ChangedAt{v3.09}{\Package{tocbasic}}}{%
+    Falls eine neue Gleitumgebung oder nicht gleitende Umgebung definiert
+    wird, so wird \PName{Code} jeweils am Anfang dieser Umgebung ausgeführt.%
+  }%
+  \entry{\OptionVName{atend}{Code}\ChangedAt{v3.09}{\Package{tocbasic}}}{%
+    Falls eine neue Gleitumgebung oder nicht gleitende Umgebung definiert
+    wird, so wird \PName{Code} jeweils am Ende dieser Umgebung ausgeführt.%
+  }%
+  \entry{\OptionVName{category}{Kategorie}}{%
+    \ChangedAt{v3.27}{\Package{tocbasic}}%
+    Diese Option kann als Synonym für \OptionVName{owner}{Besitzer} verwendet
+    werden.}%
+  \entry{\OptionVName{counterwithin}{\LaTeX-Zähler}}{%
+    Falls eine neue Gleitumgebung oder eine nicht gleitende Umgebung definiert
+    wird, so wird für diese auch ein neuer Zähler
+    \Counter{\PName{Eintragstyp}} (siehe Option \Option{type})
+    angelegt. Dieser Zähler kann, in gleicher Weise wie beispielsweise der
+    Zähler \Counter{figure} bei \Class{book}-Klassen von Zähler
+    \Counter{chapter} abhängt, von einem \PName{\LaTeX-Zähler} abhängig gemacht
+    werden. Eine\ChangedAt{v3.35}{\Package{tocbasic}} Einstellung
+    \OptionValue{counterwithin}{chapter} wird bei Klassen mit
+    \DescRef{maincls.cmd.chapter}\IndexCmd{chapter} jedoch nur im Hauptteil
+    (siehe \DescRef{maincls.cmd.frontmatter}\IndexCmd{frontmatter},
+    \DescRef{maincls.cmd.mainmatter} und
+    \DescRef{maincls.cmd.backmatter}\IndexCmd{backmatter} in
+    \autoref{sec:maincls.separation}, \DescPageRef{maincls.cmd.frontmatter})
+    und nur dann beachtet, wenn der Zähler
+    \Counter{chapter}\IndexCounter{chapter} bei der Ausgabe größer als Null
+    ist. Bei Klassen ohne \DescRef{maincls.cmd.chapter} gilt dies entsprechend
+    für die Einstellung \OptionValue{counterwithin}{section} und Zähler
+    \Counter{section}\IndexCounter{section}\IndexCmd{section}.%
+  }%
+  \entry{\Option{float}}{%
+    Es wird nicht nur ein neuer Verzeichnistyp definiert, sondern auch
+    Gleitumgebungen \Environment{\PName{Eintragstyp}} (siehe Option
+    \Option{type}) und \Environment{\PName{Eintragstyp}*}
+    (vgl. \Environment{figure} und \Environment{figure*}).}%
+  \entry{\OptionVName{floatpos}{Gleitverhalten}}{%
+    Jede Gleitumgebung hat ein voreingestelltes \PName{Gleitverhalten}, das
+    über das optionale Argument der Gleitumgebung geändert werden kann. Mit
+    dieser Option wird das \PName{Gleitverhalten} für die optional erstellbare
+    Gleitumgebung (siehe Option \Option{float}) festgelegt. Die Syntax und
+    Semantik sind dabei mit der des optionalen Arguments für die Gleitumgebung
+    identisch. Wird die Option nicht verwendet, so ist das voreingestellte
+    Gleitverhalten \texttt{tbp}, also \emph{top}, \emph{bottom},
+    \emph{page}.}%
+  \entry{\OptionVName{floattype}{Gleittyp}}{%
+    Jede Gleitumgebung hat einen numerischen Typ. Gleitumgebungen, bei denen
+    in diesem \PName{Gleittyp} nur unterschiedliche Bits gesetzt sind, können
+    sich gegenseitig überholen. Die Gleitumgebungen \Environment{figure} und
+    \Environment{table} haben normalerweise die Typen 1 und 2, können sich
+    also gegenseitig überholen. Es sind Typen von 1 bis 31 (alle Bits gesetzt,
+    kann also keinen anderen Typ überholen und von keinem anderen Typen
+    überholt werden) zulässig. Wird kein Typ angegeben, so wird mit 16 der
+    höchst mögliche Ein-Bit-Typ verwendet.}%
+  \entry{\Option{forcenames}}{%
+    Siehe Option \Option{name} und \Option{listname}.}%
+  \entry{\OptionVName{hang}{Einzug}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \ChangedAt{v3.21}{\Package{tocbasic}}%
+    Diese Option gilt seit \KOMAScript~3.20 als überholt. Die Breite der
+    Nummer des Verzeichniseintrags\index{Verzeichnis>Eintrag} ist nun
+    stattdessen als Eigenschaft in Abhängigkeit des Verzeichniseintragsstils
+    von Option \Option{tocentrystyle} anzugeben. Bei den Stilen von
+    \KOMAScript{} wäre das beispielsweise die Eigenschaft \PValue{numwidth}
+    und damit Option \Option{tocentrynumwidth}. Besitzt ein Stil diese
+    Eigenschaft, so wird sie von \Macro{DeclareNewTOC} mit 1,5\Unit{em}
+    voreingestellt. Diese Voreinstellung kann durch explizite Angabe von
+    \OptionVName{tocentrynumwidth}{Wert} leicht mit einem anderen \PName{Wert}
+    überschrieben werden. Für Abbildungen verwenden die \KOMAScript-Klassen
+    beispielsweise den \PName{Wert} \PValue{2.3em}.}%
+  \entry{\OptionVName{indent}{Einzug}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \ChangedAt{v3.21}{\Package{tocbasic}}%
+    Diese Option gilt seit \KOMAScript~3.20 als überholt. Der Einzug des
+    Verzeichniseintrags\index{Verzeichnis>Eintrag} von links ist nun
+    stattdessen als Eigenschaft in Abhängigkeit des Verzeichniseintragsstils
+    von Option \Option{tocentrystyle} anzugeben. Bei den Stilen von
+    \KOMAScript{} wäre das beispielsweise die Eigenschaft \PValue{indent} und
+    damit Option \Option{tocentryindent}. Besitzt ein Stil diese Eigenschaft,
+    so wird sie von \Macro{DeclareNewTOC} mit 1\Unit{em} voreingestellt. Diese
+    Voreinstellung kann durch explizite Angabe von
+    \OptionVName{tocentryindent}{Wert} leicht mit einem anderen \PName{Wert}
+    überschrieben werden. Für Abbildungen verwenden die \KOMAScript-Klassen
+    beispielsweise den \PName{Wert} \PValue{1.5em}.}%
+  \entry{\OptionVName{level}{Gliederungsebene}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \ChangedAt{v3.21}{\Package{tocbasic}}%
+    Diese Option gilt seit \KOMAScript~3.20 als überholt. Der numerische Wert
+    der Ebene des Verzeichniseintrags\index{Verzeichnis>Eintrag} ist nun
+    stattdessen als Eigenschaft in Abhängigkeit des Verzeichniseintragsstils
+    von Option \Option{tocentrystyle} anzugeben. Nichtsdestotrotz haben alle
+    Stile die Eigenschaft \PValue{level} und damit Option
+    \Option{tocentrylevel}. Die Eigenschaft wird von \Macro{DeclareNewTOC} mit
+    1 voreingestellt. Diese Voreinstellung kann durch explizite Angabe von
+    \OptionVName{tocentrylevel}{Wert} leicht mit einem anderen \PName{Wert}
+    überschrieben werden.}%
+  \entry{\OptionVName{listname}{Verzeichnistitel}}{%
+    Jedes Verzeichnis hat eine Überschrift, die durch diese Option bestimmt
+    werden kann. Ist die Option nicht angegeben, so wird als Verzeichnistitel
+    »\texttt{List of \PName{Mehrzahl des Eintragstyps}}« (siehe Option
+    \Option{types}) verwendet, wobei das erste Zeichen der \PName{Mehrzahl des
+      Eintragstyps} in einen Großbuchstaben gewandelt wird. Es wird auch ein
+    Makro \Macro{list\PName{Eintragstyp}name} mit diesem Wert definiert, der
+    jederzeit geändert werden kann. Dieses Makro wird jedoch nur definiert,
+    wenn es nicht bereits definiert ist oder zusätzlich Option
+    \Option{forcenames} gesetzt ist.}%
+  \entry{\OptionVName{name}{Eintragsname}}{%
+    Sowohl als optionaler Präfix für die Einträge im Verzeichnis als auch für
+    die Beschriftung in einer Gleitumgebung (siehe Option \Option{float}) oder
+    einer nicht gleitenden Umgebung (siehe Option \Option{nonfloat}) wird ein
+    Name benötigt. Ohne diese Option wird als \PName{Eintragsname} der
+    \PName{Eintragstyp} (siehe Option \Option{type}) verwendet, bei dem das
+    erste Zeichen in einen Großbuchstaben gewandelt wird. Es wird auch ein
+    Makro \Macro{\PName{Eintragstyp}name} mit diesem Wert definiert, der
+    jederzeit geändert werden kann. Dieses Makro wird jedoch nur definiert,
+    wenn es nicht bereits definiert ist oder zusätzlich Option
+    \Option{forcenames} gesetzt ist.}%
+  \entry{\Option{nonfloat}}{%
+    Es wird nicht nur ein neuer Verzeichnistyp definiert, sondern auch eine
+    nicht gleitende Umgebungen \Environment{\PName{Eintragstyp}-} (siehe
+    Option \Option{type}), die ähnlich wie eine Gleitumgebung verwendet werden
+    kann, jedoch nicht gleitet und auch nicht die Grenzen der Umgebung, in der
+    sie verwendet wird, durchbricht.}%
+  \entry{\OptionVName{owner}{Besitzer}}{%
+    Jedes neue Verzeichnis hat bei \Package{tocbasic} einen Besitzer (siehe
+    \autoref{sec:tocbasic.basics}). Dieser kann hier angegeben werden. Ist
+    kein \PName{Besitzer} angegeben, so wird als \PName{Besitzer} die
+    Kategorie »\PValue{float}« verwendet, die auch von den \KOMAScript-Klassen
+    für das Abbildungs- und das Tabellenverzeichnis verwendet wird.}%
+  \entry{\OptionVName{setup}{Liste von Eigenschaften}}{%
+    \ChangedAt{v3.25}{\Package{tocbasic}}%
+    Die \PName{Liste von Eigenschaften} wird via
+    \DescRef{\LabelBase.cmd.setuptoc} gesetzt. Es wird darauf hingewiesen,
+    dass für die Angabe mehrerer durch Komma getrennter Eigenschaften die
+    \PName{Liste von Eigenschaften} in geschweifte Klammern gesetzt werden
+    muss.%
+  }%
+  \entry{\OptionVName{tocentrystyle}{Eintragsstil}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    \PName{Eintragsstil} gibt den Stil an, den Einträge in das entsprechende
+    Verzeichnis haben sollen. Der Name der Eintragsebene wird dabei über
+    Option \Option{type} bestimmt. Zusätzlich zu den Optionen dieser Tabelle
+    können auch alle Eigenschaften des Stils als Optionen angegeben werden,
+    indem die Namen der Eigenschaften mit dem Präfix \PValue{tocentry} ergänzt
+    werden. So kann der numerische Wert der Ebene beispielsweise als
+    \Option{tocentrylevel} angegeben werden. Näheres zu den Stilen ist
+    \autoref{sec:tocbasic.tocstyle} ab \autopageref{sec:tocbasic.tocstyle} zu
+    entnehmen.%
+  }%
+  \entry{\OptionVName{tocentry\PName{Stiloption}}{Wert}}{%
+    \ChangedAt{v3.20}{\Package{tocbasic}}%
+    Weitere Optionen in Abhängigkeit vom via \Option{tocentrystyle} gewählten
+    \PName{Eintragsstil}. Siehe dazu \autoref{sec:tocbasic.tocstyle} ab
+    \autopageref{sec:tocbasic.tocstyle}. Für die von \Package{tocbasic}
+    vordefinierten Verzeichniseintragsstile finden sich die als
+    \PName{Stiloption} verwendbaren Attribute in
+    \autoref{tab:tocbasic.tocstyle.attributes}, ab
+    \autopageref{tab:tocbasic.tocstyle.attributes}.%
+  }%
+  \entry{\OptionVName{type}{Eintragstyp}}{%
+    \PName{Eintragstyp} gibt den Typ der Einträge in das entsprechende
+    Verzeichnis an. Der Typ wird auch als Basisname für verschiedene Makros
+    und gegebenenfalls Umgebungen und Zähler verwendet. Er sollte daher nur
+    aus Buchstaben bestehen. Wird diese Option nicht verwendet, so wird für
+    \PName{Eintragstyp} die \PName{Dateierweiterung} aus dem obligatorischen
+    Argument verwendet.}%
+  \entry{\OptionVName{types}{Mehrzahl des Eintragstyps}}{%
+    An verschiedenen Stellen wird auch die Mehrzahlform des Eintragstyps
+    verwendet, beispielsweise um eine Anweisung \Macro{listof\PName{Mehrzahl
+        des Eintragstyps}} zu definieren. Wird diese Option nicht verwendet,
+    so wird als \PName{Mehrzahl des Eintragstyps} der Wert von \Option{type}
+    mit angehängtem »s« verwendet.}%
+  \entry{\OptionVName{unset}{Liste von Eigenschaften}}{%
+    \ChangedAt{v3.25}{\Package{tocbasic}}%
+    Die \PName{Liste von Eigenschaften} wird via
+    \DescRef{\LabelBase.cmd.unsettoc} aufgehoben. Es wird darauf hingewiesen,
+    dass für die Angabe mehrerer durch Komma getrennter Eigenschaften die
+    \PName{Liste von Eigenschaften} in geschweifte Klammern gesetzt werden
+    muss.%
+  }%
+\end{desclist}
+
+\begin{Example}
+  Das Beispiel aus \autoref{sec:tocbasic.example} kann mit Hilfe der neuen
+  Anweisung deutlich verkürzt werden:
+\begin{lstcode}
+  \DeclareNewTOC[%
+    type=remarkbox,%
+    types=remarkboxes,%
+    float,% Gleitumgebungen sollen definiert werden.
+    floattype=4,%
+    name=Merksatz,%
+    listname={Verzeichnis der Merks\"atze}%
+  ]{lor}
+  \setuptoc{lor}{chapteratlist}
+\end{lstcode}
+  Neben den Umgebungen \Environment{remarkbox} und \Environment{remarkbox*}
+  sind damit auch der Zähler \Counter{remarkbox}, die zur Ausgabe gehörenden
+  Anweisungen \Macro{theremarkbox}, \Macro{remarkboxname} und
+  \Macro{remarkboxformat}, die für das Verzeichnis benötigten
+  \Macro{listremarkboxname} und \Macro{listofremarkboxes} %
+  \iffalse % Umbruchkorrektur
+  sowie einige intern verwendete Anweisungen mit Bezug auf %
+  \else%
+  und einige interne Anweisunen für %
+  \fi%
+  die Dateiendung \File{lor} definiert. Soll der Gleitumgebungstyp dem Paket
+  überlassen werden, so kann Option \Option{floattype} \iffalse im Beispiel \fi
+  entfallen. Wird zusätzlich die Option \Option{nonfloat} angegeben, wird
+  außerdem eine nicht gleitende Umgebung \Environment{remarkbox-} definiert,
+  in der ebenfalls \DescRef{maincls.cmd.caption}\IndexCmd{caption} verwendet
+  werden kann.
+
+  Zum besseren Verständnis zeigt \autoref{tab:tocbasic.comparison} eine
+  Gegenüberstellung der Anweisungen und Umgebungen für die neu erstellte
+  Beispielumgebung \Environment{remarkbox} mit den entsprechenden Befehlen und
+  Umgebungen für Abbildungen.%
+  \begin{table}
+    \centering
+    \caption{Gegenüberstellung von Beispielumgebung \Environment{remarkbox}
+      und Umgebung \Environment{figure}}
+    \label{tab:tocbasic.comparison}
+    \begin{tabularx}{\textwidth}{l@{\hskip\tabcolsep}l@{\hskip\tabcolsep}>{\raggedright}p{7em}@{\hskip\tabcolsep}X}
+      \toprule
+      \begin{tabular}[t]{@{}l@{}}
+        Umgebung\\
+        \Environment{remarkbox}
+      \end{tabular}
+      & \begin{tabular}[t]{@{}l@{}}
+          Umgebung\\
+          \Environment{figure}
+        \end{tabular}
+      & Optionen von \Macro{DeclareNewTOC} & Kurzbeschreibung \\[1ex]
+      \midrule
+      \Environment{remarkbox} & \Environment{figure} 
+      & \Option{type}, \Option{float} 
+      & Gleitumgebung des jeweiligen Typs.\\[1ex]
+      \Environment{remarkbox*} & \Environment{figure*} 
+      & \Option{type}, \Option{float} 
+      & spaltenübergreifende Gleitumgebung des jeweiligen Typs \\[1ex]
+      \Counter{remarkbox} & \Counter{figure} 
+      & \Option{type}, \Option{float} 
+      & Zähler, der von \DescRef{maincls.cmd.caption} verwendet wird \\[1ex]
+      \Macro{theremarkbox} & \Macro{thefigure} 
+      & \Option{type}, \Option{float} 
+      & Anweisung zur Ausgabe des jeweiligen Zählers \\[1ex]
+      \Macro{remarkboxformat} & \DescRef{maincls.cmd.figureformat}
+      & \Option{type}, \Option{float}
+      & Anweisung zur Formatierung des jeweiligen Zählers in der Ausgabe von
+        \DescRef{maincls.cmd.caption}\\[1ex]
+      \Macro{remarkboxname} & \Macro{figurename}
+      & \Option{type}, \Option{float}, \Option{name}
+      & Name, der im Label von \DescRef{maincls.cmd.caption} verwendet
+        wird\\[1ex]
+      \Macro{listofremarkboxes} & \DescRef{maincls.cmd.listoffigures}
+      & \Option{types}, \Option{float}
+      & Anweisung zur Ausgabe des jeweiligen Verzeichnisses \\[1ex]
+      \Macro{listremarkboxname} & \Macro{listfigurename}
+      & \Option{type}, \Option{float}, \Option{listname}
+      & Überschrift des jeweiligen Verzeichnisses \\[1ex]
+      \Macro{fps@remarkbox} & \Macro{fps@figure}
+      & \Option{type}, \Option{float}, \Option{floattype}
+      & numerischer Gleitumgebungstyp zwecks
+        Reihen\-fol\-gen\-erhalts\\[1ex]
+      \File{lor} & \File{lof}
+      &
+      & Dateiendung der Hilfsdatei für das jeweilige Verzeichnis \\
+      \bottomrule
+    \end{tabularx}
+  \end{table}
+
+  Und hier nun eine mögliche Verwendung der Umgebung:
+\begin{lstcode}
+  \begin{remarkbox}
+    \centering
+    Gleiches sollte immer auf gleiche Weise und
+    mit gleichem Aussehen gesetzt werden.
+    \caption{Erster Hauptsatz der Typografie}
+    \label{rem:typo1}
+  \end{remarkbox}
+\end{lstcode}
+  Ein Ausschnitt aus einer Beispielseite mit dieser Umgebung könnte dann so
+  aussehen:
+  \begin{center}\footnotesize
+    \begin{tabular}
+      {|!{\hspace{.1\linewidth}}p{.55\linewidth}!{\hspace{.1\linewidth}}|}
+      \\
+      \centering
+      Gleiches sollte immer auf gleiche Weise und
+      mit gleichem Aussehen gesetzt werden.\\[\abovecaptionskip]
+      {%
+        \usekomafont{caption}\footnotesize
+        \begin{tabularx}{\hsize}[t]{@{}l@{ }X@{}}
+          \usekomafont{captionlabel}{Merksatz 1:} &
+          Erster Hauptsatz der Typografie%\\
+        \end{tabularx}%
+      }%
+      \\
+    \end{tabular}%
+  \end{center}%
+\end{Example}%
+
+Benutzer von älteren Versionen von Paket
+\Package{hyperref}\IndexPackage{hyperref}\important{\Package{hyperref}}
+sollten Option \Option{listname} übrigens immer angeben. Anderenfalls kommt es
+in der Regel zu einer Fehlermeldung, weil \Package{hyperref} nicht mit dem
+\Macro{MakeUppercase}\IndexCmd{MakeUppercase} im Namen des Verzeichnisses
+zurecht kommt, das benötigt wird, um den ersten Buchstaben des Wertes von
+\Option{types} in Großbuchstaben zu wandeln. Besser ist natürlich die
+Verwendung eines aktuellen \Package{hyperref} mit einem aktuellen \LaTeX.%
+\EndIndexGroup%
+
+\section{Obsolete Befehle}
+\seclabel{obsolete}
+
+Frühere Versionen von \Package{tocbasic} verfügten über Befehle,
+die aufgrund von Äußerungen von Mitgliedern des \LaTeX-Project-Teams umbenannt
+wurden. Diese veralteten Befehle sollten nicht mehr verwendet werden.
+
+\LoadNonFree{tocbasic}{0}%
+% 
+\EndIndexGroup
+
+\endinput
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "scrguide-de.tex"
+%%% coding: utf-8
+%%% ispell-local-dictionary: "de_DE"
+%%% eval: (flyspell-mode 1)
+%%% End:
+
+%  LocalWords:  Verzeichnisdatei Klonquelle Absatzabstandes Absatzabstand
+%  LocalWords:  Verzeichniseinträge Verzeichniseintrag Eintragsstile
+%  LocalWords:  Inhaltsverzeichniseinträge Standardklassen Nummernbreite
+%  LocalWords:  Standardeigenschaft Eintragsebene Optionenliste expandierbar
+%  LocalWords:  Standardverzeichniseintragsstil Verzeichniseigenschaften
+%  LocalWords:  Verzeichniseintragsstil Verzeichniseintragsstils Eintragsstil
+%  LocalWords:  Kapitelüberschrift Gliederungsebene expandierbares
+%  LocalWords:  Eintragsnummer Initialisierungscode Aktivierungswerte
+%  LocalWords:  Deaktivierungswert Verzeichnistitel Eintragstyp Eintragstyps
+%  LocalWords:  Verzeichniseintrags Säumniswert Überschriftenanweisung
+%  LocalWords:  Eintragstext Dateierweiterung Dateierweiterungen Paketautoren
+%  LocalWords:  Verzeichnisbefehle Verzeichnisdaten Schrifteinstellungen
+%  LocalWords:  Eintragsebenen Platzierungsoptionen Kapiteleinträge

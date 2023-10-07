@@ -1,0 +1,2159 @@
+% ======================================================================
+% scrbase-de.tex
+% Copyright (c) Markus Kohm, 2002-2022
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+% Package scrbase for Package and Class Authors
+% Maintained by Markus Kohm
+%
+% ======================================================================
+
+\KOMAProvidesFile{scrbase-de.tex}
+                 [$Date: 2022-06-05 12:40:11 +0200 (So, 05. Jun 2022) $
+                  KOMA-Script package scrbase]
+
+\chapter{Grundlegende Funktionen im Paket \Package{scrbase}}
+\labelbase{scrbase}
+\BeginIndexGroup
+\BeginIndex{Package}{scrbase}%
+
+Das Paket \Package{scrbase} stellt einige grundlegende Funktionen bereit, die
+sich an Autoren von Paketen und Klassen richten. Dabei kann es nicht nur für
+Wrapper-Klassen genutzt werden, die ihrerseits eine \KOMAScript-Klasse
+laden. Auch Autoren von Klassen, die ansonsten nichts mit \KOMAScript{} zu tun
+haben, können von der Funktionalität von \Package{scrbase} profitieren.
+
+\section{Laden des Pakets}
+\seclabel{loadit}
+
+Während Anwender ein Paket mit Hilfe von \Macro{usepackage} laden, verwenden
+Paket- und Klassenautoren
+\Macro{RequirePackage}\IndexCmd{RequirePackage}. Autoren von Wrapper-Paketen
+nutzen auch
+\Macro{RequirePackageWithOptions}\IndexCmd{RequirePackageWithOptions}. Bei
+Verwendung von \Macro{RequirePackage} können wie bei
+\Macro{usepackage}\IndexCmd{usepackage} Optionen angegeben
+werden. Demgegenüber erhält das Paket bei \Macro{RequirePackageWithOptions}
+alle Optionen, mit denen zuvor das Wrapper-Paket geladen wurde. Näheres zu
+diesen Anweisungen ist \cite{latex:clsguide} zu entnehmen.
+
+Das Paket \Package{scrbase} benötigt intern die Funktionalität des Pakets
+\Package{keyval}\IndexPackage{keyval}\important{\Package{keyval}}. Diese kann
+auch vom Paket \Package{xkeyval} zur Verfügung gestellt werden. Bei Bedarf
+lädt \Package{scrbase} selbst \Package{keyval}. Näheres zu dem Paket is
+\cite{package:keyval} zu entnehmen.
+
+Das Paket \Package{keyval} erlaubt es, Schlüssel zu definieren und diesen
+Werte zuzuweisen.  Auch die Optionen, die \Package{scrbase} bereitstellt,
+verwenden die \Package{keyval}-Syntax: \OptionVName{\PName{Schlüssel}}{Wert}%
+\important{\OptionVName{\PName{Schlüssel}}{Wert}}.
+
+
+\section{Schlüssel als Eigenschaften von Familien und deren Mitgliedern}
+\seclabel{keyvalue}
+
+Wie bereits in \autoref{sec:scrbase.loadit} erwähnt, setzt \Package{scrbase}
+bei Schlüsseln und deren Werten auf das Paket \Package{keyval}. Allerdings
+erweitert es dessen Funktionalität. Während bei \Package{keyval} ein Schlüssel
+einer Familie gehört, kennt \Package{scrbase} zu jeder Familie auch noch
+Familienmitglieder. Ein Schlüssel kann dann sowohl einer Familie als auch
+einem oder mehreren Familienmitgliedern gehören. Außerdem kann ein Wert einem
+Schlüssel eines Familienmitglieds, einem Schlüssel einer Familie oder einem
+Schlüssel aller Familienmitglieder zugewiesen werden.
+
+\begin{Declaration}
+  \Macro{DefineFamily}\Parameter{Familienname}
+  \Macro{DefineFamilyMember}\OParameter{Mitglied}\Parameter{Familienname}
+\end{Declaration}
+\Package{scrbase} muss aus verschiedenen Gründen die Mitglieder einer Familie
+kennen. Daher ist es notwendig, eine neue Familie zunächst mit
+\Macro{DefineFamily} zu definieren und so eine leere Mitgliederliste zu
+erzeugen. Ist die Familie bereits definiert, so geschieht schlicht nichts. Es
+wird also auch nicht eine bereits existierende Mitgliederliste überschrieben.
+
+Ein neues Mitglied wird der Familie dann mit der Anweisung
+\Macro{DefineFamilyMember} bekannt gegeben. Existiert die Familie nicht, so
+führt dies zu einer Fehlermeldung. Existiert das Mitglied bereits, so
+geschieht nichts. Wird kein Mitglied angegeben, so bleibt das Mitglied nicht
+etwa leer, sondern es wird
+»\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}« angenommen. Während
+des Ladens einer Klasse oder eines Pakets sind \Macro{@currname} und
+\Macro{@currext} zusammen der Dateiname.
+
+Theoretisch wäre es möglich, mit einem leeren optionalen Argument
+\PName{Mitglied} auch ein Mitglied ohne Name zu definieren. Dies würde jedoch
+der Familie selbst entsprechen. Es wird empfohlen, als \PName{Familienname} nur
+Buchstaben und Ziffern zu verwenden und das \PName{Mitglied} immer mit einem
+anderen Zeichen, vorzugsweise einem Punkt, zu beginnen. Anderenfalls könnte
+es passieren, dass sich Mitglieder einer Familie mit Mitgliedern anderer
+Familien überdecken.
+
+\Package{scrbase} definiert selbst bereits die Familie »\PValue{KOMA}« und
+fügt ihr das Mitglied »\PValue{.scrbase.sty}« hinzu. Grundsätzlich sind die
+Familien »\PValue{KOMA}« und »\PValue{KOMAarg}« \KOMAScript{} vorbehalten. Es
+wird empfohlen, für eigene Pakete den Namen des Gesamtpakets als Familie und
+den Namen einzelner Pakete im Gesamtpaket als Mitglied zu verwenden.
+%
+\begin{Example}
+  Angenommen, Sie schreiben ein neues Gesamtpaket »Fleischermeister«. Darin
+  befinden sich die Pakete \File{Salami.sty}, \File{Mettwurst.sty} und
+  \File{Krakauer.sty}. Daher entscheiden Sie sich für den Familienname
+  »\PValue{Fleischermeister}« und fügen in jedem der Pakete die Zeilen
+\begin{lstcode}
+  \DefineFamily{Fleischermeister}
+  \DefineFamilyMember{Fleischermeister}
+\end{lstcode}
+  ein. Dadurch wird beim Laden der drei genannten Pakete der Familie
+  »\PValue{Fleischermeister}« je nach Paket eines der drei Mitglieder
+  »\PValue{.Salami.sty}«, »\PValue{.Mettwurst.sty}« und
+  »\PValue{.Krakauer.sty}« zugefügt. Am Ende sind dann alle drei Mitglieder
+  definiert.
+\end{Example}
+%
+\EndIndexGroup
+\ExampleEndFix
+
+
+\begin{Declaration}
+  \Macro{DefineFamilyKey}\OParameter{Mitglied}\Parameter{Familie}%
+                         \Parameter{Schlüssel}
+                         \OParameter{Säumniswert}\Parameter{Aktion}
+  \Macro{FamilyKeyState}
+  \Macro{FamilyKeyStateUnknown}
+  \Macro{FamilyKeyStateProcessed}
+  \Macro{FamilyKeyStateUnknownValue}
+  \Macro{FamilyKeyStateNeedValue}
+\end{Declaration}
+Mit dieser Anweisung wird ein \PName{Schlüssel} definiert. Ist ein
+\PName{Mitglied} angegeben, so ist der \PName{Schlüssel} eine Eigenschaft
+dieses Mitglieds der angegebenen \PName{Familie}. Ist\textnote{Hinweis}
+\OParameter{Mitglied} nicht angegeben, so wird wieder das Mitglied
+»\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}« angenommen. Ist das
+\PName{Mitglied} hingegen leer, so wird ein Familienschlüssel anstelle eines
+Mitgliederschlüssels definiert.
+
+Wird später dem \PName{Schlüssel} ein Wert zugewiesen, so wird \PName{Aktion}
+ausgeführt, wobei der Wert als Parameter übergeben wird. Innerhalb von
+\PName{Aktion} steht also »\lstinline{#1}« für den übergebenen Wert. Wurde
+kein Wert übergeben, so wird stattdessen der \PName{Säumniswert}
+eingesetzt. Falls kein \PName{Säumniswert} angegeben wird, kann später der
+\PName{Schlüssel} nur mit Wertübergabe verwendet werden.
+
+%\begin{Explain}
+  \phantomsection\label{explain:scrbase.macro.DefineFamilyKey}%
+  Letztlich führt
+\begin{lstcode}[escapeinside=><]
+  \DefineFamilyKey[>\PName{Mitglied}<]{>\PName{Familie}<}{>\PName{Schlüssel}<}
+                  [>\PName{Säumniswert}<]{>\PName{Aktion}<}
+\end{lstcode}
+  zu dem Aufruf
+\begin{lstcode}[moretexcs={define@key},escapeinside=><]
+  \define@key{>\PName{Familie\,Mitglied}<}{>\PName{Schlüssel}<}
+             [>\PName{Säumniswert}<]{>\PName{erweiterte Aktion}<}
+\end{lstcode}
+  wobei \Macro{define@key} im \Package{keyval}-Paket\IndexPackage{keyval}
+  definiert ist (siehe \cite{package:keyval}). Allerdings kommen zu dem Aufruf
+  von \Macro{define@key} noch einige zusätzliche Vorkehrungen und auch die
+  \PName{Aktion} wird automatisch um einige interne Aktionen erweitert.
+%\end{Explain}
+
+Erfolg\ChangedAt{v3.12}{\Package{scrbase}} oder Misserfolg der Ausführung
+der \PName{Aktion} werden über \Macro{FamilyKeyState} an \Package{scrbase}
+zurückgemeldet, damit dieses je nach Bedarf und Verwendung des Schlüssels
+weitere Maßnahmen ergreifen kann. Das kann beispielsweise eine Fehlermeldung
+aber auch nur die Signalisierung einer unbekannten Option sein.
+
+Der Zustand\textnote{unbekannt} \Macro{FamilyKeyState} ist in der
+Voreinstellung identisch mit dem Zustand \Macro{FamilyKeyStateUnknown}. Das
+bedeutet, dass es nicht sicher ist, ob der Schlüssel korrekt verarbeitet
+werden konnte. Findet \Package{scrbase} nach Ausführung der \PName{Aktion}
+noch immer diesen Zustand vor, so wird ein Hinweis in die \File{log}-Datei
+geschrieben und im weiteren der Zustand \Macro{FamilyKeyStateProcessed}
+angenommen.
+
+Der Zustand\textnote{Erfolg} \Macro{FamilyKeyStateProcessed} signalisiert,
+dass der Schlüssel und die Wertzuweisung an den Schlüssel vollständig
+abgeschlossen wurde und alles in Ordnung ist. Auf den Zustand kann einfach
+durch Aufruf von \Macro{FamilyKeyStateProcessed} selbst umgeschaltet werden.
+
+Der Zustand\textnote{unbekannter Wert} \Macro{FamilyKeyStateUnknownValue}
+signalisiert, dass der Schlüssel zwar verarbeitet wurde, ihm jedoch ein Wert
+zugewiesen werden sollte, der nicht erlaubt ist. Diesen Zustand meldet
+beispielsweise \hyperref[cha:typearea]{\Package{typearea}}, wenn versucht
+wird, an Option \DescRef{typearea.option.twoside} den Wert \PValue{unbekannt}
+zuzuweisen. Die Umschaltung auf den Zustand erfolgt einfach durch Aufruf von
+\Macro{FamilyKeyStateUnknownValue} selbst.
+
+Der Zustand\textnote{fehlender Wert}
+\Macro{FamilyKeyStateNeedValue}
+signalisiert, dass der Schlüssel nicht verarbeitet werden konnte, weil er
+zwingend einen Wert erwartet, er aber ohne Wertzuweisung aufgerufen
+wurde. Dieser Zustand wird automatisch gesetzt, wenn ein Schlüssel, der keinen
+\PName{Säumniswert} besitzt, ohne Wertzuweisung verwendet wird. Theoretisch
+wäre aber auch eine explizite Umschaltung darauf durch Aufruf von
+\Macro{FamilyKeyStateNeedValue} selbst möglich.
+
+Des Weiteren können zusätzliche\textnote{Fehler} Fehlerzustände definiert
+werden, indem man \Macro{FamilyKeyState} auf eine kurze Meldung
+umdefiniert. In der Regel sollten jedoch die vier vordefinierten Zustände
+verwendet werden.
+
+\begin{Example}
+  Nehmen wir an, jedes der drei Pakete aus dem letzten Beispiel soll einen
+  Schlüssel \PValue{Aufschnitt} erhalten. Wird dieser aufgerufen, so soll in
+  jedem der Pakete entsprechend dem Aufrufwert ein Schalter gesetzt
+  werden. Für das Paket \Package{Salami} könnte das beispielsweise so
+  aussehen:
+\begin{lstcode}
+  \newif\if@Salami@Aufschnitt
+  \DefineFamilyKey{Fleischermeister}%
+                  {Aufschnitt}[true]{%
+    \expandafter\let
+    \expandafter\if@Salami@Aufschnitt
+    \csname if#1\endcsname
+    \FamilyKeyStateProcessed
+  }
+\end{lstcode}
+  Als Wert ist daher beim Aufruf \PValue{true} oder \PValue{false}
+  erlaubt. Ein Test auf unerlaubte Werte existiert in diesem Beispiel
+  nicht. Stattdessen wird immer zurückgemeldet, dass der Schlüssel vollständig
+  und korrekt verarbeitet wurde. Wird der Schlüssel später verwendet, so muss
+  entweder einer der erlaubten Werte zugewiesen oder ein Aufruf ohne
+  Wertzuweisung verwendet werden. In letzterem Fall kommt der Säumniswert
+  \PName{true} zum Einsatz.
+
+  Für die anderen beiden Pakete kann das fast identisch definiert
+  werden. Lediglich die Zeichenfolge »\texttt{Salami}« ist jeweils zu
+  ersetzen.
+\end{Example}
+%
+\EndIndexGroup
+\ExampleEndFix
+
+
+\begin{Declaration}
+  \Macro{RelaxFamilyKey}\OParameter{Mitglied}\Parameter{Familie}
+                        \Parameter{Schlüssel}
+\end{Declaration}
+Wurde\ChangedAt{v3.15}{\Package{scrbase}} zuvor \PName{Schlüssel} für das
+\PName{Mitglied} der \PName{Familie} definiert, so wird diese Definition
+quasi aufgehoben. Der \PName{Schlüssel} ist dann für dieses \PName{Mitglied}
+der \PName{Familie} nicht mehr definiert. Die Verwendung für einen
+\PName{Schlüssel}, der für dieses \PName{Mitglied} der \PName{Familie} gar
+nicht definiert ist, ist ebenfalls zulässig und bleibt wirkungslos.
+
+Ist kein \PName{Mitglied} angegeben, so wird genau wie bei Anweisung
+\DescRef{\LabelBase.cmd.DefineFamilyKey} wieder das Mitglied
+»\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}« angenommen. Allerdings
+wird \Macro{RelaxFamilyKey} selten während des Ladens eines Pakets,
+sondern häufiger zur Laufzeit verwendet. Daher ist \PName{Mitglied} in der
+Regel auch explizit anzugeben.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyProcessOptions}\OParameter{Mitglied}\Parameter{Familie}
+\end{Declaration}
+Grundsätzlich ist die Erweiterung der Schlüssel von Familien auf Familien und
+Familienmitglieder dazu gedacht, dass Schlüssel beziehungsweise die
+Wertzuweisung an Schlüssel als ganz normale Klassen- oder Paketoptionen
+verwendet werden können. Diese Anweisung stellt daher eine Erweiterung von
+\Macro{ProcessOptions*}\IndexCmd{ProcessOptions*}%
+\important{\Macro{ProcessOption*}} aus dem \LaTeX-Kern dar (siehe
+\cite{latex:clsguide}). Dabei verarbeitet die Anweisung nicht nur Optionen,
+die mit \Macro{DeclareOption}\IndexCmd{DeclareOption}%
+\important{\Macro{DeclareOption}} definiert wurden. Es werden auch alle
+Schlüssel eines angegebenen Familienmitglieds abgearbeitet. Wird das optionale
+Argument \PName{Mitglied} nicht angegeben, so wird wieder das Mitglied
+»\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}« verwendet.
+
+Eine Besonderheit sind Schlüssel, die nicht einem Familienmitglied, sondern
+der Familie selbst zugeordnet sind, bei der also das Mitglied leer geblieben
+ist. Diese werden ebenfalls gesetzt und zwar noch bevor der Schlüssel des
+Mitglieds gesetzt wird.
+\begin{Example}
+  Wenn in den Paketen aus den zurückliegenden Beispielen nach der Definition
+  der Schlüssel die Zeile
+\begin{lstcode}
+  \FamilyProcessOptions{Fleischermeister}
+\end{lstcode}
+  ergänzt wird, so kann der Anwender bereits beim Laden der Pakete mit
+  \Macro{usepackage} die Eigenschaft \Option{Aufschnitt} als Option
+  angeben. Wird die Option bei \Macro{documentclass} und damit global
+  angegeben, so wird die Eigenschaft automatisch bei allen drei Paketen
+  gesetzt, wenn alle drei Pakete einzeln geladen werden.
+\end{Example}
+Es\textnote{Achtung!} wird darauf hingewiesen, dass bei Paketen globale
+Optionen vor den lokal dem Paket zugewiesenen Optionen ausgeführt
+werden. Während bei der Abarbeitung der globalen Optionen unbekannte Werte für
+Optionen dazu führen, dass darüber lediglich in der \File{log}-Datei
+informiert und die Option ansonsten ignoriert wird, führt dies bei lokalen
+Optionen zu einer Fehlermeldung.
+
+Man kann \Macro{FamilyProcessOptions} wahlweise als Erweiterung von
+\Macro{ProcessOption*} oder als Erweiterung des
+\PName{Schlüssel=Wert}-Mechanismus von \Package{keyval} verstehen. Letztlich
+werden mit Hilfe von \Macro{FamilyProcessOptions} aus
+\PName{Schlüssel=Wert}-Paaren Optionen.
+
+Wie\textnote{Achtung!} auch \Macro{ProcessOptions} darf
+\Macro{FamilyProcessOptions} nicht während der Ausführung von Optionen
+verwendet werden. Es ist also insbesondere auch nicht erlaubt, innerhalb der
+Ausführung von Optionen Pakete zu laden.%, die selbst
+%\Macro{FamilyProcessOptions} verwenden.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{BeforeFamilyProcessOptions}\OParameter{Mitglied}\Parameter{Familie}%
+                                    \Parameter{Code}%
+\end{Declaration}
+Insbesondere\ChangedAt{v3.18}{\Package{scrbase}} Autoren von Wrapper-Klassen
+wünschen manchmal, in ein Paket oder eine Klasse noch vor der Verarbeitung der
+Optionen eines zukünftig geladenen Pakets oder einer zukünftig geladenen
+Klasse mit \DescRef{\LabelBase.cmd.FamilyProcessOptions} eingreifen zu
+können. Dies ist mit \Macro{BeforeFamilyProcessOptions} möglich. Das Paket
+\Package{scrbase} bietet dafür einen sogenannten Haken\Index{Haken}
+(engl. \emph{hook}). Diesem kann man mit \Macro{BeforeFamilyProcessOptions}
+neuen \PName{Code} hinzufügen. Die Parameter \PName{Mitglied} und
+\PName{Familie} entsprechen dabei denen von
+\Macro{FammilyProcessOptions}. Allerdings kann man auch den Haken von
+Familien-Mitgliedern \PName{Code} hinzufügen, wenn bisher die \PName{Familie}
+oder das \PName{Mitglied} noch gar nicht definiert ist.
+
+Der Haken eines Familien-Mitglieds wird übrigens nach dessen Ausführung
+automatisch gelöscht. Verwendet man hingegen ein leeres \PName{Mitglied}, so
+wird dieser Haken\Index{Haken} für alle Mitglieder der \PName{Familie}
+ausgeführt und bleibt auch über die Ausführung hinaus erhalten.
+
+\begin{Example}
+  Sie schreiben ein Paket \Package{Rauchwurst}, das selbst \Package{Mettwurst}
+  lädt. Allerdings wollen Sie nicht, dass für dieses Paket die Option
+  \Option{Aufschnitt} gesetzt werden kann. Daher deaktivieren sie die Option
+  vor dem Laden des Pakets über \Macro{BeforeFamilyProcessOptions}.
+\begin{lstcode}
+  \RequirePackage{scrbase}
+  \BeforeFamilyProcessOptions[.Mettwurst.sty]%
+                             {Fleischermeister}{%
+    \RelaxFamilyKey[.Mettwurst.sty]%
+                   {Fleischermeister}{Aufschnitt}%
+  }
+  \RequirePackageWithOptions{Mettwurst}
+\end{lstcode}
+  Versucht nun jemand Ihr Paket mit Option
+  \Option{Aufschnitt} zu laden, so meldet das Paket \Package{Mettwurst}, dass
+  diese Option nicht bekannt ist. Wird die Option \Option{Aufschnitt} als
+  globale Option angegeben, so ignoriert Paket \Package{Mettwurst}
+  diese. Voreinstellungen innerhalb des Pakets \Package{Mettwurst}, die
+  beispielsweise mit \DescRef{\LabelBase.cmd.FamilyExecuteOptions} noch vor
+  \DescRef{\LabelBase.cmd.FamilyProcessOptions} erfolgen könnten, wären
+  allerdings davon unabhängig. Aber natürlich kann man eigene
+  Voreinstellungen von \Package{Rauchwurst} aus ebenfalls per
+  \Macro{BeforeFamilyProcessOptions} in \Package{Mettwurst} einschleusen.%
+\end{Example}
+\EndIndexGroup
+\ExampleEndFix
+
+
+\begin{Declaration}
+  \Macro{FamilyExecuteOptions}\OParameter{Mitglied}\Parameter{Familie}%
+                              \Parameter{Optionenliste}
+\end{Declaration}
+Diese Anweisung stellt eine Erweiterung von
+\Macro{ExecuteOptions} aus dem \LaTeX-Kern dar (siehe
+\cite{latex:clsguide}). Dabei verarbeitet die Anweisung nicht nur Optionen,
+die mit \Macro{DeclareOption} definiert wurden. Es werden auch alle Schlüssel
+eines angegebenen Familienmitglieds abgearbeitet. Wird das optionale Argument
+\PName{Mitglied} nicht angegeben, so wird wieder das Mitglied
+»\texttt{.}\Macro{@currname}\texttt{.}\Macro{@currext}« verwendet.
+
+Eine Besonderheit sind Schlüssel, die nicht einem Familienmitglied, sondern
+der Familie selbst zugeordnet sind, bei der also das Mitglied leer geblieben
+ist. Diese werden ebenfalls gesetzt, und zwar noch bevor der Schlüssel des
+Mitglieds gesetzt wird.
+\begin{Example}
+  Angenommen, die Option \Option{Aufschnitt} soll in den zurückliegenden
+  Beispielen bereits als Voreinstellung gesetzt werden, so müssen die Pakete
+  nur um den Aufruf
+\begin{lstcode}
+  \FamilyExecuteOptions{Fleischermeister}
+                       {Aufschnitt}
+\end{lstcode}
+  ergänzt werden.
+\end{Example}
+
+Wird\ChangedAt{v3.20}{\Package{scrbase}} \Macro{FamilyExecuteOptions} mit
+einer nicht definierten Option in der \PName{Optionenliste} aufgerufen, so
+wird normalerweise ein Fehler ausgegeben. Eine Ausnahme von dieser Regel ist,
+wenn für das \PName{Mitglied} eine Option namens
+\Option{@else@}\important{\Option{@else@}} definiert wurde. In diesem Fall
+wird statt der unbekannten Option eben diese Option \Option{@else@}
+verwendet. Der an \Option{@else@} übergebene Wert ist dabei die nicht
+definierte Option mit dem im Aufruf angegebenen Wert.  Innerhalb von
+\KOMAScript{} wird das beispielsweise genutzt, um die Stil-Option bei der
+Definition von Gliederungsbefehlen vor allen anderen auszuwerten.
+
+Diese Anweisung darf auch innerhalb der Ausführung von Optionen verwendet
+werden.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyOptions}\Parameter{Familie}\Parameter{Optionenliste}%
+\end{Declaration}
+Im Gegensatz zu normalen Optionen, die mit \Macro{DeclareOption} definiert
+wurden, können die \PName{Schlüssel} auch noch nach dem Laden der Klasse oder
+des Pakets gesetzt werden. Dazu verwendet der Anwender
+\Macro{FamilyOptions}. Die \PName{Optionenliste} hat dabei die Form:
+%\begin{flushleft}\begin{tabular}{l}
+    \PName{Schlüssel}\texttt{=}\PName{Wert}\texttt{,}\linebreak[1]%
+    \PName{Schlüssel}\texttt{=}\PName{Wert} \dots{},
+%\end{tabular}\vskip\dp\strutbox\end{flushleft}
+wobei für \PName{Schlüssel}, für die ein Säumniswert definiert ist, die
+Wertzuweisung natürlich auch entfallen kann.
+
+Durch die Anweisung werden die \PName{Schlüssel} aller Mitglieder der
+angegebenen \PName{Familie} gesetzt. Existiert ein \PName{Schlüssel} auch als
+Eigenschaft der Familie selbst, so wird dieser Familien-Schlüssel zuerst
+gesetzt. Danach folgen die Mitglieder-Schlüssel in der Reihenfolge, in der die
+Mitglieder definiert wurden. Existiert ein angegebener \PName{Schlüssel} weder
+für die Familie noch für ein Mitglied der Familie, so wird von
+\Macro{FamilyOptions} ein Fehler ausgegeben. Dies geschieht ebenfalls, wenn
+zwar für einige Mitglieder ein Schlüssel existiert, jedoch jedes dieser
+Mitglieder über \DescRef{\LabelBase.cmd.FamilyKeyState} einen Fehler
+zurückmeldet.
+\begin{Example}
+  Sie ergänzen das Fleischermeister-Projekt um ein weiteres Paket
+  \Package{Wurstsalat}. Wird dieses Paket verwendet, so sollen alle
+  Wurstpakete zunächst einmal Aufschnitt produzieren:
+\begin{lstcode}
+  \ProvidesPackage{Wurstsalat}%
+                  [2008/05/06 nonsense package]
+  \RequirePackage{scrbase}
+  \DefineFamily{Fleischermeister}
+  \DefineFamilyMember{Fleischermeister}
+  \FamilyProcessOptions{Fleischermeister}\relax
+  \FamilyOptions{Fleischermeister}{Aufschnitt}
+\end{lstcode}
+  Sollte noch kein Wurstpaket geladen sein, so würde nun eine Fehlermeldung
+  wegen der nicht definierten Option »\Option{Aufschnitt}« ausgegeben. Das
+  kann vermieden werden, indem vor der letzten Zeile für das Paket selbst
+  ebenfalls ein entsprechender Schlüssel definiert wird:
+\begin{lstcode}
+  \DefineFamilyKey{Fleischermeister}%
+                  {Aufschnitt}[true]{}%
+\end{lstcode}
+  Allerdings produzieren so Wurstpakete, die nach Paket
+  \Package{Wurstsalat} geladen werden, keinen Aufschnitt. Dies kann man
+  ebenfalls ändern:
+\begin{lstcode}
+  \AtBeginDocument{%
+    \DefineFamilyKey[.Wurstsalat.sty]%
+                    {Fleischermeister}%
+                    {Aufschnitt}[true]{}%
+  }
+  \DefineFamilyKey{Fleischermeister}%
+                  {Aufschnitt}[true]{%
+    \AtBeginDocument{%
+      \FamilyOptions{Fleischermeister}%
+                    {Aufschnitt=#1}%
+    }%
+  }%
+\end{lstcode}
+  Somit wird zunächst während \Macro{begin}\PParameter{document} die Option so
+  definiert, dass sie für das Paket \Package{Wurstsalat} keine Funktion mehr
+  ausübt. Da nach dem Laden von \Package{Wurstsalat}, innerhalb von
+  \Macro{begin}\PParameter{document} die beiden Anweisungen \Macro{@currname}
+  und \Macro{@currext} nicht mehr den Dateinamen des Pakets enthalten, muss
+  zwingend das optionale Argument von \DescRef{\LabelBase.cmd.DefineFamilyKey}
+  verwendet werden.
+
+  Bis zu dieser Umdefinierung der Option wird jedoch eine Definition
+  verwendet, die während \Macro{begin}\PParameter{document} die Option erneut
+  für die Familie und all ihre Mitglieder ausführt und damit auch für andere
+  Wurstpakete setzt. Die Verzögerung der Ausführung von \Macro{FamilyOptions}
+  ist hier entscheidend. Zum einen werden nur so später geladene Wurstpakete
+  erfasst. Zum anderen wird dadurch sichergestellt, dass die eigene Option
+  \Option{Aufschnitt} bereits umdefiniert wurde. Dadurch wird eine endlose
+  Rekursion vermieden.%
+\end{Example}%
+
+Für\ChangedAt{v3.27}{\Package{scrbase}} die Option Namens
+\Option{@else@}\important{\Option{@else}} existiert ähnlich wie bei Anweisung
+\DescRef{\LabelBase.cmd.FamilyExecuteOptions} eine Sonderbehandlung. Ist eine
+solche für ein Mitglied definiert, so wird sie immer dann ausgeführt, wenn das
+Mitglied eine angegebene Option nicht kennt. Ist für die Familie selbst eine
+Option \Option{@else@} definiert, so wird sie nur aufgerufen, wenn weder die
+Familie noch eines ihrer Mitglieder eine angegebene Option vollständig
+verarbeiten konnte und mit \DescRef{\LabelBase.cmd.FamilyKeyStateProcessed}
+quitiert hat.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyOption}\Parameter{Familie}%
+                      \Parameter{Option}\Parameter{Werteliste}%
+\end{Declaration}
+Neben Optionen, die sich gegenseitig ausschließende Werte besitzen, kann es
+auch Optionen geben, die gleichzeitig mehrere Werte annehmen können. Für diese
+wäre es bei Verwendung von \DescRef{\LabelBase.cmd.FamilyOptions} notwendig,
+der Option mehrfach einen Wert zuzuweisen und dabei die Option selbst mehrfach
+anzugeben. Stattdessen kann man einfach mit \Macro{FamilyOption} einer
+einzigen \PName{Option} eine ganze \PName{Werteliste} zuweisen. Die
+\PName{Werteliste} ist dabei eine durch Komma separierte Liste von Werten:
+%\begin{flushleft}\begin{tabular}{l}
+    \PName{Wert}\texttt{,}\PName{Wert} \dots{}
+%\end{tabular}\end{flushleft}
+In diesem Zusammenhang sei darauf hingewiesen, dass die Verwendung eines
+Kommas in einem Wert möglich ist, wenn man den Wert in geschweifte Klammern
+setzt. Die weitere Funktionsweise ist der vorhergehenden Erklärung zu
+\DescRef{\LabelBase.cmd.FamilyOptions} zu entnehmen.
+\begin{Example}
+  Das Paket \Package{Wurstsalat} soll eine Option bekommen, über die man
+  weitere Zutaten bestimmen kann. Für jede Zutat wird dabei wieder ein
+  Schalter gesetzt.
+\begin{lstcode}
+  \newif\if@salatmit@Zwiebeln
+  \newif\if@salatmit@Gurken
+  \newif\if@salatmit@Peperoni
+  \DefineFamilyKey{Fleischermeister}{SalatZusatz}{%
+    \csname @salatmit@#1true\endcsname
+  }
+\end{lstcode}
+  Es wurden hier die drei Zutaten »Zwiebeln«, »Gurken« und »Peperoni«
+  definiert. Eine Fehlerbehandlung für den Fall, dass der Anwender unbekannte
+  Zutaten fordert, existiert nicht.
+
+  Für einen Salat mit Zwiebeln und Gurken kann der Anwender
+\begin{lstcode}
+  \FamilyOptions{Fleischermeister}{%
+    SalatZusatz=Zwiebeln,SalatZusatz=Gurken}
+\end{lstcode}
+  oder einfach
+\begin{lstcode}
+  \FamilyOption{Fleischermeister}%
+               {SalatZusatz}{Zwiebeln,Gurken}
+\end{lstcode}
+  verwenden.
+\end{Example}
+
+\iffalse% Umbruchkorrektur
+Die\ChangedAt{v3.27}{\Package{scrbase}} Verarbeitung einer Option
+\Option{@else@} findet in derselben Weise statt wie bei
+\DescRef{\LabelBase.cmd.FamilyOptions}.%
+\else%
+Intern basiert \Macro{FamilyOption} auf
+\DescRef{\LabelBase.cmd.FamilyOptions}.
+Die\ChangedAt{v3.27}{\Package{scrbase}} Verarbeitung einer Option
+\Option{@else@} findet daher in gleicher Weise statt.%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{AtEndOfFamilyOptions}\Parameter{Aktion}%
+  \Macro{AtEndOfFamilyOptions*}\Parameter{Aktion}%
+\end{Declaration}
+Manchmal\ChangedAt{v3.12}{\Package{scrbase}} ist es vorteilhafter, wenn nicht
+jede Wertzuweisung an eine Option unmittelbar eine \PName{Aktion} auslöst,
+sondern dies erst geschieht, wenn alle Wertzuweisungen innerhalb eines Aufrufs
+von
+\DescRef{\LabelBase.cmd.FamilyProcessOptions}\IndexCmd{FamilyProcessOptions}
+oder
+\DescRef{\LabelBase.cmd.FamilyExecuteOptions}\IndexCmd{FamilyExecuteOptions}
+respektive \DescRef{\LabelBase.cmd.FamilyOptions}\IndexCmd{FamilyOptions} oder
+\DescRef{\LabelBase.cmd.FamilyOption}\IndexCmd{FamilyOptions} abgeschlossen
+sind. Genau das ist mit Hilfe von \Macro{AtEndOfFamilyOptions} und der
+zugehörigen Sternvariante\ChangedAt{v3.23}{\Package{scrbase}} möglich. Die
+Rückmeldung von Fehlerzuständen ist über die Anweisungen jedoch ebenso wenig
+möglich wie die Verwendung der Anweisungen außerhalb der Ausführung von
+Optionen.
+
+Die beiden Varianten unterscheiden sich im Falle von verschachtelt definierten
+Optionen, wenn also die Ausführung einer Option den Aufruf einer oder mehrerer
+anderer Optionen bedingt. In diesem Fall werden alle per
+\Macro{AtEndOfFamilyOptions} festgelegten Aktionen ausgeführt, sobald der
+innerste Optionenaufruf endet. Dagegen werden die per
+\Macro{AtEndOfFamilyOptions*} festgelegten Aktionen erst mit dem Ende des
+äußersten Optionenaufrufs ausgeführt. Die Reihenfolge\textnote{Achtung!} der
+Aktionen ist dabei jedoch ausdrücklich unbestimmt! Weder ist sichergestellt,
+dass zuerst angeforderte Aktionen auch zuerst ausgeführt werden, noch die
+umgekehrte Reihenfolge.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyBoolKey}\OParameter{Mitglied}\Parameter{Familie}
+                       \Parameter{Schlüssel}\Parameter{Schaltername}
+  \Macro{FamilySetBool}\Parameter{Familie}
+                       \Parameter{Schlüssel}\Parameter{Schaltername}
+                       \Parameter{Wert}
+\end{Declaration}
+In den vorherigen Beispielen wurden schon mehrfach Schalter gesetzt. Im
+Beispiel der Option \Option{Aufschnitt} war es dabei notwendig, dass der
+Anwender als Wert \PValue{true} oder \PValue{false} angibt. Es existierte
+keine Fehlerbehandlung, falls der Anwender einen falschen Wert verwendet. Da
+solche booleschen Schalter ein häufiger Anwendungsfall sind, kann man sie bei
+\Package{scrbase} einfach mit \Macro{FamilyBoolKey} definieren. Dabei sind die
+Argumente \PName{Mitglied}, \PName{Familie} und \PName{Schlüssel} die gleichen
+wie bei \DescRef{\LabelBase.cmd.DefineFamilyKey} (siehe
+\DescPageRef{scrbase.cmd.DefineFamilyKey}). Das Argument \PName{Schaltername}
+ist der Name eines Schalter ohne den Präfix \Macro{if}. Existiert dieser
+Schalter noch nicht, so wird er automatisch definiert und mit \PName{false}
+voreingestellt. Intern verwendet \Macro{FamilyBoolKey} dann
+\Macro{FamilySetBool} als \PName{Aktion} für
+\DescRef{\LabelBase.cmd.DefineFamilyKey}. Der Säumniswert für eine solche
+Option ist immer \PValue{true}.
+
+\Macro{FamilySetBool} wiederum versteht als \PName{Wert} neben \PValue{true}
+auch die Werte \PValue{on} und \PValue{yes} zum Einschalten und neben
+\PValue{false} auch die Werte \PValue{off} und \PValue{no} zum
+Ausschalten. Wird ein unbekannter Wert übergeben, so wird die auf
+\DescPageRef{\LabelBase.cmd.FamilyUnknownKeyValue} erklärte Anweisung
+\DescRef{\LabelBase.cmd.FamilyUnknownKeyValue} aufgerufen und so
+\DescRef{\LabelBase.cmd.FamilyKeyState} (siehe
+\DescPageRef{\LabelBase.cmd.FamilyKeyState}) entsprechend gesetzt. Dadurch
+kann dann gegebenenfalls eine Meldung über eine unbekannte Wertzuweisung
+ausgegeben werden.%
+\begin{Example}
+  Der Schlüssel \Option{Aufschnitt} soll in den Wurstpaketen etwas robuster
+  definiert werden, so dass Fehleingaben erkannt und behandelt
+  werden. Außerdem sollen alle Wurstpakete denselben Schalter
+  verwenden, so dass entweder alle Wurstpakete Aufschnitt produzieren oder
+  keines.
+\begin{lstcode}
+  \FamilyBoolKey{Fleischermeister}{Aufschnitt}%
+                                  {@Aufschnitt}
+\end{lstcode}
+  Ein Test, ob Aufschnitt produziert wird, sähe dann so aus:
+\begin{lstcode}
+  \if@Aufschnitt
+     ...
+  \else
+     ...
+  \fi
+\end{lstcode}
+  Dies wäre in allen drei Wurstpaketen identisch. Damit könnte man
+  prinzipiell die Eigenschaft »Aufschnitt« auch als Eigenschaft der Familie
+  definieren:
+\begin{lstcode}[moretexcs={define@key}]
+  \@ifundefined{if@Aufschnitt}{%
+    \expandafter\newif
+    \csname if@Aufschnitt\endcsname
+  }{}%
+  \DefineFamilyKey[]{Fleischermeister}%
+                    {Aufschnitt}[true]{%
+    \FamilySetBool{Fleischermeister}%
+                  {Aufschnitt}%
+                  {@Aufschnitt}%
+                  {#1}%
+  }
+\end{lstcode}
+  oder einfacher
+\begin{lstcode}
+  \FamilyBoolKey[]{Fleischermeister}%
+                  {Aufschnitt}%
+                  {@Aufschnitt}
+\end{lstcode}
+  unter Ausnutzung des Hinweises bezüglich leerer Mitglieder
+  \iftrue% Umbruchkorrekturtext
+  im Gegensatz zum Weglassen des optionalen Arguments
+  \fi%
+  auf \autopageref{explain:scrbase.macro.DefineFamilyKey}, der nicht nur für
+  \DescRef{\LabelBase.cmd.DefineFamilyKey}, sondern entsprechend auch für
+  \Macro{FamilyBoolKey} gilt.
+
+  Da \DescRef{\LabelBase.cmd.FamilyKeyState} bereits von \Macro{FamilySetBool}
+  gesetzt wird, kann innerhalb der Definition der Option mit Hilfe von
+  \DescRef{\LabelBase.cmd.DefineFamilyKey} der Status gegebenenfalls auch
+  abgefragt werden. So könnte man im ersten Fall beispielsweise nach
+  \Macro{FamilySetBool} einen Test der Art:
+\begin{lstcode}
+  \ifx\FamilyKeyState\FamilyKeyStateProcessed
+      ...
+  \else
+      ...
+  \fi   
+\end{lstcode}
+  ergänzen, um zusätzliche Aktionen in Abhängigkeit davon, ob
+  \Macro{FamilySetBool} erfolgreich war oder nicht,
+  auszuführen. Es\textnote{Achtung!} ist zu beachten, dass an dieser Stelle
+  unbedingt ein Test mit Hilfe von \Macro{ifx} vorzunehmen ist. Expandierende
+  Tests wie \DescRef{\LabelBase.cmd.Ifstr} sind hier zu vermeiden. Sie können
+  abhängig vom aktuellen Status und dem Vergleichszustand zu unterschiedlichen
+  Fehlermeldungen und auch zu falschen Ergebnissen führen.%
+\end{Example}%
+\EndIndexGroup
+\ExampleEndFix
+
+
+\begin{Declaration}
+  \Macro{FamilyInverseBoolKey}\OParameter{Mitglied}\Parameter{Familie}
+                              \Parameter{Schlüssel}\Parameter{Schaltername}
+  \Macro{FamilySetInverseBool}\Parameter{Familie}
+                              \Parameter{Schlüssel}\Parameter{Schaltername}
+                              \Parameter{Wert}
+\end{Declaration}%
+Diese\ChangedAt{v3.27}{\Package{scrbase}} beiden Anweisungen unterscheiden
+sich von \DescRef{\LabelBase.cmd.FamilyBoolKey} beziehungsweise
+\DescRef{\LabelBase.cmd.FamilySetBool} nur dadurch, dass die Logik invertiert
+wird. Das heißt, dass die Werte \PValue{true}, \PValue{yes} und \PValue{on}
+den durch \PName{Schaltername} angegebenen Schalter auf \Macro{iffalse} setzen
+und damit deaktivieren, während \PValue{false}, \PValue{no} und \PValue{off}
+ihn zu \Macro{iftrue} werden lassen, also aktivieren.%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{FamilyNumericalKey}\OParameter{Mitglied}\Parameter{Familie}
+                            \Parameter{Schlüssel}
+                            \OParameter{Säumniswert}\Parameter{Makroname}%
+                            \Parameter{Werteliste}
+  \Macro{FamilySetNumerical}\Parameter{Familie}\Parameter{Schlüssel}
+                            \Parameter{Makroname}\Parameter{Werteliste}%
+                            \Parameter{Wert}
+\end{Declaration}
+Während Schalter nur zwei Werte annehmen können, gibt es auch Schlüssel, die
+mehrere Werte kennen. So kann beispielsweise eine Ausrichtung nicht nur
+entweder links oder nicht links, sondern auch links, mittig oder rechts
+sein. Intern unterscheidet man solche Einstellungen dann gerne mit Hilfe von
+\Macro{ifcase}\IndexCmd{ifcase}. Diese \TeX-Anweisung erwartet wiederum einen
+numerischen Wert. Daher heißt bei \Package{scrbase} die Anweisung, mit der
+man via \PName{Schlüssel} einem Makro eine Definition zuweisen kann,
+entsprechend \Macro{FamilyNumericalKey}.
+
+Die \PName{Werteliste} hat dabei die Form:
+%\begin{flushleft}\vskip\dp\strutbox\begin{tabular}{l}
+    \Parameter{Wert}\Parameter{Definition}\texttt{,}\linebreak[1]%
+    \Parameter{Wert}\Parameter{Definition}~\dots{}
+%\end{tabular}\vskip\dp\strutbox\end{flushleft}
+Über diese \PName{Werteliste} werden so nicht nur die erlaubten Werte für den
+\PName{Schlüssel} angegeben. Für jeden erlaubten \PName{Wert} wird auch
+gleich angegeben, wie bei Verwendung desselben das Makro
+\Macro{\PName{Makroname}} definiert werden soll. Üblicherweise werden als
+\PName{Definition} schlicht Zahlenwerte angegeben. Es sind zwar auch andere
+Angaben möglich, derzeit gibt es aber die Einschränkung, dass
+\PName{Definition} voll expandierbar sein muss und bei der Zuweisung auch
+expandiert wird.
+\begin{Example}
+  Die Wurst für den Wurstsalat kann unterschiedlich geschnitten werden. So
+  wäre es denkbar, dass der Aufschnitt einfach ungeschnitten bleibt oder in
+  grobe oder feine Streifen geschnitten werden soll. Diese Information soll in
+  der Anweisung \Macro{Schnitt} gespeichert werden.
+\begin{lstcode}
+  \FamilyNumericalKey{Fleischermeister}%
+                     {SalatSchnitt}{Schnitt}{%
+                       {Kein}{Kein},{Nein}{Kein},%
+                       {Grob}{Grob},%
+                       {Fein}{Fein}%
+                     }
+\end{lstcode}
+  Dass nicht geschnitten werden soll, kann in diesem Fall vom Anwender sowohl
+  mit
+\begin{lstcode}
+  \FamilyOptions{Fleischermeister}{SalatSchnitt=Kein}
+\end{lstcode}
+  als auch mit
+\begin{lstcode}
+  \FamilyOptions{Fleischermeister}{SalatSchnitt=Nein}
+\end{lstcode}
+  angegeben werden. In beiden Fällen würde \Macro{Schnitt} mit dem Inhalt
+  \PValue{Kein} definiert. Es kann durchaus sinnvoll sein, dem Anwender wie in
+  diesem Beispiel mehrere Werte für denselben Zweck anzubieten.
+
+  Nun ist es sehr wahrscheinlich, dass die Schnittart nicht ausgegeben,
+  sondern später ausgewertet werden soll. In diesem Fall sind die textuellen
+  Definitionen aber eher unpraktisch. Definiert man den Schlüssel hingegen als
+\begin{lstcode}
+  \FamilyNumericalKey{Fleischermeister}%
+                     {SalatSchnitt}{Schnitt}{%
+                       {Kein}{0},{Nein}{0},%
+                       {Grob}{1},%
+                       {Fein}{2}%
+                     }
+\end{lstcode}
+  so kann später einfach in der Form
+\begin{lstcode}
+  \ifcase\Schnitt
+    % ungeschnitten
+  \or
+    % grob geschnitten
+  \else
+    % fein geschnitten
+  \fi
+\end{lstcode}
+  unterschieden werden.
+\end{Example}
+
+Intern wird von \Macro{FamilyNumericalKey} dann
+\DescRef{\LabelBase.cmd.DefineFamilyKey} mit der Anweisung
+\Macro{FamilySetNumerical} verwendet. Wird an einen solchen Schlüssel ein
+unbekannter Wert übergeben, so wird von \Macro{FamilySetNumerical} Anweisung
+\DescRef{\LabelBase.cmd.FamilyUnknownKeyValue} (siehe
+\DescPageRef{\LabelBase.cmd.FamilyUnknownKeyValue}) aufgerufen. Dies führt zu
+einer Fehlersignalisierung, indem \DescRef{\LabelBase.cmd.FamilyKeyState} den
+Status \DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue} annimmt (siehe
+\DescPageRef{\LabelBase.cmd.FamilyKeyStateUnknownValue}). Daraus resultiert
+beispielsweise bei der Verwendung als lokale Option dann eine
+Fehlermeldung. Ebenso wird beim Aufruf von \Macro{FamilySetNumerical} auch der
+Erfolg via \DescRef{\LabelBase.cmd.FamilyKeyStateProcessed} in
+\DescRef{\LabelBase.cmd.FamilyKeyState} signalisiert.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyCounterKey}\OParameter{Mitglied}\Parameter{Familie}
+                          \Parameter{Schlüssel}
+                          \OParameter{Säumniswert}\Parameter{\LaTeX-Zähler}
+  \Macro{FamilySetCounter}\Parameter{Familie}
+                          \Parameter{Schlüssel}\Parameter{\LaTeX-Zähler}
+                          \Parameter{Wert}
+\end{Declaration}
+Während\ChangedAt{v3.12}{\Package{scrbase}} bei
+\DescRef{\LabelBase.cmd.FamilyNumericalKey} ein Makro aufgrund eines
+symbolischen Wertes auf einen korrespondierenden numerischen Wert
+gesetzt wurde, gibt es natürlich auch Fälle, in denen ein \PName{Schlüssel}
+direkt einen \PName{\LaTeX-Zähler} repräsentiert, dem unmittelbar ein
+numerischer \PName{Wert} zugewiesen werden soll. Dazu dient die Anweisung
+\Macro{FamilyCounterKey}, von der intern dann \Macro{FamilySetCounter}
+aufgerufen wird. Dabei finden einige grundlegende Prüfungen des
+\PName{Wert}-Arguments statt um festzustellen, ob dieses Argument für eine
+Zuweisung an einen Zähler in Frage kommt. Die Zuweisung findet nur statt, wenn
+diese Prüfungen gelingen. Allerdings können hier nicht alle Fehler erkannt
+werden, so dass eine falsche Zuweisung auch zu einer Fehlermeldung von \TeX{}
+selbst führen kann. Erkannte Fehler werden hingegen über
+\DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue} signalisiert.
+
+Wurde\ChangedAt{v3.15}{\Package{scrbase}} kein Wert übergeben, so wird
+stattdessen der \PName{Säumniswert} eingesetzt. Falls kein \PName{Säumniswert}
+angegeben wird, kann später der \PName{Schlüssel} nur mit Wertübergabe
+verwendet werden.%
+\iffalse% Umbruchkorrekturtext
+\ Anderenfalls wir mit
+\DescRef{\LabelBase.cmd.FamilyKeyStateNeedValue} ein entsprechender Fehler
+signalisiert und beispielsweise innerhalb \Macro{FamilyOptions}  auch als
+solcher gemeldet.%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyCounterMacroKey}\OParameter{Mitglied}\Parameter{Familie}
+                               \Parameter{Schlüssel}
+                               \OParameter{Säumniswert}\Parameter{Makro}
+  \Macro{FamilySetCounterMacro}\Parameter{Familie}
+                               \Parameter{Schlüssel}\Parameter{Makro}
+                               \Parameter{Wert}
+\end{Declaration}
+Diese\ChangedAt{v3.12}{\Package{scrbase}} beiden Anweisungen unterscheiden
+sich von den zuvor erklärten \DescRef{\LabelBase.cmd.FamilyCounterKey} und
+\DescRef{\LabelBase.cmd.FamilySetCounter} nur dadurch, dass nicht ein
+\LaTeX-Zähler auf einen Wert gesetzt wird, sondern ein \PName{Makro} mit
+diesem Wert definiert wird. Auch dabei wird \PName{Wert} lokal einem Zähler
+zugewiesen und dann dessen expandierter Wert verwendet. Es gilt daher der Wert
+zum Zeitpunkt des Aufrufs der Option.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyLengthKey}\OParameter{Mitglied}\Parameter{Familie}
+                         \Parameter{Schlüssel}
+                         \OParameter{Säumniswert}\Parameter{Länge}
+  \Macro{FamilySetLength}\Parameter{Familie}
+                         \Parameter{Schlüssel}\Parameter{Länge}
+                         \Parameter{Wert}
+  \Macro{FamilyLengthMacroKey}\OParameter{Mitglied}\Parameter{Familie}
+                              \Parameter{Schlüssel}
+                              \OParameter{Säumniswert}\Parameter{Makro}
+  \Macro{FamilySetLengthMacro}\Parameter{Familie}
+                              \Parameter{Schlüssel}\Parameter{Makro}
+                              \Parameter{Wert}
+  \Macro{FamilyUseLengthMacroKey}\OParameter{Mitglied}\Parameter{Familie}
+                                 \Parameter{Schlüssel}
+                                 \OParameter{Säumniswert}\Parameter{Makro}
+  \Macro{FamilySetUseLengthMacro}\Parameter{Familie}
+                                 \Parameter{Schlüssel}\Parameter{Makro}
+                                 \Parameter{Wert}
+\end{Declaration}
+Über\ChangedAt{v3.12}{\Package{scrbase}} \Macro{FamilyLengthKey} kann ein
+\PName{Schlüssel} definiert werden, der eine \PName{Länge}
+repräsentiert. Dabei spielt es keine Rolle, ob eine \LaTeX-Länge, ein
+\TeX-Abstand oder eine \TeX-Ausdehnung als \PName{Länge} verwendet
+wird. Intern wird die \PName{Länge} über \Macro{FamilySetLength} gesetzt.
+Dabei finden einige grundlegende Prüfungen des \PName{Wert}-Arguments statt um
+festzustellen, ob dieses Argument für eine Zuweisung an eine \PName{Länge} in
+Frage kommt. Die Zuweisung findet nur statt, wenn diese Prüfungen
+gelingen. Allerdings können hier nicht alle Fehler erkannt werden, so dass
+eine falsche Zuweisung auch zu einer Fehlermeldung von \TeX{} selbst führen
+kann. Erkannte Fehler werden hingegen über
+\DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue} signalisiert.
+
+Wurde\ChangedAt{v3.15}{\Package{scrbase}} kein Wert übergeben, so wird
+stattdessen der \PName{Säumniswert} eingesetzt. Falls kein \PName{Säumniswert}
+angegeben wird, kann später der \PName{Schlüssel} nur mit Wertübergabe
+verwendet werden.
+
+\Macro{FamilyLengthMacroKey} und \Macro{FamilySetLengthMacroKey} sowie
+\Macro{FamilyUseLengthMacro} und \Macro{FamilySetUseLengthMacro} verwenden für
+die Speicherung des Wertes keine \PName{Länge}, sondern ein \PName{Makro}. Bei
+\Macro{FamilyLengthMacroKey} und \Macro{FamilySetLengthMacro} wird wie im
+Falle einer \PName{Länge} der aktuelle \PName{Wert} zum Zeitpunkt der
+Verwendung des Schlüssels beziehungsweise der Anweisung in \PName{Makro}
+gespeichert. Dagegen wird bei
+\Macro{FamilyUseLengthMacroKey}\ChangedAt{v3.20}{\Package{scrbase}} und
+\Macro{FamilySetUseLengthMacro} \PName{Wert} selbst gespeichert. Damit wird
+\PName{Wert} dann bei jeder Verwendung von \PName{Makro} neu ausgewertet.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyStringKey}\OParameter{Mitglied}\Parameter{Familie}
+                         \Parameter{Schlüssel}
+                         \OParameter{Säumniswert}\Parameter{Makro}
+  \Macro{FamilyCSKey}\OParameter{Mitglied}\Parameter{Familie}
+                     \Parameter{Schlüssel}
+                     \OParameter{Säumniswert}\Parameter{Makroname}
+\end{Declaration}
+Hier wird nun\ChangedAt{v3.08}{\Package{scrbase}} ein Schlüssel definiert, der
+jeden beliebigen Wert annehmen kann. Der Wert wird in dem angegebenen
+\PName{Makro} gespeichert. Wird das optionale Argument für den
+\PName{Säumniswert} weggelassen, so entspricht \Macro{FamilyStringKey}:
+\begin{lstcode}[escapeinside=><]
+  \DefineFamilyKey[>\PName{Mitglied}<]{>\PName{Familie}<}{>\PName{Schlüssel}<}
+                  {\def>\PName{Makro}<{#1}}
+\end{lstcode}
+Existiert
+das optionale Argument für den \PName{Säumniswert} so entspricht die Anweisung:
+\begin{lstcode}[escapeinside=><]
+  \DefineFamilyKey[>\PName{Mitglied}<]{>\PName{Familie}<}{>\PName{Schlüssel}<}
+                  [>\PName{Säumniswert}<]
+                  {\def>\PName{Makro}<{#1}\FamilyKeyStateProcessed}
+\end{lstcode}
+
+\begin{Example}
+  In der Voreinstellung sollen 250\,g Wurstsalat erzeugt werden. Die Menge
+  soll jedoch einfach per Option geändert werden können. Dazu wird die zu
+  erstellende Menge im Makro \Macro{Salatgewicht} gespeichert. Die Option,
+  über die das Gewicht geändert werden kann, soll \iffalse ebenfalls \fi
+  \PValue{Salatgewicht} heißen:
+\begin{lstcode}
+  \newcommand*{\Salatgewicht}{250g}
+  \FamilyStringKey{Fleischermeister}%
+                  {Salatgewicht}[250g]%
+                  {\Salatgewicht}
+\end{lstcode}
+  Soll nach einer Änderung
+  \iftrue% Umbruchkorrekturtext
+  wie
+\begin{lstcode}
+  \FamilyOptions{Fleichermeister}{Salatgewicht=100g}
+\end{lstcode}
+  \fi%
+  wieder die Standardmenge hergestellt
+  werden, so kann der Anwender die Option einfach ohne Gewichtsangabe
+  aufrufen:
+\begin{lstcode}
+  \FamilyOptions{Fleischermeister}{Salatgewicht}
+\end{lstcode}
+  Das ist möglich, weil die Standardmenge bei der Definition auch als
+  Säumniswert angegeben wurde.
+\end{Example}
+Da alle Werte unmittelbar für eine Makrodefinition verwendet werden, gibt es
+keine unbekannten Werte. In der Wertzuweisung an den \PName{Schlüssel} dürfen
+jedoch keine Absätze enthalten sein.
+
+Im\ChangedAt{v3.25}{\Package{scrbase}} Unterschied zu \Macro{FamilyStringKey}
+erwartet \Macro{FamilyCSKey} kein Makro als letztes Argument, sondern
+lediglich den Namen eines Makros, also beispielsweise nicht
+\PParameter{\Macro{Salatgewicht}}, sondern \PParameter{Salatgewicht}.%
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{FamilyUnknownKeyValue}\Parameter{Familie}\Parameter{Schlüssel}
+                               \Parameter{Wert}\Parameter{Werteliste}
+\end{Declaration}
+Diese Anweisung signalisiert über \DescRef{\LabelBase.cmd.FamilyKeyState}
+einen Fehler aufgrund eines unbekannten oder unerlaubten Wertes. Dabei wird
+als \PName{Werteliste} eine durch Komma separierte Liste von erlaubten Werten
+der Form:
+%\begin{flushleft}\vskip\dp\strutbox\begin{tabular}{l}
+    `\PName{Wert}'\texttt{,} `\PName{Wert}' \dots{}
+%\end{tabular}\vskip\dp\strutbox\end{flushleft}
+erwartet. Allerdings\ChangedAt{v3.12}{\Package{scrbase}} wird die
+\PName{Werteliste} derzeit nicht ausgewertet.
+
+\begin{Example}
+  Für den Aufschnitt soll nun zusätzlich wählbar sein, ob er grob oder
+  fein geschnitten werden soll. Dabei ist grob die Voreinstellung, die auch
+  dann verwendet werden soll, wenn nicht angegeben wird, wie der Aufschnitt zu
+  schneiden ist.
+\begin{lstcode}
+  \@ifundefined{if@Feinschnitt}{%
+    \expandafter
+    \newif\csname if@Feinschnitt\endcsname}{}%
+  \@ifundefined{if@Aufschnitt}{%
+    \expandafter
+    \newif\csname if@Aufschnitt\endcsname}{}
+  \DefineFamilyKey{Fleischermeister}%
+                  {Aufschnitt}[true]{%
+    \FamilySetBool{Fleischermeister}{Aufschnitt}%
+                                    {@Aufschnitt}%
+                                    {#1}%
+    \ifx\FamilyKeyState\FamilyKeyStateProcessed
+      \@Feinschnittfalse
+    \else      
+      \Ifstr{#1}{fein}{%
+        \@Aufschnitttrue
+        \@Feinschnittrue
+        \FamilyKeyStateProcessed
+      }{%
+        \FamilyUnknownKeyValue{Fleichermeister}%
+                              {Aufschnitt}%
+                              {#1}{%
+                                `true', `on', `yes',
+                                `false`, `off`, `no',
+                                `fein'%
+                              }%
+      }%
+    \fi
+  }%
+\end{lstcode}
+  Zunächst wird versucht, den booleschen Schalter für Aufschnitt über
+  \DescRef{\LabelBase.cmd.FamilySetBool} zu setzen. Gelingt dies, wurde also
+  \DescRef{\LabelBase.cmd.FamilyKeyState} zu
+  \DescRef{\LabelBase.cmd.FamilyKeyStateProcessed} definiert, wird
+  der Feinschnitt abgeschaltet. Anderenfalls wird überprüft, ob anstelle
+  eines gültigen Wertes für einen booleschen Schalter %der Wert
+  \PValue{fein} übergeben wurde. In diesem Fall wird sowohl der Feinschnitt,
+  als auch Aufschnitt aktiviert und mit Hilfe von
+  \DescRef{\LabelBase.cmd.FamilyKeyStateProcessed} der Erfolgs-Status
+  gesetzt. Ist auch das nicht der Fall, wird der von
+  \DescRef{\LabelBase.cmd.FamilySetBool} signalisierte Fehler-Zustand
+  neu auf \DescRef{\LabelBase.cmd.FamilyKeyStateUnknownValue} gesetzt. Die
+  Liste der üblichen erlaubten Werte von
+  \DescRef{\LabelBase.cmd.FamilySetBool} wird dabei um \PValue{fein}
+  ergänzt. Da diese Liste jedoch inzwischen nicht mehr verwendet wird, hätte
+  man auf den Aufruf von \Macro{FamilyUnknownKeyValue} im Beispiel auch
+  einfach verzichten und damit den Fehlerstatus von
+  \DescRef{\LabelBase.cmd.FamilySetBool} übernehmen können.
+
+  Die bei den Tests verwendete Anweisung
+  \DescRef{\LabelBase.cmd.Ifstr}\IndexCmd{Ifstr} ist auf
+  \DescPageRef{scrbase.cmd.Ifstr} in \autoref{sec:scrbase.if} erklärt.
+\end{Example}
+%
+\EndIndexGroup
+\ExampleEndFix
+
+
+\section{Verzweigungen}
+\seclabel{if}
+
+Das Paket \Package{scrbase} stellt diverse Verzweigungsanweisungen zur
+Verfügung. Dabei wird überwiegend die \LaTeX-Syntax mit Argumenten eingesetzt,
+die man von Anweisungen wie \Macro{IfFileExists}\iffalse % Umbruchkorrektur
+, \Macro{@ifundefined}, \Macro{@ifpackageloaded} und vielen weiteren\fi %
+\ kennt.
+
+\begin{Declaration}
+  \Macro{Ifundefinedorrelax}
+  \Parameter{Name}\Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Diese\ChangedAt{v3.28}{\Package{scrbase}} Anweisung funktioniert
+prinzipiell wie \Macro{@ifundefined} aus dem \LaTeX-Kern (siehe
+\cite{latex:source2e}). Es wird also der \PName{Dann-Teil} ausgeführt, wenn
+\PName{Name} der Name einer undefinierten Anweisung oder \Macro{\PName{Name}}
+derzeit \Macro{relax} ist. Im Unterschied zu \Macro{@ifundefined} wird auch
+bei älteren \LaTeX-Versionen %
+\iftrue% Umbruchvarianten
+weder Hash-Speicher belegt noch \Macro{\PName{Name}} %
+\else%
+\Macro{\PName{Name}} nicht %
+\fi%
+zu \Macro{relax}, wenn \Macro{\PName{Name}} zuvor undefiniert
+war.
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifnotundefined}\Parameter{Name}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Ist\ChangedAt{v3.28}{\Package{scrbase}} die Anweisung mit dem angegebenen
+Namen bereits definiert wird der \PName{Dann-Teil} ausgeführt, anderenfalls
+der \PName{Sonst-Teil}.\iftrue % Umbruchkorrektur
+\ Da es bereits ein Paket mit einer inkompatiblen
+Anweisung \Macro{Ifdefined} gibt, musste leider diese etwas unhandliche
+Bezeichnung gewählt werden.%
+\iffalse%
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifstr}\Parameter{Zeichenfolge}\Parameter{Zeichenfolge}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Die\ChangedAt{v3.28}{\Package{scrbase}} beiden Argumente \PName{Zeichenfolge}
+werden expandiert und dann verglichen. Sind sie gleich, so wird der
+\PName{Dann-Teil} ausgeführt, anderenfalls der \PName{Sonst-Teil}.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifstrstart}\Parameter{Zeichenfolge}\Parameter{Zeichenfolge}
+                    \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Die\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+beiden Argumente \PName{Zeichenfolge} werden expandiert und dann
+verglichen. Beginnt die erste Zeichenfolge, von Leerzeichen abgesehen, mit der
+zweiten Zeichenfolge, so wird der \PName{Dann-Teil} ausgeführt, anderenfalls
+der \PName{Sonst-Teil}.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{IfArgIsEmpty}\Parameter{Argument}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Ist\ChangedAt{v3.19}{\Package{scrbase}} das \PName{Argument} leer, so wird der
+\PName{Dann-Teil} ausgeführt, anderenfalls der \PName{Sonst-Teil}. Bereits ein
+Leerzeichen gilt als nicht leer. Da das \PName{Argument} nicht expandiert
+wird, gelten Makros, die zu einem leeren Ergebnis expandieren, ebenfalls als
+nicht leeres \PName{Argument}. Dasselbe gilt für \Macro{relax} oder nicht
+definierte Makros.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifpdfoutput}
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wird\ChangedAt{v3.28}{\Package{scrbase}} eine PDF-Datei erzeugt, wird der
+\PName{Dann-Teil} ausgeführt, anderenfalls der \PName{Sonst-Teil}. Dabei ist
+es unerheblich, ob die PDF-Datei mit Hilfe von lua\TeX{}, pdf\TeX{}, V\TeX{}
+oder \XeTeX{} erzeugt wird.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifpsoutput}
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wird\ChangedAt{v3.28}{\Package{scrbase}} eine PostScript-Datei erzeugt, wird
+der \PName{Dann-Teil} ausgeführt, anderenfalls der \PName{Sonst-Teil}. V\TeX{}
+kann PostScript direkt erzeugen, was hier erkannt wird. Wird hingegen kein
+V\TeX{} verwendet, ist aber ein Schalter \Macro{if@dvips} definiert, so wird
+die Entscheidung darüber getroffen. \KOMAScript{} stellt \Macro{if@dvips} in
+\hyperref[cha:typearea]{\Package{typearea}}\IndexPackage{typearea}%
+\IndexCmd{if@dvips} bereit.%
+\EndIndexGroup
+
+
+\begin{Declaration}[0]
+  \Macro{Ifdvioutput}
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wird \ChangedAt{v3.28}{\Package{scrbase}}eine DVI-Datei erzeugt, so wird der
+\PName{Dann-Teil} ausgeführt, anderenfalls der \PName{Sonst-Teil}. Es wird
+immer dann davon \iffree{}{\pagebreak}% Umbruchkorrektur
+ausgegangen, dass eine DVI-Datei erzeugt wird, wenn keine
+direkte Ausgabe einer PDF- oder Postscript-Datei erkannt werden kann.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisdimen}\Parameter{Code}\Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in einem \Macro{dimen}, also einem
+\TeX-Längenregister, resultiert, wird der \PName{Dann-Teil} ausgeführt,
+anderenfalls der \PName{Sonst-Teil}. Die Anweisung ist nicht voll
+expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisdimension}\Parameter{Code}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in etwas resultiert, das syntaktisch dem Wert
+einer Länge entspricht, wird der \PName{Dann-Teil} ausgeführt, anderenfalls
+der \PName{Sonst-Teil}. Es ist zu beachten,\textnote{Achtung!} dass derzeit
+unbekannte oder fehlende Einheiten zu einer Fehlermeldung führen. Die
+Anweisung ist nicht voll expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifdimen}\Parameter{Zeichenfolge}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Der\ChangedAt{v3.28}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{Dann-Teil} wird ausgeführt, wenn die einfache Expansion der
+\PName{Zeichenfolge} eine gültige Länge mit einer gültigen Längeneinheit
+ergibt. Anderenfalls wird der \PName{Sonst-Teil} verwendet.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisdimexpr}\Parameter{Code}
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in einer \Macro{dimexpr}\IndexCmd{dimexpr},
+also einem \eTeX-Längenausdruck resultiert, wird der \PName{Dann-Teil}
+ausgeführt, anderenfalls der \PName{Sonst-Teil}. Es ist zu
+beachten,\textnote{Achtung!} dass fehlerhafte Ausdrücke zu Fehlermeldungen
+führen. Die Anweisung ist nicht voll expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisskip}\Parameter{Code}\Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in einem \Macro{skip}, also einem \TeX-Abstand,
+resultiert, wird der \PName{Dann-Teil} ausgeführt, anderenfalls der
+\PName{Sonst-Teil}. Die Anweisung ist nicht voll expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisglue}\Parameter{Code}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in etwas resultiert, das syntaktisch dem Wert
+eines Abstandes entspricht, wird der \PName{Dann-Teil} ausgeführt,
+anderenfalls der \PName{Sonst-Teil}. Es ist zu beachten,\textnote{Achtung!}
+dass derzeit unbekannte oder fehlende Einheiten zu einer Fehlermeldung
+führen. Die Anweisung ist nicht voll expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\iffree{\begin{Declaration}}{\begin{Declaration}[0]}% Umbruchkorrektur
+  \Macro{Ifisglueexpr}\Parameter{Code}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in einer \Macro{glueexpr}\IndexCmd{glueexpr},
+also einem \mbox{\eTeX}-Abstandsausdruck resultiert, wird der
+\PName{Dann-Teil} ausgeführt, \iffree{}{\pagebreak}% Umbruchkorrektur
+anderenfalls der \PName{Sonst-Teil}. Es ist zu beachten,\textnote{Achtung!}
+dass fehlerhafte Ausdrücke zu Fehlermeldungen führen. Die Anweisung ist nicht
+voll expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifiscounter}\Parameter{Zähler}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+\PName{Zähler} ein definierter \LaTeX-Zähler ist, wird der \PName{Dann-Teil}
+ausgeführt, anderenfalls der \PName{Sonst-Teil}. Die Anweisung ist nicht voll
+expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifiscount}\Parameter{Code}\Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in einem \Macro{count}, also einem \TeX-Zähler,
+resultiert, wird der \PName{Dann-Teil} ausgeführt, anderenfalls der
+\PName{Sonst-Teil}. Die Anweisung ist nicht voll expandierbar. Für einen Test
+auf einen \LaTeX-Zähler siehe \DescRef{\LabelBase.cmd.Ifiscounter}.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisinteger}\Parameter{Code}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in etwas resultiert, das syntaktisch dem Wert
+eines Zählers entspricht, also eine negative oder positive ganze Zahl ist,
+wird der \PName{Dann-Teil} ausgeführt, anderenfalls der
+\PName{Sonst-Teil}. Die Anweisung ist nicht voll expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifnumber}\Parameter{Zeichenfolge}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Der\ChangedAt{v3.28}{\Package{scrbase}} \PName{Dann-Teil} wird ausgeführt,
+wenn die einfache Expansion der \PName{Zeichenfolge} nur aus Ziffern
+besteht. In allen anderen Fällen wird der \PName{Sonst-Teil} verwendet.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{Ifisnumexpr}\Parameter{Code}%
+  \Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Wenn\ChangedAt{v3.12}{\Package{scrbase}}\ChangedAt{v3.28}{\Package{scrbase}}
+die Expansion von \PName{Code} in einer \Macro{numexpr}\IndexCmd{numexpr},
+also einem \eTeX-Zahlenausdruck resultiert, wird der \PName{Dann-Teil}
+ausgeführt, anderenfalls der \PName{Sonst-Teil}. Es ist zu
+beachten,\textnote{Achtung!} dass fehlerhafte Ausdrücke zu Fehlermeldungen
+führen. Die Anweisung ist nicht voll expandierbar.%
+\iffalse% Umbruchkorrektur
+\iftrue% Umbruchvarianten
+\ Von dieser Anweisung gibt es keine interne Variante.%
+\else%
+\ Es gibt keine interne Variante.%
+\fi%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{IfActiveMkBoth}\Parameter{Dann-Teil}\Parameter{Sonst-Teil}
+\end{Declaration}
+Bei\ChangedAt{v3.27}{\Package{scrbase}} der Umschaltung zwischen automatischen
+und manuellen Kolumnentiteln, verwendet der \LaTeX-Kern die Anweisung
+\DescRef{scrlayer.cmd.@mkboth}\important{\Macro{@mkboth}}\IndexCmd{@mkboth}.
+Im Falle automatischer Kolumnentitel setzt diese normalerweise sowohl den
+linken als auch rechten Markenanteil. Im Falle manueller Kolumnentiteln setzt
+sie keine Marke. Will man wissen, ob \DescRef{scrlayer.cmd.@mkboth} Marken
+setzt oder nicht, so verwenden viele Pakete einen Vergleich entweder mit
+\DescRef{maincls.cmd.markboth}\IndexCmd{markboth} oder
+\Macro{@gobbletwo}. Dies deckt aber nicht alle Fälle von möglichen
+Umdefinierungen von \DescRef{scrlayer.cmd.@mkboth} ab. Daher testet
+\Macro{IfActiveMkBoth}, ob \DescRef{scrlayer.cmd.@mkboth} tatsächlich zum
+Setzen einer Marke führen würde und deckt dabei sogar die Verwendung von
+\Macro{marks} für die Definition von \DescRef{scrlayer.cmd.@mkboth} ab. Wird
+ein solches aktives \DescRef{scrlayer.cmd.@mkboth} entdeckt, so wird der
+\PName{Dann-Teil} ausgeführt. In allen anderen Fällen wird der
+\PName{Sonst-Teil} ausgeführt.%
+\begin{Example}
+  Angenommen, Sie wollen in einem Paket im Fall der Verwendung automatischer
+  Kolumnentitel, wie sie beispielsweise der Seitenstil
+  \PageStyle{headings}\IndexPagestyle{headings} aktiviert, nur die rechte
+  Marke setzen und die linke unverändert lassen, wohingegen bei Verwendung
+  manueller Kolumentitel die Marken unverändert bleiben sollen. In einem
+  ersten Ansatz verwenden Sie dafür:
+\begin{lstcode}
+  \ifx\@mkboth\markboth \markright{Kolumnentitel}\fi
+\end{lstcode}
+  Etwas später entdecken Sie, dass irgendein Paket nicht wie gewohnt
+\begin{lstcode}
+  \let\@mkboth\markboth
+\end{lstcode}
+  sondern
+\begin{lstcode}
+  \renewcommand{\@mkboth}{\markboth}
+\end{lstcode}
+  verwendet hat, um automatische Kolumnentitel zu aktivieren. Daher ruft Ihr
+  Vergleich niemals die \DescRef{maincls.cmd.markright}-Anweisung auf.  Daher
+  ändern Sie den Vergleich oben zu
+\begin{lstcode}
+  \ifx\@mkboth\@gobbletwo
+  \else \markright{Kolumnentitel}\fi
+\end{lstcode}
+  Leider wird nun \DescRef{maincls.cmd.markright} auch bei manuellen
+  Kolumentiteln aufgerufen, weil irgend jemand für diesen Fall
+\begin{lstcode}
+  \renewcommand{\@mkboth}[2]{%
+    \typeout{DEBUG: ignoring running head setting}%
+  }
+\end{lstcode}
+  definiert hat.
+
+  Beide Probleme sind jedoch mit Hilfe von \Package{scrbase} einfach zu lösen:
+\begin{lstcode}
+  \IfActiveMkBoth{\markright{Kolumnentitel}}{}
+\end{lstcode}%
+\end{Example}
+Noch einfacher lässt sich das Problem aus dem Beispiel %
+\iffalse übrigens \fi % Umbruchkorrektur
+mit Hilfe von \DescRef{scrlayer.cmd.@mkright} aus Paket
+\hyperref[cha:scrlayer]{\Package{scrlayer}} lösen (siehe
+\autoref{sec:scrlayer.pagestyle.content},
+\DescPageRef{scrlayer.cmd.@mkright}).%
+\EndIndexGroup
+
+
+\begin{Declaration}[0]
+  \Macro{if@atdocument}\ \PName{Dann-Teil}\ %
+  \textMacro{else}\ \PName{Sonst-Teil} \textMacro{fi}
+\end{Declaration}
+Diese Verzweigung in \TeX-Syntax existiert bewusst nur als interne
+Anweisung. In der Dokumentpräambel ist \Macro{if@atdocument} \Macro{iffalse},
+nach \Macro{begin}\PParameter{document} entspricht \Macro{if@atdocument} dann
+\Macro{iftrue}.  Klassen- und Paketautoren können dieses Anweisung manchmal
+sinnvoll nutzen, wenn sich Anweisungen in der Dokumentpräambel anders
+verhalten sollen als innerhalb des Dokuments. Es\textnote{Achtung!} ist zu
+beachten, dass es sich bei dieser Anweisung um eine Verzweigung in \TeX-Syntax
+und nicht in \LaTeX-Syntax handelt. Ab\ChangedAt{v3.37}{\Package{scrbase}}
+\LaTeX{} 2020/10/01 wird \Macro{@atdocumenttrue} von \Package{scrbase} über
+den generischen \LaTeX-Hook \texttt{begindocument/before} ausgeführt. Daher
+ist der Zustand bereits für \Macro{BeginDocument} für Klassen und alle Pakete
+\Macro{iftrue}. Für Verwendung von \Macro{if@atdocument} mit dem generischen
+\LaTeX-Hook \texttt{begindocument/before} wird hingegen gegebenenfalls eine
+zusätzliche Hook-Regel benötigt, um einen definierten Zustand zu erreichen.%
+\EndIndexGroup
+
+
+\section{Definition sprachabhängiger Bezeichner}
+\seclabel{languageSupport}
+\BeginIndexGroup
+\BeginIndex{}{Sprachdefinition}
+
+\iffalse% Umbruchkorrektur
+Anfänger haben häufig Probleme damit, sprachabhängige Begriffe wie
+\Macro{listfigurename}\IndexCmd{listfigurename}, in der Voreinstellung meist
+»List of Figures« beziehungsweise in Deutsch: »Abbildungsverzeichnis«, zu
+ändern. Werden diese beispielsweise einfach mit \Macro{renewcommand} in der
+Dokumentpräambel umdefiniert, so überleben sie eine spätere Umschaltung der
+Sprache nicht. Bei Verwendung von \Package{babel}\IndexCmd{babel} wird die
+Umdefinierung in der Dokumentpräambel bereits von
+\Macro{begin}\PParameter{document} wieder überschrieben.
+\fi
+
+Normalerweise muss man zur Definition oder zur Änderung sprachabhängiger
+Begriffe Anweisungen wie \Macro{captionsngerman} so umdefinieren, dass
+zusätzlich zu den bisherigen Begriffen auch die neuen oder geänderten
+definiert werden. Erschwert wird dieses Vorhaben dadurch, dass beim Laden
+eines Pakets wie \Package{babel}\IndexPackage{babel} oder
+\Package{polyglossia}\IndexPackage{polyglossia} diese Anweisungen von den
+Paketen erneut definiert werden. Bei den genannten Paketen geschieht dies,
+indem alle zuvor gemachten Änderungen überschrieben werden. Aus diesem Grund
+ist es sinnvoll, eigene Änderungen bis nach dem Laden entsprechender Pakete
+oder mit Hilfe von \Macro{AtBeginDocument} bis
+\Macro{begin}\PParameter{document} zu verzögern.
+
+Darüber hinaus kommt erschwerend hinzu, dass einige Pakete zusätzliche,
+sprachabhängige Begriffe in \Macro{captions\PName{Sprache}} definieren,
+während andere dafür \Macro{extras\PName{Sprache}} verwenden. So muss der
+Anwender sich schon sehr genau auskennen, um die richtige Anweisung auf die
+richtige Weise zu ergänzen.
+
+Das Paket \Package{scrbase} bietet dem Anwender daher für die Definition und
+Änderung selbst einige zusätzliche Anweisungen, die ihn von vielen dieser
+Überlegungen befreit. Gleichzeitig erlauben die Befehle, die
+sprachabhängigen Begriffe mehrerer Dialekte oder Ausprägungen einer Sprache
+gleichzeitig zu definieren oder zu ändern.
+
+\begin{Declaration}
+  \Macro{defcaptionname}
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+  \Macro{providecaptionname}
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+  \Macro{newcaptionname}
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+  \Macro{renewcaptionname}
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+  \Macro{defcaptionname*}
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+  \Macro{providecaptionname*}
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+  \Macro{newcaptionname*}
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+  \Macro{renewcaptionname*}%
+    \Parameter{Sprachliste}\Parameter{Begriff}\Parameter{Inhalt}
+\end{Declaration}
+Mit Hilfe dieser Anweisungen ist es möglich, einem \PName{Begriff} in
+Abhängigkeit der Sprache einen \PName{Inhalt} zuzuweisen. Mehrere Sprachen
+können durch Komma voneinander getrennt als
+\PName{Sprachliste}\ChangedAt{v3.12}{\Package{scrbase}} angegeben werden.
+Der \PName{Begriff} ist immer ein Makro. Die Arbeitsweise der Anweisungen
+unterscheidet sich je nachdem, ob eine Sprache und ein \PName{Begriff}
+innerhalb der Sprache zum Zeitpunkt des Aufrufs bereits definiert ist.
+
+Ist eine Sprache nicht definiert, vermerkt \Macro{providecaptionname} das
+lediglich in \File{log}-Datei. Dabei wird für jede Sprache nur einmal eine
+entsprechende Information in die \File{log}-Datei geschrieben. Ist die Sprache
+definiert, enthält aber bisher keinen entsprechenden \PName{Begriff}, so wird
+er mit dem angegebenen \PName{Inhalt} definiert. Ist der \PName{Begriff}
+hingegen in der Sprache bereits definiert, so wird er nicht umdefiniert,
+sondern ebenfalls ein entsprechender Hinweis in die \File{log}-Datei
+geschrieben.
+
+Ist dagegen bei \Macro{newcaptionname}
+eine Sprache nicht definiert, dann wird diese neu definiert, indem eine
+entsprechende Anweisung definiert wird. Für die Sprache
+\PValue{ngerman} wäre das beispielsweise \Macro{captionsngerman}. Außerdem
+wird darüber auch in der \File{log}-Datei informiert. Ist die Sprache
+definiert, der \PName{Begriff} in dieser Sprache aber noch nicht
+vorhanden, so wird er mit dem gewünschten \PName{Inhalt} definiert. Ist der
+\PName{Begriff} in der Sprache bereits vorhanden, so wird eine
+Fehlermeldung ausgegeben.
+
+Ist bei Anweisung \Macro{renewcaptionname} eine Sprache nicht definiert, so
+wird eine Fehlermeldung ausgegeben. Ist die Sprache definiert, der
+\PName{Begriff} in dieser Sprache jedoch nicht, so wird ebenfalls eine
+Fehlermeldung ausgegeben. Ist der \PName{Begriff} in der Sprache definiert, so
+wird er auf den gewünschten \PName{Inhalt} umdefiniert.
+
+Die\ChangedAt{v3.12}{\Package{scrbase}} Anweisung \Macro{defcaptionname}
+definiert einen \PName{Begriff} immer, überschreibt also eventuell vorhandene
+Definitionen. Wie bei \Macro{providecaptionname} braucht eine angegebene
+Sprache nicht definiert zu sein.
+
+\KOMAScript{} selbst verwendet \Macro{providecaptionname} um beispielsweise
+die Begriffe aus \autoref{sec:scrlttr2-experts.languages},
+\DescPageRef{scrlttr2-experts.cmd.yourrefname} zu definieren.
+
+\begin{Example}
+  Möchten Sie »Abb.« statt »Abbildung« in den Abbildungsunterschriften, so
+  erreichen Sie dies mit:
+\begin{lstcode}
+  \renewcaptionname{ngerman}{\figurename}{Abb.}
+\end{lstcode}
+
+  Soll dieselbe Änderung nicht nur für \PValue{ngerman}, sondern
+  auch für die Sprachen \PValue{naustrian} und \PValue{nswissgerman}, also für
+  Österreichisch und Schweizer Deutsch gelten, so ist
+  es nicht notwendig zwei weitere Anweisungen:
+\begin{lstcode}
+  \renewcaptionname{naustrian}{\figurename}{Abb.}
+  \renewcaptionname{nswissgerman}{\figurename}{Abb.}
+\end{lstcode}
+  hinzuzufügen. Stattdessen kann einfach, die \PName{Sprachliste} erweitert
+  werden:
+\begin{lstcode}
+  \renewcaptionname{ngerman,naustrian,nswissgerman}%
+                   {\figurename}{Abb.}
+\end{lstcode}
+  In gleicher Weise können auch \PValue{german}, \PValue{austrian} und
+  \PValue{swissgerman}, also Deutsch, Österreichisch und Schweizer Deutsch
+  nach der veralteten Rechtschreibung, hinzugefügt werden.
+\end{Example}
+\iffalse % Das ist 6 Jahre her und damit nicht mehr von Belang!
+\begin{Explain}
+  Die Sprachen \PValue{swissgerman} und \PValue{nswissgerman} werden übrigens
+  von älteren Versionen von \Package{babel} noch nicht unterstützt. Sie sind
+  erst seit Dezember~2013 Bestandteil des deutschen Sprachpakets für
+  \Package{babel}. Für die Anweisungen \Macro{defcaptionname},
+  \Macro{newcaptionname} und \Macro{providecaptionname} spielt dies kaum eine
+  Rolle, da diese auch Begriffe für nicht existierende Sprachen definieren
+  können. Da mit \Macro{renewcaptionname} jedoch nur existierende Begriffe von
+  existierenden Sprachen umdefiniert werden können, resultiert die
+  Umdefinierung für \Option{nswissgerman} und \Option{swissgerman} bei
+  Verwendung einer älteren Version von \Package{babel} in einer entsprechenden
+  Fehlermeldung.
+\end{Explain}%
+\fi
+
+Es\ChangedAt{v3.12}{\Package{scrbase}} ist nicht erforderlich, die Definierung
+oder Umdefinierung via \Macro{AtBeginDocument} bis
+\Macro{begin}\PParameter{document} zu verzögern. Stattdessen erledigt
+\Package{scrbase} das selbst, falls die Anweisungen in der Dokumentpräambel
+aufgerufen werden. Außerdem prüft \Package{scrbase} auch, ob ein
+umzudefinierender Begriff statt in \Macro{captions\PName{Sprache}} in
+\Macro{extras\PName{Sprache}} zu definieren ist. Die Sternvarianten der
+Befehle verwenden grundsätzlich \Macro{extras\PName{Sprache}}, da dessen
+Definitionen in der Regel nach \Macro{captions\PName{Sprache}} Anwendung
+finden. Damit funktioniert auch das Umdefinieren von sprachabhängigen
+Bezeichnern von Paketen\iffalse\ wie \Package{hyperref}\fi, die dafür
+\Macro{extras\PName{Sprache}} verwenden.
+
+In \autoref{tab:scrbase.commonNames} ist ein Überblick über die üblicherweise
+von Klassen und Sprachpaketen definierten Begriffe und deren Verwendung zu
+finden.\iffree{}{ \KOMAScript{} selbst definiert noch einige weitere
+  Begriffe. Siehe dazu \autoref{sec:scrlttr2-experts.languages} ab
+  \DescPageRef{scrlttr2-experts.cmd.yourrefname}.}
+%
+%\iffree{}{\enlargethispage{4pt}}% Umbruchkorrektur
+\begin{desclist}
+  \renewcommand*{\abovecaptionskipcorrection}{-\normalbaselineskip}%
+  \desccaption[{%
+    Überblick über übliche sprachabhängige Begriffe%
+  }]{%
+    Überblick über sprachabhängige Begriffe in den üblichen
+    Sprachpaketen\label{tab:scrbase.commonNames}%
+  }{%
+    Überblick über übliche sprachabhängige Begriffe
+    (\emph{Fortsetzung})%
+  }%
+  \entry{\Macro{abstractname}}{%
+    Überschrift für die Zusammenfassung%
+    \IndexCmd{abstractname}%
+  }%
+  \entry{\Macro{alsoname}}{%
+    »siehe auch« bei ergänzenden Verweisen im Stichwortverzeichnis%
+    \IndexCmd{alsoname}%
+  }%
+  \entry{\Macro{appendixname}}{%
+    »Anhang« in der Kapitelüberschrift eines Anhangs%
+    \IndexCmd{appendixname}%
+  }%
+  \entry{\Macro{bibname}}{%
+    Überschrift für das Literaturverzeichnis%
+    \IndexCmd{bibname}%
+  }%
+  \entry{\Macro{ccname}}{%
+    Spitzmarke für den Verteiler in Briefen%
+    \IndexCmd{ccname}%
+  }%
+  \entry{\Macro{chaptername}}{%
+    »Kapitel« in der Kapitelüberschrift%
+    \IndexCmd{chaptername}%
+  }%
+  \entry{\Macro{contentsname}}{%
+    Überschrift für das Inhaltsverzeichnis%
+    \IndexCmd{contentsname}%
+  }%
+  \entry{\Macro{enclname}}{%
+    Spitzmarke für die Anlagen bei Briefen%
+    \IndexCmd{enclname}%
+  }%
+  \entry{\Macro{figurename}}{%
+    Spitzmarke in der Abbildungsunterschrift%
+    \IndexCmd{figurename}%
+  }%
+  \entry{\Macro{glossaryname}}{%
+    Überschrift für das Glossar%
+    \IndexCmd{glossaryname}%
+  }%
+  \entry{\Macro{headtoname}}{%
+    »An« im Briefkopf%
+    \IndexCmd{headtoname}%
+  }%
+  \entry{\Macro{indexname}}{%
+    Überschrift für das Stichwortverzeichnis%
+    \IndexCmd{indexname}%
+  }%
+  \entry{\Macro{listfigurename}}{%
+    Überschrift für das Abbildungsverzeichnis%
+    \IndexCmd{listfigurename}%
+  }%
+  \entry{\Macro{listtablename}}{%
+    Überschrift für das Tabellenverzeichnis%
+    \IndexCmd{listtablename}%
+  }%
+  \entry{\Macro{pagename}}{%
+    »Seite« in der Seitennummer von Briefen%
+    \IndexCmd{pagename}%
+  }%
+  \entry{\Macro{partname}}{%
+    »Teil« in der Teileüberschrift%
+    \IndexCmd{partname}%
+  }%
+  \entry{\Macro{prefacename}}{%
+    Überschrift für das Vorwort%
+    \IndexCmd{prefacename}%
+  }%
+  \entry{\Macro{proofname}}{%
+    Spitzmarke bei Beweisen%
+    \IndexCmd{proofname}%
+  }%
+  \entry{\Macro{refname}}{%
+    Überschrift für das Quellenverzeichnis%
+    \IndexCmd{refname}%
+  }%
+  \entry{\Macro{seename}}{%
+    »siehe« bei Verweisen im Stichwortverzeichnis%
+    \IndexCmd{seename}%
+  }%
+  \entry{\Macro{tablename}}{%
+    Spitzmarke in der Tabellenunter- bzw. "~überschrift%
+    \IndexCmd{tablename}%
+  }%
+\end{desclist}
+%
+\EndIndexGroup
+%
+\EndIndexGroup
+
+
+\section{Identifikation von \KOMAScript}
+\seclabel{identify}
+
+Obwohl -- oder gerade weil -- \Package{scrbase} ganz allgemein als Paket für
+Klassen- und Paketautoren konzipiert ist, wird es natürlich von den
+\KOMAScript-Klassen und den meisten \KOMAScript-Paketen verwendet. Es enthält
+daher auch eine Anweisung, die in allen \KOMAScript-Klassen und allen
+grundlegenden \KOMAScript-Paketen vorhanden ist.
+
+
+\begin{Declaration}
+  \Macro{KOMAScriptVersion}
+\end{Declaration}
+Bei \KOMAScript{} ist in dieser Anweisung die Hauptversion von \KOMAScript{}
+in der Form »\PName{Datum} \PName{Version} \texttt{KOMA-Script}«
+abgelegt. Diese Hauptversion ist für alle \KOMAScript-Klassen und alle
+\KOMAScript-Pakete, die von den Klassen verwendet werden, gleich. Daher kann
+sie auch nach dem Laden von \Package{scrbase} abgefragt werden. Diese
+Anleitung wurde beispielsweise mit der \KOMAScript-Version
+»\KOMAScriptVersion« erstellt. Das Vorhandensein der Anweisung ist ein
+starkes Indiz dafür, dass zumindest ein \KOMAScript-Paket verwendet wird.%
+\EndIndexGroup
+
+
+\section{Erweiterungen des \LaTeX-Kerns}
+\seclabel{latexkernel}
+
+In einigen Fällen stellt der \LaTeX-Kern selbst Anweisungen zur Verfügung,
+lässt aber ganz ähnliche Anweisungen, die ebenfalls häufiger benötigt werden
+oder eigentlich nahe liegen, vermissen. Einige wenige solcher Anweisungen
+für Klassen- und Paketautoren stellt \Package{scrbase} zur Verfügung.
+
+\begin{Declaration}
+  \Macro{ClassInfoNoLine}\Parameter{Klassenname}\Parameter{Information}
+  \Macro{PackageInfoNoLine}\Parameter{Paketname}\Parameter{Information}
+\end{Declaration}%
+Der \LaTeX-Kern bietet dem Klassen- und Paketautor zwar Anweisungen wie
+\Macro{PackageInfo} und \Macro{ClassInfo}, um Informationen mit aktueller
+Zeilennummer in die Log-Datei zu schreiben. Er bietet neben
+\Macro{PackageWarning} und \Macro{ClassWarning}, die Warnungen mit aktueller
+Zeilennummer ausgeben, auch die beiden Anweisungen
+\Macro{PackageWarningNoLine} und \Macro{ClassWarningNoLine}, um Warnungen ohne
+Zeilennummer auszugeben. Die naheliegenden Anweisungen
+\Macro{ClassInfoNoLine} und \Macro{PackageInfoNoLine}, um auch Informationen
+ohne Zeilennummer in die Log-Datei zu schreiben, fehlen jedoch. Diese werden
+von \Package{scrbase} bereitgestellt.
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{l@addto@macro}\Parameter{Anweisung}\Parameter{Erweiterung}%
+\end{Declaration}%
+Der \LaTeX-Kern bietet mit \Macro{g@addto@macro} eine interne Anweisung, um
+die Definition eines Makro \PName{Anweisung} global um den Code
+\PName{Erweiterung} zu erweitern. Das funktioniert in dieser Form nur für
+Makros ohne Argumente. Dennoch könnte man die Anweisung in einigen Fällen
+auch in einer Form benötigen, die lokal zur aktuellen Gruppe arbeitet. Diese
+wird mit \Macro{l@addto@macro} von \Package{scrbase} bereitgestellt. Eine
+Alternative stellt hier die Verwendung des Pakets
+\Package{etoolbox}\IndexPackage{etoolbox} oder
+\Package{xpatch}\IndexPackage{xpatch} dar, die eine ganze Reihe solcher
+Anweisungen für unterschiedliche Zwecke bieten (siehe
+\cite{package:etoolbox} oder \cite{package:xpatch}).
+%
+\EndIndexGroup
+
+
+\section{Erweiterungen der mathematischen Fähigkeiten von \eTeX}
+\seclabel{etex}
+
+Das für \LaTeX{} inzwischen verwendete und von \KOMAScript{} vorausgesetzte
+\eTeX{} besitzt mit \Macro{numexpr}\IndexCmd{numexpr} erweiterte Möglichkeiten
+zur Berechnung einfacher Ausdrücke mit \TeX-Zählern und ganzen Zahlen. Als
+Operationen werden dabei die vier Grundrechenarten und Klammern
+unterstützt. Bei der Division wird korrekt gerundet.
+\iffalse Manchmal sind weitere Operationen nützlich.\fi% Umbruchkorrektur
+
+\begin{Declaration}
+  \Macro{XdivY}\Parameter{Dividend}\Parameter{Divisor}
+  \Macro{XmodY}\Parameter{Dividend}\Parameter{Divisor}
+\end{Declaration}%
+\BeginIndex{Cmd}{XdivY}%
+\BeginIndex{Cmd}{XmodY}%
+Die\ChangedAt{v3.05a}{\Package{scrbase}} Anweisung \Macro{XdivY} liefert den
+Wert des ganzzahligen Quotienten, die Anweisung \Macro{XmodY} den Wert des
+Rests der Division mit Rest. Diese Art der Division ist nach der Gleichung
+\[
+\textit{Dividend} = \textit{Divisor} \cdot
+\textit{Quotient} + \textit{Rest}
+\]
+%
+definiert, wobei \textit{Dividend}, \textit{Divisor} und \textit{Rest} ganze
+Zahlen und \textit{Rest} außerdem größer oder gleich 0 und kleiner als
+\textit{Divisor} ist. Der \textit{Divisor} ist eine natürliche Zahl (ohne die
+0).
+
+Der Wert kann jeweils zur Zuweisung an einen Zähler oder direkt innerhalb
+eines Ausdrucks mit \Macro{numexpr}\IndexCmd{numexpr} verwendet werden. Zur
+Ausgabe als arabische Zahl ist \Macro{the} voranzustellen.%
+%
+\EndIndexGroup
+
+
+\section[{Mechanismus für mehrstufige Haken}]
+{Mechanismus für mehrstufige
+  Haken\ChangedAt{v3.27}{\Package{scrbase}}}
+\seclabel{hooks}
+
+\BeginIndexGroup
+\BeginIndex{}{Haken}
+Der \LaTeX-Kern bietet selbst bereits einige wenige Stellen in der
+Verarbeitung eines Dokuments, an denen die Ausführung zusätzlichen Codes
+\emph{eingehakt} werden kann. Klassen- und Paketautoren dürften
+\Macro{AtBeginDocument} und \Macro{AtEndDocument} bestens bekannt
+sein. \KOMAScript{} bietet an einigen Stellen vergleichbares, beispielsweise
+um Code in die Ausführung von
+\hyperref[sec:maincls.structure]{Gliederungsbefehlen} einzuhaken. Über die
+Jahre zeigten sich dabei zwei Probleme:
+\begin{itemize}
+\item Es gibt nie genug Haken.
+\item Es gibt sowohl Code, der nur einmal ausgeführt werden soll, also quasi
+  bei seiner Ausführung wieder vom Haken fällt, als auch Code, der bei jedem
+  Durchlaufen des Hakens auszuführen ist, also dauerhaft auf dem Haken bleibt.
+\end{itemize}
+Üblicherweise muss man zur Definition eines einzelnen Hakens eine Anweisung
+definieren, mit der Code für den jeweiligen Haken aufgesammelt wird. Der Code
+wird dazu in einem weiteren internen Makro abgelegt, das man an der Stelle
+einfügen muss, an der der aufgesammelte Code auszuführen ist. Je mehr Haken
+man einfügt, desto mehr solcher Anweisungen gibt es. Um sowohl Einmalcode als
+auch dauerhaften Code zu ermöglichen, bedarf es sogar zweier Haken und damit
+der doppelten Anzahl an zu definierenden Anweisungen.
+
+Das Beispiel der Gliederungsbefehle zeigt, dass sich das erste Problem
+an einem einzigen Codeausführungspunkt noch verschärfen kann. Der
+eine Paketautor benötigt nur eine Möglichkeit, für alle
+Gliederungsbefehle denselben Code auszuführen. Ein anderer Paketautor hätte
+lieber, dass er bei bestimmten Gliederungsbefehlen unterschiedlichen Code
+ausführen kann. Es würde also sowohl ein allgemeiner Haken als auch ein Haken
+je Gliederungsbefehl benötigt. Das ganze dann wieder wegen des zweiten
+Problems verdoppelt.
+
+\KOMAScript{} bietet in \Package{scrbase} daher einen verallgemeinerten
+Hakenmechanismus, der mehrstufige Haken sowohl für Einmalcode als auch für
+dauerhaften Code bereitstellt. Diese Haken haben aufgrund der Implementierung
+den Namen \emph{do-hook} erhalten. Davon leitet sich auch der Name der
+Anweisungen ab, mit denen sie gesteuert werden.
+
+\begin{Declaration}
+  \Macro{ExecuteDoHook}\Parameter{Spezifikator}
+\end{Declaration}
+Über\ChangedAt[2019/01]{v3.27}{\Package{scrbase}} diese Anweisung werden Haken
+implementiert. Dabei bestimmt der \PName{Spezifikator} den Namen des oder
+genauer der Haken. Der \PName{Spezifikator} wird zur Analyse immer vollständig
+expandiert.
+
+Der \PName{Spezifikator} besteht allgemein aus durch Querstrichen,
+»\texttt{/}«, voneinander getrennten Zeichenfolgen. Von \Macro{ExecuteDoHook}
+wird zunächst die Zeichenfolge vor dem ersten Querstrich abgetrennt. Diese ist
+der Name. Der verbleibende Rest ohne den führenden Querstrich ist das
+Argument. Dann wird der Code für den Haken mit diesem Namen
+ausgeführt. Anschließend wird erneut die vordere Zeichenfolge vom Rest
+abgetrennt und mit einem Querstrich hinten an den Namen angefügt und der Code
+für den so neu gebildeten Namen ausgeführt. Das geht so lange, bis der Code
+für den Haken mit dem Namen \PName{Spezifikator} und leerem Argument
+ausgeführt wurde.
+
+Im einfachsten Fall besteht der \PName{Spezifikator} aus einem einzelnen
+Namen. In diesem Fall wird zunächst der dauerhafte Code für genau einen durch
+diesen Namen festgelegten Haken mit leerem Argument ausgeführt.
+
+In jeder Stufe der Ausführung wird nach dem dauerhaften Code für einen Haken
+zusätzlich Einmalcode ausgeführt, bevor der Einmalcode global vom Haken
+genommen wird.
+
+\begin{Example}
+  Mit \DescRef{\LabelBase.cmd.ExecuteDoHook}%
+  \PParameter{heading/begingroup/\PName{Name}} in der Ausführung jedes
+  durch \DescRef{maincls-experts.cmd.DeclareSectionCommand} definierten
+  Gliederungbefehls wurden in den \KOMAScript-Klassen letztlich sechs Haken an
+  diesem Codepunkt eingefügt, die in dieser Reihenfolge ausgeführt werden:
+  \begin{enumerate}
+  \item \PValue{heading} mit Argument \PValue{begingroup/}\PName{Name} für
+    dauerhaften Code,
+  \item \PValue{heading} mit Argument \PValue{begingroup/}\PName{Name} für
+    Einmalcode,
+  \item \PValue{heading/begingroup} mit Argument \PName{Name} für
+    dauerhaften Code,
+  \item \PValue{heading/begingroup} mit Argument \PName{Name} für
+    Einmalcode,
+  \item \PValue{heading/begingroup/}\PName{Name} mit leerem Argument für
+    dauerhaften Code,
+  \item \PValue{heading/begingroup/}\PName{Name} mit leerem Argument für
+    Einmalcode.
+  \end{enumerate}
+  Der Platzhalter \PName{Name} ist dabei identisch mit dem bei
+  \DescRef{maincls-experts.cmd.DeclareSectionCommand},
+  \DescRef{maincls-experts.cmd.DeclareNewSectionCommand} oder
+  \DescRef{maincls-experts.cmd.ProvideSectionCommand}
+  angegebenen Namen
+  der Gliederungsebene beziehungsweise des dadurch bestimmten
+  Gliederungsbefehls, also beispielsweise \PValue{subparagraph} oder
+  \PValue{chapter}. Betrachtet man obige Auf"|listung unter
+  Berücksichtigung der Vielzahl an Gliederungsbefehlen,
+  wird klar, dass die Haken \PValue{heading} und \PValue{heading/begingroup}
+  mehrfach, nämlich für jeden Gliederungsbefehl existieren.%
+\end{Example}%
+%
+\EndIndexGroup
+\ExampleEndFix
+
+
+\begin{Declaration}
+  \Macro{AddtoDoHook}\Parameter{Name}\Parameter{Befehl}
+  \Macro{AddtoOneTimeDoHook}\Parameter{Name}\Parameter{Befehl}
+\end{Declaration}
+Mit\ChangedAt[2019/01]{v3.27}{\Package{scrbase}} \Macro{AddtoDoHook} wird an
+dem Haken mit dem Namen \PName{Name} dauerhafter\textnote{dauerhaft} Code
+aufgehängt. Als Code dient dabei der \PName{Befehl}, dem das in der Erklärung
+zu \DescRef{\LabelBase.cmd.ExecuteDoHook} erwähnte Argument als Parameter
+angehängt wird.
+\begin{Example}
+  Angenommen, es soll innerhalb von \Macro{section} mitgezählt werden, wie oft
+  diese Anweisung ausgeführt wird. Dies wäre in Fortführung des obigen
+  Beispiels mit
+\begin{lstcode}
+  \newcounter{sectionZaehler}
+  \AddtoDoHook{heading/begingroup/section}
+              {\stepcounter{sectionZaehler}}
+\end{lstcode}
+  sehr einfach möglich. Allerdings würde dann in Wirklichkeit
+  \Macro{stepcounter}\PParameter{sectionZaehler}\PParameter{} ausgeführt. Wir
+  erinnern uns daran, dass immer ein Argument als Parameter angehängt wird.
+  Im Falle des Hakens mit dem Namen \PValue{heading/begingroup/section} ist
+  dieses Argument leer. Da ein solcher leerer Parameter hier zu einer leeren
+  Gruppe wird, ist es besser, diesen leeren Parameter quasi aufzubrauchen:
+\begin{lstcode}
+  \newcommand*{\stepcountergobble}[2]{%
+    \stepcounter{#1}%
+  }
+  \AddtoDoHook{heading/begingroup/section}
+              {\stepcountergobble{sectionZaehler}}
+\end{lstcode}
+  Somit wird der angehängte, leere Parameter von der neuen Anweisung
+  \Macro{stepcountergobble} gelesen, aber nicht verwendet.
+
+  Sollen nun statt \Macro{section} alle Gliederungsbefehle gezählt werden, so
+  muss nur ein anderer Hakenname eingesetzt werden:
+\begin{lstcode}
+  \AddtoDoHook{heading/begingroup}
+              {\stepcountergobble{sectionZaehler}}
+\end{lstcode}
+  Hier ist übrigens der angehängte Parameter nicht leer, sondern enthält den
+  Namen der Gliederungsebene oder des Gliederungsbefehls. Wollte man die
+  Gliederungsbefehle einzeln zählen, so könnte man genau dies ausnützen:
+\begin{lstcode}
+  \newcommand*{\stepZaehler}[1]{%
+    \stepcounter{#1Zaehler}%
+  }
+  \AddtoDoHook{heading/begingroup}
+              {\stepZaehler}
+\end{lstcode}
+  Natürlich müssten dann auch die Zähler \Counter{partZaehler},
+  \Counter{chapterZaehler} bis hinunter zu \Counter{subparagraphZaehler}
+  definiert werden.
+\end{Example}
+
+Die Anweisung \Macro{AddtoOneTimeDoHook}\textnote{einmalig} arbeitet
+vergleichbar, fügt den \PName{Befehl} aber dem Einmalcode hinzu. Dieser Code
+wird dann nach der ersten Ausführung global vom Haken genommen.%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{ForDoHook}\Parameter{Spezifikator}\Parameter{Befehl}
+\end{Declaration}
+Während\ChangedAt[2019/01]{v3.27}{\Package{scrbase}}
+\DescRef{\LabelBase.cmd.ExecuteDoHook} dazu gedacht ist, die Befehle
+auszuführen, die zuvor mit \DescRef{\LabelBase.cmd.AddtoDoHook} oder
+\DescRef{\LabelBase.cmd.AddtoOneTimeDoHook} für die durch den
+\PName{Spezifikator} bestimmten Haken gespeichert wurden, führt diese Anweisung
+den unmittelbar angegebenen \PName{Befehl} aus. Dabei werden an \PName{Befehl}
+sogar zwei Parameter angefügt. Der erste Parameter ist der Name des Haken, der
+zweite das Argument des Hakens.
+
+Diese Anweisung ist ein Abfallprodukt der Implementierung von
+\DescRef{\LabelBase.cmd.ExecuteDoHook}. Normalerweise sollten weder Anwender
+noch Paketautoren diese Anweisung benötigen.%
+\EndIndexGroup
+
+\begin{Declaration}
+  \Macro{SplitDoHook}\Parameter{Spezifikator}\Parameter{Kopf-Makro}
+                     \Parameter{Rest-Makro}
+\end{Declaration}
+Wie\ChangedAt[2019/01]{v3.27}{\Package{scrbase}} aus den vorangegangenen
+Erklärungen deutlich wird, kann der Parameter eines mit
+\DescRef{\LabelBase.cmd.AddtoDoHook} oder
+\DescRef{\LabelBase.cmd.AddtoOneTimeDoHook} hinzugefügten \PName{Befehls}
+ebenfalls ein mehrteiliger \PName{Spezifikator} sein. Mit \Macro{SplitDoHook}
+kann so ein \PName{Spezifikator} in das vordere Element und den Rest
+aufgeteilt werden. Das \PName{Kopf-Makro} wird dabei als das vordere Element
+definiert. Das \PName{Rest-Makro} wird als der Rest definiert. Im Falle, dass
+kein Rest bleibt, wird das \PName{Rest-Makro} leer definiert. Falls bereits der
+\PName{Spezifikator} leer war, wird eine Warnung ausgegeben und sowohl
+\PName{Kopf-Makro} als auch \PName{Rest-Makro} leer definiert.
+
+\begin{Example}
+  Wollte man am Anfang der Gruppe, in der die Überschrift ausgegeben wird,
+  einen Zähler erhöhen, diesen am Ende aber wieder verringern, so könnte man
+  dies über zwei Haken tun:
+\begin{lstcode}
+  \AddtoDoHook{heading/begingroup}
+              {\stepZaehler}
+  \newcommand*{\restepZaehler}[1]{%
+    \addtocounter{#1Zaehler}{-1}%
+  }
+  \AddtoDoHook{heading/endgroup}
+              {\restepcounter}
+\end{lstcode}
+  Man könnte aber auch mit einem einzigen Haken arbeiten und dessen Parameter
+  zerlegen:
+\begin{lstcode}
+  \newcommand*{\changeZaehler}[1]{%
+    \SplitDoHook{#1}{\Gruppe}{\Ebene}%
+    \Ifstr{\Gruppe}{begingroup}{%
+      \stepcounter{\Ebene Zaehler}%
+    }{%
+      \Ifstr{\Gruppe}{endgroup}{%
+        \addtocounter{\Ebene Zaehler}{-1}%
+      }{}%
+    }%
+  }
+  \AddtoDoHook{heading}
+              {\changeZaehler}
+\end{lstcode}
+  Wie zu sehen ist, ist die erste Lösung um einiges einfacher. Dazu kommt,
+  dass man die zweite Fallunterscheidung in der zweiten Lösung gerne
+  vergisst. Das wäre allerdings fatal, da es weitere Haken mit Namen
+  \PValue{heading} aber abweichendem Argument geben kann.
+\end{Example}
+
+Genau genommen ist diese Anweisung ein Abfallprodukt der Implementierung
+von \DescRef{\LabelBase.cmd.ForDoHook}.%
+\EndIndexGroup
+%
+\EndIndexGroup
+
+\section{Obsolete Optionen und Anweisungen}
+\seclabel{obsolete}
+
+Frühere Versionen von \Package{scrbase} verfügten über Optionen und
+Anweisungen, die inzwischen entfernt oder ersetzt wurden. Diese sind hier nur
+aus Gründen der Vollständigkeit aufgeführt und sollten nicht mehr verwendet
+werden.
+
+\LoadNonFree{scrbase}{0}%
+\EndIndexGroup
+
+\endinput
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "scrguide-de.tex"
+%%% coding: utf-8
+%%% ispell-local-dictionary: "de_DE"
+%%% eval: (flyspell-mode 1)
+%%% End:
+
+% LocalWords:  Paketoptionen Familienmitglieder Familienmitglieds Säumniswert
+% LocalWords:  Fleischermeister FamilyProcessOptions ProcessOption keyval Cmd
+% LocalWords:  documentclass ProcessOptions FamilyExecuteOptions currname
+% LocalWords:  Optionenliste ExecuteOptions DeclareOption currext Wurstsalat
+% LocalWords:  FamilyOptions FamilyKeyState Wurstpakete nonsense package true
+% LocalWords:  Wurstpaket FamilyOption salatmit SalatZusatz scrbase false
+% LocalWords:  AtEndOfFamilyOptions FamilyBoolKey FamilySetBool Schaltername
+% LocalWords:  FamilyLengthKey FamilySetLength FamilyLengthMacroKey
+% LocalWords:  FamilySetLengthMacro Wertübergabe Gliederungsbefehlen
+% LocalWords:  Sternvariante Anwenderanweisungen Signalisierung Paketautoren
+% LocalWords:  Familienschlüssel Mitgliederschlüssels Vergleichszustand
+% LocalWords:  Benutzeräquivalent Dokumentpräambel voranzustellen

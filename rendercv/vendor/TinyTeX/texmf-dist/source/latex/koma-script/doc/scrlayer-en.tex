@@ -1,0 +1,1605 @@
+% ======================================================================
+% scrlayer-en.tex
+% Copyright (c) Markus Kohm, 2013-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%
+% Chapter about scrlayer of the KOMA-Script guide
+% Maintained by Markus Kohm
+%
+% ============================================================================
+
+\KOMAProvidesFile{scrlayer-en.tex}
+                 [$Date: 2023-04-25 09:00:44 +0200 (Di, 25. Apr 2023) $
+                  KOMA-Script guide (chapter:scrlayer)]
+
+\translator{Markus Kohm\and Karl Hagen}
+
+\chapter[{Defining Layers and Page Styles with \Package{scrlayer}}]
+  {Defining\ChangedAt{v3.12}{\Package{scrlayer}} Layers and Page Styles with
+	\Package{scrlayer}}
+\labelbase{scrlayer}
+
+\BeginIndexGroup
+\BeginIndex{Package}{scrlayer}%
+\BeginIndex{}{layer}%
+Most users of graphics software are already familiar with the layer model for
+a page. Such a model is rather alien to \LaTeX{} itself, but some packages,
+like \Package{eso-pic} or \Package{textpos}, provide a kind of
+background or foreground layer. \Package{scrlayer} is another package that
+provides such background and foreground layers, but unlike the packages
+mentioned above, these layers are part of the page style. As a result, you can
+switch between different layers simply by switching the page style.
+
+To do so, the package also supports a low-level interface for defining page
+styles that are based on a stack or list of layers, for adding layers to such
+a layer stack, either at the top or the bottom, or before or after a specific
+layer, and for removing individual layers and duplicates from a stack. In a
+nutshell, the page style interface of \Package{scrlayer} provides commands to
+define page styles based on a stack of layers and to manage those stacks.
+
+Nevertheless, using the layers directly is recommended for advanced users
+only. Interfaces for beginners and average users are provided by additional
+packages that in turn load \Package{scrlayer}. See
+\autoref{cha:scrlayer-scrpage} in \autoref{part:forAuthors} of this
+\iffree{manual}{book}.
+
+
+\LoadCommonFile{options} % \section{Early or Late Selection of Options}
+
+\section{Generic Information}
+\seclabel{generic.information}
+
+The package needs some generic information about the class being used. Class
+authors can help \Package{scrlayer} by providing the appropriate information.
+Otherwise the package will try to determine this information for itself. This
+works, for example, for the standard and the \KOMAScript{} classes. It may
+work with other classes, or it may fail in whole or in part.
+
+This section describes some of the information that class authors can provide.
+Normally, users should not have to worry about it.
+
+\begin{Declaration}
+  \Macro{if@chapter}\ \PName{then code}\ \textMacro{else}\ %
+  \PName{else code}\ \textMacro{fi}%
+\end{Declaration}
+If \Macro{if@chapter} is defined and corresponds to
+\Macro{iftrue}\IndexCmd{iftrue}, \Package{scrlayer} takes the chapter level
+into account when, for example, processing the
+\DescRef{\LabelBase.option.automark} option. If it is defined but is not
+\Macro{iftrue}, \Package{scrlayer} handles only the
+\DescRef{maincls.cmd.part}, \DescRef{maincls.cmd.section},
+\DescRef{maincls.cmd.subsection}, \Macro{sub\dots subsection},
+\DescRef{maincls.cmd.paragraph}, \DescRef{maincls.cmd.subparagraph},
+\Macro{sub\dots subparagraph} sectioning units. If the macro is undefined,
+\Package{scrlayer} searches for \DescRef{maincls.cmd.chapter}. If
+\DescRef{maincls.cmd.chapter} is defined and does not correspond to
+\Macro{relax}, \Package{scrlayer} defines \Macro{if@chapter} to
+\Macro{iftrue}. Otherwise \Macro{if@chapter} becomes
+\Macro{iffalse}\IndexCmd{iffalse}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{if@mainmatter}\ \PName{then code}\ %
+  \textMacro{else}\ \PName{else code}\ \textMacro{fi}%
+\end{Declaration}
+Classes like \Class{book} or \Class{scrbook} provide
+\DescRef{maincls.cmd.frontmatter}\IndexCmd{frontmatter},
+\DescRef{maincls.cmd.mainmatter}\IndexCmd{mainmatter}, and
+\DescRef{maincls.cmd.backmatter}\IndexCmd{backmatter} to switch between the
+front, main, and end parts of a book. Typically, these classes also use
+\Macro{if@mainmatter} internally to decide whether the current text is part of
+the main body of the document or not. Classes like \Class{report} and
+\Class{article} have no \DescRef{maincls.cmd.frontmatter},
+\DescRef{maincls.cmd.mainmatter}, or \DescRef{maincls.cmd.backmatter} and
+therefore also lack \Macro{if@mainmatter}.
+
+It is easier for \Package{scrlayer} to avoid constantly testing for the
+existence of these commands to decide whether to work in the main matter or
+not, and instead to use  \Macro{if@mainmatter}\IndexCmd{iftrue} with classes
+like \Class{report} and \Class{article}. So if \Macro{if@mainmatter} is not
+defined, \Package{scrlayer} defines it as a synonym for \Macro{iftrue}.
+
+Some classes, however, define \DescRef{maincls.cmd.frontmatter},
+\DescRef{maincls.cmd.mainmatter}, or \DescRef{maincls.cmd.backmatter} but not
+\Macro{if@mainmatter}. In this case, \Package{scrlayer} also defines
+\Macro{if@mainmatter} to be \Macro{iftrue} and it extends definition of
+\DescRef{maincls.cmd.frontmatter}, \DescRef{maincls.cmd.mainmatter}, and
+\DescRef{maincls.cmd.backmatter} to set \Macro{if@mainmatter} properly.
+However, if there are other, comparable commands for switching between
+different document parts. \Package{scrlayer} will not recognize them, does not
+test for them, and therefore cannot extend them appropriately. In this case,
+\Package{scrlayer} needs help of the class author to set \Macro{if@mainmatter}
+correctly.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DeclareSectionNumberDepth}\Parameter{level name}%
+                                   \Parameter{level depth}
+\end{Declaration}
+Generally each section level is assigned an integer number indicating its
+depth in the document structure. \LaTeX{} needs this to manage the hierarchy
+of the section levels. But normally these values are known only to the
+particular class that defines the section commands. This class then uses the
+appropriate numbers inside the corresponding commands.
+
+The \Package{scrlayer} package also needs information about the section
+hierarchy. With the help of \Macro{DeclareSectionNumberDepth}, you can map the
+name of a heading level to a corresponding \PName{level depth}. For example,
+for the standard \Class{book} class, the \PName{level name}s would be
+\PValue{part}, \PValue{chapter}, \PValue{section}, \PValue{subsection},
+\PValue{subsubsection}, \PValue{paragraph}, and \PValue{subparagraph}, and the
+corresponding \PName{level depth}s would be -1, 0, 1, 2, 3, 4, and 5.
+
+The \Package{scrlayer} package tries to determine the \PName{level depth}s on
+its own while loading and again during \Macro{begin}\PParameter{document}. But
+if this fails, for example because you use completely different sectioning
+commands, you can define the relationship explicitly with
+\Macro{DeclareSectionNumberDepth}.%
+\EndIndexGroup
+
+
+\section{Declaring Layers}
+\seclabel{layers}
+
+A layer is an abstract model of a page. Unlike a real, physical sheet of
+paper, this page is completely transparent. Typically, multiple layers are
+stacked atop one another and opaque material on one layer hides material on
+the layers below. The stack of layers is then merged to form the physical
+page. The \Package{scrlayer} package provides two such stacks for each page: a
+background stack and a foreground stack. The background stack is printed
+beneath the normal page content, while the foreground stack is printed above
+it. The normal page content is therefore a kind of a dividing layer between
+the two layer stacks.
+
+A layer has several attributes that can be understood as answers to some basic
+questions:
+\iffree{\begin{description}}{%
+    \begingroup
+    \RedeclareSectionCommand[beforeskip=.5\baselineskip plus .25\baselineskip
+    minus .1\baselineskip]{paragraph}%
+    \renewcommand*\item[4][]{\paragraph*{#3{#4}#1}}%
+  }%
+\item[Does the layer belong to the foreground or the background?]%
+  \leavevmode\textnote{foreground or background}\hskip 0pt
+  Background layers are output before the normal content of the page.
+  Therefore they appear behind or beneath the normal content of the page.
+  Foreground layers are then output after the normal content. Therefore they
+  appear on top of the normal content of the page. By default, a layer is both
+  a background layer \emph{and} a foreground layer and therefore is printed
+  twice. Usually it makes sense to limit the layer explicitly to either the
+  foreground or the background.
+\item[What is the position of the layer?]%
+  \leavevmode\textnote{horizontal and vertical position}\hskip 0pt
+  To answer this question, there are attributes to define the layer's 
+  horizontal and vertical position.
+\item[How big is the layer?\textnote{horizontal and vertical size}]%
+  As with the position, there are also attributes to define the width and
+  height of a layer. Thus a layer can be smaller or larger than the paper
+  and it can be placed at different positions on the paper.
+\item[How are the horizontal and vertical positions measured?]%
+  \leavevmode\textnote{alignment}\hskip 0pt
+  This question is answered by the alignment attribute. The horizontal 
+  position can be measured from the left edge of the paper to the left edge of
+  the layer, to the centre of the layer, to the right edge of the layer. 
+  Similarly, the vertical position can be measured from the top edge of the
+  paper to the top edge of the layer, the centre of the layer, or the bottom
+  edge of the layer.
+\item[Is the layer intended for text or picture output?]%
+  \leavevmode\textnote{text or	picture}\hskip 0pt
+  This question is closely related to the position. For example, users often
+  expect the origin for a picture to be at the lower left corner of the layer.
+  But this would not be suitable for text output. Therefore the origin of a 
+  text layer is the height of a standard text line below the top left corner 
+  of the layer. Picture layers, on the other hand, create a
+  \Environment{picture}\IndexEnv{picture} environment in which additional
+  positioning commands are available.
+\item[Should the layer be printed on left or right pages?]%
+  \leavevmode\textnote{left or right page}\hskip 0pt
+  By default a layer will be printed on all pages. Note that \LaTeX{} treats
+  even pages as left-side pages and odd pages as right-side pages, but in
+  one-sided printing, only right-hand pages exist regardless of the page
+  number.
+\item[Should the layer be printed in one-sided or two-sided mode?]%
+  \leavevmode\textnote{one-sided or two-sided}\hskip 0pt
+  By default a layer will be printed in both one-sided and two-sided
+  printing. Nonetheless, a layer that is restricted to even pages will never
+  be printed in one-sided printing and therefore is not a one-sided layer.
+\item[Should the layer be printed on float pages or normal pages?]%
+  \leavevmode\textnote{float page or normal page}\hskip 0pt
+  \LaTeX{} produces float pages for objects from environments like tables or 
+  figures if they are allowed to appear on a page without normal page contents
+  (see option \PValue{p} for \Environment{figure} or \Environment{table}). In 
+  effect, the entire page is allowed to float within the document. Normal
+  pages in this sense are all pages that are not float pages. Normal pages can
+  also contain floats at the top, in the middle, or at the bottom of the page.
+  Very large floats can give the impression of being page floats, while in 
+  reality they are floating environments placed at the top of a normal page.
+\item[What are the contents of the layer?]%
+  \leavevmode\textnote{contents}\hskip 0pt
+  The corresponding attribute simply contains what should be printed whenever
+  the layer is output.
+\iffree{\end{description}}{%
+  \endgroup\par\bigskip\noindent\ignorespaces
+}%
+These eight questions immediately give rise to a number of attributes. Later
+\iffree{in this guide}, we will describe additional attributes. However, they
+are only defined for convenience and can be expressed by a combination of
+these primary attributes.
+
+
+\begin{Declaration}
+  \Macro{DeclareLayer}\OParameter{option list}\Parameter{layer name}%
+  \Macro{DeclareNewLayer}\OParameter{option list}\Parameter{layer name}%
+  \Macro{ProvideLayer}\OParameter{option list}\Parameter{layer name}%
+  \Macro{RedeclareLayer}\OParameter{option list}\Parameter{layer name}%
+  \Macro{ModifyLayer}\OParameter{option list}\Parameter{layer name}
+\end{Declaration}
+These commands can be used to define layers. The \PName{layer name} must be
+fully expandable and should expand to ASCII letters only. Some additional
+characters are accepted, but their use is only recommended for advanced users.
+
+The \Macro{DeclareLayer} command does not care whether or not a layer with the
+given \PName{layer name} already exists. It will under all circumstances
+define the layer with the attributes specified in the \PName{option list}. An
+\PName{option} can be either a key or a key followed by an equal sign and
+a value. Multiple options are separated by commas. To use a comma or a white
+space within the value of an option, you must put the value inside curly
+brackets. See \autoref{tab:scrlayer.layerkeys} for more information on keys,
+values, and the corresponding attributes.
+
+Unlike \Macro{DeclareLayer}, \Macro{DeclareNewLayer} reports an error if a 
+layer with the same \PName{layer name} already exists. This prevents the user
+from accidentally using the same \PName{layer name} more than once. This 
+is especially useful when classes or packages also define layers internally.
+
+In contrast, \Macro{ProvideLayer} only defines a layer if there is no layer 
+with the same name already. If the name is in use for another layer, the new 
+definition is ignored. Therefore this command has the meaning, \emph{define
+	the layer only if it does not already exist.}
+
+If you want to redefine an existing layer, you can use \Macro{RedeclareLayer} 
+or \Macro{ModifyLayer}. With \Macro{RedeclareLayer}, the layer is first reset
+to the default settings and then completely redefined via the specified 
+options list. In contrast, \Macro{ModifyLayer} does not reset the layer.
+Only those attributes which are explicitly set in the \PName{option list} will
+be changed. Applying either command to a previously undefined \PName{layer 
+	name} results in an error.
+
+\begin{desclist}
+  \desccaption{%
+    Options for defining page layers and the meaning of the
+    corresponding layer attribute\label{tab:scrlayer.layerkeys}%
+  }{%
+    Options for defining layers (\emph{continued})%
+  }%
+  \entry{%
+    \ChangedAt{v3.16}{\Package{scrlayer}}%
+    \OptionVName{addcontents}{Code}}{%
+    The specified \PName{code} will be appended to the current value of the
+    \Option{contents} attribute, so the new content will appear at the end of
+    the existing content. For more information about the handling of 
+    \PName{code} see the \Option{contents} option.%
+  }%
+  \entry{%
+    \ChangedAt{v3.16}{\Package{scrlayer}}%
+    \OptionVName{addheight}{additional height}}{%
+    The current value of the \Option{height} attribute will be increased by 
+    the value of this option. You can use the same kind of values as for
+    \Option{height}.%
+  }%
+  \entry{%
+    \ChangedAt{v3.16}{\Package{scrlayer}}%
+    \OptionVName{addhoffset}{additional horizontal offset}}{%
+    The current value of the \Option{hoffset} attribute will be increased by 
+    the value of this option. You can use the same kind of values as for
+    \Option{hoffset}.%
+  }%
+  \entry{%
+    \ChangedAt{v3.16}{\Package{scrlayer}}%
+    \OptionVName{addvoffset}{additional vertical offset}}{%
+    The current value of the \Option{voffset} attribute will be increased by 
+    the value of this option. You can use the same kind of values as for
+    \Option{voffset}.%
+  }%
+  \entry{%
+    \ChangedAt{v3.16}{\Package{scrlayer}}%
+    \OptionVName{addwidth}{additional width}}{%
+    The current value of the \Option{width} attribute will be increased by 
+    the value of this option. You can use the same kind of values as for
+    \Option{width}.%
+  }%
+  \nentry{\KOption{align}{\PName{alignment characters}}}{%
+    The \PName{alignment characters} define the desired alignment of the
+    layer. Each \PName{alignment character} determines how the \PName{length}
+    of either the \Option{hoffset} or the \Option{voffset} option is 
+    interpreted. Multiple \PName{alignment character}s can be used together 
+    (without spaces or commas) and are evaluated in the order they occur. 
+    Macros are not permitted in the value of the option. Valid 
+    \PName{alignment character}s are:
+    \begin{description}
+    \item[\PValue{b} --] align the layer at its bottom edge; the value of
+      \Option{voffset} is the distance from the top edge of the paper to the
+      bottom of the layer.
+    \item[\PValue{c} --] align the layer at its centre; the values of
+      \Option{voffset} and \Option{hoffset} are interpreted as the distance
+      from the top left corner of the paper to the centre of the layer.
+    \item[\PValue{l} --] align the layer at its left edge; the value of
+      \Option{hoffset} is interpreted as the distance from the left edge of
+      the paper to the left edge of the layer.
+    \item[\PValue{r} --] align the layer at its right edge; the value of
+      \Option{hoffset} is interpreted as the distance from the left edge of
+      the paper to the right edge of the layer.
+    \item[\PValue{t} --] align the layer at its top edge; the value of
+      \Option{voffset} is interpreted as the distance from the top edge of the
+      paper to the top edge of the layer.
+    \end{description}%
+  }%
+  \entry{\KOption{area}{%
+      \Parameter{hoffset}\Parameter{voffset}%
+      \Parameter{width}\Parameter{height}}}{%
+    This composite option sets the primary attributes
+    \OptionValue{hoffset}{horizontal offset}, \OptionValue{voffset}{vertical
+      offset}, \OptionValue{width}{width}, \OptionValue{height}{height}.%
+  }%
+  \entry{\ChangedAt{v3.18}{\Package{scrlayer}}%
+    \Option{backandforeground}}{%
+    This option removes the restriction of a layer to the foreground or the
+    background. In general, this option makes little sense, but it is provided
+    for the sake of a complete user interface. This option does not expect or
+    allow a value.%
+  }%
+  \entry{\Option{background}}{%
+    This option displays the layer in the background only. The default is to
+    display layers in both the background and the foreground. This option does
+    not expect or allow a value.%
+  }%
+  \entry{\Option{bottommargin}}{%
+    This composite option sets the primary attributes \Option{hoffset},
+    \Option{voffset}, \Option{width}, \Option{height}, and \Option{align} so
+    that the layer spans the paper horizontally from the left edge to the
+    right and vertically from immediately beneath the footer to the bottom
+    edge of the paper.%
+  }%
+  \entry{\KOption{clone}{\PName{layer name}}}{%
+    This composite option sets all primary attributes of the layer to the same
+    values as the primary attributes of the layer with the given \PName{layer
+      name}. See the notes on the \PName{layer name} at the beginning of the
+    explanation for \Macro{DeclareLayer}. The layer to be cloned must also
+    already exist.%
+  }%
+  \entry{\KOption{contents}{\PName{code}}}{%
+    The specified \PName{code} will be expanded whenever the layer is printed.
+    This \PName{code} defines what you see for the layer. No tests are made to
+    see if the code is valid. Errors in the \PName{code} can therefore lead to
+    multiple error messages on each page that prints the layer.%
+  }%
+  \entry{\Option{evenpage}}{%
+    This option causes the layer to appear on even pages only, unlike the
+    default, where a layer will appear on both even and odd pages. Since even
+    pages only appear in two-sided printing, this option implies
+    \Option{twoside}. This option does not expect or allow a value.%
+  }%
+  \entry{\ChangedAt{v3.18}{\Package{scrlayer}}%
+    \Option{everypage}}{%
+    This option is a combination of \Option{oddorevenpage} and
+    \Option{floatornonfloatpage}. This option does not expect or allow a
+    value.%
+  }%
+  \entry{\Option{everyside}}{%
+    This option removes any restriction of the layer to one-sided or two-sided
+    printing. This is the default setting. This option does not expect or
+    allow a value.%
+  }%
+  \entry{\ChangedAt{v3.18}{\Package{scrlayer}}%
+    \Option{floatornonfloatpage}}{%
+    This option removes any restriction of the layer to float or non-float
+    pages and restores the default setting. This option does not expect or
+    allow a value.%
+  }%
+  \entry{\Option{floatpage}}{%
+    This option restricts the layer to appearing on float pages only. The
+    default setting is for layers to appear on both float and non-float pages.
+    This option does not expect or allow a value.%
+  }%
+  \entry{\Option{foot}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the page footer over the width of the text area. This option does
+    not expect or allow a value.%
+  }%
+  \entry{\Option{footskip}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the vertical distance between the text area and the page footer over
+    the width of the text area. Note, however, that although the height of
+    this area depends on \Length{footskip}, it is not the same. This option
+    does not expect or allow a value.%
+  }%
+  \entry{\Option{foreground}}{%
+    This option displays the layer in the foreground only. The default is to
+    display layers in both the background and the foreground. The option does
+    not expect or allow a value.%
+  }%
+  \entry{\Option{head}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the vertical area of the page header for the width of the text area.
+    The height corresponds to the length \Length{headheight}. This option does
+    not expect or allow a value.%
+  }%
+  \entry{\Option{headsep}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the vertical distance between the page header and the text area for
+    the width of the text area. The height corresponds to the length
+    \Length{headsep}. This option does not expect or allow a value.%
+  }%
+  \entry{\KOption{height}{\PName{length}}}{%
+    Sets the height of the layer. Note that the \PName{length} can be a
+    \LaTeX{} length declared with \Macro{newlength}, a \TeX{} length declared
+    with \Macro{newdimen} or \Macro{newskip}, a length value like 10\,pt, or a
+    dimensional expression using +, -, /, *, (, and ). For more information
+    about valid dimensional expressions see \cite[section~3.5]{manual:eTeX}.%
+  }%
+  \entry{\KOption{hoffset}{\PName{length}}}{%
+    Sets the distance of the layer from the left edge of the paper. How the
+    distance is measured depends on the \Option{align} option. See the
+    \Option{height} option for more information about valid expressions for
+    \PName{length}.%
+  }%
+  \entry{\Option{innermargin}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the inner margin, from the edge of the page to the edge of the text
+    area and from the top to the bottom of the page. In one-sided printing,
+    the inner margin corresponds to the left margin. This option does not
+    expect or allow a value.%
+  }%
+  \entry{\Option{leftmargin}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the left margin, from the left edge of the paper to the left edge of
+    the text area and from the top of the paper to the bottom. This option
+    does not expect or allow a value.%
+  }%
+  \entry{\ChangedAt{v3.19}{\Package{scrlayer}}%
+    \OptionVName{mode}{mode}}{%
+    This primary option defines the \PName{mode} in which the layer's content
+    is output. The default is \OptionValue{mode}{text}. The baseline of the
+    first text line is placed the height of one standard text line below the
+    top edge of the layer, so the text is usually neatly aligned with the top
+    of the layer. In \PValue{picture} \PName{mode}, on the other hand, the
+    layer spans a \Environment{picture} environment with the origin at the
+    bottom left corner of the layer. The \PValue{raw} \PName{mode} is also
+    also defined. By default it corresponds to \PValue{text} \PName{mode}.
+    Changing\textnote{Attention!} the \PName{mode} of a layer usually results
+    the contents shifting. Furthermore, the \PValue{picture} \PName{mode}
+    provides additional commands that result in errors with another
+    \PName{mode}. Therefore it usually makes no sense to change the
+    \PName{mode} of a layer after its initial declaration!%
+  }%
+  \entry{\Option{nonfloatpage}}{%
+    This option restricts the layer to pages that are not float pages. The
+    default is for the layer to appear on both float and non-float pages. This
+    option does not expect or allow a value.%
+  }%
+  \entry{\ChangedAt{v3.18}{\Package{scrlayer}}%
+    \Option{oddorevenpage}}{%
+    This option removes any restriction of the layer to odd or even pages,
+    restoring the default behaviour that the layer should appear on both odd
+    and even pages. The option does not expect or allow a value.%
+  }%
+  \entry{\Option{oddpage}}{%
+    This option restricts the layer to odd pages only. The default is for
+    layers to appear on both odd pages and on even pages. Note that in
+    one-sided printing, all pages are odd, regardless of the page number. This
+    option does not expect or allow a value.%
+  }%
+  \entry{\Option{oneside}}{%
+    This option restricts the layer to one-sided printing only. The default is
+    for layers to appear in both one-sided and two-sided printing. This option
+    does not expect or allow a value.%
+  }%
+  \entry{\Option{outermargin}}{%
+    The composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the outer margin of the page, from the top to the bottom of the
+    paper. The outer margin corresponds to the right margin in one-sided
+    printing. This option does not expect or allow a value.%
+  }%
+  \entry{\Option{page}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the the whole paper. This option does not expect or allow a value.%
+  }%
+  \entry{\ChangedAt{v3.16}{\Package{scrlayer}}%
+    \OptionVName{pretocontents}{code}}{%
+    The value of \PName{code} is prefixed the current value of the
+    \Option{contents} attribute, so the new content will appear before the
+    existing content. For more information about the handling of \PName{code},
+    see the \Option{contents} option.%
+  }%
+  \entry{\Option{rightmargin}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the right margin, from the right edge of the text area to the right
+    edge of the paper and from the top to the bottom edge of the paper. This
+    option does not expect or allow a value.%
+  }%
+  \entry{\Option{textarea}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the entire text area. This option does not expect or allow a value.%
+  }%
+  \entry{\Option{topmargin}}{%
+    This composite option sets \Option{hoffset}, \Option{voffset},
+    \Option{width}, \Option{height}, and \Option{align} so that the layer
+    spans the vertical distance between the top edge of the paper to the
+    header for the entire width of the paper. This option does not expect or
+    allow a value.%
+  }%
+  \entry{\Option{twoside}}{%
+    This option restricts the layer to two-sided printing. The default is for
+    layers to appear in both one-sided and two-sided printing. This option
+    does not expect or allow a value.%
+  }%
+  \entry{\ChangedAt{v3.18}{\Package{scrlayer}}%
+    \Option{unrestricted}}{%
+    This option removes all output restrictions. It is a combination of
+    \Option{backandforeground}, \Option{everyside}, and
+    \Option{floatornonfloatpage}. This option does not expect or allow a
+    value.%
+  }%
+  \entry{\KOption{voffset}{\PName{length}}}{%
+    Sets the distance of the layer from the top of the paper. How the distance
+    is measured depends on the \Option{align} option. See the \Option{height}
+    option for more information about valid expressions for \PName{length}.%
+  }%
+  \entry{\KOption{width}{\PName{length}}}{%
+    Sets the width of the layer. See the \Option{height} option for more
+    information about valid expressions for \PName{length}.%
+  }%
+\end{desclist}
+%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{ModifyLayers}\OParameter{option list}\Parameter{layer list}
+\end{Declaration}
+This\ChangedAt{v3.26}{\Package{scrlayer}} command executes
+\DescRef{\LabelBase.cmd.ModifyLayer} with the given \PName{option list} for
+all layers of the comma-separated layer list. Therefore the option can be used
+to change attributes of several layers simultaneously.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{layerhalign}%
+  \Macro{layervalign}%
+  \Macro{layerxoffset}%
+  \Macro{layeryoffset}%
+  \Macro{layerwidth}%
+  \Macro{layerheight}%
+\end{Declaration}
+These commands are only valid in the \PName{code} specified with
+\Option{contents}, \Option{addcontents}, or \Option{pretocontents}. In this
+case, they contain the layer's actual alignment, position, and dimensions that
+will be used for the output. However, this is not necessarily the actual
+dimensions of the layer's contents, e.\,g., if the contents are oversized or
+do not fill the layer completely.
+
+The primary layer attribute \PValue{align} is mapped to
+\Macro{layerhalign}\ChangedAt{v3.19}{\Package{scrlayer}} and
+\Macro{layervalign}. The horizontal values \PValue{l} and \PValue{r} are
+copied to \Macro{layerhalign}. The vertical values \PValue{t} and \PValue{b}
+are copied to \Macro{layervalign}. The value \PValue{c}, which is both 
+horizontal and vertical, is copied to both commands. If there are several
+conflicting values for \PValue{align}, only the last one is copied. Thus the
+resulting \Macro{layerhalign} is either \PValue{l}, \PValue{c}, or \PValue{r},
+and the resulting \Macro{layervalign} is either \PValue{t}, \PValue{c}, or
+\PValue{b}.
+
+Redefining\textnote{Attention!} these instructions to change the values stored
+in them is not permitted, as it would lead to unpredictable results.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{LenToUnit}\Parameter{length}
+\end{Declaration}
+This\ChangedAt{v3.19}{\Package{scrlayer}} command originally came from
+\Package{eso-pic}\IndexPackage{eso-pic}~2.0f. It converts lengths into
+multiples of \Length{unit length} and can therefore be used everywhere \LaTeX{}
+expects \Environment{picture} coordinates or \Length{unit length}-dependent
+values. For more information, see \cite{package:eso-pic} and the descriptions
+of \Macro{putUR}, \Macro{putLL}, and \Macro{putLR} below. If the command is 
+already defined, e.\,g., by loading \Package{eso-pic} before
+\Package{scrlayer}, the package does not define it again.%
+\iffalse% Umbruchkorrekturtext
+\par
+It should be noted at this point that using package
+\Package{picture}\IndexPackage{picture}\important{\Package{picture}} (see
+\cite{package:picture}) supersedes \Macro{LenToUnit} more or less. The package
+extends environment \Environment{picture} and the picture commands so that you
+can use \LaTeX{} lengths directly for coordinates.%
+\fi
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{putUL}\Parameter{content}%
+  \Macro{putUR}\Parameter{content}%
+  \Macro{putLL}\Parameter{content}%
+  \Macro{putLR}\Parameter{content}%
+  \Macro{putC}\Parameter{content}
+\end{Declaration}
+You\ChangedAt{v3.19}{\Package{scrlayer}} can use these commands inside the
+value of \PValue{contents} layer option if the layer is declared with
+\OptionValue{mode}{picture}. In this case, \Macro{putUL} places the
+\PName{content} relative to the upper left corner of the layer and therefore
+is the same as
+\lstinline[breaklines=false]|\put(0,\LenToUnit{\layerheight})|. \Macro{putUR}
+places the \PName{content} relative to the upper right corner of the layer and
+therefore is the same as
+\lstinline[breaklines=false]
+|\put(\LenToUnit{\layerwidth},\LenToUnit{\layerheight})|.
+\Macro{putLL} places the \PName{content} relative to the lower left corner of
+the layer and therefore is the same as
+\lstinline[breaklines=false]|\put(0,0)|. \Macro{putLR} places the
+\PName{content} relative to the lower right corner and therefore is the same
+as \lstinline[breaklines=false]|\put(\LenToUnit{\layerwidth},0)|. Last but
+not least, \Macro{putC} places the \PName{content} relative to the centre of
+the layer.%
+\begin{Example}
+  You want to determine exactly how accurately
+  \OptionValueRef{typearea}{DIV}{classic} sets the height of the text area to
+  the width of the page size. You declare a layer that both borders the text
+  area and places a circle with a diameter of the paper width in the centre of
+  the text area:
+\begin{lstcode}
+  \documentclass[DIV=classic]{scrartcl}
+  \usepackage{pict2e}
+  \usepackage{scrlayer}
+  \DeclareNewLayer[%
+    textarea,background,mode=picture,
+    contents={%
+      \putLL{\line(1,0){\LenToUnit{\layerwidth}}}%
+      \putLR{\line(0,1){\LenToUnit{\layerheight}}}%
+      \putUR{\line(-1,0){\LenToUnit{\layerwidth}}}%
+      \putUL{\line(0,-1){\LenToUnit{\layerheight}}}%
+      \putC{\circle{\LenToUnit{\paperwidth}}}%
+    }
+  ]{showtextarea}
+  \DeclareNewPageStyleByLayers{test}{showtextarea}
+  \pagestyle{test}
+  \begin{document}
+  \null
+  \end{document}
+\end{lstcode}
+  You will notice that \Package{typearea}'s mapping to an integer \PName{DIV}
+  value is very accurate in this example.
+\end{Example}
+Incidentally, you will find more information about late medieval book-page
+canon sketched in the example in \autoref{sec:typearea.circleConstruction},
+\autopageref{sec:typearea.circleConstruction}.
+
+The \Macro{DeclareNewPageStyleByLayers}\IndexCmd{DeclareNewPageStyleByLayers}
+command just used in the example defines a new page style using the newly
+declared layer. It will be explained in \autoref{sec:scrlayer.pagestyles},
+\DescPageRef{scrlayer.cmd.DeclareNewPageStyleByLayers}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{GetLayerContents}\Parameter{layer~name}
+\end{Declaration}
+This\ChangedAt{v3.16}{\Package{scrlayer}} command returns the whole contents
+of a layer. It is important to note\textnote{Attention!} that using this
+command inside the \PName{code} of the layer attributes \Option{contents},
+\Option{addcontents}, or \Option{pretocontents} can result in
+infinite recursion when referencing the contents of the current layer. You
+are responsible for avoiding such situations!%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{IfLayerExists}\Parameter{layer~name}
+                       \Parameter{then-code}\Parameter{else-code}
+\end{Declaration}
+This command can be used to execute code depending on whether or not a layer
+with the specified \PName{layer name} exists. If the layer exists, the
+\PName{then-code} will be executed; otherwise, the \PName{else-code} will be
+executed. Note that the command cannot really test whether a layer exists.
+Instead it uses a heuristic which will never yield a false negative but which,
+in extreme cases, could yield a false positive.
+\iffalse% Umbruchvarianten
+Nevertheless, if the test yields a false positive, something has gone wrong.
+For example, this could indicate an incompatible package or that the user is
+doing something he or she should not.%
+\else
+False positives indicate a problem, such as the use of an incompatible package
+or a bad choice of internal macro names by the user.
+\fi
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DestroyLayer}\Parameter{layer~name}
+\end{Declaration}
+If a layer with the given \PName{layer name} exists, all macros belonging to
+it will be set to \Macro{relax}. In page styles already defined with
+\Package{scrlayer}, such destroyed layers are ignored. Destroyed layers can be
+redefined using \DescRef{\LabelBase.cmd.DeclareNewLayer} or
+\DescRef{\LabelBase.cmd.ProvideLayer}, but they can no longer be changed using
+\DescRef{\LabelBase.cmd.RedeclareLayer} or
+\DescRef{\LabelBase.cmd.ModifyLayer}.%
+\iffalse % See the note at the beginning of the end user interface section
+\par
+The command is intended to be used inside
+\DescRef{\LabelBase.cmd.scrlayerOnAutoRemoveInterface} (see
+\autoref{sec:scrlayer.enduserinterfaces},
+\DescPageRef{scrlayer.cmd.scrlayerOnAutoRemoveInterface})
+to remove layers defined using removable macros of an interface along with
+that interface.%
+\fi
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{draft}{simple switch}
+  \Macro{layercontentsmeasure}%
+\end{Declaration}
+The \KOMAScript{} option \Option{draft} can be used to active the draft mode
+of \Package{scrlayer}. The draft mode uses the \Macro{layercontentsmeasure}
+command to print a ruler at each layer edge, of which the top and left one is
+labelled in centimetres and the right and bottom one in inches. The rulers are
+drawn behind the content of each layer. This command can also be used as
+exclusive content of a layer.%
+\EndIndexGroup
+
+
+\section{Declaring and Managing Page Styles}
+\seclabel{pagestyles}
+
+\BeginIndexGroup
+\BeginIndex{}{page>style}%
+We now understand how to define and manage layers, but so far we do not know 
+how they are used. The possibly surprising answer is, with page styles. In
+\LaTeX{}, page styles usually define headers and footers of the page.
+
+The header and footer of odd or right-hand pages\textnote{even or odd page}
+are printed on pages with odd page numbers in two-sided printing or on all
+pages in one-sided printing. This is directly comparable to the layer 
+options\important[i]{\Option{evenpage}\\\Option{oddpage}} \Option{oddpage} and
+\Option{evenpage}.
+
+The page header\textnote{header or footer} is output before the main page
+contents. The page footer is output after the main page contents. This
+corresponds directly to the layer
+options\important[i]{\Option{background}\\\Option{foreground}}
+\Option{background} and \Option{foreground}.
+
+Therefore it makes sense to define page styles as lists of layers. But instead
+of just the four options mentioned above, you can use all the properties
+explained in \autoref{sec:scrlayer.layers}, \autoref{tab:scrlayer.layerkeys}, 
+on \autopageref{tab:scrlayer.layerkeys}.
+
+As a result of these considerations, layer page
+styles\textnote{layer page style}\Index{page style>layer}%
+\Index{layer>page style}\Index{page>style} are one type of page style that 
+\Package{scrlayer} provides. A layer page style consists of layers as well as
+several hooks. The layers have already been described in
+\autoref{sec:scrlayer.layers}. The hooks\Index[indexmain]{hooks}%
+\textnote{hooks} are points in the expansion or execution of page styles to
+which you can add code. Experienced users already know this concept from
+commands like \Macro{AtBeginDocument} (see \cite{latex:usrguide}) or
+\DescRef{scrlfile.cmd.BeforeClosingMainAux} (see
+\DescPageRef{scrlfile.cmd.BeforeClosingMainAux}).
+
+Page-style aliases are another type of page style which \Package{scrlayer}
+provides. A page-style alias is actually a different page style. In other
+words, the name of a page-style alias is an alternative name for another
+page-style alias or for a page style. As a result, manipulating a page-style
+alias results in manipulating the original page style. If the original page
+style is itself an alias, its manipulation again results in the manipulation
+of the alias's original page style, and so on until a real page style is
+finally changed. The term \emph{real page style}\textnote{real page style} is
+used to distinguish it from a page-style alias. All page styles that are not
+page-style aliases are real page styles. Aliases can be defined for all page
+styles, not just those defined with \Package{scrlayer}.
+
+\begin{Declaration}
+  \Macro{currentpagestyle}
+  \Macro{toplevelpagestyle}
+\end{Declaration}
+The \Package{scrlayer} package patches the \DescRef{maincls.cmd.pagestyle}
+command so that it sets \Macro{currentpagestyle} to the currently active page
+style. Note that \DescRef{maincls.cmd.thispagestyle} does not change
+\Macro{currentpagestyle}. If you use \DescRef{maincls.cmd.thispagestyle},
+however, \Macro{currentpagestyle} can change within the \LaTeX{} output
+routine. However, this change will only occur if \Macro{currentpagestyle} has
+been actively protected from expansion until the execution of the output
+routine.
+
+Note that the layer page styles described later in this section do not rely on
+this \DescRef{maincls.cmd.pagestyle} extension because they redefine
+\Macro{currentpagestyle} themselves. This patch was made so that other,
+non-\Package{scrlayer} page styles can use \Macro{currentpagestyle}.
+Additionally, \Macro{currentpagestyle} is empty after loading
+\Package{scrlayer} and before using \DescRef{maincls.cmd.pagestyle} for the
+first time. Therefore, when defining an end-user interface, you may find it
+useful to set the current page style to a default with an implicit
+\DescRef{maincls.cmd.pagestyle} statement.
+
+If \DescRef{maincls.cmd.pagestyle} activates an alias page style,
+\Macro{currentpagestyle} shows not the alternative name but the name of
+the real page style. You\ChangedAt{v3.16}{\Package{scrlayer}} can get the
+alternative name using \Macro{toplevelpagestyle}. However, it is not
+recommended to define page styles that produce different results depending on
+\Macro{toplevelpagestyle}, e.\,g., using \DescRef{scrbase.cmd.Ifstr}. If you
+were to activate such a page style using \DescRef{maincls.cmd.thispagestyle}
+you could get the wrong result.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{BeforeSelectAnyPageStyle}\Parameter{code}%
+  \Macro{AfterSelectAnyPageStyle}\Parameter{code}%
+\end{Declaration}
+The \Macro{BeforeSelectAnyPageStyle} command adds \PName{code} to the hook%
+\textnote{hook} that will be executed inside \DescRef{maincls.cmd.pagestyle},
+just before the page style is selected. Within the \PName{code}, you can use
+\texttt{\#1} as a place-holder for the argument of
+\DescRef{maincls.cmd.pagestyle}.
+
+The \Macro{AfterSelectAnyPageStyle} command works similarly, but the
+\PName{code} will be executed just after the page style has been selected and
+after \DescRef{\LabelBase.cmd.currentpagestyle} has been set to the name of
+the real page style.
+
+Note\textnote{Attention!} that the \PName{code} of both commands is executed
+only if a page style is selected with \DescRef{maincls.cmd.pagestyle} and not
+if it is chosen in a different way, e.\,g., using
+\DescRef{maincls.cmd.thispagestyle}. Note also that you cannot remove
+\PName{code} from the hook after adding it. But the \PName{code} will be added
+locally, so you can use a group to limit the scope of the \PName{code}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DeclarePageStyleAlias}\Parameter{page~style~alias~name}
+                               \Parameter{original~page~style~name}
+  \Macro{DeclareNewPageStyleAlias}\Parameter{page~style~alias~name}
+                                  \Parameter{original~page~style~name}
+  \Macro{ProvidePageStyleAlias}\Parameter{page~style~alias~name}
+                               \Parameter{original~page~style~name}
+  \Macro{RedeclarePageStyleAlias}\Parameter{page~style~alias~name}
+                                 \Parameter{original page style name}
+\end{Declaration}
+\BeginIndex{}{page style>alias}%
+\BeginIndex{}{alias>page style}%
+These commands can be used to define a page style with name \PName{page style
+  alias name} that is simply an alias for an existing page style with the
+name \PName{original page style name}. If there is already a page style
+\PName{page style alias name}, using \Macro{DeclarePageStyleAlias} or
+\Macro{RedeclarePageStyleAlias} will destroy the alias before recreating it.
+
+\Macro{DeclareNewPageStyleAlias} will throw an error message if a page style
+\PName{page style alias name} has already been defined. It does not matter if
+the previously defined page style is a layer-page style, a page style alias,
+or another page style.
+
+\Macro{ProvidePageStyleAlias} will define the alias only if the
+\PName{page style alias name} page style has not been defined before. If the
+\PName{page style alias name} page style already exists, nothing will be done.
+
+\Macro{RedeclarePageStyleAlias} expects an existing
+\PName{page style alias name} page style. It will destroy that page style and
+afterwards define the alias. If the \PName{page style alias name} page style
+does not exist, you will get an error.%
+\iffree{\csname @tempswafalse\endcsname}{\csname @tempswatrue\endcsname}%
+\csname if@tempswa\endcsname% Umbruchkorrekturtext
+  \begin{Example}
+    Suppose you write a class and use the \PageStyle{chapter} page style for the
+    first page of each chapter. By default, this page style should match the
+    \PageStyle{plain} page style. Therefore, you can use the \Package{scrlayer}
+    package and use
+\begin{lstcode}
+  \DeclareNewPageStyleAlias{chapter}{plain}
+\end{lstcode}
+    to define the \PageStyle{chapter} page style as an alias for the
+    \PageStyle{plain} page style. If, on the other hand, you later decide that
+    the \PageStyle{chapter} plage style should correspond to the
+    \PageStyle{empty} page style, you can achieve this with:
+\begin{lstcode}
+  \RedeclarePageStyleAlias{chapter}{empty}
+\end{lstcode}%
+  \end{Example}%
+\fi
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DestroyPageStyleAlias}\Parameter{page~style~name}%
+\end{Declaration}
+\BeginIndex{}{page style>alias}%
+\BeginIndex{}{alias>page style}%
+This command renders the page style named \PName{page style name} undefined
+for \LaTeX{} if it is an alias for another page style. Afterwards, the page
+style can be newly defined with
+\DescRef{\LabelBase.cmd.DeclareNewPageStyleAlias} or
+\DescRef{\LabelBase.cmd.ProvidePageStyleAlias}.%
+\iffalse % See the note at the beginning of the end user interface section
+\par
+This command is intended to be used inside the argument code of
+\DescRef{\LabelBase.cmd.scrlayerOnAutoRemoveInterface} to remove page styles
+that have been declared as part of an end-user interface when removing this
+interface automatically.%
+\fi%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{GetRealPageStyle}\Parameter{page~style~name}%
+\end{Declaration}
+\BeginIndex{}{page style>alias}%
+\BeginIndex{}{alias>page style}%
+This command will result in the (recursive) real page name of the page style
+if \PName{page style name} is an alias of another page style. In all other
+cases, even if there's no alias and no page style named \PName{page style
+  name}, the result is simply \PName{page style name}. The command is fully
+expandable and may be used, e.g., in the second argument of \Macro{edef}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DeclarePageStyleByLayers}\OParameter{option list}
+                                  \Parameter{page style name}
+                                  \Parameter{layer list}
+  \Macro{DeclareNewPageStyleByLayers}\OParameter{option list}
+                                     \Parameter{page style name}
+                                     \Parameter{layer list}
+  \Macro{ProvidePageStyleByLayers}\OParameter{option list}
+                                  \Parameter{page style name}
+                                  \Parameter{layer list}
+  \Macro{RedeclarePageStyleByLayers}\OParameter{option list}
+                                    \Parameter{page style name}
+                                    \Parameter{layer list}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+These commands declare a page style named \PName{page style name}. The page
+style will consist of the layers given in \PName{layer list}, a comma
+separated list of layer names. Note\textnote{Attention!} that the \PName{page
+  style name} and the layer names in the \PName{layer list} must be fully
+expandable and should expand to letters. Several other characters are also
+accepted, but their use is recommended only for experienced users.
+
+The \PName{option list} is a comma-separated list of options in the form
+\texttt{\PName{key}=\PName{value}}. These options may be used to set
+additional features. Currently they are used to set the code that should be
+expanded or executed at several hooks\Index{hooks}. See the introduction to
+this section for more general information about hooks. See
+\autoref{tab:scrlayer.pagestyle.hooks} for detailed information on specific
+hooks.
+
+\begin{desclist}
+  \desccaption{%
+    Hook options for page styles (in order of
+    execution)\label{tab:scrlayer.pagestyle.hooks}%
+  }{%
+    Hook options for page styles (\emph{continued})%
+  }%
+  \entry{\OptionVName{onselect}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the page
+    style is selected, for example with \DescRef{maincls.cmd.pagestyle}. Note
+    that \DescRef{maincls.cmd.thispagestyle} itself does not directly select a
+    page style. In this case, the page style is only activated within \LaTeX's
+    output routine.%
+  }%
+  \entry{\OptionVName{oninit}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's layers is initialised. Note that this happens twice
+    for each page: once for background layers and once for foreground layers.%
+  }%
+  \entry{\OptionVName{ononeside}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's layers in one-sided printing is initialised. Note that
+    this happens twice for each page: once for background layers and once for
+    foreground layers.%
+  }%
+  \entry{\OptionVName{ontwoside}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's layers in two-sided printing is initialised. Note that
+    this happens twice for each page: once for background layers and once for
+    foreground layers.%
+  }%
+  \entry{\OptionVName{onoddpage}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's layers on an odd page is initialised. Note that this
+    happens twice for each page: once for background layers and once for
+    foreground layers. Note also that in one-sided printing all pages are odd
+    pages, not just those with odd page numbers.%
+  }%
+  \entry{\OptionVName{onevenpage}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's layers on an even page is initialised. Note that this
+    happens twice for each page: once for background layers and once for
+    foreground layers. Note also that in one-sided printing there are no even
+    pages. Instead, all pages are treated as odd pages, not just those with
+    odd page numbers.%
+  }%
+  \entry{\OptionVName{onfloatpage}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's layers on a float page is initialised. Note that this
+    happens twice for each page: once for background layers and once for
+    foreground layers. Note also that float pages are only those pages with
+    one or more p-placed floating environments.%
+  }%
+  \entry{\OptionVName{onnonfloatpage}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's layers on a non-float page is initialised. Note that
+    this happens twice for each page: once for background layers and once for
+    foreground layers. Note also that float pages are only the pages on which
+    one or more p-placed floating environments are output. Other pages may
+    well have t-, h-, or b-placed floating environments.%
+  }%
+  \entry{\OptionVName{onbackground}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's background layers is initialised. Note that this
+    happens once each page.%
+  }%
+  \entry{\OptionVName{onforeground}{code}}{%
+    The \PName{code} of this hook\Index{hook} is executed whenever the output
+    of the page style's foreground layers is initialised. Note that this
+    happens once each page.%
+  }%
+\end{desclist}
+
+\iffalse% Umbruchvarianten
+  While the \Macro{DeclarePageStyleByLayers} command always defines the page
+  style, \Macro{DeclareNewPageStyleByLayers} generates an error message if a
+  page style with the same name already exists. Note\textnote{Attention!} that
+  the declaration of a page style that is already an alias for another page
+  style (see, for example, \Macro{DeclareAliasPageStyle} earlier in this
+  section) will redefine not the specified page style alias but the real page
+  style (see \DescRef{\LabelBase.cmd.GetRealPageStyle} earlier in this
+  section).%
+\else%
+  The \Macro{DeclarePageStyleByLayers} command defines the page style
+  regardless of whether a page style of \PName{page style name} already
+  exists. If necessary, the existing page style is completely
+  redefined. However, if a page style alias \PName{page style name} already
+  exists, the associated real page style, not the page style alias itself, is
+  redefined (see \DescRef{\LabelBase.cmd.GetRealPageStyle} earlier in this
+  section).
+
+  The \Macro{DeclareNewPageStyleByLayers} command differs if a page style of
+  the same name already exists. Regardless of whether it is a real or an alias
+  page style, an error will be reported in this case.
+\fi
+
+In contrast, \Macro{ProvidePageStyleByLayers} preserves the page style
+unchanged if a page style with name \PName{page style name} already exists. If
+no such page style exists, it is defined as in
+\Macro{DeclarePageStyleByLayers}.
+
+The \Macro{RedeclarePageStyleByLayers} in turn expects that a page style of
+of the name \PName{page style name} already exists and then redefines its real
+page style. However, if no page style of the specified name exists, an error
+message results.
+
+Also note the remarks below about the pseudo-page style
+\PageStyle{@everystyle@}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \PageStyle{@everystyle@}%
+  \PageStyle{empty}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+The \Package{scrlayer} package defines two specific page styles worth noting.
+The first of these is \PageStyle{@everystyle@}%
+\important{\PageStyle{@everystyle@}}. This page style should never be used
+like a normal page style, for example with \DescRef{maincls.cmd.pagestyle} or
+\DescRef{maincls.cmd.thispagestyle}, or as the target of a page-style alias.
+Instead, the layers and hooks\Index{hooks} of this page style are used by all
+other layer page styles. The hooks of \PageStyle{@everystyle@} are placed in
+front of their respective hooks, and the layers in front of the respective
+layers, of the active page style.
+
+Thus adding a layer to the pseudo-page style \PageStyle{@everystyle@} or code
+to a hook of this page style is like adding a layer or hook code to all layer
+page styles, even the empty one. There's one crucial difference: commands that
+reference the layers of a page style which include
+\DescRef{\LabelBase.cmd.ForEachLayerOfPageStyle}, e.\,g., the commands
+\DescRef{\LabelBase.cmd.AddLayersToPageStyleBeforeLayer} or
+\DescRef{\LabelBase.cmd.AddLayersToPageStyleAfterLayer}, disregard the layers
+of the page style \PageStyle{@everystyle@} when applied to a different layer
+page style.
+
+The second, slightly different page style is \PageStyle{empty}. Normally the
+\LaTeX{} kernel defines the \PageStyle{empty} page style to have an empty
+header and footer. The \Package{scrlayer} package redefines this page style as
+a layerless page style. Nonetheless, you can use it like any other layer page
+style. The main advantage of the layer page style over the original page
+style from the \LaTeX{} kernel is that it also executes the hooks and layers
+of the psuedo-layer page style \PageStyle{@everystyle@}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{onpsselect}{code}%
+  \OptionVName{onpsinit}{code}%
+  \OptionVName{onpsoneside}{code}%
+  \OptionVName{onpstwoside}{code}%
+  \OptionVName{onpsoddpage}{code}%
+  \OptionVName{onpsevenpage}{code}%
+  \OptionVName{onpsfloatpage}{code}%
+  \OptionVName{onpsnonfloatpage}{code}%
+  \OptionVName{onpsbackground}{code}%
+  \OptionVName{onpsforeground}{code}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+There is also a \KOMAScript{} option for each of the hooks\Index{hooks} in
+\autoref{tab:scrlayer.pagestyle.hooks}%
+\iftrue
+. The names of the \KOMAScript{} options are similar to those for declaring
+page style layers, except that a ``\texttt{ps}'' is inserted after
+``\texttt{on}'' at the beginning of the name
+\else
+, into the names of which a ``\texttt{ps}'' is inserted
+\fi
+. The values of these \KOMAScript{} options are used as the initial values for
+the corresponding hooks. These initial values are then extended by all the
+values assigned to the corresponding hooks in the \PName{option list} of the
+declaration commands. You can remove the default with
+\DescRef{\LabelBase.cmd.ModifyLayerPageStyleOptions}, which is explained later
+in this section.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{singlespacing}{simple switch}
+\end{Declaration}
+If\ChangedAt{v3.24}{\Package{scrlayer}\and \Package{scrlayer-scrpage}} a
+document is printed with increased line spacing, e.\,g., using the
+\Package{setspace}\IndexPackage{setspace}\important{\Package{setspace}}
+package, it is often undesirable for the header and footer to be printed with
+this increased spacing. This is particularly true if the header and footer
+consist of only a single line. In this case you can use \KOMAScript{} option
+\Option{singlespacing}. However, the default\textnote{default} is
+\OptionValue{singlespacing}{false}! The option generally applies to all layer
+page styles. If you want single-spacing for only some page styles, use
+\OptionValue{oninit}{\Macro{linespread}\PParameter{1}\Macro{selectfont}} for
+those page styles.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{deactivatepagestylelayers}{simple switch}%
+  \Macro{ForEachLayerOfPageStyle}\Parameter{page style name}\Parameter{code}%
+  \Macro{ForEachLayerOfPageStyle*}\Parameter{page style name}\Parameter{code}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+As long as the \KOMAScript{} option \Option{deactivatepagestylelayers} is not
+enabled, the \Macro{ForEachLayerOfPageStyle} command can execute arbitrary
+\PName{code} for each layer of the page style named \PName{page style name}.
+Inside of \PName{code}, the place holder \PValue{\#1} serves as a
+reference to the name of the current layer.
+\begin{Example}
+  If you want to print the names of all layers of the \PValue{scrheadings}
+  page style as a comma-separated list, you can use:
+\begin{lstcode}
+  \let\commaatlist\empty
+  \ForEachLayerOfPageStyle{scrheadings}{%
+    \commaatlist#1\gdef\commaatlist{, }}
+\end{lstcode}
+\end{Example}
+In\textnote{Attention!} the example above, we had to use \Macro{gdef} instead
+of \Macro{def} because \Macro{ForEachLayerOfPageStyle} executes the 
+\PName{code} inside a group to minimise side effects. However, \Macro{gdef}
+redefines \Macro{commaatlist} globally so the change will persist when the
+\PName{code} for the next layer is executed.
+
+Alternatively,\ChangedAt{v3.18}{\Package{scrlayer}} you can use \Macro{def}
+with the starred variant \Macro{ForEachLayerOfPageStyle*}. This form dispenses
+with the extra group when executing \PName{code}. However, the user then has
+to take make sure that the \PName{code} has no unwanted side effects. In
+particular, deactivating all layers using
+\OptionValue{deactivatepagestylelayers}{true} within \PName{code} would
+persist beyond the call to \Macro{ForEachLayerOfPageStyle*}.
+
+Various \Package{scrlayer} commands also use \Macro{ForEachLayerOfPageStyle}
+internally. Their behaviour can therefore also be changed using the
+\KOMAScript{} option \Option{deactivatepagestylelayers}. With this option,
+you can temporarily disable and thus hide all layers of all layer page
+styles.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{AddLayersToPageStyle}%
+  \Parameter{page style name}\Parameter{layer list}%
+  \Macro{AddLayersAtBeginOfPageStyle}%
+  \Parameter{page style name}\Parameter{layer list}%
+  \Macro{AddLayersAtEndOfPageStyle}%
+  \Parameter{page style name}\Parameter{layer list}%
+  \Macro{RemoveLayersFromPageStyle}%
+  \Parameter{page style name}\Parameter{layer list}%
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+You can use these commands to add layers to a layer page style or to remove
+layers from a layer page style. The page style is referenced by its
+\PName{page style name}. The layers are given by a comma-separated
+\PName{layer list}.
+
+Both the \Macro{AddLayersToPageStyle} and the
+\Macro{AddLayersAtEndOfPageStyle}\textnote{add at the end} commands insert the
+new layers at the bottom of the page style's layer list. Logically, the newly
+added layers lie above or in front of the old layers. Background layers, of
+course, still are logically behind the text layer and thus behind all
+foreground layers.
+
+In contrast, the \Macro{AddLayersAtBeginOfPageStyle}\textnote{add at the
+  beginning} command inserts the new layers at the top of the page style's
+layer list. The layers are separately inserted to the top of the list in the
+same order they appear in the \PName{layer list} parameter. This means that
+the last layer in the \PName{layer list} parameter will become the first, and
+thus the lowest, layer of the page style.
+
+\iffalse% Umbruchkorrekturtext (beim Aktiveren muss unten \textnote{remove}
+% entfernt werden!)
+The \Macro{RemoveLayersFromPageStyle} command is exactly the opposite. It
+removes\textnote{remove} the specified page-style levels.%
+\fi
+
+The \Macro{RemoveLayersFromPageStyle}\textnote{remove} command removes layers
+from the layer list of the page style named \PName{page style name}.
+Attempting to remove layers which are not part of the page style's layer list
+will be ignored. But attempting to add layers to or remove layers from a page
+style that is neither a layer page style nor a page-style alias is an error
+and will be reported as such.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{AddLayersToPageStyleBeforeLayer}%
+  \Parameter{page style name}\Parameter{layer list}%
+  \Parameter{reference layer name}%
+  \Macro{AddLayersToPageStyleAfterLayer}%
+  \Parameter{page style name}\Parameter{layer list}%
+  \Parameter{reference layer name}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+\iffalse% Umbruchvarianten
+These two commands are similar to the previous ones, but they take an
+additional parameter,  \Parameter{reference layer name}. The layer list of
+the page style named in \Parameter{page style name} is searched for this
+reference layer. %
+\else%
+These commands are similar to the previous ones. The existing layers of the
+page style, however, are searched for the \PName{reference layer name}. %
+\fi%
+The layers in the \Parameter{layer list} parameter are then inserted
+before\textnote{add before/after layer} or after this reference layer%
+\iffalse% Umbruchkorrekturtext
+in the layers of the page style%
+\fi%
+. The order of the layers in the \PName{layer list} is retained.
+
+If the reference layer named \PName{reference layer name} is not part of the
+given page style, nothing is inserted. On the other hand, if the page style is
+neither a layer page style nor a page-style alias, an error will be reported.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{UnifyLayersAtPageStyle}\Parameter{page style name}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+The commands for defining page styles or adding layers to a page style do not
+care how many times a layer appears in a page style, so it is quite
+permissible for a layer to appear multiple times. In most cases, however, it
+does not make sense to use the same layer several times in one page style.
+Therefore, you can use \Macro{UnifyLayersAtPageStyle} to remove all layer
+duplicates from the layer page style of the specified \Parameter{page style
+	name}.
+
+Note\textnote{Attention!} that this function can change the order of layers.
+So if you need a specific order, you should remove all layers and add the
+layers in the order you want instead of using \Macro{UnifyLayersAtPageStyle}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{ModifyLayerPageStyleOptions}%
+  \Parameter{page style name}\Parameter{option list}%
+  \Macro{AddToLayerPageStyleOptions}%
+  \Parameter{page style name}\Parameter{option list}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+These two commands can be used to modify the options, and thus the
+hooks\Index{hooks}, of a layer page style. With
+\Macro{ModifyLayerPageStyleOptions}\textnote{change page-style options}, only
+the options in the comma-separated \PName{option list} will be set to the new
+values given there. The previous values are lost. All options from
+\autoref{tab:scrlayer.pagestyle.hooks},
+\autopageref{tab:scrlayer.pagestyle.hooks} are allowed. Options or hooks that
+are not specified in the \PName{option list} will remain unchanged. If you
+want to set an option to do nothing you can set it to the value \Macro{relax}.
+Setting an option to a new value using \Macro{ModifyLayerPageStyleOptions}
+will remove the previous value, including the global default value. This
+statement is the only way to remove the global defaults of the \KOMAScript{}
+options from a page style.
+
+\Macro{AddToLayerPageStyleOptions}\textnote{extend page-style options}, on the
+other hand, does not overwrite the previous values. Instead it adds\,---\,or,
+more precisely, concatenates\,---\, the new values to old ones.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{IfLayerPageStyleExists}%
+  \Parameter{page style name}\Parameter{then code}\Parameter{else code}%
+  \Macro{IfRealLayerPageStyleExists}%^
+  \Parameter{page style name}\Parameter{then code}\Parameter{else code}%
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+With these commands, you can execute code depending on whether a page style is
+a layer page style or not. The \Macro{IfLayerPageStyleExists} command executes
+the \PName{then code} if \PName{page style name} is the name of a layer page
+style or a page-style alias that results in a layer page style. Otherwise, the
+command executes the \PName{else code}. Internally, this command is often used
+to throw an error message if you use one of the layer page style commands with
+an \PName{page style name} that does not correspond to a layer page style.
+
+The \Macro{IfRealLayerPageStyleExists} command goes one step further and
+executes the \PName{then code} only if the page style specified by \PName{page
+  style name} is itself a layer page style. So if \PName{page style name} is a
+page-style alias, this command executes the \PName{else code} even if the
+alias resolves to a real layer page style.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{IfLayerAtPageStyle}%
+  \Parameter{page style name}\Parameter{layer name}%
+  \Parameter{then code}\Parameter{else code}%
+  \Macro{IfSomeLayerAtPageStyle}%
+  \Parameter{page style name}\Parameter{layer list}%^
+  \Parameter{then code}\Parameter{else code}%
+  \Macro{IfLayersAtPageStyle}%
+  \Parameter{page style name}\Parameter{layer list}%
+  \Parameter{then code}\Parameter{else code}%
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+These commands can be used to test whether one or more layers are part of a
+page style. The \Macro{IfLayerAtPageStyle} command expects exactly one
+\PName{layer name}\textnote{exactly one layer} as the second argument. If this
+layer is part of the page style specified in \PName{page style name}, the
+\PName{then code} will be executed. Otherwise, the \PName{else code} will be
+executed.
+
+The \Macro{IfSomeLayerAtPageStyle} and \Macro{IfLayersAtPageStyle} commands
+allow a comma-separated \PName{layer list}. \Macro{IfSomeLayerAtPageStyle}
+will execute the \PName{then code} if \emph{at least one} of the layers in the
+\PName{layer list} parameter is part of the layer list of \PName{page style
+  name}. In contrast, \Macro{IfLayersAtPageStyle} executes the \PName{then
+  code} only if \emph{all} the layers in the \PName{layer list} parameter are
+part of the page style. If the condition is not met, the \PName{else code}
+will be executed.
+
+With suitable nesting of these commands, you can construct complex conditions.
+If you use only one \PName{layer name} in the \PName{layer list}, all three
+statements are synonymous.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{DestroyRealLayerPageStyle}\Parameter{page style name}
+\end{Declaration}
+\BeginIndex{}{page style>layers}%
+\BeginIndex{}{layers>page style}%
+\iftrue
+This statement makes a layer page style undefined. If a page-style alias or
+ordinary page style is specified, the command is ignored.
+\else
+With this command you can remove a the definition of a layer page style.
+However, this only occurs if a layer page style named \PName{page style name}
+exists. If, instead, it is a page-style alias, a different (non-layer) page
+style, or not a page style at all, nothing happens; the command is ignored.%
+\fi
+
+If \PName{page style name} is the name of the current page style, the current
+page style will becomes a kind of empty page style. If the page style set with
+\DescRef{maincls.cmd.thispagestyle} is \PName{page style name}, it will simply
+be reset. The previous \DescRef{maincls.cmd.thispagestyle} command loses its
+current effect.
+
+Note\textnote{Attention!} that the layers of the page style are not destroyed
+automatically. If you want to destroy the layers too, you can do this with: 
+\begin{lstcode}
+  \ForEachLayerOfPageStyle{...}{\DestroyLayer{#1}}
+\end{lstcode}
+before destroying the layer page style itself.%
+\iffalse % See the note at the beginning of the end user interface section
+\par
+The command is intended to be used within the \PName{code} argument of
+\DescRef{\LabelBase.cmd.scrlayerOnAutoRemoveInterface} to remove page styles
+that are defined as part of an end-user interface. See
+\autoref{sec:scrlayer.enduserinterfaces} below for more information about
+auto-removal code.%
+\fi%
+\EndIndexGroup
+\EndIndexGroup
+
+\LoadCommonFile{headfootheight}% \section{Height of Page Head and Foot}
+
+\LoadCommonFile{pagestylemanipulation}% \section{Manipulation of Defined Page Styles}
+
+\section{Defining and Managing Interfaces for End Users}
+\seclabel{enduserinterfaces}
+
+\iftrue% The whole mechanism is deprecated and should not be used any
+       % longer. So the documentation is also deactivated.
+% TODO: Fix new translation
+Until version 3.27\ChangedAt{v3.28}{\Package{scrlayer}} package
+\Package{scrlayer} provided mechanism to manage concurrent end user
+interfaces. The mechanism has been marked as experimental and the usability
+limited. Only \KOMAScript{} itself has used this mechanism and from version
+3.28 it is marked as deprecated. So the commands
+\Macro{scrlayerInitInterface}\IndexCmd{scrlayerInitInterface},
+\Macro{scrlayerAddToInterface}\IndexCmd{scrlayerAddToInterface},
+\Macro{scrlayerAddCsToInterface}\IndexCmd{scrlayerAddCsToInterface},
+\Macro{scrlayerOnAutoRemoveInterface}\IndexCmd{scrlayerOnAutoRemoveInterface}%
+\important{\Macro{scrlayerOnAutoRemoveInterface}}
+and the options
+\Option{forceoverwrite}\IndexOption{forceoverwrite},
+\Option{autoremoveinterfaces}\IndexOption{autoremoveinterfaces}
+should not be used any longer.%
+% :ODOT
+\else%
+The \Package{scrlayer} package provides an experimental interface to define
+and manage (concurrent) interfaces for end users. \iffree{In the long run,
+  this interface may disappear from \Package{scrlayer} and be taken over by
+  \Package{scrbase} instead.}{} Currently, this interface is highly
+experimental%
+\iffree{ and therefore \Package{scrlayer} provides these interface commands
+  only for the use of subpackages of \Package{scrlayer}}{}%
+. Given the current state of development, you should not depend on automatic
+removal of a concurrent interface to work. Instead, you should avoid using
+concurrent end-user interfaces.
+
+This section only describes the interface commands for defining an end-user
+interface. For end users themselves, it is of little interest. Rather, this
+section is intended for authors of packages and classes that build on
+\Package{scrlayer}. End users will find information about specific end-user
+interfaces in \autoref{cha:scrlayer-scrpage},
+\autoref{cha:scrlayer-scrpage-experts}, and \autoref{cha:scrlayer-notecolumn}.
+
+\begin{Declaration}
+  \Macro{scrlayerInitInterface}\OParameter{interface name}
+\end{Declaration}
+The \Macro{scrlayerInitInterface} command registers a new interface named
+\PName{interface name}. The \PName{interface name} must be unique. If an
+interface with the same name has already been registered, an error will occur.
+
+This command should always appear as the first command when defining an
+end-user interface and therefore is described here first. If the optional
+argument\,---\,including the square brackets\,---\,is omitted,
+\PValue{\Macro{@currname}.\Macro{@currext}} will be used instead. For classes
+and packages, this is the file name of the class or package. But of course you
+can use any other sequence of characters with a category of \emph{letter} or
+\emph{other}. This is useful, for example, when a class or package defines
+multiple end-user interfaces%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \OptionVName{forceoverwrite}{simple switch}%
+  \OptionVName{autoremoveinterfaces}{simple switch}%
+  \Macro{scrlayerAddToInterface}%
+  \OParameter{interface name}\Parameter{command}\Parameter{code}%
+  \Macro{scrlayerAddCsToInterface}%
+  \OParameter{interface name}\Parameter{command sequence}\Parameter{code}
+\end{Declaration}
+One of the special features of \Package{scrlayer}'s end user interfaces is
+that they should register all interface-dependent commands (also known as
+\emph{macros}). You can do this using \Macro{scrlayerAddToInterface}. The
+optional argument \PName{interface name} must be an interface name previously
+registered with \DescRef{\LabelBase.cmd.scrlayerInitInterface}. An error will
+occur if the interface has not been initialised.
+
+If\textnote{Attention!} your interface defines macros not just when the class
+or package is being loaded but also at runtime, you must provide the interface
+name in the optional argument even if it corresponds to the file name of the
+class or package, since the values of \Macro{@currname} and \Macro{@currext}
+are only valid while the class or package is being loaded.
+
+The first mandatory argument is the \PName{command}\footnote{The
+  \PName{command} consists of a backslash followed by a \PName{command
+    sequence} that consists of characters of the category code \emph{letter},
+  or of exactly one character of the category \emph{other}, or of a character
+  of the category \emph{active} (without the backslash).} to be added to the
+interface. If the command can be defined, this will be done. In addition, it
+will set to \Macro{relax} and \PName{code} will be executed. Within
+\PName{code}, you can then define \PName{command}, e.\,g., using
+\Macro{newcommand}.
+
+But when can a command be defined? If a command is undefined or \Macro{relax},
+it can always be defined. If a command has already been defined \emph{and}
+registered for another interface \emph{and} if the \KOMAScript{} option
+\Option{autoremoveinterfaces} has been activated, the other interface will be
+removed automatically, and the \PName{command} will be set to \Macro{relax}
+and registered for the new interface specified. If a \PName{command} is
+already defined but is \emph{not} part of another interface, \emph{and} if the
+\KOMAScript{} option \Option{forceoverwrite} has been activated, the
+\PName{command} is also set to \Macro{relax} and registered for the specified
+interface. In all other cases, however, the command is not definable, in
+particular if it is already defined and the \KOMAScript{} options
+\Option{autoremoveinterfaces} and \Option{forceoverwrite} are deactivated.
+
+The \Macro{scrlayerAddCsToInterface} command is similar to
+\Macro{scrlayerAddToInterface} but it expects the first argument to be not a
+\PName{command} but a command sequence\footnote{A command sequence must be
+  fully expandable and its expansion must result in characters of the category
+  code \emph{letter}, \emph{other}, or \emph{space}.}.%
+\EndIndexGroup
+
+
+\begin{Declaration}
+  \Macro{scrlayerOnAutoRemoveInterface}%
+  \OParameter{interface name}\Parameter{code}
+\end{Declaration}
+The \Macro{scrlayerOnAutoRemoveInterface} command registers \PName{code} to be
+executed in the event that the end-user interface with the specified
+\PName{interface name} is automatically removed (see
+\DescRef{\LabelBase.option.autoremoveinterfaces} earlier in this section).
+This can be used, for example, to automatically destroy layers or page styles
+that rely on commands from the end-user interface (see
+\DescRef{\LabelBase.cmd.DestroyLayer},
+\DescRef{\LabelBase.cmd.DestroyPageStyleAlias}, and
+\DescRef{\LabelBase.cmd.DestroyRealLayerPageStyle}). Regarding the default for
+the optional argument, please refer to the explanation for
+\DescRef{\LabelBase.cmd.scrlayerInitInterface}.%
+\EndIndexGroup%
+\fi%
+%
+\EndIndexGroup
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "scrguide-en.tex"
+%%% coding: utf-8
+%%% ispell-local-dictionary: "en_GB"
+%%% eval: (flyspell-mode 1)
+%%% End:

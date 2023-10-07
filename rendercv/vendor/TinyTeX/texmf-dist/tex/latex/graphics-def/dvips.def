@@ -1,0 +1,198 @@
+%% dvips.def Copyright (C) 1994      David Carlisle Sebastian Rahtz
+%%           Copyright (C) 1995-1999 David Carlisle
+%%           Copyright (C) 2000-2022 David Carlisle, LaTeX3 Project
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is the LaTeX3 Project.
+%%
+%% https://github.com/latex3/graphics-def/issues
+%%
+\ProvidesFile{dvips.def}
+  [2022/09/22 v3.1e Graphics/color driver for dvips]
+\def\GPT@space{ }
+\def\c@lor@arg#1{%
+  \dimen@#1\p@
+  \ifdim\dimen@<\z@\dimen@\maxdimen\fi
+  \ifdim\dimen@>\p@
+    \PackageError{color}{Argument `#1' not in range [0,1]}\@ehd
+  \fi}
+\def\color@gray#1#2{%
+  \c@lor@arg{#2}%
+  \edef#1{gray #2}%
+  }
+\def\color@cmyk#1#2{\c@lor@@cmyk#2\@@#1}
+\def\c@lor@@cmyk#1,#2,#3,#4\@@#5{%
+  \c@lor@arg{#4}%
+  \c@lor@arg{#1}%
+  \c@lor@arg{#2}%
+  \c@lor@arg{#3}%
+  \edef#5{cmyk #1 #2 #3 #4}%
+  }
+\def\color@rgb#1#2{\c@lor@@rgb#2\@@#1}
+\def\c@lor@@rgb#1,#2,#3\@@#4{%
+  \c@lor@arg{#1}%
+  \c@lor@arg{#2}%
+  \c@lor@arg{#3}%
+  \edef#4{rgb #1 #2 #3}%
+  }
+\def\color@RGB#1#2{\c@lor@@RGB#2\@@#1}
+\def\c@lor@@RGB#1,#2,#3\@@#4{%
+ \c@lor@RGB@rgb{#1}\@tempa
+ \c@lor@RGB@rgb{#2}\@tempb
+ \c@lor@RGB@rgb{#3}\@tempc
+ \c@lor@@rgb\@tempa,\@tempb,\@tempc\@@#4%
+  }
+\def\c@lor@RGB@rgb#1#2{%
+  \dimen@#1\p@
+  \divide\dimen@\@cclv
+  \edef#2{\strip@pt\dimen@}}
+\def\color@hsb#1#2{\c@lor@@hsb#2\@@#1}
+\def\c@lor@@hsb#1,#2,#3\@@#4{%
+  \c@lor@arg{#1}%
+  \c@lor@arg{#2}%
+  \c@lor@arg{#3}%
+  \edef#4{hsb #1 #2 #3}%
+  }
+\def\color@named#1#2{\c@lor@@named#2,,\@@#1}
+\def\c@lor@@named#1,#2,#3\@@#4{%
+  \@ifundefined{col@#1}%
+    {\PackageError{color}{Undefined color `#1'}\@ehd}%
+  {\edef#4{ #1}}%
+  }
+\def\c@lor@to@ps#1 #2\@@{\csname c@lor@ps@#1\endcsname#2 \@@}
+\def\c@lor@ps@#1 #2\@@{TeXDict begin #1 end}
+\def\c@lor@ps@rgb#1\@@{#1 setrgbcolor}
+\def\c@lor@ps@hsb#1\@@{#1 sethsbcolor}
+\def\c@lor@ps@cmyk#1\@@{#1 setcmykcolor}
+\def\c@lor@ps@gray#1\@@{#1 setgray}
+\def\current@color{ Black}
+\def\set@color{%
+ \special{color push  \current@color
+                          }\aftergroup\reset@color}
+\def\reset@color{\special{%
+        color pop}}
+\def\set@page@color{\special{%
+        background \current@color}}
+\def\define@color@named#1#2{%
+  \expandafter\let\csname col@#1\endcsname\@nnil}
+      \def\no@page@color{\special{background \string"newpath clip}}
+\def\Ginclude@eps#1{%
+ \message{<#1>}%
+  \bgroup
+  \def\@tempa{!}%
+  \dimen@\Gin@req@width
+  \dimen@ii.1bp%
+  \divide\dimen@\dimen@ii
+  \@tempdima\Gin@req@height
+  \divide\@tempdima\dimen@ii
+    \special{PSfile="#1"\GPT@space
+      llx=\Gin@llx\GPT@space
+      lly=\Gin@lly\GPT@space
+      urx=\Gin@urx\GPT@space
+      ury=\Gin@ury\GPT@space
+      \ifx\Gin@scalex\@tempa\else rwi=\number\dimen@\GPT@space\fi
+      \ifx\Gin@scaley\@tempa\else rhi=\number\@tempdima\GPT@space\fi
+      \ifGin@clip clip\fi}%
+  \egroup}
+\def\Ginclude@bmp#1{%
+  \message{<#1>}%
+  \dimen@\Gin@req@height
+  \advance\dimen@ by-\Gin@lly bp
+  \kern-\Gin@llx bp\raise\Gin@req@height\hbox{%
+   \ifdim\Gin@urx bp=\z@
+     \ifdim\Gin@ury bp=\z@
+        \special{em: graph #1}%
+     \else
+        \special{em: graph #1,\Gin@urx bp}%
+     \fi
+  \else
+        \special{em: graph #1,\Gin@urx bp,\Gin@ury bp}%
+  \fi
+ }%
+}
+\def\oztex@include#1#2{%
+ \dimen@1bp%
+ \divide\Gin@req@width\dimen@
+ \divide\Gin@req@height\dimen@
+ \special{#1=#2\GPT@space
+   \@width=\number\Gin@req@width \GPT@space
+   \@height=\number\Gin@req@height}}
+\def\Ginclude@pntg{\oztex@include{pntg}}
+\def\Ginclude@pict{\oztex@include{pict}}
+\def\Grot@start{%
+ \special{ps: gsave currentpoint
+ currentpoint translate \Grot@angle\GPT@space neg
+ rotate neg exch neg exch translate}}
+\def\Grot@end{\special{ps: currentpoint grestore moveto}}
+\def\Gscale@start{\special{ps:  currentpoint currentpoint translate
+  \Gscale@x\GPT@space \Gscale@y\GPT@space scale neg exch neg exch translate}}
+\def\Gscale@end{\special{ps:  currentpoint currentpoint translate
+  1 \Gscale@x\GPT@space div 1 \Gscale@y\GPT@space div scale
+  neg exch neg exch translate}}
+\def\Gin@PS@raw#1{\special{ps: #1}}
+\def\Gin@PS@restored#1{\special{" #1}}
+\def\Gin@PS@literal@header#1{\AtBeginDvi{\special{! #1}}}
+\def\Gin@PS@file@header#1{\AtBeginDvi{\special{header=#1}}}
+\@ifundefined{ifGin@setpagesize}
+  {\expandafter\let\csname ifGin@setpagesize\expandafter\endcsname
+                    \csname iftrue\endcsname}
+  {}
+\@ifundefined{stockwidth}{\newdimen\stockwidth}{}
+\@ifundefined{stockheight}{\newdimen\stockheight}{}
+\ifGin@setpagesize
+\ifx\paperwidth\@undefined\else
+  \AtBeginDocument{%
+% If a package has changed \mag, assume it knows what it is doing
+% and leave page size alone
+ \ifnum\mag=\@m
+  \AtBeginDvi{%
+    \begingroup
+      \ifdim\stockwidth>\z@
+        \ifdim\stockheight>\z@
+          \special{papersize=\the\stockwidth,\the\stockheight}%
+        \else
+          \ifdim\paperwidth>\z@
+            \ifdim\paperheight>\z@
+              \special{papersize=\the\paperwidth,\the\paperheight}%
+            \fi
+          \fi
+        \fi
+      \else
+        \ifdim\stockwidth=\z@
+          \ifdim\paperwidth>\z@
+            \ifdim\paperheight>\z@
+              \special{papersize=\the\paperwidth,\the\paperheight}%
+            \fi
+          \fi
+        \fi
+      \fi
+    \endgroup}%
+    \fi
+    }
+\fi
+\fi
+\def\Gin@extensions{.eps,.ps,.eps.gz,.ps.gz,.eps.Z,.mps}
+\@namedef{Gin@rule@.ps}#1{{eps}{.ps}{#1}}
+\@namedef{Gin@rule@.eps}#1{{eps}{.eps}{#1}}
+\@namedef{Gin@rule@.mps}#1{{eps}{.mps}{#1}}
+\@namedef{Gin@rule@.pz}#1{{eps}{.bb}{#1}}
+\@namedef{Gin@rule@.eps.Z}#1{{eps}{.eps.bb}{#1}}
+\@namedef{Gin@rule@.ps.Z}#1{{eps}{.ps.bb}{#1}}
+\@namedef{Gin@rule@.ps.gz}#1{{eps}{.ps.bb}{#1}}
+\@namedef{Gin@rule@.eps.gz}#1{{eps}{.eps.bb}{#1}}
+\@namedef{Gin@rule@*}#1{{eps}{\Gin@ext}{#1}}
+\@namedef{Gin@rule@.pcx}#1{{bmp}{}{#1}}
+\@namedef{Gin@rule@.bmp}#1{{bmp}{}{#1}}
+\@namedef{Gin@rule@.msp}#1{{bmp}{}{#1}}
+\@namedef{Gin@rule@.pict}#1{{pict}{}{#1}}
+\@namedef{Gin@rule@.pntg}#1{{pntg}{}{#1}}
+\endinput

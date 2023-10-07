@@ -1,0 +1,186 @@
+% ======================================================================
+% scrdocstrip.tex
+% Copyright (c) Markus Kohm, 2013-2022
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+% $Id: scrdocstrip.tex 3915 2022-06-29 07:09:48Z kohm $
+
+\expandafter\ifx\csname scrdocstripversion\endcsname\relax
+  \let\KOMAbatchfile\batchfile
+  \let\batchfile\undefined
+\fi
+
+\input docstrip.tex
+
+\ifx\generate\undefined
+  \errhelp{| This installation requires docstrip version 2.3c or * later,^^J%
+    | but an old version of docstrip has been input.^^J%
+    | This error is fatal, because You have to update docstrip and maybe LaTeX
+    fist!}
+  \errmessage{| Fatal error: Old docstrip in input path}
+  \batchmode
+  \csname @@end\endcsname
+\fi
+
+\expandafter\ifx\csname scrdocstripversion\endcsname\relax
+\else \expandafter\endinput
+\fi
+\Msg{| Using KOMA-Script's docstrip extensions.}%|
+% Support for variables:
+\def\KOMAdefVariable#1#2{%
+  \expandafter\def\csname KOMAvar@#1\endcsname{#2}%
+}
+\def\KOMAifVariable#1{%
+  \expandafter\ifx\csname KOMAvar@#1\endcsname\relax
+    \expandafter\@secondoftwo
+  \else
+    \expandafter\@firstoftwo
+  \fi
+}
+\def\KOMAuseVariable#1{%
+  \KOMAifVariable{#1}{%
+    \csname KOMAvar@#1\endcsname
+  }{%
+    variable #1\undefined
+  }%
+}
+\KOMAdefVariable{AUTHOR}{Markus Kohm}
+\KOMAdefVariable{COPYRIGHT}{%
+  Copyright (c) 
+  \KOMAifVariable{COPYRIGHTFROM}{\KOMAuseVariable{COPYRIGHTFROM}-}{}%
+  \KOMAifVariable{COPYRIGHTTILL}{\KOMAuseVariable{COPYRIGHTTILL}}{}
+  \KOMAuseVariable{AUTHOR}%
+  \KOMAifVariable{EMAIL}{ \KOMAuseVariable{EMAIL}}{}%
+}
+\KOMAdefVariable{COPYRIGHTCOMMENT}{%
+  \MetaPrefix\space\KOMAuseVariable{COPYRIGHT}%
+}
+% Extend line scanner by:
+% - %!VARIABLE       : to write variable into files
+% - %?VARIABLE=VALUE : to setup a new variable
+\begingroup
+\catcode`\%=12 \catcode`\*=14
+\gdef\processLineX%#1{*
+  \ifcase\ifx%#10\else
+         \ifx<#11\else
+         \ifx!#12\else 3\fi\fi\fi\relax
+    \expandafter\putMetaComment\or
+    \expandafter\checkOption\or
+    \expandafter\KOMAexpandVariable\or
+    \expandafter\removeComment\fi
+  #1}
+\gdef\KprocessLineX%#1{*
+  \ifcase\ifx%#10\else
+         \ifx<#11\else
+         \ifx!#12\else
+         \ifx?#13\else 4\fi\fi\fi\fi\relax
+    \expandafter\putMetaComment\or
+    \expandafter\checkOption\or
+    \expandafter\KOMAexpandVariable\or
+    \expandafter\KOMAsetVariable\or
+    \expandafter\removeComment\fi
+  #1}
+\endgroup
+\def\KOMAexpandVariable!#1\endLine{%
+  \advance\codeLinesPassed\@ne
+  \maybeMsg{x}%
+  \edef\inLine{\KOMAuseVariable{#1}}%
+  \let\do\putline@do
+  \activefiles
+}
+\def\KOMAsetVariable?#1=#2\endLine{%
+  \expandafter\gdef\csname KOMAvar@#1\endcsname{#2}%
+}
+% Extend heading
+\def\ds@heading{%
+  \expandafter\ifx\csname ifbeta\expandafter\endcsname
+                  \csname iftrue\endcsname
+    \use@Warning{\outFileName}{%
+      YOU SHOULD NOTE, THAT THIS IS NOT AN OFFICIAL RELEASE!^^J%
+      THIS VERSION IS INTENDED TO BE USED FOR TESTING ONLY!^^J%
+      USAGE FOR PURPOSES OTHER THAN INTENDED IS DANGEROUS!^^J%
+      DON'T EXPECT ANY SUPPORT FOR THIS VERSION!%
+    }%
+  \fi
+  \MetaPrefix ^^J%
+  \MetaPrefix\space This is file `\outFileName',^^J%
+  \MetaPrefix\space generated with the docstrip utility, extended by
+  scrdocstrip.^^J%
+}
+\def\commentWarning#1#2{%
+  \MetaPrefix\space 
+  -------------------------------------------------------------------------^^J%
+  \@commentWarning#2^^J\@nil
+  \MetaPrefix\space 
+  -------------------------------------------------------------------------^^J%
+}
+\def\@commentWarning#1^^J#2\@nil{%
+  \MetaPrefix\space #1^^J%
+  \ifx\relax#2\relax\else\@commentWarning#2\@nil\fi
+}
+\def\KNL{^\empty^J\perCent^^J}
+\def\XKNL{^\empty^J\perCent|^^J}
+\def\genericWarning#1#2{%
+  \string\expandafter\string\ifx\string\csname\space scrWMSG\string\endcsname\string\relax^^J%
+  \space\space\string\def\string\scrWMSG{\string\immediate\string\write17}^^J%
+  \string\fi^^J%
+  \string\scrWMSG{\KNL
+    +----------------------------------------------------------------------\KNL
+    | WARNING (`#1'):\XKNL
+    +----------------------------------------------------------------------\KNL
+    \@genericWarning#2^^J\@nil
+    +----------------------------------------------------------------------\KNL
+  }^^J%
+}
+\def\@genericWarning#1^^J#2\@nil{%
+  | #1\XKNL
+  \ifx\relax#2\relax\else\@genericWarning#2\@nil\fi
+}%|
+\def\useWarning#1{\let\use@Warning#1}
+\useWarning\genericWarning
+
+% Now, we need some code from docstrip to start old docstrip-processing
+\ifx\undefined\KOMAbatchfile\else 
+  \Defaultfalse
+  \let\batchfile\KOMAbatchfile
+  \def\process@first@batchfile{%
+    \processbatchFile
+    \ifnum\NumberOfFiles=\z@
+      \interactive
+    \fi
+    \endbatchfile
+  }
+\fi
+
+\chardef\scrdocstripversion 1\relax
+
+\def\fromoptional#1{%
+  \immediate\openin\inputcheck\uptospace#1 \qStop\relax
+  \ifeof\inputcheck
+    \Msg{Ignorring not existing optional file `#1'.}%
+    \expandafter\@gobbletwo
+  \else
+    \immediate\closein\inputcheck
+    \expandafter\from
+  \fi
+  {#1}%
+}
+
+\process@first@batchfile
+\endinput
+%
+% end of file `scrdocstrip.tex'

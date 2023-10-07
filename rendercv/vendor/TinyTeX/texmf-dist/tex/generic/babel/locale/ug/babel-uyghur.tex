@@ -1,0 +1,79 @@
+% This file is part of babel. For further details see:
+% https://www.ctan.org/pkg/babel
+\ifx\BabelBeforeIni\undefined
+  \PackageError{babel}%
+    {This file is a component of babel and cannot\MessageBreak
+     be loaded directly. I'll stop immediately}%
+    {Just use babel as documented.}%
+  \stop
+\fi
+\BabelBeforeIni{ug}{%
+}
+
+\ifcase\bbl@engine\or
+
+\newattribute\bblug@disc
+\bblug@disc=-1
+
+\bbl@luahyphenate
+
+% 1) Store discretionaries just after hyphenation as an attribute of the
+% next glyph, with the value of the disc penalty (assumed positive). Then
+% remove the discretionary. 
+% 2) After the shaping, restore the discretionaries.
+
+\directlua{
+Babel.locale[\the\localeid] = {}
+local ug = Babel.locale[\the\localeid]
+
+function ug.posthyphen(head)
+  local UGDISC = luatexbase.registernumber'bblug@disc'
+  for item in node.traverse(head) do
+    if item.id == 7 and item.subtype == 3 and
+        item.next and item.next.id == 29 and
+        item.next.lang == \the\l@uyghur\space then 
+      node.set_attribute(item.next, UGDISC, item.penalty)
+      node.remove(head, item)
+    end
+  end
+end
+
+ug.hyphen_sep = .09   % in em units
+% Note it can be a string, with several characters:
+ug.hyphen = unicode.utf8.char(0x0640)
+
+Babel.linebreaking.add_after(ug.posthyphen)
+
+function ug.hyphenate(head) 
+  local d, k
+  local quad = 655360
+  local UGDISC = luatexbase.registernumber'bblug@disc'
+  for item in node.traverse(head) do
+    if item.id == 29 and item.lang == \the\l@uyghur\space then
+      local ugdisc = node.get_attribute(item, UGDISC)
+      if ugdisc >= 0 then    
+        quad = font.getfont(item.font).size or quad
+        k = node.new(13, 1)  % (kern, userkern)
+        k.kern = ug.hyphen_sep * quad
+        d = node.new(7, 3)   % (disc, regular)
+        d.pre = Babel.str_to_nodes(
+                      function() return ug.hyphen end, 
+                      nil, item)
+        d.pre = node.insert_before(d.pre, d.pre, k)
+        d.penalty = ugdisc
+        head = node.insert_before(head, item, d)
+      end
+    end
+  end
+  return head
+end
+
+luatexbase.add_to_callback("pre_linebreak_filter",
+  ug.hyphenate, "Babel.locale.uyghur.hyphenate")
+luatexbase.add_to_callback("hpack_filter",
+  ug.hyphenate, "Babel.locale.uyghur.hyphenate")
+}
+
+\fi
+
+\endinput

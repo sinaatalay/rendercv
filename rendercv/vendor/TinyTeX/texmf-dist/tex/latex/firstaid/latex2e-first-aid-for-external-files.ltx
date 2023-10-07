@@ -1,0 +1,185 @@
+%%
+%% This is file `latex2e-first-aid-for-external-files.ltx',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% latex2e-first-aid-for-external-files.dtx  (with options: `kernel')
+%% 
+%% The source is maintained by the LaTeX Project team and bug
+%% reports for it can be opened at https://latex-project.org/bugs/
+%% (but please observe conditions on bug reports sent to that address!)
+%% 
+%% 
+%% Copyright (C) 2020-2021
+%% The LaTeX Project and any individual authors listed elsewhere
+%% in this file.
+%% 
+%% This file was generated from file(s) of the Standard LaTeX `First Aid Bundle'.
+%% ------------------------------------------------------------------------------
+%% 
+%% It may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%    https://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%% 
+%% This file may only be distributed together with a copy of the LaTeX
+%% `First Aid Bundle'. You may however distribute the LaTeX `First Aid Bundle'
+%% without such generated files.
+%% 
+%% File: latex2e-first-aid-for-external-files.dtx (C) Copyright 2020-2023
+%%
+%% The LaTeX Project and any individual authors listed elsewhere
+%% in this file.
+\def\LaTeXFirstAidDate{2023/05/20}
+\def\LaTeXFirstAidVersion{v1.0z}
+\ProvidesFile{latex2e-first-aid-for-external-files.ltx}
+             [\LaTeXFirstAidDate\space \LaTeXFirstAidVersion\space
+               LaTeX kernel fixes to external files and packages]
+\ExplSyntaxOn
+\cs_new:Npn\FirstAidNeededT#1#2#3{
+  \exp_args:Ncx\str_if_eq:onF{ver@#1.#2}{#3}
+      { \typeout{==>~ First~ Aid~ for~ #1.#2~ no~ longer~ applied!^^J
+          \@spaces Expected:^^J
+          \@spaces\@spaces #3^^J
+          \@spaces but~ found:^^J
+          \@spaces\@spaces \use:c{ver@#1.#2}^^J
+          \@spaces so~ I'm~ assuming~ it~ got~ fixed.
+      } }
+  \exp_args:Ncx\str_if_eq:onT{ver@#1.#2}{#3}
+}
+\ExplSyntaxOff
+\AddToHook{file/dinbrief.cls/after}[firstaid]{%
+  \FirstAidNeededT{dinbrief}{cls}{2000/03/02 LaTeX2e class}%
+                  {\AddToHook{env/document/begin}{\begingroup}}%
+}
+\AddToHook{package/unicode-math/after}{%
+  \AddToHook{cmd/mod@math@codes/after}{\mathcode`\|=28796 }}
+\ExplSyntaxOn
+\AddToHook{file/pgfpages.sty/after}[firstaid]{%
+  \cs_gset_eq:NN \shipout \pgfpages@originalshipout
+  \cs_set_eq:NN \pgfpages@originalshipout \tex_shipout:D
+  \cs_set_eq:NN \tex_shipout:D \pgfpages@interceptshipout
+}
+\ExplSyntaxOff
+\ExplSyntaxOn
+\AddToHook{file/pgfmorepages.sty/after}[firstaid]{
+  \cs_set_nopar:Npn \pgfhookintoshipout {
+    \cs_set_eq:NN \pgfpages@originalshipout \tex_shipout:D
+    \cs_set_eq:NN \tex_shipout:D \pgfpages@interceptshipout
+  }
+}
+\ExplSyntaxOff
+\AddToHook{file/babel.sty/before}[firstaid]{\def\BabelCaseHack{}}
+\AddToHook{file/songs.sty/after}[firstaid]{%
+  \FirstAidNeededT{songs}{sty}{2018/09/12 v3.1 Songs package}%
+                  {%
+     \renewcommand\SB@obeylines{%
+         \let\obeyedline\SB@par%
+         \obeylines%
+         \let\@par\SB@@par%
+       }}%
+}
+\AddToHook{file/crop.sty/after}[firstaid]{%
+  \FirstAidNeededT{crop}{sty}{2017/11/19 1.10 crop marks (mf)}%
+                  {%
+  \ifdim\stockwidth  > 0pt \else \stockwidth\paperwidth \fi
+  \ifdim\stockheight > 0pt \else \stockheight\paperheight \fi
+  \renewcommand*\CROP@genreflect[1]{%
+    \leavevmode
+    \dimen0\CROP@horigin
+    \kern2\dimen0
+    \begingroup
+    \set@typeset@protect %change protect
+    \reflectbox{%
+        \hb@xt@\paperwidth{%
+            \vbox to\paperheight{%
+                #1%
+                \vss
+            }%
+            \hss
+        }%
+    }%
+   \endgroup
+   }
+  }%
+}
+\AddToHook{file/bigfoot.sty/after}{%
+   \ifnum\count10<\insc@unt
+     \global\count10=\insc@unt
+   \fi
+    \def\FN@allmarks#1{\@elt{#1}%
+      \ifnum#1<\count256 %<--- problem: 266 isn't the counter for marks
+        \expandafter\FN@allmarks\expandafter{\number\numexpr#1+\@ne}%
+        \fi}%
+}
+\AddToHook{file/ulem.sty/after}[firstaid]{%
+   \def\@hspace#1{\begingroup\setlength\skip@{#1}%
+                  \edef\x{\endgroup\hskip\the\skip@\relax}\x}%
+   }
+\AddToHook{file/varwidth.sty/after}[firstaid]{%
+  \FirstAidNeededT{varwidth}{sty}%
+       {2009/03/30 ver 0.92; \space Variable-width minipages}%
+     {%
+\def\@vwid@sift{%
+  \skip@\lastskip\unskip
+  \ifdim\lastskip=\z@\unskip\fi   % <---- the first aid here (not just unskip)
+  \dimen@\lastkern\unkern
+  \count@\lastpenalty\unpenalty
+  \setbox\z@\lastbox
+  \ifvoid\z@ \advance\sift@deathcycles\@ne \else \sift@deathcycles\z@ \fi
+  \ifnum\sift@deathcycles>33
+    \let\@vwid@sift\relax
+    \PackageWarning{varwidth}{Failed to reprocess entire contents}%
+  \fi
+  \ifnum\count@=\@vwid@preeqp \@vwid@eqmodefalse\fi
+  \ifnum\count@=\@vwid@posteqp \@vwid@eqmodetrue\fi
+  \ifnum\count@=\@vwid@toppen % finished
+    \let\@vwid@sift\relax
+  \else\ifnum\count@=\@vwid@offsets
+    \@vwid@setoffsets
+  \else
+    \ifnum\count@=\@vwid@postw
+    \else
+      \@vwid@resetb % reset box \z@ or measure it
+    \fi
+    \@vwid@append
+  \fi\fi
+  \@vwid@sift}%
+     }%
+   }
+\AddToHook{file/german.sty/after}[firstaid]{%
+  \FirstAidNeededT{german}{sty}{1998/07/08 v2.5e Support for writing german texts (br)}
+                  {%
+\let\grmn@active@dq@\@active@dq
+\def\@active@dq{\protect\grmn@active@dq@}%
+\germanTeX
+}%
+}
+\AddToHook{file/ngerman.sty/after}[firstaid]{%
+  \FirstAidNeededT{ngerman}{sty}{1998/07/08 v2.5e Support for writing german texts (br)}
+                  {%
+\let\grmn@active@dq@\@active@dq
+\def\@active@dq{\protect\grmn@active@dq@}%
+\ngermanTeX
+}%
+}
+\AddToHook{file/memoir.cls/before}[firstaid]{%
+  \expandafter\def\expandafter\@tempa\string\dimen{}%
+  \edef\kernel@stockheight{\expandafter\@tempa\meaning\stockheight}%
+  \edef\kernel@stockwidth{\expandafter\@tempa\meaning\stockwidth}%
+  \let\stockheight\@undefined
+  \let\stockwidth\@undefined
+}
+\AddToHook{file/memoir.cls/after}[firstaid]{%
+  \dimen\kernel@stockheight=\stockheight
+  \dimen\kernel@stockwidth=\stockwidth
+  \dimendef\stockheight=\kernel@stockheight
+  \dimendef\stockwidth=\kernel@stockwidth
+}
+\endinput
+%%
+%% End of file `latex2e-first-aid-for-external-files.ltx'.

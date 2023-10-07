@@ -1,0 +1,256 @@
+%% dvisvgm.def
+%% Copyright 2015 by Till Tantau
+%% Copyright 2016-2022 by Till Tantau and LaTeX3 Project
+%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3c
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3c or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The Current Maintainer of this work is the LaTeX3 Project.
+%%
+%% https://github.com/latex3/graphics-def/issues
+%
+\ProvidesFile{dvisvgm.def}[2022/09/22 v1.6 dvisvgm graphics driver for latex]
+% The following is copied from dvips.def:
+\def\GPT@space{ }
+\def\c@lor@arg#1{%
+  \dimen@#1\p@
+  \ifdim\dimen@<\z@\dimen@\maxdimen\fi
+  \ifdim\dimen@>\p@
+    \PackageError{color}{Argument `#1' not in range [0,1]}\@ehd
+  \fi}
+\def\color@gray#1#2{%
+  \c@lor@arg{#2}%
+  \edef#1{gray #2}%
+  }
+\def\color@cmyk#1#2{\c@lor@@cmyk#2\@@#1}
+\def\c@lor@@cmyk#1,#2,#3,#4\@@#5{%
+  \c@lor@arg{#4}%
+  \c@lor@arg{#1}%
+  \c@lor@arg{#2}%
+  \c@lor@arg{#3}%
+  \edef#5{cmyk #1 #2 #3 #4}%
+  }
+\def\color@rgb#1#2{\c@lor@@rgb#2\@@#1}
+\def\c@lor@@rgb#1,#2,#3\@@#4{%
+  \c@lor@arg{#1}%
+  \c@lor@arg{#2}%
+  \c@lor@arg{#3}%
+  \edef#4{rgb #1 #2 #3}%
+  }
+\def\color@RGB#1#2{\c@lor@@RGB#2\@@#1}
+\def\c@lor@@RGB#1,#2,#3\@@#4{%
+ \c@lor@RGB@rgb{#1}\@tempa
+ \c@lor@RGB@rgb{#2}\@tempb
+ \c@lor@RGB@rgb{#3}\@tempc
+ \c@lor@@rgb\@tempa,\@tempb,\@tempc\@@#4%
+  }
+\def\c@lor@RGB@rgb#1#2{%
+  \dimen@#1\p@
+  \divide\dimen@\@cclv
+  \edef#2{\strip@pt\dimen@}}
+\def\color@hsb#1#2{\c@lor@@hsb#2\@@#1}
+\def\c@lor@@hsb#1,#2,#3\@@#4{%
+  \c@lor@arg{#1}%
+  \c@lor@arg{#2}%
+  \c@lor@arg{#3}%
+  \edef#4{hsb #1 #2 #3}%
+  }
+\def\color@named#1#2{\c@lor@@named#2,,\@@#1}
+\def\c@lor@@named#1,#2,#3\@@#4{%
+  \@ifundefined{col@#1}%
+    {\PackageError{color}{Undefined color `#1'}\@ehd}%
+  {\edef#4{ #1}}%
+  }
+% Mapping to literal Postscript, matching dvips.def, used by PSTricks
+\def\c@lor@to@ps#1 #2\@@{\csname c@lor@ps@#1\endcsname#2 \@@}
+\def\c@lor@ps@#1 #2\@@{TeXDict begin #1 end}
+\def\c@lor@ps@rgb#1\@@{#1 setrgbcolor}
+\def\c@lor@ps@hsb#1\@@{#1 sethsbcolor}
+\def\c@lor@ps@cmyk#1\@@{#1 setcmykcolor}
+\def\c@lor@ps@gray#1\@@{#1 setgray}
+\def\current@color{ Black}
+\def\set@color{\special{color push  \current@color}\aftergroup\reset@color}
+\def\reset@color{\special{color pop}}
+\def\set@page@color{\special{background  \current@color}}
+\def\define@color@named#1#2{\expandafter\let\csname col@#1\endcsname\@nnil}
+\def\Grot@start{%
+  \special{ps: gsave currentpoint currentpoint translate \Grot@angle\GPT@space neg rotate neg exch neg exch translate}%
+  \special{dvisvgm:bbox \strip@pt\wd\z@ pt \strip@pt\ht\z@ pt \strip@pt\dp\z@ pt transform}%
+  \special{ps: grestore}%
+  \special{dvisvgm:raw <g transform="translate({?x},{?y})scale(1,-1)rotate(\Grot@angle)scale(-1,1)translate({?x},{?y})scale(-1)">}%
+  \special{dvisvgm:bbox lock}%
+}
+\def\Grot@end{\special{dvisvgm:bbox unlock}\special{dvisvgm:raw </g>}}
+\def\Gscale@start{%
+  \special{ps: gsave currentpoint currentpoint translate \Gscale@x\GPT@space \Gscale@y\GPT@space scale neg exch neg exch translate}%
+  \special{dvisvgm:bbox \strip@pt\wd\z@ pt \strip@pt\ht\z@ pt \strip@pt\dp\z@ pt transform}%
+  \special{ps: grestore}%
+  \special{dvisvgm:raw <g transform="translate({?x},{?y})scale(\Gscale@x,\Gscale@y)scale(-1)translate({?x},{?y})scale(-1)">}%
+  \special{dvisvgm:bbox lock}%
+}
+\let\Gscale@end\Grot@end
+\def\Gin@extensions{.svg,.eps,.pdf,.png,.jpg,.jpeg}
+\def\Ginclude@pdf#1{\Ginclude@psorpdf{#1}{pdffile}}
+\def\Ginclude@eps#1{\let\Gin@page\@empty\Ginclude@psorpdf{#1}{PSfile}}
+\def\Ginclude@psorpdf#1#2{%
+  \message{<#1>}%
+  \bgroup
+  \def\@tempa{!}%
+  \dimen@\Gin@req@width
+  \dimen@ii.1bp%
+  \divide\dimen@\dimen@ii
+  \@tempdima\Gin@req@height
+  \divide\@tempdima\dimen@ii
+    \special{#2="#1"\GPT@space
+      \ifx\Gin@page\@empty\else page=\Gin@page\GPT@space\fi
+      llx=\Gin@llx\GPT@space
+      lly=\Gin@lly\GPT@space
+      urx=\Gin@urx\GPT@space
+      ury=\Gin@ury\GPT@space
+      \ifx\Gin@scalex\@tempa\else rwi=\number\dimen@\GPT@space\fi
+      \ifx\Gin@scaley\@tempa\else rhi=\number\@tempdima\GPT@space\fi
+      \ifGin@clip clip\fi
+    }%
+  \egroup}
+\@namedef{Gin@rule@.ps}#1{{eps}{.ps}{#1}}
+\@namedef{Gin@rule@.eps}#1{{eps}{.eps}{#1}}
+\@namedef{Gin@rule@.mps}#1{{eps}{.mps}{#1}}
+\@namedef{Gin@rule@.pdf}#1{{pdf}{.xbb}{#1}}
+% BoundingBox determination (from dvipdfmx.def)
+\def\Gread@pdf#1{%
+  \Gread@generic{#1}\Gread@extractbb@aux%
+}%
+\def\Gread@extractbb@aux#1{%
+  \ifeof\@inputcheck%
+    \immediate\openin\@inputcheck=%
+      "|extractbb %
+      \ifx\Gin@page\@empty\else -p \Gin@page\GPT@space\fi
+      \ifx\Gin@pagebox\@empty\else -B \Gin@pagebox\GPT@space\fi
+      -O \Gin@base\Gin@ext"%
+  \fi%
+  \Gread@true%
+  \let\@tempb\Gread@false%
+  \ifeof\@inputcheck%
+    \@latex@error%
+      {Cannot run pipe command. Try --shell-escape\MessageBreak%
+       (--enable-pipes in MikTeX) option}%
+      {Alternatively, execute\MessageBreak\space\space
+         extractbb
+         \ifx\Gin@page\@empty\else -p \Gin@page\GPT@space\fi
+         \ifx\Gin@pagebox\@empty\else -B \Gin@pagebox\GPT@space\fi
+         \Gin@base\Gin@ext\MessageBreak in a terminal.}%
+  \else%
+    \loop%
+      \read\@inputcheck to\@tempa%
+      \ifeof\@inputcheck%
+        \Gread@false%
+      \else%
+        \expandafter\Gread@find@bb\@tempa:.\\%
+      \fi%
+      \ifGread@%
+      \repeat%
+    \immediate\closein\@inputcheck%
+  \fi%
+}
+\def\Ginclude@bitmap#1{%
+  \dimen@\Gin@urx pt%
+  \advance\dimen@ by-\Gin@llx pt%
+  \edef\Gin@svg@view@width{\strip@pt\dimen@}%
+  \dimen@\Gin@ury pt%
+  \advance\dimen@ by-\Gin@lly pt%
+  \edef\Gin@svg@view@height{\strip@pt\dimen@}%
+  \dimen@\Gin@svg@real@height@bp pt%
+  \advance\dimen@ by-\Gin@ury pt%
+  \edef\Gin@svg@view@base{\strip@pt\dimen@}%
+  \special{dvisvgm:bbox \strip@pt\Gin@req@width pt \strip@pt\Gin@req@height pt transform}%
+  \Gin@req@width0.99626\Gin@req@width%
+  \Gin@req@height0.99626\Gin@req@height%
+  \raise\strip@pt\Gin@req@height bp\hbox{%
+    \special{dvisvgm: raw
+      <g transform="translate({?x},{?y})">%
+        <svg overflow="\ifGin@clip hidden\else visible\fi" width="\strip@pt\Gin@req@width" height="\strip@pt\Gin@req@height"
+             viewBox="\Gin@llx\GPT@space\Gin@svg@view@base\GPT@space\Gin@svg@view@width\GPT@space\Gin@svg@view@height">%
+          <image width="\Gin@svg@real@width@bp" height="\Gin@svg@real@height@bp" xlink:href="#1"/>%
+        </svg>%
+      </g>}%
+  }%
+}
+
+\@namedef{Gin@rule@.svg}#1{{svg}{.svg}{#1}}
+\let\Ginclude@svg\Ginclude@bitmap
+\def\Gread@svg#1{%
+  \begingroup
+  \catcode`\"12\relax%
+  \immediate\openin\@inputcheck#1 %
+  \ifeof\@inputcheck
+    \@latex@error{File `#1' not found}\@ehc
+  \else
+     \let\Gin@urx\relax
+     \let\Gin@ury\relax
+     \Gread@true
+     \let\@tempb\Gread@false
+     \loop
+       \read\@inputcheck to\@tempa
+       \ifeof\@inputcheck
+         \Gread@false
+       \else
+         \ifx\@tempa\Gin@partext\else
+           \ifx\Gin@ury\relax\expandafter\Gread@svg@height\@tempa height=\relax\fi%
+           \ifx\Gin@urx\relax\expandafter\Gread@svg@width\@tempa width=\relax\fi%
+         \fi%
+       \fi
+       \ifx\Gin@urx\relax\else\ifx\Gin@ury\relax\else\Gread@false\fi\fi%
+     \ifGread@
+     \repeat
+     \immediate\closein\@inputcheck
+     \ifx\Gin@urx\relax
+       \@latex@error{Cannot determine width of graphic in #1 (no BoundingBox)}\@ehc
+       \def\Gin@urx{72}%
+     \fi
+     \ifx\Gin@ury\relax
+       \@latex@error{Cannot determine height of graphic in #1 (no BoundingBox)}\@ehc
+       \def\Gin@ury{72}%
+     \fi
+  \fi
+  \edef\Gin@setter{\def\noexpand\Gin@urx{\Gin@urx}\def\noexpand\Gin@ury{\Gin@ury}}%
+  \expandafter\endgroup\Gin@setter%
+  \def\Gin@llx{0}%
+  \def\Gin@lly{0}%
+  \edef\Gin@svg@real@width@bp{\Gin@urx}%
+  \edef\Gin@svg@real@height@bp{\Gin@ury}%
+}
+\def\Gin@partext{\par}
+\def\Gread@svg@height#1height={\@ifnextchar\relax{}{\@ifnextchar'\Gread@svg@height@apo\Gread@svg@height@double}}
+\def\Gread@svg@height@apo'#1'#2\relax{\afterassignment\Gin@gobble@till@relax\dimen@#1pt\relax\edef\Gin@ury{\strip@pt\dimen@}}
+\def\Gread@svg@height@double"#1"#2\relax{\afterassignment\Gin@gobble@till@relax\dimen@#1pt\relax\edef\Gin@ury{\strip@pt\dimen@}}
+\def\Gread@svg@width#1width={\@ifnextchar\relax{}{\@ifnextchar'\Gread@svg@width@apo\Gread@svg@width@double}}
+\def\Gread@svg@width@apo'#1'#2\relax{\afterassignment\Gin@gobble@till@relax\dimen@#1pt\relax\edef\Gin@urx{\strip@pt\dimen@}}
+\def\Gread@svg@width@double"#1"#2\relax{\afterassignment\Gin@gobble@till@relax\dimen@#1pt\relax\edef\Gin@urx{\strip@pt\dimen@}}
+\def\Gin@gobble@till@relax#1\relax{}
+\edef\Gin@hash@tag{\string#}
+
+\@namedef{Gin@rule@.jpg}#1{{bitmap}{.xbb}{#1}}
+\@namedef{Gin@rule@.jpeg}#1{{bitmap}{.xbb}{#1}}
+\@namedef{Gin@rule@.png}#1{{bitmap}{.xbb}{#1}}
+
+% Replace
+\def\Gread@bitmap#1{%
+  \Gread@generic{#1}\Gread@extractbb@aux%
+  \dimen@\Gin@urx pt%
+  \advance\dimen@ by-\Gin@llx pt%
+  \edef\Gin@svg@real@width@bp{\strip@pt\dimen@}%
+  \dimen@\Gin@ury pt%
+  \advance\dimen@ by-\Gin@lly pt%
+  \edef\Gin@svg@real@height@bp{\strip@pt\dimen@}%
+}
+
+\endinput
+%%
+%% End of file `dvisvgm.def'.

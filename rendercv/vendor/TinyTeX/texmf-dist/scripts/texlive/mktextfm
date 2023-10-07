@@ -1,0 +1,182 @@
+#!/bin/sh
+# original mktextfm -- make a new TFM file, because one wasn't found.
+# 
+# (If you change or delete the word `original' on the previous line,
+# installation won't write this script over yours.)
+# 
+# Primarily written by Thomas Esser, Karl Berry, and Olaf Weber.
+# Public domain.
+
+version='$Id: mktextfm 53602 2020-01-30 22:18:33Z karl $'
+progname=`echo $0 | sed 's%.*/%%'`
+
+# preferentially use subprograms from our own directory.
+mydir=`echo "$0" | sed 's,/[^/]*$,,'`
+mydir=`cd "$mydir" && pwd`
+PATH="$mydir:$PATH"; export PATH
+
+usage="Usage: $progname [--destdir DESTDIR] FONT.
+
+Makes a TFM file for FONT, if possible. Use DESTDIR for the root of where
+to install into, either the absolute directory name to use (if it starts
+with a /) or relative to the default DESTDIR (if not).
+
+See the mktexpk and updmap help messages for more general information on
+making fonts available.
+
+If the environment variable MF_MODE_EXTRA_INFO is non-empty, the
+codingscheme and other so-called Xerox-world information will be
+included in the tfm file.
+
+Report bugs to: tex-k@tug.org
+TeX Live home page: <https://tug.org/texlive/>
+"
+
+# Handle non-positional options, except for --version/--help
+while test $# -gt 0; do
+  case "$1" in
+    --destdir|-destdir) shift; DEST="$1"; shift ;;
+    --destdir=*|-destdir=*) DEST=`echo "$1" | sed 's/--*destdir=//'`; shift ;;
+    --version|-version) break ;;
+    --help|-help) break ;;
+    *) break ;;
+  esac
+done
+
+# Common code for all scripts.
+: ${MT_TEXMFMAIN=`kpsewhich --expand-path='$TEXMFMAIN'`}
+: ${MT_MKTEX_OPT=`kpsewhich --format='web2c files' mktex.opt`}
+test -n "$MT_MKTEX_OPT" || MT_MKTEX_OPT="$MT_TEXMFMAIN/web2c/mktex.opt"
+if test ! -f "$MT_MKTEX_OPT"; then
+  echo "$progname: Cannot find mktex.opt; check your installation." >&2
+  exit 1
+fi
+
+. "$MT_MKTEX_OPT"
+
+# Where do potential mf driver files go?
+case "$MT_FEATURES" in
+  *nomfdrivers*)
+     : ${MT_MFDESTDIR=`pwd`}
+     export MT_MFDESTDIR;;
+esac
+
+# start of redirection stdout -> stderr, stdin <- /dev/null
+(
+
+NAME=`basename "$1" .tfm`
+MAG=1  # mag=0 fails with larm1000.mf
+#DEST="$2"
+DPI=$BDPI
+
+OIFS=$IFS; IFS=$SEP
+set x `"$MT_MKTEXNAM" $NAME $DPI $MODE $DEST`; shift
+IFS=$OIFS
+
+PKDEST="$1"
+TFMDEST="$2"
+PKDESTDIR=`echo "$PKDEST" | sed 's%/[^/][^/]*$%%'` # can't rely on dirname
+TFMDESTDIR=`echo "$TFMDEST" | sed 's%/[^/][^/]*$%%'`
+PKNAME=`basename "$PKDEST"`
+TFMNAME=$NAME.tfm
+GFNAME=$NAME.$DPI'gf'
+
+if test -r "$TFMDESTDIR/$TFMNAME"; then
+  echo "$progname: $TFMDESTDIR/$TFMNAME already exists." >&2
+  echo "$TFMDESTDIR/$TFMNAME" >$STDOUT
+  "$MT_MKTEXUPD" "$TFMDESTDIR" $TFMNAME
+  exit
+fi
+
+# Try to create the destdir first. Do not create fonts, if this fails.
+"$MT_MKTEXDIR" "$TFMDESTDIR"
+if test ! -d "$TFMDESTDIR"; then
+  echo "$progname: mktexdir $TFMDESTDIR failed."
+  exit 1
+fi
+
+# Check if this font is supported by hbf2gf else use metafont.
+if (hbf2gf -q -t $NAME) >/dev/null 2>&1; then
+  cmd="hbf2gf -g $NAME $DPI"
+else
+  # determine the progname of metafont to use; prefer mf-nowin.
+  if (mf-nowin --version) >/dev/null 2>&1; then
+    MF="mf-nowin -progname=mf"
+  else
+    MF=mf
+  fi
+
+  # The idea here is to provide a programmatic way to get the
+  # codingscheme and other so-called Xerox-world information into the
+  # tfm: if the envvar MF_MODE_EXTRA_INFO is set, then modes.mf (as of
+  # the 3.9 release in January 2020) will arrange for that.  We do not
+  # do this by default because Knuth objected.
+  #
+  if test -n "$MF_MODE_EXTRA_INFO"; then
+    mf_extra_info="if known mode_include_extra_info_available: "
+    mf_extra_info="$mf_extra_info mode_include_extra_info fi"
+   else
+   mf_extra_info=""
+  fi
+  
+  cmd="$MF \mode:=$MODE; mag:=$MAG; $mf_extra_info; nonstopmode; input $NAME"
+fi
+
+echo "$progname: Running $cmd"
+$cmd </dev/null || {
+  # Don't abort if only "Strange path", "bad pos" or "angle(0,0)"
+  # errors occurr.
+  grep '^!' $NAME.log | sort >$$.errs 2>/dev/null
+  grep '^! Strange path' $$.errs >$$.strange 2>/dev/null
+  grep '^! bad pos.' $$.errs >$$.badpos 2>/dev/null
+  grep '^! angle(0,0) is taken as zero.' $$.errs >$$.angle 2>/dev/null
+  cat $$.badpos $$.strange $$.angle | sort > $$.errs_accept
+  if cmp $$.errs $$.errs_accept >/dev/null 2>&1; then
+    test -s $$.strange >/dev/null 2>&1 \
+      && echo "$progname: warning: \`$cmd' caused strange path errors." >&2
+    test -s $$.badpos >/dev/null 2>&1 \
+      && echo "$progname: warning: \`$cmd' caused bad pos errors." >&2
+    test -s $$.angle >/dev/null 2>&1 \
+      && echo "$progname: warning: \`$cmd' caused angle(0,0) errors." >&2
+  else
+    echo "$progname: \`$cmd' failed." >&2
+    test -s $NAME.log && mv -f $NAME.log "$KPSE_DOT"
+    exit 1;
+  fi
+}
+
+# hbf2gf just produces a .pl file:
+test -r ./$NAME.pl && pltotf ./$NAME.pl $TFMNAME
+test -r $TFMNAME || { echo "$progname: \`$cmd' failed to make $TFMNAME."; exit 1; }
+
+# Install the TFM file carefully, since others may be working simultaneously.
+# Use cp when mv fails, since DOS will fail mv for deeply-nested directories.
+mv $TFMNAME "$TFMDESTDIR/tfm$$.tmp" 2>/dev/null \
+  || cp $TFMNAME "$TFMDESTDIR/tfm$$.tmp" || exit 1
+cd "$TFMDESTDIR" || exit 1
+chmod `kpsestat -xst,go-w .` tfm$$.tmp
+test -r $TFMNAME || mv tfm$$.tmp $TFMNAME || exit 1
+
+# OK, success with the TFM.
+"$MT_MKTEXUPD" "$TFMDESTDIR" $TFMNAME
+echo "$TFMDESTDIR/$TFMNAME" >$STDOUT
+echo "$progname: $TFMDESTDIR/$TFMNAME: successfully generated." >&2
+
+# Since we probably made a GF(->PK) file, too, may as well install it if
+# it's needed.
+cd $TEMPDIR
+if test -r $GFNAME && test ! -f "$PKDESTDIR/$PKNAME"; then
+  gftopk ./$GFNAME $PKNAME || exit 1
+  "$MT_MKTEXDIR" "$PKDESTDIR"
+  mv $PKNAME "$PKDESTDIR/pk$$.tmp" 2>/dev/null \
+    || cp $PKNAME "$PKDESTDIR/pk$$.tmp" || exit 1
+  cd "$PKDESTDIR" || exit 1
+  if test -f $PKNAME; then
+    rm -f pk$$.tmp
+  else
+    chmod `kpsestat -xst,go-w .` pk$$.tmp
+    mv pk$$.tmp $PKNAME
+    "$MT_MKTEXUPD" "$PKDESTDIR" $PKNAME
+  fi
+fi
+) 1>&2 </dev/null

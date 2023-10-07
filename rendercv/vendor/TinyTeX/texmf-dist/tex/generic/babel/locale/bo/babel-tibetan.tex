@@ -1,0 +1,142 @@
+% This file is part of babel. For further details see:
+% https://www.ctan.org/pkg/babel
+\ifx\BabelBeforeIni\undefined
+  \PackageError{babel}%
+    {This file is a component of babel and cannot\MessageBreak
+     be loaded directly. I'll stop immediately}%
+    {Just use babel as documented.}%
+  \stop
+\fi
+\BabelBeforeIni{bo}{%
+}
+
+\ifcase\bbl@engine\or
+
+\bbl@warning{%
+  Tibetan line breaking and justification are tentative.\\%
+  They might not work as expected and their behavior\\%
+  could change in the future. Feel free to contribute.\\%
+  Reported}%
+
+\directlua{
+  Babel.tibetan = Babel.tibetan or {}
+  Babel.tibetan.shad = {.5, 0, 0, false}
+  Babel.tibetan.tsheg = {0, .0001, 0, false}
+  Babel.tibetan.intraspace = {0, 0, 0} % TODO
+}
+
+\AtBeginDocument{%
+  % (1) Spacing
+  \edef\bbl@tempe{\directlua{
+    tex.print(table.concat(Babel.tibetan.shad, ' ', 1, 3))
+  }}%
+  \babelprehyphenation{tibetan}{[{a}{p}]|}%
+    { {}, {space=\bbl@tempe, data=1 } }%
+  % (2) Line breaking
+  \babelprehyphenation{tibetan}{[^^^^0f0d^^^^0f0e]|[^^^^0f0d^^^^0f0e]}%
+    { {}, {insert, penalty=10000}, {}, {} }%
+  \babelprehyphenation{tibetan}{[^^^^0f0d^^^^0f0e][^^^^0f40-^^^^0f6a]}%
+    { {}, {insert, space=0 0 0}, {} }%
+  \edef\bbl@tempe{\directlua{
+    tex.print(table.concat(Babel.tibetan.tsheg, ' ', 1, 3))
+  }}%
+  \babelprehyphenation{tibetan}{^^^^0f0b[^ ^^^^0f0d^^^^0f0e]}%
+    { {insert, penalty=10000}, {insert, space=\bbl@tempe, data=1}, {},
+      {insert, space=\bbl@tempe, data=1}, {} }}
+      
+\def\bbl@tibetanjust{%
+  % (3) Justification
+  \directlua{
+    Babel.tibetan = Babel.tibetan or {}
+    %
+    Babel.tibetan.justify_enabled = true
+    Babel.tibetan.justify_factor = 1
+    %
+    function Babel.tibetan.justify(head)
+      if not Babel.tibetan.justify_enabled then return head end
+      for line in node.traverse_id(node.id'hlist', head) do
+        Babel.tibetan.justify_hlist(head, line)
+      end
+      return head
+    end
+    %
+    function Babel.tibetan.justify_hbox(head, gc, size, pack)
+      local has_infte = false
+      if Babel.tibetan.justify_enabled and pack == 'exactly' then
+        for n in node.traverse_id(12, head) do
+          if n.stretch_order > 0 then has_infte = true end
+        end
+        if not has_infte then
+          Babel.tibetan.justify_hlist(head, nil, gc, size, pack)
+        end
+      end
+      return head
+    end
+    %
+    function Babel.tibetan.justify_hlist(head, line, gc, size, pack)
+      local d, new
+      local last_t
+      local width, width_new, full, goal, shift
+      local subst_done = false
+      local GLYPH = node.id'glyph'
+      local LOCALE = Babel.attr_locale
+      %
+      if line == nil then
+        line = {}
+        line.glue_sign = 1
+        line.glue_order = 0
+        line.head = head
+        line.shift = 0
+        line.width = size
+      end
+      %
+      if (line.glue_sign == 1 and line.glue_order == 0) then
+        last_t = nil
+        for n in node.traverse_id(GLYPH, line.head) do
+          if n.char == 0x0f0b then % TSHEG
+            last_t = n
+          else
+            last_t = nil
+          end
+        end
+        %
+        if not last_t then goto next_line end
+        %
+        full  = line.width
+        shift = line.shift
+        goal  = full * Babel.tibetan.justify_factor % A bit crude
+        width = node.dimensions(line.head)    % The 'natural' width
+        %
+        while width < goal do
+          subst_done = true
+          d = node.copy(last_t)
+          line.head, new = node.insert_after(line.head, last_t, d)
+          width_new = node.dimensions(line.head)
+          if width_new > goal or width == width_new then
+            node.remove(line.head, new) % Better compute before
+            break
+          end
+          width = width_new
+        end
+        % Must take into account marks and ins, see luatex manual.
+        % Have to be executed only if there are changes. Investigate
+        % what's going on exactly.     
+        if subst_done and not gc then
+          d = node.hpack(line.head, full, 'exactly')
+          d.shift = shift
+          node.insert_before(head, line, d)
+          node.remove(head, line)
+        end
+        ::next_line::
+      end % if process line
+    end
+    %
+    luatexbase.add_to_callback('post_linebreak_filter',
+      Babel.tibetan.justify, 'Babel.tibetan.justify')
+    luatexbase.add_to_callback('hpack_filter',
+      Babel.tibetan.justify_hbox, 'Babel.tibetan.justify_hbox')
+  }}
+  
+\fi
+
+\endinput

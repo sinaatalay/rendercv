@@ -1,0 +1,1942 @@
+% \iffalse meta-comment
+% ======================================================================
+% scrkernel-floats.dtx
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrkernel-floats.dtx 4054 2023-05-10 14:35:36Z kohm $
+%<option>%%%            (run: option)
+%<body>%%%            (run: body)
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2023-05-10 16:35:36 +0200 (Mi, 10. Mai 2023) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 4054 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrkernel-floats.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script source
+                           (floats)]
+  }%
+\reserved@a
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\setcounter{StandardModuleDepth}{2}
+\begin{document}
+\DocInput{scrkernel-floats.dtx}
+\end{document}
+%</dtx>
+% \fi
+%
+% \changes{v2.95}{2002/07/01}{new by splitting \file{scrclass.dtx}}
+% \changes{v3.36}{2022/02/22}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/02/22}{implementation documentation in English}
+% \changes{v3.40}{2023/04/17}{guide names changed}
+%
+% \GetFileInfo{scrkernel-floats.dtx}
+% \title{Code for the Foats of the
+%   \href{https://komascript.de}{\KOMAScript} Classes}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   The code for floats in \file{scrkernel-floats.dtx} is older than the
+%   generic hook mechanism in the \LaTeX{} kernel. Because of this, it
+%   currently does not use the kernel hook mechanism. Mostly it is also older
+%   then the \KOMAScript{} package \pkg*{tocbasic} to implement and manage
+%   floats. So several code has been adapted several times and maybe a general
+%   re-implementation would be a good idea.
+% \end{abstract}
+% \tableofcontents
+%
+% \section{User Manual}
+%
+% You can find the user documentation the commands implemented here in the
+% \KOMAScript{} manual, either the German \file{scrguide-de.pdf} or the English
+% \file{scrguide-en.pdf}.
+%
+% \subsection{Features not yet in the user manuals}
+%
+% \DescribeEnv{figure-,table-}
+% These are non floating versions of \env{figure} and \env{table} defined
+% using \cs{DeclareNewTOC}. See the description of this command in the
+% \KOMAScript{} manuals for more information.
+%
+%
+% \MaybeStop{\PrintIndex}
+%
+%
+% \section{Implementation of Floats}
+%
+% All this code is for the classes only and not for the \KOMAScript{} letter
+% class, because letter classes usually do not provide floats. If you need
+% letters with floats, just use \KOMAScript{} class \cls*{scrartcl} with
+% \KOMAScript{} package \pkg*{scrletter}.
+%
+%    \begin{macrocode}
+%<*class&!letter>
+%    \end{macrocode}
+% 
+% \subsection{Some macros and configurations for the options}
+%
+% We need some of the macros an settings already when processing the options.
+%
+% \begin{macro}{\@captionabovefalse,\@captionabovetrue,\if@captionabove}
+% \changes{v2.8h}{2001/07/19}{added}
+% \changes{v3.09}{2011/03/23}{moved before definition of options}
+% Boolean switch to decide whether a \cs{caption} has to behave like
+% \cs{captionabove} or \cs{captionbelow}. The default is \cs{captionbelow}.
+%    \begin{macrocode}
+%<*option>
+\newif\if@captionabove\@captionabovefalse
+%    \end{macrocode}  
+% \end{macro}^^A \if@captionabove
+%
+% \begin{macro}{\@tablecaptionabovefalse,\@tablecaptionabovetrue,\if@tablecaptionabove}
+% \changes{v2.8h}{2001/07/19}{added}
+% \changes{v2.8k}{2001/08/15}{moved from \pkg*{typearea} into the classes}
+% \changes{v2.98c}{2008/02/18}{moved before definition of options}
+% Boolean switch to decide whether a \cs{caption} inside a \env{table}
+% environment has to behave like \cs{captionabove} or \cs{captionbelow}. The
+% default is \cs{captionbelow}.
+%    \begin{macrocode}
+\newif\if@tablecaptionabove\@tablecaptionabovefalse
+%    \end{macrocode}
+% \end{macro}^^A \if@tablecaptionabove
+%
+% \begin{macro}{\@figurecaptionabovefalse,\@figurecaptionabovetrue,\if@figurecaptionabove}
+% \changes{v3.09}{2011/03/23}{added}
+% Boolean switch to decide whether a \cs{caption} inside a \env{figure}
+% environment has to behave like \cs{captionabove} or \cs{captionbelow}. The
+% default is \cs{captionbelow}.
+%    \begin{macrocode}
+\newif\if@figurecaptionabove\@figurecaptionabovefalse
+%    \end{macrocode}
+% \end{macro}^^A \if@figurecaptionabove
+%
+% \begin{macro}{\onelinecaptionsfalse,\onelinecaptionstrue,\ifonelinecaptions}
+% \changes{v2.8q}{2001/11/17}{added}
+% \changes{v2.98c}{2008/03/03}{earlier definition}
+% The boolean is used to distinguish whether or not use a special handling of
+% captions with one text line only. The name of the boolean is traditionally
+% but nevertheless should seen as internal.
+%    \begin{macrocode}
+\newif\ifonelinecaptions\onelinecaptionstrue
+%    \end{macrocode}
+% \end{macro}^^A \ifonelinecaptions
+%
+% \begin{macro}{\scap@pos}
+% \changes{v2.8q}{2001/11/22}{added}
+% \changes{v2.98c}{2008/03/03}{earlier definition}
+% Environment \env{captionbeside} supports several horizontal placements for
+% the caption beside the object:
+% \begin{description}
+% \item[\texttt{i}:] caption inner beside the object, which means left beside
+%   on odd pages and right beside on even pages (note: single-sided documents
+%   have only odd pages),
+% \item[\texttt{l}:] caption left beside the object,
+% \item[\texttt{o}:] caption outer beside the object, which means right beside
+%   on odd pages and left beside on even pages (note: single-sided documents
+%   have only odd pages),
+% \item[\texttt{r}:] caption right beside the object.
+% \end{description}
+% The default is right beside.
+%    \begin{macrocode}
+\newcommand*{\scap@pos}{r}
+%    \end{macrocode}
+% \end{macro}^^A \scap@pos
+%
+% \begin{macro}{\scap@valign}
+% \changes{v2.8q}{2001/11/22}{added}
+% \changes{v2.98c}{2008/03/03}{earlier definition}
+% Environment \env{captionbeside} support different vertical alignments
+% for the object box:
+% \begin{description}
+% \item[\texttt{c}:] centered,
+% \item[\texttt{b}:] bottom,
+% \item[\texttt{t}:] top.
+% \end{description}
+% The default is bottom.
+%    \begin{macrocode}
+\newcommand*{\scap@valign}{b}
+%    \end{macrocode}
+% \end{macro}^^A \scap@valign
+%
+% \subsection{Options for the captions}
+%
+% \begin{option}{captions}
+% \changes{v2.98c}{2008/02/18}{new \pkg*{keyval} option}
+% \changes{v3.09}{2011/04/02}{new values \opt{heading}, \opt{signature},
+%   \opt{figureheading}, \opt{figuresignature}}
+% \changes{v3.17}{2015/03/11}{using \cs{FamilyKeyState}}
+% \changes{v3.17}{2015/03/11}{using internal value storage}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% This is the general option for the settings of captions. Because of
+% compatibility with package \pkg{caption}, several of the macros, that are
+% used to handle the values to the option, cannot be renamed and have to be
+% used. This makes it difficult to change anything here. However, the
+% currently provides values are:
+%    \begin{macrocode}
+\KOMA@key{captions}{%
+  \KOMA@set@ncmdkey{captions}{@tempa}{%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=heading}:] change the \cs{caption} default to \cs{captionabove}.
+% \end{description}
+%    \begin{macrocode}
+    {heading}{0},{above}{0},{top}{0},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=signature}:] change the \cs{caption} default to \cs{captionbelow}.
+% \end{description}
+%    \begin{macrocode}
+    {signature}{1},{below}{1},{bot}{1},{bottom}{1},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=tableheading}:] change the \cs{caption} default inside
+%   \env{table} environments to \cs{captionabove}.
+% \end{description}
+%    \begin{macrocode}
+    {tableheading}{2},%
+    {tableabove}{2},{abovetable}{2},{abovetabular}{2},{topattable}{2},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=tablesignature}:] change the \cs{caption} default inside
+%   \env{table} environment to \cs{captionbelow}.
+% \end{description}
+%    \begin{macrocode}
+    {tablesignature}{3},%
+    {tablebelow}{3},{belowtable}{3},{belowtabular}{3},{bottomattable}{3},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=figureheading}:] change the \cs{caption} default inside
+%   \env{figure} environments to \cs{captionabove}.
+% \end{description}
+%    \begin{macrocode}
+    {figureheading}{4},{figureabove}{4},{abovefigure}{4},{topatfigure}{4},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=figuresignature}:] change the \cs{caption} default inside
+%   \env{figure} environment to \cs{captionbelow}.
+% \end{description}
+%    \begin{macrocode}
+    {figuresignature}{5},{figurebelow}{5},{belowfigure}{5},{bottomatfigure}{5},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=oneline}:] special treatment for one line captions.
+% \end{description}
+%    \begin{macrocode}
+    {oneline}{6},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=oneline}:] no special treatment for one line captions.
+% \end{description}
+%    \begin{macrocode}
+    {nooneline}{7},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=rightbeside}:] change horizontal \env{captionbeside} placement
+% to right beside (see \cs{scap@pos} above).
+% \end{description}
+%    \begin{macrocode}
+    {rightbeside}{8},{besideright}{8},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=leftbeside}:] change horizontal \env{captionbeside} placement
+% to left beside (see \cs{scap@pos} above).
+% \end{description}
+%    \begin{macrocode}
+    {leftbeside}{9},{besideleft}{9},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=innerbeside}:] change horizontal \env{captionbeside} placement
+% to inner beside (see \cs{scap@pos} above).
+% \end{description}
+%    \begin{macrocode}
+    {innerbeside}{10},{besideinner}{10},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=outerbeside}:] change horizontal \env{captionbeside} placement
+% to outer beside (see \cs{scap@pos} above).
+% \end{description}
+%    \begin{macrocode}
+    {outerbeside}{11},{besideouter}{11},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=topbeside}:] change vertical \env{captionbeside} alignment
+% to top (see \cs{scap@valign} above).
+% \end{description}
+%    \begin{macrocode}
+    {topbeside}{12},{besidetop}{12},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=centeredbeside}:] change vertical \env{captionbeside} alignment
+% to centered (see \cs{scap@valign} above).
+% \end{description}
+%    \begin{macrocode}
+    {centeredbeside}{13},{besidecentered}{13},%
+    {middlebeside}{13},{besidemiddle}{13},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=bottombeside}:] change vertical \env{captionbeside} alignment
+% to bottom (see \cs{scap@valign} above).
+% \end{description}
+%    \begin{macrocode}
+    {bottombeside}{14},{besidebottom}{14}%
+  }{#1}%
+  \ifx\FamilyKeyState\FamilyKeyStateProcessed
+    \ifcase \@tempa\relax % heading
+      \@tablecaptionabovetrue
+      \@figurecaptionabovetrue
+      \@captionabovetrue
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{heading}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{signature}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{heading}%
+   \or % signature
+      \@tablecaptionabovefalse
+      \@figurecaptionabovefalse
+      \@captionabovefalse
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{heading}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{signature}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{signature}%
+    \or % tableheading
+      \@tablecaptionabovetrue
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{tableheading}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{tablesignature}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{tableheading}%
+    \or % tablesignature
+      \@tablecaptionabovefalse
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{tableheading}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{tablesignature}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{tablesignature}%
+    \or % figureheading
+      \@figurecaptionabovetrue
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{figureheading}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{figuresignature}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{figureheading}%
+    \or % figuresignature
+      \@figurecaptionabovefalse
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{figureheading}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{figuresignature}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{figuresignature}%
+    \or % oneline
+      \onelinecaptionstrue
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{oneline}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{nooneline}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{oneline}%
+    \or % nooneline
+      \onelinecaptionsfalse
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{oneline}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{nooneline}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{nooneline}%
+    \or % rightbeside
+      \renewcommand*{\scap@pos}{r}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{rightbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{leftbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{innerbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{outerbeside}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{rightbeside}%
+    \or % leftbeside
+      \renewcommand*{\scap@pos}{l}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{rightbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{leftbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{innerbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{outerbeside}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{leftbeside}%
+    \or % innerbeside
+      \renewcommand*{\scap@pos}{i}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{rightbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{leftbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{innerbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{outerbeside}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{innerbeside}%
+    \or % outerbeside
+      \renewcommand*{\scap@pos}{o}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{rightbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{leftbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{innerbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{outerbeside}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{outerbeside}%
+    \or % topbeside
+      \renewcommand*{\scap@valign}{t}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{topbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{centeredbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{bottombeside}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{topbeside}%
+    \or % centeredbeside
+      \renewcommand*{\scap@valign}{c}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{topbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{centeredbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{bottombeside}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{centeredbeside}%
+    \or % bottombeside
+      \renewcommand*{\scap@valign}{b}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{topbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{centeredbeside}%
+      \KOMA@kav@remove{\KOMAClassFileName}{captions}{bottombeside}%
+      \KOMA@kav@add{\KOMAClassFileName}{captions}{bottombeside}%
+    \fi
+  \fi
+}
+\KOMA@kav@add{\KOMAClassFileName}{captions}{signature}
+\KOMA@kav@add{\KOMAClassFileName}{captions}{tablesignature}
+\KOMA@kav@add{\KOMAClassFileName}{captions}{figuresignature}
+\KOMA@kav@add{\KOMAClassFileName}{captions}{oneline}
+\KOMA@kav@add{\KOMAClassFileName}{captions}{rightbeside}
+\KOMA@kav@add{\KOMAClassFileName}{captions}{bottombeside}
+%    \end{macrocode}
+% \end{option}^^A captions
+%
+% \begin{option}{tablecaptionabove,tablecaptionbelow}
+% \changes{v2.8h}{2001/07/19}{added}
+% \changes{v2.8k}{2001/08/15}{moved from \pkg*{typearea} into the classes}
+% \changes{v2.98c}{2008/02/18}{obsolete} 
+% \changes{v3.01a}{2008/11/20}{deprecated}
+% \changes{v3.99}{2022/11/16}{not with \KOMAScript~4}
+% Implementation of deprecated options by mapping them to corresponding
+% \pkg*{keyval} options.
+%    \begin{macrocode}
+%<*!v4>
+\KOMA@DeclareDeprecatedOption{tablecaptionabove}{captions=tableheading}
+\KOMA@DeclareDeprecatedOption{tablecaptionbelow}{captions=tablesignature}
+%</!v4>
+%    \end{macrocode}
+% \end{option}^^A tablecaptionabove,tablecaptionbelow
+%
+% \begin{option}{origlongtable}
+% \changes{v2.8l}{2001/08/16}{added}
+% If package \pkg{longtable} is loaded, the classes redefine table titles
+% of that package. However, if the option has been set, this is prevented.
+% \begin{macro}{\@komalongtablefalse,\@komalongtabletrue,\if@komalongtable}
+% \changes{v2.8l}{2001/08/16}{added}
+% The wanted behaviour is stored in a boolean.
+%    \begin{macrocode}
+\newif\if@komalongtable\@komalongtabletrue
+\DeclareOption{origlongtable}{\@komalongtablefalse}
+%    \end{macrocode}
+% \end{macro}^^A \if@komalongtable
+% \end{option}^^A origlongtable
+%
+% \begin{option}{onelinecaption,noonelinecaption}
+% \changes{v2.8q}{2001/11/17}{new option}
+% \changes{v2.98c}{2008/03/03}{obsolete} 
+% \changes{v2.98c}{2008/03/03}{extra code for \pkg{caption2} removed}
+% \changes{v3.01a}{2008/11/20}{deprecated}
+% \changes{v3.99}{2022/11/16}{not with \KOMAScript~4}
+% Implementation of deprecated options by mapping them to corresponding
+% \pkg*{keyval} options.
+%    \begin{macrocode}
+%<*!v4>
+\KOMA@DeclareDeprecatedOption{onelinecaption}{captions=oneline}
+\KOMA@DeclareDeprecatedOption{noonelinecaption}{captions=nooneline}
+%</!v4>
+%</option> 
+%    \end{macrocode}
+% \end{option}^^A onelinecaption,noonelinecaption
+%
+%
+% \subsection{Macros and commands for the captions}
+%
+% \changes{v2.2c}{1995/05/25}{support for CJK added}
+% The initial feature for defining captions somehow different from the
+% standard classes was a request of Werner Lember to add support for CJK
+% languages. However not everything is changed. For example the usual lengths
+% of the standard classes are still defined, but interpreted somehow different.
+%
+% \begin{length}{\abovecaptionskip,\belowcaptionskip}
+% The distance above and below a caption. The default for captions below the
+% object is 10\,pt above the caption and 0 below. Note: For captions above
+% the object the lengths are switched: \len{abovecaptionskip} is used
+% \emph{below} the caption and \len{belowcaptionskip} is used \emph{above}
+% the caption then.
+%    \begin{macrocode}
+%<*body>
+\newlength{\abovecaptionskip}
+\newlength{\belowcaptionskip}
+\setlength{\abovecaptionskip}{10\p@}
+\setlength{\belowcaptionskip}{0\p@}
+%    \end{macrocode}
+% \end{length}^^A \abovecaptionskip,\belowcaptionskip
+% \begin{command}{\captionformat}
+% \changes{v2.3c}{1995/08/06}{added}
+% Separator between label (with number) an text only.
+%    \begin{macrocode}
+\newcommand*{\captionformat}{:\ }
+%    \end{macrocode}
+% \end{command}^^A \captionformat
+% \begin{command}{\captionabove,\captionbelow}
+% \changes{v2.8h}{2001/07/19}{added}
+% \begin{macro}{\scr@caption}
+% \changes{v2.8h}{2001/07/19}{added}
+% We have two different commands \cs{captionabove} and \cs{captionbelow} to
+% distinguish captions above or below the object. Internally both use
+% \cs{scr@caption}, but set either \cs{@captionabovetrue} or
+% \cs{@captionabovefalse}. To allow other packages (e.g. \pkg{hyperref} to
+% redefine \cs{caption} the final definition of \cs{scr@caption} is done in
+% |\begin{document}|. We cannot use \cs{caption} inside \cs{captionabove} or
+% \cs{captionbelow}, because we do use a redefinition of \cs{capion} to use
+% \cs{captionabove} or \cs{captionbelow} via \opt{atbegin} at \cs{DeclareNewTOC}.
+%    \begin{macrocode}
+\newcommand{\scr@caption}{}
+\AtBeginDocument{\let\scr@caption\caption}
+%    \end{macrocode}
+% \end{macro}^^A \scr@caption
+% Jetzt ist es möglich durch einfaches Umlegen des Schalters für die
+% korrekte Darstellung zu sorgen:
+%    \begin{macrocode}
+\newcommand{\captionabove}{\@captionabovetrue\scr@caption}
+\newcommand{\captionbelow}{\@captionabovefalse\scr@caption}
+%    \end{macrocode}
+% \end{command}^^A \captionabove,\captionbelow
+%
+%
+% \begin{environment}{captionbeside}
+% \changes{v2.8q}{2001/11/22}{added}
+% Placing captions above or below the object inside a float is easy. But to
+% place it beside the object an additional environment is needed. This has to
+% collect the object (environment body) into a box and then print it side by
+% side with a second box with the caption. Note: This cannot work with
+% tables of package \pkg{longtable} or \pkg{supertabular} or similar packages.
+% \begin{quote}\raggedright
+%   |\begin{captionbeside}|\oarg{list
+%     entry}\marg{caption}\oarg{position}\oarg{with}\oarg{offset}|*|\\
+%     \dots\\
+%   |\end{captionbeside}|
+% \end{quote}
+% Note: The asterisk is optional and changes the meaning of \meta{offset}.
+% \begin{macro}{\scap@caption}
+% \changes{v2.8q}{2001/11/22}{added}
+% The \meta{caption} is locally stored into helper macro \cs{scap@caption}.
+%    \begin{macrocode}
+\newcommand*{\scap@caption}{}
+%    \end{macrocode}
+% \end{macro}^^A \scap@caption
+% \begin{macro}{\scap@width}
+% \changes{v2.8q}{2001/11/22}{added}
+% The optional \meta{width}, which is the width of the whole environment
+% inclusive caption, is locally stored into helper macro \cs{scap@width}. The
+% default is the while line width.
+%    \begin{macrocode}
+\newcommand*{\scap@width}{\linewidth}
+%    \end{macrocode}
+% \end{macro}^^A \scap@width
+% \begin{macro}{\scap@move}
+% \changes{v2.8q}{2001/11/22}{added}
+% If \cs{scap@width} is not the line width, the environment is horizontal
+% centered by default. But if \meta{offset} is used, this is used as a
+% distance from the left margin. This is locally stored into helper macro
+% \cs{scap@move}.
+%    \begin{macrocode}
+\newcommand*{\scap@move}{\z@}
+%    \end{macrocode}
+% \end{macro}^^A \scap@move
+% \begin{macro}{\scap@altfalse,\scap@alttrue,\ifscap@alt}
+% \changes{v2.8q}{2001/11/22}{added}
+% The boolean switch \cs{ifscap@alt} is used to decide if in twoside mode the
+% movement of \cs{scap@move} has to be done from the left or the right margin
+% and to left or to the right.
+%    \begin{macrocode}
+\newif\ifscap@alt
+%    \end{macrocode}
+% \end{macro}^^A \ifscap@alt
+% \begin{macro}{\scap@currentlabel}
+% \changes{v2.8q}{2001/11/24}{added}
+% \begin{macro}{\scap@currentcounter,\scap@currentlabelname,\scap@currentHref}
+% \changes{v3.38}{2022/07/30}{added}
+% Because of using \cs{caption} inside a box and inside an environment, a
+% label after the \env{captionbeside} environment usually would not reference
+% the caption number. To preserve this after the end of the
+% \env{captionbeside} the current label and counter are locally stored into
+% global \cs{scap@currentlabel} and restored after the end of the environment
+% using \cs{aftergroup}. Note: You can have only one \cs{label} inside!
+%    \begin{macrocode}
+\newcommand*{\scap@currentlabel}{}
+\newcommand*{\scap@currentlabelname}{}
+\newcommand*{\scap@currentHref}{}
+%    \end{macrocode}
+% \end{macro}^^A \scap@currentcounter … \scap@currentHref
+% \end{macro}^^A \scap@currentlabel
+% \begin{macro}{\@@@captionbeside,\@@captionbeside,\@captionbeside}
+% \changes{v2.8q}{2001/11/22}{added}
+% \changes{v3.20}{2016/04/12}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
+% \begin{macro}{\@@@@captionbeside}
+% \changes{v2.8q}{2001/11/22}{added}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% To handle all the optional arguments and the optional star at the end,
+% several helper macros are needed (because we currently do not use \pkg{xparse}).
+%    \begin{macrocode}
+\newcommand*{\@captionbeside}{}
+\long\def\@captionbeside[#1]#2{%
+  \kernel@ifnextchar [%]
+    {\@@captionbeside[{#1}]{#2}}
+    {\c@pti@nb@sid@[{#1}]{#2}}%
+}
+\newcommand*{\@@captionbeside}{}
+\long\def\@@captionbeside[#1]#2[#3]{%
+  \def\scap@pos{#3}%
+  \kernel@ifnextchar [%]
+    {\@@@captionbeside[{#1}]{#2}}
+    {\c@pti@nb@sid@[{#1}]{#2}}%
+}
+\newcommand*{\@@@captionbeside}{}
+\long\def\@@@captionbeside[#1]#2[#3]{%
+  \def\scap@width{#3}%
+  \kernel@ifnextchar [%]
+    {\@@@@captionbeside[{#1}]{#2}}
+    {\setlength{\@tempdima}{#3}%
+      \addtolength{\@tempdima}{-\linewidth}%
+      \setlength{\@tempdima}{-.5\@tempdima}%
+      \edef\scap@move{\the\@tempdima}%
+      \c@pti@nb@sid@[{#1}]{#2}}%
+}
+\newcommand*{\@@@@captionbeside}{}
+\long\def\@@@@captionbeside[#1]#2[#3]{%
+  \def\scap@move{#3}%
+  \kernel@ifstar
+    {\scap@alttrue\c@pti@nb@sid@[{#1}]{#2}}
+    {\scap@altfalse\c@pti@nb@sid@[{#1}]{#2}}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@@@@captionbeside
+% \end{macro}^^A \@@@captionbeside … \@captionbeside
+% \begin{macro}{\c@pti@nb@sid@b@x}
+% \changes{v2.8q}{2001/11/22}{added}
+% We also use our own box register to collect the environment body.
+%    \begin{macrocode}
+\newbox\c@pti@nb@sid@b@x
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\c@pti@nb@sid@}
+% \changes{v2.8q}{2001/11/22}{added}
+% \changes{v2.98c}{2008/03/11}{vertical alignment fixed}
+% \changes{v3.07a}{2010/11/04}{vertical alignment \texttt{t} and \texttt{b}
+%   fixed}
+% \changes{v3.99}{2022/11/10}{vertical alignment fixed}
+% This is the real beginning of the environment. After collecting all the
+% arguments into local macros. Until version 4 the vertical alignment was
+% totally broken at least, if font element \fnt{caption} changes font
+% size. From version 4 we try to take care on this. However, the current
+% solution could still fail, if the first resp. last line of content of the
+% environment changes the font size.
+%    \begin{macrocode}
+\newcommand{\c@pti@nb@sid@}{}
+%<*!v4>
+\long\def\c@pti@nb@sid@[#1]#2{%
+  \def\scap@caption{%
+    \if c\scap@valign
+      \setlength{\abovecaptionskip}{\z@}%
+    \else \if t\scap@valign
+        \setlength{\abovecaptionskip}{-\ht\strutbox}%
+      \else \if b\scap@valign
+          \setlength{\abovecaptionskip}{\z@}%
+        \fi
+      \fi
+    \fi
+    \setlength{\belowcaptionskip}{-\dp\strutbox}%
+    \captionbelow[{#1}]{#2}%
+  }%
+  \begin{lrbox}{\c@pti@nb@sid@b@x}%
+}
+%</!v4>
+%<*v4>
+\long\def\c@pti@nb@sid@[#1]#2{%
+  \def\scap@caption{%
+    \abovecaptionskip\z@
+    \belowcaptionskip\z@
+    \if t\scap@valign
+      {%
+        \usekomafont{caption}{%
+          \global\@tempdima\ht\strutbox
+        }%
+      }%
+      \setlength{\abovecaptionskip}{-\@tempdima}%
+    \fi
+    \if b\scap@valign  
+      {%
+        \usekomafont{caption}{%
+          \global\@tempdima\dp\strutbox
+        }%
+      }%
+      \setlength{\belowcaptionskip}{\dimexpr\dp\strutbox-2\@tempdima\relax}%
+    \fi
+    \captionbelow[{#1}]{#2}%
+  }%
+  \begin{lrbox}{\c@pti@nb@sid@b@x}%
+}
+%</v4>
+%    \end{macrocode}
+% \end{macro}^^A \c@pti@nb@sid@
+% Now we can use all of the helper macros to begin the environment. We use
+% \LaTeX{} kernel macro \cs{@dblarg} to define an argument with first
+% optional argument defaults to mandatory second argument.
+%    \begin{macrocode}
+\newenvironment*{captionbeside}{%
+  \@dblarg\@captionbeside
+}{%
+%    \end{macrocode}
+% This was easy (because of using all the helper macros), but the end of the
+% environment isn't. Here we do all the calculations for printing.
+% \changes{v2.9a}{2002/06/27}{\cs{ifthispageodd} replaced by \cs{if@thispageodd}}
+% \changes{v3.28}{2019/11/19}{\cs{ifthispageodd} replaced by \cs{Ifthispageodd}}
+%    \begin{macrocode}
+  \end{lrbox}%
+  \settowidth{\@tempdima}{\usebox\c@pti@nb@sid@b@x}%
+  \setlength{\@tempdimb}{\scap@width}%
+  \addtolength{\@tempdimb}{-\@tempdima}%
+  \addtolength{\@tempdimb}{-\columnsep}%
+  \ifdim \@tempdimb<2em
+    \ClassWarning{\KOMAClassName}{%
+      caption beside will be very, very small.\MessageBreak
+      In most cases this will result in overfull and\MessageBreak
+      underfull \string\hbox\space messages%
+    }%
+  \fi
+  \onelinecaptionsfalse
+  \setcapwidth[r]{\@tempdimb}%
+  \let\@tempa\scap@pos
+  \setlength{\@tempdimc}{\scap@move}%
+  \if i\scap@pos\def\@tempa{l}\fi
+  \if o\scap@pos\def\@tempa{r}\fi
+  \if@twoside
+    \Ifthispageodd{}{%
+      \if o\scap@pos\def\@tempa{l}\fi
+      \if i\scap@pos\def\@tempa{r}\fi
+      \ifscap@alt
+        \addtolength{\@tempdimc}{\scap@width}%
+        \addtolength{\@tempdimc}{-\linewidth}%
+        \setlength{\@tempdimc}{-\@tempdimc}%
+      \fi
+    }%
+  \fi
+  \hspace*{\@tempdimc}%
+%    \end{macrocode}
+% \changes{v2.9p}{2003/12/10}{\cs{@temdima} replaced by
+%   \cs{wd}\cs{c@pti@nb@sid@b@x}, because \cs{@temdima} would be changed}
+% \changes{v3.38}{2022/07/20}{using \cs{scap@currentcounter}}
+% \changes{v3.38}{2022/07/20}{using \cs{scap@currentlabelname}}
+% \changes{v3.38}{2022/07/20}{using \cs{scap@currentHref}}
+%    \begin{macrocode}   
+  \if l\@tempa
+    \rlap{%
+      \parbox[\scap@valign]{\@tempdimb}{\scap@caption
+        \global\let\scap@currentlabel\@currentlabel
+        \global\let\scap@currentcounter\@currentcounter
+        \global\let\scap@currentlabelname\@currentlabelname
+        \global\let\scap@currentHref\@currentHref
+      }%
+      \nobreak\hskip\columnsep
+      \parbox[\scap@valign]{\wd\c@pti@nb@sid@b@x}{\usebox\c@pti@nb@sid@b@x}%
+    }%
+  \else
+    \rlap{%
+      \parbox[\scap@valign]{\wd\c@pti@nb@sid@b@x}{\usebox\c@pti@nb@sid@b@x}%
+      \nobreak\hskip\columnsep
+      \parbox[\scap@valign]{\@tempdimb}{\scap@caption
+        \global\let\scap@currentlabel\@currentlabel
+        \global\let\scap@currentcounter\@currentcounter
+        \global\let\scap@currentlabelname\@currentlabelname
+        \global\let\scap@currentHref\@currentHref
+      }%
+    }%
+  \fi
+  \par
+  \aftergroup\let\aftergroup\@currentlabel\aftergroup\scap@currentlabel
+  \aftergroup\let\aftergroup\@currentcounter\aftergroup\scap@currentcounter
+  \aftergroup\let\aftergroup\@currentlabelname\aftergroup\scap@currentlabelname
+  \aftergroup\let\aftergroup\@currentHref\aftergroup\scap@currentHref
+}
+%    \end{macrocode}
+% \end{environment}^^A captionbeside
+%
+%
+% \begin{fontelement}{caption,captionlabel}
+% We need two font elements for the caption at whole and the label part only.
+% \begin{macro}{\capfont,\caplabelfont}
+% \changes{v2.8c}{2001/06/29}{\cs{normalcolor} added}
+% Originally two user macros has been used to change the fonts. To stay
+% compatible with old \KOMAScript{} and also i.e. with package \pkg{caption},
+% we still define \cs{capfont} and \cs{caplabelfont} as internal storage of
+% the font elements. But already from \KOMAScript{} version 2.8c these should
+% be interpreted as internal macros.
+%    \begin{macrocode}
+\newcommand*\capfont{\normalfont\normalcolor}
+\newcommand*\caplabelfont{\normalfont\normalcolor}
+%    \end{macrocode}
+% \end{macro}^^A \capfont,\caplabelfont
+% \begin{macro}{\scr@fnt@caption,\scr@fnt@captionlabel}
+% \changes{v2.8o}{2001/09/14}{added}
+% Because of that non-default for the internal storage the font elements have
+% to be defined \emph{manually} instead of using \cs{newkomafont}.
+%    \begin{macrocode}
+\newcommand*{\scr@fnt@caption}{\capfont}
+\newcommand*{\scr@fnt@captionlabel}{\caplabelfont}
+%    \end{macrocode}
+% \end{macro}^^A \scr@fnt@caption,\scr@fnt@captionlabel
+% \end{fontelement}^^A caption,captionlabel
+%
+% \begin{macro}{\@makecaption}
+% \changes{v2.3a}{1995/07/08}{using \cs{sbox} instead of \cs{setbox}}
+% \changes{v2.3a}{1995/07/08}{using \cs{@minipagefalse}}
+% \changes{v2.3f}{1995/12/09}{using same font switching for long and short captions}
+% \changes{v2.5g}{1999/10/09}{supporting partial hanging captions}
+% \begin{macro}{\dofullc@pfalse,\dofullc@ptrue,\ifdofullc@p}
+% The boolean switch \cs{ifdofullc@p} is true for caption texts, that should
+% be full hanging (behind the label part), which is the default.
+%    \begin{macrocode}
+\newif\ifdofullc@p
+\dofullc@ptrue
+%    \end{macrocode}
+% \end{macro}^^A  \ifdofullc@p
+% \begin{macro}{\if@capbreak}
+% \changes{v2.8j}{2001/07/30}{added}
+% The boolean switch \cs{if@capbreak} is true, if the label should be followed
+% by a line break, which is not the case by default.
+%    \begin{macrocode}
+\newif\if@capbreak
+\@capbreakfalse
+%    \end{macrocode}
+% \end{macro}^^A \@capbreakfalse
+% \begin{command}{\setcapindent}
+% \begin{macro}{\@@setcaptindent,\@setcapindent}
+% \changes{v2.8j}{2001/07/30}{using \cs{if@capbreak}}
+% \changes{v2.8l}{2001/08/17}{using \cs{edef}\cs{cap@indent} instead of
+%   \cs{def}\cs{cap@indent}}
+% \changes{v2.8q}{2001/11/17}{redefined after loading \pkg{caption2}}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% \changes{v3.34}{2021/03/22}{special treatment of \pkg{caption2} removed}
+% The user can configure the indent using:
+% \begin{quote}
+%   \cs{setcapindent}*\marg{indent}
+% \end{quote}
+% The optional asterisk activates a line break between the label and the
+% text. The \meta{indent} is always an indent of the text from the left. A
+% local dimension assignment is done to report errors here and not at
+% usage of \cs{cap@indent}.
+%    \begin{macrocode}
+\newcommand*{\setcapindent}{\kernel@ifstar{\@@setcapindent}{\@setcapindent}}
+\newcommand*{\@setcapindent}[1]{%
+  \setlength{\@tempdima}{#1}%
+  \ifdim\@tempdima>\hsize
+    \addtolength{\@tempdima}{-\hsize}\@capbreaktrue
+  \else
+    \@capbreakfalse
+  \fi
+  \edef\cap@indent{\the\@tempdima}%
+  \dofullc@pfalse
+}
+\newcommand*{\@@setcapindent}[1]{%
+  \setlength{\@tempdima}{#1}%
+  \edef\cap@indent{\the\@tempdima}%
+  \dofullc@pfalse\@capbreaktrue
+}
+%    \end{macrocode}
+% \end{macro}^^A \@@setcaptindent,\@setcapindent
+% \end{command}^^A \setcapindent
+% \begin{command}{\setcaphanging}
+% \changes{v2.8q}{2001/11/17}{redefined after loading \pkg{caption2}}
+% \changes{v3.34}{2021/03/22}{special treatment of \pkg{caption2} removed}
+% Alternatively the user can select the full hanging printing.
+%    \begin{macrocode}
+\newcommand*{\setcaphanging}{\dofullc@ptrue\@capbreakfalse}
+%    \end{macrocode}
+% \end{command}
+% Now, we have all to define \cs{@makecaption} as needed by the \LaTeX{} kernel.
+% \changes{v2.5g}{1999/10/09}{using \cs{newcommand}}
+% \changes{v2.8h}{2001/07/19}{support for headings and signatures}
+% \changes{v2.8j}{2001/07/30}{using \cs{@@makecaption}}
+% \changes{v2.8q}{2001/11/17}{special treatment of one line captions is optional}
+% \changes{v2.8q}{2001/11/17}{caption width can be limited}
+% \changes{v3.41}{2023/05/10}{no page break below caption above or above
+%   caption below content}
+% \begin{command}{\captionnopagebreak}
+% \changes{v3.41}{2023/05/10}{new}
+% Can be redefined by users to allow page breaks between content and caption.
+%    \begin{macrocode}
+\expandafter\ifnum\scr@v@is@ge{3.41}%
+  \newcommand*{\captionnopagebreak}{\nopagebreak}
+\else
+  \newcommand*{\captionnopagebreak}{}
+\fi
+\newcommand{\@makecaption}[2]{%
+  \if@captionabove
+    \vskip\belowcaptionskip
+  \else
+    \captionnopagebreak\vskip\abovecaptionskip\captionnopagebreak
+  \fi
+  \@@makecaption\@firstofone{#1}{#2}%
+  \if@captionabove
+    \captionnopagebreak\vskip\abovecaptionskip\captionnopagebreak
+  \else
+    \vskip\belowcaptionskip
+  \fi
+}
+%    \end{macrocode}
+% \end{command}
+% \begin{macro}{\cap@width,\cap@left,\cap@right}
+% \changes{v2.8q}{2001/11/17}{added}
+% Multi line captions can printed with a reduced with. If the width is reduced
+% the left an right margin can be changed. The defaults are centering.
+%    \begin{macrocode}
+\newcommand*{\cap@width}{\hsize}
+\newcommand*{\cap@left}{\hfill}
+\newcommand*{\cap@right}{\hfill}
+%    \end{macrocode}
+% \end{macro}^^A \cap@width,\cap@left,\cap@right
+% \begin{command}{\setcapwidth}
+% \changes{v2.8q}{2001/11/17}{added}
+% \changes{v2.9a}{2002/06/27}{\cs{ifthispageodd} replaced by \cs{if@thispageodd}}
+% \changes{v2.97}{2007/02/27}{minimum width for captions is 0\,pt}
+% \changes{v3.28}{2019/11/19}{\cs{ifthispageodd} replaced by \cs{Ifthispageodd}}
+% \changes{v3.34}{2021/03/22}{special treatment of \pkg{caption2} removed}
+% The user command:
+% \begin{quote}
+%   \cs{setcapwidth}\oarg{alignment}\marg{width}
+% \end{quote}
+% is one choice to set \cs{cap@width} to \meta{width}. The optional
+% \meta{alignment} (as usual |l|, |r|, |o|, or |i|) also changes \cs{cap@left}
+% and \cs{cap@right}.
+%    \begin{macrocode}
+\newcommand*{\setcapwidth}[2][]{%
+  \begingroup%
+    \setlength{\@tempdima}{#2}%
+    \ifdim\@tempdima <\z@
+      \@tempdima\z@
+      \ClassWarning{\KOMAClassName}{%
+        caption width less than 0pt not allowed.\MessageBreak
+        Setting caption width to 0pt%
+      }%
+    \fi
+    \edef\@tempa{\endgroup\def\noexpand\cap@width{\the\@tempdima}}%
+  \@tempa
+  \begingroup
+    \edef\@tempa{#1}%
+    \def\@tempb{c}\ifx\@tempa\@tempb
+      \endgroup
+      \def\cap@margin{\let\cap@left=\hfill\let\cap@right=\hfill}%
+    \else
+      \def\@tempb{l}\ifx\@tempa\@tempb
+        \endgroup
+        \def\cap@margin{\let\cap@left=\relax\let\cap@right\hfill}%
+      \else
+        \def\@tempb{r}\ifx\@tempa\@tempb
+          \endgroup
+          \def\cap@margin{\let\cap@left=\hfill\let\cap@right=\relax}%
+        \else
+          \def\@tempb{i}\ifx\@tempa\@tempb
+            \endgroup
+            \def\cap@margin{%
+              \let\cap@left=\relax
+              \let\cap@right=\hfill
+              \if@twoside
+                \Ifthispageodd{}{%
+                  \let\cap@left=\hfill
+                  \let\cap@right=\relax
+                }%
+              \fi
+            }%
+          \else
+            \def\@tempb{o}\ifx\@tempa\@tempb
+              \endgroup
+              \def\cap@margin{%
+                \let\cap@left=\hfill
+                \let\cap@right=\relax
+                \if@twoside
+                  \Ifthispageodd{}{%
+                    \let\cap@left=\relax
+                    \let\cap@right=\hfill
+                  }%
+                \fi
+              }%
+            \else
+              \ifx \@tempa\@empty\else
+                \ClassError{\KOMAClassName}{%
+                  unknown optional position argument%
+                }{%
+                  You've used `#1' as position argument at
+                  \string\setcaptionwidth,\MessageBreak
+                  but only ONE of `c', `l', `r', `i`, `o` ist
+                  allowed.\MessageBreak
+                  Argument will be ignored, if you'll continue.%
+                }%
+              \fi
+              \endgroup
+  \fi\fi\fi\fi\fi
+}
+%    \end{macrocode}
+% \end{command}^^A \setcapwidth
+% \begin{command}{\setcapdynwidth}
+% \changes{v3.20}{2016/03/31}{added}
+% Ulrike Fischer requested for an alternative, that does not behave like
+% \cs{setlength} and therefore sets the length already at usage of
+% \cs{setcapwidth} but at usage of \cs{cap@width}. This is
+% \cs{setcapdynwidth}. But in this case mistakes can result in errors while
+% usage of \cs{cap@width} too.
+%    \begin{macrocode}
+\newcommand*{\setcapdynwidth}[2][]{%
+  \def\cap@width{#2}%
+  \begingroup
+    \edef\@tempa{#1}%
+    \def\@tempb{c}\ifx\@tempa\@tempb
+      \endgroup
+      \def\cap@margin{%
+        \ifdim \cap@width<\z@
+          \ClassWarning{\KOMAClassName}{%
+            caption width less than 0pt not allowed.\MessageBreak
+            Setting caption width to 0pt%
+          }%
+          \let\cap@width\z@
+        \fi
+        \let\cap@left=\hfill\let\cap@right=\hfill}%
+    \else
+      \def\@tempb{l}\ifx\@tempa\@tempb
+        \endgroup
+        \def\cap@margin{%
+          \ifdim \cap@width<\z@
+            \ClassWarning{\KOMAClassName}{%
+              caption width less than 0pt not allowed.\MessageBreak
+              Setting caption width to 0pt%
+            }%
+            \let\cap@width\z@
+          \fi
+          \let\cap@left=\relax\let\cap@right\hfill}%
+      \else
+        \def\@tempb{r}\ifx\@tempa\@tempb
+          \endgroup
+          \def\cap@margin{%
+            \ifdim \cap@width<\z@
+              \ClassWarning{\KOMAClassName}{%
+                caption width less than 0pt not allowed.\MessageBreak
+                Setting caption width to 0pt%
+              }%
+              \let\cap@width\z@
+            \fi
+            \let\cap@left=\hfill\let\cap@right=\relax}%
+        \else
+          \def\@tempb{i}\ifx\@tempa\@tempb
+            \endgroup
+            \def\cap@margin{%
+              \ifdim \cap@width<\z@
+                \ClassWarning{\KOMAClassName}{%
+                  caption width less than 0pt not allowed.\MessageBreak
+                  Setting caption width to 0pt%
+                }%
+                \let\cap@width\z@
+              \fi
+              \let\cap@left=\relax
+              \let\cap@right=\hfill
+              \if@twoside
+                \Ifthispageodd{}{%
+                  \let\cap@left=\hfill
+                  \let\cap@right=\relax
+                }%
+              \fi
+            }%
+          \else
+            \def\@tempb{o}\ifx\@tempa\@tempb
+              \endgroup
+              \def\cap@margin{%
+                \ifdim \cap@width<\z@
+                  \ClassWarning{\KOMAClassName}{%
+                    caption width less than 0pt not allowed.\MessageBreak
+                    Setting caption width to 0pt%
+                  }%
+                  \let\cap@width\z@
+                \fi
+                \let\cap@left=\hfill
+                \let\cap@right=\relax
+                \if@twoside
+                  \Ifthispageodd{}{%
+                    \let\cap@left=\relax
+                    \let\cap@right=\hfill
+                  }%
+                \fi
+              }%
+            \else
+              \ifx \@tempa\@empty\else
+                \ClassError{\KOMAClassName}{%
+                  unknown optional position argument%
+                }{%
+                  You've used `#1' as position argument at
+                  \string\setcaptionwidth,\MessageBreak
+                  but only ONE of `c', `l', `r', `i`, `o` ist
+                  allowed.\MessageBreak
+                  Argument will be ignored, if you'll continue.%
+                }%
+              \fi
+              \endgroup
+  \fi\fi\fi\fi\fi
+}
+%    \end{macrocode}
+% \end{command}^^A \setcapdynwidth
+% \begin{macro}{\cap@margin}
+% \changes{v2.8q}{2001/11/17}{added}
+% \cs{cap@margin} is used to recalculate \cs{cap@left} and \cs{cap@right}
+% inside \cs{@@makecaption}, if the margins has been set using
+% \cs{setcapmargin}. Default is no such action.
+%    \begin{macrocode}
+\newcommand*{\cap@margin}{}
+\let\cap@margin=\relax%
+%    \end{macrocode}
+% \end{macro}^^A \cap@margin
+% \begin{command}{\setcapmargin}
+% \changes{v2.8q}{2001/11/17}{neu}
+% \changes{v3.20}{2016/04/12}{\cs{@ifstar} replaced by \cs{kernel@ifstar}}
+% \begin{macro}{\@@setcapmargin,\@setcapmargin}
+% \changes{v2.8q}{2001/11/17}{added}
+% \changes{v2.9a}{2002/06/27}{\cs{ifthispageodd} replaced by \cs{if@thispageodd}}
+% \changes{v3.28}{2019/11/19}{\cs{ifthispageodd} replaced by \cs{Ifthispageodd}}
+% \changes{v3.34}{2021/03/22}{special treatment for \pkg{caption2} removed}
+% Instead of setting of the width of the caption, the left and right margin
+% can be set. The star variant switch left and right depending on odd or even
+% side in two side mode.
+%    \begin{macrocode}
+\newcommand*{\setcapmargin}{\kernel@ifstar{\@setcapmargin}{\@@setcapmargin}}
+\newcommand*{\@setcapmargin}[2][\@tempdimb]{%
+  \def\cap@margin{%
+    \onelinecaptionsfalse
+    \begingroup
+      \setlength{\@tempdima}{\hsize}%
+      \setlength{\@tempdimb}{#2}%
+      \addtolength{\@tempdima}{-\@tempdimb}%
+      \setlength{\@tempdimc}{#1}%
+      \addtolength{\@tempdima}{-\@tempdimc}%
+      \edef\@tempa{\endgroup
+        \def\noexpand\cap@width{\the\@tempdima}%
+        \noexpand\if@twoside
+          \noexpand\Ifthispageodd{%
+            \def\noexpand\cap@left{\noexpand\hspace*{\the\@tempdimc}}%
+            \def\noexpand\cap@right{\noexpand\hspace*{\the\@tempdimb}}%
+          }{%
+            \def\noexpand\cap@right{\noexpand\hspace*{\the\@tempdimc}}%
+            \def\noexpand\cap@left{\noexpand\hspace*{\the\@tempdimb}}%
+          }%
+        \noexpand\else
+          \def\noexpand\cap@left{\noexpand\hspace*{\the\@tempdimc}}%
+          \def\noexpand\cap@right{\noexpand\hspace*{\the\@tempdimb}}%
+        \noexpand\fi
+      }%
+    \@tempa
+  }%
+}
+\newcommand*{\@@setcapmargin}[2][\@tempdimb]{%
+  \def\cap@margin{%
+    \onelinecaptionsfalse
+    \begingroup
+      \setlength{\@tempdima}{\hsize}%
+      \setlength{\@tempdimb}{#2}%
+      \addtolength{\@tempdima}{-\@tempdimb}%
+      \setlength{\@tempdimc}{#1}%
+      \addtolength{\@tempdima}{-\@tempdimc}%
+      \edef\@tempa{\endgroup
+        \def\noexpand\cap@width{\the\@tempdima}%
+        \def\noexpand\cap@left{\noexpand\hspace*{\the\@tempdimc}}%
+        \def\noexpand\cap@right{\noexpand\hspace*{\the\@tempdimb}}%
+      }%
+    \@tempa
+  }%
+}
+%    \end{macrocode}
+% \end{macro}^^A \@@setcapmargin,\@setcapmargin
+% \end{command}^^A \setcapmargin
+% \begin{macro}{\@@makecaption}
+% The main job is done by \cs{@@makecaption}. It has an additional first
+% argument, that has to be either \cs{@gobble} or \cs{@firstofone}. This is
+% used to either set a label or not. This is needed for captions of
+% \pkg{longtable}.
+% \changes{v2.8q}{2002/05/17}{avoid double increase of footnote number}
+% \changes{v2.95}{2004/01/30}{fixing vertical skips also with \pkg{float}}
+% \changes{v2.95a}{2006/07/13}{fixing vertical skips with \pkg{color}}
+% \changes{v2.97c}{2007/06/06}{\cs{unskip}\cs{strut} added to fix vertical
+%   positions in some \emph{above} cases}
+% \changes{v3.02a}{2009/01/24}{braces fixed}
+% \changes{v3.11c}{2013/06/12}{using \cs{usekomafont}}
+% \changes{v3.12}{2013/06/12}{one \cs{usekomafont} replaced by \cs{usesizeofkomafont}}
+% \changes{v3.21}{2016/05/31}{re-implemented}
+%    \begin{macrocode}
+\newcommand{\@@makecaption}[3]{%
+%    \end{macrocode}
+% Recalculate the margins.
+%    \begin{macrocode}
+  \cap@margin
+%    \end{macrocode}
+% Test for special treatment of one line captions.
+% \changes{v3.22}{2016/09/01}{local redefinition of \cs{stepcounter} and
+%   \cs{refstepcounter} because of \pkg{isodate}}
+%    \begin{macrocode}
+  \begingroup
+    \ifonelinecaptions
+      \def\stepcounter##1{\advance\value{##1}\@ne}%
+      \let\refstepcounter\stepcounter
+      \let\label\@gobble
+      \let\@footnotetext=\@gobble
+      \let\hypertarget\@gobbletwo
+%    \end{macrocode}
+% \changes{v3.22}{2016/09/01}{special treatment of hard coded line breaks}
+% If there are hard coded line breaks using |\\| or \cs{newline}, we inform
+% the user to use a multi-line caption.
+%    \begin{macrocode}
+      \edef\@xnewline{%
+        \unexpanded{\ClassInfo{\KOMAClassName}{%
+            Workaround for not recommended usage of \string\\ or\MessageBreak
+            \string\newline in caption text
+          }%
+          \hspace*{\linewidth}\hspace{1sp}%
+        }%
+        \unexpanded\expandafter{\@xnewline}%
+      }%
+      \edef\@xcentercr{%
+        \unexpanded{\ClassInfo{\KOMAClassName}{%
+            Workaround for not recommended usage of \string\\ or\MessageBreak
+            \string\newline in caption text
+          }%
+          \hspace*{\linewidth}\hspace{1sp}%
+        }%
+        \unexpanded\expandafter{\@xcentercr}%
+      }%
+      \settowidth{\@tempdima}{\scr@@makesinglelinecaption{#1}{#2}{#3}}%
+%    \end{macrocode}
+% \changes{v3.34}{2021/03/22}{fix of maximum line width of single line
+%   captions}
+% Until \KOMAScript~3.34 the test here was wrong, because it used
+% \cs{linewidth}, which is still the whole line width not the maximum caption
+% width. From \KOMAScript~3.34 \cs{cap@width} is used.
+%    \begin{macrocode}
+      \ifdim\@tempdima>\cap@width
+        \aftergroup\scr@makemultilinecaption
+      \else
+        \aftergroup\scr@makesinglelinecaption
+      \fi
+    \else
+      \aftergroup\scr@makemultilinecaption
+    \fi
+  \endgroup
+  {#1}{#2}{#3}%
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@@makesinglelinecaption,\scr@makesinglelinecaption}
+% \changes{v3.21}{2016/05/31}{added}
+% The output of single line captions. The first argument once again is
+% \cs{@gobble} (to not show a label) or \cs{@firstofone} (to show the
+% label). Argument two and three are the label (without separator, that is
+% added here) and the caption text.
+%    \begin{macrocode}
+\newcommand{\scr@makesinglelinecaption}[3]{%
+  {%
+    \usefontofkomafont{caption}{%
+      \hb@xt@\hsize{%
+        \cap@left
+        \scr@@makesinglelinecaption{#1}{#2}{#3}%
+        \cap@right
+      }\par\kern\dp\strutbox%
+    }%
+  }\kern-\dp\strutbox
+}
+\newcommand{\scr@@makesinglelinecaption}[3]{%
+    \usekomafont{caption}{\strut\ignorespaces
+      #1{{\usekomafont{captionlabel}{#2\captionformat}}}%
+      \ignorespaces #3\unskip}%
+}
+%    \end{macrocode}
+% \end{macro}^^A \scr@@makesinglelinecaption,\scr@makesinglelinecaption
+% \begin{macro}{\scr@makemultilinecaption}
+% \changes{v3.21}{2016/05/31}{added}
+% The output of multi line captions. The arguments are same as above.
+%    \begin{macrocode}
+\newcommand{\scr@makemultilinecaption}[3]{%
+  {%
+    \usefontofkomafont{caption}{%
+      \hb@xt@\hsize{%
+        \cap@left
+        \vbox{\hsize\cap@width\linewidth\hsize
+%    \end{macrocode}
+% \changes{v3.25}{2017/11/15}{caption alignment added}
+% First of all we have to use the ragged type depending in the float/caption
+% type. If the float/caption type is unknown we can use the general ragged
+% type only.
+%    \begin{macrocode}
+          \scr@ifundefinedorrelax{@captype}{%
+            \ClassWarning{\KOMAClassName}{%
+              `\string\caption' outside float.\MessageBreak
+              Seems you are using `\string\caption' outside a
+              float.\MessageBreak
+              Maybe you are using a package that uses
+              `\string\@makecaption'\MessageBreak
+              without setting `\string\@captype' before.\MessageBreak
+              Because I cannot detect the caption type, I'm using\MessageBreak
+              the empty one.%
+            }%
+            \let\@captype\@empty
+          }{}%
+          \scr@ifundefinedorrelax{ragged\@captype caption}{\raggedcaption}{%
+            \@nameuse{ragged\@captype caption}%
+          }%
+%    \end{macrocode}
+% Maybe we have to us a full hanging caption.
+% \changes{v3.25}{2017/11/15}{Using \cs{scr@endstrut} instead of \cs{unskip}\cs{strut}}
+%    \begin{macrocode}
+          \ifdofullc@p
+            \@hangfrom{%
+              \strut
+              \scr@smashdp{%
+                #1{%
+                  \usekomafont{caption}{%
+                    \usekomafont{captionlabel}{#2\captionformat}%
+                  }%
+                }%
+              }%
+            }%
+            {\usekomafont{caption}{#3\scr@endstrut\par}}%
+%    \end{macrocode}
+% Maybe a partial hanging caption with line break after the label.
+%    \begin{macrocode}
+          \else
+            \ifdim\cap@indent<\z@
+              \strut
+              #1{%
+                \usekomafont{caption}{%
+                  \usekomafont{captionlabel}{#2\captionformat\par}%
+                }%
+              }%
+              \noindent{\usekomafont{caption}{%
+                  \hspace*{-\cap@indent}#3\scr@endstrut\par
+              }}%
+%    \end{macrocode}
+% Or a line break after the label with full hanging.
+%    \begin{macrocode}
+            \else
+              \if@capbreak
+                \strut
+                #1{%
+                  \usekomafont{caption}{%
+                    \usekomafont{captionlabel}{#2\captionformat\par}%
+                  }%
+                }%
+                \noindent\@hangfrom{\hspace*{\cap@indent}}%
+                {\usekomafont{caption}{#3\scr@endstrut\par}}%
+%    \end{macrocode}
+% \changes{v3.27a}{2019/10/21}{missing usage of \fnt{caption} added}
+% Or no line break but still with indent.
+%    \begin{macrocode}
+              \else
+                \@hangfrom{\scr@smashdp\strut\hspace*{\cap@indent}}%
+                {%
+                  \hspace{-\cap@indent}%
+                  \scr@smashdp{%
+                    #1{\usekomafont{caption}{%
+                        \usekomafont{captionlabel}{#2\captionformat}%
+                      }%
+                    }%
+                  }%
+                  {\usekomafont{caption}{#3\scr@endstrut}\par}%
+                }%
+              \fi
+            \fi
+          \fi
+%    \end{macrocode}
+% Here we could also add the not hanging version without line break:
+%    \begin{macrocode}
+%<*neverusethis>
+%          #1{{\usekomafont{caption}{%
+%              \usekomafont{captionlabel}{#2\captionformat}}}}%
+%          {\usekomafont{capion}{\ignorespaces #3\scr@endstrut\par}%
+%</neverusethis>
+%    \end{macrocode}
+% But this is not needed, because it is the same like indent of 0.
+%    \begin{macrocode}
+        }%
+        \cap@right
+      }\par\kern\dp\strutbox
+    }%
+  }\kern-\dp\strutbox
+}
+%    \end{macrocode}
+% \begin{command}{\setcaptionalignment}
+% \begin{macro}{\@setcaptionalignment}
+% \changes{v3.25}{2017/11/15}{added}
+% \changes{v3.28}{2019/11/18}{\cs{ifstr} replaced by \cs{Ifstr}}
+% It is better for users to not define the \cs{raggedcaption} and
+% \cs{ragged\dots caption} commands themselves to avoid mistakes. So we have
+% \begin{quote}
+%   \cs{setcaptionalignment}\oarg{float}\marg{alignment}
+% \end{quote}
+% If \meta{float} is used, \cs{ragged\meta{float}caption} will be changed. If
+% \meta{float} is not used, but \cs{@captype} is defined (and not \cs{relax})
+% \cs{ragged\cs{@captype}caption} is defined. If \meta{float} is empty or
+% \cs{captype} is undefined (or \cs{relax}) and \meta{float} is not used,
+% \cs{raggedcaption} will be changed.
+%    \begin{macrocode}
+\newcommand*\setcaptionalignment{%
+  \kernel@ifnextchar [%]
+    {\@setcaptionalignment}
+    {%
+      \scr@ifundefinedorrelax{@captype}{\@setcaptionalignment}{%
+        \edef\reserved@a{\noexpand\@setcaptionalignment[{\@captype}]}\reserved@a
+      }%
+    }%
+}%
+\newcommand*\@setcaptionalignment[2][]{%
+%    \end{macrocode}
+% If \meta{float} is not empty it should be the name of a already defined
+% floating environment. Otherwise we report a warning, but nevertheless define
+% the command.
+%    \begin{macrocode}
+  \IfArgIsEmpty{#1}{}{%
+    \expandafter\ifnum 
+    \scr@ifundefinedorrelax{#1}{0}{\scr@ifundefinedorrelax{end#1}{0}{1}}=0
+      \ClassWarning{\KOMAClassName}{%
+        float type `#1' defined not yet,\MessageBreak
+        but setting ragged mode for captions of\MessageBreak
+        float type `#1'%
+      }%
+    \fi
+  }%
+%    \end{macrocode}
+% Depending on \meta{alignment} the command will be changed:
+% \begin{description}
+% \item[\texttt{j}] -- justified (\cs{ragged\dots caption} becomes \cs{relax}).
+% \item[\texttt{l}] -- left aligned (\cs{ragged\dots caption} becomes
+%                      \cs{raggedright}).
+% \item[\texttt{r}] -- right aligned (\cs{ragged\dots caption} becomes
+%                      \cs{raggedleft}).
+% \item[\texttt{c}] -- centered (\cs{ragged\dots caption} becomes
+%                      \cs{centering}.
+% \end{description}
+% Note: If \pkg{ragged2e} has been loaded, \cs{LaTeXraggedright},
+% \cs{LaTeXraggedleft} and \cs{LaTeXcentering} are used and the following
+% additional \meta{alignment}s are supported:
+% \begin{description}
+% \item[\texttt{J}] -- justified (\cs{ragged\dots caption} becomes \cs{justifying}).
+% \item[\texttt{L}] -- left aligned (\cs{ragged\dots caption} becomes
+%                      \cs{RaggedRight}).
+% \item[\texttt{R}] -- right aligned (\cs{ragged\dots caption} becomes
+%                      \cs{RaggedLeft}).
+% \item[\texttt{C}] -- centered (\cs{ragged\dots caption} becomes
+%                      \cs{Centering}.
+% \end{description}
+% Without \pkg{ragged2e} the upper case letters are same like lower case
+% letters, but additionally warn. Note: The implementation does also work, if
+% \pkg*{scrlayer-scrpage} has defined \cs{LaTeXraggedright} etc.
+%    \begin{macrocode}
+  \def\reserved@a{#2}%
+  \Ifstr{\reserved@a}{j}{%
+    \expandafter\let\csname ragged#1caption\endcsname\@empty
+  }{%
+    \Ifstr{\reserved@a}{l}{%
+      \scr@ifundefinedorrelax{LaTeXraggedright}{%
+        \expandafter\let\csname ragged#1caption\endcsname\raggedright
+      }{%
+        \expandafter\let\csname ragged#1caption\endcsname\LaTeXraggedright
+      }%
+    }{%
+      \Ifstr{\reserved@a}{r}{%
+        \scr@ifundefinedorrelax{LaTeXraggedleft}{%
+          \expandafter\let\csname ragged#1caption\endcsname\raggedleft
+        }{%
+          \expandafter\let\csname ragged#1caption\endcsname\LaTeXraggedleft
+        }%
+      }{%
+        \Ifstr{\reserved@a}{c}{%
+          \scr@ifundefinedorrelax{LaTeXcentering}{%
+            \expandafter\let\csname ragged#1caption\endcsname\centering
+          }{%
+            \expandafter\let\csname ragged#1caption\endcsname\LaTeXcentering
+          }%
+        }{%
+          \Ifstr{\reserved@a}{J}{%
+            \scr@ifundefinedorrelax{justifying}{%
+              \scr@caption@raggede@warning{J}{\justifying}%
+              \expandafter\let\csname ragged#1caption\endcsname\@empty
+            }{%
+              \expandafter\let\csname ragged#1caption\endcsname\justifying
+            }%
+          }{%
+            \Ifstr{\reserved@a}{L}{%
+              \scr@ifundefinedorrelax{RaggedRight}{%
+                \scr@caption@raggede@warning{L}{\RaggedRight}%
+                \expandafter\let\csname ragged#1caption\endcsname\raggedright
+              }{%
+                \expandafter\let\csname ragged#1caption\endcsname\RaggedRight
+              }%
+            }{%
+              \Ifstr{\reserved@a}{R}{%
+                \scr@ifundefinedorrelax{RaggedLeft}{%
+                  \scr@caption@raggede@warning{R}{\RaggedLeft}%
+                  \expandafter\let\csname ragged#1caption\endcsname\raggedleft
+                }{%
+                  \expandafter\let\csname ragged#1caption\endcsname\RaggedLeft
+                }%
+              }{%
+                \Ifstr{\reserved@a}{C}{%
+                  \scr@ifundefinedorrelax{Centering}{%
+                    \scr@caption@raggede@warning{C}{\Centering}%
+                    \expandafter\let\csname ragged#1caption\endcsname\centering
+                  }{%
+                    \expandafter\let\csname ragged#1caption\endcsname\Centering
+                  }%
+                }{%
+                  \Ifstr{\reserved@a}{}{%
+                    \expandafter\let\csname ragged#1caption\endcsname\relax
+                  }{%
+                    \ClassError{\KOMAClassName}{unknown alignment char `#2'}{%
+                      \string\setcaptionalignment\space supports
+                      only:\MessageBreak 
+                      \space\space c - centered captions,\MessageBreak
+                      \space\space j - justified captions,\MessageBreak
+                      \space\space l - left align captions,\MessageBreak
+                      \space\space r - right aligned captions,\MessageBreak
+                      \space\space C - centered captions with
+                      `ragged2e',\MessageBreak 
+                      \space\space J - justified captions with
+                      `ragged2e',\MessageBreak 
+                      \space\space L - left align captions with
+                      `ragged2e',\MessageBreak 
+                      \space\space R - right aligned captions with
+                      `ragged2e',\MessageBreak 
+                      or an empty argument to remove special
+                      alignment.\MessageBreak 
+                      If you'd continue, I'd not change the alignment.%
+                    }%
+                  }%
+                }%
+              }%
+            }%
+          }%
+        }%
+      }%
+    }%
+  }%
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@caption@raggede@warning}
+% \changes{v3.25}{2017/11/15}{added}
+% The warning used above.
+%    \begin{macrocode}
+\newcommand*{\scr@caption@raggede@warning}[2]{%
+  \begingroup
+    \lowercase{\def\reserved@a{#1}}%
+    \ClassWarning{\KOMAClassName}{%
+      `\string#2' undefined!\MessageBreak
+      To avoid replacing caption alignment `#1' by `\reserved@a'\MessageBreak
+      you should load package `ragged2e' before using\MessageBreak
+      `\string\setcaptionalignment'%
+    }%
+  \endgroup
+}
+%    \end{macrocode}
+% \begin{command}{\raggedcaption}
+% \changes{v3.25}{2017/11/15}{added}
+% The default alignment is standard alignment (empty means no change).
+%    \begin{macrocode}
+\newcommand*\raggedcaption{}
+%    \end{macrocode}
+% \end{command}^^A \raggedcaption
+% \end{macro}^^A \scr@caption@raggede@warning
+% \end{macro}^^A \@setcaptionalignment
+% \end{command}^^A \setcaptionalignment
+% \end{macro}^^A \scr@makemultilinecaption
+% \end{macro}^^A \@@makecaption
+% \end{macro}^^A \@makecaption
+%
+% \subsection{Special treatment of \texorpdfstring{\pkg*{longtable}}{`longtable'} captions}
+%
+% \begin{macro}{\LT@makecaption}
+% \changes{v2.8j}{2001/07/30}{added}
+% \changes{v2.8k}{2001/08/15}{do nothing if \pkg{caption2} has been loaded or
+%   option \opt{origlongtable} has been used}
+% \changes{v2.8q}{2001/11/18}{width and alignment by \KOMAScript{}}
+% \changes{v2.8q}{2001/11/18}{using \cs{AfterPackage}}
+% \changes{v2.9s}{2004/08/24}{vertical skips fixed by moving \cs{vskip}}
+% \changes{v3.34}{2021/03/22}{special treatment of \pkg{caption2} removed}
+% \begin{macro}{\LT@array,\LT@caption}
+% \changes{v2.8q}{2001/11/18}{added}
+% \begin{macro}{\scr@caption@before@longtable@warning}
+% \changes{v2.98c}{2008/03/03}{added}
+% The code for \pkg{longtable} has to be delayed until loading the package.
+%    \begin{macrocode}
+\newcommand*{\scr@caption@before@longtable@warning}[1]{%
+  \ClassWarning{\KOMAClassName}{%
+    you've loaded package `#1' before package\MessageBreak
+    `longtable'!\MessageBreak
+    Because of this package `#1' isn't able to\MessageBreak
+    control `\string\caption' at longtables. \space After loading
+    \MessageBreak 
+    package `#1' KOMA-Script also doesn't control\MessageBreak
+    `\string\caption'.\MessageBreak
+    I think, you should load package `caption' after\MessageBreak
+    package `longtable'%
+  }%
+}
+\AfterPackage{longtable}{%
+  \if@komalongtable
+    \renewcommand{\LT@makecaption}[3]{%
+      \noalign{%
+        \if@captionabove
+          \vskip\belowcaptionskip
+        \else
+          \vskip\abovecaptionskip
+        \fi
+      }%
+      \LT@mcol\LT@cols c{%
+        \hbox to\z@{\hss\parbox[t]\linewidth{%
+%    \end{macrocode}
+% \changes{v3.25}{2017/11/15}{\cs{@captype} set to \texttt{table}}
+% To make \cs{raggedtablecaption} available, \cs{@captype} has to be defined.
+%    \begin{macrocode}
+            \def\@captype{table}%
+            \@@makecaption{#1}{#2}{#3}%
+            \endgraf
+            \if@captionabove
+              \vskip\abovecaptionskip
+            \else
+              \vskip\belowcaptionskip
+            \fi
+          }%
+          \hss
+        }%
+      }%
+    }%
+    \newcommand*{\scr@LT@array}{}%
+    \let\scr@LT@array=\LT@array
+    \renewcommand*{\LT@array}{%
+      \let\scr@caption=\LT@caption
+      \def\captionabove{\noalign{\global\@captionabovetrue}%
+        \scr@caption}%
+      \def\captionbelow{\noalign{\global\@captionabovefalse}%
+        \scr@caption}%
+      \if@tablecaptionabove
+        \let\LT@caption=\captionabove
+      \else
+        \let\LT@caption=\captionbelow
+      \fi
+      \scr@LT@array
+    }%
+    \ClassInfo{\KOMAClassName}{%
+      longtable captions redefined%
+    }%
+  \fi
+}
+%    \end{macrocode}  
+% \end{macro}^^A \scr@caption@before@longtable@warning
+% \end{macro}^^A \LT@array,\LT@caption
+% \end{macro}^^A \LT@makecaption
+%
+% \subsection{Special treatment of the \texorpdfstring{\pkg*{float}}{`float'} package}
+%
+% \begin{macro}{\fs@komaabove,\fs@komabelow,\floatc@komascript}
+% \changes{v2.8j}{2001/07/30}{added}
+% We define two float style for package \pkg{float}: \texttt{komaabove} and
+% \texttt{komabelow}. However this is done independent of loading \pkg{float},
+% because maybe someone else also uses those styles (but I don't think so).
+% Note: Internal macros of \pkg{float} has to be used for the definitions.
+%    \begin{macrocode}
+\newcommand*{\fs@komaabove}{%
+  \let\@fs@capt\floatc@komascript
+  \let\@fs@pre\@empty
+  \def\@fs@mid{\vskip\abovecaptionskip}%
+  \let\@fs@post\@empty
+  \let\@fs@iftopcapt\iftrue}
+\newcommand*{\fs@komabelow}{%
+  \let\@fs@capt\floatc@komascript
+  \let\@fs@pre\@empty
+  \def\@fs@mid{\vskip\abovecaptionskip}%
+  \let\@fs@post\@empty
+  \let\@fs@iftopcapt\iffalse}
+\newcommand{\floatc@komascript}{\@@makecaption\@firstofone}
+%    \end{macrocode}
+% \end{macro}^^A \fs@komabove,\fs@komabelow,\floatc@komascript
+%
+%
+% \subsection{Where to place floats}
+%
+% \begin{counter}{topnumber}
+% \begin{command}{\topfraction}
+% \begin{counter}{bottomnumber}
+% \begin{command}{\bottomfraction}
+% \begin{counter}{totalnumber}
+% \begin{command}{\textfraction}
+% \begin{command}{\floatpagefraction}
+% \begin{counter}{dbltopnumber}
+% \begin{command}{\dbltopfraction}
+% \begin{command}{\dblfloatpagefraction}
+% These are constants used by the \LaTeX{} kernel to decide where to place a
+% float. See the kernel documentation for more information.
+%    \begin{macrocode}
+\setcounter{topnumber}{2}
+\renewcommand*\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\renewcommand*\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\renewcommand*\textfraction{.2}
+\renewcommand*\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\renewcommand*\dbltopfraction{.7}
+\renewcommand*\dblfloatpagefraction{.5}
+%    \end{macrocode}
+% \end{command}
+% \end{command}
+% \end{counter}
+% \end{command}
+% \end{command}
+% \end{counter}
+% \end{command}
+% \end{counter}
+% \end{command}
+% \end{counter}
+%
+%
+% \subsection{Caption without float}
+%
+% \begin{command}{\captionof}
+% \changes{v3.05}{2009/07/08}{added}
+% \changes{v3.09}{2011/03/21}{using internal \cs{scr@caption}}
+% \changes{v3.09a}{2011/04/13}{handling of
+%   \opt{captions\quotechar=tableheading} and \opt{captions\quotechar=figureheading}}
+% \begin{command}{\captionaboveof,\captionbelowof}
+% \changes{v3.09}{2011/03/21}{added}
+% We do not only provide a \cs{captionof} like \pkg{caption} or \pkg{capt-of}
+% but also \cs{captionaboveof} and \cs{captionbelowof}. Users should not
+% additionally use \pkg{capt-of}, but if they do, the definition of that
+% package will be used instead (which is usually not, what the user want, but
+% what they decided to do).
+%    \begin{macrocode}
+\newcommand*{\captionof}[1]{\def\@captype{#1}%
+  \begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname if@#1captionabove\endcsname\iftrue
+    \@captionabovetrue
+  \fi
+  \scr@caption}
+\newcommand*{\captionaboveof}{\@captionabovetrue\captionof}
+\newcommand*{\captionbelowof}{\@captionabovefalse\captionof}
+\BeforePackage{capt-of}{\let\captionof\relax}
+%    \end{macrocode}
+% \end{command}^^A \captionaboveof,\captionbelowof
+% \end{command}^^A \captionof
+%
+% \begin{environment}{captionofbeside}
+% \changes{v3.10}{2011/09/02}{added}
+% The analogue environment to \cs{captionbeside} to be used outside
+% floats.
+% \begin{description}
+% \item[ToDo:] Wouldn't it be a good idea to test for already defined
+% \cs{@captype} inside \env{captionbeside} and then expect an additional first
+% argument \meta{float}? In this case user could simply us \env{captionbeside}
+% the same way as \env{captionofbeside}.
+% \end{description}
+%    \begin{macrocode}
+\newenvironment{captionofbeside}[1]{%
+  \def\@captype{#1}%
+  \captionbeside
+}{%
+  \endcaptionbeside
+}
+%    \end{macrocode}
+% \end{environment}
+%
+%
+% \subsection{Names}
+%
+% \begin{command}{\figurename,\tablename}
+% \changes{v3.36}{2022/02/15}{explicit definition for English languages}
+% The names to be used for the float labels.
+%    \begin{macrocode}
+\newcommand*\figurename{Figure}
+\providecaptionname{american,australian,british,canadian,english,newzealand,%
+  UKenglish,ukenglish,USenglish,usenglish}\figurename{Figure}
+\newcommand*\tablename{Table}
+\providecaptionname{american,australian,british,canadian,english,newzealand,%
+  UKenglish,ukenglish,USenglish,usenglish}\tablename{Table}
+%    \end{macrocode}
+% \end{command}^^A \figurename,\tablename
+%
+%
+% \subsection{Defining the \env{figure} environment}
+%
+% \begin{environment}{figure*,figure-,figure}
+% \changes{v2.2c}{1995/05/25}{initial CJK support}
+% \changes{v2.8h}{2001/07/19}{\cs{caption} is \cs{captionbelow}}
+% \changes{v3.25}{2017/10/10}{re-implemented using \pkg*{tocbasic}}
+% \changes{v3.36}{2022/02/22}{define additional non-float}
+% \begin{counter}{figure}
+% \changes{v3.25}{2017/10/10}{implicit by \cs{DeclareNewTOC}}
+% \end{counter}
+% We do the main job using \cs{DeclareNewTOC}:
+%    \begin{macrocode}
+\DeclareNewTOC[%
+  type=figure,
+  float,
+  nonfloat,
+%<book|report>  counterwithin=chapter,
+%    \end{macrocode}
+% \begin{macro}{\fps@figure}
+% Default placement (by \cs{DeclareNewTOC}) \textbf{t}op, \textbf{b}ottom,
+% \textbf{p}age.
+%    \begin{macrocode}
+  floatpos=tbp,
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\ftype@figure}
+% Numerical float type 1 (by \cs{DeclareNewTOC}).
+%    \begin{macrocode}
+  floattype=1,
+%    \end{macrocode}
+% \end{macro}
+% \changes{v3.11c}{2013/03/01}{fix: one \cs{caption} change removed}
+% \changes{v3.20}{2016/04/07}{internal redefinition of \cs{caption}}
+%    \begin{macrocode}
+  tocentryindent=1.5em,
+  tocentrynumwidth=2.3em,
+  atbegin=\def\caption{%
+    \if@figurecaptionabove\expandafter\captionabove
+    \else\expandafter\captionbelow\fi
+  }
+%    \end{macrocode}
+% \begin{macro}{\ext@figure}
+% Extension to be used (by \cs{DeclareNewTOC})
+%    \begin{macrocode}
+]{lof}
+%    \end{macrocode}
+% \end{macro}
+% \begin{command}{\thefigure}
+% \changes{v2.97e}{2007/11/23}{using chapter number in main-matter only}
+% \changes{v3.27}{2019/06/26}{\cs{relax} replaced by percent}
+% \changes{v3.35}{2021/10/12}{use chapter number only of greater than zero}
+% \changes{v3.35}{2021/10/12}{redefine \cs{thefigure} only if compatibility is
+%   less or equal 2.97d resp. less than 3.35}
+%    \begin{macrocode}
+%<*!v4>
+%<*book|report>
+\expandafter\ifnum\scr@v@is@le{2.97d}%
+  \renewcommand*\thefigure{\thechapter.\@arabic\c@figure}
+\fi
+%</book|report>
+%<*article>
+\expandafter\ifnum\scr@v@is@lt{3.35}%
+  \renewcommand*\thefigure{\@arabic\c@figure}
+\fi
+%</article>
+%</!v4>  
+%    \end{macrocode}
+% \end{command}
+% \begin{macro}{\fnum@figure}
+% \begin{command}{\figureformat}
+% \changes{v2.3c}{1995/08/06}{added}
+% The print format of the number (by \cs{DeclareNewTOC}).
+% \end{command}
+% \end{macro}
+% \end{environment}
+%
+%
+% \subsection{Defining the \env{table} environment}
+%
+% Note: This is almost the same as defining the \env{figure} environment. So
+% read the previous section first.
+%
+% \begin{environment}{table*,table-,table}
+% \changes{v2.2c}{1995/05/25}{initial CJK support}
+% \changes{v2.8h}{2001/07/19}{\cs{caption} is \cs{captionbelow}}
+% \changes{v3.25}{2017/10/10}{re-implemented using \pkg*{tocbasic}}
+% \changes{v3.36}{2022/02/22}{define additional non-float}
+% \begin{counter}{table}
+% \changes{v3.25}{2017/10/10}{implicit by \cs{DeclareNewTOC}}
+% \end{counter}
+% We do the main job using \cs{DeclareNewTOC}:
+%    \begin{macrocode}
+\DeclareNewTOC[%
+  type=table,
+  float,
+  nonfloat,
+%<book|report>  counterwithin=chapter,
+%    \end{macrocode}
+% \begin{macro}{\fps@table}
+% Default placement (by \cs{DeclareNewTOC}) \textbf{t}op, \textbf{b}ottom,
+% \textbf{p}age.
+%    \begin{macrocode}
+  floatpos=tbp,
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\ftype@table}
+% Numerical float type 2 (by \cs{DeclareNewTOC}).
+%    \begin{macrocode}
+  floattype=2,
+%    \end{macrocode}
+% \end{macro}
+% \changes{v3.20}{2016/04/07}{internal redefinition of \cs{caption}}
+%    \begin{macrocode}
+  tocentryindent=1.5em,
+  tocentrynumwidth=2.3em,
+  atbegin=\def\caption{%
+    \if@tablecaptionabove\expandafter\captionabove
+    \else\expandafter\captionbelow\fi
+  }
+%    \end{macrocode}
+% \begin{macro}{\ext@table}
+% Extension to be used (by \cs{DeclareNewTOC})
+%    \begin{macrocode}
+]{lot}
+%    \end{macrocode}
+% \end{macro}
+% \begin{command}{\thetable}
+% \changes{v2.97e}{2007/11/23}{using chapter number in main-matter only}
+% \changes{v3.27}{2019/06/26}{\cs{relax} replaced by percent}
+% \changes{v3.35}{2021/10/12}{use chapter number only of greater than zero}
+% \changes{v3.35}{2021/10/12}{redefine \cs{thetable} only if compatibility is
+%   less or equal 2.97d resp. less than 3.35}
+%    \begin{macrocode}
+%<*!v4>
+%<*book|report>
+\expandafter\ifnum\scr@v@is@le{2.97d}%
+  \renewcommand*\thetable{\thechapter.\@arabic\c@table}
+\fi
+%</book|report>
+%<*article>
+\expandafter\ifnum\scr@v@is@lt{3.35}%
+  \renewcommand*\thetable{\@arabic\c@table}
+\fi
+%</article>
+%</!v4>
+%</body>
+%    \end{macrocode}
+% \end{command}
+% \begin{macro}{\fnum@table}
+% \begin{command}{\tableformat}
+% \changes{v2.3c}{1995/08/06}{added}
+% The print format of the number (by \cs{DeclareNewTOC}).
+% \end{command}
+% \end{macro}
+% \end{environment}
+%
+%    \begin{macrocode}
+%</class&!letter>
+%    \end{macrocode}
+% 
+% \Finale
+% \PrintChanges
+% 
+\endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:

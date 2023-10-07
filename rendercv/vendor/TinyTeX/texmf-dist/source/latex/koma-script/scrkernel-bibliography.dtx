@@ -1,0 +1,755 @@
+% \iffalse meta-comment
+% ======================================================================
+% scrkernel-bibliography.dtx
+% Copyright (c) Markus Kohm, 2002-2023
+%
+% This file is part of the LaTeX2e KOMA-Script bundle.
+%
+% This work may be distributed and/or modified under the conditions of
+% the LaTeX Project Public License, version 1.3c of the license.
+% The latest version of this license is in
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3c or later is part of all distributions of LaTeX 
+% version 2005/12/01 or later and of this work.
+%
+% This work has the LPPL maintenance status "author-maintained".
+%
+% The Current Maintainer and author of this work is Markus Kohm.
+%
+% This work consists of all files listed in MANIFEST.md.
+% ======================================================================
+%%% From File: $Id: scrkernel-bibliography.dtx 4032 2023-04-17 09:45:11Z kohm $
+%<option>%%%            (run: option)
+%<body>%%%            (run: body)
+%<*dtx>
+\ifx\ProvidesFile\undefined\def\ProvidesFile#1[#2]{}\fi
+\begingroup
+  \def\filedate$#1: #2-#3-#4 #5${\gdef\filedate{#2/#3/#4}}
+  \filedate$Date: 2023-04-17 11:45:11 +0200 (Mo, 17. Apr 2023) $
+  \def\filerevision$#1: #2 ${\gdef\filerevision{r#2}}
+  \filerevision$Revision: 4032 $
+  \edef\reserved@a{%
+    \noexpand\endgroup
+    \noexpand\ProvidesFile{scrkernel-bibliography.dtx}%
+                          [\filedate\space\filerevision\space
+                           KOMA-Script source
+                           (bibliography)]%
+  }%
+\reserved@a
+\documentclass[USenglish]{koma-script-source-doc}
+\usepackage{babel}
+\usepackage{hvlogos}
+\setcounter{StandardModuleDepth}{2}
+\begin{document}
+\DocInput{scrkernel-bibliography.dtx}
+\end{document}
+%</dtx>
+% \fi^^A meta-comment
+%
+% \changes{v2.95}{2002/06/30}{new by splitting \file{scrclass.dtx}}
+% \changes{v3.36}{2022/02/21}{switch over from \cls*{scrdoc} to
+%   \cls*{koma-script-source-doc}}
+% \changes{v3.36}{2022/02/21}{whole implementation documentation in English}
+% \changes{v3.40}{2023/04/17}{guide names changed}
+%
+% \GetFileInfo{scrkernel-bibliography.dtx}
+% \title{Bibliography and References with
+%   \href{https://komascript.de}{\KOMAScript} Classes and Packages}
+% \author{\href{mailto:komascript@gmx.info}{Markus Kohm}}
+% \date{Revision \fileversion{} of \filedate}
+% \maketitle
+% \begin{abstract}
+%   \file{scrkernel-bibliography.dtx} provides the usual functionality for the
+%   bibliography or references. In comparison with the standard classes
+%   several additions are available. Nevertheless it is fully compatible with
+%   the known features of the standard classes.
+% \end{abstract}
+% \tableofcontents
+%
+% \section{User Manual}
+%
+% You can find the user documentation of the commands implemented in
+% \file{scrkernel-bibliography.dtx} in the \KOMAScript{} manual, either the
+% German \file{scrguide-de.pdf} or the English \file{scrguide-en.pdf}.
+% 
+%
+% \MaybeStop{\PrintIndex}
+%
+% \section{Implementation of Bibliography or References}
+%
+% Bibliography or references are not available with the \KOMAScript{} letter
+% class.
+%    \begin{macrocode}
+%<*!letter>
+%    \end{macrocode}
+%
+%
+% \subsection{Bibliography styles}
+%
+% \KOMAScript{} provides styles for the bibliography or references. This is
+% similar to the redefinition of \cs{@openbib@code} and \cs{newblock} with the
+% standard classes, but much more configurable.
+%
+% \begin{command}{\newbibstyle}
+% \changes{v2.98c}{2008/02/15}{added}
+% \changes{v3.17}{2015/03/12}{using internal storage of options \opt{bibliography}}
+% Defining new bibliography style:
+% \begin{quote}
+%   \cs{newbibstyle}\oarg{parent style}\marg{style name}\marg{style code}
+% \end{quote}
+% The command defines an internal command \cs{scr@bibstyle@\meta{style name}},
+% that can be used to activate a bibliography style. If the \meta{parent
+% style} is given, the code of the \meta{parent style} is executed before the
+% \meta{style code}. 
+% \begin{macro}{\@openbib@code}
+% \changes{v2.3g}{1996/01/14}{added}
+% \changes{v2.98c}{2008/02/15}{earlier definition}
+% Typically the \meta{style code} redefines the macro \cs{@openbib@code} and
+% \cs{newblock}.
+% The \cs{@openbib@code} is executed at the very beginning of a
+% bibliography. Originally it has been used to implement the standard option
+% \opt{openbib}. \KOMAScript{} uses it for compatibility for all bibliography
+% styles.
+% \begin{command}{\newblock}
+% \changes{v2.3g}{1996/01/14}{initialization changed}
+% \changes{v2.98c}{2008/02/15}{earlier definition}
+% The command \cs{newblock} is used inside bibliography entries to mark a
+% \emph{new block}. Usually such new blocks are inserted after the author and
+% after the title. But the user or \BibTeX{} style is free to use it different.
+% Both are initialized empty (before the code of a parent
+% style is executed.
+% \begin{macro}{\bib@beginhook,\bib@endhook}
+% \changes{v2.98c}{2008/02/15}{added}
+% Also \cs{bib@beginhook} and \cs{bib@endhook} are initialized empty. So
+% activation of a new bibliography style always removes the hook
+% code. Redefining an already existing style is not supported and results in
+% an error.
+%    \begin{macrocode}
+%<*option>
+\newcommand{\newbibstyle}[3][]{%
+  \scr@ifundefinedorrelax{scr@bibstyle@#2}{%
+    \scr@ifundefinedorrelax{scr@bibstyle@#1}{%
+      \ClassError{\KOMAClassName}{%
+        parent bibliography style `#1' does not exist}{%
+        You've told me to define the new bibliography style `#2'\MessageBreak
+        to be a child of bibliography style `#1', but bibliography
+        style\MessageBreak
+        `#1' does not exist.\MessageBreak
+        You have to remove the parent declaration or use an existing parent!
+        See the KOMA-Script manual for more information.%
+      }%
+    }{%
+      \@namedef{scr@bibstyle@#2}{%
+        \let\@openbib@code\@empty
+        \let\newblock\@empty
+        \let\bib@beginhook\@empty
+        \let\bib@endhook\@empty
+%    \end{macrocode}
+% \begin{macro}{\scr@current@bibstyle}
+% \changes{v3.17}{2015/03/12}{added}
+% \changes{v3.28}{2019/11/18}{\cs{ifstr} renamed to \cs{Ifstr}}
+% \changes{v3.36}{2022/02/21}{add expanded name to list}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% To be able to change the current value of option \opt{bibliography} we need
+% to know the current style and save it in \cs{scr@current@bibstyle}. We also
+% have to correct the value in the storage by activating a style.
+%    \begin{macrocode}
+        \@ifundefined{scr@current@bibstyle}{}{%
+          \Ifstr{\scr@current@bibstyle}{}{}{%
+            \edef\reserved@a{%
+              \noexpand\KOMA@kav@remove{\KOMAClassFileName}{bibliography}%
+                                       {\scr@current@bibstyle}%
+            }\reserved@a
+          }%
+        }%
+        \def\scr@current@bibstyle{#2}%
+%    \end{macrocode}
+% \end{macro}
+%    \begin{macrocode}
+        \KOMA@kav@xadd{\KOMAClassFileName}{bibliography}{#2}%
+        \csname scr@bibstyle@#1\endcsname
+        #3%
+      }%
+      \ifx\scr@bibstylelist\@empty
+        \edef\scr@bibstylelist{`#2'}%
+      \else
+        \edef\scr@bibstylelist{\scr@bibstylelist, `#2'}%
+      \fi
+    }%
+  }{%
+    \ClassError{\KOMAClassName}{bibliography style `#2' already exists}{%
+      You've told me to define the new bibliography style `#2',\MessageBreak
+      but this style already exists.\MessageBreak
+      You have to use another bibliography style name.\MessageBreak
+      See the KOMA-Script manual for more information.%
+    }%
+  }%
+}
+%    \end{macrocode}
+% \begin{macro}{\scr@bibstyle@}
+% \changes{v2.98c}{2008/02/15}{added}
+% Dummy of the empty parent style.
+%    \begin{macrocode}
+\newcommand*{\scr@bibstyle@}{}
+%    \end{macrocode}
+% \end{macro}^^A \scr@bibstyle@
+% The hook macros are reserved.
+%    \begin{macrocode}
+\newcommand*{\bib@beginhook}{}
+\newcommand*{\bib@endhook}{}
+%    \end{macrocode}
+% \end{macro}^^A \bib@beginhook,\bib@endhook
+% \begin{macro}{\scr@bibstylelist}
+% \changes{v2.98c}{2008/02/15}{added}
+% \changes{v3.36}{2022/02/21}{\cs{@gobble} removed}
+% \cs{scr@bibstylelist} is a printable comma-separated list of all known
+% styles. Single quotes are used to quote the single styles. It is designated
+% to be used in messages.
+%    \begin{macrocode}
+\newcommand*{\scr@bibstylelist}{}
+%    \end{macrocode}
+% And also \cs{@openbib@code} and \cs{newblock} are reserved.
+%    \begin{macrocode}
+\newcommand*{\@openbib@code}{}
+\newcommand*{\newblock}{}
+%    \end{macrocode}
+% \end{macro}^^A \scr@bibstylelist
+% \begin{macro}{\scr@bibstyle@openstyle,\scr@bibstyle@oldstyle}
+% \changes{v2.98c}{2008/02/15}{added}
+% The bibliography style \texttt{openstyle} corresponds to standard option
+% \opt{openbib}. The \cs{newblock} starts a new paragraph.
+% Style \texttt{oldstyle} is the default style where \cs{newblock} inserts a
+% small horizontal distance only.
+%    \begin{macrocode}
+\newbibstyle{openstyle}{%
+  \renewcommand*{\@openbib@code}{%
+    \advance\leftmargin\bibindent
+    \itemindent -\bibindent
+    \listparindent \itemindent
+    \parsep \z@
+  }%
+  \renewcommand*{\newblock}{\par}%
+}
+\newbibstyle{oldstyle}{%
+  \renewcommand*{\newblock}{\hskip .11em\@plus.33em\@minus.07em}%
+}
+\scr@bibstyle@oldstyle
+%    \end{macrocode}
+% \end{macro}^^A \scr@bibstyle@openstyle,\scr@bibstyle@oldstyle
+% \end{command}^^A \newblock
+% \end{macro}^^A \@openbib@code
+% \end{command}^^A \newbibstyle
+%
+%
+% \subsection{Bibliography heading}
+%
+% \begin{macro}{\bib@heading}
+% \changes{v2.3h}{1995/01/21}{added}
+% \changes{v2.6c}{2000/06/10}{printing preamble}
+% \changes{v2.7b}{2001/01/05}{using \cs{setchapterpreamble}}
+% \changes{v2.7j}{2001/06/27}{printing preamble moved to \env{thebibliography}}
+% \changes{v2.98c}{2008/02/15}{defined ealier}
+% \changes{v3.10}{2011/08/31}{using \cs{MakeMarkcase}}
+% \changes{v3.12}{2012/02/06}{using \cs{ifbib@leveldown}}
+% \changes{v3.13b}{2014/10/10}{running head with \texttt{leveldown} fixed}
+% \changes{v3.25}{2017/10/13}{using always \cs{@mkright} and \cs{@mkdouble}}
+% \changes{v3.25}{2017/10/13}{using \cs{bibliography@heading}}
+% \begin{macro}{\bibliography@heading}
+% \changes{v3.25}{2017/10/13}{added}
+% \changes{v3.26}{2018/09/03}{using \cs{addsecmark} or \cs{subsectionmark}
+%   instead of \cs{@mkright}}
+% \cs{bib@heading} runs the more generic \cs{bibliography@heading} with text
+% \cs{refname} resp. \cs{bibname}. This indirect approach has been
+% implemented, to that \pkg{biblatex} can simply call \cs{bibliography} with
+% different texts for multiple bibliographies.
+%    \begin{macrocode}
+\newcommand*{\bib@heading}{%
+%<article>  \bibliography@heading{\refname}%
+%<book|report>  \bibliography@heading{\bibname}%
+}
+\newcommand*{\bibliography@heading}[1]{%
+  \ifbib@leveldown
+%<article>    \subsection*{#1}%
+%<book|report>    \section*{#1}%
+%<book|report>    \addsecmark{#1}%
+%<*article>
+    \begingroup
+      \c@secnumdepth=-\maxdimen
+      \subsectionmark{#1}%
+    \endgroup
+%</article>  
+  \else
+%<article>    \section*{#1}%
+%<book|report>    \chapter*{#1}%
+    \@mkdouble{\MakeMarkcase{#1}}%
+  \fi
+}%
+%    \end{macrocode}
+% \end{macro}^^A \bibliography@heading
+% \end{macro}^^A \bib@heading
+%
+%
+% \subsection{Options}
+%
+% \begin{option}{bibliography}
+% \changes{v2.98c}{2008/02/15}{added}
+% \changes{v3.10}{2011/08/31}{using \cs{MakeMarkcase}}
+% \changes{v3.12}{2013/02/06}{new value \opt{leveldown}}
+% \changes{v3.12}{2013/02/06}{new value \opt{standardlevel}}
+% \changes{v3.12}{2013/03/05}{adapted to changes of \pkg*{scrbase}}
+% \changes{v3.12}{2013/09/28}{using \cs{addxcontentsline} instead of
+%   \cs{addcontentsline}}
+% \changes{v3.12}{2013/09/28}{do not write chapter entries to other directories}
+% \changes{v3.17}{2015/03/12}{using internal value storage}
+% \changes{v3.25}{2017/10/13}{using always \cs{@mkright} and \cs{@mkdouble}}
+% \changes{v3.25}{2017/10/13}{redefining \cs{bibliography@heading} instead of
+%   \cs{bib@heading}}
+% \changes{v3.39}{2022/11/11}{initial dot removed from member argument of
+%   option storage commands}
+% \KOMAScript provides several configurations for the bibliography or
+% references using a single option.
+% \begin{macro}{\bib@leveldownfalse,\bib@leveldowntrue,\ifbib@leveldown}
+% \changes{v3.12}{2013/02/06}{added}
+% The boolean \cs{ifbib@leveldown} is used to allow the
+% bibliography/references have a lower heading level.
+%    \begin{macrocode}
+\newif\ifbib@leveldown
+%    \end{macrocode}
+% \end{macro}
+% The supported values for option \opt{bibliography} are:
+%    \begin{macrocode}
+\KOMA@key{bibliography}{%
+  \scr@ifundefinedorrelax{scr@bibstyle@#1}{%
+    \KOMA@set@ncmdkey{bibliography}{@tempa}{%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=notoc}:] (default) don't add the bibliography/references to the
+%   table of contents.
+% \end{description}
+%    \begin{macrocode}
+      {notoc}{0},{nottotoc}{0},{plainheading}{0},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=totoc}:] add the bibliography/references to the table of
+%   contents, but do not number it.
+% \end{description}
+%    \begin{macrocode}
+      {totoc}{1},{toc}{1},{notnumbered}{1},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=numbered}:] number the bibliography/references and so also add
+% it to the table of contents.
+% \end{description}
+%    \begin{macrocode}
+      {numbered}{2},{totocnumbered}{2},{tocnumbered}{2},{numberedtotoc}{2},%
+      {numberedtoc}{2},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=leveldown}:] don't use the top heading level (chapters with
+%   \cls*{scrbook} or \cls*{scrreprt}, sections with \cs*{scrartcl}) but one
+%   level lower (sections with \cls*{scrbook} or \cls*{scrreprt}, subsection
+%   with \cs*{scrartcl}) for the bibliography/references.
+% \end{description}
+%    \begin{macrocode}
+      {leveldown}{3},%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=standardlevel}:] use the top heading level  (chapters with
+%   \cls*{scrbook} or \cls*{scrreprt}, sections with \cs*{scrartcl}) for the
+%   bibliography/references.
+% \end{description}
+%    \begin{macrocode}
+      {standardlevel}{4}%
+    }{#1}%
+    \ifcase \@tempa\relax % notoc
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{nobibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{bibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{bibliographynumbered}%
+      \KOMA@kav@add{\KOMAClassFileName}{toc}{nobibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{notoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{totoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{numbered}%
+      \KOMA@kav@add{\KOMAClassFileName}{bibliography}{notoc}%
+      \renewcommand*{\bibliography@heading}[1]{%
+        \ifbib@leveldown
+%<article>          \subsection*{##1}%
+%<book|report>          \section*{##1}%
+          \@mkright{\MakeMarkcase{##1}}%
+        \else
+%<article>          \section*{##1}%
+%<book|report>          \chapter*{##1}%
+          \@mkdouble{\MakeMarkcase{##1}}%
+        \fi
+      }%
+    \or% totoc
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{nobibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{bibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{bibliographynumbered}%
+      \KOMA@kav@add{\KOMAClassFileName}{toc}{bibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{notoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{totoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{numbered}%
+      \KOMA@kav@add{\KOMAClassFileName}{bibliography}{totoc}%
+      \renewcommand*{\bibliography@heading}[1]{%
+%<*article>
+        \ifbib@leveldown
+%    \end{macrocode}
+% \changes{v3.23}{2017/02/23}{using \cs{ext@toc}}
+% \changes{v3.25}{2017/10/13}{using \cs{addsubsectiontocentry} instead of
+%   \cs{addxcontentsline}}
+% From version 3.23 \cs{ext@toc} of \pkg*{tocbasic} is used instead of hard
+% coded |toc|.
+%    \begin{macrocode}
+          \subsection*{%
+                \addsubsectiontocentry{}{##1}%
+                ##1%
+              }%
+          \@mkright{\MakeMarkcase{##1}}%
+        \else
+          \addsec{##1}%
+          \@mkdouble{\MakeMarkcase{##1}}%
+        \fi
+%</article>
+%<*book|report>
+        \ifbib@leveldown
+          \addsec{##1}%
+        \else
+          \if@chaptertolists
+            \@chaptertolistsfalse\addchap{##1}\@chaptertoliststrue
+          \else
+            \addchap{##1}%
+          \fi
+          \@mkdouble{\MakeMarkcase{##1}}%
+        \fi
+%</book|report>
+      }%
+    \or% numbered
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{nobibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{bibliography}%
+      \KOMA@kav@remove{\KOMAClassFileName}{toc}{bibliographynumbered}%
+      \KOMA@kav@add{\KOMAClassFileName}{toc}{bibliographynumbered}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{notoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{totoc}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{numbered}%
+      \KOMA@kav@add{\KOMAClassFileName}{bibliography}{numbered}%
+      \renewcommand*{\bibliography@heading}[1]{%
+%<*article>
+        \ifbib@leveldown
+          \subsection{##1}%
+        \else
+          \section{##1}%
+          \@mkdouble{\MakeMarkcase{\sectionmarkformat ##1}}%
+        \fi
+%</article>
+%<*book|report>
+        \ifbib@leveldown
+          \section{##1}%
+        \else
+          \if@chaptertolists
+            \@chaptertolistsfalse\chapter{##1}\@chaptertoliststrue
+          \else
+            \chapter{##1}
+          \fi
+          \@mkdouble{\MakeMarkcase{\chaptermarkformat ##1}}%
+        \fi
+%</book|report>
+      }
+    \or% leveldown
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{leveldown}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{standardlevel}%
+      \KOMA@kav@add{\KOMAClassFileName}{bibliography}{leveldown}%
+      \bib@leveldowntrue
+    \or% standardlevel
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{leveldown}%
+      \KOMA@kav@remove{\KOMAClassFileName}{bibliography}{standardlevel}%
+      \KOMA@kav@add{\KOMAClassFileName}{bibliography}{standardlevel}%
+      \bib@leveldownfalse
+    \fi
+  }{%
+%    \end{macrocode}
+% \begin{description}
+% \item[\opt{=\meta{style}}:] all other values are names of styles.
+%   \begin{description}
+%   \item[ToDo:] Here we should test for valid style names and report an
+%     unknown value for unknown styles.
+%   \end{description}
+% \end{description}
+%    \begin{macrocode}
+    \FamilyKeyStateProcessed
+    \edef\reserved@a{%
+      \noexpand\KOMA@kav@remove{\KOMAClassFileName}{bibliography}%
+                               {\scr@current@bibstyle}%
+    }\reserved@a
+    \csname scr@bibstyle@#1\endcsname
+  }%
+}
+%    \end{macrocode}
+% \end{option}
+%
+% \begin{option}{openbib}
+% \begin{macro}{\@openbibfalse,\@openbibtrue,\if@openbib}
+% \changes{v2.3g}{1996/01/14}{removed}
+% \end{macro}
+% \changes{v2.3g}{1996/01/14}{re-implemented}
+% \changes{v2.98c}{2008/02/15}{obsolete}
+% \changes{v3.01a}{2008/11/21}{standard instead of obsolete}
+% The standard option \opt{openbib} is mapped to \opt{bibliography=openstyle}.
+%    \begin{macrocode}
+\KOMA@DeclareStandardOption{openbib}{bibliography=openstyle}
+%    \end{macrocode}
+% \end{option}
+%
+% \begin{option}{bibtotoc}
+% \changes{v2.3h}{1995/01/21}{added}
+% \changes{v2.6b}{2000/05/26}{\cs{@mkboth} added}
+% \changes{v2.6c}{2000/06/10}{\cs{bibpreamble} added}
+% \changes{v2.7}{2001/01/03}{braces fixed}
+% \changes{v2.7j}{2001/06/27}{preamble printing moved to \env{thebibliography}}
+% \changes{v2.98c}{2008/02/15}{obsolete}
+% \changes{v3.01a}{2008/11/20}{deprecated}
+% \changes{v3.39}{2022/11/16}{not with \KOMAScript~4}
+% \begin{option}{bibtotocnumbered}
+% \changes{v2.3h}{1995/01/21}{added}
+% \changes{v2.6b}{2000/05/26}{\cs{@mkboth} added}
+% \changes{v2.6c}{2000/06/10}{\cs{bibpreamble} added}
+% \changes{v2.7}{2001/01/03}{braces fixed}
+% \changes{v2.7b}{2001/01/05}{using \cs{setchapterpreamble}}
+% \changes{v2.7i}{2001/05/17}{\cs{chapter} instead of \cs{addchap}}
+% \changes{v2.7j}{2001/06/27}{preamble printing moved to \env{thebibliography}}
+% \changes{v2.9p}{2003/07/07}{number in running head}
+% \changes{v2.98c}{2008/02/15}{obsolete}
+% \changes{v3.01a}{2008/11/20}{deprecated}
+% \changes{v3.39}{2022/11/16}{not with \KOMAScript~4}
+% Deprecated options \opt{bibtotoc} and \opt{bibtotocnumbered} are mapped to
+% \opt{bibliography=totoc} resp. \opt{bibliography=totocnumbered}.
+%    \begin{macrocode}
+%<*!v4>
+\KOMA@DeclareDeprecatedOption{bibtotoc}{bibliography=totoc}
+\KOMA@DeclareDeprecatedOption{bibtotocnumbered}{bibliography=totocnumbered}
+%</!v4>
+%</option> 
+%    \end{macrocode}
+% \end{option}^^A bibtotocnumbered
+% \end{option}^^A bibtotoc
+%
+%
+% \subsection{Names}
+%
+% \begin{command}{\refname,\bibname}
+% \changes{v3.36}{2022/02/15}{explicit definition for English languages}
+% Depending on the class either \cs{refname} or \cs{bibname} is used.
+%    \begin{macrocode}
+%<*body>
+%<*article>
+\newcommand*\refname{References}
+\providecaptionname{american,australian,british,canadian,english,newzealand,%
+  UKenglish,ukenglish,USenglish,usenglish}\refname{References}
+%</article>
+%<*book|report>
+\newcommand*\bibname{Bibliography}
+\providecaptionname{american,australian,british,canadian,english,newzealand,%
+  UKenglish,ukenglish,USenglish,usenglish}\bibname{Bibliography}
+%</book|report>
+%    \end{macrocode}
+% \end{command}
+%
+%
+% \subsection{Printing the bibliography or references}
+%
+% \begin{command}{\setbibpreamble}
+% \changes{v2.6c}{2000/06/10}{added}
+% \changes{v2.7j}{2001/05/27}{\cs{renewcommand} replaced by \cs{def} for
+%   better \pkg{natbib} compatibility}
+% \begin{macro}{\bibpreamble}
+% \changes{v2.6c}{2000/06/10}{neue (intern)}
+% \changes{v2.6d}{2000/07/20}{\cs{let} replaced by \cs{newcommand*}}
+% \changes{v2.8q}{2002/01/10}{\cs{newcommand*} replaced by \cs{let}}
+% \changes{v2.7j}{2001/05/27}{preamble printing moved to \env{thebibliography}}
+% \cs{bibpreamble} should be interpreted as an internal macro. The user
+% command name space has been used for compatibility with \pkg{natbib}
+% only. The official \KOMAScript{} user interface is using
+% \begin{quote}
+%   \cs{setbibpreamble}\marg{preamble}
+% \end{quote}
+% Also for compatibility \cs{bibpreamble} is not set by \cs{bib@heading} but
+% inside environment \env{theenvironment}.
+%    \begin{macrocode}
+\newcommand*{\bibpreamble}{\relax}
+\let\bibpreamble\relax
+\newcommand{\setbibpreamble}[1]{\def\bibpreamble{#1}}
+%    \end{macrocode}
+% \end{macro}^^A \bibpreamble
+% \end{command}^^A \setbibpreamble
+%
+% \begin{length}{bibindent}
+% The indent of entries with option \opt{bibliography=openstyle}. Default is 1.5\,em.
+%    \begin{macrocode}
+\newdimen\bibindent
+\bibindent=1.5em
+%    \end{macrocode}
+% \end{length}
+%
+% \begin{environment}{thebibliography}
+% \changes{v2.2a}{1995/02/01}{for \cls*{scrartcl} \cs{bibname} replaced by
+%   \cs{refname}}
+% \changes{v2.3h}{1995/01/21}{using \cs{bib@heading}}
+% \changes{v2.8q}{2002/01/10}{handling empty preamble}
+% \changes{v2.9o}{2003/03/06}{fix of comparing \cs{bibpreamble} with \cs{@empty}}
+% \changes{v2.98c}{2008/02/15}{new hooks \cs{bib@before@hook} and
+%   \cs{bib@after@hook}}
+% This environment is used to print the bibliography or references. Note: This
+% environment is redefined by almost all bibliography packages like
+% \pkg{natbib} or \pkg{biblatex}. No one of these supports all features of
+% \KOMAScript{}. So if such a package is used, users should consult the
+% package manual instead of using a \KOMAScript{} feature.
+%    \begin{macrocode}
+\newenvironment{thebibliography}[1]{%
+  \if@bib@break@
+    \bib@beginhook
+  \else
+%<*book|report>
+    \ifx\bibpreamble\relax\else\ifx\bibpreamble\@empty\else
+        \setchapterpreamble{\bibpreamble}%
+    \fi\fi
+%</book|report>
+    \bib@heading
+%<*article>
+    \ifx\bibpreamble\relax\else\ifx\bibpreamble\@empty\else
+        \noindent\bibpreamble\par\nobreak
+    \fi\fi
+%</article>
+    \bib@beginhook
+    \bib@before@hook
+  \fi
+%    \end{macrocode}
+% \begin{command}{\BreakBibliography}
+% \changes{v2.98c}{2008/02/15}{added}
+% Redefining \cs{BreakBibliography} to work with our definition of
+% \env{thebibliography}.
+%    \begin{macrocode}
+  \renewcommand{\BreakBibliography}[1]{%
+    \@bib@break
+    \end{thebibliography}%
+    \begingroup ##1\endgroup
+    \begin{thebibliography}{#1}
+  }%
+%    \end{macrocode}
+% \end{command}
+%    \begin{macrocode}
+% Start the list for the entries.
+  \list{%
+    \@biblabel{\@arabic\c@enumiv}%
+  }{%
+    \settowidth\labelwidth{\@biblabel{#1}}%
+    \leftmargin\labelwidth
+    \advance\leftmargin\labelsep
+    \@openbib@code
+    \if@bib@break@
+      \edef\@tempa{%
+        \noexpand\usecounter{enumiv}%
+        \noexpand\setcounter{enumiv}{\the\c@enumiv}%
+      }\@tempa
+      \no@bib@break
+    \else
+      \usecounter{enumiv}%
+    \fi
+    \let\p@enumiv\@empty
+    \renewcommand*\theenumiv{\@arabic\c@enumiv}%
+  }%
+  \sloppy\clubpenalty4000 \widowpenalty4000
+  \sfcode`\.=\@m
+}{%
+  \if@bib@break@
+    \def\@noitemerr{%
+      \@latex@warning{%
+        \string\BreakBibliography\space at begin of `thebibliography'
+        environment\MessageBreak
+        or following \string\BreakBibliography}%
+    }%
+  \else
+    \def\@noitemerr{%
+      \@latex@warning{%
+        Empty `thebibliography' environment or
+        \string\BreakBibliography\MessageBreak
+        before end of `thebibliography' environment}%
+    }%
+  \fi
+  \endlist
+  \if@bib@break@
+  \else
+    \bib@after@hook
+    \let\bib@before@hook\@empty
+    \let\bib@after@hook\@empty
+  \fi
+  \bib@endhook
+}
+%    \end{macrocode}
+% \begin{macro}{\if@bib@break@,\no@bib@break,\@bib@break}
+% \changes{v2.98c}{2008/02/15}{added}
+% To be used as global switch.
+% \begin{description}
+% \item[ToDo:] Maybe redefine \cs{@bib@break@true} and \cs{@bib@break@false}.
+% \end{description}
+%    \begin{macrocode}
+\newif\if@bib@break@
+\newcommand{\no@bib@break}{\global\let\if@bib@break@\iffalse}
+\newcommand*{\@bib@break}{\global\let\if@bib@break@\iftrue}
+%    \end{macrocode}
+% \end{macro}^^A \if@bib@break@,\no@bib@break,\@bib@break
+% \begin{macro}{\bib@before@hook,\bib@after@hook}
+% \changes{v2.98c}{2008/02/15}{added}
+%    \begin{macrocode}
+\newcommand*{\bib@before@hook}{}
+\newcommand*{\bib@after@hook}{}
+%    \end{macrocode}
+% \end{macro}^^A \bib@before@hook,\bib@after@hook
+% \end{environment}^^A thebibliography
+%
+% \begin{command}{\BreakBibliography}
+% \changes{v2.98c}{2008/02/15}{added}
+% The initial definition is a do nothing but warn, because the command makes
+% sense only inside \env{thebibliography}.
+%    \begin{macrocode}
+\newcommand{\BreakBibliography}[1]{%
+  \ClassWarning{\KOMAClassName}{%
+    You've used \string\BreakBibliography\space either outside of\MessageBreak
+    the bibliography or `thebibliography' was redefined\MessageBreak
+    incompatible, e.g., using a bibliography package.\MessageBreak
+    \string\BreakBibliography\space ignored%
+  }%
+}
+%    \end{macrocode}
+% \end{command}^^A \BreakBibliography
+%
+% \begin{command}{\AfterBibliographyPreamble,\AtEndBibliography}
+% \changes{v2.98c}{2008/02/15}{added}
+% Add code to the two new hooks inside our definition of
+% \env{thebibliography}. So any bibliography package can break this
+% functionality.
+% Note: The hooks are always emptied by selecting a style using
+% \opt{bibliography=\meta{style name}}.
+%    \begin{macrocode}
+\newcommand{\AfterBibliographyPreamble}{\g@addto@macro\bib@before@hook}
+\newcommand{\AtEndBibliography}{\g@addto@macro\bib@after@hook}
+%</body>
+%    \end{macrocode}
+% \end{command}
+%
+%
+%    \begin{macrocode}
+%</!letter>
+%    \end{macrocode}
+% 
+% \Finale
+% \PrintChanges
+% 
+\endinput
+% Local Variables:
+% mode: doctex
+% ispell-local-dictionary: "en_US"
+% eval: (flyspell-mode 1)
+% TeX-master: t
+% TeX-engine: luatex-dev
+% eval: (setcar (or (cl-member "Index" (setq-local TeX-command-list (copy-alist TeX-command-list)) :key #'car :test #'string-equal) (setq-local TeX-command-list (cons nil TeX-command-list))) '("Index" "mkindex %s" TeX-run-index nil t :help "makeindex for dtx"))
+% End:
