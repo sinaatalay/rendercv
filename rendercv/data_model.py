@@ -81,7 +81,7 @@ def check_spelling(sentence: str) -> str:
         r"\-+", " ", modifiedSentence
     )  # replace hyphens with spaces
     modifiedSentence = re.sub(
-        "[^a-z\s\-']", "", modifiedSentence
+        r"[^a-z\s\-']", "", modifiedSentence
     )  # remove all the special characters
     words = modifiedSentence.split()  # split sentence into a list of words
     misspelled = spell.unknown(words)  # find misspelled words
@@ -777,14 +777,14 @@ class SocialNetwork(BaseModel):
 
 
 class Connection(BaseModel):
-    """This class stores a connection/communication information.
+    r"""This class stores a connection/communication information.
 
     Warning:
         This class isn't designed for users to use, but it is used by RenderCV to make
         the $\LaTeX$ templating easier.
     """
 
-    name: Literal["LinkedIn", "GitHub", "Instagram", "phone", "email", "website"]
+    name: Literal["LinkedIn", "GitHub", "Instagram", "phone", "email", "website", "location"]
     value: str
 
     @computed_field
@@ -802,6 +802,8 @@ class Connection(BaseModel):
             url = f"{self.value}"
         elif self.name == "phone":
             url = f"{self.value}"
+        elif self.name == "location":
+            url = None
         else:
             raise RuntimeError(f'"{self.name}" is not a valid connection!"')
 
@@ -945,6 +947,8 @@ class CurriculumVitae(BaseModel):
     @cached_property
     def connections(self) -> list[str]:
         connections = []
+        if self.location is not None:
+            connections.append(Connection(name="location", value=self.location))
         if self.phone is not None:
             connections.append(Connection(name="phone", value=self.phone))
         if self.email is not None:
@@ -1015,8 +1019,9 @@ class CurriculumVitae(BaseModel):
                 # Find the corresponding custom section and get its entries:
                 if self.custom_sections is None:
                     raise ValueError(
-                        f'"{section_name}" is not a valid section name. Please fix the'
-                        " section_order field."
+                        f'"{section_name}" is not a valid section name. Please create a'
+                        " custom section with this name or delete it from the section"
+                        " order."
                     )
                 else:
                     for custom_section in self.custom_sections:
