@@ -835,14 +835,12 @@ class Connection(BaseModel):
 
     @field_validator("value")
     @classmethod
-    def check_type_of_value(
-        cls, value: str
-    ) -> str:
+    def check_type_of_value(cls, value: str) -> str:
         if not re.search(r"[^\d\-+]", str(value)):
             # If there is nothing other than digits, hyphens, and plus signs, then it is
             # a phone number
             value = "tel:" + value
-        
+
         return value
 
     @computed_field
@@ -902,6 +900,11 @@ class Section(BaseModel):
         title="Entries",
         description="The entries of the section. The format depends on the entry type.",
     )
+
+    @field_validator("title")
+    @classmethod
+    def make_first_letters_uppercase(cls, title: str) -> str:
+        return title.title()
 
 
 class CurriculumVitae(BaseModel):
@@ -1001,6 +1004,36 @@ class CurriculumVitae(BaseModel):
         ),
     )
 
+    @model_validator(mode="after")
+    @classmethod
+    def check_if_the_section_names_are_unique(self, model):
+        pre_defined_section_names = [
+            "Education",
+            "Work Experience",
+            "Academic Projects",
+            "Personal Projects",
+            "Certificates",
+            "Extracurricular Activities",
+            "Test Scores",
+            "Skills",
+            "Publications",
+        ]
+        if model.custom_sections is not None:
+            custom_section_names = []
+            for custom_section in model.custom_sections:
+                custom_section_names.append(custom_section.title)
+
+        section_names = pre_defined_section_names + custom_section_names
+        seen = set()
+        duplicates = {val for val in section_names if (val in seen or seen.add(val))}
+        if len(duplicates) > 0:
+            raise ValueError(
+                "The section names should be unique. The following section names are"
+                f" duplicated: {duplicates}"
+            )
+
+        return model
+
     @computed_field
     @cached_property
     def connections(self) -> list[str]:
@@ -1063,11 +1096,11 @@ class CurriculumVitae(BaseModel):
 
         link_text = None
         for section_name in self.section_order:
-            # capitalize the first letter of each word in the section name:
-            section_name = section_name.title()
-
             # Create a section for each section name in the section order:
             if section_name in pre_defined_sections:
+                if pre_defined_sections[section_name] is None:
+                    continue
+
                 entry_type = pre_defined_sections[section_name][0].__class__.__name__
                 entries = pre_defined_sections[section_name]
                 if section_name == "Test Scores":
