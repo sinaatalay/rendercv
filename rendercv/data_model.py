@@ -439,7 +439,7 @@ class Event(BaseModel):
         ),
         examples=["2020-09-24", "present"],
     )
-    date: Optional[str] = Field(
+    date: Optional[str | PastDate] = Field(
         default=None,
         title="Date",
         description=(
@@ -450,7 +450,7 @@ class Event(BaseModel):
         ),
         examples=["2020-09-24"],
     )
-    highlights: list[SpellCheckedString] = Field(
+    highlights: Optional[list[SpellCheckedString]] = Field(
         default=[],
         title="Highlights",
         description=(
@@ -515,6 +515,17 @@ class Event(BaseModel):
             )
             model.end_date = "present"
 
+        if model.start_date is not None and model.end_date is not None:
+            if model.end_date == "present":
+                end_date = Date.today()
+            else:
+                end_date = model.end_date
+                
+            if model.start_date > end_date:
+                raise ValueError(
+                    '"start_date" is after "end_date". Please check the dates!'
+                )
+
         return model
 
     @computed_field
@@ -578,8 +589,8 @@ class Event(BaseModel):
     @cached_property
     def highlight_strings(self) -> list[SpellCheckedString]:
         highlight_strings = []
-
-        highlight_strings.extend(self.highlights)
+        if self.highlights is not None:
+            highlight_strings.extend(self.highlights)
 
         return highlight_strings
 
@@ -614,7 +625,7 @@ class Event(BaseModel):
             try:
                 # If this runs, it means the date is an ISO format string, and it can be
                 # parsed
-                month_and_year = format_date(Date.fromisoformat(self.date))
+                month_and_year = format_date(self.date)
             except:
                 month_and_year = self.date
         else:
@@ -709,7 +720,8 @@ class EducationEntry(Event):
                 gpaString += f" ([Transcript]({self.transcript_url}))"
             highlight_strings.append(gpaString)
 
-        highlight_strings.extend(self.highlights)
+        if self.highlights is not None:
+            highlight_strings.extend(self.highlights)
 
         return highlight_strings
 
@@ -784,7 +796,9 @@ class Connection(BaseModel):
         the $\LaTeX$ templating easier.
     """
 
-    name: Literal["LinkedIn", "GitHub", "Instagram", "phone", "email", "website", "location"]
+    name: Literal[
+        "LinkedIn", "GitHub", "Instagram", "phone", "email", "website", "location"
+    ]
     value: str
 
     @computed_field
