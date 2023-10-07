@@ -3,6 +3,7 @@
 import subprocess
 import os
 import re
+import shutil
 
 from jinja2 import Environment, PackageLoader
 
@@ -201,6 +202,15 @@ def print_today() -> str:
     return today.strftime("%B %d, %Y")
 
 
+def get_path_to_fonts_directory() -> str:
+    """Return the path to the fonts directory.
+
+    Returns:
+        str: The path to the fonts directory.
+    """
+    return os.path.join(os.path.dirname(__file__), "templates", "fonts")
+
+
 def render_template(data):
     """Render the template using the given data.
 
@@ -242,7 +252,10 @@ def render_template(data):
     environment.filters["make_it_italic"] = make_it_italic
 
     output_latex_file = template.render(
-        design=data.design.options, cv=data.cv, today=print_today()
+        design=data.design.options,
+        cv=data.cv,
+        today=print_today(),
+        fonts_directory=get_path_to_fonts_directory(),
     )
 
     # Create an output file and write the rendered LaTeX code to it:
@@ -250,6 +263,21 @@ def render_template(data):
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
     with open(output_file_path, "w") as file:
         file.write(output_latex_file)
+
+    # Copy the fonts directory to the output directory:
+    fonts_directory = get_path_to_fonts_directory()
+    output_fonts_directory = os.path.join(os.path.dirname(output_file_path), "fonts")
+    os.makedirs(output_fonts_directory, exist_ok=True)
+    for directory in os.listdir(fonts_directory):
+        if directory == "SourceSans3":
+            # copy the SourceSans3 fonts:
+            source_directory = os.path.join(fonts_directory, directory)
+
+            shutil.copytree(
+                source_directory,
+                output_fonts_directory,
+                dirs_exist_ok=True,
+            )
 
     return output_file_path
 
@@ -267,7 +295,7 @@ def run_latex(latex_file_path):
     if os.name == "nt":
         # remove all files except the .tex file
         for file in os.listdir(os.path.dirname(latex_file_path)):
-            if file.endswith(".tex"):
+            if file.endswith(".tex") or file == "fonts":
                 continue
             os.remove(os.path.join(os.path.dirname(latex_file_path), file))
 
@@ -278,6 +306,7 @@ def run_latex(latex_file_path):
             "bin",
             "windows",
         )
+        print("PDF generatation started!")
         subprocess.run(
             [
                 f"{tinytexPath}\\latexmk.exe",
@@ -289,6 +318,12 @@ def run_latex(latex_file_path):
                 "-file-line-error",
             ],
             cwd=os.path.dirname(latex_file_path),
+            stdout=subprocess.DEVNULL,
         )
+        print("PDF generated successfully!")
     else:
-        print("Only Windows is supported for now.")
+        print(
+            "Only Windows is supported for now. But you can still use the generated"
+            " .tex file to generate the PDF. Go to overleaf.com and upload the .tex"
+            " file there to generate the PDF."
+        )
