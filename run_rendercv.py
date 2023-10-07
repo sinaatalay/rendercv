@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 input_name = "personal"
-workspace = os.path.dirname(os.path.dirname(__file__))
+workspace = os.path.dirname(__file__)
 
 input_file_path = os.path.join(workspace, "tests", "inputs", f"{input_name}.yaml")
 with open(input_file_path) as file:
