@@ -87,6 +87,10 @@ class TestRendercv(unittest.TestCase):
             with self.subTest(msg="valid dates"):
                 data_model.Event(**input)
 
+        # Inputs without dates:
+        with self.subTest(msg="no dates"):
+            data_model.Event(**{})
+
         # Inputs with invalid dates:
         input = {
             "start_date": Date(year=2020, month=1, day=1),
@@ -162,7 +166,7 @@ class TestRendercv(unittest.TestCase):
         ]
         event = data_model.Event(**input)
         result = event.date_and_location_strings_with_timespan
-        with self.subTest(expected=expected):
+        with self.subTest(msg="start_date, end_date, and location are provided"):
             self.assertEqual(result, expected)
 
         input = {
@@ -175,7 +179,42 @@ class TestRendercv(unittest.TestCase):
         ]
         event = data_model.Event(**input)
         result = event.date_and_location_strings_with_timespan
-        with self.subTest(expected=expected):
+        with self.subTest(msg="date and location are provided"):
+            self.assertEqual(result, expected)
+
+        input = {
+            "date": Date(year=2020, month=1, day=1),
+        }
+        expected = [
+            "Jan. 2020",
+        ]
+        event = data_model.Event(**input)
+        result = event.date_and_location_strings_with_timespan
+        with self.subTest(msg="date is provided"):
+            self.assertEqual(result, expected)
+
+        input = {
+            "start_date": Date(year=2020, month=1, day=1),
+            "end_date": Date(year=2021, month=1, day=16),
+        }
+        expected = [
+            "Jan. 2020 to Jan. 2021",
+            "1 year 1 month",
+        ]
+        event = data_model.Event(**input)
+        result = event.date_and_location_strings_with_timespan
+        with self.subTest(msg="start_date and end_date are provided"):
+            self.assertEqual(result, expected)
+
+        input = {
+            "location": "My Location",
+        }
+        expected = [
+            "My Location",
+        ]
+        event = data_model.Event(**input)
+        result = event.date_and_location_strings_with_timespan
+        with self.subTest(msg="location is provided"):
             self.assertEqual(result, expected)
 
     def test_data_event_date_and_location_strings_without_timespan(self):
@@ -219,7 +258,7 @@ class TestRendercv(unittest.TestCase):
         ]
         event = data_model.Event(**input)
         result = event.highlight_strings
-        with self.subTest(expected=expected):
+        with self.subTest(msg="highlights are provided"):
             self.assertEqual(result, expected)
 
         input = {}
@@ -297,6 +336,107 @@ class TestRendercv(unittest.TestCase):
         event = data_model.Event(**input)
         result = event.month_and_year
         with self.subTest(msg="date is provided"):
+            self.assertEqual(result, expected)
+
+    def test_data_education_highlight_strings(self):
+        input = {
+            "institution": "My Institution",
+            "area": "My Area",
+            "gpa": 3.5,
+            "highlights": [
+                "My Highlight 1",
+                "My Highlight 2",
+            ],
+        }
+        expected = [
+            "GPA: 3.5",
+            "My Highlight 1",
+            "My Highlight 2",
+        ]
+        education = data_model.EducationEntry(**input)
+        result = education.highlight_strings
+        with self.subTest(msg="gpa and highlights are provided"):
+            self.assertEqual(result, expected)
+
+        input = {
+            "institution": "My Institution",
+            "area": "My Area",
+            "gpa": None,
+            "highlights": [
+                "My Highlight 1",
+                "My Highlight 2",
+            ],
+        }
+        expected = [
+            "My Highlight 1",
+            "My Highlight 2",
+        ]
+        education = data_model.EducationEntry(**input)
+        result = education.highlight_strings
+        with self.subTest(msg="gpa is not provided, but highlights are"):
+            self.assertEqual(result, expected)
+
+        input = {
+            "institution": "My Institution",
+            "area": "My Area",
+            "gpa": 3.5,
+            "highlights": [],
+        }
+        expected = [
+            "GPA: 3.5",
+        ]
+        education = data_model.EducationEntry(**input)
+        result = education.highlight_strings
+        with self.subTest(msg="gpa is provided, but highlights are not"):
+            self.assertEqual(result, expected)
+
+        input = {
+            "institution": "My Institution",
+            "area": "My Area",
+            "gpa": None,
+            "highlights": [],
+        }
+        expected = []
+        education = data_model.EducationEntry(**input)
+        result = education.highlight_strings
+        with self.subTest(msg="neither gpa nor highlights are provided"):
+            self.assertEqual(result, expected)
+
+        input = {
+            "institution": "My Institution",
+            "area": "My Area",
+            "gpa": 3.5,
+            "transcript_url": "https://www.example.com/",
+            "highlights": None,
+        }
+        expected = [
+            "GPA: 3.5 ([Transcript](https://www.example.com/))",
+        ]
+        education = data_model.EducationEntry(**input)
+        result = education.highlight_strings
+        with self.subTest(
+            msg="gpa and transcript_url are provided, but highlights are not"
+        ):
+            self.assertEqual(result, expected)
+
+        input = {
+            "institution": "My Institution",
+            "area": "My Area",
+            "gpa": "3.5",
+            "transcript_url": "https://www.example.com/",
+            "highlights": [
+                "My Highlight 1",
+                "My Highlight 2",
+            ],
+        }
+        expected = [
+            "GPA: 3.5 ([Transcript](https://www.example.com/))",
+            "My Highlight 1",
+            "My Highlight 2",
+        ]
+        education = data_model.EducationEntry(**input)
+        result = education.highlight_strings
+        with self.subTest(msg="gpa, transcript_url, and highlights are provided"):
             self.assertEqual(result, expected)
 
 

@@ -520,7 +520,7 @@ class Event(BaseModel):
                 end_date = Date.today()
             else:
                 end_date = model.end_date
-                
+
             if model.start_date > end_date:
                 raise ValueError(
                     '"start_date" is after "end_date". Please check the dates!'
@@ -537,17 +537,13 @@ class Event(BaseModel):
             date_and_location_strings.append(self.location)
 
         if self.date is not None:
-            # Then it means start_date and end_date are not provided.
-            try:
-                # If this runs, it means the date is an ISO format string, and it can be
-                # parsed
-                date = format_date(Date.fromisoformat(self.date))
-                date_and_location_strings.append(date)
-            except:
+            if isinstance(self.date, str):
                 date_and_location_strings.append(self.date)
-        else:
-            # Then it means start_date and end_date are provided.
-
+            elif isinstance(self.date, Date):
+                date_and_location_strings.append(format_date(self.date))
+            else:
+                raise RuntimeError("Date is neither a string nor a Date object!")
+        elif self.start_date is not None and self.end_date is not None:
             start_date = format_date(self.start_date)
 
             if self.end_date == "present":
@@ -694,7 +690,7 @@ class EducationEntry(Event):
         description="The type of the degree.",
         examples=["BS", "BA", "PhD", "MS"],
     )
-    gpa: Optional[str] = Field(
+    gpa: Optional[str | float] = Field(
         default=None,
         title="GPA",
         description="The GPA of the degree.",
