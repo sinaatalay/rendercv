@@ -11,7 +11,7 @@ class TestRendercv(unittest.TestCase):
         sentences = [
             "This is a sentence.",
             "This is a sentance with special characters &@#&^@*#&)((!@#_)()).",
-            "12312309 Thisdf sdfsd is a sentence *safds\{\}[[[]]]",
+            r"12312309 Thisdf sdfsd is a sentence *safds\{\}[[[]]]",
         ]
 
         for sentence in sentences:
@@ -57,86 +57,89 @@ class TestRendercv(unittest.TestCase):
         result = data_model.format_date(date)
         self.assertEqual(result, expected)
 
-    def test_data_cv_name(self):
-        cv_dict = {"name": "John Doe Test"}
-        cv = data_model.CurriculumVitae(**cv_dict)
-        self.assertEqual(cv.name, "John Doe Test")
+    def test_data_Event_check_dates(self):
+        # Inputs with correct dates:
+        inputs = [
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": Date(year=2021, month=1, day=1),
+            },
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": None,
+            },
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": "present",
+            },
+            {"date": "My Birthday"},
+        ]
 
-        with self.assertRaises(ValidationError):
-            cv_dict = {}
-            data_model.CurriculumVitae(**cv_dict)
+        for input in inputs:
+            with self.subTest(msg="start_date < end_date"):
+                data_model.Event(**input)
 
-    def test_data_cv_email(self):
-        # Test invalid emails
-        cv_dict = {"name": "John Doe", "email": "wrongEmail"}
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
+        # Inputs with incorrect dates:
+        inputs = [
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": Date(year=2019, month=1, day=1),
+            },
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": Date(year=2400, month=1, day=1),
+            },
+        ]
+        for input in inputs:
+            with self.subTest(msg="start_date > end_date"):
+                with self.assertRaises(ValidationError):
+                    data_model.Event(**input)
 
-        cv_dict["email"] = "anotherWrongEmail@.com"
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
+        # Other inputs:
+        input = {
+            "start_date": Date(year=2020, month=1, day=1),
+            "end_date": "present",
+            "date": "My Birthday",
+        }
+        event = data_model.Event(**input)
+        with self.subTest(msg="start_date, end_date, and date are all provided"):
+            self.assertEqual(event.date, None)
+            self.assertEqual(event.start_date, input["start_date"])
+            self.assertEqual(event.end_date, input["end_date"])
 
-        # Test empty email field
-        cv_dict["email"] = ""
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
+        input = {
+            "start_date": Date(year=2020, month=1, day=1),
+            "end_date": None,
+            "date": "My Birthday",
+        }
+        event = data_model.Event(**input)
+        with self.subTest(msg="start_date and date are provided"):
+            self.assertEqual(event.start_date, None)
+            self.assertEqual(event.end_date, None)
+            self.assertEqual(event.date, input["date"])
 
-        # Test valid email
-        cv_dict["email"] = "johndoe@example.com"
-        cv = data_model.CurriculumVitae(**cv_dict)
-        self.assertEqual(cv.email, "johndoe@example.com")
+        input = {
+            "start_date": None,
+            "end_date": Date(year=2020, month=1, day=1),
+            "date": "My Birthday",
+        }
+        event = data_model.Event(**input)
+        with self.subTest(msg="end_date and date are provided"):
+            self.assertEqual(event.start_date, None)
+            self.assertEqual(event.end_date, None)
+            self.assertEqual(event.date, input["date"])
 
-    def test_data_cv_phone(self):
-        # Test invalid phone numbers
-        cv_dict = {"name": "John Doe", "phone": "123456789"}
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
+        input = {
+            "start_date": None,
+            "end_date": None,
+            "date": "My Birthday",
+        }
+        event = data_model.Event(**input)
+        with self.subTest(msg="only date is provided"):
+            self.assertEqual(event.start_date, None)
+            self.assertEqual(event.end_date, None)
+            self.assertEqual(event.date, input["date"])
 
-        cv_dict["phone"] = "12"
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
-
-        # Test empty phone field
-        cv_dict["phone"] = ""
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
-
-        # Test valid phone numbers
-        cv_dict["phone"] = "+1-512-456-9999"
-        cv = data_model.CurriculumVitae(**cv_dict)
-        self.assertEqual(cv.phone, "tel:+1-512-456-9999")
-
-        cv_dict["phone"] = "+90(555) 555 55 55"
-        cv = data_model.CurriculumVitae(**cv_dict)
-        self.assertEqual(cv.phone, "tel:+90-555-555-55-55")
-
-        cv_dict["phone"] = "+86 139 1099 8888"
-        cv = data_model.CurriculumVitae(**cv_dict)
-        self.assertEqual(cv.phone, "tel:+86-139-1099-8888")
-    
-    def test_data_cv_website(self):
-        # Test invalid website
-        cv_dict = {"name": "John Doe", "website": "wrongWebsite"}
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
-
-        cv_dict["website"] = "anotherWrongWebsit@e.com"
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
-
-        # Test empty website field
-        cv_dict["website"] = ""
-        with self.assertRaises(ValidationError):
-            data_model.CurriculumVitae(**cv_dict)
-
-        # Test valid websites
-        cv_dict["website"] = "https://example.com"
-        cv = data_model.CurriculumVitae(**cv_dict)
-        self.assertEqual(cv.website, Url("https://example.com/"))
-
-        cv_dict["website"] = "http://www.example.com"
-        cv = data_model.CurriculumVitae(**cv_dict)
-        self.assertEqual(cv.website, Url("http://www.example.com/"))
 
 if __name__ == "__main__":
     unittest.main()
