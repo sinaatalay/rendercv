@@ -126,6 +126,7 @@ def make_it_bold(value: str, match_str: str) -> str:
     else:
         return value
 
+
 def make_it_underlined(value: str, match_str: str) -> str:
     """Make the matched parts of the string underlined.
 
@@ -156,6 +157,7 @@ def make_it_underlined(value: str, match_str: str) -> str:
     else:
         return value
 
+
 def make_it_italic(value: str, match_str: str) -> str:
     """Make the matched parts of the string italic.
 
@@ -185,6 +187,19 @@ def make_it_italic(value: str, match_str: str) -> str:
         return value
     else:
         return value
+
+
+def print_today() -> str:
+    """Return today's date.
+
+    Returns:
+        str: Today's date.
+    """
+    from datetime import date
+
+    today = date.today()
+    return today.strftime("%B %d, %Y")
+
 
 def render_template(data):
     """Render the template using the given data.
@@ -226,7 +241,9 @@ def render_template(data):
     environment.filters["make_it_underlined"] = make_it_underlined
     environment.filters["make_it_italic"] = make_it_italic
 
-    output_latex_file = template.render(design=data.design.options, cv=data.cv)
+    output_latex_file = template.render(
+        design=data.design.options, cv=data.cv, today=print_today()
+    )
 
     # Create an output file and write the rendered LaTeX code to it:
     output_file_path = os.path.join(os.getcwd(), "tests", "outputs", "test.tex")
