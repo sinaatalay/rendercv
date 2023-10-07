@@ -1023,7 +1023,10 @@ class CurriculumVitae(BaseModel):
             for custom_section in model.custom_sections:
                 custom_section_names.append(custom_section.title)
 
-        section_names = pre_defined_section_names + custom_section_names
+            section_names = pre_defined_section_names + custom_section_names
+        else:
+            section_names = pre_defined_section_names
+
         seen = set()
         duplicates = {val for val in section_names if (val in seen or seen.add(val))}
         if len(duplicates) > 0:
