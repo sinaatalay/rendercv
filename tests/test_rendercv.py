@@ -482,6 +482,32 @@ class TestRendercv(unittest.TestCase):
         result = publication.doi_url
         self.assertEqual(result, expected)
 
+    def test_data_connection_url(self):
+        # Github link:
+        inputs = [
+            {"name": "LinkedIn", "value": "username"},
+            {"name": "GitHub", "value": "sinaatalay"},
+            {"name": "Instagram", "value": "username"},
+            {"name": "phone", "value": "+909999999999"},
+            {"name": "email", "value": "example@example.com"},
+            {"name": "website", "value": "https://www.example.com/"},
+            {"name": "location", "value": "My Location"},
+        ]
+        expected_results = [
+            "https://www.linkedin.com/in/username",
+            "https://www.github.com/sinaatalay",
+            "https://www.instagram.com/username",
+            "tel:+909999999999",
+            "mailto:example@example.com",
+            "https://www.example.com/",
+            None,
+        ]
+        for input, expected in zip(inputs, expected_results):
+            with self.subTest(type=input["name"]):
+                connection = data_model.Connection(**input)
+                result = connection.url
+                self.assertEqual(result, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

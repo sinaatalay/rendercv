@@ -788,12 +788,12 @@ class PublicationEntry(Event):
     @classmethod
     def check_doi(cls, doi: str) -> str:
         doi_url = f"https://doi.org/{doi}"
-        
+
         try:
             urllib.request.urlopen(doi_url)
         except:
             raise ValueError(f"{doi} cannot be found in the DOI System.")
-        
+
         return doi
 
     @computed_field
@@ -833,21 +833,33 @@ class Connection(BaseModel):
     ]
     value: str
 
+    @field_validator("value")
+    @classmethod
+    def check_type_of_value(
+        cls, value: str
+    ) -> str:
+        if not re.search(r"[^\d\-+]", str(value)):
+            # If there is nothing other than digits, hyphens, and plus signs, then it is
+            # a phone number
+            value = "tel:" + value
+        
+        return value
+
     @computed_field
     @cached_property
     def url(self) -> HttpUrl:
         if self.name == "LinkedIn":
             url = f"https://www.linkedin.com/in/{self.value}"
         elif self.name == "GitHub":
-            url = f"https:www.github.com/{self.value}"
+            url = f"https://www.github.com/{self.value}"
         elif self.name == "Instagram":
             url = f"https://www.instagram.com/{self.value}"
         elif self.name == "email":
             url = f"mailto:{self.value}"
         elif self.name == "website":
-            url = f"{self.value}"
+            url = self.value
         elif self.name == "phone":
-            url = f"{self.value}"
+            url = self.value
         elif self.name == "location":
             url = None
         else:
