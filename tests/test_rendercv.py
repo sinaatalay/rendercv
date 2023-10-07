@@ -338,7 +338,7 @@ class TestRendercv(unittest.TestCase):
         with self.subTest(msg="date is provided"):
             self.assertEqual(result, expected)
 
-    def test_data_education_highlight_strings(self):
+    def test_data_education_entry_highlight_strings(self):
         input = {
             "institution": "My Institution",
             "area": "My Area",
@@ -439,7 +439,8 @@ class TestRendercv(unittest.TestCase):
         with self.subTest(msg="gpa, transcript_url, and highlights are provided"):
             self.assertEqual(result, expected)
 
-    def test_data_publication_netry_doi_url(self):
+    def test_data_publication_entry_check_doi(self):
+        # Invalid DOI:
         input = {
             "title": "My Publication",
             "authors": [
@@ -449,6 +450,37 @@ class TestRendercv(unittest.TestCase):
             "doi": "invalidDoi",
             "date": "2020-01-01",
         }
+        with self.subTest(msg="invalid doi"):
+            with self.assertRaises(ValidationError):
+                data_model.PublicationEntry(**input)
+
+        # Valid DOI:
+        input = {
+            "title": "My Publication",
+            "authors": [
+                "Author 1",
+                "Author 2",
+            ],
+            "doi": "10.1103/PhysRevB.76.054309",
+            "date": "2007-08-01",
+        }
+        with self.subTest(msg="valid doi"):
+            data_model.PublicationEntry(**input)
+
+    def test_data_publication_entry_doi_url(self):
+        input = {
+            "title": "My Publication",
+            "authors": [
+                "Author 1",
+                "Author 2",
+            ],
+            "doi": "10.1103/PhysRevB.76.054309",
+            "date": "2007-08-01",
+        }
+        expected = "https://doi.org/10.1103/PhysRevB.76.054309"
+        publication = data_model.PublicationEntry(**input)
+        result = publication.doi_url
+        self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":

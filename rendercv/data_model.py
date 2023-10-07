@@ -775,6 +775,7 @@ class PublicationEntry(Event):
         examples=[10, 100],
     )
     journal: Optional[str] = Field(
+        default=None,
         title="Journal",
         description="The journal or the conference name.",
         examples=[
@@ -787,11 +788,12 @@ class PublicationEntry(Event):
     @classmethod
     def check_doi(cls, doi: str) -> str:
         doi_url = f"https://doi.org/{doi}"
-
-        html = urllib.request.urlopen(doi_url).read().decode("utf-8")
-        if "DOI NOT FOUND" in html:
+        
+        try:
+            urllib.request.urlopen(doi_url)
+        except:
             raise ValueError(f"{doi} cannot be found in the DOI System.")
-
+        
         return doi
 
     @computed_field
