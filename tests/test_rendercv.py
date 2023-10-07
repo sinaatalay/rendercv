@@ -69,15 +69,15 @@ class TestRendercv(unittest.TestCase):
         # Inputs with valid dates:
         inputs = [
             {
-                "start_date": Date(year=2020, month=1, day=1),
-                "end_date": Date(year=2021, month=1, day=1),
+                "start_date": "2020-01-01",
+                "end_date": "2021-01-01",
             },
             {
-                "start_date": Date(year=2020, month=1, day=1),
+                "start_date": "2020-01-01",
                 "end_date": None,
             },
             {
-                "start_date": Date(year=2020, month=1, day=1),
+                "start_date": "2020-01-01",
                 "end_date": "present",
             },
             {"date": "My Birthday"},
@@ -93,16 +93,16 @@ class TestRendercv(unittest.TestCase):
 
         # Inputs with invalid dates:
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
-            "end_date": Date(year=2019, month=1, day=1),
+            "start_date": "2020-01-01",
+            "end_date": "2019-01-01",
         }
         with self.subTest(msg="start_date > end_date"):
             with self.assertRaises(ValidationError):
                 data_model.Event(**input)
 
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
-            "end_date": Date(year=2900, month=1, day=1),
+            "start_date": "2020-01-01",
+            "end_date": "2900-01-01",
         }
         with self.subTest(msg="end_date > present"):
             with self.assertRaises(ValidationError):
@@ -110,18 +110,18 @@ class TestRendercv(unittest.TestCase):
 
         # Other inputs:
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
+            "start_date": "2020-01-01",
             "end_date": "present",
             "date": "My Birthday",
         }
         event = data_model.Event(**input)
         with self.subTest(msg="start_date, end_date, and date are all provided"):
             self.assertEqual(event.date, None)
-            self.assertEqual(event.start_date, input["start_date"])
+            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
             self.assertEqual(event.end_date, input["end_date"])
 
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
+            "start_date": "2020-01-01",
             "end_date": None,
             "date": "My Birthday",
         }
@@ -133,7 +133,7 @@ class TestRendercv(unittest.TestCase):
 
         input = {
             "start_date": None,
-            "end_date": Date(year=2020, month=1, day=1),
+            "end_date": "2020-01-01",
             "date": "My Birthday",
         }
         event = data_model.Event(**input)
@@ -145,18 +145,18 @@ class TestRendercv(unittest.TestCase):
         input = {
             "start_date": None,
             "end_date": None,
-            "date": "My Birthday",
+            "date": "2020-01-01",
         }
         event = data_model.Event(**input)
         with self.subTest(msg="only date is provided"):
             self.assertEqual(event.start_date, None)
             self.assertEqual(event.end_date, None)
-            self.assertEqual(event.date, input["date"])
+            self.assertEqual(event.date, Date.fromisoformat(input["date"]))
 
     def test_data_event_date_and_location_strings_with_timespan(self):
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
-            "end_date": Date(year=2021, month=1, day=16),
+            "start_date": "2020-01-01",
+            "end_date": "2021-01-16",
             "location": "My Location",
         }
         expected = [
@@ -183,7 +183,7 @@ class TestRendercv(unittest.TestCase):
             self.assertEqual(result, expected)
 
         input = {
-            "date": Date(year=2020, month=1, day=1),
+            "date": "2020-01-01",
         }
         expected = [
             "Jan. 2020",
@@ -194,8 +194,8 @@ class TestRendercv(unittest.TestCase):
             self.assertEqual(result, expected)
 
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
-            "end_date": Date(year=2021, month=1, day=16),
+            "start_date": "2020-01-01",
+            "end_date": "2021-01-16",
         }
         expected = [
             "Jan. 2020 to Jan. 2021",
@@ -219,8 +219,8 @@ class TestRendercv(unittest.TestCase):
 
     def test_data_event_date_and_location_strings_without_timespan(self):
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
-            "end_date": Date(year=2021, month=1, day=16),
+            "start_date": "2020-01-01",
+            "end_date": "2021-01-16",
             "location": "My Location",
         }
         expected = [
@@ -311,8 +311,8 @@ class TestRendercv(unittest.TestCase):
 
     def test_data_event_month_and_year(self):
         input = {
-            "start_date": Date(year=2020, month=1, day=1),
-            "end_date": Date(year=2021, month=1, day=16),
+            "start_date": "2020-01-01",
+            "end_date": "2021-01-16",
         }
         expected = None
         event = data_model.Event(**input)
@@ -330,7 +330,7 @@ class TestRendercv(unittest.TestCase):
             self.assertEqual(result, expected)
 
         input = {
-            "date": Date(year=2020, month=1, day=1),
+            "date": "2020-01-01",
         }
         expected = "Jan. 2020"
         event = data_model.Event(**input)
@@ -438,6 +438,17 @@ class TestRendercv(unittest.TestCase):
         result = education.highlight_strings
         with self.subTest(msg="gpa, transcript_url, and highlights are provided"):
             self.assertEqual(result, expected)
+
+    def test_data_publication_netry_doi_url(self):
+        input = {
+            "title": "My Publication",
+            "authors": [
+                "Author 1",
+                "Author 2",
+            ],
+            "doi": "invalidDoi",
+            "date": "2020-01-01",
+        }
 
 
 if __name__ == "__main__":
