@@ -12,11 +12,13 @@ from typing_extensions import Annotated, Optional
 import re
 import logging
 from functools import cached_property
+import urllib.request
 
 from pydantic import (
     BaseModel,
     HttpUrl,
     Field,
+    field_validator,
     model_validator,
     computed_field,
     EmailStr,
@@ -120,13 +122,20 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
     Returns:
         str: The time span string.
     """
-    # calculate the number of days between start_date and end_date:
-    timespan_in_days = (end_date - start_date).days
+    # check if the types of start_date and end_date are correct:
+    if not isinstance(start_date, Date):
+        raise TypeError("start_date is not a Date object!")
+    if not isinstance(end_date, Date):
+        raise TypeError("end_date is not a Date object!")
 
-    if timespan_in_days < 0:
+    # # check if start_date is before end_date:
+    if start_date > end_date:
         raise ValueError(
             "The start date is after the end date. Please check the dates!"
         )
+
+    # calculate the number of days between start_date and end_date:
+    timespan_in_days = (end_date - start_date).days
 
     # calculate the number of years between start_date and end_date:
     how_many_years = timespan_in_days // 365
@@ -469,6 +478,20 @@ class Event(BaseModel):
     )
     url: Optional[HttpUrl] = None
 
+    @field_validator("date")
+    @classmethod
+    def check_date(cls, date: str | PastDate) -> str | PastDate:
+        if isinstance(date, str):
+            try:
+                # If this runs, it means the date is an ISO format string, and it can be
+                # parsed
+                date = Date.fromisoformat(date)
+            except ValueError:
+                # Then it means it is a custom string like "Fall 2023"
+                date = date
+
+        return date
+
     @model_validator(mode="after")
     @classmethod
     def check_dates(cls, model):
@@ -735,14 +758,6 @@ class PublicationEntry(Event):
         description="The authors of the publication in order as a list of strings.",
         examples=["John Doe", "Jane Doe"],
     )
-    journal: str = Field(
-        title="Journal",
-        description="The journal or the conference name.",
-        examples=[
-            "Physical Review B",
-            "ASME International Mechanical Engineering Congress and Exposition",
-        ],
-    )
     doi: str = Field(
         title="DOI",
         description="The DOI of the publication.",
@@ -759,6 +774,25 @@ class PublicationEntry(Event):
         description="The number of citations of the publication.",
         examples=[10, 100],
     )
+    journal: Optional[str] = Field(
+        title="Journal",
+        description="The journal or the conference name.",
+        examples=[
+            "Physical Review B",
+            "ASME International Mechanical Engineering Congress and Exposition",
+        ],
+    )
+
+    @field_validator("doi")
+    @classmethod
+    def check_doi(cls, doi: str) -> str:
+        doi_url = f"https://doi.org/{doi}"
+
+        html = urllib.request.urlopen(doi_url).read().decode("utf-8")
+        if "DOI NOT FOUND" in html:
+            raise ValueError(f"{doi} cannot be found in the DOI System.")
+
+        return doi
 
     @computed_field
     @cached_property
