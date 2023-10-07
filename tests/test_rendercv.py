@@ -508,6 +508,130 @@ class TestRendercv(unittest.TestCase):
                 result = connection.url
                 self.assertEqual(result, expected)
 
+    def test_data_curriculum_vitae_connections(self):
+        input = {
+            "name": "John Doe",
+            "location": "My Location",
+            "phone": "+905559876543",
+            "email": "john@doe.com",
+            "website": "https://www.example.com/",
+        }
+        exptected_length = 4
+        cv = data_model.CurriculumVitae(**input)
+        result = len(cv.connections)
+        with self.subTest(msg="without social networks"):
+            self.assertEqual(result, exptected_length)
+
+        input = {
+            "name": "John Doe",
+            "location": "My Location",
+            "phone": "+905559876543",
+            "email": "john@doe.com",
+            "website": "https://www.example.com/",
+            "social_networks": [
+                {"network": "LinkedIn", "username": "username"},
+                {"network": "GitHub", "username": "sinaatalay"},
+                {"network": "Instagram", "username": "username"},
+            ],
+        }
+        exptected_length = 7
+        cv = data_model.CurriculumVitae(**input)
+        result = len(cv.connections)
+        with self.subTest(msg="with social networks"):
+            self.assertEqual(result, exptected_length)
+
+    def test_data_curriculum_vitae_custom_sections(self):
+        # Valid custom sections:
+        input = {
+            "name": "John Doe",
+            "custom_sections": [
+                {
+                    "title": "My Custom Section 1",
+                    "entry_type": "OneLineEntry",
+                    "entries": [
+                        {
+                            "name": "My Custom Entry Name",
+                            "details": "My Custom Entry Value",
+                        },
+                        {
+                            "name": "My Custom Entry Name",
+                            "details": "My Custom Entry Value",
+                        },
+                    ],
+                },
+                {
+                    "title": "My Custom Section 2",
+                    "entry_type": "NormalEntry",
+                    "entries": [
+                        {"name": "My Custom Entry Name"},
+                        {"name": "My Custom Entry Name"},
+                    ],
+                },
+                {
+                    "title": "My Custom Section 3",
+                    "entry_type": "ExperienceEntry",
+                    "entries": [
+                        {
+                            "company": "My Custom Entry Name",
+                            "position": "My Custom Entry Value",
+                        },
+                        {
+                            "company": "My Custom Entry Name",
+                            "position": "My Custom Entry Value",
+                        },
+                    ],
+                },
+                {
+                    "title": "My Custom Section 4",
+                    "entry_type": "EducationEntry",
+                    "entries": [
+                        {
+                            "institution": "My Custom Entry Name",
+                            "area": "My Custom Entry Value",
+                        },
+                        {
+                            "institution": "My Custom Entry Name",
+                            "area": "My Custom Entry Value",
+                        },
+                    ],
+                },
+                {
+                    "title": "My Custom Section 5",
+                    "entry_type": "PublicationEntry",
+                    "entries": [
+                        {
+                            "title": "My Publication",
+                            "authors": [
+                                "Author 1",
+                                "Author 2",
+                            ],
+                            "doi": "10.1103/PhysRevB.76.054309",
+                            "date": "2020-01-01",
+                        },
+                        {
+                            "title": "My Publication",
+                            "authors": [
+                                "Author 1",
+                                "Author 2",
+                            ],
+                            "doi": "10.1103/PhysRevB.76.054309",
+                            "date": "2020-01-01",
+                        },
+                    ],
+                },
+            ],
+        }
+
+        with self.subTest(msg="valid custom sections"):
+            cv = data_model.CurriculumVitae(**input)
+            self.assertEqual(len(cv.sections), 5)
+
+        # Custom sections with duplicate titles:
+        input["custom_sections"][1]["title"] = "My Custom Section 1"
+        with self.subTest(msg="custom sections with duplicate titles"):
+            with self.assertRaises(ValidationError):
+                data_model.CurriculumVitae(**input)
+
 
 if __name__ == "__main__":
     unittest.main()
