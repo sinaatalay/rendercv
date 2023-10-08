@@ -410,11 +410,11 @@ class Design(BaseModel):
         title="Theme name",
         description='The only option is "Classic" for now.',
     )
-    font: Literal["SourceSans3", "Roboto"] = Field(
+    font: Literal["SourceSans3", "Roboto", "EBGaramond"] = Field(
         default="SourceSans3",
         title="Font",
         description="The font of the CV.",
-        examples=["SourceSans3", "Roboto"],
+        examples=["SourceSans3", "Roboto", "EBGaramond"],
     )
     font_size: Literal["10pt", "11pt", "12pt"] = Field(
         default="10pt",
