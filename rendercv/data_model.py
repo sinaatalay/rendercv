@@ -13,6 +13,7 @@ import re
 import logging
 from functools import cached_property
 import urllib.request
+import os
 
 from pydantic import (
     BaseModel,
@@ -409,11 +410,47 @@ class Design(BaseModel):
         title="Theme name",
         description='The only option is "Classic" for now.',
     )
+    font: Literal["SourceSans3", "Roboto"] = Field(
+        default="SourceSans3",
+        title="Font",
+        description="The font of the CV.",
+        examples=["SourceSans3", "Roboto"],
+    )
+    font_size: Literal["10pt", "11pt", "12pt"] = Field(
+        default="10pt",
+        title="Font Size",
+        description="The font size of the CV. It can be 10pt, 11pt, or 12pt.",
+        examples=["10pt", "11pt", "12pt"],
+    )
     options: ClassicThemeOptions = Field(
         default=ClassicThemeOptions(),
         title="Theme Options",
         description="The options of the theme.",
     )
+
+    @field_validator("font")
+    @classmethod
+    def check_font(cls, font: str) -> str:
+        # Go to fonts directory and check if the font exists:
+        fonts_directory = os.path.join(os.path.dirname(__file__), "templates", "fonts")
+        if font not in os.listdir(fonts_directory):
+            raise ValueError(
+                f'The font "{font}" is not found in the "fonts" directory! To add a new'
+                " font, please see TO BE ADDED."
+            )
+        else:
+            font_directory = os.path.join(fonts_directory, font)
+            required_files = [
+                f"{font}-Bold.ttf",
+                f"{font}-BoldItalic.ttf",
+                f"{font}-Italic.ttf",
+                f"{font}-Regular.ttf",
+            ]
+            for file in required_files:
+                if file not in os.listdir(font_directory):
+                    raise ValueError(f"{file} is not found in the {font} directory!")
+
+        return font
 
 
 # ======================================================================================
