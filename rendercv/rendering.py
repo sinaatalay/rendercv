@@ -4,8 +4,15 @@ import subprocess
 import os
 import re
 import shutil
+from datetime import date
+import logging
+
+from rendercv.data_model import RenderCVDataModel
 
 from jinja2 import Environment, PackageLoader
+
+
+logger = logging.getLogger(__name__)
 
 
 def markdown_to_latex(markdown_string: str) -> str:
@@ -66,14 +73,14 @@ def markdown_to_latex(markdown_string: str) -> str:
     return latex_string
 
 
-def markdown_url_to_url(value: str) -> bool:
+def markdown_link_to_url(value: str) -> bool:
     """Convert a markdown link to a normal string URL.
 
     This function is used as a Jinja2 filter.
 
     Example:
         ```python
-        markdown_url_to_url("[Google](https://google.com)")
+        markdown_link_to_url("[Google](https://google.com)")
         ```
 
         will return:
@@ -92,13 +99,49 @@ def markdown_url_to_url(value: str) -> bool:
     link = re.search(r"\[(.*)\]\((.*?)\)", value)
     if link is not None:
         url = link.groups()[1]
+        if url == "":
+            raise ValueError(f"The markdown link {value} is empty!")
         return url
     else:
-        raise ValueError("markdown_url_to_url should only be used on markdown links!")
+        raise ValueError("markdown_link_to_url should only be used on markdown links!")
 
 
-def make_it_bold(value: str, match_str: str) -> str:
-    """Make the matched parts of the string bold.
+def make_it_something(value: str, something: str, match_str: str = None) -> str:
+    """Make the matched parts of the string something. If the match_str is None, the
+    whole string will be made something.
+
+    Warning:
+        This function shouldn't be used directly. Use
+        (make_it_bold)[#rendercv.rendering.make_it_bold],
+        (make_it_underlined)[#rendercv.rendering.make_it_underlined], or
+        (make_it_italic)[#rendercv.rendering.make_it_italic] instead.
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"{something} should only be used on strings!")
+
+    if match_str is not None and not isinstance(match_str, str):
+        raise ValueError("The string to match should be a string!")
+
+    if something == "make_it_bold":
+        keyword = "textbf"
+    elif something == "make_it_underlined":
+        keyword = "underline"
+    elif something == "make_it_italic":
+        keyword = "textit"
+
+    if match_str is None:
+        return f"\\{keyword}{{{value}}}"
+
+    if match_str in value:
+        value = value.replace(match_str, f"\\{keyword}{{{match_str}}}")
+        return value
+    else:
+        return value
+
+
+def make_it_bold(value: str, match_str: str = None) -> str:
+    """Make the matched parts of the string bold. If the match_str is None, the whole
+    string will be made bold.
 
     This function is used as a Jinja2 filter.
 
@@ -115,21 +158,12 @@ def make_it_bold(value: str, match_str: str) -> str:
         value (str): The string to make bold.
         match_str (str): The string to match.
     """
-    if not isinstance(value, str):
-        raise ValueError("make_it_bold_if should only be used on strings!")
-
-    if not isinstance(match_str, str):
-        raise ValueError("The string to match should be a string!")
-
-    if match_str in value:
-        value = value.replace(match_str, "\\textbf{" + match_str + "}")
-        return value
-    else:
-        return value
+    return make_it_something(value, "make_it_bold", match_str)
 
 
-def make_it_underlined(value: str, match_str: str) -> str:
-    """Make the matched parts of the string underlined.
+def make_it_underlined(value: str, match_str: str = None) -> str:
+    """Make the matched parts of the string underlined. If the match_str is None, the
+    whole string will be made underlined.
 
     This function is used as a Jinja2 filter.
 
@@ -146,21 +180,12 @@ def make_it_underlined(value: str, match_str: str) -> str:
         value (str): The string to make underlined.
         match_str (str): The string to match.
     """
-    if not isinstance(value, str):
-        raise ValueError("make_it_underlined_if should only be used on strings!")
-
-    if not isinstance(match_str, str):
-        raise ValueError("The string to match should be a string!")
-
-    if match_str in value:
-        value = value.replace(match_str, "\\underline{" + match_str + "}")
-        return value
-    else:
-        return value
+    return make_it_something(value, "make_it_underlined", match_str)
 
 
-def make_it_italic(value: str, match_str: str) -> str:
-    """Make the matched parts of the string italic.
+def make_it_italic(value: str, match_str: str = None) -> str:
+    """Make the matched parts of the string italic. If the match_str is None, the whole
+    string will be made italic.
 
     This function is used as a Jinja2 filter.
 
@@ -177,24 +202,14 @@ def make_it_italic(value: str, match_str: str) -> str:
         value (str): The string to make italic.
         match_str (str): The string to match.
     """
-    if not isinstance(value, str):
-        raise ValueError("make_it_italic_if should only be used on strings!")
-
-    if not isinstance(match_str, str):
-        raise ValueError("The string to match should be a string!")
-
-    if match_str in value:
-        value = value.replace(match_str, "\\textit{" + match_str + "}")
-        return value
-    else:
-        return value
+    return make_it_something(value, "make_it_italic", match_str)
 
 
 def divide_length_by(length: str, divider: float) -> str:
-    # r"""Divide a length by a number.
+    r"""Divide a length by a number.
 
-    # Length is a string with the following regex pattern: `\d+\.?\d* *(cm|in|pt|mm|ex|em)`
-    # """
+    Length is a string with the following regex pattern: `\d+\.?\d* *(cm|in|pt|mm|ex|em)`
+    """
     # Get the value as a float and the unit as a string:
     value = re.search(r"\d+\.?\d*", length).group()
     unit = re.findall(r"[^\d\.\s]+", length)[0]
@@ -208,7 +223,6 @@ def get_today() -> str:
     Returns:
         str: Today's date.
     """
-    from datetime import date
 
     today = date.today()
     return today.strftime("%B %d, %Y")
@@ -223,7 +237,7 @@ def get_path_to_font_directory(font_name: str) -> str:
     return os.path.join(os.path.dirname(__file__), "templates", "fonts", font_name)
 
 
-def render_template(data):
+def render_template(data: RenderCVDataModel, output_path: str = None):
     """Render the template using the given data.
 
     Args:
@@ -254,7 +268,7 @@ def render_template(data):
 
     # add custom filters:
     environment.filters["markdown_to_latex"] = markdown_to_latex
-    environment.filters["markdown_url_to_url"] = markdown_url_to_url
+    environment.filters["markdown_link_to_url"] = markdown_link_to_url
     environment.filters["make_it_bold"] = make_it_bold
     environment.filters["make_it_underlined"] = make_it_underlined
     environment.filters["make_it_italic"] = make_it_italic
@@ -272,7 +286,12 @@ def render_template(data):
     )
 
     # Create an output file and write the rendered LaTeX code to it:
-    output_file_path = os.path.join(os.getcwd(), "tests", "outputs", "test.tex")
+    if output_path is None:
+        output_path = os.getcwd()
+
+    output_folder = os.path.join(output_path, "output")
+    file_name = data.cv.name.replace(" ", "_") + "_CV.tex"
+    output_file_path = os.path.join(output_folder, file_name)
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
     with open(output_file_path, "w") as file:
         file.write(output_latex_file)
@@ -308,9 +327,10 @@ def run_latex(latex_file_path):
         for file in os.listdir(os.path.dirname(latex_file_path)):
             if file.endswith(".tex") or file == "fonts":
                 continue
+            # remove the file:
             os.remove(os.path.join(os.path.dirname(latex_file_path), file))
 
-        tinytexPath = os.path.join(
+        tinytex_path = os.path.join(
             os.path.dirname(__file__),
             "vendor",
             "TinyTeX",
@@ -320,7 +340,7 @@ def run_latex(latex_file_path):
         print("PDF generatation started!")
         subprocess.run(
             [
-                f"{tinytexPath}\\latexmk.exe",
+                f"{tinytex_path}\\latexmk.exe",
                 "-lualatex",
                 # "-c",
                 f"{latex_file}",
