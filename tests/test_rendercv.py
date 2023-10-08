@@ -65,50 +65,80 @@ class TestRendercv(unittest.TestCase):
         with self.subTest(expected=expected):
             self.assertEqual(result, expected)
 
+    def test_data_design_font(self):
+        # Valid font:
+        input = {
+            "font": "SourceSans3",
+        }
+        with self.subTest(msg="valid font"):
+            design = data_model.Design(**input)
+            self.assertEqual(design.font, input["font"])
+
+        # Invalid font:
+        input = {
+            "font": "InvalidFont",
+        }
+        with self.subTest(msg="invalid font"):
+            with self.assertRaises(ValidationError):
+                data_model.Design(**input)
+
     def test_data_event_check_dates(self):
         # Inputs with valid dates:
-        inputs = [
-            {
-                "start_date": "2020-01-01",
-                "end_date": "2021-01-01",
-            },
-            {
-                "start_date": "2020-01-01",
-                "end_date": None,
-            },
-            {
-                "start_date": "2020-01-01",
-                "end_date": "present",
-            },
-            {"date": "My Birthday"},
-        ]
-
-        for input in inputs:
-            with self.subTest(msg="valid dates"):
-                data_model.Event(**input)
-
-        # Inputs without dates:
-        with self.subTest(msg="no dates"):
-            data_model.Event(**{})
-
-        # Inputs with invalid dates:
         input = {
             "start_date": "2020-01-01",
-            "end_date": "2019-01-01",
+            "end_date": "2021-01-01",
+            "date": None,
         }
-        with self.subTest(msg="start_date > end_date"):
-            with self.assertRaises(ValidationError):
-                data_model.Event(**input)
+        with self.subTest(msg="valid date with start_date and end_date"):
+            event = data_model.Event(**input)
+            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
+            self.assertEqual(event.end_date, Date.fromisoformat(input["end_date"]))
+            self.assertEqual(event.date, None)
 
         input = {
             "start_date": "2020-01-01",
-            "end_date": "2900-01-01",
+            "end_date": None,
+            "date": None,
         }
-        with self.subTest(msg="end_date > present"):
-            with self.assertRaises(ValidationError):
-                data_model.Event(**input)
+        with self.subTest(msg="valid date with start_date"):
+            event = data_model.Event(**input)
+            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
+            self.assertEqual(event.end_date, "present")
+            self.assertEqual(event.date, None)
 
-        # Other inputs:
+        input = {
+            "start_date": "2020-01-01",
+            "end_date": "present",
+            "date": None,
+        }
+        with self.subTest(msg="valid date with start_date and end_date=present"):
+            event = data_model.Event(**input)
+            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
+            self.assertEqual(event.end_date, "present")
+            self.assertEqual(event.date, None)
+
+        input = {
+            "start_date": None,
+            "end_date": None,
+            "date": "My Birthday",
+        }
+        with self.subTest(msg="valid date with custom date"):
+            event = data_model.Event(**input)
+            self.assertEqual(event.start_date, None)
+            self.assertEqual(event.end_date, None)
+            self.assertEqual(event.date, input["date"])
+
+        input = {
+            "start_date": None,
+            "end_date": None,
+            "date": "2020-01-01",
+        }
+        with self.subTest(msg="valid date with ISO date"):
+            event = data_model.Event(**input)
+            self.assertEqual(event.start_date, None)
+            self.assertEqual(event.end_date, None)
+            self.assertEqual(event.date, Date.fromisoformat(input["date"]))
+
         input = {
             "start_date": "2020-01-01",
             "end_date": "present",
@@ -152,6 +182,30 @@ class TestRendercv(unittest.TestCase):
             self.assertEqual(event.start_date, None)
             self.assertEqual(event.end_date, None)
             self.assertEqual(event.date, Date.fromisoformat(input["date"]))
+
+        # Inputs without dates:
+        with self.subTest(msg="no dates"):
+            event = data_model.Event(**{})
+            self.assertEqual(event.start_date, None)
+            self.assertEqual(event.end_date, None)
+            self.assertEqual(event.date, None)
+
+        # Inputs with invalid dates:
+        input = {
+            "start_date": "2020-01-01",
+            "end_date": "2019-01-01",
+        }
+        with self.subTest(msg="start_date > end_date"):
+            with self.assertRaises(ValidationError):
+                data_model.Event(**input)
+
+        input = {
+            "start_date": "2020-01-01",
+            "end_date": "2900-01-01",
+        }
+        with self.subTest(msg="end_date > present"):
+            with self.assertRaises(ValidationError):
+                data_model.Event(**input)
 
     def test_data_event_date_and_location_strings_with_timespan(self):
         input = {
@@ -465,7 +519,8 @@ class TestRendercv(unittest.TestCase):
             "date": "2007-08-01",
         }
         with self.subTest(msg="valid doi"):
-            data_model.PublicationEntry(**input)
+            publication_entry = data_model.PublicationEntry(**input)
+            self.assertEqual(publication_entry.doi, input["doi"])
 
     def test_data_publication_entry_doi_url(self):
         input = {
