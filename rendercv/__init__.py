@@ -2,8 +2,6 @@ r"""RenderCV package.
 
 It parses the user input YAML/JSON file and validates the data (checks spelling mistakes, checks if the dates are consistent, etc.). Then, with the data, it creates a $\LaTeX$ file and renders it with [TinyTeX](https://yihui.org/tinytex/).
 """
-
-# initialize logging:
 import logging
 
 
@@ -36,7 +34,7 @@ class LoggingFormatter(logging.Formatter):
 
 
 logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 stdout_handler = logging.StreamHandler()
-stdout_handler.setLevel(logging.INFO)
 stdout_handler.setFormatter(LoggingFormatter())
 logger.addHandler(stdout_handler)
