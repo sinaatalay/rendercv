@@ -6,11 +6,12 @@ import re
 import shutil
 from datetime import date
 import logging
+import time
 
 from rendercv.data_model import RenderCVDataModel
 
 from jinja2 import Environment, PackageLoader
-
+from ruamel.yaml import YAML
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +238,32 @@ def get_path_to_font_directory(font_name: str) -> str:
     return os.path.join(os.path.dirname(__file__), "templates", "fonts", font_name)
 
 
+def read_input_file(file_path: str) -> RenderCVDataModel:
+    """Read the input file.
+
+    Args:
+        file_path (str): The path to the input file.
+
+    Returns:
+        str: The input file as a string.
+    """
+    start_time = time.time()
+    logger.info(f"Reading and validating the input file {file_path} has started.")
+    with open(file_path) as file:
+        yaml = YAML()
+        raw_json = yaml.load(file)
+
+    data = RenderCVDataModel(**raw_json)
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+    logger.info(
+        f"Reading and validating the input file {file_path} has finished in"
+        f" {time_taken:.2f} s."
+    )
+    return data
+
+
 def render_template(data: RenderCVDataModel, output_path: str = None):
     """Render the template using the given data.
 
@@ -246,8 +273,8 @@ def render_template(data: RenderCVDataModel, output_path: str = None):
     Returns:
         str: The path to the rendered LaTeX file.
     """
-    # templates_directory = os.path.dirname(os.path.dirname())
-
+    start_time = time.time()
+    logger.info("Rendering the LaTeX file has started.")
     # create a Jinja2 environment:
     environment = Environment(
         loader=PackageLoader("rendercv", "templates"),
@@ -309,6 +336,10 @@ def render_template(data: RenderCVDataModel, output_path: str = None):
         dirs_exist_ok=True,
     )
 
+    end_time = time.time()
+    time_taken = end_time - start_time
+    logger.info(f"Rendering the LaTeX file has finished in {time_taken:.2f} s.")
+
     return output_file_path
 
 
@@ -319,8 +350,13 @@ def run_latex(latex_file_path):
     Args:
         latexFilePath (str): The path to the LaTeX file to compile.
     """
-    latex_file_path = os.path.normpath(latex_file_path)
+    start_time = time.time()
+    logger.info("Running TinyTeX to generate the PDF has started.")
     latex_file = os.path.basename(latex_file_path)
+    latex_file_path = os.path.normpath(latex_file_path)
+
+    output_file = latex_file.replace(".tex", ".pdf")
+    output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file)
 
     if os.name == "nt":
         # remove all files except the .tex file
@@ -337,12 +373,10 @@ def run_latex(latex_file_path):
             "bin",
             "windows",
         )
-        print("PDF generatation started!")
         subprocess.run(
             [
                 f"{tinytex_path}\\latexmk.exe",
                 "-lualatex",
-                # "-c",
                 f"{latex_file}",
                 "-synctex=1",
                 "-interaction=nonstopmode",
@@ -351,10 +385,17 @@ def run_latex(latex_file_path):
             cwd=os.path.dirname(latex_file_path),
             stdout=subprocess.DEVNULL,
         )
-        print("PDF generated successfully!")
     else:
-        print(
-            "Only Windows is supported for now. But you can still use the generated"
-            " .tex file to generate the PDF. Go to overleaf.com and upload the .tex"
-            " file there to generate the PDF."
+        raise NotImplementedError(
+            "The current OS is not supported! Only Windows is supported at the moment."
         )
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+    logger.info(
+        f"Running TinyTeX to generate the PDF has finished in {time_taken:.2f} s."
+    )
+
+    return os.path.join(
+        os.path.dirname(latex_file_path), latex_file.replace(".tex", ".pdf")
+    )
