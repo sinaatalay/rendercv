@@ -358,14 +358,13 @@ def run_latex(latex_file_path):
     output_file = latex_file.replace(".tex", ".pdf")
     output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file)
 
+    # remove all files except the .tex file
+    for file in os.listdir(os.path.dirname(latex_file_path)):
+        if file.endswith(".tex") or file == "fonts":
+            continue
+        # remove the file:
+        os.remove(os.path.join(os.path.dirname(latex_file_path), file))
     if os.name == "nt":
-        # remove all files except the .tex file
-        for file in os.listdir(os.path.dirname(latex_file_path)):
-            if file.endswith(".tex") or file == "fonts":
-                continue
-            # remove the file:
-            os.remove(os.path.join(os.path.dirname(latex_file_path), file))
-
         tinytex_path = os.path.join(
             os.path.dirname(__file__),
             "vendor",
@@ -373,23 +372,30 @@ def run_latex(latex_file_path):
             "bin",
             "windows",
         )
-        subprocess.run(
-            [
-                f"{tinytex_path}\\latexmk.exe",
-                "-lualatex",
-                f"{latex_file}",
-                "-synctex=1",
-                "-interaction=nonstopmode",
-                "-file-line-error",
-            ],
-            cwd=os.path.dirname(latex_file_path),
-            stdout=subprocess.DEVNULL,
-        )
-    else:
-        raise NotImplementedError(
-            "The current OS is not supported! Only Windows is supported at the moment."
-        )
+        executable = os.path.join(tinytex_path, "latexmk.exe")
 
+    else:
+        tinytex_path = os.path.join(
+            os.path.dirname(__file__),
+            "vendor",
+            "TinyTeX",
+            "bin",
+            "x86_64-linux",
+        )
+        executable = os.path.join(tinytex_path, "latexmk")
+
+    subprocess.run(
+        [
+            executable,
+            "-lualatex",
+            f"{latex_file}",
+            "-synctex=1",
+            "-interaction=nonstopmode",
+            "-file-line-error",
+        ],
+        cwd=os.path.dirname(latex_file_path),
+        stdout=subprocess.DEVNULL,
+    )
     end_time = time.time()
     time_taken = end_time - start_time
     logger.info(
