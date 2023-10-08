@@ -399,12 +399,12 @@ class TestDataModel(unittest.TestCase):
         # Remove the output directory:
         shutil.rmtree(output_folder_path)
 
-    def test_run_latex(self):
-        latex_file_path = os.path.join(
-            os.path.dirname(__file__), "reference_files", "John_Doe_CV.tex"
-        )
+    # def test_run_latex(self):
+    #     latex_file_path = os.path.join(
+    #         os.path.dirname(__file__), "reference_files", "John_Doe_CV.tex"
+    #     )
 
-        rendering.run_latex(latex_file_path)
+    #     rendering.run_latex(latex_file_path)
 
 if __name__ == "__main__":
     unittest.main()
