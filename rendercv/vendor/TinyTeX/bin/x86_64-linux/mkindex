@@ -1,0 +1,41 @@
+#!/bin/sh
+# $Id$
+# Public domain. Originally written by Thomas Esser around 2001..
+
+test -f /bin/sh5 && test -z "$RUNNING_SH5" \
+  && { UNAMES=`uname -s`; test "x$UNAMES" = xULTRIX; } 2>/dev/null \
+  && { RUNNING_SH5=true; export RUNNING_SH5; exec /bin/sh5 $0 ${1+"$@"}; }
+unset RUNNING_SH5
+
+test -f /bin/bsh && test -z "$RUNNING_BSH" \
+  && { UNAMES=`uname -s`; test "x$UNAMES" = xAIX; } 2>/dev/null \
+  && { RUNNING_BSH=true; export RUNNING_BSH; exec /bin/bsh $0 ${1+"$@"}; }
+unset RUNNING_BSH
+
+progname=`basename $0`
+case $# in
+  0) 
+    echo "Usage: `basename $0` file[.idx|.glo] ..." 1>&2
+    exit 1
+    ;;
+esac
+
+gind=gind.ist
+gglo=gglo.ist
+
+# remember starting directory
+dir=`pwd`
+
+# loop over all files
+for i
+do
+  destdir=`echo "$i" | sed 's/^[^\/]*$/./; s/\/[^\/]*$//'`
+  test -d "$destdir" || continue
+  cd "$destdir" || exit 1
+  FILENAME=`basename "$i" .idx`
+  test -f "$FILENAME".idx \
+    && makeindex -s "$gind" "$FILENAME"
+  test -f "$FILENAME".glo \
+    && makeindex -s "$gglo" -o "$FILENAME".gls "$FILENAME".glo
+  cd "$dir" || exit 1
+done
