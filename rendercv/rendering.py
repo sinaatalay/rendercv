@@ -202,13 +202,13 @@ def print_today() -> str:
     return today.strftime("%B %d, %Y")
 
 
-def get_path_to_fonts_directory() -> str:
+def get_path_to_font_directory(font_name: str) -> str:
     """Return the path to the fonts directory.
 
     Returns:
         str: The path to the fonts directory.
     """
-    return os.path.join(os.path.dirname(__file__), "templates", "fonts")
+    return os.path.join(os.path.dirname(__file__), "templates", "fonts", font_name)
 
 
 def render_template(data):
@@ -252,10 +252,10 @@ def render_template(data):
     environment.filters["make_it_italic"] = make_it_italic
 
     output_latex_file = template.render(
-        design=data.design.options,
         cv=data.cv,
+        design=data.design,
+        theme_options=data.design.options,
         today=print_today(),
-        fonts_directory=get_path_to_fonts_directory(),
     )
 
     # Create an output file and write the rendered LaTeX code to it:
@@ -265,19 +265,13 @@ def render_template(data):
         file.write(output_latex_file)
 
     # Copy the fonts directory to the output directory:
-    fonts_directory = get_path_to_fonts_directory()
+    font_directory = get_path_to_font_directory(data.design.font)
     output_fonts_directory = os.path.join(os.path.dirname(output_file_path), "fonts")
-    os.makedirs(output_fonts_directory, exist_ok=True)
-    for directory in os.listdir(fonts_directory):
-        if directory == "SourceSans3":
-            # copy the SourceSans3 fonts:
-            source_directory = os.path.join(fonts_directory, directory)
-
-            shutil.copytree(
-                source_directory,
-                output_fonts_directory,
-                dirs_exist_ok=True,
-            )
+    shutil.copytree(
+        font_directory,
+        output_fonts_directory,
+        dirs_exist_ok=True,
+    )
 
     return output_file_path
 
