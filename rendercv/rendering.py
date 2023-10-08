@@ -190,7 +190,19 @@ def make_it_italic(value: str, match_str: str) -> str:
         return value
 
 
-def print_today() -> str:
+def divide_length_by(length: str, divider: float) -> str:
+    # r"""Divide a length by a number.
+
+    # Length is a string with the following regex pattern: `\d+\.?\d* *(cm|in|pt|mm|ex|em)`
+    # """
+    # Get the value as a float and the unit as a string:
+    value = re.search(r"\d+\.?\d*", length).group()
+    unit = re.findall(r"[^\d\.\s]+", length)[0]
+
+    return str(float(value) / divider) + " " + unit
+
+
+def get_today() -> str:
     """Return today's date.
 
     Returns:
@@ -240,22 +252,23 @@ def render_template(data):
     environment.comment_start_string = "((#"
     environment.comment_end_string = "#))"
 
-    # load the template:
-    theme = data.design.theme
-    template = environment.get_template(f"{theme}.tex.j2")
-
     # add custom filters:
     environment.filters["markdown_to_latex"] = markdown_to_latex
     environment.filters["markdown_url_to_url"] = markdown_url_to_url
     environment.filters["make_it_bold"] = make_it_bold
     environment.filters["make_it_underlined"] = make_it_underlined
     environment.filters["make_it_italic"] = make_it_italic
+    environment.filters["divide_length_by"] = divide_length_by
+
+    # load the template:
+    theme = data.design.theme
+    template = environment.get_template(f"{theme}.tex.j2")
 
     output_latex_file = template.render(
         cv=data.cv,
         design=data.design,
         theme_options=data.design.options,
-        today=print_today(),
+        today=get_today(),
     )
 
     # Create an output file and write the rendered LaTeX code to it:
@@ -265,6 +278,10 @@ def render_template(data):
         file.write(output_latex_file)
 
     # Copy the fonts directory to the output directory:
+    # Remove the old fonts directory if it exists:
+    if os.path.exists(os.path.join(os.path.dirname(output_file_path), "fonts")):
+        shutil.rmtree(os.path.join(os.path.dirname(output_file_path), "fonts"))
+
     font_directory = get_path_to_font_directory(data.design.font)
     output_fonts_directory = os.path.join(os.path.dirname(output_file_path), "fonts")
     shutil.copytree(
