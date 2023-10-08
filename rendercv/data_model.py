@@ -31,6 +31,7 @@ from pydantic_extra_types.color import Color
 
 from spellchecker import SpellChecker
 
+logger = logging.getLogger(__name__)
 # ======================================================================================
 # HELPERS ==============================================================================
 # ======================================================================================
@@ -96,7 +97,7 @@ def check_spelling(sentence: str) -> str:
             if word in dictionary:
                 continue
 
-            logging.warning(
+            logger.warning(
                 f'The word "{word}" might be misspelled according to the'
                 " pyspellchecker."
             )
@@ -546,14 +547,14 @@ class Event(BaseModel):
             end_date_is_provided = True
 
         if date_is_provided and start_date_is_provided and end_date_is_provided:
-            logging.warning(
+            logger.warning(
                 '"start_date", "end_date" and "date" are all provided in of the'
                 " entries. Therefore, date will be ignored."
             )
             model.date = None
 
         elif date_is_provided and start_date_is_provided and not end_date_is_provided:
-            logging.warning(
+            logger.warning(
                 'Both "date" and "start_date" is provided in of the entries.'
                 ' "start_date" will be ignored.'
             )
@@ -561,7 +562,7 @@ class Event(BaseModel):
             model.end_date = None
 
         elif date_is_provided and end_date_is_provided and not start_date_is_provided:
-            logging.warning(
+            logger.warning(
                 'Both "date" and "end_date" is provided in of the entries. "end_date"'
                 " will be ignored."
             )
@@ -569,7 +570,7 @@ class Event(BaseModel):
             model.end_date = None
 
         elif start_date_is_provided and not end_date_is_provided:
-            logging.warning(
+            logger.warning(
                 '"start_date" is provided in of the entries, but "end_date" is not.'
                 ' "end_date" will be set to "present".'
             )
