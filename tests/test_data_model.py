@@ -1,12 +1,12 @@
 import unittest
-from rendercv import data_model, rendering
+
+from rendercv import data_model
 
 from datetime import date as Date
 from pydantic import ValidationError
-from pydantic_core import Url
 
 
-class TestRendercv(unittest.TestCase):
+class TestDataModel(unittest.TestCase):
     def test_check_spelling(self):
         sentences = [
             "This is a sentence.",
