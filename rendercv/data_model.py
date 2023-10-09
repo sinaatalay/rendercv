@@ -191,6 +191,9 @@ def format_date(date: Date) -> str:
     Returns:
         str: The formatted date.
     """
+    if not isinstance(date, Date):
+        raise TypeError("date is not a Date object!")
+
     # Month abbreviations,
     # taken from: https://web.library.yale.edu/cataloging/months
     abbreviations_of_months = [
@@ -683,7 +686,7 @@ class Event(BaseModel):
                 # If this runs, it means the date is an ISO format string, and it can be
                 # parsed
                 month_and_year = format_date(self.date)
-            except:
+            except TypeError:
                 month_and_year = self.date
         else:
             # Then it means start_date and end_date are provided and month_and_year
@@ -829,7 +832,7 @@ class PublicationEntry(Event):
 
         try:
             urllib.request.urlopen(doi_url)
-        except:
+        except urllib.request.HTTPError:
             raise ValueError(f"{doi} cannot be found in the DOI System.")
 
         return doi

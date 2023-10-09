@@ -5,8 +5,6 @@ import shutil
 
 from rendercv import rendering, data_model
 
-from pydantic import ValidationError
-
 
 class TestDataModel(unittest.TestCase):
     def test_markdown_to_latex(self):
@@ -378,6 +376,9 @@ class TestDataModel(unittest.TestCase):
             output = file.read()
         with open(reference_file_path, "r") as file:
             reference = file.read()
+            reference = reference.replace(
+                "REPLACE_THIS_WITH_TODAY", rendering.get_today()
+            )
 
         self.assertEqual(output, reference)
 
@@ -405,6 +406,7 @@ class TestDataModel(unittest.TestCase):
     #     )
 
     #     rendering.run_latex(latex_file_path)
+
 
 if __name__ == "__main__":
     unittest.main()
