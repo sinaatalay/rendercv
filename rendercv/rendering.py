@@ -372,7 +372,7 @@ def run_latex(latex_file_path):
             "bin",
             "windows",
         )
-        executable = os.path.join(tinytex_path, "latexmk.exe")
+        executable = os.path.join(tinytex_path, "lualatex.exe")
 
     else:
         tinytex_path = os.path.join(
@@ -382,16 +382,12 @@ def run_latex(latex_file_path):
             "bin",
             "x86_64-linux",
         )
-        executable = os.path.join(tinytex_path, "latexmk")
+        executable = os.path.join(tinytex_path, "lualatex")
 
     subprocess.run(
         [
             executable,
-            "-lualatex",
             f"{latex_file}",
-            "-synctex=1",
-            "-interaction=nonstopmode",
-            "-file-line-error",
         ],
         cwd=os.path.dirname(latex_file_path),
         stdout=subprocess.DEVNULL,  # suppress latexmk output
