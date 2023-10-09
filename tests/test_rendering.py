@@ -377,7 +377,7 @@ class TestDataModel(unittest.TestCase):
         with open(reference_file_path, "r") as file:
             reference = file.read()
             reference = reference.replace(
-                "REPLACE_THIS_WITH_TODAY", rendering.get_today()
+                "REPLACETHISWITHTODAY", rendering.get_today()
             )
 
         self.assertEqual(output, reference)
