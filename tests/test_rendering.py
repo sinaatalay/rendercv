@@ -405,8 +405,10 @@ class TestDataModel(unittest.TestCase):
             os.path.dirname(__file__), "reference_files", "John_Doe_CV.tex"
         )
 
-        rendering.run_latex(latex_file_path)
-
+        pdf_file = rendering.run_latex(latex_file_path)
+        
+        # Check if the output file exists:
+        self.assertTrue(os.path.exists(pdf_file))
 
 if __name__ == "__main__":
     unittest.main()
