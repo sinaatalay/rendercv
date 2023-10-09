@@ -394,7 +394,7 @@ def run_latex(latex_file_path):
             "-file-line-error",
         ],
         cwd=os.path.dirname(latex_file_path),
-        stdout=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,  # suppress latexmk output
     )
     end_time = time.time()
     time_taken = end_time - start_time
