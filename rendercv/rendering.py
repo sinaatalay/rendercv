@@ -338,7 +338,7 @@ def render_template(data: RenderCVDataModel, output_path: str = None) -> str:
 
     end_time = time.time()
     time_taken = end_time - start_time
-    logger.info(f"Rendering the LaTeX file has finished in {time_taken:.2f} s.")
+    logger.info(f"Rendering the LaTeX file ({output_file_path}) has finished in {time_taken:.2f} s.")
 
     return output_file_path
 
@@ -395,9 +395,7 @@ def run_latex(latex_file_path):
     end_time = time.time()
     time_taken = end_time - start_time
     logger.info(
-        f"Running TinyTeX to generate the PDF has finished in {time_taken:.2f} s."
+        f"Running TinyTeX to generate the PDF ({output_file_path}) has finished in {time_taken:.2f} s."
     )
 
-    return os.path.join(
-        os.path.dirname(latex_file_path), latex_file.replace(".tex", ".pdf")
-    )
+    return output_file_path
