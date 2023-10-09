@@ -264,7 +264,7 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
     return data
 
 
-def render_template(data: RenderCVDataModel, output_path: str = None):
+def render_template(data: RenderCVDataModel, output_path: str = None) -> str:
     """Render the template using the given data.
 
     Args:
