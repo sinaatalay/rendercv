@@ -364,6 +364,7 @@ def run_latex(latex_file_path):
             continue
         # remove the file:
         os.remove(os.path.join(os.path.dirname(latex_file_path), file))
+
     if os.name == "nt":
         tinytex_path = os.path.join(
             os.path.dirname(__file__),
@@ -390,7 +391,7 @@ def run_latex(latex_file_path):
             f"{latex_file}",
         ],
         cwd=os.path.dirname(latex_file_path),
-        stdout=subprocess.DEVNULL,  # suppress latexmk output
+        # stdout=subprocess.DEVNULL,  # suppress latexmk output
     )
     end_time = time.time()
     time_taken = end_time - start_time
