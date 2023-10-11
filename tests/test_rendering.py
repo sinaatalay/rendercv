@@ -407,8 +407,18 @@ class TestDataModel(unittest.TestCase):
 
         pdf_file = rendering.run_latex(latex_file_path)
         
+        # read the log file:
+        log_file_path = os.path.join(
+            os.path.dirname(__file__), "reference_files", "John_Doe_CV.log"
+        )
+        with open(log_file_path, "r") as file:
+            log_file_content = file.read()
+        
+        print(log_file_content)
+
         # Check if the output file exists:
         self.assertTrue(os.path.exists(pdf_file))
+
 
 if __name__ == "__main__":
     unittest.main()
