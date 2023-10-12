@@ -355,15 +355,15 @@ def run_latex(latex_file_path):
     """
     start_time = time.time()
     logger.info("Running TinyTeX to generate the PDF has started.")
-    latex_file = os.path.basename(latex_file_path)
+    latex_file_name = os.path.basename(latex_file_path)
     latex_file_path = os.path.normpath(latex_file_path)
 
     # check if the file exists:
     if not os.path.exists(latex_file_path):
         raise FileNotFoundError(f"The file {latex_file_path} doesn't exist!")
 
-    output_file = latex_file.replace(".tex", ".pdf")
-    output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file)
+    output_file_name = latex_file_name.replace(".tex", ".pdf")
+    output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file_name)
 
     # remove all files except the .tex file
     for file in os.listdir(os.path.dirname(latex_file_path)):
@@ -392,19 +392,30 @@ def run_latex(latex_file_path):
         )
         executable = os.path.join(tinytex_path, "lualatex")
 
+    # Check if the executable exists:
+    if not os.path.exists(executable):
+        raise FileNotFoundError(
+            f"The TinyTeX executable ({executable}) doesn't exist! Please install"
+            " RenderCV again."
+        )
+
     try:
         subprocess.run(
             [
                 executable,
-                f"{latex_file}",
+                f"{latex_file_name}",
             ],
             cwd=os.path.dirname(latex_file_path),
             check=True,
-            # stdout=subprocess.DEVNULL,  # suppress latexmk output
+            stdout=subprocess.DEVNULL,  # suppress latexmk output
         )
     except subprocess.CalledProcessError as e:
+        log_file_name = latex_file_name.replace(".tex", ".log")
+        log_file_path = os.path.join(os.path.dirname(latex_file_path), log_file_name)
         raise RuntimeError(
-            f"Running TinyTeX has failed with the following error:\n{e.stderr}"
+            f"Running TinyTeX has failed. Check the log file ({log_file_path}) for"
+            " details. If you can't find the problem, please try to re-install"
+            " RenderCV, or open an issue on GitHub."
         )
 
     # remove the unnecessary files:
