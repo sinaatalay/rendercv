@@ -102,9 +102,13 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="valid date with start_date"):
             event = data_model.Event(**input)
-            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
-            self.assertEqual(event.end_date, "present")
-            self.assertEqual(event.date, None)
+            self.assertEqual(
+                event.start_date,
+                Date.fromisoformat(input["start_date"]),
+                msg="Start date is not correct.",
+            )
+            self.assertEqual(event.end_date, "present", msg="End date is not correct.")
+            self.assertEqual(event.date, None, msg="Date is not correct.")
 
         input = {
             "start_date": "2020-01-01",
@@ -113,9 +117,13 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="valid date with start_date and end_date=present"):
             event = data_model.Event(**input)
-            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
-            self.assertEqual(event.end_date, "present")
-            self.assertEqual(event.date, None)
+            self.assertEqual(
+                event.start_date,
+                Date.fromisoformat(input["start_date"]),
+                msg="Start date is not correct.",
+            )
+            self.assertEqual(event.end_date, "present", msg="End date is not correct.")
+            self.assertEqual(event.date, None, msg="Date is not correct.")
 
         input = {
             "start_date": None,
@@ -124,9 +132,9 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="valid date with custom date"):
             event = data_model.Event(**input)
-            self.assertEqual(event.start_date, None)
-            self.assertEqual(event.end_date, None)
-            self.assertEqual(event.date, input["date"])
+            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
+            self.assertEqual(event.end_date, None, msg="End date is not correct.")
+            self.assertEqual(event.date, input["date"], msg="Date is not correct.")
 
         input = {
             "start_date": None,
@@ -135,9 +143,13 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="valid date with ISO date"):
             event = data_model.Event(**input)
-            self.assertEqual(event.start_date, None)
-            self.assertEqual(event.end_date, None)
-            self.assertEqual(event.date, Date.fromisoformat(input["date"]))
+            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
+            self.assertEqual(event.end_date, None, msg="End date is not correct.")
+            self.assertEqual(
+                event.date,
+                Date.fromisoformat(input["date"]),
+                msg="Date is not correct.",
+            )
 
         input = {
             "start_date": "2020-01-01",
@@ -146,9 +158,15 @@ class TestDataModel(unittest.TestCase):
         }
         event = data_model.Event(**input)
         with self.subTest(msg="start_date, end_date, and date are all provided"):
-            self.assertEqual(event.date, None)
-            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
-            self.assertEqual(event.end_date, input["end_date"])
+            self.assertEqual(event.date, None, msg="Date is not correct.")
+            self.assertEqual(
+                event.start_date,
+                Date.fromisoformat(input["start_date"]),
+                msg="Start date is not correct.",
+            )
+            self.assertEqual(
+                event.end_date, input["end_date"], msg="End date is not correct."
+            )
 
         input = {
             "start_date": "2020-01-01",
@@ -157,9 +175,9 @@ class TestDataModel(unittest.TestCase):
         }
         event = data_model.Event(**input)
         with self.subTest(msg="start_date and date are provided"):
-            self.assertEqual(event.start_date, None)
-            self.assertEqual(event.end_date, None)
-            self.assertEqual(event.date, input["date"])
+            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
+            self.assertEqual(event.end_date, None, msg="End date is not correct.")
+            self.assertEqual(event.date, input["date"], msg="Date is not correct.")
 
         input = {
             "start_date": None,
@@ -168,9 +186,9 @@ class TestDataModel(unittest.TestCase):
         }
         event = data_model.Event(**input)
         with self.subTest(msg="end_date and date are provided"):
-            self.assertEqual(event.start_date, None)
-            self.assertEqual(event.end_date, None)
-            self.assertEqual(event.date, input["date"])
+            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
+            self.assertEqual(event.end_date, None, msg="End date is not correct.")
+            self.assertEqual(event.date, input["date"], msg="Date is not correct.")
 
         input = {
             "start_date": None,
@@ -179,16 +197,20 @@ class TestDataModel(unittest.TestCase):
         }
         event = data_model.Event(**input)
         with self.subTest(msg="only date is provided"):
-            self.assertEqual(event.start_date, None)
-            self.assertEqual(event.end_date, None)
-            self.assertEqual(event.date, Date.fromisoformat(input["date"]))
+            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
+            self.assertEqual(event.end_date, None, msg="End date is not correct.")
+            self.assertEqual(
+                event.date,
+                Date.fromisoformat(input["date"]),
+                msg="Date is not correct.",
+            )
 
         # Inputs without dates:
         with self.subTest(msg="no dates"):
             event = data_model.Event(**{})
-            self.assertEqual(event.start_date, None)
-            self.assertEqual(event.end_date, None)
-            self.assertEqual(event.date, None)
+            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
+            self.assertEqual(event.end_date, None, msg="End date is not correct.")
+            self.assertEqual(event.date, None, msg="Date is not correct.")
 
         # Inputs with invalid dates:
         input = {
@@ -535,7 +557,7 @@ class TestDataModel(unittest.TestCase):
         expected = "https://doi.org/10.1103/PhysRevB.76.054309"
         publication = data_model.PublicationEntry(**input)
         result = publication.doi_url
-        self.assertEqual(result, expected)
+        self.assertEqual(result, expected, msg="DOI URL is not correct.")
 
     def test_data_connection_url(self):
         # Github link:

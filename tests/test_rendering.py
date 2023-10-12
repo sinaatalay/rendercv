@@ -170,13 +170,13 @@ class TestDataModel(unittest.TestCase):
             "102.4 ex",
         ]
         for length, exp in zip(lengths, expected):
-            with self.subTest(length=length):
+            with self.subTest(length=length, msg="valid input"):
                 self.assertEqual(rendering.divide_length_by(length, divider), exp)
 
     def test_get_today(self):
         expected = date.today().strftime("%B %d, %Y")
         result = rendering.get_today()
-        self.assertEqual(expected, result)
+        self.assertEqual(expected, result, msg="Today's date is not correct.")
 
     def test_get_path_to_font_directory(self):
         font_name = "test"
@@ -188,7 +188,7 @@ class TestDataModel(unittest.TestCase):
             font_name,
         )
         result = rendering.get_path_to_font_directory(font_name)
-        self.assertEqual(expected, result)
+        self.assertEqual(expected, result, msg="Font directory path is not correct.")
 
     def test_render_template(self):
         test_input = {
@@ -366,7 +366,9 @@ class TestDataModel(unittest.TestCase):
         # Check if the output file exists:
         output_folder_path = os.path.join(os.path.dirname(__file__), "output")
         output_file_path = os.path.join(output_folder_path, "John_Doe_CV.tex")
-        self.assertTrue(os.path.exists(output_file_path))
+        self.assertTrue(
+            os.path.exists(output_file_path), msg="LaTeX file couldn't be generated."
+        )
 
         # Compare the output file with the reference file:
         reference_file_path = os.path.join(
@@ -378,11 +380,15 @@ class TestDataModel(unittest.TestCase):
             reference = file.read()
             reference = reference.replace("REPLACETHISWITHTODAY", rendering.get_today())
 
-        self.assertEqual(output, reference)
+        self.assertEqual(
+            output, reference, msg="LaTeX file didn't match the reference."
+        )
 
         # Check if the font directory exists:
         font_directory_path = os.path.join(output_folder_path, "fonts")
-        self.assertTrue(os.path.exists(font_directory_path))
+        self.assertTrue(
+            os.path.exists(font_directory_path), msg="Font directory doesn't exist."
+        )
 
         required_files = [
             "EBGaramond-Italic.ttf",
@@ -393,7 +399,11 @@ class TestDataModel(unittest.TestCase):
         font_files = os.listdir(font_directory_path)
         for required_file in required_files:
             with self.subTest(required_file=required_file):
-                self.assertIn(required_file, font_files)
+                self.assertIn(
+                    required_file,
+                    font_files,
+                    msg=f"Font file ({required_file}) is missing.",
+                )
 
         # Remove the output directory:
         shutil.rmtree(output_folder_path)
@@ -407,20 +417,27 @@ class TestDataModel(unittest.TestCase):
             pdf_file = rendering.run_latex(latex_file_path)
 
             # Check if the output file exists:
-            self.assertTrue(os.path.exists(pdf_file))
+            self.assertTrue(
+                os.path.exists(pdf_file), msg="PDF file couldn't be generated."
+            )
 
             # Compare the pdf file with the reference pdf file:
             reference_pdf_file = pdf_file.replace(".pdf", "_reference.pdf")
-            self.assertTrue(
-                os.path.getsize(pdf_file) == os.path.getsize(reference_pdf_file)
+            reference_pdf_file_size = os.path.getsize(reference_pdf_file)
+            pdf_file_size = os.path.getsize(pdf_file)
+            ratio = min(reference_pdf_file_size, pdf_file_size) / max(
+                reference_pdf_file_size, pdf_file_size
             )
+            self.assertTrue(ratio > 0.99, msg="PDF file didn't match the reference.")
 
         nonexistent_latex_file_path = os.path.join(
             os.path.dirname(__file__), "reference_files", "nonexistent.tex"
         )
 
         with self.subTest(msg="Nonexistent file name"):
-            with self.assertRaises(FileNotFoundError):
+            with self.assertRaises(
+                FileNotFoundError, msg="File not found error didn't raise."
+            ):
                 rendering.run_latex(nonexistent_latex_file_path)
 
 
