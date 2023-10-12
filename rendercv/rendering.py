@@ -338,7 +338,10 @@ def render_template(data: RenderCVDataModel, output_path: str = None) -> str:
 
     end_time = time.time()
     time_taken = end_time - start_time
-    logger.info(f"Rendering the LaTeX file ({output_file_path}) has finished in {time_taken:.2f} s.")
+    logger.info(
+        f"Rendering the LaTeX file ({output_file_path}) has finished in"
+        f" {time_taken:.2f} s."
+    )
 
     return output_file_path
 
@@ -354,6 +357,10 @@ def run_latex(latex_file_path):
     logger.info("Running TinyTeX to generate the PDF has started.")
     latex_file = os.path.basename(latex_file_path)
     latex_file_path = os.path.normpath(latex_file_path)
+
+    # check if the file exists:
+    if not os.path.exists(latex_file_path):
+        raise FileNotFoundError(f"The file {latex_file_path} doesn't exist!")
 
     output_file = latex_file.replace(".tex", ".pdf")
     output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file)
@@ -393,10 +400,19 @@ def run_latex(latex_file_path):
         cwd=os.path.dirname(latex_file_path),
         stdout=subprocess.DEVNULL,  # suppress latexmk output
     )
+
+    # remove the unnecessary files:
+    for file in os.listdir(os.path.dirname(latex_file_path)):
+        if file.endswith(".tex") or file.endswith(".pdf") or file == "fonts":
+            continue
+        # remove the file:
+        os.remove(os.path.join(os.path.dirname(latex_file_path), file))
+
     end_time = time.time()
     time_taken = end_time - start_time
     logger.info(
-        f"Running TinyTeX to generate the PDF ({output_file_path}) has finished in {time_taken:.2f} s."
+        f"Running TinyTeX to generate the PDF ({output_file_path}) has finished in"
+        f" {time_taken:.2f} s."
     )
 
     return output_file_path
