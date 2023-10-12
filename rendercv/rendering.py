@@ -398,7 +398,7 @@ def run_latex(latex_file_path):
             f"{latex_file}",
         ],
         cwd=os.path.dirname(latex_file_path),
-        stdout=subprocess.DEVNULL,  # suppress latexmk output
+        # stdout=subprocess.DEVNULL,  # suppress latexmk output
     )
 
     # remove the unnecessary files:
