@@ -407,15 +407,14 @@ def run_latex(latex_file_path):
             ],
             cwd=os.path.dirname(latex_file_path),
             check=True,
-            stdout=subprocess.DEVNULL,  # suppress latexmk output
+            stdout=subprocess.STDOUT,  # suppress latexmk output
+            stderr=subprocess.STDOUT,  # suppress latexmk output
         )
     except subprocess.CalledProcessError as e:
-        log_file_name = latex_file_name.replace(".tex", ".log")
-        log_file_path = os.path.join(os.path.dirname(latex_file_path), log_file_name)
         raise RuntimeError(
-            f"Running TinyTeX has failed. Check the log file ({log_file_path}) for"
-            " details. If you can't find the problem, please try to re-install"
-            " RenderCV, or open an issue on GitHub."
+            "Running TinyTeX has failed with the following error: \n{e.output.decode()}"
+            " \n\nIf you can't find the problem, please try to re-install RenderCV, or"
+            " open an issue on GitHub."
         )
 
     # remove the unnecessary files:
