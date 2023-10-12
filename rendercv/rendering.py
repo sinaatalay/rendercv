@@ -346,7 +346,7 @@ def render_template(data: RenderCVDataModel, output_path: str = None) -> str:
     return output_file_path
 
 
-def run_latex(latex_file_path):
+def run_latex(latex_file_path: str) -> str:
     """
     Run TinyTeX with the given LaTeX file and generate a PDF.
 
@@ -364,13 +364,6 @@ def run_latex(latex_file_path):
 
     output_file_name = latex_file_name.replace(".tex", ".pdf")
     output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file_name)
-
-    # remove all files except the .tex file
-    for file in os.listdir(os.path.dirname(latex_file_path)):
-        if file.endswith(".tex") or file == "fonts":
-            continue
-        # remove the file:
-        os.remove(os.path.join(os.path.dirname(latex_file_path), file))
 
     if os.name == "nt":
         tinytex_path = os.path.join(
@@ -407,23 +400,24 @@ def run_latex(latex_file_path):
             ],
             cwd=os.path.dirname(latex_file_path),
             check=True,
-            stdout=subprocess.PIPE,  # suppress latexmk output
-            stderr=subprocess.STDOUT,  # suppress latexmk output
+            stdout=subprocess.DEVNULL,  # suppress latexmk output
         )
     except subprocess.CalledProcessError as e:
         raise RuntimeError(
             "Running TinyTeX has failed with the following error:\n\n"
-            f"command \"{e.cmd}\" return with error (code {e.returncode}): {e.output}\n\n"
+            f'command "{e.cmd}" return with error (code {e.returncode}): {e.output}\n\n'
             "If you can't find the problem, please try to re-install RenderCV, or"
             " open an issue on GitHub."
         )
 
     # remove the unnecessary files:
-    for file in os.listdir(os.path.dirname(latex_file_path)):
-        if file.endswith(".tex") or file.endswith(".pdf") or file == "fonts":
-            continue
-        # remove the file:
-        os.remove(os.path.join(os.path.dirname(latex_file_path), file))
+    for file_name in os.listdir(os.path.dirname(latex_file_path)):
+        if (
+            file_name.endswith(".aux")
+            or file_name.endswith(".log")
+            or file_name.endswith(".out")
+        ):
+            os.remove(os.path.join(os.path.dirname(latex_file_path), file_name))
 
     end_time = time.time()
     time_taken = end_time - start_time
