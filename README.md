@@ -1,5 +1,4 @@
 # RenderCV
-[![deploy MkDocs](https://github.com/sinaatalay/rendercv/actions/workflows/deploy-mkdocs.yaml/badge.svg)](https://github.com/sinaatalay/rendercv/actions/workflows/deploy-mkdocs.yaml)
 [![python tests](https://github.com/sinaatalay/rendercv/actions/workflows/python-tests.yml/badge.svg)](https://github.com/sinaatalay/rendercv/actions/workflows/python-tests.yml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://smokeshow.helpmanual.io/06110o3l5x474d540n3x/)
 
