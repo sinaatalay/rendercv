@@ -412,8 +412,9 @@ def run_latex(latex_file_path):
         )
     except subprocess.CalledProcessError as e:
         raise RuntimeError(
-            "Running TinyTeX has failed with the following error: \n{e.output.decode()}"
-            " \n\nIf you can't find the problem, please try to re-install RenderCV, or"
+            "Running TinyTeX has failed with the following error:\n\n"
+            f"command \"{e.cmd}\" return with error (code {e.returncode}): {e.output}\n\n"
+            "If you can't find the problem, please try to re-install RenderCV, or"
             " open an issue on GitHub."
         )
 
