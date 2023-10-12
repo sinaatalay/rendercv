@@ -415,9 +415,6 @@ class TestDataModel(unittest.TestCase):
                 os.path.getsize(pdf_file) == os.path.getsize(reference_pdf_file)
             )
 
-            # Remove the output file:
-            os.remove(pdf_file)
-
         nonexistent_latex_file_path = os.path.join(
             os.path.dirname(__file__), "reference_files", "nonexistent.tex"
         )
