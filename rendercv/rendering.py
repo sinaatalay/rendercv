@@ -407,7 +407,7 @@ def run_latex(latex_file_path):
             ],
             cwd=os.path.dirname(latex_file_path),
             check=True,
-            stdout=subprocess.STDOUT,  # suppress latexmk output
+            stdout=subprocess.PIPE,  # suppress latexmk output
             stderr=subprocess.STDOUT,  # suppress latexmk output
         )
     except subprocess.CalledProcessError as e:
