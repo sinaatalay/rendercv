@@ -392,14 +392,20 @@ def run_latex(latex_file_path):
         )
         executable = os.path.join(tinytex_path, "lualatex")
 
-    subprocess.run(
-        [
-            executable,
-            f"{latex_file}",
-        ],
-        cwd=os.path.dirname(latex_file_path),
-        # stdout=subprocess.DEVNULL,  # suppress latexmk output
-    )
+    try:
+        subprocess.run(
+            [
+                executable,
+                f"{latex_file}",
+            ],
+            cwd=os.path.dirname(latex_file_path),
+            check=True,
+            # stdout=subprocess.DEVNULL,  # suppress latexmk output
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"Running TinyTeX has failed with the following error:\n{e.stderr}"
+        )
 
     # remove the unnecessary files:
     for file in os.listdir(os.path.dirname(latex_file_path)):
