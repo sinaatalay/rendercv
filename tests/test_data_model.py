@@ -101,6 +101,23 @@ class TestDataModel(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 data_model.Design(**input)  # type: ignore
 
+    def test_data_design_theme(self):
+        # Valid theme:
+        input = {
+            "theme": "classic",
+        }
+        with self.subTest(msg="valid theme"):
+            design = data_model.Design(**input) # type: ignore
+            self.assertEqual(design.theme, input["theme"])
+
+        # Nonexistent theme:
+        input = {
+            "theme": "nonexistent",
+        }
+        with self.subTest(msg="nonexistent theme"):
+            with self.assertRaises(ValidationError):
+                data_model.Design(**input) # type: ignore
+
     def test_data_event_check_dates(self):
         # Inputs with valid dates:
         input = {
