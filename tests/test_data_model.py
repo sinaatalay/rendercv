@@ -46,6 +46,25 @@ class TestDataModel(unittest.TestCase):
             with self.assertRaises(ValueError):
                 data_model.compute_time_span_string(start_date, end_date)
 
+        # invalid inputs:
+        start_date = None
+        end_date = Date(year=2023, month=3, day=2)
+        with self.subTest(msg="start_date is None"):
+            with self.assertRaises(TypeError):
+                data_model.compute_time_span_string(start_date, end_date)  # type: ignore
+
+        start_date = Date(year=2020, month=1, day=1)
+        end_date = None
+        with self.subTest(msg="end_date is None"):
+            with self.assertRaises(TypeError):
+                data_model.compute_time_span_string(start_date, end_date)  # type: ignore
+
+        start_date = 324
+        end_date = "test"
+        with self.subTest(msg="start_date and end_date are not dates"):
+            with self.assertRaises(TypeError):
+                data_model.compute_time_span_string(start_date, end_date)  # type: ignore
+
     def test_format_date(self):
         date = Date(year=2020, month=1, day=1)
         expected = "Jan. 2020"
@@ -71,7 +90,7 @@ class TestDataModel(unittest.TestCase):
             "font": "SourceSans3",
         }
         with self.subTest(msg="valid font"):
-            design = data_model.Design(**input)
+            design = data_model.Design(**input)  # type: ignore
             self.assertEqual(design.font, input["font"])
 
         # Invalid font:
@@ -80,7 +99,7 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="invalid font"):
             with self.assertRaises(ValidationError):
-                data_model.Design(**input)
+                data_model.Design(**input)  # type: ignore
 
     def test_data_event_check_dates(self):
         # Inputs with valid dates:
@@ -156,7 +175,7 @@ class TestDataModel(unittest.TestCase):
             "end_date": "present",
             "date": "My Birthday",
         }
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         with self.subTest(msg="start_date, end_date, and date are all provided"):
             self.assertEqual(event.date, None, msg="Date is not correct.")
             self.assertEqual(
@@ -219,7 +238,7 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="start_date > end_date"):
             with self.assertRaises(ValidationError):
-                data_model.Event(**input)
+                data_model.Event(**input)  # type: ignore
 
         input = {
             "start_date": "2020-01-01",
@@ -227,7 +246,7 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="end_date > present"):
             with self.assertRaises(ValidationError):
-                data_model.Event(**input)
+                data_model.Event(**input)  # type: ignore
 
     def test_data_event_date_and_location_strings_with_timespan(self):
         input = {
@@ -240,7 +259,7 @@ class TestDataModel(unittest.TestCase):
             "Jan. 2020 to Jan. 2021",
             "1 year 1 month",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.date_and_location_strings_with_timespan
         with self.subTest(msg="start_date, end_date, and location are provided"):
             self.assertEqual(result, expected)
@@ -253,7 +272,7 @@ class TestDataModel(unittest.TestCase):
             "My Location",
             "My Birthday",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.date_and_location_strings_with_timespan
         with self.subTest(msg="date and location are provided"):
             self.assertEqual(result, expected)
@@ -264,7 +283,7 @@ class TestDataModel(unittest.TestCase):
         expected = [
             "Jan. 2020",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.date_and_location_strings_with_timespan
         with self.subTest(msg="date is provided"):
             self.assertEqual(result, expected)
@@ -277,7 +296,7 @@ class TestDataModel(unittest.TestCase):
             "Jan. 2020 to Jan. 2021",
             "1 year 1 month",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.date_and_location_strings_with_timespan
         with self.subTest(msg="start_date and end_date are provided"):
             self.assertEqual(result, expected)
@@ -288,7 +307,7 @@ class TestDataModel(unittest.TestCase):
         expected = [
             "My Location",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.date_and_location_strings_with_timespan
         with self.subTest(msg="location is provided"):
             self.assertEqual(result, expected)
@@ -303,7 +322,7 @@ class TestDataModel(unittest.TestCase):
             "My Location",
             "Jan. 2020 to Jan. 2021",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.date_and_location_strings_without_timespan
         with self.subTest(expected=expected):
             self.assertEqual(result, expected)
@@ -316,7 +335,7 @@ class TestDataModel(unittest.TestCase):
             "My Location",
             "My Birthday",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.date_and_location_strings_without_timespan
         with self.subTest(expected=expected):
             self.assertEqual(result, expected)
@@ -332,7 +351,7 @@ class TestDataModel(unittest.TestCase):
             "My Highlight 1",
             "My Highlight 2",
         ]
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.highlight_strings
         with self.subTest(msg="highlights are provided"):
             self.assertEqual(result, expected)
@@ -348,7 +367,7 @@ class TestDataModel(unittest.TestCase):
         # Github link:
         input = {"url": "https://github.com/sinaatalay"}
         expected = "[view on GitHub](https://github.com/sinaatalay)"
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.markdown_url
         with self.subTest(msg="Github link"):
             self.assertEqual(result, expected)
@@ -356,7 +375,7 @@ class TestDataModel(unittest.TestCase):
         # LinkedIn link:
         input = {"url": "https://www.linkedin.com/"}
         expected = "[view on LinkedIn](https://www.linkedin.com/)"
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.markdown_url
         with self.subTest(msg="LinkedIn link"):
             self.assertEqual(result, expected)
@@ -364,7 +383,7 @@ class TestDataModel(unittest.TestCase):
         # Instagram link:
         input = {"url": "https://www.instagram.com/"}
         expected = "[view on Instagram](https://www.instagram.com/)"
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.markdown_url
         with self.subTest(msg="Instagram link"):
             self.assertEqual(result, expected)
@@ -372,7 +391,7 @@ class TestDataModel(unittest.TestCase):
         # Youtube link:
         input = {"url": "https://www.youtube.com/"}
         expected = "[view on YouTube](https://www.youtube.com/)"
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.markdown_url
         with self.subTest(msg="Youtube link"):
             self.assertEqual(result, expected)
@@ -380,7 +399,7 @@ class TestDataModel(unittest.TestCase):
         # Other links:
         input = {"url": "https://www.google.com/"}
         expected = "[view on my website](https://www.google.com/)"
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.markdown_url
         with self.subTest(msg="Other links"):
             self.assertEqual(result, expected)
@@ -391,7 +410,7 @@ class TestDataModel(unittest.TestCase):
             "end_date": "2021-01-16",
         }
         expected = None
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.month_and_year
         with self.subTest(msg="start_date and end_date are provided"):
             self.assertEqual(result, expected)
@@ -400,7 +419,7 @@ class TestDataModel(unittest.TestCase):
             "date": "My Birthday",
         }
         expected = "My Birthday"
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.month_and_year
         with self.subTest(msg="custom date is provided"):
             self.assertEqual(result, expected)
@@ -409,7 +428,7 @@ class TestDataModel(unittest.TestCase):
             "date": "2020-01-01",
         }
         expected = "Jan. 2020"
-        event = data_model.Event(**input)
+        event = data_model.Event(**input)  # type: ignore
         result = event.month_and_year
         with self.subTest(msg="date is provided"):
             self.assertEqual(result, expected)
@@ -581,7 +600,7 @@ class TestDataModel(unittest.TestCase):
         ]
         for input, expected in zip(inputs, expected_results):
             with self.subTest(type=input["name"]):
-                connection = data_model.Connection(**input)
+                connection = data_model.Connection(**input)  # type: ignore
                 result = connection.url
                 self.assertEqual(result, expected)
 
@@ -594,7 +613,7 @@ class TestDataModel(unittest.TestCase):
             "website": "https://www.example.com/",
         }
         exptected_length = 4
-        cv = data_model.CurriculumVitae(**input)
+        cv = data_model.CurriculumVitae(**input)  # type: ignore
         result = len(cv.connections)
         with self.subTest(msg="without social networks"):
             self.assertEqual(result, exptected_length)
@@ -703,12 +722,16 @@ class TestDataModel(unittest.TestCase):
             cv = data_model.CurriculumVitae(**input)
             self.assertEqual(len(cv.sections), 5)
 
+        # Invalid section_order:
+        input["section_order"] = ["invalid section"]
+        with self.subTest(msg="invalid section_order"):
+            data = data_model.CurriculumVitae(**input)
+            with self.assertRaises(ValueError):
+                data.sections
+        del input["section_order"]
+
         # Custom sections with duplicate titles:
         input["custom_sections"][1]["title"] = "My Custom Section 1"
         with self.subTest(msg="custom sections with duplicate titles"):
             with self.assertRaises(ValidationError):
                 data_model.CurriculumVitae(**input)
-
-
-if __name__ == "__main__":
-    unittest.main()

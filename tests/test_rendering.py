@@ -1,5 +1,6 @@
 import unittest
 import os
+import json
 from datetime import date
 import shutil
 
@@ -57,7 +58,7 @@ class TestDataModel(unittest.TestCase):
         input = 20
         with self.subTest(msg="float input"):
             with self.assertRaises(ValueError):
-                rendering.markdown_to_latex(input)
+                rendering.markdown_to_latex(input)  # type: ignore
 
     def test_markdown_link_to_url(self):
         input = "[link](www.example.com)"
@@ -82,7 +83,7 @@ class TestDataModel(unittest.TestCase):
         input = 20
         with self.subTest(msg="float input"):
             with self.assertRaises(ValueError):
-                rendering.markdown_link_to_url(input)
+                rendering.markdown_link_to_url(input)  # type: ignore
 
         input = "not a markdown link"
         with self.subTest(msg="invalid input"):
@@ -101,17 +102,21 @@ class TestDataModel(unittest.TestCase):
         with self.subTest(msg="without match_str input"):
             self.assertEqual(output, expected)
 
-        input = "some text"
         match_str = "text"
         expected = r"some \textbf{text}"
         output = rendering.make_it_bold(input, match_str)
         with self.subTest(msg="with match_str input"):
             self.assertEqual(output, expected)
 
+        match_str = 2423
+        with self.subTest(msg="invalid match_str input"):
+            with self.assertRaises(ValueError):
+                rendering.make_it_bold(input, match_str)  # type: ignore
+
         input = 20
         with self.subTest(msg="float input"):
             with self.assertRaises(ValueError):
-                rendering.make_it_bold(input)
+                rendering.make_it_bold(input)  # type: ignore
 
     def test_make_it_underlined(self):
         input = "some text"
@@ -130,7 +135,7 @@ class TestDataModel(unittest.TestCase):
         input = 20
         with self.subTest(msg="float input"):
             with self.assertRaises(ValueError):
-                rendering.make_it_underlined(input)
+                rendering.make_it_underlined(input)  # type: ignore
 
     def test_make_it_italic(self):
         input = "some text"
@@ -149,7 +154,7 @@ class TestDataModel(unittest.TestCase):
         input = 20
         with self.subTest(msg="float input"):
             with self.assertRaises(ValueError):
-                rendering.make_it_italic(input)
+                rendering.make_it_italic(input)  # type: ignore
 
     def test_divide_length_by(self):
         lengths = [
@@ -189,6 +194,35 @@ class TestDataModel(unittest.TestCase):
         )
         result = rendering.get_path_to_font_directory(font_name)
         self.assertEqual(expected, result, msg="Font directory path is not correct.")
+
+    def test_read_input_file(self):
+        test_input = {
+            "cv": {
+                "name": "John Doe",
+            }
+        }
+
+        # write dictionary to a file as json:
+        input_file_path = os.path.join(os.path.dirname(__file__), "test_input.json")
+        json_string = json.dumps(test_input)
+        with open(input_file_path, "w") as file:
+            file.write(json_string)
+
+        # read the file:
+        result = rendering.read_input_file(input_file_path)
+
+        # remove the file:
+        os.remove(input_file_path)
+
+        with self.subTest(msg="read input file"):
+            self.assertEqual(
+                result.cv.name,
+                test_input["cv"]["name"],
+            )
+
+        with self.subTest(msg="nonexistent file"):
+            with self.assertRaises(FileNotFoundError):
+                rendering.read_input_file("nonexistent.json")
 
     def test_render_template(self):
         test_input = {
@@ -360,7 +394,7 @@ class TestDataModel(unittest.TestCase):
                 "theme": "classic",
             },
         }
-        data = data_model.RenderCVDataModel(**test_input)
+        data = data_model.RenderCVDataModel(**test_input)  # type: ignore
         rendering.render_template(data=data, output_path=os.path.dirname(__file__))
 
         # Check if the output file exists:
