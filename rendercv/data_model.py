@@ -150,12 +150,7 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
 
     # calculate the number of months between start_date and end_date:
     how_many_months = round((timespan_in_days % 365) / 30)
-    if how_many_months == 0:
-        how_many_months = 1
-
-    if how_many_months == 0:
-        how_many_months_string = None
-    elif how_many_months == 1:
+    if how_many_months <= 1:
         how_many_months_string = "1 month"
     else:
         how_many_months_string = f"{how_many_months} months"
@@ -163,8 +158,6 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
     # combine howManyYearsString and howManyMonthsString:
     if how_many_years_string is None:
         timespan_string = how_many_months_string
-    elif how_many_months_string is None:
-        timespan_string = how_many_years_string
     else:
         timespan_string = f"{how_many_years_string} {how_many_months_string}"
 
@@ -685,9 +678,9 @@ class Event(BaseModel):
             try:
                 # If this runs, it means the date is an ISO format string, and it can be
                 # parsed
-                month_and_year = format_date(self.date)
+                month_and_year = format_date(self.date)  # type: ignore
             except TypeError:
-                month_and_year = self.date
+                month_and_year = str(self.date)
         else:
             # Then it means start_date and end_date are provided and month_and_year
             # doesn't make sense.
@@ -886,7 +879,7 @@ class Connection(BaseModel):
 
     @computed_field
     @cached_property
-    def url(self) -> HttpUrl:
+    def url(self) -> Optional[HttpUrl | str]:
         if self.name == "LinkedIn":
             url = f"https://www.linkedin.com/in/{self.value}"
         elif self.name == "GitHub":
@@ -1139,6 +1132,8 @@ class CurriculumVitae(BaseModel):
                 )
 
         link_text = None
+        entry_type = None
+        entries = None
         for section_name in self.section_order:
             # Create a section for each section name in the section order:
             if section_name in pre_defined_sections:
@@ -1152,23 +1147,23 @@ class CurriculumVitae(BaseModel):
             else:
                 # If the section is not pre-defined, then it is a custom section.
                 # Find the corresponding custom section and get its entries:
-                if self.custom_sections is None:
+                for custom_section in self.custom_sections:  # type: ignore
+                    if custom_section.title == section_name:
+                        entry_type = custom_section.entries[0].__class__.__name__
+                        entries = custom_section.entries
+                        break
+
+                if entry_type is None or entries is None:
                     raise ValueError(
                         f'"{section_name}" is not a valid section name. Please create a'
                         " custom section with this name or delete it from the section"
                         " order."
                     )
-                else:
-                    for custom_section in self.custom_sections:
-                        if custom_section.title == section_name:
-                            entry_type = custom_section.entries[0].__class__.__name__
-                            entries = custom_section.entries
-                            break
 
             section = Section(
                 title=section_name,
                 entry_type=entry_type,  # type: ignore
-                entries=entries,  # type: ignore
+                entries=entries,
                 link_text=link_text,
             )
             sections.append(section)
@@ -1184,5 +1179,9 @@ class CurriculumVitae(BaseModel):
 class RenderCVDataModel(BaseModel):
     """This class binds both the CV and the design information together."""
 
-    design: Design
+    design: Design = Field(
+        default=Design(),
+        title="Design",
+        description="The design of the CV.",
+    )
     cv: CurriculumVitae
