@@ -449,6 +449,19 @@ class Design(BaseModel):
 
         return font
 
+    @field_validator("theme")
+    @classmethod
+    def check_if_theme_exists(cls, theme: str) -> str:
+        # Go to templates directory and check if the theme exists:
+        templates_directory = os.path.join(os.path.dirname(__file__), "templates")
+        if f"{theme}.tex.j2" not in os.listdir(templates_directory):
+            raise ValueError(
+                f'The theme "{theme}" is not found in the "templates" directory! To add'
+                " a new theme, please see TO BE ADDED."
+            )
+
+        return theme
+
 
 # ======================================================================================
 # ======================================================================================
