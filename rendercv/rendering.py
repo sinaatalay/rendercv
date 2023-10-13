@@ -420,6 +420,14 @@ def run_latex(latex_file_path: str) -> str:
             " open an issue on GitHub."
         )
 
+    # check if the PDF file is generated:
+    if not os.path.exists(output_file_path):
+        raise FileNotFoundError(
+            f"The PDF file {output_file_path} couldn't be generated! If you can't"
+            " solve the problem, please try to re-install RenderCV, or open an issue"
+            " on GitHub."
+        )
+
     # remove the unnecessary files:
     for file_name in os.listdir(os.path.dirname(latex_file_path)):
         if (
