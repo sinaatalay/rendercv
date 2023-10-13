@@ -7,6 +7,7 @@ import shutil
 from datetime import date
 import logging
 import time
+from typing import Optional
 
 from rendercv.data_model import RenderCVDataModel
 
@@ -74,7 +75,7 @@ def markdown_to_latex(markdown_string: str) -> str:
     return latex_string
 
 
-def markdown_link_to_url(value: str) -> bool:
+def markdown_link_to_url(value: str) -> str:
     """Convert a markdown link to a normal string URL.
 
     This function is used as a Jinja2 filter.
@@ -107,7 +108,9 @@ def markdown_link_to_url(value: str) -> bool:
         raise ValueError("markdown_link_to_url should only be used on markdown links!")
 
 
-def make_it_something(value: str, something: str, match_str: str = None) -> str:
+def make_it_something(
+    value: str, something: str, match_str: Optional[str] = None
+) -> str:
     """Make the matched parts of the string something. If the match_str is None, the
     whole string will be made something.
 
@@ -129,6 +132,8 @@ def make_it_something(value: str, something: str, match_str: str = None) -> str:
         keyword = "underline"
     elif something == "make_it_italic":
         keyword = "textit"
+    else:
+        raise ValueError(f"Unknown keyword {something}!")
 
     if match_str is None:
         return f"\\{keyword}{{{value}}}"
@@ -140,7 +145,7 @@ def make_it_something(value: str, something: str, match_str: str = None) -> str:
         return value
 
 
-def make_it_bold(value: str, match_str: str = None) -> str:
+def make_it_bold(value: str, match_str: Optional[str] = None) -> str:
     """Make the matched parts of the string bold. If the match_str is None, the whole
     string will be made bold.
 
@@ -162,7 +167,7 @@ def make_it_bold(value: str, match_str: str = None) -> str:
     return make_it_something(value, "make_it_bold", match_str)
 
 
-def make_it_underlined(value: str, match_str: str = None) -> str:
+def make_it_underlined(value: str, match_str: Optional[str] = None) -> str:
     """Make the matched parts of the string underlined. If the match_str is None, the
     whole string will be made underlined.
 
@@ -184,7 +189,7 @@ def make_it_underlined(value: str, match_str: str = None) -> str:
     return make_it_something(value, "make_it_underlined", match_str)
 
 
-def make_it_italic(value: str, match_str: str = None) -> str:
+def make_it_italic(value: str, match_str: Optional[str] = None) -> str:
     """Make the matched parts of the string italic. If the match_str is None, the whole
     string will be made italic.
 
@@ -212,7 +217,7 @@ def divide_length_by(length: str, divider: float) -> str:
     Length is a string with the following regex pattern: `\d+\.?\d* *(cm|in|pt|mm|ex|em)`
     """
     # Get the value as a float and the unit as a string:
-    value = re.search(r"\d+\.?\d*", length).group()
+    value = re.search(r"\d+\.?\d*", length).group()  # type: ignore
     unit = re.findall(r"[^\d\.\s]+", length)[0]
 
     return str(float(value) / divider) + " " + unit
@@ -249,6 +254,11 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
     """
     start_time = time.time()
     logger.info(f"Reading and validating the input file {file_path} has started.")
+
+    # check if the file exists:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The file {file_path} doesn't exist!")
+
     with open(file_path) as file:
         yaml = YAML()
         raw_json = yaml.load(file)
@@ -264,7 +274,7 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
     return data
 
 
-def render_template(data: RenderCVDataModel, output_path: str = None) -> str:
+def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) -> str:
     """Render the template using the given data.
 
     Args:
