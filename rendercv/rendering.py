@@ -8,6 +8,7 @@ from datetime import date
 import logging
 import time
 from typing import Optional
+import sys
 
 from rendercv.data_model import RenderCVDataModel
 
@@ -426,10 +427,10 @@ def run_latex(latex_file_path: str) -> str:
         )
     except subprocess.CalledProcessError or subprocess.TimeoutExpired as e:
         raise RuntimeError(
-            "Running TinyTeX has failed with the following error:\n\n"
-            f'command "{e.cmd}" return with error (code {e.returncode}): {e.output}\n\n'
-            "If you can't find the problem, please try to re-install RenderCV, or"
-            " open an issue on GitHub."
+            "Running TinyTeX has failed with the following error:\n\ncommand"
+            f" \"{e.cmd}\" return with error (code {e.returncode}): {e.output}\n\nIf"
+            " you can't find the problem, please try to re-install RenderCV, or open"
+            " an issue on GitHub."
         )
 
     # check if the PDF file is generated:
@@ -457,3 +458,23 @@ def run_latex(latex_file_path: str) -> str:
     )
 
     return output_file_path
+
+
+def main():
+    """
+    This is the main function to run RenderCV.
+    """
+    if len(sys.argv) < 2:
+        raise ValueError("Please provide the input file path.")
+    elif len(sys.argv) == 2:
+        input_file_path = sys.argv[1]
+    else:
+        raise ValueError(
+            "More than one input is provided. Please provide only one input, which is"
+            " the input file path."
+        )
+    
+    file_path = os.path.join(os.getcwd(), input_file_path)
+    data = read_input_file(file_path)
+    output_latex_file = render_template(data)
+    run_latex(output_latex_file)
