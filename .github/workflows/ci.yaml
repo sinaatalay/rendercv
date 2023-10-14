@@ -67,7 +67,6 @@ jobs:
           name: coverage
           path: .coverage.${{ matrix.python-version }}.${{ matrix.os }}
 
-
   combine-coverages:
     name: Upload coverage report
     needs: [test]
@@ -97,7 +96,7 @@ jobs:
           coverage combine coverage
           coverage report
           coverage html --show-contexts --title "RenderCV coverage for ${{ github.sha }}"
-      
+
       - name: Upload coverage data to smokeshow
         run: |
           pip install smokeshow
@@ -107,3 +106,32 @@ jobs:
           SMOKESHOW_GITHUB_COVERAGE_THRESHOLD: 50
           SMOKESHOW_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  publish:
+    if: github.event_name == 'release'
+    name: Publish to PyPI
+    needs: [test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        run: |
+          pip install -U build
+          python -m build
+
+      - name: Check version
+        id: check-tag
+        uses: samuelcolvin/check-python-version@v4.1
+        with:
+          version_file_path: pydantic/version.py
+
+      - name: build
+        run: python -m build
+
+      - name: Upload package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
