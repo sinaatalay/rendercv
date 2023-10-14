@@ -374,13 +374,14 @@ class ClassicThemeOptions(BaseModel):
         examples=["1.35 cm", "1 in", "12 pt", "14 mm", "2 ex", "3 em"],
     )
 
-    show_timespan_in_experience_entries: bool = Field(
-        default=True,
-        title="Show Time Span in Experience Entries",
+    show_timespan_in: list[str] = Field(
+        default=[],
+        title="Show Time Span in These Sections",
         description=(
-            "If this option is set to true, then the time span of the experience"
-            " entries will be shown in the date and location column."
+            "The time span will be shown in the date and location column in these"
+            " sections. The input should be a list of strings."
         ),
+        examples=[["Education", "Experience"]],
     )
 
     show_last_updated_date: bool = Field(
@@ -402,7 +403,7 @@ class ClassicThemeOptions(BaseModel):
 class Design(BaseModel):
     """This class stores the theme name of the CV and the theme's options."""
 
-    theme: Literal["classic"] = Field(
+    theme: Literal["classic", "awesome-cv"] = Field(
         default="classic",
         title="Theme name",
         description='The only option is "Classic" for now.',
@@ -742,7 +743,6 @@ class ExperienceEntry(Event):
 class EducationEntry(Event):
     """This class stores [EducationEntry](../index.md#educationentry) information."""
 
-    # 1) Mandotory user inputs:
     institution: str = Field(
         title="Institution",
         description="The institution name. It will be shown as bold text.",
@@ -753,7 +753,6 @@ class EducationEntry(Event):
         description="The area of study. It will be shown as normal text.",
         examples=["Mechanical Engineering", "Computer Science"],
     )
-    # 2) Optional user inputs:
     study_type: Optional[str] = Field(
         default=None,
         title="Study Type",
@@ -957,13 +956,11 @@ class Section(BaseModel):
 class CurriculumVitae(BaseModel):
     """This class bindes all the information of a CV together."""
 
-    # 1) Mandotory user inputs:
     name: str = Field(
         title="Name",
         description="The name of the person.",
         examples=["John Doe", "Jane Doe"],
     )
-    # 2) Optional user inputs:
     label: Optional[str] = Field(
         default=None,
         title="Label",
@@ -983,6 +980,18 @@ class CurriculumVitae(BaseModel):
     )
     phone: Optional[PhoneNumber] = None
     website: Optional[HttpUrl] = None
+    social_networks: Optional[list[SocialNetwork]] = Field(
+        default=None,
+        title="Social Networks",
+        description=(
+            "The social networks of the person. They will be rendered in the heading."
+        ),
+    )
+    summary: Optional[str] = Field(
+        default=None,
+        title="Summary",
+        description="The summary of the person.",
+    )
     section_order: Optional[list[str]] = Field(
         default=None,
         title="Section Order",
@@ -990,13 +999,6 @@ class CurriculumVitae(BaseModel):
             "The order of sections in the CV. The section title should be used."
         ),
         examples=[["Education", "Work Experience", "Skills"]],
-    )
-    social_networks: Optional[list[SocialNetwork]] = Field(
-        default=None,
-        title="Social Networks",
-        description=(
-            "The social networks of the person. They will be rendered in the heading."
-        ),
     )
     education: Optional[list[EducationEntry]] = Field(
         default=None,
@@ -1053,7 +1055,7 @@ class CurriculumVitae(BaseModel):
 
     @model_validator(mode="after")
     @classmethod
-    def check_if_the_section_names_are_unique(self, model):
+    def check_if_the_section_names_are_unique(cls, model):
         pre_defined_section_names = [
             "Education",
             "Work Experience",
@@ -1198,3 +1200,21 @@ class RenderCVDataModel(BaseModel):
         description="The design of the CV.",
     )
     cv: CurriculumVitae
+
+    @model_validator(mode="after")
+    @classmethod
+    def check_classical_theme_show_timespan_in(cls, model):
+        if model.design.theme == "classic":
+            design: Design = model.design
+            cv: CurriculumVitae = model.cv
+            section_titles = [section.title for section in cv.sections]
+            for title in design.options.show_timespan_in:
+                if title not in section_titles:
+                    raise ValueError(
+                        f'The section "{title}" that is specified in the'
+                        ' "show_timespan_in" option is not found in the CV! You might'
+                        " have misspelled the section title or forgot to add it to"
+                        ' "section_order".'
+                    )
+
+        return model
