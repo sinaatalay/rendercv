@@ -420,6 +420,12 @@ class Design(BaseModel):
         description="The font size of the CV. It can be 10pt, 11pt, or 12pt.",
         examples=["10pt", "11pt", "12pt"],
     )
+    page_size: Literal["a4paper", "letterpaper"] = Field(
+        default="a4paper",
+        title="Page Size",
+        description="The page size of the CV. It can be a4paper or letterpaper.",
+        examples=["a4paper", "letterpaper"],
+    )
     options: ClassicThemeOptions = Field(
         default=ClassicThemeOptions(),
         title="Theme Options",
@@ -454,8 +460,8 @@ class Design(BaseModel):
     @classmethod
     def check_if_theme_exists(cls, theme: str) -> str:
         # Go to templates directory and check if the theme exists:
-        templates_directory = os.path.join(os.path.dirname(__file__), "templates")
-        if f"{theme}.tex.j2" not in os.listdir(templates_directory):
+        template_directory = os.path.join(os.path.dirname(__file__), "templates", theme)
+        if f"{theme}.tex.j2" not in os.listdir(template_directory):
             raise ValueError(
                 f'The theme "{theme}" is not found in the "templates" directory! To add'
                 " a new theme, please see TO BE ADDED."
@@ -1158,7 +1164,9 @@ class CurriculumVitae(BaseModel):
                 entry_type = pre_defined_sections[section_name][0].__class__.__name__
                 entries = pre_defined_sections[section_name]
                 if section_name == "Test Scores":
-                    link_text = "view score report"
+                    link_text = "Score Report"
+                elif section_name == "Certificates":
+                    link_text = "Certificate"
             else:
                 # If the section is not pre-defined, then it is a custom section.
                 # Find the corresponding custom section and get its entries:
@@ -1212,9 +1220,8 @@ class RenderCVDataModel(BaseModel):
                 if title not in section_titles:
                     raise ValueError(
                         f'The section "{title}" that is specified in the'
-                        ' "show_timespan_in" option is not found in the CV! You might'
-                        " have misspelled the section title or forgot to add it to"
-                        ' "section_order".'
+                        ' "show_timespan_in" option is not found in the CV! The'
+                        f" available section titles are: {section_titles}"
                     )
 
         return model
