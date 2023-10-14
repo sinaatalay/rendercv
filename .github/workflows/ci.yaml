@@ -15,9 +15,16 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Lint with Ruff
         run: |
-          pip install ruff
+          python -m pip install ruff
           ruff --output-format=github .
         continue-on-error: true
 
@@ -48,6 +55,8 @@ jobs:
       - name: Test with pytest
         run: |
           pip install pytest pytest-cov
+          touch .coveragerc
+          echo -e "[run]\nrelative_files = True" > .coveragerc
           pytest --cov="rendercv" tests/
           mv .coverage .coverage.${{ matrix.python-version }}.${{ matrix.os }}
         continue-on-error: true
@@ -60,7 +69,7 @@ jobs:
 
 
   combine-coverages:
-    name: Combine coverages and upload the report
+    name: Upload coverage report
     needs: [test]
     runs-on: ubuntu-latest
 
