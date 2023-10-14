@@ -285,9 +285,11 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     """
     start_time = time.time()
     logger.info("Rendering the LaTeX file has started.")
+
     # create a Jinja2 environment:
+    theme = data.design.theme
     environment = Environment(
-        loader=PackageLoader("rendercv", "templates"),
+        loader=PackageLoader("rendercv", os.path.join("templates", theme)),
         trim_blocks=True,
         lstrip_blocks=True,
     )
@@ -312,7 +314,6 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     environment.filters["divide_length_by"] = divide_length_by
 
     # load the template:
-    theme = data.design.theme
     template = environment.get_template(f"{theme}.tex.j2")
 
     output_latex_file = template.render(
@@ -410,9 +411,10 @@ def run_latex(latex_file_path: str) -> str:
             ],
             cwd=os.path.dirname(latex_file_path),
             check=True,
-            stdout=subprocess.DEVNULL,  # suppress latexmk output
+            # stdout=subprocess.DEVNULL,  # suppress latexmk output
+            timeout=30,
         )
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError or subprocess.TimeoutExpired as e:
         raise RuntimeError(
             "Running TinyTeX has failed with the following error:\n\n"
             f'command "{e.cmd}" return with error (code {e.returncode}): {e.output}\n\n'
