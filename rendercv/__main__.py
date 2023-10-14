@@ -29,9 +29,7 @@ def main(args=sys.argv[1:]):
     file_path = os.path.join(os.getcwd(), input_file_path)
     data = read_input_file(file_path)
     output_latex_file = render_template(data)
-    output_pdf_file = run_latex(output_latex_file)
-    logger.info(f"RenderCV: PDF file generated at {output_pdf_file}")
-
+    run_latex(output_latex_file)
 
 if __name__ == "__main__":
     main(args=["tests/inputs/personal.yaml"])

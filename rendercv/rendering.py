@@ -331,8 +331,8 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     file_name = data.cv.name.replace(" ", "_") + "_CV.tex"
     output_file_path = os.path.join(output_folder, file_name)
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-    with open(output_file_path, "w") as file:
-        file.write(output_latex_file)
+    with open(output_file_path, "wb") as file:
+        file.write(output_latex_file.encode("utf-8"))
 
     # Copy the fonts directory to the output directory:
     # Remove the old fonts directory if it exists:
@@ -346,6 +346,16 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
         output_fonts_directory,
         dirs_exist_ok=True,
     )
+
+    # Copy auxiliary files to the output directory (if there is any):
+    output_directory = os.path.dirname(output_file_path)
+    theme_directory = os.path.join(os.path.dirname(__file__), "templates", theme)
+    for file_name in os.listdir(theme_directory):
+        if file_name.endswith(".cls"):
+            shutil.copy(
+                os.path.join(theme_directory, file_name),
+                output_directory,
+            )
 
     end_time = time.time()
     time_taken = end_time - start_time
