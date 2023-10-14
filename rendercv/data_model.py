@@ -403,7 +403,7 @@ class ClassicThemeOptions(BaseModel):
 class Design(BaseModel):
     """This class stores the theme name of the CV and the theme's options."""
 
-    theme: Literal["classic", "awesome-cv"] = Field(
+    theme: Literal["classic"] = Field(
         default="classic",
         title="Theme name",
         description='The only option is "Classic" for now.',
@@ -426,11 +426,30 @@ class Design(BaseModel):
         description="The page size of the CV. It can be a4paper or letterpaper.",
         examples=["a4paper", "letterpaper"],
     )
-    options: ClassicThemeOptions = Field(
-        default=ClassicThemeOptions(),
+    options: Optional[ClassicThemeOptions] = Field(
+        default=None,
         title="Theme Options",
         description="The options of the theme.",
     )
+
+    @model_validator(mode="after")
+    @classmethod
+    def check_theme_options(cls, model):
+        if model.options is None:
+            if model.theme == "classic":
+                model.options = ClassicThemeOptions()
+            else:
+                raise RuntimeError("Unknown theme!")
+        else:
+            if model.theme == "classic":
+                if not isinstance(model.options, ClassicThemeOptions):
+                    raise ValueError(
+                        "Theme is classic but options is not classic theme options!"
+                    )
+            else:
+                raise RuntimeError("Theme is neither classic nor awesome-cv!")
+
+        return model
 
     @field_validator("font")
     @classmethod
