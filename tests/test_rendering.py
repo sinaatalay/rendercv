@@ -7,7 +7,7 @@ import shutil
 from rendercv import rendering, data_model
 
 
-class TestDataModel(unittest.TestCase):
+class TestRendering(unittest.TestCase):
     def test_markdown_to_latex(self):
         input = "[link](www.example.com)"
         expected = r"\hrefExternal{www.example.com}{link}"
