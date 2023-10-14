@@ -1,0 +1,1139 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesPackage{pgfpages}[2011/01/05 ver 0.02]
+
+\RequirePackage{pgfcore,calc}
+
+\newcount\pgf@logicalpages
+\newcount\pgf@firstshipout
+\newcount\pgf@lastshipout
+\newcount\pgf@currentshipout
+\newcount\pgf@cpn
+\newcount\pgf@shipoutnextto
+\newdimen\pgfphysicalheight
+\newdimen\pgfphysicalwidth
+
+\pgf@shipoutnextto=0\relax
+\pgf@logicalpages=0\relax
+\pgf@firstshipout=1\relax
+\pgf@lastshipout=1\relax
+\pgf@currentshipout=1\relax
+\pgfphysicalheight=\paperheight
+\pgfphysicalwidth=\paperwidth
+
+\newif\ifpgfphysicalpageempty
+\newif\ifpgf@holdingphysicalpage
+
+\pgfphysicalpageemptytrue
+\pgf@holdingphysicalpagefalse
+
+
+% Define a layout
+%
+% #1 = layout name
+% #2 = code before options have been set
+% #2 = code after options have been set
+%
+% Example:
+%
+% \pgfpagesdeclarelayout{resize to}{
+%    \pgfpagesphysicalpageoptions{logical pages=1,physical height=\pgfpageoptionheight,physical width=\pgfpageoptionwidth}
+%    \pgfpageslogicalpageoptions{1}{resized width=\pgfphysicalwidth,%
+%      resized height=\pgfphysicalheight,center=\pgfpoint{.5\pgfphysicalwidth}{.5\pgfphysicalheight}}}
+
+\newcommand\pgfpagesdeclarelayout[3]{
+  \expandafter\newcommand\csname pgfpages@layoutbefore@#1\endcsname{#2}
+  \expandafter\newcommand\csname pgfpages@layout@#1\endcsname{#3}}
+
+
+% Use a layout
+%
+% #1 = layout name
+% #2 = options
+%
+% Example:
+%
+% \pgfpagesuselayout{resize to}[a4paper]
+
+\def\pgfpagesuselayout#1{\pgfutil@ifnextchar[{\pgf@pagelayout{#1}}{\pgf@pagelayout{#1}[]}}
+\def\pgf@pagelayout#1[#2]{
+  \csname pgfpages@layoutbefore@#1\endcsname
+  \setkeys{pgfpagesuselayoutoption}{#2}
+  \pgfutil@ifundefined{pgfpages@layout@#1}{
+    \PackageError{pgfpages}{Page layout `#1' undefined.}{}
+  }
+  {
+    \csname pgfpages@layout@#1\endcsname
+  }
+}
+
+
+% Predefined options
+
+\define@key{pgfpagesuselayoutoption}{physical paper width}%
+{\def\pgfpageoptionwidth{#1}}
+
+\define@key{pgfpagesuselayoutoption}{physical paper height}%
+{\def\pgfpageoptionheight{#1}}
+
+\define@key{pgfpagesuselayoutoption}{a0paper}[]%
+{\def\pgfpageoptionheight{1189mm} \def\pgfpageoptionwidth{841mm}}
+
+\define@key{pgfpagesuselayoutoption}{a1paper}[]%
+{\def\pgfpageoptionheight{841mm} \def\pgfpageoptionwidth{594mm}}
+
+\define@key{pgfpagesuselayoutoption}{a2paper}[]%
+{\def\pgfpageoptionheight{594mm} \def\pgfpageoptionwidth{420mm}}
+
+\define@key{pgfpagesuselayoutoption}{a3paper}[]%
+{\def\pgfpageoptionheight{420mm} \def\pgfpageoptionwidth{297mm}}
+
+\define@key{pgfpagesuselayoutoption}{a4paper}[]%
+{\def\pgfpageoptionheight{297mm} \def\pgfpageoptionwidth{210mm}}
+
+\define@key{pgfpagesuselayoutoption}{a5paper}[]%
+{\def\pgfpageoptionheight{210mm} \def\pgfpageoptionwidth{148mm}}
+
+\define@key{pgfpagesuselayoutoption}{a6paper}[]%
+{\def\pgfpageoptionheight{148mm} \def\pgfpageoptionwidth{105mm}}
+
+\define@key{pgfpagesuselayoutoption}{letterpaper}[]%
+{\def\pgfpageoptionheight{11in}  \def\pgfpageoptionwidth{8.5in}}
+
+\define@key{pgfpagesuselayoutoption}{legalpaper}[]%
+{\def\pgfpageoptionheight{14in}  \def\pgfpageoptionwidth{8.5in}}
+
+\define@key{pgfpagesuselayoutoption}{executivepaper}[]%
+{\def\pgfpageoptionheight{10.5in}\def\pgfpageoptionwidth{7.25in}}
+
+\define@key{pgfpagesuselayoutoption}{landscape}[]%
+{
+  \let\pgf@temp=\pgfpageoptionwidth
+  \let\pgfpageoptionwidth=\pgfpageoptionheight
+  \let\pgfpageoptionheight=\pgf@temp
+}
+
+\define@key{pgfpagesuselayoutoption}{border shrink}%
+{\def\pgfpageoptionborder{#1}}
+
+\define@key{pgfpagesuselayoutoption}{corner width}%
+{\def\pgfpageoptioncornerwidth{#1}}
+
+\define@key{pgfpagesuselayoutoption}{odd numbered pages right}[]%
+{\def\pgfpageoptionfirstshipout{2}}
+
+\define@key{pgfpagesuselayoutoption}{second right}[]%
+{%
+  \def\pgfpageoptionfirstcenter{\pgfpoint{.5\paperwidth}{.5\paperheight}}%
+  \def\pgfpageoptionsecondcenter{\pgfpoint{1.5\paperwidth}{.5\paperheight}}%
+  \def\pgfpageoptiontwoheight{\paperheight}%
+  \def\pgfpageoptiontwowidth{2\paperwidth}%
+}
+
+\define@key{pgfpagesuselayoutoption}{second left}[]%
+{%
+  \def\pgfpageoptionfirstcenter{\pgfpoint{1.5\paperwidth}{.5\paperheight}}%
+  \def\pgfpageoptionsecondcenter{\pgfpoint{.5\paperwidth}{.5\paperheight}}%
+  \def\pgfpageoptiontwoheight{\paperheight}%
+  \def\pgfpageoptiontwowidth{2\paperwidth}%
+}
+
+\define@key{pgfpagesuselayoutoption}{second top}[]%
+{%
+  \def\pgfpageoptionfirstcenter{\pgfpoint{.5\paperwidth}{.5\paperheight}}%
+  \def\pgfpageoptionsecondcenter{\pgfpoint{.5\paperwidth}{1.5\paperheight}}%
+  \def\pgfpageoptiontwoheight{2\paperheight}%
+  \def\pgfpageoptiontwowidth{\paperwidth}%
+}
+
+\define@key{pgfpagesuselayoutoption}{second bottom}[]%
+{%
+  \def\pgfpageoptionfirstcenter{\pgfpoint{.5\paperwidth}{1.5\paperheight}}%
+  \def\pgfpageoptionsecondcenter{\pgfpoint{.5\paperwidth}{.5\paperheight}}%
+  \def\pgfpageoptiontwoheight{2\paperheight}%
+  \def\pgfpageoptiontwowidth{\paperwidth}%
+}
+
+
+
+% Predefined layouts
+
+\pgfpagesdeclarelayout{rounded corners}
+{
+  \def\pgfpageoptioncornerwidth{10pt}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=1
+  }
+  \pgfpageslogicalpageoptions{1}
+  {%
+    center=\pgfpoint{.5\pgfphysicalwidth}{.5\pgfphysicalheight},%
+    corner width=\pgfpageoptioncornerwidth%
+  }%
+}
+
+\pgfpagesdeclarelayout{resize to}
+{
+  \def\pgfpageoptionborder{0pt}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=1,%
+    physical height=\pgfpageoptionheight,%
+    physical width=\pgfpageoptionwidth%
+  }
+  \pgfpageslogicalpageoptions{1}
+  {%
+    resized width=\pgfphysicalwidth,%
+    resized height=\pgfphysicalheight,%
+    border shrink=\pgfpageoptionborder,%
+    center=\pgfpoint{.5\pgfphysicalwidth}{.5\pgfphysicalheight}%
+  }%
+}
+
+\pgfpagesdeclarelayout{two screens with lagging second}
+{}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=2,%
+    physical height=\pgfpageoptiontwoheight,%
+    physical width=\pgfpageoptiontwowidth,%
+    last logical shipout=1,%
+  }
+  \pgfpageslogicalpageoptions{1}
+  {%
+    center=\pgfpageoptionfirstcenter,%
+  }%
+  \pgfpageslogicalpageoptions{2}
+  {%
+    center=\pgfpageoptionsecondcenter,%
+    copy from=1%
+  }%
+}
+
+\pgfpagesdeclarelayout{two screens with optional second}
+{}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=2,%
+    physical height=\pgfpageoptiontwoheight,%
+    physical width=\pgfpageoptiontwowidth,%
+    last logical shipout=1%
+  }
+  \pgfpageslogicalpageoptions{1}
+  {%
+    center=\pgfpageoptionfirstcenter,%
+  }%
+  \pgfpageslogicalpageoptions{2}
+  {%
+    center=\pgfpageoptionsecondcenter,%
+    copy from=2%
+  }%
+}
+
+\pgfpagesdeclarelayout{2 on 1}
+{
+  \edef\pgfpageoptionheight{\the\paperwidth} % landscaped by default
+  \edef\pgfpageoptionwidth{\the\paperheight}
+  \def\pgfpageoptionborder{0pt}
+  \def\pgfpageoptionfirstshipout{1}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=2,%
+    physical height=\pgfpageoptionheight,%
+    physical width=\pgfpageoptionwidth,%
+    current logical shipout=\pgfpageoptionfirstshipout%
+  }
+  \ifdim\paperheight>\paperwidth\relax
+    % put side-by-side
+    \pgfpageslogicalpageoptions{1}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.5\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{2}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.5\pgfphysicalheight}%
+    }%
+  \else
+    % stack on top of one another
+    \pgfpageslogicalpageoptions{1}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.5\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{2}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.5\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+  \fi    
+}
+
+
+\pgfpagesdeclarelayout{4 on 1}
+{
+  \edef\pgfpageoptionheight{\the\paperheight} 
+  \edef\pgfpageoptionwidth{\the\paperwidth}
+  \edef\pgfpageoptionborder{0pt}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=4,%
+    physical height=\pgfpageoptionheight,%
+    physical width=\pgfpageoptionwidth%
+  }
+  \pgfpageslogicalpageoptions{1}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.5\pgfphysicalwidth,%
+    resized height=.5\pgfphysicalheight,%
+    center=\pgfpoint{.25\pgfphysicalwidth}{.75\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{2}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.5\pgfphysicalwidth,%
+    resized height=.5\pgfphysicalheight,%
+    center=\pgfpoint{.75\pgfphysicalwidth}{.75\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{3}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.5\pgfphysicalwidth,%
+    resized height=.5\pgfphysicalheight,%
+    center=\pgfpoint{.25\pgfphysicalwidth}{.25\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{4}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.5\pgfphysicalwidth,%
+    resized height=.5\pgfphysicalheight,%
+    center=\pgfpoint{.75\pgfphysicalwidth}{.25\pgfphysicalheight}%
+  }%
+}
+
+
+\pgfpagesdeclarelayout{6 on 1}
+{
+  \edef\pgfpageoptionheight{\the\paperwidth} % landscaped by default
+  \edef\pgfpageoptionwidth{\the\paperheight}
+  \def\pgfpageoptionborder{0pt}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=6,%
+    physical height=\pgfpageoptionheight,%
+    physical width=\pgfpageoptionwidth%
+  }
+  \ifdim\paperheight>\paperwidth\relax
+    % put side-by-side
+    \pgfpageslogicalpageoptions{1}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.167\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{2}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.5\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{3}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.833\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{4}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.167\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{5}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.5\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{6}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.833\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+  \else
+    % stack on top of one another
+    \pgfpageslogicalpageoptions{1}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.833\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{2}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.833\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{3}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.5\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{4}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.5\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{5}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.167\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{6}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.167\pgfphysicalheight}%
+    }%
+  \fi    
+}
+
+
+\pgfpagesdeclarelayout{8 on 1}
+{
+  \edef\pgfpageoptionheight{\the\paperwidth} % landscaped by default
+  \edef\pgfpageoptionwidth{\the\paperheight}
+  \def\pgfpageoptionborder{0pt}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=8,%
+    physical height=\pgfpageoptionheight,%
+    physical width=\pgfpageoptionwidth%
+  }
+  \ifdim\paperheight>\paperwidth\relax
+    % put side-by-side
+    \pgfpageslogicalpageoptions{1}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.125\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{2}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.375\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{3}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.625\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{4}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.875\pgfphysicalwidth}{.75\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{5}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.125\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{6}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.375\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{7}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.625\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{8}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.25\pgfphysicalwidth,%
+      resized height=.5\pgfphysicalheight,%
+      center=\pgfpoint{.875\pgfphysicalwidth}{.25\pgfphysicalheight}%
+    }%
+  \else
+    % stack on top of one another
+    \pgfpageslogicalpageoptions{1}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.875\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{2}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.875\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{3}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.625\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{4}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.625\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{5}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.375\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{6}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.375\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{7}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.25\pgfphysicalwidth}{.125\pgfphysicalheight}%
+    }%
+    \pgfpageslogicalpageoptions{8}
+    {%
+      border shrink=\pgfpageoptionborder,%
+      resized width=.5\pgfphysicalwidth,%
+      resized height=.25\pgfphysicalheight,%
+      center=\pgfpoint{.75\pgfphysicalwidth}{.125\pgfphysicalheight}%
+    }%
+  \fi    
+}
+
+
+\pgfpagesdeclarelayout{16 on 1}
+{
+  \edef\pgfpageoptionheight{\the\paperheight} 
+  \edef\pgfpageoptionwidth{\the\paperwidth}
+  \edef\pgfpageoptionborder{0pt}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=16,%
+    physical height=\pgfpageoptionheight,%
+    physical width=\pgfpageoptionwidth%
+  }
+  \pgfpageslogicalpageoptions{1}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.125\pgfphysicalwidth}{.875\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{2}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.375\pgfphysicalwidth}{.875\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{3}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.625\pgfphysicalwidth}{.875\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{4}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.875\pgfphysicalwidth}{.875\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{5}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.125\pgfphysicalwidth}{.625\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{6}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.375\pgfphysicalwidth}{.625\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{7}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.625\pgfphysicalwidth}{.625\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{8}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.875\pgfphysicalwidth}{.625\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{9}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.125\pgfphysicalwidth}{.375\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{10}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.375\pgfphysicalwidth}{.375\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{11}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.625\pgfphysicalwidth}{.375\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{12}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.875\pgfphysicalwidth}{.375\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{13}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.125\pgfphysicalwidth}{.125\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{14}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.375\pgfphysicalwidth}{.125\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{15}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.625\pgfphysicalwidth}{.125\pgfphysicalheight}%
+  }%
+  \pgfpageslogicalpageoptions{16}
+  {%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.25\pgfphysicalwidth,%
+    resized height=.25\pgfphysicalheight,%
+    center=\pgfpoint{.875\pgfphysicalwidth}{.125\pgfphysicalheight}%
+  }%
+}
+
+
+% Change/set main option
+%
+% #1 = options
+%
+% Options:
+%
+% logical pages     = number of logical pages per physical page
+% logical shipouts  = number of shipouts needed to fill a physical page
+%                     (may be less than the number of logical pages,
+%                     if some logical pages are calculated
+%                     automatically) 
+% current logical shipout = number of logical shipout that will come
+%                           next. 
+%
+% Example:
+%
+% \pgfpagesphysicalpageoptions{logical pages=2,logical shipouts=1}
+
+\newcommand\pgfpagesphysicalpageoptions[1]{%
+  \pgf@lastshipout=0\relax%
+  \pgf@currentshipout=0\relax%
+  \setkeys{pgfpages@main}{#1}%
+  \ifnum\pgf@lastshipout=0\relax%not set
+    \pgf@lastshipout=\pgf@logicalpages%
+  \fi%  
+  \ifnum\pgf@currentshipout=0\relax%not set
+    \pgf@currentshipout=\pgf@firstshipout%
+  \fi%  
+}
+
+
+\define@key{pgfpages@main}{logical pages}{\pgf@logicalpages=#1\relax}
+\define@key{pgfpages@main}{first logical shipout}{\pgf@firstshipout=#1\relax}
+\define@key{pgfpages@main}{last logical shipout}{\pgf@lastshipout=#1\relax}
+\define@key{pgfpages@main}{current logical shipout}{\pgf@currentshipout=#1\relax}
+\define@key{pgfpages@main}{physical height}{\pgfphysicalheight=#1\relax}
+\define@key{pgfpages@main}{physical width}{\pgfphysicalwidth=#1\relax}
+
+
+
+% Setup/change parameters of a logical page. You must call this
+% macro for each logical page.
+%
+% #1 = logical page number
+% #2 = options
+%
+% Options:
+%
+% original height = height of the logical page (\paperheight at point of
+%                   first invocation by default) 
+% original width  = width of the logical page (\paperwidth by default)
+% resized height  = height of the logical page after resizing
+% resized width   = width of the logical page after resizing
+% border shrink   = length that is subtracted from resized height and
+%                   resized width
+% border code     = pgf commands to be used for drawing a border (a
+%                   path with the border set will already have been
+%                   set) 
+% rounded corners = clip the frame against a rectangle of the size of
+%                   the frame with corners of the given radius
+% scale           = factor by which the page is enlarged/shrunk 
+% center          = center of the logical page in the physical page
+% rotation        = degree by which the page is rotated around its center
+% xscale          = scale only x-axis (use -1 to flip along y-axis)
+% yscale          = scale only y-axis (use -1 to flip along x-axis)
+% copy from       = copy the contents from this logical page of the
+%                   previous physical page, if no contents is specified 
+%
+% If more than one of the three options ``resized height'', ``resized
+% width'' and ``scale'' are given, the smallest resulting scaling
+% wins. 
+%
+% Example:
+%
+% \pgfpageslogicalpageoptions{1}{scale=0.5,center=\pgfpoint{0cm}{2cm}}
+
+\newcommand\pgfpageslogicalpageoptions[2]{%
+  \pgf@cpn=#1\relax%
+  \expandafter\ifx\csname pgfpages@box@#1\endcsname\relax%
+    \expandafter\newbox\csname pgfpages@box@#1\endcsname%
+    \edef\pgf@temp{%
+      \noexpand\pgf@psetcurrent{height}{\the\paperheight}%
+      \noexpand\pgf@psetcurrent{width}{\the\paperwidth}%
+    }%
+    \pgf@temp%
+  \fi%
+  \setkeys{pgfpages@page}{#2}%
+  \pgf@calculateresizes{height}%
+  \pgf@calculateresizes{width}%
+  \pgfsetupphysicalpagesizes%
+}
+
+\def\pgf@epset#1#2#3{\expandafter\edef\csname pgfpages@p@#1@#2\endcsname{#3}}
+\def\pgf@epsetcurrent#1#2{\pgf@pset{\the\pgf@cpn}{#1}{#2}}
+\def\pgf@pset#1#2#3{\expandafter\def\csname pgfpages@p@#1@#2\endcsname{#3}}
+\def\pgf@pget#1#2{\csname pgfpages@p@#1@#2\endcsname}
+\def\pgf@psetcurrent#1#2{\pgf@pset{\the\pgf@cpn}{#1}{#2}}
+\def\pgf@pgetcurrent#1{\pgf@pget{\the\pgf@cpn}}
+
+\define@key{pgfpages@page}{scale}{\pgf@epsetcurrent{scale}{#1}}
+\define@key{pgfpages@page}{xscale}{\pgf@epsetcurrent{xscale}{#1}}
+\define@key{pgfpages@page}{yscale}{\pgf@epsetcurrent{yscale}{#1}}
+\define@key{pgfpages@page}{original height}{\pgf@epsetcurrent{height}{#1}}
+\define@key{pgfpages@page}{original width}{\pgf@epsetcurrent{width}{#1}}
+\define@key{pgfpages@page}{resized height}{\pgf@epsetcurrent{reheight}{#1}}
+\define@key{pgfpages@page}{resized width}{\pgf@epsetcurrent{rewidth}{#1}}
+\define@key{pgfpages@page}{center}{\pgf@psetcurrent{center}{#1}}
+\define@key{pgfpages@page}{rotation}{\pgf@epsetcurrent{rotation}{#1}}
+\define@key{pgfpages@page}{copy from}{\pgf@epsetcurrent{copy}{#1}}
+\define@key{pgfpages@page}{border shrink}{\pgf@epsetcurrent{border}{#1}}
+\define@key{pgfpages@page}{border code}{\pgf@psetcurrent{bordercode}{#1}}
+\define@key{pgfpages@page}{corner width}{\pgf@psetcurrent{cornerwidth}{#1}}
+
+\def\pgf@calculateresizes#1{%
+  \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @re#1\endcsname\relax%
+  \else%
+    \expandafter\pgfutil@tempdima\csname pgfpages@p@\the\pgf@cpn @re#1\endcsname\relax%
+    \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @border\endcsname\relax%
+    \else%
+      \expandafter\pgfutil@tempdimb\csname pgfpages@p@\the\pgf@cpn @border\endcsname\relax%
+      \advance\pgfutil@tempdima by-2\pgfutil@tempdimb\relax%
+    \fi%
+    \expandafter\pgfutil@tempdimb\csname pgfpages@p@\the\pgf@cpn @#1\endcsname\relax%
+    \pgfutil@tempcnta=\pgfutil@tempdimb%
+    \divide\pgfutil@tempcnta by 65536\relax%
+    \ifnum\pgfutil@tempcnta=0\relax%
+      \pgfutil@tempcnta=1\relax%
+    \fi%
+    \divide\pgfutil@tempdima by\pgfutil@tempcnta\relax%
+    \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @scale\endcsname\relax%
+      \pgfutil@tempdimb=10000pt%
+    \else%
+      \expandafter\pgfutil@tempdimb\expandafter=\csname pgfpages@p@\the\pgf@cpn @scale\endcsname pt\relax%
+    \fi%
+    \ifdim\pgfutil@tempdima<\pgfutil@tempdimb%
+      \edef\pgf@temp{{scale}{\expandafter\Pgf@geT\the\pgfutil@tempdima}}%
+      \expandafter\pgf@psetcurrent\pgf@temp%
+    \fi%
+  \fi%
+}
+
+
+
+% Shipout a physical page immediately
+%
+% Example:
+%
+% \pgfshipoutphysicalpage
+
+\newcommand\pgfshipoutphysicalpage{%
+  \ifnum\pgf@logicalpages>0\relax%
+    \pgfpages@buildshipoutbox%
+    \pgfpages@shipoutshipoutbox%
+    \pgfpages@performcopying%
+    \global\pgfphysicalpageemptytrue%
+    \global\pgf@holdingphysicalpagefalse%  
+  \fi%
+}
+
+\newbox\pgfpages@shipoutbox
+
+\def\pgfpages@buildshipoutbox{%
+  \setbox\pgfpages@shipoutbox=\vbox{{%
+    \set@typeset@protect%
+    \offinterlineskip%
+    \pgfsys@beginpicture%
+    \pgf@cpn=1\relax%
+    \loop%
+      \setbox0=\hbox to \csname pgfpages@p@\the\pgf@cpn @width\endcsname{%
+        \hskip1in%
+        \vbox to \csname pgfpages@p@\the\pgf@cpn @height\endcsname%
+          {\vskip1in\offinterlineskip\expandafter\copy\csname
+            pgfpages@box@\the\pgf@cpn\endcsname\vss}\hss}%
+      \pgfsys@beginscope%
+        % Translate lower left corner
+        \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @center\endcsname\relax%
+        \else%
+          \pgflowlevel{\pgftransformshift{\csname pgfpages@p@\the\pgf@cpn @center\endcsname}}%
+        \fi%
+        \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @scale\endcsname\relax%
+        \else%
+          \pgflowlevel{\pgftransformscale{\csname pgfpages@p@\the\pgf@cpn @scale\endcsname}}%
+        \fi%
+        \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @xscale\endcsname\relax%
+        \else%
+          \pgflowlevel{\pgftransformxscale{\csname pgfpages@p@\the\pgf@cpn @xscale\endcsname}{1}}%
+        \fi%
+        \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @yscale\endcsname\relax%
+        \else%
+          \pgflowlevel{\pgftransformyscale{\csname pgfpages@p@\the\pgf@cpn @yscale\endcsname}}%
+        \fi%
+        \pgfscope%
+        \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @rotation\endcsname\relax%
+        \else%
+        \pgflowlevel{\pgftransformrotate{\csname
+            pgfpages@p@\the\pgf@cpn @rotation\endcsname}}%
+        \fi%
+        \pgfutil@tempdima=\csname pgfpages@p@\the\pgf@cpn @width\endcsname\relax%
+        \pgfutil@tempdimb=\csname pgfpages@p@\the\pgf@cpn @height\endcsname\relax%
+        \pgflowlevel{\pgftransformshift{\pgfpoint{-.5\pgfutil@tempdima}{-.5\pgfutil@tempdimb}}}%
+        \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @bordercode\endcsname\relax%
+        \else%
+          \pgfpathmoveto{\pgfpointorigin}%
+          \pgfpathlineto{\pgfpoint{\wd0}{0pt}}%
+          \pgfpathlineto{\pgfpoint{\wd0}{\ht0}}%
+          \pgfpathlineto{\pgfpoint{0pt}{\ht0}}%
+          \pgfpathclose%
+          {\csname pgfpages@p@\the\pgf@cpn @bordercode\endcsname}%
+        \fi%
+        \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @cornerwidth\endcsname\relax%
+        \else%
+          {
+            \expandafter\pgfutil@tempdima\csname pgfpages@p@\the\pgf@cpn @cornerwidth\endcsname\relax%
+            \color{black}
+            \pgfpathrectangle{\pgfpointorigin}{\pgfpoint{\pgfutil@tempdima}{\pgfutil@tempdima}}%
+            \pgfpathrectangle{\pgfpoint{0pt}{\ht0-\pgfutil@tempdima}}{\pgfpoint{\pgfutil@tempdima}{\pgfutil@tempdima}}%
+            \pgfpathrectangle{\pgfpoint{\wd0-\pgfutil@tempdima}{0pt}}{\pgfpoint{\pgfutil@tempdima}{\pgfutil@tempdima}}%
+            \pgfpathrectangle{\pgfpoint{\wd0-\pgfutil@tempdima}{\ht0-\pgfutil@tempdima}}{\pgfpoint{\pgfutil@tempdima}{\pgfutil@tempdima}}%
+            \pgfusepath{fill}%
+            \pgfpathmoveto{\pgfpoint{0pt}{\pgfutil@tempdima}}
+            \pgfpathcurveto{\pgfpoint{0pt}{0.555\pgfutil@tempdima}}{\pgfpoint{.555\pgfutil@tempdima}{0pt}}{\pgfpoint{\pgfutil@tempdima}{0pt}}
+            \pgfpathlineto{\pgfpoint{\wd0-\pgfutil@tempdima}{0pt}}
+            \pgfpathcurveto{\pgfpoint{\wd0-.555\pgfutil@tempdima}{0pt}}{\pgfpoint{\wd0}{.555\pgfutil@tempdima}}{\pgfpoint{\wd0}{\pgfutil@tempdima}}
+            \pgfpathlineto{\pgfpoint{\wd0}{\ht0-\pgfutil@tempdima}}
+            \pgfpathcurveto{\pgfpoint{\wd0}{\ht0-.555\pgfutil@tempdima}}{\pgfpoint{\wd0-.555\pgfutil@tempdima}{\ht0}}{\pgfpoint{\wd0-\pgfutil@tempdima}{\ht0}}
+            \pgfpathlineto{\pgfpoint{\pgfutil@tempdima}{\ht0}}
+            \pgfpathcurveto{\pgfpoint{.555\pgfutil@tempdima}{\ht0}}{\pgfpoint{0pt}{\ht0-.555\pgfutil@tempdima}}{\pgfpoint{0pt}{\ht0-\pgfutil@tempdima}}
+            \pgfpathclose
+            \pgfusepath{clip}
+            \color{white}
+            \pgfpathrectangle{\pgfpointorigin}{\pgfpoint{\wd0}{\ht0}}
+            \pgfusepath{fill}
+          }
+        \fi%
+        \ht0=0pt%
+        \wd0=0pt%
+        \dp0=0pt%
+        \pgfsys@hbox0%
+        \endpgfscope%
+      \pgfsys@endscope%
+    \ifnum\pgf@cpn<\pgf@logicalpages%
+      \advance \pgf@cpn by 1\relax%  
+    \repeat%
+    \pgfsys@endpicture%
+    }}%
+}
+
+
+\def\pgfpages@shipoutshipoutbox{%
+  \begingroup
+    \let \protect \noexpand
+    \@resetactivechars
+    \global\let\@@if@newlist\if@newlist
+    \global\@newlistfalse
+    \@parboxrestore%
+    \pgfpages@originalshipout%
+    \vbox{\hbox{%
+        \pgfsetupphysicalpagesizes%
+        \hskip-1in%
+        \vbox to \pgfphysicalheight{%
+          \vss\box\pgfpages@shipoutbox%
+          \vskip1in%
+        }}%
+      \pgfsetupphysicalpagesizes%
+    }%
+  \endgroup%
+}
+
+\def\pgfpages@performcopying{
+  \pgf@cpn=1\relax% copy first
+  \loop%
+    \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @copy\endcsname\relax
+    \else%
+      \edef\pgf@temp{\noexpand\global\noexpand\setbox\csname pgfpages@box@%
+        \the\pgf@cpn\endcsname=\noexpand\copy\csname pgfpages@box@\csname
+        pgfpages@p@\the\pgf@cpn @copy\endcsname\endcsname}%
+      \pgf@temp%
+    \fi%
+  \ifnum\pgf@cpn<\pgf@logicalpages%
+    \advance \pgf@cpn by 1\relax%  
+  \repeat%
+  \pgf@cpn=1\relax% then void
+  \loop%
+    \expandafter\ifx\csname pgfpages@p@\the\pgf@cpn @copy\endcsname\relax
+      \expandafter\global\expandafter\setbox\csname pgfpages@box@\the\pgf@cpn\endcsname=\box\voidb@x%
+    \else%
+    \fi%
+  \ifnum\pgf@cpn<\pgf@logicalpages%
+    \advance \pgf@cpn by 1\relax%  
+  \repeat%
+}
+
+
+
+% Save original shipout commands
+%
+% Example:
+%
+% \pgfhookintoshipout
+
+\newcommand\pgfhookintoshipout{
+  \ifx\CROP@shipout\undefined
+    \let\pgfpages@originalshipout=\shipout
+    \let\shipout=\pgfpages@interceptshipout
+  \else
+    \let\pgfpages@originalshipout=\CROP@shipout
+    \let\CROP@shipout=\pgfpages@interceptshipout
+  \fi
+}
+
+\def\pgfpages@interceptshipout{%
+  \ifnum\pgf@shipoutnextto>0\relax
+    \def\pgf@next{%
+      \expandafter\global\expandafter\setbox\csname pgfpages@box@\the\pgf@shipoutnextto\endcsname=\box\voidb@x%
+      \afterassignment\pgfpages@shipouttestnext%
+      \pgfpagesshipoutlogicalpage{\the\pgf@shipoutnextto}%
+    }%
+  \else%
+    \ifpgf@holdingphysicalpage% shipout physical page now
+      {\pgfshipoutphysicalpage}%
+    \fi%    
+    \ifnum\pgf@logicalpages=0\relax
+      \def\pgf@next{\pgfpages@originalshipout}%
+    \else%
+      \def\pgf@next{%
+        \expandafter\global\expandafter\setbox\csname pgfpages@box@\the\pgf@currentshipout\endcsname=\box\voidb@x%
+        \afterassignment\pgfpages@shipouttest%
+        \pgfpagesshipoutlogicalpage{\the\pgf@currentshipout}%
+      }%
+    \fi%
+  \fi%
+  \pgf@next%  
+}
+
+\def\pgfpages@shipouttest{%
+  \ifvoid\csname pgfpages@box@\the\pgf@currentshipout\endcsname\relax%
+    \aftergroup\pgfpages@preparenextshipout%
+  \else%
+    \pgfpages@preparenextshipout%
+  \fi%
+}
+
+\def\pgfpages@shipouttestnext{%
+  \ifvoid\csname pgfpages@box@\the\pgf@shipoutnextto\endcsname\relax%
+    \aftergroup\pgfpages@preparenextshipout%
+  \else%
+    \pgfpages@preparenextshipout%
+  \fi%
+}
+ 
+\def\pgfpages@preparenextshipout{%
+  \ifnum\pgf@shipoutnextto=0\relax%
+    \global\advance\pgf@currentshipout by 1\relax%
+  \else%
+    \global\pgf@shipoutnextto=0\relax%
+  \fi%
+  \ifnum\pgf@currentshipout>\pgf@lastshipout\relax%
+    \global\pgf@currentshipout=\pgf@firstshipout\relax%
+    \global\pgf@holdingphysicalpagetrue%
+  \fi%
+}
+
+
+
+% Shipout a logical page
+%
+% #1 = logical page number
+%
+% The command should be followed by a box. This box will become the
+% contents of the logical page.
+%
+% Example:
+%
+% \pgfpagesshipoutlogicalpage{0}\vbox{Hi!}
+
+\newcommand\pgfpagesshipoutlogicalpage[1]{%
+  \global\pgfphysicalpageemptyfalse%
+  \expandafter\global\expandafter\setbox\csname pgfpages@box@#1\endcsname=}
+
+
+
+% Finish current page and shipout next page to a specific logical page.
+%
+% #1 = logical page number
+%
+% When the current page has been typset, it will be become the given
+% logical page. This command ``interrupts'' the normal order of
+% logical pages.
+%
+% Example:
+%
+% \pgfpagesuselayout{two screens with optional second}
+%
+% Text for main page.\clearpage
+%
+% \pgfpagescurrentpagewillbelogicalpage{2}
+%
+% Text that goes to second page
+%
+% \clearpage
+%
+% Text for main page.
+
+\newcommand\pgfpagescurrentpagewillbelogicalpage[1]{%
+  \global\pgf@shipoutnextto=#1\relax%
+}
+
+
+% Setup the physical page sizes
+%
+% Example:
+%
+% \pgfsetupphysicalpagesizes
+
+\newcommand\pgfsetupphysicalpagesizes{%
+  \pgfsys@global@papersize{\the\pgfphysicalwidth}{\the\pgfphysicalheight}%
+}
+
+
+%
+% Start/End setup
+%
+\pgfhookintoshipout
+
+\AtEndDocument
+{
+  \clearpage
+  \ifpgfphysicalpageempty
+  \else
+    \pgfshipoutphysicalpage
+  \fi
+}
+

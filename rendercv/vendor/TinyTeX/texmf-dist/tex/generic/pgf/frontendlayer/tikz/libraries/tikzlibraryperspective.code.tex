@@ -1,0 +1,111 @@
+% Copyright 2019 by Max Snippe
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibraryperspective.code.tex}
+
+% Initialize affine transformation matrix for perspective view
+% [aa ab ac 0]
+% [ba bb bc 0]
+% [ca cb cc 0]
+% [da db dc 1]
+\pgfmathsetmacro\pgf@H@tpp@aa{+1}
+  \pgfmathsetmacro\pgf@H@tpp@ab{+0}
+    \pgfmathsetmacro\pgf@H@tpp@ac{+0}
+\pgfmathsetmacro\pgf@H@tpp@ba{+0}
+  \pgfmathsetmacro\pgf@H@tpp@bb{+1}
+    \pgfmathsetmacro\pgf@H@tpp@bc{+0}
+\pgfmathsetmacro\pgf@H@tpp@ca{+0}
+  \pgfmathsetmacro\pgf@H@tpp@cb{+0}
+    \pgfmathsetmacro\pgf@H@tpp@cc{+1}
+\pgfmathsetmacro\pgf@H@tpp@da{+0}
+  \pgfmathsetmacro\pgf@H@tpp@db{+0}
+    \pgfmathsetmacro\pgf@H@tpp@dc{+0}
+
+\def\pgfpointperspectivexyz#1#2#3{%
+  \pgfmathsetmacro\pgf@pp@w%
+    { \pgf@H@tpp@da*(#1) + \pgf@H@tpp@db*(#2) + \pgf@H@tpp@dc*(#3) + 1}
+  \pgfmathsetmacro\pgf@pp@x%
+    {(\pgf@H@tpp@aa*(#1) + \pgf@H@tpp@ab*(#2) + \pgf@H@tpp@ac*(#3))/\pgf@pp@w}
+  \pgfmathsetmacro\pgf@pp@y%
+    {(\pgf@H@tpp@ba*(#1) + \pgf@H@tpp@bb*(#2) + \pgf@H@tpp@bc*(#3))/\pgf@pp@w}
+  \pgfmathsetmacro\pgf@pp@z%
+    {(\pgf@H@tpp@ca*(#1) + \pgf@H@tpp@cb*(#2) + \pgf@H@tpp@cc*(#3))/\pgf@pp@w}
+%
+  \pgf@x=\pgf@pp@x\pgf@xx%
+  \advance\pgf@x by \pgf@pp@y\pgf@yx%
+  \advance\pgf@x by \pgf@pp@z\pgf@zx%
+  \pgf@y=\pgf@pp@x\pgf@xy%
+  \advance\pgf@y by \pgf@pp@y\pgf@yy%
+  \advance\pgf@y by \pgf@pp@z\pgf@zy}
+
+\tikzdeclarecoordinatesystem{three point perspective}
+{%
+  \tikzset{cs/.cd,x=0,y=0,z=0,#1}%
+  \pgfpointperspectivexyz{\tikz@cs@x}{\tikz@cs@y}{\tikz@cs@z}
+}
+\tikzaliascoordinatesystem{tpp}{three point perspective}
+
+\pgfkeys{
+  /perspective/.cd,
+    p/.code args={(#1,#2,#3)}{
+      \pgfmathparse{ifthenelse(#1,int(1),int(0))}
+      \ifnum\pgfmathresult=0\else
+        \pgfmathsetmacro\pgf@H@tpp@ba{#2/#1}
+        \pgfmathsetmacro\pgf@H@tpp@ca{#3/#1}
+        \pgfmathsetmacro\pgf@H@tpp@da{ 1/#1}
+      \fi
+    },
+    q/.code args={(#1,#2,#3)}{
+      \pgfmathparse{ifthenelse(#2,int(1),int(0))}
+      \ifnum\pgfmathresult=0\else
+        \pgfmathsetmacro\pgf@H@tpp@ab{#1/#2}
+        \pgfmathsetmacro\pgf@H@tpp@cb{#3/#2}
+        \pgfmathsetmacro\pgf@H@tpp@db{ 1/#2}
+      \fi
+    },
+    r/.code args={(#1,#2,#3)}{
+      \pgfmathparse{ifthenelse(#3,int(1),int(0))}
+      \ifnum\pgfmathresult=0\else
+        \pgfmathsetmacro\pgf@H@tpp@ac{#1/#3}
+        \pgfmathsetmacro\pgf@H@tpp@bc{#2/#3}
+        \pgfmathsetmacro\pgf@H@tpp@dc{ 1/#3}
+      \fi
+    },
+}
+
+\tikzset{
+  perspective/.append code={\pgfkeys{/perspective/.cd,#1}},
+  perspective/.default={
+    p={(10,0,0)},
+    q={(0,10,0)},
+    r={(0,0,20)}},
+}
+
+\tikzset{
+  3d view/.code 2 args={%
+    % Set elevation and azimuth angles
+    \pgfmathsetmacro\pgf@view@az{#1}%
+    \pgfmathsetmacro\pgf@view@el{#2}%
+    % Calculate projections of rotation matrix
+    \pgfmathsetmacro\pgf@xvec@x{cos(\pgf@view@az)}%
+    \pgfmathsetmacro\pgf@xvec@y{-sin(\pgf@view@az)*sin(\pgf@view@el)}%
+    \pgfmathsetmacro\pgf@yvec@x{sin(\pgf@view@az)}%
+    \pgfmathsetmacro\pgf@yvec@y{cos(\pgf@view@az)*sin(\pgf@view@el)}%
+    \pgfmathsetmacro\pgf@zvec@x{+0}%
+    \pgfmathsetmacro\pgf@zvec@y{cos(\pgf@view@el)}%
+    % Set base vectors
+    \pgfsetxvec{\pgfpoint{\pgf@xvec@x cm}{\pgf@xvec@y cm}}%
+    \pgfsetyvec{\pgfpoint{\pgf@yvec@x cm}{\pgf@yvec@y cm}}%
+    \pgfsetzvec{\pgfpoint{\pgf@zvec@x cm}{\pgf@zvec@y cm}}%
+  },
+  3d view/.default={-30}{15},
+  isometric view/.style={3d view={-45}{atan(1/sqrt(2))}},
+}
+
+\endinput

@@ -1,0 +1,134 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibraryspy.code.tex}
+
+
+
+% Spy styles
+
+\tikzset{
+  spy using outlines/.style={
+    spy scope={
+      every spy on node/.style={very thin,draw},
+      every spy in node/.style={thick,draw},
+      #1
+    }
+  },
+  spy using overlays/.style={
+    spy scope={
+      every spy on node/.style={fill,fill opacity=0.2,text opacity=1},
+      every spy in node/.style={fill,fill opacity=0.2,text opacity=1},
+      #1
+    }
+  },
+  connect spies/.style={
+    spy connection path={\draw[thin] (tikzspyonnode) -- (tikzspyinnode);}
+  }
+}%
+
+\newbox\tikz@lib@spybox
+
+\let\tikz@lib@spy@collection=\pgfutil@empty%
+
+\tikzset{spy scope/.style={
+    size/.style={minimum size={##1}},
+    height/.style={minimum height={##1}},
+    width/.style={minimum width={##1}},
+    execute at begin scope={%
+      \let\tikz@lib@spy@save=\tikz@lib@spy@collection%
+      \setbox\tikz@lib@spybox=\hbox\bgroup\bgroup%
+      \let\spy=\tikz@lib@spy@parse},
+    execute at end scope={%
+      \egroup\egroup%
+      {%
+        \copy\tikz@lib@spybox%
+        \tikz@lib@spy@collection%
+      }%
+      \global\let\tikz@lib@spy@collection=\tikz@lib@spy@save%
+    },%
+    tikz@lib@spy@style/.style={#1},
+    tikz@lib@reset@gs
+  },
+  lens/.store in=\tikz@lib@spy@lens,
+  lens=,
+  magnification/.style={lens={scale={#1}}},
+  spy connection path/.store in=\tikz@lib@spy@path,
+  spy connection path=
+}%
+
+\tikzset{
+  tikz@lib@reset@gs/.style={black,thin,solid,opaque,line cap=butt,line join=miter}
+}%
+
+\def\tikz@lib@spy@parse{%
+  \pgfutil@ifnextchar[{\tikz@lib@spy@parse@opt}{\tikz@lib@spy@parse@opt[]}%]
+}%
+\def\tikz@lib@spy@parse@opt[#1]{
+  \pgfutil@ifnextchar x{\tikz@lib@spy@parse@opta[#1]}{\tikz@lib@spy@parse@opta[#1]}%]
+}%
+\def\tikz@lib@spy@parse@opta[#1]on#2in node#3;{%
+  \pgfutil@g@addto@macro\tikz@lib@spy@collection{\tikz@lib@spy@do{#1}{#2}{#3}}%
+}%
+
+\def\tikz@lib@spy@do#1#2#3{%
+  \scope[tikz@lib@spy@style,#1]
+    \node [alias=tikzspyonnode,inner sep=0pt,outer sep=0pt,every spy on node/.try,
+    /utils/exec={
+      {%
+        \let\tikz@transform=\relax
+        \pgftransformreset%
+        \expandafter\tikzset\expandafter{\tikz@lib@spy@lens}
+        \pgftransforminvert%
+        \pgfgettransformentries\a\b\c\d\e\f%
+        \global\let\pgf@lib@svg@a=\a%
+        \global\let\pgf@lib@svg@b=\b%
+        \global\let\pgf@lib@svg@c=\c%
+        \global\let\pgf@lib@svg@d=\d%
+      }%
+      \tikz@addtransform{%
+        \tikz@scan@one@point\pgftransformshift#2%
+        \pgftransformcm{\pgf@lib@svg@a}{\pgf@lib@svg@b}{\pgf@lib@svg@c}{\pgf@lib@svg@d}{\pgfpointorigin}%
+      }
+    }]{};
+    \expandafter\pgfutil@switch\expandafter\pgfutil@ifstrequal\expandafter{\tikz@anchor}{%
+      {north}     {\def\tikz@spy@anchor{south}}%
+      {north east}{\def\tikz@spy@anchor{south west}}%
+      {east}      {\def\tikz@spy@anchor{west}}%
+      {south east}{\def\tikz@spy@anchor{north west}}%
+      {south}     {\def\tikz@spy@anchor{north}}%
+      {south west}{\def\tikz@spy@anchor{north east}}%
+      {west}      {\def\tikz@spy@anchor{east}}%
+      {north west}{\def\tikz@spy@anchor{south east}}%
+    }{}{\def\tikz@spy@anchor{center}}%
+    \node [alias=tikzspyinnode,inner sep=0pt,outer sep=0pt,at={#2},every spy in node/.try,
+    path picture={\node[anchor=\tikz@spy@anchor,tikz@lib@reset@gs]{\nullfont%
+        \pgfpicture\relax\pgfsetbaseline{default}\pgfsettrimleft{default}\pgfsettrimright{default}%
+        \pgftransformreset%
+        \let\tikz@transform=\relax%
+        \expandafter\tikzset\expandafter{\tikz@lib@spy@lens}%
+        \pgflowlevelsynccm%
+        \tikz@scan@one@point\tikz@lib@spy@shift#2%
+        \pgflowlevelsynccm%
+        \copy\tikz@lib@spybox%
+        \endpgfpicture};}]#3{};
+    \tikz@lib@spy@path
+  \endscope
+}%
+
+\def\tikz@lib@spy@shift#1{%
+  \pgf@process{#1}%
+  \pgf@x=-\pgf@x%
+  \pgf@y=-\pgf@y%
+  \pgftransformshift{}%
+}%
+
+
+
+\endinput

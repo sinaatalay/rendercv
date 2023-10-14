@@ -1,0 +1,163 @@
+% Copyright 2019 by Christian Feuersaenger
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+%
+% This list here is a general re-implementation of the list used in
+% the PGF system layer.
+% It employs two collect-buffers to reduce the runtime.
+%
+% - It has pre-asymptotical runtime O(N), but is O(N^2) asymptotically.
+% - It requires only 5 macros per list.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pgfutil@packagewarning
+  {pgfutil-common-lists}%
+  {This package is deprecated and will be removed by the end of 2022}
+
+% Usage:
+% \pgfapplistnewempty\macro
+\def\pgfapplistnewempty#1{%
+    \expandafter\let\csname pgfapp@#1\endcsname=\pgfutil@empty
+    \expandafter\let\csname pgfapp@#1@smallbuf\endcsname=\pgfutil@empty
+    \expandafter\let\csname pgfapp@#1@bigbuf\endcsname=\pgfutil@empty
+    \expandafter\def\csname pgfapp@#1@smallbuf@c\endcsname{0}%
+    \expandafter\def\csname pgfapp@#1@bigbuf@c\endcsname{0}%
+}%
+
+% #1: the item to append
+% #2: the list as macro name
+\long\def\pgfapplistpushback#1\to#2{%
+    \begingroup
+        \c@pgf@counta=\csname pgfapp@#2@smallbuf@c\endcsname\relax
+        \advance\c@pgf@counta by1
+        \xdef\pgf@glob@TMPa{\the\c@pgf@counta}%
+    \endgroup
+    \expandafter\let\csname pgfapp@#2@smallbuf@c\endcsname=\pgf@glob@TMPa
+    \ifnum\csname pgfapp@#2@smallbuf@c\endcsname<40
+        \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfapp@#2@smallbuf\endcsname#1}%
+        \expandafter\edef\csname pgfapp@#2@smallbuf\endcsname{\the\t@pgf@toka}%
+    \else
+        \pgfapplistpushback@smallbufoverfl{#1}{#2}%
+    \fi
+}%
+\long\def\pgfapplistpushback@smallbufoverfl#1#2{%
+    \begingroup
+        \c@pgf@counta=\csname pgfapp@#2@bigbuf@c\endcsname\relax
+        \advance\c@pgf@counta by1
+        \xdef\pgf@glob@TMPa{\the\c@pgf@counta}%
+    \endgroup
+    \expandafter\let\csname pgfapp@#2@bigbuf@c\endcsname=\pgf@glob@TMPa
+    %
+    \ifnum\csname pgfapp@#2@bigbuf@c\endcsname<30
+        \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfapp@#2@bigbuf\endcsname}%
+        \t@pgf@tokb=\expandafter\expandafter\expandafter{\csname pgfapp@#2@smallbuf\endcsname#1}%
+        \expandafter\edef\csname pgfapp@#2@bigbuf\endcsname{\the\t@pgf@toka\the\t@pgf@tokb}%
+        \expandafter\let\csname pgfapp@#2@smallbuf\endcsname=\pgfutil@empty
+        \expandafter\def\csname pgfapp@#2@smallbuf@c\endcsname{0}%
+    \else%
+        \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfapp@#2\endcsname}%
+        \t@pgf@tokb=\expandafter\expandafter\expandafter{\csname pgfapp@#2@bigbuf\endcsname}%
+        \t@pgf@tokc=\expandafter\expandafter\expandafter{\csname pgfapp@#2@smallbuf\endcsname#1}%
+        \expandafter\edef\csname pgfapp@#2\endcsname{\the\t@pgf@toka\the\t@pgf@tokb\the\t@pgf@tokc}%
+        \expandafter\let\csname pgfapp@#2@smallbuf\endcsname=\pgfutil@empty
+        \expandafter\def\csname pgfapp@#2@smallbuf@c\endcsname{0}%
+        \expandafter\let\csname pgfapp@#2@bigbuf\endcsname=\pgfutil@empty
+        \expandafter\def\csname pgfapp@#2@bigbuf@c\endcsname{0}%
+    \fi%
+}%
+\def\pgfapplist@flushbuffers#1{%
+    \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfapp@#1\endcsname}%
+    \t@pgf@tokb=\expandafter\expandafter\expandafter{\csname pgfapp@#1@bigbuf\endcsname}%
+    \t@pgf@tokc=\expandafter\expandafter\expandafter{\csname pgfapp@#1@smallbuf\endcsname}%
+    \expandafter\edef\csname pgfapp@#1\endcsname{\the\t@pgf@toka\the\t@pgf@tokb\the\t@pgf@tokc}%
+    \expandafter\let\csname pgfapp@#1@smallbuf\endcsname=\pgfutil@empty
+    \expandafter\def\csname pgfapp@#1@smallbuf@c\endcsname{0}%
+    \expandafter\let\csname pgfapp@#1@bigbuf\endcsname=\pgfutil@empty
+    \expandafter\def\csname pgfapp@#1@bigbuf@c\endcsname{0}%
+}%
+
+\def\pgfapplistlet#1=#2{%
+    \pgfapplist@flushbuffers{#2}%
+    \expandafter\let\expandafter#1\csname pgfapp@#2\endcsname
+}%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% A variant of applist which has the same runtime requirements, but
+% does PUSH FRONT only.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Usage:
+% \pgfprependlistnewempty{list}
+\def\pgfprependlistnewempty#1{%
+    \expandafter\let\csname pgfpPRP@#1\endcsname=\pgfutil@empty
+    \expandafter\let\csname pgfpPRP@#1@smallbuf\endcsname=\pgfutil@empty
+    \expandafter\let\csname pgfpPRP@#1@bigbuf\endcsname=\pgfutil@empty
+    \expandafter\def\csname pgfpPRP@#1@smallbuf@c\endcsname{0}%
+    \expandafter\def\csname pgfpPRP@#1@bigbuf@c\endcsname{0}%
+}%
+
+% #1: the item to prepend
+% #2: the list as macro name
+\long\def\pgfprependlistpushfront#1\to#2{%
+    \begingroup
+        \c@pgf@counta=\csname pgfpPRP@#2@smallbuf@c\endcsname\relax
+        \advance\c@pgf@counta by1
+        \xdef\pgf@glob@TMPa{\the\c@pgf@counta}%
+    \endgroup
+    \expandafter\let\csname pgfpPRP@#2@smallbuf@c\endcsname=\pgf@glob@TMPa
+    \ifnum\csname pgfpPRP@#2@smallbuf@c\endcsname<40
+        \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfpPRP@#2@smallbuf\endcsname}%
+        \t@pgf@tokb={#1}%
+        \expandafter\edef\csname pgfpPRP@#2@smallbuf\endcsname{\the\t@pgf@tokb\the\t@pgf@toka}%
+    \else
+        \pgfprependlistpushfront@smallbufoverfl{#1}{#2}%
+    \fi
+}%
+\long\def\pgfprependlistpushfront@smallbufoverfl#1#2{%
+    \begingroup
+        \c@pgf@counta=\csname pgfpPRP@#2@bigbuf@c\endcsname\relax
+        \advance\c@pgf@counta by1
+        \xdef\pgf@glob@TMPa{\the\c@pgf@counta}%
+    \endgroup
+    \expandafter\let\csname pgfpPRP@#2@bigbuf@c\endcsname=\pgf@glob@TMPa
+    %
+    \ifnum\csname pgfpPRP@#2@bigbuf@c\endcsname<30
+        \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfpPRP@#2@bigbuf\endcsname}%
+        \t@pgf@tokb=\expandafter\expandafter\expandafter{\csname pgfpPRP@#2@smallbuf\endcsname}%
+        \t@pgf@tokc={#1}%
+        \expandafter\edef\csname pgfpPRP@#2@bigbuf\endcsname{\the\t@pgf@tokc\the\t@pgf@tokb\the\t@pgf@toka}%
+        \expandafter\let\csname pgfpPRP@#2@smallbuf\endcsname=\pgfutil@empty
+        \expandafter\def\csname pgfpPRP@#2@smallbuf@c\endcsname{0}%
+    \else%
+        \pgfprependlist@flushbuffers{#2}%
+        \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfpPRP@#2\endcsname}%
+        \t@pgf@tokb={#1}%
+        \expandafter\edef\csname pgfpPRP@#2\endcsname{\the\t@pgf@tokb\the\t@pgf@toka}%
+    \fi%
+}%
+\def\pgfprependlist@flushbuffers#1{%
+    \t@pgf@toka=\expandafter\expandafter\expandafter{\csname pgfpPRP@#1\endcsname}%
+    \t@pgf@tokb=\expandafter\expandafter\expandafter{\csname pgfpPRP@#1@bigbuf\endcsname}%
+    \t@pgf@tokc=\expandafter\expandafter\expandafter{\csname pgfpPRP@#1@smallbuf\endcsname}%
+    \expandafter\edef\csname pgfpPRP@#1\endcsname{\the\t@pgf@tokc\the\t@pgf@tokb\the\t@pgf@toka}%
+    \expandafter\let\csname pgfpPRP@#1@smallbuf\endcsname=\pgfutil@empty
+    \expandafter\def\csname pgfpPRP@#1@smallbuf@c\endcsname{0}%
+    \expandafter\let\csname pgfpPRP@#1@bigbuf\endcsname=\pgfutil@empty
+    \expandafter\def\csname pgfpPRP@#1@bigbuf@c\endcsname{0}%
+}%
+\def\pgfprependlistlet#1=#2{%
+    \pgfprependlist@flushbuffers{#2}%
+    \expandafter\let\expandafter#1\csname pgfpPRP@#2\endcsname
+}%

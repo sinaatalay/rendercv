@@ -1,0 +1,217 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-dvisvgm.def}
+
+
+% Driver commands for dvisvgm
+
+%
+% Load common pdf commands:
+%
+\input pgfsys-common-svg.def
+
+\newif\ifpgf@sys@svg@inpicture
+
+\def\pgf@sys@svg@make@defs#1#2{{\let\#\pgf@sys@svg@hash\special{dvisvgm:rawset #1}\special{dvisvgm:rawdef #2}\special{dvisvgm:endrawset}}}
+\def\pgf@sys@svg@ref@defs#1{\special{dvisvgm:rawput #1}}
+\def\pgfsys@invoke#1{{\let\#\pgf@sys@svg@hash\special{dvisvgm:raw #1}}}
+\def\pgfsys@beginpicture{%
+  \special{color push gray 0}% make dvisvgm *not* add anything to text
+  \pgf@sys@svg@inpicturetrue% in a picture
+  \pgfsys@svg@boxmodefalse%
+  \pgfsys@invoke{<g \ifx\pgf@sys@svg@last@stroke\relax\else
+    stroke="\pgf@sys@svg@last@stroke" \fi stroke-miterlimit="10" transform="translate({?x},{?y})scale(0.996264,-0.996264)">}}
+\def\pgfsys@endpicture{\pgfsys@invoke{</g>}\special{color pop}}
+
+\def\pgfsys@svg@newline{{?nl}}
+
+\let\pgf@sys@svg@last@stroke\relax%
+
+
+\def\pgfsys@hbox#1{%
+  {%
+    \setbox#1=\hbox{\box#1}%
+    \wd#1=0pt%
+    \ht#1=0pt%
+    \dp#1=0pt%
+    \pgfsys@begin@idscope%
+    \pgfsys@invoke{<g stroke="none" transform="scale(-1.00375,1.00375)translate({?x},{?y})scale(-1,-1)">}\box#1\pgfsys@invoke{</g>}%
+    \pgfsys@end@idscope%
+  }%
+}
+
+\def\pgfsys@hboxsynced#1{%
+  {%
+    \setbox#1=\hbox{\box#1}%
+    \wd#1=0pt%
+    \ht#1=0pt%
+    \dp#1=0pt%
+    \pgfsys@begin@idscope%
+    \pgfsys@beginscope%
+    \pgflowlevelsynccm%
+    \pgfsys@invoke{<g stroke="none" transform="scale(-1.00375,1.00375)translate({?x},{?y})scale(-1,-1)">}\box#1\pgfsys@invoke{</g>}%
+    \pgfsys@endscope%
+    \pgfsys@end@idscope%
+  }%
+}
+
+
+\def\pgfsys@shadingoutsidepgfpicture#1{%
+  \begingroup%
+    #1%
+    \setbox\pgfpic=\hbox to0pt{%
+      \pgfsys@beginpicture%
+        \pgfsys@beginscope%
+          \pgf@sys@svg@sh@defs%
+          \pgf@sys@svg@sh%
+        \pgfsys@endscope%
+      \pgfsys@endpicture%
+      \hss%
+    }%
+    \pgf@process{\pgf@sys@svg@pos}%
+    \pgf@picminx=0pt%
+    \pgf@picminy=0pt%
+    \pgf@picmaxx=\pgf@x%
+    \pgf@picmaxy=\pgf@y%
+    \def\pgf@trimleft@final{0pt}%
+    \def\pgf@trimright@final{0pt}%
+    \def\pgf@shift@baseline{0pt}%
+    \pgfsys@typesetpicturebox\pgfpic%
+  \endgroup%
+}
+
+\def\pgfsys@shadinginsidepgfpicture#1{%
+  #1%
+  \pgf@sys@svg@sh@defs% hmmm....
+  \pgf@process{\pgf@sys@svg@pos}
+  \pgf@xa=-.5\pgf@x%
+  \pgf@ya=-.5\pgf@y%
+  \pgfsysprotocol@literal{<g transform="translate(\pgf@sys@tonumber{\pgf@xa},\pgf@sys@tonumber{\pgf@ya})">}%
+  \pgf@sys@svg@sh%
+  \pgfsysprotocol@literal{</g>}%
+}
+
+
+
+\def\pgfsys@papersize#1#2{%
+  {%
+    \pgf@x#1\relax%
+    \pgf@y#2\relax%
+    \pgf@xa-1in\relax%
+    \special{dvisvgm:bbox fix \pgf@sys@tonumber\pgf@xa\space \pgf@sys@tonumber\pgf@xa\space \pgf@sys@tonumber\pgf@x\space \pgf@sys@tonumber\pgf@y}%
+  }%
+}
+\def\pgfsys@prepare@papersize#1#2{%
+ \expandafter\gdef\expandafter\pgfsys@atbegindocument\expandafter{\pgfsys@atbegindocument\pgfsys@papersize{#1}{#2}}%
+}
+
+
+
+\def\pgfsys@typesetpicturebox#1{%
+  \pgf@ya=\pgf@shift@baseline\relax%
+  \advance\pgf@ya by-\pgf@picminy\relax%
+  %
+  %
+  \advance\pgf@picmaxy by-\pgf@picminy\relax% maxy is now the height
+  \advance\pgf@picmaxx by-\pgf@picminx\relax% maxx is now the width
+  \setbox#1=\hbox{\hskip-\pgf@picminx\lower\pgf@picminy\box#1}%
+  \ht#1=\pgf@picmaxy%
+  \wd#1=\pgf@picmaxx%
+  \dp#1=0pt%
+  \leavevmode%
+  \pgf@xa=\pgf@trimleft@final\relax  \ifdim\pgf@xa=0pt \else\kern\pgf@xa\fi%
+  \raise-\pgf@ya\hbox{\ifpgf@sys@svg@inpicture\else\special{dvisvgm:bbox \pgf@sys@tonumber\pgf@picmaxx\space\pgf@sys@tonumber\pgf@picmaxy}\fi\box#1}%
+  \pgf@xa=\pgf@trimright@final\relax \ifdim\pgf@xa=0pt \else\kern\pgf@xa\fi%
+}
+
+
+
+\def\pgfsys@text@to@black@hook{%
+  \let\pgfsys@svg@set@color@orig\set@color%
+  \let\pgfsys@svg@reset@color@orig\reset@color%
+  \def\set@color{\special{dvisvgm:raw <g fill="black">}\pgfsys@svg@set@color@orig}%
+  \def\reset@color{\special{dvisvgm:raw </g>}\pgfsys@svg@reset@color@orig}%
+}
+
+
+
+% Fadings
+
+% FIXME: Correct sizes!
+
+%
+% Opacity masks
+%
+% \def\pgfsys@fadingfrombox#1#2{%
+%   \setbox#2=\hbox{%
+%     \pgfsys@invoke{<mask id="pgfmask#1">}%
+%     \box#2%
+%     \pgfsys@invoke{</mask>}%
+%   }%
+%   \wd#2=0pt%
+%   \ht#2=0pt%
+%   \dp#2=0pt%
+%   \unskip\box#2%
+% }
+% \def\pgfsys@usefading#1#2#3#4#5#6#7{%
+%   \pgf@sys@svg@gs@color{mask="url(\#pgfmask#1)"}%
+% }
+
+
+
+
+%
+% Position tracking (needs pdftex or luatex in dvi mode)
+%
+\ifx\savepos\@undefined
+  \ifx\pdfsavepos\@undefined
+  \else
+    \let\pgf@savepos\pdfsavepos
+    \let\pgf@lastxpos\pdflastxpos
+    \let\pgf@lastypos\pdflastypos
+  \fi
+\else
+  \let\pgf@savepos\savepos
+  \let\pgf@lastxpos\lastxpos
+  \let\pgf@lastypos\lastypos
+\fi
+
+
+\ifx\pgf@savepos\@undefined
+\else
+
+\def\pgfsys@markposition#1{%
+  \pgf@savepos%
+  \edef\pgf@temp{#1}%
+  \expandafter\pgfutil@writetoaux\expandafter{%
+    \expandafter\noexpand\expandafter\pgfsyspdfmark\expandafter{\pgf@temp}{\the\pgf@lastxpos}{\the\pgf@lastypos}}%
+}
+
+\def\pgfsyspdfmark#1#2#3{%
+  \expandafter\gdef\csname pgf@sys@pdf@mark@pos@#1\endcsname{\pgfqpoint{#2sp}{#3sp}}%
+  \pgfutil@check@rerun{#1}{{#2}{#3}}%
+}
+
+\def\pgfsys@getposition#1#2{%
+  \edef\pgf@marshal{\let\noexpand#2=\expandafter\noexpand\csname pgf@sys@pdf@mark@pos@#1\endcsname}%
+  \pgf@marshal%
+}
+
+\def\pgf@sys@pdf@mark@pos@pgfpageorigin{\pgfpointorigin}
+
+\fi
+
+
+\endinput
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

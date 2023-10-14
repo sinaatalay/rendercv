@@ -1,0 +1,108 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesPackage{xxcolor}[2003/10/24 ver 0.1]
+\NeedsTeXFormat{LaTeX2e}[1995/12/01]
+
+\RequirePackage{xcolor}
+
+
+
+% Command \newcolormixin{\somecommand}
+%
+% Description:
+%
+% After this command has been called, you can assign a partial color
+% specification to \somecommand. Every time a color is set, the
+% partial color specification in \somecommand will be applied to the
+% current color.
+%
+% Examples:
+%
+% \newcolormixin\mymixin
+% \def\mymixin{!50!white}
+%
+% \newcolormixin\anothermixin
+% \def\anothermixin{!50!red}
+
+\def\newcolormixin#1{%
+  \expandafter\def\csname XC@mixin@\the\XC@nummixins\endcsname{#1}%
+  \advance\XC@nummixins\@ne%
+  \ifx#1\@undefined\def#1{}\fi}
+
+\newcount\XC@nummixins
+\newcount\XC@countmixins
+
+
+% Command \applycolormixins{colorname}
+%
+% Description:
+%
+% Applies all color mixins that have been defined using \newcolormixin
+% to the color named colorname.
+%
+% Examples:
+%
+% \applycolormixins{mycolor}
+
+\def\applycolormixins#1{%
+  \XC@countmixins=0\relax%
+  \loop%
+  \ifnum\XC@countmixins<\XC@nummixins%
+    \colorlet{#1}{#1\csname XC@mixin@\the\XC@countmixins\endcsname}%
+    \advance\XC@countmixins\@ne\relax%
+  \repeat%
+}
+
+
+% Internal:
+
+\ifx\XC@mcolor\relax
+  \let\XC@mcolor\@empty
+\fi
+  
+\g@addto@macro\XC@mcolor{%
+  \ifnum\XC@nummixins>0%
+    \colorlet{XC@mixtmp}{.}%
+    \applycolormixins{XC@mixtmp}%
+    \pgfutil@namelet{current@color}{\string\color@XC@mixtmp}%
+  \fi%
+}
+
+
+
+% Environment colormixin
+%  
+% #1 = full xcolor specification after the first ! ("white" may not be
+%      omitted)
+%
+% Description:
+%
+% Inside the environment, all colors get the specified mixin. May be
+% nested. 
+%
+% Examples:
+%
+% \color{red}This is red.
+% \begin{colormixin}{25!black}
+%   This is dark red. 
+%   \color{blue}
+%   This is dark blue.
+% \end{colormixin}
+% This is normal red once more.
+
+\newcolormixin\colorcurrentmixin
+
+\newenvironment{colormixin}[1]%
+{\edef\colorcurrentmixin{!#1\colorcurrentmixin}\color{.}}{}
+
+\def\pgfalternateextension{\colorcurrentmixin}
+
+\endinput
+

@@ -1,0 +1,298 @@
+% Copyright 2019 Mark Wibrow
+%
+% but subject to the LaTeX Project Public License
+% (http://www.latex-project.org/lppl.txt)
+%
+% and the GNU Public License
+% (http://www.gnu.org/licenses/gpl.txt)
+%
+
+% This file defines utilities common to the \pgfmath files.
+%
+% Version 1.414213 29/9/2007
+
+\def\pgfmathincluded{}
+
+% Helper macros for \pgfmath@ifregister
+%
+\def\pgfmath@grabv#1#2#3#4#5#6#7\pgfmath@grabv{#2#3#4#5\ifx#6!!\fi}
+\def\pgfmath@ifskip@extract#1{\expandafter\pgfmath@grabv\meaning#1!!!!!!\pgfmath@grabv}
+\def\pgfmath@iftoks@extract#1{\expandafter\pgfmath@grabv\meaning#1!!!!!!\pgfmath@grabv}
+
+\def\pgfmath@grabvi#1#2#3#4#5#6#7#8\pgfmath@grabvi{#2#3#4#5#6\ifx#7!!\fi}
+\def\pgfmath@ifdimen@extract#1{\expandafter\pgfmath@grabvi\meaning#1!!!!!!\pgfmath@grabvi}
+\def\pgfmath@ifcount@extract#1{\expandafter\pgfmath@grabvi\meaning#1!!!!!!\pgfmath@grabvi}
+
+\def\pgfmath@grabvii#1#2#3#4#5#6#7#8#9\pgfmath@grabvii{#2#3#4#5#6#7\ifx#8!!\fi}
+\def\pgfmath@ifmuskip@extract#1{\expandafter\pgfmath@grabvii\meaning#1!!!!!!\pgfmath@grabvii}
+
+% \pgfmath@ifdimen@unguarded
+%
+% Check if #2 is a register of type #1.
+% Credits to Frank: https://tex.stackexchange.com/a/56905
+%
+% #1 register type (count, dimen, skip, muskip, toks)
+% #2 single token
+%
+\def\pgfmath@ifregister@unguarded#1#2{%
+    \expandafter\ifx\csname\csname pgfmath@if#1@extract\endcsname{#2}\expandafter\endcsname\csname #1\endcsname
+        \expandafter\pgfutil@firstoftwo
+    \else
+        \expandafter\pgfutil@secondoftwo
+    \fi}
+
+% \pgfmath@ifregister
+%
+% Checks if a token is a a certain type of register
+%
+% #1 register type (count, dimen, skip, muskip, toks)
+% #2 single token
+%
+\def\pgfmath@ifregister#1#2{%
+    \pgfutil@IfUndefined{pgfmath@if#1@extract}%
+        {\errmessage{Package PGF Math Error: Cannot test for #1 register}}%
+        {\pgfutil@IfUndefined{\csname pgfmath@if#1@extract\endcsname{#2}}%
+            {\pgfutil@secondoftwo}}%
+            {\pgfmath@ifregister@unguarded{#1}{#2}}}
+
+% \pgfmath@ensureregister
+%
+% Ensure a control sequence exists as a TeX count/dimen register.
+%
+% #1 - count or dimen.
+% #2 - a control sequence.
+%
+\def\pgfmath@ensureregister#1#2{%
+    \pgfmath@ifregister{#1}{#2}%
+        {}%
+        {\csname new#1\endcsname#2}%
+}
+
+% Check registers exist. If not, create them.
+%
+\pgfmath@ensureregister{dimen}{\pgf@x}
+\pgfmath@ensureregister{dimen}{\pgf@xa}
+\pgfmath@ensureregister{dimen}{\pgf@xb}
+\pgfmath@ensureregister{dimen}{\pgf@xc}
+
+\pgfmath@ensureregister{dimen}{\pgf@y}
+\pgfmath@ensureregister{dimen}{\pgf@ya}
+\pgfmath@ensureregister{dimen}{\pgf@yb}
+\pgfmath@ensureregister{dimen}{\pgf@yc}
+
+\pgfmath@ensureregister{dimen}{\pgfutil@tempdima}
+\pgfmath@ensureregister{dimen}{\pgfutil@tempdimb}
+
+\pgfmath@ensureregister{count}{\c@pgf@counta}
+\pgfmath@ensureregister{count}{\c@pgf@countb}
+\pgfmath@ensureregister{count}{\c@pgf@countc}
+\pgfmath@ensureregister{count}{\c@pgf@countd}
+
+\pgfmath@ensureregister{count}{\pgfutil@tempcnta}
+\pgfmath@ensureregister{count}{\pgfutil@tempcntb}
+
+% Alias for \pgfmath.
+%
+\let\pgfmath@x\pgf@x
+\let\pgfmath@xa\pgf@xa
+\let\pgfmath@xb\pgf@xb
+\let\pgfmath@xc\pgf@xc
+
+\let\pgfmath@y\pgf@y
+\let\pgfmath@ya\pgf@ya
+\let\pgfmath@yb\pgf@yb
+\let\pgfmath@yc\pgf@yc
+
+\let\pgfmath@tempdima\pgfutil@tempdima
+\let\pgfmath@tempdimb\pgfutil@tempdimb
+
+\let\c@pgfmath@counta\c@pgf@counta
+\let\c@pgfmath@countb\c@pgf@countb
+\let\c@pgfmath@countc\c@pgf@countc
+\let\c@pgfmath@countd\c@pgf@countd
+
+\let\pgfmath@tempcnta\pgfutil@tempcnta
+\let\pgfmath@tempcntb\pgfutil@tempcntb
+
+% Now check if pgfutil and pgf@sys stuff exists. If it does, fine.
+% Just \let pgfmath versions. If not, define pgfmath versions (Arghhh).
+%
+
+% \...ifnextchar
+%
+\ifx\pgfutil@ifnextchar\pgfmath@undefined%
+    \long\def\pgfmath@ifnextchar#1#2#3{%
+  \let\pgfmath@reserved@d#1%
+  \def\pgfmath@reserved@a{#2}%
+  \def\pgfmath@reserved@b{#3}%
+  \futurelet\pgfmath@let@token\pgfmath@ifnch}
+    \def\pgfmath@ifnch{%
+      \ifx\pgfmath@let@token\pgfmath@sptoken%
+        \let\pgfmath@reserved@c\pgfmath@xifnch%
+      \else%
+        \ifx\pgfmath@let@token\pgfmath@reserved@d%
+          \let\pgfmath@reserved@c\pgfmath@reserved@a%
+        \else%
+          \let\pgfmath@reserved@c\pgfmath@reserved@b%
+        \fi%
+      \fi%
+      \pgfmath@reserved@c}
+    {%
+      \def\:{\global\let\pgfmath@sptoken= } \:
+      \def\:{\pgfmath@xifnch} \expandafter\gdef\: {\futurelet\pgfmath@let@token\pgfmath@ifnch}
+    }%
+\else%
+    \let\pgfmath@ifnextchar\pgfutil@ifnextchar%
+    % Still need to define \pgfmath@sptoken (cannot \let).
+    {%
+        \def\:{\global\let\pgfmath@sptoken= } \:
+    }%
+\fi%
+
+% \...ifundefined
+%
+\ifx\pgfutil@ifundefined\pgfmath@undefined%
+    \long\def\pgfmath@ifundefined#1{%
+      \expandafter\ifx\csname#1\endcsname\relax%
+        \expandafter\pgfmath@firstoftwo%
+      \else%
+        \expandafter\pgfmath@secondoftwo%
+      \fi}%
+\else%
+    \let\pgfmath@ifundefined\pgfutil@ifundefined%
+\fi%
+
+% \...selectfont
+%
+\ifx\pgfutil@selectfont\pgfmath@undefined%
+    \ifx\selectfont\pgfmath@undefined%
+        \let\pgfmath@selectfont\rm% Plain TeX and ConTeXt.
+    \else%
+        \let\pgfmath@selectfont\selectfont% LaTeX.
+    \fi%
+\else%
+    \let\pgfmath@selectfont\pgfutil@selectfont%
+\fi%
+
+% New definition easier than fussing around with let.
+%
+\newif\ifpgfmath@in@
+\def\pgfmath@in@#1#2{%
+ \def\pgfmath@in@@##1#1##2##3\pgfmath@in@@{%
+  \ifx\pgfmath@in@##2\pgfmath@in@false\else\pgfmath@in@true\fi}%
+ \pgfmath@in@@#2#1\pgfmath@in@\pgfmath@in@@}
+
+
+% \...tonumber
+%
+\ifx\pgf@sys@tonumber\pgfmath@undefined%
+  {\catcode`\p=12\catcode`\t=12\gdef\Pgf@geT#1pt{#1}}
+    \def\pgfmath@tonumber#1{\expandafter\Pgf@geT\the#1}
+\else%
+    \let\pgfmath@tonumber\pgf@sys@tonumber%
+\fi%
+
+
+% \PackageWarning and \PackageError
+%
+\ifx\PackageWarning\pgfmath@undefined
+    \def\pgfmath@PackageWarning#1#2{\immediate\write-1{Package #1: Warning! #2.}}%
+\else%
+    \let\pgfmath@PackageWarning\PackageWarning%
+\fi%
+\ifx\PackageError\pgfmath@undefined
+    \def\pgfmath@PackageError#1#2#3{\errmessage{Package #1 Error: #2.}}%
+\else%
+    \let\pgfmath@PackageError\PackageError%
+\fi%
+
+\def\pgfmath@error#1#2{%
+    \pgfmath@PackageError{PGF Math}{%
+        #1%
+        \pgfutil@ifundefined{pgfmath@expression}{}{ (in '\pgfmath@expression')}%
+    }{#2}%
+}
+\def\pgfmath@warning#1{%
+    \pgfmath@PackageWarning{PGF Math}{%
+        #1%
+        \pgfutil@ifundefined{pgfmath@expression}{}{ (in '\pgfmath@expression')}%
+    }%
+}
+
+% \pgfmath@pt
+%
+% Needed to test for 'pt' resulting from expansion using \the.
+%
+{\catcode`\p=12\catcode`\t=12\gdef\PgfmaTh@PT{pt}}
+\edef\pgfmath@pt{\PgfmaTh@PT}%
+
+% \pgfmath@empty
+%
+% A handy macro.
+%
+\def\pgfmath@empty{}
+
+\def\pgfmath@firstoftwo#1#2{#1}
+\def\pgfmath@secondoftwo#1#2{#2}
+
+% \pgfmath@gobbletilpgfmath@
+%
+% Gobble stream until \pgfmath@ {which is undefined}.
+%
+\def\pgfmath@gobbletilpgfmath@#1\pgfmath@{}
+\def\pgfmath@gobbleone#1{}%
+
+
+\def\pgfmath@namedef#1{\expandafter\def\csname#1\endcsname}
+\def\pgfmath@nameedef#1{\expandafter\edef\csname#1\endcsname}
+
+% \pgfmathloop
+%
+% A version of the standard TeX and LaTeX
+% \loop, with an additional macro \pgfmathcounter
+% (which is *not* a TeX counter) which keeps
+% track of the iterations.
+%
+\newif\ifpgfmathcontinueloop
+\def\pgfmathloop#1\repeatpgfmathloop{%
+    \def\pgfmathcounter{1}%
+    \def\pgfmath@iterate{%
+        #1\relax%
+        {% Do this inside a group, just in case...
+            \c@pgfmath@counta\pgfmathcounter%
+            \advance\c@pgfmath@counta1\relax%
+            \xdef\pgfmathloop@temp{\the\c@pgfmath@counta}%
+        }%
+        \edef\pgfmathcounter{\pgfmathloop@temp}%
+        \expandafter\pgfmath@iterate\fi}%
+    \pgfmath@iterate\let\pgfmath@iterate\relax}
+\let\repeatpgfmathloop\fi
+\def\pgfmathbreakloop{\let\pgfmath@iterate\relax}%
+
+% \pgfmath@returnone
+%
+% #1 - a dimension representing a number or dimension.
+%
+% Changed by TT: made faster and simpler since it is used
+% *heavily*. #1 must be something that can be assigned to a
+% dimension.
+%
+\def\pgfmath@returnone#1\endgroup{%
+  \pgfmath@x#1%
+  \edef\pgfmath@temp{\pgfmath@tonumber{\pgfmath@x}}%
+  \expandafter\endgroup\expandafter\def\expandafter\pgfmathresult\expandafter{\pgfmath@temp}%
+}
+
+\let\pgfmathreturn=\pgfmath@returnone
+
+% \pgfmath@smuggleone
+%
+% Smuggle a macro outside a group.
+%
+% Changed by TT: Speedup by insisting, that smuggleone is directly
+% followed by \endgroup
+%
+\def\pgfmath@smuggleone#1\endgroup{%
+  \expandafter\endgroup\expandafter\def\expandafter#1\expandafter{#1}}
+
+\let\pgfmathsmuggle=\pgfmath@smuggleone

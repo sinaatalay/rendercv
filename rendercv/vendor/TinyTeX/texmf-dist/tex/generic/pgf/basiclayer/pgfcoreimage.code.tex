@@ -1,0 +1,242 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcoreimage.code.tex}
+
+
+
+% Declare an image
+%
+% #1 = optional argument: width, height, page specification
+% #2 = name of the image for later use
+% #4 = filename without extension, automatic extensions are .pdf,
+%      .jpg, and .png for PDF and .ps, .eps, .epsi for postscript.
+%
+% Description:
+%
+% This command declares an image file for later use. Even if the image
+% is used several times in the document, in PDF it will only be stored
+% once.
+%
+% Example:
+%
+% \pgfdeclareimage[width=2cm,page=2]{myimage}{imagefilename}
+
+\def\pgfdeclareimage{\pgfutil@ifnextchar[{\pgf@declareimage}{\pgf@declareimage[]}}
+\def\pgf@declareimage[#1]#2#3{%
+  \pgfqkeys{/pgf/images}{height=,width=,page=,interpolate=false,mask=,#1}%
+  % Try to find the file
+  \gdef\pgf@filename{}%
+  % If page= parameter is not empty, try that file first:
+  \ifx\pgf@imagepage\pgfutil@empty%
+  \else%
+  \expandafter\pgf@findfile\pgfsys@imagesuffixlist:+{#3.page\pgf@imagepage}%
+  \fi%
+  \ifx\pgf@filename\pgfutil@empty%
+    \expandafter\pgf@findfile\pgfsys@imagesuffixlist:+{#3}%
+  \else%
+    \pgfkeys{/pgf/images/page=}% make page empty
+  \fi%
+  \ifx\pgf@filename\pgfutil@empty%
+    \pgfwarning%
+    {File "#3" not found when defining image "#2".
+      Tried all extensions in "\pgfsys@imagesuffixlist"}%
+    \pgf@declaredraftimage{#2}{#3}%
+  \else%
+    \ifpgf@draftmode%
+      \pgf@declaredraftimage{#2}{#3}%
+    \else%
+      \pgfsys@defineimage%
+    \fi%
+  \fi%
+  \expandafter\global\expandafter\let\csname pgf@image@#2!\endcsname=\pgf@image%
+}
+
+
+\pgfkeys{
+    /pgf/images/draft/.is if=pgf@draftmode,
+    /pgf/images/draft/.default=true}
+\pgfkeys{/pgf/images/width/.estore in=\pgf@imagewidth}
+\pgfkeys{/pgf/images/height/.estore in=\pgf@imageheight}
+\pgfkeys{/pgf/images/page/.estore in=\pgf@imagepage}
+\pgfkeys{/pgf/images/interpolate/.cd,.code=\edef\pgf@imageinterpolate{#1},.default=true}
+\let\pgf@imageinterpolate\pgfutil@empty
+\pgfkeys{/pgf/images/mask/.code=%
+  {%
+    \edef\pgf@imagemask{#1}%
+    \ifx\pgf@imagemask\pgfutil@empty%
+    \else%
+      \pgfutil@ifundefined{pgf@mask@#1}%
+      {\pgferror{Undefined mask "#1".}%
+        \edef\pgf@imagemask{}}%
+      {\edef\pgf@imagemask{\csname pgf@mask@#1\endcsname}%
+      }%
+    \fi%
+  }}
+
+
+\def\pgf@findfile#1:#2+#3{%
+  \pgfutil@IfFileExists{#3#1}%
+  {\xdef\pgf@filename{#3#1}}%
+  {\def\pgf@mightbeempty{#2}%
+    \ifx\pgf@mightbeempty\pgfutil@empty\else%
+    \pgf@findfile#2+{#3}%
+    \fi}}
+
+% #1: image name
+% #2: file name
+\def\pgf@declaredraftimage#1#2{%
+  \ifx\pgf@imagewidth\pgfutil@empty%
+    \pgfwarning{Missing width for image "#1" ("#2") in draft mode. Using 1cm instead}%
+    \edef\pgf@imagewidth{1cm}%
+  \fi%
+  \ifx\pgf@imageheight\pgfutil@empty%
+    \pgfwarning{Missing height for image "#1" ("#2") in draft mode. Using 1cm instead}%
+    \edef\pgf@imageheight{1cm}%
+  \fi%
+  \ifx\pgf@imagepage\pgfutil@empty\else\edef\pgf@imagepagetext{ page \pgf@imagepage}\fi%
+  \edef\pgf@image{%
+    \hbox to \pgf@imagewidth{%
+      \vrule\kern-0.4pt%
+      \vbox to \pgf@imageheight{%
+        \hrule\vfil%
+        \hbox to \pgf@imagewidth{\hskip-10cm\hfil\noexpand\pgfutil@font@tiny#2\pgf@imagepage\hfil\hskip-10cm}%
+        \vfil\hrule}%
+      \kern-0.4pt\vrule}%
+  }%
+}
+
+
+
+% Declare a soft mask
+%
+% #1 = optional argument: matte specification. default matte is
+%      white.
+% #2 = name of the mask for later use
+% #3 = filename without extension, automatic extensions are .pdf,
+%      .jpg, and .png for PDF. Postscript is not supported.
+%
+% Description:
+%
+% This command declares a soft mask for later masking an image. The
+% declared mask should be used together with an image of exactly the
+% same height/width if matte is defined. Matte should be the
+% preblended background color (see pdf spec for details).
+%
+% Example:
+%
+% \pgfdeclaremask[matte=white]{maskname}{maskfilename}
+% \pgfdeclareimage[mask=maskname]{image}{imagefilename}
+
+\def\pgfdeclaremask{\pgfutil@ifnextchar[\pgf@declaremask{\pgf@declaremask[]}}
+\def\pgf@declaremask[#1]#2#3{%
+  \pgfqkeys{/pgf/images/mask}{matte={1 1 1},#1}% defaults
+  \def\pgf@mask{}%
+  % Try to find the file
+  \gdef\pgf@filename{}%
+  \expandafter\pgf@findfile\pgfsys@imagesuffixlist:+{#3}%
+  \ifx\pgf@filename\pgfutil@empty%
+    \pgfwarning%
+    {File "#3" not found when defining mask "#2".
+      Tried all extensions in "\pgfsys@imagesuffixlist"}%
+  \else%
+    \pgfsys@definemask%
+  \fi%
+  \expandafter\global\expandafter\let\csname pgf@mask@#2\endcsname=\pgf@mask%
+}
+
+\pgfkeys{/pgf/images/mask/matte/.cd,.estore in=\pgf@maskmatte,.value required}
+
+
+
+% Create an alias name for an image
+%
+% #1 = name of the alias
+% #2 = name of the original
+%
+% Example:
+%
+% \pgfdeclareimage{image}{1cm}{1cm}{filename
+% \pgfaliasimage{alias}{image}
+% \pgfuseimage{alias}
+
+\def\pgfaliasimage#1#2{%
+  \expandafter\global\expandafter\let\expandafter\pgf@temp\expandafter=\csname pgf@image@#2!\endcsname%
+  \expandafter\global\expandafter\let\csname pgf@image@#1!\endcsname=\pgf@temp%
+  }
+
+
+% Use an image
+%
+% #1 = name of a previously declared image
+%
+% Example:
+%
+% \pgfputat{\pgforigin}{\pgfbox[left,base]{\pgfuseimage{myimage}}}
+
+\def\pgfuseimage#1{%
+  \def\pgf@imagename{pgf@image@#1}%
+  \pgf@tryextensions{\pgf@imagename}{\pgfalternateextension}%
+  \expandafter\pgfutil@ifundefined\expandafter{\pgf@imagename}%
+  {\pgferror{Undefined image "#1"}}%
+  {{\leavevmode\csname\pgf@imagename\endcsname}}}
+
+\def\pgf@tryextensions#1#2{%
+  \edef\pgf@args{[#2!]}\expandafter\pgf@@tryextensions\pgf@args{#1}}
+\def\pgf@@tryextensions[#1!#2]#3{%
+  \expandafter\pgfutil@ifundefined\expandafter{#3#1!#2}%
+  {\def\pgf@temp{#2}%
+    \ifx\pgf@temp\pgfutil@empty%
+    \edef#3{#3!}%
+    \else%
+    \pgf@@tryextensions[#2]{#3}%
+    \fi}%
+  {\edef#3{#3#1!#2}}}
+
+
+% Alternate image
+%
+% Description:
+%
+% When an image is used, pgf first attempts to use the image with the
+% alternate extension added. If this fails, the original image is
+% used. If the alternate extension contains ``!'', then the text up to
+% the ! is successively removed and the remainder is tried as an
+% alternate extension.
+%
+% Example:
+%
+% \def\pgfalternateextension{20!white}
+
+\def\pgfalternateextension{}
+
+
+
+% Directly insert an image
+%
+% #1 = optional argument: width, height, page specification
+% #2 = file name
+%
+% Description:
+%
+% Directly inserts an image without declaration. You can, however,
+% still access this image using the name pgflastimage. By using
+% pgfaliasimage, you can also save this image for later.
+%
+% Example:
+%
+% \pgfimage[height=2cm]{filename}
+
+\def\pgfimage{\pgfutil@ifnextchar[\pgf@imagecom{\pgf@imagecom[]}}
+\def\pgf@imagecom[#1]#2{%
+  \pgfdeclareimage[#1]{pgflastimage}{#2}%
+  \pgfuseimage{pgflastimage}}
+
+
+\endinput

@@ -1,0 +1,80 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbprocessing.code.tex: Code for conditional processing
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\tcb@set@library@version{6.1.0}
+
+\RequirePackage{pdftexcmds}
+\RequirePackage{shellesc}
+
+\ifdefined\pdf@filemdfivesum\else% XeLaTeX presumed ...
+  \def\pdf@filemdfivesum#1{\mdfivesum file {#1}}%
+\fi
+\ifdefined\pdf@filemoddate\else% very poor XeLaTeX bypassing
+  \def\pdf@filemoddate#1{}%
+\fi
+
+\def\tcbproc@readmdfive#1#2{%
+  \edef\tcbprocmdfivesum{\pdf@filemdfivesum{#1}}%
+  \IfFileExists{#2}{\input{#2}}{\def\tcbproclastmdfivesum{}}%
+}
+
+\def\tcbproc@writemdfive#1{%
+  \tcb@allocate@tcb@out%
+  \immediate\openout\tcb@out=#1%
+  \immediate\write\tcb@out{\string\def\string\tcbproclastmdfivesum{\tcbprocmdfivesum}\@percentchar}%
+  \immediate\closeout\tcb@out%
+}
+
+\newrobustcmd{\iftcb@process@on}[3]{%
+  \tcbproc@readmdfive{#1}{#2}%
+  \ifdefstrequal{\tcbproclastmdfivesum}{\tcbprocmdfivesum}{}{\tcbproc@writemdfive{#2}}%
+  \expandafter\@firstoftwo%
+}
+
+\newrobustcmd{\iftcb@process@conditional}[3]{%
+  \tcbproc@readmdfive{#1}{#2}%
+  \ifdefstrequal{\tcbproclastmdfivesum}{\tcbprocmdfivesum}{%
+    \IfFileExists{#3}{%
+      \ifnum\pdf@strcmp{\pdf@filemoddate{#2}}{\pdf@filemoddate{#3}}>0\relax%
+        \expandafter\@firstoftwo%
+      \else%
+        \expandafter\@secondoftwo%
+      \fi%
+    }{\expandafter\@firstoftwo}%
+  }{%
+    \tcbproc@writemdfive{#2}%
+    \expandafter\@firstoftwo%
+  }%
+}
+
+\newrobustcmd{\iftcb@process@off}[3]{%
+  \tcbproc@readmdfive{#1}{#2}%
+  \ifdefstrequal{\tcbproclastmdfivesum}{\tcbprocmdfivesum}{}{\tcbproc@writemdfive{#2}}%
+  \expandafter\@secondoftwo%
+}%
+
+\newrobustcmd{\tcbiffileprocess}[1]{%
+  \ifcase\numexpr#1\relax%
+    \expandafter\iftcb@process@on%
+  \or%
+    \expandafter\iftcb@process@conditional%
+  \else%
+    \expandafter\iftcb@process@off%
+  \fi%
+}

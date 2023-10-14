@@ -1,0 +1,100 @@
+% Copyright 2019 by Till Tantau
+% Copyright 2019 by Kroum Tzanev
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibraryangles.code.tex}
+
+
+\tikzset{
+  pics/angle/.style = {
+    setup code  = \tikz@lib@angle@parse#1\pgf@stop,
+    code = {},
+    background code = \tikz@lib@angle@background#1\pgf@stop,
+    foreground code = \tikz@lib@angle@foreground#1\pgf@stop,
+  },
+  pics/right angle/.style = {
+    setup code  = \tikz@lib@angle@parse#1\pgf@stop,
+    code = {},
+    background code = \tikz@lib@rightangle@background#1\pgf@stop,
+    foreground code = \tikz@lib@rightangle@foreground#1\pgf@stop,
+  },
+  pics/angle/.default=A--B--C,
+  angle eccentricity/.initial=.6,
+  angle radius/.initial=5mm,
+}%
+
+\def\tikz@lib@angle@background#1--#2--#3\pgf@stop{%
+  \path [name prefix ..] [pic actions, draw=none] (#2.center)
+    -- ++(\tikz@start@angle@temp:\tikz@lib@angle@rad pt)
+    arc [start angle=\tikz@start@angle@temp, end
+    angle=\tikz@end@angle@temp, radius=\tikz@lib@angle@rad pt] -- cycle;
+}%
+
+\def\tikz@lib@angle@foreground#1--#2--#3\pgf@stop{%
+  \path [name prefix ..] [pic actions, fill=none, shade=none]
+  ([shift={(\tikz@start@angle@temp:\tikz@lib@angle@rad pt)}]#2.center)
+    arc [start angle=\tikz@start@angle@temp, end
+    angle=\tikz@end@angle@temp, radius=\tikz@lib@angle@rad pt];
+  \ifx\tikzpictext\relax\else%
+    \def\pgf@temp{\node()[name prefix
+      ..,at={([shift={({.5*\tikz@start@angle@temp+.5*\tikz@end@angle@temp}:\pgfkeysvalueof{/tikz/angle
+            eccentricity}*\tikz@lib@angle@rad pt)}]#2.center)}]}
+    \expandafter\pgf@temp\expandafter[\tikzpictextoptions]{\tikzpictext};%
+  \fi
+}%
+
+\def\tikz@lib@rightangle@background#1--#2--#3\pgf@stop{%
+  \path [name prefix ..] [pic actions, draw=none] (#2.center)
+    -- ++(\tikz@start@angle@temp:\tikz@lib@angle@rad pt)
+    -- ++(\tikz@end@angle@temp:\tikz@lib@angle@rad pt)
+    -- ++(\tikz@start@angle@temp:-\tikz@lib@angle@rad pt)
+    -- cycle;
+}%
+
+\def\tikz@lib@rightangle@foreground#1--#2--#3\pgf@stop{%
+  \path [name prefix ..] [pic actions, fill=none, shade=none]
+  ([shift={(\tikz@start@angle@temp:\tikz@lib@angle@rad pt)}]#2.center)
+  -- ++(\tikz@end@angle@temp:\tikz@lib@angle@rad pt)
+  -- ++(\tikz@start@angle@temp:-\tikz@lib@angle@rad pt);
+  \ifx\tikzpictext\relax\else%
+    \def\pgf@temp{\node()[name prefix
+      ..,at={([shift={({.5*\tikz@start@angle@temp+.5*\tikz@end@angle@temp}:\pgfkeysvalueof{/tikz/angle
+            eccentricity}*1.4142136*\tikz@lib@angle@rad pt)}]#2.center)}]}
+    \expandafter\pgf@temp\expandafter[\tikzpictextoptions]{\tikzpictext};%
+  \fi
+}%
+
+\def\tikz@lib@angle@parse#1--#2--#3\pgf@stop{%
+  % Compute radius:
+  \pgfmathsetmacro\tikz@lib@angle@rad{\pgfkeysvalueof{/tikz/angle radius}}
+  \ifdim\tikz@lib@angle@rad pt>0pt\else\def\tikz@lib@angle@rad{12}\fi%
+  % Compute first coordinate:
+  \pgf@process{\pgfpointanchor{#2}{center}}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{\pgfpointanchor{#1}{center}}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@process{\pgfpointanchor{#3}{center}}%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \advance\pgf@xc by-\pgf@xa%
+  \advance\pgf@yc by-\pgf@ya%
+  \pgfmathsetmacro{\tikz@start@angle@temp}{atan2(\the\pgf@yb,\the\pgf@xb)}
+  \pgfmathsetmacro{\tikz@end@angle@temp}{atan2(\the\pgf@yc,\the\pgf@xc)}
+  \ifdim\tikz@end@angle@temp pt<\tikz@start@angle@temp pt%
+    \pgfmathsetmacro{\tikz@start@angle@temp}{\tikz@start@angle@temp-360}%
+  \fi%
+}%
+
+
+
+\endinput

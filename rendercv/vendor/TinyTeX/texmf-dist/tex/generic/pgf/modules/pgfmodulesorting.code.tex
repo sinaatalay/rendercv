@@ -1,0 +1,69 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmodulesorting.code.tex}
+
+%
+% This file defines commands for sorting data. This is useful for 3d plots,
+% but also for drawing things in the correct order.
+%
+
+
+\newcount\pgfsortingbuckets
+
+
+% Init the sorting
+%
+% #1 = number of buckets
+%
+% Description:
+%
+% This macro inits a sorting. At any time there can be only one active
+% sorting. When you init the sorting, #1 should be a number of
+% buckets. You can then call \pgfsortinginsert to insert code into the
+% buckets. Once you are done, calling \pgfsortingexecute will execute
+% first the code in buckets 0, then the code in bucket 1, and so on to
+% bucket number #1-1.
+%
+\def\pgfsortinginit#1{
+  \pgfsortingbuckets#1\relax%
+  \c@pgf@counta=0\relax
+  \pgfutil@loop
+  \ifnum\c@pgf@counta<\c@pgf@countb\relax%
+    \expandafter\global\expandafter\let\csname pgf@sort@\the\c@pgf@counta\endcsname\pgfutil@empty%
+    \advance\c@pgf@counta by1\relax%
+  \pgfutil@repeat
+}%
+
+% Insert code into some bucket
+%
+% #1 = the bucket
+% #2 = the code
+%
+\def\pgfsortinginsert#1#2{
+  \expandafter\let\expandafter\pgf@temp\csname pgf@lib@sort@#1\endcsname%
+  \expandafter\def\expandafter\pgf@temp\expandafter{\pgf@temp#2}%
+  \expandafter\global\expandafter\let\csname pgf@lib@sort@\the\c@pgf@counta\endcsname\pgf@temp%
+}%
+
+
+% After all code has been inserted into the buckets, you can call
+% this method to execute the code in the order of the buckets.
+\def\pgfsortingexecute{
+  \c@pgf@countb=\pgfoovalueof{buckets}\relax
+  \c@pgf@counta=0\relax
+  \pgfutil@loop
+  \ifnum\c@pgf@counta<\c@pgf@countb\relax%
+    \csname pgf@lib@sort@\the\c@pgf@counta\endcsname%
+    \advance\c@pgf@counta by1\relax%
+  \pgfutil@repeat
+}%
+
+
+\endinput

@@ -1,0 +1,185 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbmagazine.code.tex: Code for box sets and magazine styles
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\tcb@set@library@version{6.1.0}
+
+\tcbuselibrary{breakable}
+
+\def\newboxarray#1{%
+  \ifcsdef{tcb@boxarray@#1@allocated}{%
+    \tcb@warning{box array '#1' is allocated again by \string\newboxarray. Memory and registers are wasted}%
+  }{}%
+  \global\csdef{tcb@boxarray@#1@size}{0}%
+  \global\csdef{tcb@boxarray@#1@allocated}{0}%
+}
+
+\newboxarray{default}
+
+\newrobustcmd*{\boxarraygetsize}[2][default]{%
+  \letcs#2{tcb@boxarray@#1@size}%
+  \ifdef{#2}{}{%
+    \tcb@error{undefined box array '#1'}%
+    {You have to say \string\newboxarray{#1}, before '#1' can be used as box array.}%
+  }%
+}
+
+\newrobustcmd*{\boxarrayreset}[1][default]{%
+  \boxarraygetsize[#1]\tcb@box@array@size%
+  \global\csdef{tcb@boxarray@#1@size}{0}%
+}
+
+\newrobustcmd*{\boxarrayclear}[1][default]{%
+  \boxarraygetsize[#1]\tcb@box@array@size%
+  \global\csdef{tcb@boxarray@#1@size}{0}%
+  \letcs\tcb@box@array@allocated{tcb@boxarray@#1@allocated}%
+  \begingroup%
+    \count@=0%
+    \loop%
+    \ifnum\count@<\tcb@box@array@allocated\relax%
+      \advance\count@ 1\relax%
+      \letcs\tcb@box@array@box{tcb@boxarray@#1@\number\count@ @box}%
+      \setbox0=\box\tcb@box@array@box%
+    \repeat%
+  \endgroup%
+}
+
+\newrobustcmd*{\boxarraygetbox}[3][default]{%
+  \boxarraygetsize[#1]\tcb@box@array@size%
+  \let#2\@undefined%
+  \ifnum\numexpr#3>0\relax%
+    \ifnum\numexpr#3>\tcb@box@array@size\relax%
+    \else%
+      \letcs#2{tcb@boxarray@#1@#3@box}%
+    \fi%
+  \fi%
+}
+
+\newrobustcmd*{\boxarraygetwidth}[3][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#3}%
+  \ifdefined\tcb@box@array@box%
+    \tcbdimto#2{\wd\tcb@box@array@box}%
+  \else%
+    \let#2\tcb@zpt%
+  \fi%
+}
+
+\newrobustcmd*{\boxarraygetheight}[3][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#3}%
+  \ifdefined\tcb@box@array@box%
+    \tcbdimto#2{\ht\tcb@box@array@box}%
+  \else%
+    \let#2\tcb@zpt%
+  \fi%
+}
+
+\newrobustcmd*{\boxarraygetdepth}[3][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#3}%
+  \ifdefined\tcb@box@array@box%
+    \tcbdimto#2{\dp\tcb@box@array@box}%
+  \else%
+    \let#2\tcb@zpt%
+  \fi%
+}
+
+\newrobustcmd*{\boxarraygettotalheight}[3][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#3}%
+  \ifdefined\tcb@box@array@box%
+    \tcbdimto#2{\ht\tcb@box@array@box+\dp\tcb@box@array@box}%
+  \else%
+    \let#2\tcb@zpt%
+  \fi%
+}
+
+\newrobustcmd*{\useboxarray}[2][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#2}%
+  \ifdefined\tcb@box@array@box%
+    \usebox{\tcb@box@array@box}%
+  \fi%
+}
+
+\newrobustcmd{\usetcboxarray}[3][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#2}%
+  \ifdefined\tcb@box@array@box%
+    \tcbox[{#3}]{\usebox{\tcb@box@array@box}}%
+  \fi%
+}
+
+\newrobustcmd*{\consumeboxarray}[2][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#2}%
+  \ifdefined\tcb@box@array@box%
+    \leavevmode\box\tcb@box@array@box\relax%
+  \fi%
+}
+
+\newrobustcmd{\consumetcboxarray}[3][default]{%
+  \boxarraygetbox[#1]{\tcb@box@array@box}{#2}%
+  \ifdefined\tcb@box@array@box%
+    \tcbox[{#3}]{\leavevmode\box\tcb@box@array@box\relax}%
+  \fi%
+}
+
+\newrobustcmd{\ifboxarrayempty}[2][default]{%
+  \begingroup%
+    \boxarraygetbox[#1]{\tcb@box@array@box}{#2}%
+    \ifdefined\tcb@box@array@box\relax%
+      \aftergroup\@secondoftwo%
+    \else%
+      \aftergroup\@firstoftwo%
+    \fi%
+  \endgroup%
+}
+
+\def\boxarraystore#1{%
+  \boxarraygetsize[#1]\tcb@box@array@size%
+  \numdef\tcb@box@array@size{\tcb@box@array@size+1}%
+  \global\cslet{tcb@boxarray@#1@size}{\tcb@box@array@size}%
+  \letcs\tcb@box@array@allocated{tcb@boxarray@#1@allocated}%
+  \ifnum\tcb@box@array@allocated<\tcb@box@array@size\relax%
+    \newbox\tcb@box@array@box\csxdef{tcb@boxarray@#1@\tcb@box@array@size @box}{\the\tcb@box@array@box}%
+    \global\cslet{tcb@boxarray@#1@allocated}{\tcb@box@array@size}%
+  \else%
+    \letcs\tcb@box@array@box{tcb@boxarray@#1@\tcb@box@array@size @box}%
+  \fi%
+  \edef\reserved@a{%
+    \endgroup
+    \global\setbox\tcb@box@array@box\hbox{%
+      \begingroup\aftergroup}%
+        \def\noexpand\@currenvir{\@currenvir}%
+        \def\noexpand\@currenvline{\on@line}}%
+  \reserved@a
+    \@endpefalse
+    \color@setgroup
+      \ignorespaces}
+
+\def\endboxarraystore{\unskip\color@endgroup}
+
+\def\tcb@storetoboxarray@begin#1#2[#3]{\begin{boxarraystore}{#1}}
+\def\tcb@storetoboxarray@end{\end{boxarraystore}}
+
+\tcbset{
+  store to box array/.code={%
+    \def\kvtcb@float{S}\def\tcb@float@env@begin{\tcb@storetoboxarray@begin{#1}}\def\tcb@float@env@end{\tcb@storetoboxarray@end}},
+  store to box array/.default=default,
+  reset box array/.code={\boxarrayreset[#1]},
+  reset box array/.default=default,
+  reset and store to box array/.style={reset box array={#1},store to box array={#1}},%
+  reset and store to box array/.default=default,
+  do not store to box array/.style={nofloat},
+}
+

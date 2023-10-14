@@ -1,0 +1,1932 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Free Documentation License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+% $Header$
+
+
+\newcount\pgfmanualtargetcount
+
+\colorlet{examplefill}{yellow!80!black}
+\definecolor{graphicbackground}{rgb}{0.96,0.96,0.8}
+\definecolor{codebackground}{rgb}{0.9,0.9,1}
+\definecolor{animationgraphicbackground}{rgb}{0.96,0.96,0.8}
+
+\newenvironment{pgfmanualentry}{\list{}{\leftmargin=2em\itemindent-\leftmargin\def\makelabel##1{\hss##1}}}{\endlist}
+\newcounter{pgfmanualentry}
+\newcommand\pgfmanualentryheadline[1]{%
+  \itemsep=0pt\parskip=0pt{\raggedright\item\refstepcounter{pgfmanualentry}\strut{#1}\par}\topsep=0pt}
+\newcommand\pgfmanualbody{\parskip3pt}
+
+\let\origtexttt=\texttt
+\def\texttt#1{{\def\textunderscore{\char`\_}\def\textbraceleft{\char`\{}\def\textbraceright{\char`\}}\origtexttt{#1}}}
+\def\exclamationmarktext{!}
+\def\atmarktext{@}
+
+{
+  \catcode`\|=12
+  \gdef\pgfmanualnormalbar{|}
+  \catcode`\|=13
+  \AtBeginDocument{\gdef|{\ifmmode\pgfmanualnormalbar\else\expandafter\verb\expandafter|\fi}}
+}
+
+
+
+\newenvironment{pgflayout}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \texttt{\string\pgfpagesuselayout\char`\{\declare{#1}\char`\}}\oarg{options}%
+    }
+    \index{#1@\protect\texttt{#1} layout}%
+    \index{Page layouts!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\newenvironment{sysanimateattribute}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \texttt{\string\pgfsysanimate\char`\{\declare{#1}\char`\}}%
+    }
+    \index{#1@\protect\texttt{#1} system layer animation attribute}%
+    \index{Animation attributes (system layer)!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\newenvironment{animateattribute}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \texttt{\string\pgfanimateattribute\char`\{\declare{#1}\char`\}\marg{options}}%
+    }
+    \index{#1@\protect\texttt{#1} basic layer animation attribute}%
+    \index{Animation attributes (basic layer)!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\newenvironment{tikzanimateattribute}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \foreach \attr in{#1} {\expandafter\pgfmanualpdflabel\expandafter{\attr}{}}%
+      \textbf{Animation attribute} \foreach \attr[count=\i]
+      in{#1}{{\ifnum\i>1 \textbf,\fi} \texttt{:\declare{\attr}}}%
+    }
+    \foreach\attr in{#1}{%
+      \edef\indexcall{%
+        \noexpand\index{\attr@\noexpand\protect\noexpand\texttt{\attr} animation attribute}%
+        \noexpand\index{Animation attributes!\attr@\noexpand\protect\noexpand\texttt{\attr}}%
+      }%
+      \indexcall%
+    }%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\newenvironment{command}[1]{
+  \begin{pgfmanualentry}
+    \extractcommand#1\@@
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\makeatletter
+
+\def\includeluadocumentationof#1{
+  \directlua{require 'pgf.manual.DocumentParser'}
+  \directlua{pgf.manual.DocumentParser.include '#1'}
+}
+
+\newenvironment{luageneric}[4]{
+  \pgfmanualentry
+    \pgfmanualentryheadline{#4 \texttt{#1\declare{#2}}#3}
+    \index{#2@\protect\texttt{#2} (Lua)}%
+    \def\temp{#1}
+    \ifx\temp\pgfutil@empty\else
+      \index{#1@\protect\texttt{#1}!#2@\protect\texttt{#2} (Lua)}%
+    \fi
+  \pgfmanualbody
+}{\endpgfmanualentry}
+
+\newenvironment{luatable}[3]{
+  \medskip
+  \luageneric{#1}{#2}{ (declared in \texttt{#3})}{\textbf{Lua table}}
+}{\endluageneric}
+
+\newenvironment{luafield}[1]{
+  \pgfmanualentry
+    \pgfmanualentryheadline{Field \texttt{\declare{#1}}}
+  \pgfmanualbody
+}{\endpgfmanualentry}
+
+
+\newenvironment{lualibrary}[1]{
+  \pgfmanualentry
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{#1}{}%
+    \textbf{Graph Drawing Library} \texttt{\declare{#1}}%
+  }
+    \index{#1@\protect\texttt{#1} graph drawing library}%
+    \index{Libraries!#1@\protect\texttt{#1}}%
+    \index{Graph drawing libraries!#1@\protect\texttt{#1}}%
+    \vskip.25em
+    {\ttfamily\char`\\usegdlibrary\char`\{\declare{#1}\char`\}\space\space \char`\%\space\space  \LaTeX\space and plain \TeX}\\
+    {\ttfamily\char`\\usegdlibrary[\declare{#1}]\space \char`\%\space\space Con\TeX t}\smallskip\par
+    \pgfmanualbody
+}{\endpgfmanualentry}
+
+\newenvironment{luadeclare}[4]{
+  \pgfmanualentry
+  \def\manual@temp@default{#3}%
+  \def\manual@temp@initial{#4}%
+  \def\manual@temp@{#3#4}%
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{#1}{}%
+    {\ttfamily/graph
+      drawing/\declare{#1}\opt{=}}\opt{#2}\hfill%
+    \ifx\manual@temp@\pgfutil@empty\else%
+    (\ifx\manual@temp@default\pgfutil@empty\else%
+    default {\ttfamily #3}\ifx\manual@temp@initial\pgfutil@empty\else, \fi%
+    \fi%
+    \ifx\manual@temp@initial\pgfutil@empty\else%
+    initially {\ttfamily #4}%
+    \fi%
+    )\fi%
+  }%
+  \index{#1@\protect\texttt{#1} key}%
+  \pgfmanualbody
+  \gdef\myname{#1}%
+%  \keyalias{tikz}
+%  \keyalias{tikz/graphs}
+}{\endpgfmanualentry}
+
+\newenvironment{luadeclarestyle}[4]{
+  \pgfmanualentry
+  \def\manual@temp@para{#2}%
+  \def\manual@temp@default{#3}%
+  \def\manual@temp@initial{#4}%
+  \def\manual@temp@{#3#4}%
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{#1}{}%
+    {\ttfamily/graph drawing/\declare{#1}}\ifx\manual@temp@para\pgfutil@empty\else\opt{\texttt=}\opt{#2}\fi\hfill%
+    (style\ifx\manual@temp@\pgfutil@empty\else, %
+    \ifx\manual@temp@default\pgfutil@empty\else%
+    default {\ttfamily #3}\ifx\manual@temp@initial\pgfutil@empty\else, \fi%
+    \fi%
+    \ifx\manual@temp@initial\pgfutil@empty\else%
+    initially {\ttfamily #4}%
+    \fi%
+    \fi)%
+  }%
+  \index{#1@\protect\texttt{#1} key}%
+  \pgfmanualbody%
+  \gdef\myname{#1}%
+%  \keyalias{tikz}
+%  \keyalias{tikz/graphs}
+}{\endpgfmanualentry}
+
+\newenvironment{luanamespace}[2]{
+  \luageneric{#1}{#2}{}{\textbf{Lua namespace}}
+}{\endluageneric}
+
+\newenvironment{luafiledescription}[1]{}{}
+
+\newenvironment{luacommand}[4]{
+  \hypertarget{pgf/lua/#1}{\luageneric{#2}{#3}{\texttt{(#4)}}{\texttt{function}}}
+}{\endluageneric}
+
+\newenvironment{luaparameters}{\par\emph{Parameters:}%
+  \parametercount=0\relax%
+  \let\item=\parameteritem%
+  \let\list=\restorelist%
+}
+{\par
+}
+
+\newenvironment{luareturns}{\par\emph{Returns:}%
+  \parametercount=0\relax%
+  \let\item=\parameteritem%
+  \let\list=\restorelist%
+}
+{\par
+}
+
+\newcount\parametercount
+
+\newenvironment{parameterdescription}{\unskip%
+  \parametercount=0\relax%
+  \let\item=\parameteritem%
+  \let\list=\restorelist%
+}
+{\par
+}
+\let\saveditemcommand=\item
+\let\savedlistcommand=\list
+\def\denselist#1#2{\savedlistcommand{#1}{#2}\parskip0pt\itemsep0pt}
+\def\restorelist{\let\item=\saveditemcommand\denselist}
+\def\parameteritem{\pgfutil@ifnextchar[\parameteritem@{}}%}
+\def\parameteritem@[#1]{\advance\parametercount by1\relax\hskip0.15em plus 1em\emph{\the\parametercount.}\kern1ex\def\test{#1}\ifx\test\pgfutil@empty\else#1\kern.5em\fi}
+
+\newenvironment{commandlist}[1]{%
+  \begin{pgfmanualentry}
+  \foreach \xx in {#1} {%
+    \expandafter\extractcommand\xx\@@
+  }%
+  \pgfmanualbody
+}{%
+  \end{pgfmanualentry}
+}%
+
+% \begin{internallist}[register]{\pgf@xa}
+% \end{internallist}
+%
+% \begin{internallist}[register]{\pgf@xa,\pgf@xb}
+% \end{internallist}
+\newenvironment{internallist}[2][register]{%
+  \begin{pgfmanualentry}
+  \foreach \xx in {#2} {%
+    \expandafter\extractinternalcommand\expandafter{\xx}{#1}%
+  }%
+  \pgfmanualbody
+}{%
+  \end{pgfmanualentry}
+}%
+\def\extractinternalcommand#1#2{%
+  \removeats{#1}%
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{\textbackslash\strippedat}{}%
+    Internal #2 \declare{\texttt{\string#1}}}%
+  \index{Internals!\strippedat @\protect\myprintocmmand{\strippedat}}%
+  \index{\strippedat @\protect\myprintocmmand{\strippedat}}%
+}
+
+%% MW: START MATH MACROS
+\def\mvar#1{{\ifmmode\textrm{\textit{#1}}\else\rmfamily\textit{#1}\fi}}
+
+\makeatletter
+
+\def\extractmathfunctionname#1{\extractmathfunctionname@#1(,)\tmpa\tmpb}
+\def\extractmathfunctionname@#1(#2)#3\tmpb{\def\mathname{#1}}
+
+\makeatother
+  
+\newenvironment{math-function}[1]{
+  \def\mathdefaultname{#1}
+  \extractmathfunctionname{#1}
+  \edef\mathurl{{math:\mathname}}\expandafter\hypertarget\expandafter{\mathurl}{}%
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\texttt{#1}}%
+    \index{\mathname @\protect\texttt{\mathname} math function}%
+    \index{Math functions!\mathname @\protect\texttt{\mathname}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\pgfmanualemptytext{}
+\def\pgfmanualvbarvbar{\char`\|\char`\|}
+
+\newenvironment{math-operator}[4][]{%
+  \begin{pgfmanualentry}
+  \csname math#3operator\endcsname{#2}{#4}
+  \def\mathtest{#4}%
+  \ifx\mathtest\pgfmanualemptytext%
+    \def\mathtype{(#3 operator)}
+  \else%
+    \def\mathtype{(#3 operator; uses the \texttt{#4} function)}
+  \fi%
+  \pgfmanualentryheadline{\mathexample\hfill\mathtype}%
+  \def\mathtest{#1}%
+  \ifx\mathtest\pgfmanualemptytext%
+    \index{#2@\protect\texttt{#2} #3 math operator}%  
+    \index{Math operators!#2@\protect\texttt{#2}}%
+  \fi%
+  \pgfmanualbody
+}
+{\end{pgfmanualentry}}
+
+\newenvironment{math-operators}[5][]{%
+  \begin{pgfmanualentry}
+  \csname math#4operator\endcsname{#2}{#3}
+  \def\mathtest{#5}%
+  \ifx\mathtest\pgfmanualemptytext%
+    \def\mathtype{(#4 operators)}
+  \else%
+    \def\mathtype{(#4 operators; use the \texttt{#5} function)}
+  \fi%
+  \pgfmanualentryheadline{\mathexample\hfill\mathtype}%
+  \def\mathtest{#1}%
+  \ifx\mathtest\pgfmanualemptytext%
+    \index{#2#3@\protect\texttt{#2\protect\ #3} #4 math operators}% 
+    \index{Math operators!#2#3@\protect\texttt{#2\protect\ #3}}%
+  \fi%
+  \pgfmanualbody
+}
+{\end{pgfmanualentry}}
+
+\def\mathinfixoperator#1#2{%
+  \def\mathoperator{\texttt{#1}}%
+  \def\mathexample{\mvar{x}\space\texttt{#1}\space\mvar{y}}%
+}
+
+\def\mathprefixoperator#1#2{%
+  \def\mathoperator{\texttt{#1}}%
+  \def\mathexample{\texttt{#1}\mvar{x}}%
+}
+
+\def\mathpostfixoperator#1#2{%
+  \def\mathoperator{\texttt{#1}}
+  \def\mathexample{\mvar{x}\texttt{#1}}%
+}
+
+\def\mathgroupoperator#1#2{%
+  \def\mathoperator{\texttt{#1\ #2}}%
+  \def\mathexample{\texttt{#1}\mvar{x}\texttt{#2}}%
+}
+
+\expandafter\let\csname matharray accessoperator\endcsname=\mathgroupoperator
+\expandafter\let\csname matharrayoperator\endcsname=\mathgroupoperator
+
+\def\mathconditionaloperator#1#2{%
+  \def\mathoperator{#1\space#2}
+  \def\mathexample{\mvar{x}\ \texttt{#1}\ \mvar{y}\ {\texttt{#2}}\ \mvar{z}}
+}
+
+\newcommand\mathcommand[1][\mathdefaultname]{%
+  \expandafter\makemathcommand#1(\empty)\stop%
+  \expandafter\extractcommand\mathcommandname\@@%
+  \medskip
+}
+\makeatletter
+
+\def\makemathcommand#1(#2)#3\stop{%
+  \expandafter\def\expandafter\mathcommandname\expandafter{\csname pgfmath#1\endcsname}%
+  \ifx#2\empty%
+  \else%
+    \@makemathcommand#2,\stop,
+  \fi}
+\def\@makemathcommand#1,{%
+  \ifx#1\stop%
+  \else%
+    \expandafter\def\expandafter\mathcommandname\expandafter{\mathcommandname{\ttfamily\char`\{#1\char`\}}}%
+    \expandafter\@makemathcommand%
+  \fi}
+\makeatother
+
+\def\calcname{\textsc{calc}}
+
+\newenvironment{math-keyword}[1]{
+  \extracttikzmathkeyword#1@
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\texttt{\color{red}\mathname}\mathrest}%
+    \index{\mathname @\protect\texttt{\mathname} tikz math function}%
+    \index{TikZ math functions!\mathname @\protect\texttt{\mathname}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\extracttikzmathkeyword#1#2@{%
+  \def\mathname{#1}%
+  \def\mathrest{#2}%
+}
+
+%% MW: END MATH MACROS
+
+
+\def\extractcommand#1#2\@@{%
+  \removeats{#1}%
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{\textbackslash\strippedat}{}%
+    \declare{\expandafter\texttt\expandafter{\string#1}}#2%
+  }%
+  \index{\strippedat @\protect\myprintocmmand{\strippedat}}
+}
+
+\def\luaextractcommand#1#2\relax{%
+  \declare{\texttt{\string#1}}#2\par%
+%  \removeats{#1}%
+ % \index{\strippedat @\protect\myprintocmmand{\strippedat}}
+ % \pgfmanualpdflabel{\textbackslash\strippedat}{}%
+}
+
+
+% \begin{environment}{{name}\marg{arguments}}
+\renewenvironment{environment}[1]{
+  \begin{pgfmanualentry}
+    \extractenvironement#1\@@
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\extractenvironement#1#2\@@{%
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{#1}{}%
+    {\ttfamily\char`\\begin\char`\{\declare{#1}\char`\}}#2%
+  }%
+  \pgfmanualentryheadline{{\ttfamily\ \ }\meta{environment contents}}%
+  \pgfmanualentryheadline{{\ttfamily\char`\\end\char`\{\declare{#1}\char`\}}}%
+  \index{#1@\protect\texttt{#1} environment}%
+  \index{Environments!#1@\protect\texttt{#1}}
+}
+
+
+\newenvironment{plainenvironment}[1]{
+  \begin{pgfmanualentry}
+    \extractplainenvironement#1\@@
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\extractplainenvironement#1#2\@@{%
+  \pgfmanualentryheadline{{\ttfamily\declare{\char`\\#1}}#2}%
+  \pgfmanualentryheadline{{\ttfamily\ \ }\meta{environment contents}}%
+  \pgfmanualentryheadline{{\ttfamily\declare{\char`\\end#1}}}%
+  \index{#1@\protect\texttt{#1} environment}%
+  \index{Environments!#1@\protect\texttt{#1}}%
+}
+
+
+\newenvironment{contextenvironment}[1]{
+  \begin{pgfmanualentry}
+    \extractcontextenvironement#1\@@
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\extractcontextenvironement#1#2\@@{%
+  \pgfmanualentryheadline{{\ttfamily\declare{\char`\\start#1}}#2}%
+  \pgfmanualentryheadline{{\ttfamily\ \ }\meta{environment contents}}%
+  \pgfmanualentryheadline{{\ttfamily\declare{\char`\\stop#1}}}%
+  \index{#1@\protect\texttt{#1} environment}%
+  \index{Environments!#1@\protect\texttt{#1}}}
+
+
+\newenvironment{shape}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Shape} {\ttfamily\declare{#1}}%
+    }%
+    \index{#1@\protect\texttt{#1} shape}%
+    \index{Shapes!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{pictype}[2]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Pic type} {\ttfamily\declare{#1}#2}%
+    }%
+    \index{#1@\protect\texttt{#1} pic type}%
+    \index{Pic Types!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{shading}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Shading} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} shading}%
+    \index{Shadings!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\newenvironment{graph}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Graph} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} graph}%
+    \index{Graphs!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{gdalgorithm}[2]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Layout} {\ttfamily/graph drawing/\declare{#1}\opt{=}}\opt{\meta{options}}}%
+    \index{#1@\protect\texttt{#1} layout}%
+    \index{Layouts!#1@\protect\texttt{#1}}%
+    \foreach \algo in {#2}
+    {\edef\marshal{\noexpand\index{#2@\noexpand\protect\noexpand\texttt{#2} algorithm}}\marshal}%
+    \index{Graph drawing layouts!#1@\protect\texttt{#1}}
+    \item{\small alias {\ttfamily/tikz/#1}}\par
+    \item{\small alias {\ttfamily/tikz/graphs/#1}}\par
+    \item{\small Employs {\ttfamily algorithm=#2}}\par
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{dataformat}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Format} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} format}%
+    \index{Formats!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{stylesheet}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Style sheet} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} style sheet}%
+    \index{Style sheets!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{handler}[1]{
+  \begin{pgfmanualentry}
+    \extracthandler#1\@nil%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\gobble#1{}
+\def\extracthandler#1#2\@nil{%
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{/handlers/#1}{}%
+    \textbf{Key handler} \meta{key}{\ttfamily/\declare{#1}}#2}%
+  \index{\gobble#1@\protect\texttt{#1} handler}%
+  \index{Key handlers!#1@\protect\texttt{#1}}
+}
+
+
+\makeatletter
+
+
+\newenvironment{stylekey}[1]{
+  \begin{pgfmanualentry}
+    \def\extrakeytext{style, }
+    \extractkey#1\@nil%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\choicesep{$\vert$}%
+\def\choicearg#1{\texttt{#1}}
+
+\newif\iffirstchoice
+
+% \mchoice{choice1,choice2,choice3}
+\newcommand\mchoice[1]{%
+  \begingroup
+  \firstchoicetrue
+  \foreach \mchoice@ in {#1} {%
+    \iffirstchoice
+      \global\firstchoicefalse
+    \else
+      \choicesep
+    \fi
+    \choicearg{\mchoice@}%
+  }%
+  \endgroup
+}%
+
+% \begin{key}{/path/x=value}
+% \begin{key}{/path/x=value (initially XXX)}
+% \begin{key}{/path/x=value (default XXX)}
+\newenvironment{key}[1]{
+  \begin{pgfmanualentry}
+    \def\extrakeytext{}
+    %\def\altpath{\emph{\color{gray}or}}%
+    \extractkey#1\@nil%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+% \insertpathifneeded{a key}{/pgf} -> assign mykey={/pgf/a key}
+% \insertpathifneeded{/tikz/a key}{/pgf} -> assign mykey={/tikz/a key}
+%
+% #1: the key
+% #2: a default path (or empty)
+\def\insertpathifneeded#1#2{%
+  \def\insertpathifneeded@@{#2}%
+  \ifx\insertpathifneeded@@\empty
+    \def\mykey{#1}%
+  \else
+    \insertpathifneeded@#2\@nil
+    \ifpgfutil@in@
+      \def\mykey{#2/#1}%
+    \else
+      \def\mykey{#1}%
+    \fi
+  \fi
+}%
+\def\insertpathifneeded@#1#2\@nil{%
+  \def\insertpathifneeded@@{#1}%
+  \def\insertpathifneeded@@@{/}%
+  \ifx\insertpathifneeded@@\insertpathifneeded@@@
+    \pgfutil@in@true
+  \else
+    \pgfutil@in@false
+  \fi
+}%
+
+% \begin{keylist}[default path]
+%   {/path/option 1=value,/path/option 2=value2}
+% \end{keylist}
+\newenvironment{keylist}[2][]{%
+  \begin{pgfmanualentry}
+    \def\extrakeytext{}%
+  \foreach \xx in {#2} {%
+    \expandafter\insertpathifneeded\expandafter{\xx}{#1}%
+    \expandafter\extractkey\mykey\@nil%
+  }%
+  \pgfmanualbody
+}{%
+  \end{pgfmanualentry}
+}%
+
+\def\extractkey#1\@nil{%
+  \pgfutil@in@={#1}%
+  \ifpgfutil@in@%
+    \extractkeyequal#1\@nil
+  \else%
+    \pgfutil@in@{(initial}{#1}%
+    \ifpgfutil@in@%
+      \extractequalinitial#1\@nil%
+    \else
+      \pgfmanualentryheadline{%
+      \def\mykey{#1}%
+      \def\mypath{}%
+      \gdef\myname{}%
+      \firsttimetrue%
+      \pgfmanualdecomposecount=0\relax%
+      \decompose#1/\nil%
+        {\ttfamily\declare{#1}}\hfill(\extrakeytext no value)}%
+    \fi
+  \fi%
+}
+
+\def\extractkeyequal#1=#2\@nil{%
+  \pgfutil@in@{(default}{#2}%
+  \ifpgfutil@in@%
+    \extractdefault{#1}#2\@nil%
+  \else%
+    \pgfutil@in@{(initial}{#2}%
+    \ifpgfutil@in@%
+      \extractinitial{#1}#2\@nil%
+    \else
+      \pgfmanualentryheadline{%
+        \def\mykey{#1}%
+        \def\mypath{}%
+        \gdef\myname{}%
+        \firsttimetrue%
+        \pgfmanualdecomposecount=0\relax%
+        \decompose#1/\nil%
+        {\ttfamily\declare{#1}=}#2\hfill(\extrakeytext no default)}%
+    \fi%
+  \fi%
+}
+
+\def\extractdefault#1#2(default #3)\@nil{%
+  \pgfmanualentryheadline{%
+    \def\mykey{#1}%
+    \def\mypath{}%
+    \gdef\myname{}%
+    \firsttimetrue%
+    \pgfmanualdecomposecount=0\relax%
+    \decompose#1/\nil%
+    {\ttfamily\declare{#1}\opt{=}}\opt{#2}\hfill (\extrakeytext default {\ttfamily#3})}%
+}
+
+\def\extractinitial#1#2(initially #3)\@nil{%
+  \pgfmanualentryheadline{%
+    \def\mykey{#1}%
+    \def\mypath{}%
+    \gdef\myname{}%
+    \firsttimetrue%
+    \pgfmanualdecomposecount=0\relax%
+    \decompose#1/\nil%
+    {\ttfamily\declare{#1}=}#2\hfill (\extrakeytext no default, initially {\ttfamily#3})}%
+}
+
+\def\extractequalinitial#1 (initially #2)\@nil{%
+  \pgfmanualentryheadline{%
+    \def\mykey{#1}%
+    \def\mypath{}%
+    \gdef\myname{}%
+    \firsttimetrue%
+    \pgfmanualdecomposecount=0\relax%
+    \decompose#1/\nil%
+    {\ttfamily\declare{#1}}\hfill (\extrakeytext initially {\ttfamily#2})}%
+}
+
+% Introduces a key alias '/#1/<name of current key>'
+% to be used inside of \begin{key} ... \end{key}
+\def\keyalias#1{\vspace{-3pt}\item{\small alias {\ttfamily/#1/\myname}}\vspace{-2pt}\par
+  \pgfmanualpdflabel{/#1/\myname}{}%
+}
+
+\newif\iffirsttime
+\newcount\pgfmanualdecomposecount
+
+\makeatother
+
+\def\decompose/#1/#2\nil{%
+  \def\test{#2}%
+  \ifx\test\empty%
+    % aha.
+    \index{#1@\protect\texttt{#1} key}%
+    \index{\mypath#1@\protect\texttt{#1}}%
+    \gdef\myname{#1}%
+    \pgfmanualpdflabel{#1}{}
+  \else%
+    \advance\pgfmanualdecomposecount by1\relax%
+    \ifnum\pgfmanualdecomposecount>2\relax%
+      \decomposetoodeep#1/#2\nil%
+    \else%
+      \iffirsttime%
+        \begingroup%  
+          % also make a pdf link anchor with full key path.
+          \def\hyperlabelwithoutslash##1/\nil{%
+            \pgfmanualpdflabel{##1}{}%
+          }%
+          \hyperlabelwithoutslash/#1/#2\nil%
+        \endgroup%
+        \def\mypath{#1@\protect\texttt{/#1/}!}%
+        \firsttimefalse%
+      \else%
+        \expandafter\def\expandafter\mypath\expandafter{\mypath#1@\protect\texttt{#1/}!}%
+      \fi%
+      \def\firsttime{}%
+      \decompose/#2\nil%
+    \fi%
+  \fi%
+}
+
+\def\decomposetoodeep#1/#2/\nil{%
+  % avoid too-deep nesting in index
+  \index{#1/#2@\protect\texttt{#1/#2} key}%
+  \index{\mypath#1/#2@\protect\texttt{#1/#2}}%
+  \decomposefindlast/#1/#2/\nil%
+}
+\makeatletter
+\def\decomposefindlast/#1/#2\nil{%
+  \def\test{#2}%
+  \ifx\test\pgfutil@empty%
+    \gdef\myname{#1}%
+  \else%
+    \decomposefindlast/#2\nil%
+  \fi%
+}
+\makeatother
+\def\indexkey#1{%
+  \def\mypath{}%
+  \decompose#1/\nil%
+}
+
+\newenvironment{predefinedmethod}[1]{
+  \begin{pgfmanualentry}
+    \extractpredefinedmethod#1\@nil
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+\def\extractpredefinedmethod#1(#2)\@nil{%
+  \pgfmanualentryheadline{%
+    \pgfmanualpdflabel{#1}{}%
+    Method \declare{\ttfamily #1}\texttt(#2\texttt) \hfill(predefined for all classes)}
+  \index{#1@\protect\texttt{#1} method}%
+  \index{Methods!#1@\protect\texttt{#1}}
+}
+
+
+\newenvironment{ooclass}[1]{
+  \begin{pgfmanualentry}
+    \def\currentclass{#1}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Class} \declare{\texttt{#1}}}
+    \index{#1@\protect\texttt{#1} class}%
+    \index{Class #1@Class \protect\texttt{#1}}%
+    \index{Classes!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{method}[1]{
+  \begin{pgfmanualentry}
+    \extractmethod#1\@nil
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+\def\extractmethod#1(#2)\@nil{%
+  \def\test{#1}
+  \ifx\test\currentclass
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      Constructor \declare{\ttfamily #1}\texttt(#2\texttt)}
+  \else
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      Method \declare{\ttfamily #1}\texttt(#2\texttt)}
+  \fi
+  \index{#1@\protect\texttt{#1} method}%
+  \index{Methods!#1@\protect\texttt{#1}}
+  \index{Class \currentclass!#1@\protect\texttt{#1}}%
+}
+
+\newenvironment{classattribute}[1]{
+  \begin{pgfmanualentry}
+    \extractattribute#1\@nil
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+\def\extractattribute#1=#2;\@nil{%
+  \def\test{#2}%
+  \ifx\test\@empty
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      Private attribute \declare{\ttfamily #1} \hfill (initially empty)}
+  \else
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      Private attribute \declare{\ttfamily #1} \hfill (initially {\ttfamily #2})}
+  \fi
+  \index{#1@\protect\texttt{#1} attribute}%
+  \index{Attributes!#1@\protect\texttt{#1}}
+  \index{Class \currentclass!#1@\protect\texttt{#1}}%
+}
+
+
+
+\newenvironment{predefinednode}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Predefined node} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} node}%
+    \index{Predefined node!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{coordinatesystem}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{Coordinate system} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} coordinate system}%
+    \index{Coordinate systems!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{snake}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\textbf{Snake} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} snake}%
+    \index{Snakes!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{decoration}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\textbf{Decoration} {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} decoration}%
+    \index{Decorations!#1@\protect\texttt{#1}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\def\pgfmanualbar{\char`\|}
+\makeatletter
+\newenvironment{pathoperation}[3][]{
+  \begin{pgfmanualentry}
+    \def\pgfmanualtest{#1}%
+    \pgfmanualentryheadline{%
+      \ifx\pgfmanualtest\@empty%
+        \pgfmanualpdflabel{#2}{}%
+      \fi%
+      \textcolor{gray}{{\ttfamily\char`\\path}\
+        \ \dots}
+      \declare{\texttt{\noligs{#2}}}#3\ \textcolor{gray}{\dots\texttt{;}}}%
+    \ifx\pgfmanualtest\@empty%
+      \index{#2@\protect\texttt{#2} path operation}%
+      \index{Path operations!#2@\protect\texttt{#2}}%
+    \fi%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+\newenvironment{datavisualizationoperation}[3][]{
+  \begin{pgfmanualentry}
+    \def\pgfmanualtest{#1}%
+    \pgfmanualentryheadline{%
+      \ifx\pgfmanualtest\@empty%
+        \pgfmanualpdflabel{#2}{}%
+      \fi%
+      \textcolor{gray}{{\ttfamily\char`\\datavisualization}\
+        \ \dots}
+      \declare{\texttt{\noligs{#2}}}#3\ \textcolor{gray}{\dots\texttt{;}}}%
+    \ifx\pgfmanualtest\@empty%
+      \index{#2@\protect\texttt{#2} (data visualization)}%
+      \index{Data visualization!#2@\protect\texttt{#2}}%
+    \fi%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+\makeatother
+
+\def\doublebs{\texttt{\char`\\\char`\\}}
+
+
+\newenvironment{package}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      {\ttfamily\char`\\usepackage\char`\{\declare{#1}\char`\}\space\space \char`\%\space\space  \LaTeX}}
+    \index{#1@\protect\texttt{#1} package}%
+    \index{Packages and files!#1@\protect\texttt{#1}}%
+    \pgfmanualentryheadline{{\ttfamily\char`\\input \declare{#1}.tex\space\space\space \char`\%\space\space  plain \TeX}}
+    \pgfmanualentryheadline{{\ttfamily\char`\\usemodule[\declare{#1}]\space\space \char`\%\space\space  Con\TeX t}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\newenvironment{pgfmodule}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      {\ttfamily\char`\\usepgfmodule\char`\{\declare{#1}\char`\}\space\space\space
+        \char`\%\space\space  \LaTeX\space and plain \TeX\space and pure pgf}}
+    \index{#1@\protect\texttt{#1} module}%
+    \index{Modules!#1@\protect\texttt{#1}}%
+    \pgfmanualentryheadline{{\ttfamily\char`\\usepgfmodule[\declare{#1}]\space\space \char`\%\space\space  Con\TeX t\space and pure pgf}}
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{pgflibrary}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{\tikzname\ Library} \texttt{\declare{#1}}}
+    \index{#1@\protect\texttt{#1} library}%
+    \index{Libraries!#1@\protect\texttt{#1}}%
+    \vskip.25em%
+    {{\ttfamily\char`\\usepgflibrary\char`\{\declare{#1}\char`\}\space\space\space
+        \char`\%\space\space  \LaTeX\space and plain \TeX\space and pure pgf}}\\
+    {{\ttfamily\char`\\usepgflibrary[\declare{#1}]\space\space \char`\%\space\space  Con\TeX t\space and pure pgf}}\\
+    {{\ttfamily\char`\\usetikzlibrary\char`\{\declare{#1}\char`\}\space\space
+        \char`\%\space\space  \LaTeX\space and plain \TeX\space when using \tikzname}}\\
+    {{\ttfamily\char`\\usetikzlibrary[\declare{#1}]\space
+        \char`\%\space\space  Con\TeX t\space when using \tikzname}}\\[.5em]
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{purepgflibrary}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{{\small PGF} Library} \texttt{\declare{#1}}}
+    \index{#1@\protect\texttt{#1} library}%
+    \index{Libraries!#1@\protect\texttt{#1}}%
+    \vskip.25em%
+    {{\ttfamily\char`\\usepgflibrary\char`\{\declare{#1}\char`\}\space\space\space
+        \char`\%\space\space  \LaTeX\space and plain \TeX}}\\
+    {{\ttfamily\char`\\usepgflibrary[\declare{#1}]\space\space \char`\%\space\space  Con\TeX t}}\\[.5em]
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{tikzlibrary}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{\tikzname\ Library} \texttt{\declare{#1}}}
+    \index{#1@\protect\texttt{#1} library}%
+    \index{Libraries!#1@\protect\texttt{#1}}%
+    \vskip.25em%
+    {{\ttfamily\char`\\usetikzlibrary\char`\{\declare{#1}\char`\}\space\space \char`\%\space\space  \LaTeX\space and plain \TeX}}\\
+    {{\ttfamily\char`\\usetikzlibrary[\declare{#1}]\space \char`\%\space\space Con\TeX t}}\\[.5em]
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{pgfkeyslibrary}[1]{%
+  \begin{pgfmanualentry}%
+    \pgfmanualentryheadline{%
+      \pgfmanualpdflabel{#1}{}%
+      \textbf{pgfkeys Library} \texttt{\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} pgfkeys library}%
+    \index{pgfkeys Libraries!#1@\protect\texttt{#1}}%
+    \vskip.25em
+    {{\ttfamily\char`\\usepgfkeyslibrary\char`\{\declare{#1}\char`\}\space\space \char`\%\space\space  \LaTeX\space and plain \TeX}}\\
+    {{\ttfamily\char`\\usepgfkeyslibrary[\declare{#1}]\space \char`\%\space\space Con\TeX t}}\\[.5em]%
+    \pgfmanualbody
+}%
+{%
+  \end{pgfmanualentry}%
+}
+
+
+\newenvironment{filedescription}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{File {\ttfamily\declare{#1}}}%
+    \index{#1@\protect\texttt{#1} file}%
+    \index{Packages and files!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+\newenvironment{packageoption}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{{\ttfamily\char`\\usepackage[\declare{#1}]\char`\{pgf\char`\}}}
+    \index{#1@\protect\texttt{#1} package option}%
+    \index{Package options for \textsc{pgf}!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+
+
+\newcommand\opt[1]{{\color{black!50!green}#1}}
+\newcommand\ooarg[1]{{\ttfamily[}\meta{#1}{\ttfamily]}}
+
+\def\opt{\afterassignment\pgfmanualopt\let\next=}
+\def\pgfmanualopt{\ifx\next\bgroup\bgroup\color{black!50!green}\else{\color{black!50!green}\next}\fi}
+
+
+
+\def\beamer{\textsc{beamer}}
+\def\pdf{\textsc{pdf}}
+\def\eps{\texttt{eps}}
+\def\pgfname{\textsc{pgf}}
+\def\tikzname{Ti\emph{k}Z}
+\def\pstricks{\textsc{pstricks}}
+\def\prosper{\textsc{prosper}}
+\def\seminar{\textsc{seminar}}
+\def\texpower{\textsc{texpower}}
+\def\foils{\textsc{foils}}
+
+{
+  \makeatletter
+  \global\let\myempty=\@empty
+  \global\let\mygobble=\@gobble
+  \catcode`\@=12
+  \gdef\getridofats#1@#2\relax{%
+    \def\getridtest{#2}%
+    \ifx\getridtest\myempty%
+      \expandafter\def\expandafter\strippedat\expandafter{\strippedat#1}
+    \else%
+      \expandafter\def\expandafter\strippedat\expandafter{\strippedat#1\protect\printanat}
+      \getridofats#2\relax%
+    \fi%
+  }
+
+  \gdef\removeats#1{%
+    \let\strippedat\myempty%
+    \edef\strippedtext{\stripcommand#1}%
+    \expandafter\getridofats\strippedtext @\relax%
+  }
+  
+  \gdef\stripcommand#1{\expandafter\mygobble\string#1}
+}
+
+\def\printanat{\char`\@}
+
+\def\declare{\afterassignment\pgfmanualdeclare\let\next=}
+\def\pgfmanualdeclare{\ifx\next\bgroup\bgroup\color{red!75!black}\else{\color{red!75!black}\next}\fi}
+
+
+\let\textoken=\command
+\let\endtextoken=\endcommand
+
+\def\myprintocmmand#1{\texttt{\char`\\#1}}
+
+\def\example{\par\smallskip\noindent\textit{Example: }}
+\def\themeauthor{\par\smallskip\noindent\textit{Theme author: }}
+
+
+\def\indexoption#1{%
+  \index{#1@\protect\texttt{#1} option}%
+  \index{Graphic options and styles!#1@\protect\texttt{#1}}%
+}
+
+\def\itemcalendaroption#1{\item \declare{\texttt{#1}}%
+  \index{#1@\protect\texttt{#1} date test}%
+  \index{Date tests!#1@\protect\texttt{#1}}%
+}
+
+
+
+\def\class#1{\list{}{\leftmargin=2em\itemindent-\leftmargin\def\makelabel##1{\hss##1}}%
+\extractclass#1@\par\topsep=0pt}
+\def\endclass{\endlist}
+\def\extractclass#1#2@{%
+\item{{{\ttfamily\char`\\documentclass}#2{\ttfamily\char`\{\declare{#1}\char`\}}}}%
+  \index{#1@\protect\texttt{#1} class}%
+  \index{Classes!#1@\protect\texttt{#1}}}
+
+\def\partname{Part}
+
+\makeatletter
+\def\index@prologue{\section*{Index}\addcontentsline{toc}{section}{Index}
+  This index only contains automatically generated entries. A good
+  index should also contain carefully selected keywords. This index is
+  not a good index.
+  \bigskip
+}
+\c@IndexColumns=2
+  \def\theindex{\@restonecoltrue
+    \columnseprule \z@  \columnsep 29\p@
+    \twocolumn[\index@prologue]%
+       \parindent -30pt
+       \columnsep 15pt
+       \parskip 0pt plus 1pt
+       \leftskip 30pt
+       \rightskip 0pt plus 2cm
+       \small
+       \def\@idxitem{\par}%
+    \let\item\@idxitem \ignorespaces}
+  \def\endtheindex{\onecolumn}
+\def\noindexing{\let\index=\@gobble}
+
+
+\newenvironment{arrowtipsimple}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\textbf{Arrow Tip Kind} {\ttfamily#1}}
+    \index{#1@\protect\texttt{#1} arrow tip}%
+    \index{Arrow tips!#1@\protect\texttt{#1}}%
+    \def\currentarrowtype{#1}
+    \pgfmanualbody}
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{arrowtip}[4]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\textbf{Arrow Tip Kind} {\ttfamily#1}}
+    \index{#1@\protect\texttt{#1} arrow tip}%
+    \index{Arrow tips!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+    \def\currentarrowtype{#1}
+    \begin{minipage}[t]{10.25cm}
+      #2
+    \end{minipage}\hskip5mm\begin{minipage}[t]{4.75cm}
+      \leavevmode\vskip-2em
+    \tikz{
+      \draw [black!50,line width=5mm,-{#1[#3,color=black]}] (-4,0) -- (0,0);
+      \foreach \action in {#4}
+      { \expandafter\processaction\action\relax }
+    }
+    \end{minipage}\par\smallskip
+  }
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{arrowcap}[5]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\textbf{Arrow Tip Kind} {\ttfamily#1}}
+    \index{#1@\protect\texttt{#1} arrow tip}%
+    \index{Arrow tips!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+    \def\currentarrowtype{#1}
+    \begin{minipage}[t]{10.25cm}
+      #2
+    \end{minipage}\hskip5mm\begin{minipage}[t]{4.75cm}
+      \leavevmode\vskip-2em
+    \tikz{
+      \path [tips, line width=10mm,-{#1[#3,color=black]}] (-4,0) -- (0,0);
+      \draw [line width=10mm,black!50] (-3,0) -- (#5,0);
+      \foreach \action in {#4}
+      { \expandafter\processaction\action\relax }
+    }
+    \end{minipage}\par\smallskip
+  }
+{
+  \end{pgfmanualentry}
+}
+
+\newenvironment{pattern}[1]{
+  \begin{pgfmanualentry}
+    \pgfmanualentryheadline{\textbf{Pattern} {\ttfamily#1}}
+    \index{#1@\protect\texttt{#1} pattern}%
+    \index{Patterns!#1@\protect\texttt{#1}}%
+    \pgfmanualbody
+}
+{
+  \end{pgfmanualentry}
+}
+
+\def\processaction#1=#2\relax{
+  \expandafter\let\expandafter\pgf@temp\csname manual@action@#1\endcsname
+  \ifx\pgf@temp\relax\else
+    \pgf@temp#2/0/\relax
+  \fi
+}
+\def\manual@action@length#1/#2/#3\relax{%
+  \draw [red,|<->|,semithick,xshift=#2] ([yshift=4pt]current bounding
+  box.north -| -#1,0) coordinate (last length) -- node
+  [above=-2pt] {|length|} ++(#1,0);
+}
+\def\manual@action@width#1/#2/#3\relax{%
+  \draw [overlay, red,|<->|,semithick] (.5,-#1/2) -- node [below,sloped] {|width|} (.5,#1/2);
+}
+\def\manual@action@inset#1/#2/#3\relax{%
+  \draw [red,|<->|,semithick,xshift=#2] ([yshift=-4pt]current bounding
+  box.south -| last length) -- node [below] {|inset|} ++(#1,0);
+}
+
+\newenvironment{arrowexamples}
+{\begin{tabbing}
+    \hbox to \dimexpr\linewidth-5.5cm\relax{\emph{Appearance of the below at line width} \hfil} \= 
+     \hbox to 1.9cm{\emph{0.4pt}\hfil} \= \hbox to 2cm{\emph{0.8pt}\hfil} \= \emph{1.6pt} \\
+  }
+{\end{tabbing}\vskip-1em}
+
+\newenvironment{arrowcapexamples}
+{\begin{tabbing}
+    \hbox to \dimexpr\linewidth-5.5cm\relax{\emph{Appearance of the below at line width} \hfil} \= 
+     \hbox to 1.9cm{\emph{1ex}\hfil} \= \hbox to 2cm{\emph{1em}\hfil} \\
+  }
+{\end{tabbing}\vskip-1em}
+
+\def\arrowcapexample#1[#2]{\def\temp{#1}\ifx\temp\pgfutil@empty\arrowcapexample@\currentarrowtype[{#2}]\else\arrowcapexample@#1[{#2}]\fi}
+\def\arrowcapexample@#1[#2]{%
+  {\sfcode`\.1000\small\texttt{#1[#2]}} \>
+  \kern-.5ex\tikz [baseline,>={#1[#2]}] \draw [line
+  width=1ex,->] (0,.5ex) -- (2em,.5ex);  \>
+  \kern-.5em\tikz [baseline,>={#1[#2]}] \draw [line
+  width=1em,->] (0,.5ex) -- (2em,.5ex);  \\
+}
+
+\def\arrowexample#1[#2]{\def\temp{#1}\ifx\temp\pgfutil@empty\arrowexample@\currentarrowtype[{#2}]\else\arrowexample@#1[{#2}]\fi}
+\def\arrowexample@#1[#2]{%
+  {\sfcode`\.1000\small\texttt{#1[#2]}} \>
+  \tikz [baseline,>={#1[#2]}] \draw [line
+  width=0.4pt,->] (0,.5ex) -- (2em,.5ex); thin \>
+  \tikz [baseline,>={#1[#2]}] \draw [line
+  width=0.8pt,->] (0,.5ex) -- (2em,.5ex); \textbf{thick} \>
+  \tikz [baseline,>={#1[#2]}] \draw [line
+  width=1.6pt,->] (0,.5ex) -- (3em,.5ex); \\
+}
+\def\arrowexampledup[#1]{\arrowexample[{#1] \currentarrowtype[}]}
+\def\arrowexampledupdot[#1]{\arrowexample[{#1] . \currentarrowtype[}]}
+
+\def\arrowexampledouble#1[#2]{\def\temp{#1}\ifx\temp\pgfutil@empty\arrowexampledouble@\currentarrowtype[{#2}]\else\arrowexampledouble@#1[{#2}]\fi}
+\def\arrowexampledouble@#1[#2]{%
+  {\sfcode`\.1000\small\texttt{#1[#2]} on double line} \>
+  \tikz [baseline,>={#1[#2]}]
+    \draw [double equal sign distance,line width=0.4pt,->] (0,.5ex) -- (2em,.5ex); thin \>
+  \tikz [baseline,>={#1[#2]}]
+    \draw [double equal sign distance,line width=0.8pt,->] (0,.5ex) -- (2em,.5ex); \textbf{thick} \>
+  \tikz [baseline,>={#1[#2]}]
+    \draw [double equal sign distance, line width=1.6pt,->] (0,.5ex) -- (3em,.5ex); \\
+}
+
+
+
+\newcommand\symarrow[1]{%
+  \index{#1@\protect\texttt{#1} arrow tip}%
+  \index{Arrow tips!#1@\protect\texttt{#1}}%
+  \texttt{#1}& yields thick  
+  \begin{tikzpicture}[arrows={#1-#1},thick,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture} and thin
+  \begin{tikzpicture}[arrows={#1-#1},thin,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture}
+}
+\newcommand\symarrowdouble[1]{%
+  \index{#1@\protect\texttt{#1} arrow tip}%
+  \index{Arrow tips!#1@\protect\texttt{#1}}%
+  \texttt{#1}& yields thick  
+  \begin{tikzpicture}[arrows={#1-#1},thick,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture}
+  and thin
+  \begin{tikzpicture}[arrows={#1-#1},thin,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture}, double 
+  \begin{tikzpicture}[arrows={#1-#1},thick,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw[double,double equal sign distance] (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture} and 
+  \begin{tikzpicture}[arrows={#1-#1},thin,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw[double,double equal sign distance] (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture}
+}
+
+\newcommand\sarrow[2]{%
+  \index{#1@\protect\texttt{#1} arrow tip}%
+  \index{Arrow tips!#1@\protect\texttt{#1}}%
+  \index{#2@\protect\texttt{#2} arrow tip}%
+  \index{Arrow tips!#2@\protect\texttt{#2}}%
+  \texttt{#1-#2}& yields thick  
+  \begin{tikzpicture}[arrows={#1-#2},thick,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture} and thin
+  \begin{tikzpicture}[arrows={#1-#2},thin,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture}
+}
+
+\newcommand\sarrowdouble[2]{%
+  \index{#1@\protect\texttt{#1} arrow tip}%
+  \index{Arrow tips!#1@\protect\texttt{#1}}%
+  \index{#2@\protect\texttt{#2} arrow tip}%
+  \index{Arrow tips!#2@\protect\texttt{#2}}%
+  \texttt{#1-#2}& yields thick  
+  \begin{tikzpicture}[arrows={#1-#2},thick,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture} and thin
+  \begin{tikzpicture}[arrows={#1-#2},thin,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture}, double 
+  \begin{tikzpicture}[arrows={#1-#2},thick,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw[double,double equal sign distance] (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture} and 
+  \begin{tikzpicture}[arrows={#1-#2},thin,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.1cm,2ex);
+    \fill [black!15] (1cm,-.5ex) rectangle (1.1cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw[double,double equal sign distance] (0pt,.5ex) -- (1cm,.5ex);
+  \end{tikzpicture}
+}
+
+\newcommand\carrow[1]{%
+  \index{#1@\protect\texttt{#1} arrow tip}%
+  \index{Arrow tips!#1@\protect\texttt{#1}}%
+  \texttt{#1}& yields for line width 1ex
+  \begin{tikzpicture}[arrows={#1-#1},line width=1ex,baseline]
+    \useasboundingbox (-1mm,-0.5ex) rectangle (1.6cm,2ex);
+    \fill [black!15] (1.5cm,-.5ex) rectangle (1.6cm,1.5ex) (-1mm,-.5ex) rectangle (0mm,1.5ex) ;
+    \draw (0pt,.5ex) -- (1.5cm,.5ex);
+  \end{tikzpicture}
+}
+\def\myvbar{\char`\|}
+\newcommand\plotmarkentry[1]{%
+  \index{#1@\protect\texttt{#1} plot mark}%
+  \index{Plot marks!#1@\protect\texttt{#1}}
+  \texttt{\char`\\pgfuseplotmark\char`\{\declare{\noligs{#1}}\char`\}} &
+  \tikz\draw[color=black!25] plot[mark=#1,mark options={fill=examplefill,draw=black}] coordinates{(0,0) (.5,0.2) (1,0) (1.5,0.2)};\\
+}
+\newcommand\plotmarkentrytikz[1]{%
+  \index{#1@\protect\texttt{#1} plot mark}%
+  \index{Plot marks!#1@\protect\texttt{#1}}
+  \texttt{mark=\declare{\noligs{#1}}} & \tikz\draw[color=black!25]
+  plot[mark=#1,mark options={fill=examplefill,draw=black}] 
+    coordinates {(0,0) (.5,0.2) (1,0) (1.5,0.2)};\\
+}
+
+
+
+\ifx\scantokens\@undefined
+  \PackageError{pgfmanual-macros}{You need to use extended latex
+    (elatex) or (pdfelatex) to process this document}{}
+\fi
+
+\begingroup
+\catcode`|=0
+\catcode`[= 1
+\catcode`]=2
+\catcode`\{=12
+\catcode `\}=12
+\catcode`\\=12 |gdef|find@example#1\end{codeexample}[|endofcodeexample[#1]]
+|endgroup
+
+% define \returntospace.
+%
+% It should define NEWLINE as {}, spaces and tabs as \space.
+\begingroup
+\catcode`\^=7
+\catcode`\^^M=13
+\catcode`\^^I=13
+\catcode`\ =13%
+\gdef\returntospace{\catcode`\ =13\def {\space}\catcode`\^^I=13\def^^I{\space}}
+\gdef\showreturn{\show^^M}
+\endgroup
+
+\begingroup
+\catcode`\%=13
+\catcode`\^^M=13
+\gdef\commenthandler{\catcode`\%=13\def%{\@gobble@till@return}}
+\gdef\@gobble@till@return#1^^M{}
+\gdef\@gobble@till@return@ignore#1^^M{\ignorespaces}
+\gdef\typesetcomment{\catcode`\%=13\def%{\@typeset@till@return}}
+\gdef\@typeset@till@return#1^^M{{\def%{\char`\%}\textsl{\char`\%#1}}\par}
+\endgroup
+
+% Define tab-implementation functions
+%   \codeexample@tabinit@replacementchars@
+% and
+%   \codeexample@tabinit@catcode@
+%
+% They should ONLY be used in case that tab replacement is active.
+%
+% This here is merely a preparation step.
+%
+% Idea:
+% \codeexample@tabinit@catcode@ will make TAB active
+% and
+% \codeexample@tabinit@replacementchars@ will insert as many spaces as
+% /codeexample/tabsize contains.
+{
+\catcode`\^^I=13
+% ATTENTION: do NOT use tabs in these definitions!!
+\gdef\codeexample@tabinit@replacementchars@{%
+ \begingroup
+ \count0=\pgfkeysvalueof{/codeexample/tabsize}\relax
+ \toks0={}%
+ \loop
+ \ifnum\count0>0
+  \advance\count0 by-1
+  \toks0=\expandafter{\the\toks0\ }%
+ \repeat
+ \xdef\codeexample@tabinit@replacementchars@@{\the\toks0}%
+ \endgroup
+ \let^^I=\codeexample@tabinit@replacementchars@@
+}%
+\gdef\codeexample@tabinit@catcode@{\catcode`\^^I=13}%
+}%
+
+% Called after any options have been set. It assigns
+%   \codeexample@tabinit@catcode
+% and
+%   \codeexample@tabinit@replacementchars
+% which are used inside of 
+%\begin{codeexample}
+% ...
+%\end{codeexample}
+%
+% \codeexample@tabinit@catcode  is either \relax or it makes tab
+% active.
+%
+% \codeexample@tabinit@replacementchars is either \relax or it inserts
+% a proper replacement sequence for tabs (as many spaces as
+% configured)
+\def\codeexample@tabinit{%
+  \ifnum\pgfkeysvalueof{/codeexample/tabsize}=0\relax
+    \let\codeexample@tabinit@replacementchars=\relax
+    \let\codeexample@tabinit@catcode=\relax
+  \else
+    \let\codeexample@tabinit@catcode=\codeexample@tabinit@catcode@
+    \let\codeexample@tabinit@replacementchars=\codeexample@tabinit@replacementchars@
+  \fi
+}
+
+\newif\ifpgfmanualtikzsyntaxhilighting
+
+\pgfqkeys{/codeexample}{%
+  width/.code=  {\setlength\codeexamplewidth{#1}},
+  graphic/.code=  {\colorlet{graphicbackground}{#1}},
+  code/.code=  {\colorlet{codebackground}{#1}},
+  execute code/.is if=code@execute,
+  hidden/.is if=code@hidden,
+  code only/.code=  {\code@executefalse},
+  setup code/.code=  {\pgfmanual@setup@codetrue\code@executefalse},
+  multipage/.code=  {\code@executefalse\pgfmanual@multipage@codetrue},
+  pre/.store in=\code@pre,
+  post/.store in=\code@post,
+  % #1 is the *complete* environment contents as it shall be
+  % typeset. In particular, the catcodes are NOT the normal ones.
+  typeset listing/.code=  {#1},
+  render instead/.store in=\code@render,
+  vbox/.code=  {\def\code@pre{\vbox\bgroup\setlength{\hsize}{\linewidth-6pt}}\def\code@post{\egroup}},
+  ignorespaces/.code=  {\let\@gobble@till@return=\@gobble@till@return@ignore},
+  leave comments/.code=  {\def\code@catcode@hook{\catcode`\%=12}\let\commenthandler=\relax\let\typesetcomment=\relax},
+  tabsize/.initial=0,% FIXME : this here is merely used for indentation. It is just a TAB REPLACEMENT.
+  every codeexample/.style={width=4cm+7pt, tikz syntax=true},
+  from file/.code={\codeexamplefromfiletrue\def\codeexamplesource{#1}},
+  tikz syntax/.is if=pgfmanualtikzsyntaxhilighting,
+  animation list/.store in=\code@animation@list,
+  animation pre/.store in=\code@animation@pre,
+  animation post/.store in=\code@animation@post,
+  animation scale/.store in=\pgfmanualanimscale,
+  animation bb/.style={
+    animation pre={
+      \tikzset{
+        every picture/.style={
+          execute at begin picture={
+            \useasboundingbox[clip] #1;}
+        }
+      }
+    }
+  },
+  preamble/.store in=\code@preamble,
+}
+
+\def\pgfmanualanimscale{.5}
+
+\newread\examplesource
+
+
+% Opening, reading and closing the results file
+
+\def\opensource#1{
+  \immediate\openin\examplesource=#1
+}
+\def\do@codeexamplefromfile{%
+  \immediate\openin\examplesource\expandafter{\codeexamplesource}%
+  \def\examplelines{}%
+  \readexamplelines
+  \closein\examplesource
+  \expandafter\endofcodeexample\expandafter{\examplelines}%
+}
+
+\def\readexamplelines{
+  \ifeof\examplesource%
+  \else
+    \immediate\read\examplesource to \exampleline
+    \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\examplelines\expandafter\expandafter\expandafter{\expandafter\examplelines\exampleline}
+    \expandafter\readexamplelines%
+  \fi
+}
+
+\let\code@animation@pre\pgfutil@empty
+\let\code@animation@post\pgfutil@empty
+\let\code@animation@list\pgfutil@empty
+
+\let\code@pre\pgfutil@empty
+\let\code@post\pgfutil@empty
+\let\code@render\pgfutil@empty
+\let\code@preamble\pgfutil@empty
+\def\code@catcode@hook{}
+
+\newif\ifpgfmanual@multipage@code
+\newif\ifpgfmanual@setup@code
+\newif\ifcodeexamplefromfile
+\newdimen\codeexamplewidth
+\newif\ifcode@execute
+\newif\ifcode@hidden
+\newbox\codeexamplebox
+\def\codeexample[#1]{%
+  \global\let\pgfmanual@do@this\relax%
+  \aftergroup\pgfmanual@do@this%
+  \begingroup%
+  \code@executetrue
+  \pgfqkeys{/codeexample}{every codeexample,#1}%
+  \pgfmanualswitchoncolors%
+  \ifcodeexamplefromfile\begingroup\fi
+  \codeexample@tabinit% assigns \codeexample@tabinit@[catcode,replacementchars]
+  \parindent0pt
+  \begingroup%
+  \par% this \par is not inside \ifcode@hidden because we want to switch to vmode
+  \ifcode@hidden\else
+    \medskip%
+  \fi
+  \let\do\@makeother%
+  \dospecials%
+  \obeylines%
+  \@vobeyspaces%
+  \catcode`\%=13%
+  \catcode`\^^M=13%
+  \code@catcode@hook%
+  \codeexample@tabinit@catcode
+  \relax%
+  \ifcodeexamplefromfile%
+    \expandafter\do@codeexamplefromfile%
+  \else%
+    \expandafter\find@example%
+  \fi}
+\def\endofcodeexample#1{%
+  \endgroup%
+  \ifpgfmanual@setup@code%
+    \gdef\pgfmanual@do@this{%
+      {%
+        \returntospace%
+        \commenthandler%
+        % ensures the active ^^M is protected thus won't be expanded in the
+        % following \xdef\code@temp{#1}
+        \obeylines%
+        \xdef\code@temp{#1}% removes returns and comments
+      }%
+      \edef\pgfmanualmcatcode{\the\catcode`\^^M}%
+      \catcode`\^^M=9\relax%
+      \expandafter\scantokens\expandafter{\code@temp}%
+      \catcode`\^^M=\pgfmanualmcatcode%
+    }%
+  \fi%
+  \ifcode@hidden\else
+    \ifcode@execute%
+      \setbox\codeexamplebox=\hbox{%
+        \ifx\code@render\pgfutil@empty%
+        {%
+          {%
+            \returntospace%
+            \commenthandler%
+            % ensures the active ^^M is protected thus won't be expanded in the
+            % following \xdef\code@temp{#1}
+            \obeylines%
+            \xdef\code@temp{#1}% removes returns and comments
+          }%
+          \catcode`\^^M=9%
+          \colorbox{graphicbackground}{\color{black}\ignorespaces%
+            \code@pre\expandafter\scantokens\expandafter{\code@temp\ignorespaces}\code@post\ignorespaces}%
+        }%
+        \else%
+          \global\let\code@temp\code@render%
+          \colorbox{graphicbackground}{\color{black}\ignorespaces%
+            \code@render}%
+        \fi%
+      }%
+      \ifx\code@animation@list\pgfutil@empty%
+      \else%
+      \setbox\codeexampleboxanim=\vbox{%
+        \rightskip0pt\leftskip0pt plus1filll%
+        \ifdim\wd\codeexamplebox>\codeexamplewidth%
+        \else%
+          \hsize\codeexamplewidth%
+          \advance\hsize by2cm%
+        \fi%
+        \leavevmode\catcode`\^^M=9%
+        \foreach \pgfmanualtime/\pgfmanualtimehow in\code@animation@list{%
+          \setbox\codeexampleboxanim=\hbox{\colorbox{animationgraphicbackground}{%
+              \tikzset{make snapshot of=\pgfmanualtime}%
+              \scalebox{\pgfmanualanimscale}{\color{black}\ignorespaces%
+                \code@animation@pre\expandafter\scantokens\expandafter{\code@temp\ignorespaces}\code@animation@post\ignorespaces}%
+            }}%
+          \space\raise4pt\hbox to0pt{\vrule width0pt height1em\hbox
+            to\wd\codeexampleboxanim{\hfil\scriptsize$t{=}\pgfmanualtimehow \mathrm s$\hfil}\hss}%
+          \lower\ht\codeexampleboxanim\box\codeexampleboxanim\hfil\penalty0\hskip0ptplus-1fil%
+        }%
+      }%
+      \setbox\codeexampleboxanim=\hbox{\hbox{}\hskip-2cm\box\codeexampleboxanim}%
+      \fi%
+      \ifdim\wd\codeexamplebox>\codeexamplewidth%
+        \def\code@start{\par}%
+        \def\code@flushstart{}\def\code@flushend{}%
+        \def\code@mid{\parskip2pt\par\noindent}%
+        \def\code@width{\linewidth-6pt}%
+        \def\code@end{}%
+      \else%
+        \def\code@start{%
+          \linewidth=\textwidth%
+          \parshape \@ne 0pt \linewidth
+          \leavevmode%
+          \hbox\bgroup}%
+        \def\code@flushstart{\hfill}%
+        \def\code@flushend{\hbox{}}%
+        \def\code@mid{\hskip6pt}%
+        \def\code@width{\linewidth-12pt-\codeexamplewidth}%
+        \def\code@end{\egroup}%
+      \fi%
+      \code@start%
+      \noindent%
+      \begin{minipage}[t]{\codeexamplewidth}\raggedright
+        \hrule width0pt%
+        \footnotesize\vskip-1em%
+        \code@flushstart\box\codeexamplebox\code@flushend%
+        \vskip0pt%
+        \leavevmode%
+        \box\codeexampleboxanim%
+        \vskip-1ex
+        \leavevmode%
+      \end{minipage}%
+    \else%
+      \def\code@mid{\par}
+      \def\code@width{\linewidth-6pt}
+      \def\code@end{}
+    \fi%
+    \code@mid%
+      \ifpgfmanual@multipage@code%
+        {%
+          \pgfkeysvalueof{/codeexample/prettyprint/base color}%
+          \pgfmanualdolisting{#1}%
+        }%
+      \else%
+        \colorbox{codebackground}{%
+          \pgfkeysvalueof{/codeexample/prettyprint/base color}%
+          \begin{minipage}[t]{\code@width}%
+            \pgfmanualdolisting{#1}%
+          \end{minipage}}%
+      \fi%
+    \code@end%
+    \par%
+    \medskip
+  \fi
+  \endcodeexample\endgroup%
+}
+
+\def\endcodeexample{\endgroup}
+\newbox\codeexampleboxanim
+
+\def\pgfmanualdolisting#1{%
+      {%
+        \let\do\@makeother
+        \dospecials
+        \frenchspacing\@vobeyspaces
+        \normalfont\ttfamily\footnotesize
+        \typesetcomment%
+        \codeexample@tabinit@replacementchars
+        \@tempswafalse
+        \def\par{%
+          \if@tempswa
+          \leavevmode \null \@@par\penalty\interlinepenalty
+          \else
+          \@tempswatrue
+          \ifhmode\@@par\penalty\interlinepenalty\fi
+          \fi}%
+        \obeylines
+        \everypar \expandafter{\the\everypar \unpenalty}%
+        \ifx\code@preamble\pgfutil@empty\else
+          \pgfutil@tempdima=\hsize
+          \vbox{\hsize=\pgfutil@tempdima
+              \raggedright\scriptsize\detokenize\expandafter{\code@preamble}}%
+        \fi
+        \pgfkeysvalueof{/codeexample/typeset listing/.@cmd}{#1}\pgfeov
+      }%
+}
+
+\makeatother
+
+\usepackage{pgfmanual}
+
+
+% autoxref is now always on
+
+% \makeatletter
+% % \pgfautoxrefs will be defined by 'make dist'
+% \pgfutil@ifundefined{pgfautoxrefs}{%
+%   \renewcommand\pgfmanualpdflabel[3][]{#3}% NO-OP
+%   \def\pgfmanualpdfref#1#2{#2}%
+%   \pgfkeys{
+%     /pdflinks/codeexample links=false,% DISABLED.
+%   }%
+% }{}
+% \makeatother
+
+\newdimen\pgfmanualcslinkpreskip
+
+% Styling of the pretty printer
+\pgfkeys{
+  /codeexample/syntax hilighting/.style={
+    /codeexample/prettyprint/key name/.code={\textcolor{keycolor}{\pgfmanualpdfref{##1}{\noligs{##1}}}},
+    /codeexample/prettyprint/key name with handler/.code 2 args={\textcolor{keycolor}{\pgfmanualpdfref{##1}{\noligs{##1}}}/\textcolor{blue!70!black}{\pgfmanualpdfref{/handlers/##2}{\noligs{##2}}}},
+    /codeexample/prettyprint/key value display only/.code={\textcolor{keycolor}{{\itshape{\let\pgfmanualwordstartup\relax\pgfmanualprettyprintcode{##1}}}}},
+    /codeexample/prettyprint/cs/.code={\textcolor{cscolor}{\pgfmanualcslinkpreskip4.25pt\pgfmanualpdfref{##1}{\noligs{##1}}}},
+    /codeexample/prettyprint/cs with args/.code 2 args={\textcolor{black}{\pgfmanualcslinkpreskip4.25pt\pgfmanualpdfref{##1}{\noligs{##1}}}\{\textcolor{black}{\pgfmanualprettyprintcode{##2}}\pgfmanualclosebrace},
+    /codeexample/prettyprint/cs arguments/pgfkeys/.initial=1,
+    /codeexample/prettyprint/cs/pgfkeys/.code 2 args={\textcolor{black}{\pgfmanualcslinkpreskip4.25pt\pgfmanualpdfref{##1}{\noligs{##1}}}\{\textcolor{black}{\pgfmanualprettyprintpgfkeys{##2}}\pgfmanualclosebrace},
+    /codeexample/prettyprint/cs arguments/begin/.initial=1,
+    /codeexample/prettyprint/cs/begin/.code 2 args={\textcolor{black}{##1}\{\textcolor{cscolor}{\pgfmanualpdfref{##2}{\noligs{##2}}}\pgfmanualclosebrace},
+    /codeexample/prettyprint/cs arguments/end/.initial=1,
+    /codeexample/prettyprint/cs/end/.code 2 args={\textcolor{black}{##1}\{\textcolor{cscolor}{\pgfmanualpdfref{##2}{\noligs{##2}}}\pgfmanualclosebrace},
+    /codeexample/prettyprint/word/.code={\pgfmanualwordstartup{\begingroup\pgfkeyssetvalue{/pdflinks/search key prefixes in}{}\pgfmanualpdfref{##1}{\noligs{##1}}\endgroup}},
+    /codeexample/prettyprint/point/.code={\textcolor{pointcolor}{\noligs{##1}}},%
+    /codeexample/prettyprint/point with cs/.code 2 args={\textcolor{pointcolor}{(\pgfmanualpdfref{##1}{\noligs{##1}}:\noligs{##2}}},%
+    /codeexample/prettyprint/comment font=\itshape,
+    /codeexample/prettyprint/base color/.initial=\color{basecolor},
+    /pdflinks/render hyperlink/.code={%
+      {\setbox0=\hbox{##1}%
+        \rlap{{\color{linkcolor}\dimen0\wd0\advance\dimen0by-\pgfmanualcslinkpreskip\hskip\pgfmanualcslinkpreskip\vrule width\dimen0 height-1pt depth1.6pt}}%
+        \box0%
+      }%
+    }
+  },/codeexample/syntax hilighting
+}
+
+\colorlet{keycolor}{black}
+\colorlet{cscolor}{black}
+\colorlet{pointcolor}{black}
+\colorlet{basecolor}{black}
+\colorlet{linkcolor}{black!8}
+
+\def\pgfmanualswitchoncolors{%
+  \colorlet{keycolor}{green!50!black}%
+  \colorlet{cscolor}{blue!70!black}
+  \colorlet{pointcolor}{violet}
+  \colorlet{basecolor}{black!55}
+  \colorlet{linkcolor}{white}
+}
+
+\makeatletter
+
+\def\pgfmanualwordstartup{\textcolor{black}}
+
+\def\noligs#1{\pgfmanualnoligs#1\kern0pt--\pgf@stop}%
+\def\pgfmanualnoligs#1--{%
+  \pgfutil@ifnextchar\pgf@stop{#1\pgfutil@gobble}{#1-\kern0pt-\kern0pt\pgfmanualnoligs}%
+}
+\makeatother
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "beameruserguide"
+%%% End: 

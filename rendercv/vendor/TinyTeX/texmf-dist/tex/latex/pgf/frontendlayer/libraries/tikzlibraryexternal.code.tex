@@ -1,0 +1,115 @@
+% Copyright 2019 by Christian Feuersaenger
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+%
+% 
+% This file provides a high-level automatic export feature for tikz pictures.
+% It allows to export EACH SINGLE FIGURE into a separate PDF.
+%
+% The simplest way is to use 
+%
+% \tikzexternalize{myarticle}
+%
+% it simply converts every figure using the write18 method. If that is not possible,
+% you need to reconfigure \tikzexternalize: it can generate a list of figure file names 
+% and you need to generate these figures manually (or with a script).
+%
+% It replaces \tikzpicture/ \endtikzpicture and \tikz and invokes \beginpgfgraphicnamed ... \endpgfgraphicnamed
+% commands if necessary.
+
+% load this package in order to get \pdf@mdfivesum .
+% \pdf@mdfivesum is available for pdftex and lualatex and computes the
+% md5 sum. Note that pdftex has \pdfmdfivesum, but lualatex does not
+% have it.
+%
+% ... also used for \pdf@shellescape.
+\usepackage{pdftexcmds}
+\pgfutil@IfFileExists{atveryend.sty}{%
+	\usepackage{atveryend}%
+}{%
+	\message{! Package tikz Warning: \string\usepackage{atveryend} impossible. Automatic resolving of references within external files impossible.}%
+}%
+
+% source generic implementation:
+\input tikzexternalshared.code.tex
+
+\pgfutil@IfUndefined{pdf@mdfivesum}{}{%
+	\let\tikzexternal@mdfivesum=\pdf@mdfivesum
+}%
+
+\def\tikzexternal@TEXDIALECT@begpicture{\begin{tikzpicture}}
+\def\tikzexternal@TEXDIALECT@endpicture{\end{tikzpicture}}%
+
+% this latex specific this assumes it starts at the beginning of an
+% environment. The environment is named
+% '\tikzexternal@laTeX@collect@until@end@tikzpicturetikzpicturestring'.
+%
+% Everything up to \end{<name>} will be collected and passed as
+% argument to the macro '#1'.
+%
+% This does also work if <name> is NOT tikzpicture!
+\def\tikzexternal@TEXDIALECT@collectpicture#1{%
+	\begingroup
+	\t@tikzexternal@tmpa={}%
+	\tikzexternal@laTeX@collect@until@end@tikzpicture{#1}%
+}
+
+% Loop until we find '\end{tikzpicture}'.  We have to make sure that
+% even strings like '#1' are allowed inside of the collected argument.
+\long\def\tikzexternal@laTeX@collect@until@end@tikzpicture#1#2\end#3{%
+	\def\tikzexternal@laTeX@collect@until@end@tikzpicture@{#3}%
+	\ifx\tikzexternal@laTeX@collect@until@end@tikzpicture@\tikzexternal@laTeX@collect@until@end@tikzpicturetikzpicturestring
+		\t@tikzexternal@tmpa=\expandafter{\the\t@tikzexternal@tmpa #2}%
+		\edef\tikzexternal@TEXDIALECT@collectpicture@next{%
+			\noexpand\endgroup
+			\noexpand#1{\the\t@tikzexternal@tmpa}%
+		}%
+		\t@tikzexternal@tmpa={}% release memory.
+	\else
+		\t@tikzexternal@tmpa=\expandafter{\the\t@tikzexternal@tmpa #2\end{#3}}%
+		\def\tikzexternal@TEXDIALECT@collectpicture@next{%
+			\tikzexternal@laTeX@collect@until@end@tikzpicture{#1}}%
+	\fi
+	\tikzexternal@TEXDIALECT@collectpicture@next
+}%
+\def\tikzexternal@laTeX@collect@until@end@tikzpicturetikzpicturestring{tikzpicture}%
+
+\def\tikzexternal@handle@landscape{%
+	\ltx@ifpackageloaded{pdflscape}{%
+		% Work around a bug in conjunction with pdflscape and
+		% external: without this optimize-away-instruction, the
+		% externalized image would be rotated - and it will be rotated
+		% once more again when it is included.
+		%
+		% if we "optimize it away", the landscape stuff will be
+		% omitted. I hope this is enough... might not be entirely
+		% fool-proof; perhaps we need to set it to \relax. For now, it
+		% will probably do the job
+		\tikzset{
+			external/.cd,
+			optimize command away=\landscape,
+			optimize command away=\endlandscape
+		}%
+	}{%
+	}%
+}%
+
+% FIXME: See also https://github.com/latex3/latex2e/issues/441
+% for compatibility with the new LaTeX hook management redefine \@currname to
+% force a separate scope
+\let\tikzexternal@currname\@currname
+\def\@currname{tikzlibraryexternal}
+
+\AtBeginDocument{%
+	\pgfutil@ifundefined{tikzexternalrealjob}{%
+		\global\let\tikzexternalrealjob=\jobname
+	}{}%
+	\tikzexternal@handle@landscape
+}%
+
+\let\@currname\tikzexternal@currname

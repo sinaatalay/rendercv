@@ -1,0 +1,600 @@
+% Copyright 2019 by Till Tantau
+% CMYK and grayscale shadings adaptation copyright 2019 by David Purton
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-common-postscript.def}
+
+
+% Driver commands for postscript
+
+\newif\ifpgf@fillcolor
+\newif\ifpgf@strokecolor
+\newif\ifpgfsys@@clipnext
+
+% Path construction:
+\def\pgfsys@lineto#1#2{\pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgfsysprotocol@literal{lineto}}
+\def\pgfsys@moveto#1#2{\pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgfsysprotocol@literal{moveto}}
+\def\pgfsys@curveto#1#2#3#4#5#6{%
+  \pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgf@sys@bp{#3}\pgf@sys@bp{#4}\pgf@sys@bp{#5}\pgf@sys@bp{#6}\pgfsysprotocol@literal{curveto}}
+\def\pgfsys@rect#1#2#3#4{\pgf@sys@bp{#4}\pgf@sys@bp{#3}\pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgfsysprotocol@literal{pgfe}}
+\def\pgfsys@closepath{\pgfsysprotocol@literal{closepath}}
+
+% Path usage:
+\def\pgfsys@stroke{%
+  \ifpgfsys@@clipnext%
+    \ifpgfsys@eorule%
+      \pgfsysprotocol@literal{gsave pgfsc pgfstr grestore eoclip newpath}%
+    \else%
+      \pgfsysprotocol@literal{gsave pgfsc pgfstr grestore clip newpath}%
+    \fi%
+    \pgfsys@@clipnextfalse%
+  \else%
+    \ifpgf@strokecolor%
+      \pgfsysprotocol@literal{gsave pgfsc pgfstr grestore newpath}%
+    \else%
+      \pgfsysprotocol@literal{pgfstr}%
+    \fi%
+ \fi}
+\def\pgfsys@fill{%
+  \ifpgfsys@@clipnext%
+    \ifpgfsys@eorule%
+      \pgfsysprotocol@literal{gsave pgffc pgfeofill grestore eoclip newpath}%
+    \else%
+      \pgfsysprotocol@literal{gsave pgffc pgffill grestore clip newpath}%
+    \fi%
+    \pgfsys@@clipnextfalse%
+  \else%
+    \ifpgf@fillcolor%
+      \ifpgfsys@eorule%
+        \pgfsysprotocol@literal{gsave pgffc pgfeofill grestore newpath}%
+      \else%
+        \pgfsysprotocol@literal{gsave pgffc pgffill grestore newpath}%
+      \fi%
+    \else%
+      \ifpgfsys@eorule%
+        \pgfsysprotocol@literal{pgfeofill}%
+      \else%
+        \pgfsysprotocol@literal{pgffill}%
+      \fi%
+    \fi%
+ \fi}
+\def\pgfsys@fillstroke{%
+  \ifpgfsys@eorule%
+    \pgfsysprotocol@literal{gsave pgffc pgfeofill grestore gsave pgfsc pgfstr grestore}%
+  \else%
+    \pgfsysprotocol@literal{gsave pgffc pgffill grestore gsave pgfsc pgfstr grestore}%
+  \fi%
+  \ifpgfsys@@clipnext%
+    \ifpgfsys@eorule%
+      \pgfsysprotocol@literal{eoclip}%
+    \else%
+      \pgfsysprotocol@literal{clip}%
+    \fi%
+    \pgfsys@@clipnextfalse%
+  \fi%
+  \pgfsysprotocol@literal{newpath}}
+\def\pgfsys@clipnext{\pgfsys@@clipnexttrue}
+\def\pgfsys@discardpath{%
+  \ifpgfsys@@clipnext%
+    \ifpgfsys@eorule%
+      \pgfsysprotocol@literal{eoclip}%
+    \else%
+      \pgfsysprotocol@literal{clip}%
+    \fi%
+    \pgfsys@@clipnextfalse%
+  \fi%
+  \pgfsysprotocol@literal{newpath}}
+
+% Transformation:
+\def\pgfsys@transformshift#1#2{\pgf@sys@bp{#1}\pgf@sys@bp{#2}\pgfsysprotocol@literal{translate}}
+\def\pgfsys@transformxyscale#1#2{\pgfsysprotocol@literal{#1 #2 scale}}
+\def\pgfsys@transformcm#1#2#3#4#5#6{%
+  \pgfsysprotocol@literalbuffered{[#1 #2 #3 #4}\pgf@sys@bp{#5}\pgf@sys@bp{#6}\pgfsysprotocol@literal{] concat}}
+
+% Scopes
+\def\pgfsys@beginscope{\pgfsysprotocol@literal{save}}
+\def\pgfsys@endscope{\pgfsysprotocol@literal{restore}}
+
+\newif\ifpgfsys@ps@boxmode
+\def\pgfsys@begin@text{\pgfsys@ps@boxmodetrue}
+\def\pgfsys@end@text{}
+
+
+% Graphics state
+\def\pgfsys@setdash#1#2{%
+  \pgfsysprotocol@literalbuffered{[}%
+  \pgfutil@for\pgf@sys@temp:={#1}\do{\pgf@sys@bp{\pgf@sys@temp}}%
+  \pgfsysprotocol@literalbuffered{]}%
+  \pgf@sys@bp{#2}\pgfsysprotocol@literal{setdash}}
+\def\pgfsys@setlinewidth#1{\pgf@sys@bp{#1}\pgfsysprotocol@literal{pgfw}}
+\def\pgfsys@setmiterlimit#1{\pgfsysprotocol@literal{#1 setmiterlimit}}
+\def\pgfsys@buttcap{\pgfsysprotocol@literal{0 setlinecap}}
+\def\pgfsys@roundcap{\pgfsysprotocol@literal{1 setlinecap}}
+\def\pgfsys@rectcap{\pgfsysprotocol@literal{2 setlinecap}}
+\def\pgfsys@miterjoin{\pgfsysprotocol@literal{0 setlinejoin}}
+\def\pgfsys@roundjoin{\pgfsysprotocol@literal{1 setlinejoin}}
+\def\pgfsys@beveljoin{\pgfsysprotocol@literal{2 setlinejoin}}
+\def\pgfsys@color@rgb@stroke#1#2#3{\pgfsysprotocol@literal{/pgfsc{#1 #2 #3 setrgbcolor}def}\pgf@strokecolortrue}
+\def\pgfsys@color@rgb@fill#1#2#3{\pgfsysprotocol@literal{/pgffc{#1 #2 #3 setrgbcolor}def}\pgf@fillcolortrue}
+\def\pgfsys@color@rgb#1#2#3{\pgfsys@color@reset\pgfsysprotocol@literal{#1 #2 #3 setrgbcolor}}
+\def\pgfsys@color@cmyk@stroke#1#2#3#4{\pgfsysprotocol@literal{/pgfsc{#1 #2 #3 #4 setcmykcolor}def}\pgf@strokecolortrue}
+\def\pgfsys@color@cmyk@fill#1#2#3#4{\pgfsysprotocol@literal{/pgffc{#1 #2 #3 #4 setcmykcolor}def}\pgf@fillcolortrue}
+\def\pgfsys@color@cmyk#1#2#3#4{\pgfsys@color@reset\pgfsysprotocol@literal{#1 #2 #3 #4 setcmykcolor}}
+\def\pgfsys@color@cmy@stroke#1#2#3{\pgfsysprotocol@literal{/pgfsc{#1 #2 #3 0 setcmykcolor}def}\pgf@strokecolortrue}
+\def\pgfsys@color@cmy@fill#1#2#3{\pgfsysprotocol@literal{/pgffc{#1 #2 #3 0 setcmykcolor}def}\pgf@fillcolortrue}
+\def\pgfsys@color@cmy#1#2#3{\pgfsys@color@reset\pgfsysprotocol@literal{#1 #2 #3 0 setcmykcolor}}
+\def\pgfsys@color@gray@stroke#1{\pgfsysprotocol@literal{/pgfsc{#1 setgray}def}\pgf@strokecolortrue}
+\def\pgfsys@color@gray@fill#1{\pgfsysprotocol@literal{/pgffc{#1 setgray}def}\pgf@fillcolortrue}
+\def\pgfsys@color@gray#1{\pgfsys@color@reset\pgfsysprotocol@literal{#1 setgray}}
+\def\pgfsysps@color@resetnow{\pgfsysprotocol@literal{/pgfsc{}def/pgffc{}def}\pgf@strokecolorfalse\pgf@fillcolorfalse}%
+\def\pgfsys@color@reset{%
+  \ifpgfsys@color@reset@inorder%
+    \ifpgf@strokecolor%
+      \pgfsysps@color@resetnow%
+    \else%
+      \ifpgf@fillcolor%
+        \pgfsysps@color@resetnow%
+      \fi%
+    \fi%
+  \else%
+    \pgfsysps@color@resetnow%
+  \fi}
+
+
+% Opacity
+
+\def\pgfsys@fill@opacity#1{%
+  \pgfsysprotocol@literal{#1 .pgfsetfillopacityalpha}%
+}
+\def\pgfsys@stroke@opacity#1{%
+  \pgfsysprotocol@literal{#1 .pgfsetstrokeopacityalpha}%
+}
+
+% Objects
+\newcount\pgf@objectcount
+\def\pgfsys@defobject#1#2#3#4{%
+  \global\advance\pgf@objectcount by 1%
+  \expandafter\xdef\csname#1\endcsname{\the\pgf@objectcount}%
+  \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
+  {%
+    \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+    \pgfsysprotocol@bufferedtrue%
+    #4%
+    \pgfsysprotocol@getcurrentprotocol\pgfsys@@temp%
+    \pgf@sys@postscript@object{/pgf\csname#1\endcsname{gsave exec \pgfsys@@temp\space grestore} bind def}%
+  }%
+  \pgfsysprotocol@setcurrentprotocol\pgfsys@temp%
+}
+\def\pgfsys@useobject#1#2{%
+  \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
+  {%
+    \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+    \pgfsysprotocol@bufferedfalse%
+    #2%
+    \pgfsysprotocol@invokecurrentprotocol%
+    \pgfsys@invoke{pgf\csname#1\endcsname}%
+  }%
+  \pgfsysprotocol@setcurrentprotocol\pgfsys@temp}
+
+% Shadings
+
+\def\pgfsys@horishading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgfmathsetlength\pgf@x{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@sys@bp@correct{\pgf@x}%
+    \pgf@y=\pgf@max%
+    \pgf@sys@bp@correct{\pgf@y}%
+    \xdef\pgfutil@tempa{\hbox to \the\pgf@max{%
+        \noexpand\vrule width0pt height\the\pgf@xa%
+        \noexpand\pgfsys@beginpurepicture%
+          \noexpand\pgfsys@rect{0pt}{0pt}{\the\pgf@max}{\the\pgf@xa}%
+          \noexpand\pgfsys@clipnext%
+          \noexpand\pgfsys@discardpath%
+          \noexpand\pgfsys@invoke{\pgf@domb\space \pgf@sys@tonumber{\pgf@x} pgfH\pgf@shading@model\space \pgf@psfuncs\space pop}%
+          \hss%
+        \noexpand\pgfsys@endpurepicture}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+\def\pgfsys@vertshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgfmathsetlength\pgf@x{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@sys@bp@correct{\pgf@x}%
+    \pgf@y=\pgf@max%
+    \pgf@sys@bp@correct{\pgf@y}%
+    \xdef\pgfutil@tempa{\hbox to \the\pgf@xa{%
+        \noexpand\vrule width0pt height\the\pgf@max%
+        \noexpand\pgfsys@beginpurepicture%
+          \noexpand\pgfsys@rect{0pt}{0pt}{\the\pgf@xa}{\the\pgf@max}%
+          \noexpand\pgfsys@clipnext%
+          \noexpand\pgfsys@discardpath%
+          \noexpand\pgfsys@invoke{\pgf@domb\space \pgf@sys@tonumber{\pgf@x} pgfV\pgf@shading@model\space \pgf@psfuncs\space pop}%
+          \hss%
+        \noexpand\pgfsys@endpurepicture}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+\def\pgfsys@radialshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@process{#2}%
+    \pgf@sys@bp@correct{\pgf@x}%
+    \pgf@sys@bp@correct{\pgf@y}%
+    \pgf@xa=2\pgf@max%
+    \pgf@sys@bp@correct{\pgf@max}%
+    \advance\pgf@x by \pgf@max%
+    \advance\pgf@y by \pgf@max%
+    \xdef\pgfutil@tempa{\hbox to \the\pgf@xa{%
+        \noexpand\vrule width0pt height\the\pgf@xa%
+        \noexpand\pgfsys@beginpurepicture%
+          \noexpand\pgfsys@invoke{%
+            \pgf@domb\space \pgf@sys@tonumber{\pgf@y} \pgf@sys@tonumber{\pgf@x} \pgf@sys@tonumber{\pgf@max} pgfR1\pgf@shading@model\space
+            \pgf@psfuncs\space \pgf@firstcolor\space \pgf@doma\space pgfR2\pgf@shading@model}%
+          \hss%
+        \noexpand\pgfsys@endpurepicture}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+\def\pgfsys@functionalshading#1#2#3#4{%
+  {%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{#3}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \pgf@sys@bp@correct{\pgf@xb}%
+    \pgf@sys@bp@correct{\pgf@yb}%
+    \pgf@xc=-\pgf@xa%
+    \pgf@yc=-\pgf@ya%
+    \xdef\pgfutil@tempa{%
+      \hbox to\the\pgf@x{\vbox to\the\pgf@y{\vfil
+          \noexpand\pgfsys@beginpurepicture%
+          \noexpand\pgfsys@invoke{%
+            \pgf@sys@tonumber{\pgf@xc} \pgf@sys@tonumber{\pgf@yc} translate
+            1.1 setlinewidth [] 0 setdash 0 setlinecap
+            /pgfproc {#4} bind def
+            \pgf@sys@tonumber{\pgf@ya} 1 \pgf@sys@tonumber{\pgf@yb}
+            {
+              \pgf@sys@tonumber{\pgf@xa} 1 \pgf@sys@tonumber{\pgf@xb}
+              { 1 index 2 copy pgfproc \pgf@shading@ps@device\space moveto 1.1 0 rlineto stroke }
+              for
+              pop
+            }
+            for
+          }%
+        \noexpand\pgfsys@endpurepicture
+      }\hfil}%
+    }%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+
+%
+% Patterns
+%
+
+
+\def\pgfsys@declarepattern#1#2#3#4#5#6#7{%
+  % Start building the pattern dictionary:
+  \pgf@xa=#2\relax%
+  \pgf@ya=#3\relax%
+  \pgf@xb=#4\relax%
+  \pgf@yb=#5\relax%
+  \pgf@xc=#6\relax%
+  \pgf@yc=#7\relax%
+  \pgf@sys@bp@correct\pgf@xa%
+  \pgf@sys@bp@correct\pgf@ya%
+  \pgf@sys@bp@correct\pgf@xb%
+  \pgf@sys@bp@correct\pgf@yb%
+  \pgf@sys@bp@correct\pgf@xc%
+  \pgf@sys@bp@correct\pgf@yc%
+  \pgfsys@@declarepattern{#1}%
+}
+
+\def\pgfsys@@declarepattern#1#2#3#4#5#6#7#8#9{%
+  \pgfutil@tempdima=#6\relax%
+  \pgfutil@tempdimb=#7\relax%
+  \pgf@sys@bp@correct\pgfutil@tempdima%
+  \pgf@sys@bp@correct\pgfutil@tempdimb%
+  \edef\pgf@sys@marshal{%
+  \noexpand\pgfutil@insertatbegincurrentpage{\noexpand\pgfsys@outerinvoke{
+    save true setglobal globaldict begin /pgfpat#1
+    {
+    \ifnum#9=0 [/Pattern /DeviceRGB] \else /Pattern \fi\space
+    setcolorspace
+    gsave
+    initgraphics
+    <<
+      /Type /Pattern
+      /PatternType 1
+      /PaintType \ifnum#9=0 2 \else 1 \fi
+      /TilingType 1
+      /BBox [\pgf@sys@tonumber\pgf@xa\space\pgf@sys@tonumber\pgf@ya\space\pgf@sys@tonumber\pgf@xb\space\pgf@sys@tonumber\pgf@yb]
+      /XStep \pgf@sys@tonumber\pgf@xc\space
+      /YStep \pgf@sys@tonumber\pgf@yc\space
+      /Matrix [#2\space#3\space#4\space#5\space\pgf@sys@tonumber\pgfutil@tempdima\space\pgf@sys@tonumber\pgfutil@tempdimb]
+      /PaintProc
+      { begin 2 dict begin #8\space end end } bind
+    >>
+    matrix
+    makepattern
+    %/pgfpat#1\space exch def
+    grestore
+    setcolor
+    } bind def end restore
+  }}% <<
+  }%
+  \pgf@sys@marshal%
+}
+
+\def\pgfsys@setpatternuncolored#1#2#3#4{%
+  \pgfsysprotocol@literal{/pgffc{#2 #3 #4 pgfpat#1}def}%
+%      [/Pattern /DeviceRGB] setcolorspace
+%      #2 #3 #4 pgfpat#1\space setcolor
+%    }def}%
+  \pgf@fillcolortrue%
+}
+
+\def\pgfsys@setpatterncolored#1{%
+  \pgfsysprotocol@literal{/pgffc{pgfpat#1}def}%/Pattern setcolorspace
+%      pgfpat#1\space setcolor}def}%
+  \pgf@fillcolortrue%
+}
+
+
+
+\def\pgfsys@atbegindocument{%
+  % Parameters to horizontal pre axishade: \pgf@domb x
+  \pgf@sys@postscript@header{/pgfHrgb{%
+      /pgfheight exch def 0.75 setlinewidth [] 0 setdash
+      /pgfshade {pgfArgb} def /pgfdir { dup 0 moveto
+        dup 5 index lineto } bind def} bind def}%
+
+  % Parameters to vertical pre axishade: \pgf@domb x
+  \pgf@sys@postscript@header{/pgfVrgb{%
+      /pgfheight exch def 0.75 setlinewidth [] 0 setdash
+      /pgfshade {pgfArgb} def /pgfdir { dup 0 exch moveto dup 5 index
+        exch lineto } bind def} bind def}%
+
+  % Parameters to axishade: end x, start x, r-, g-, b- of first color, r-, g-, b- of second color
+  % Stack afterwards: end x
+  \pgf@sys@postscript@header{/pgfArgb{
+      /pgfdiff 8 index round cvi 8 index round cvi sub 2 mul 1 add def
+      2 index 6 index sub pgfdiff div % put red-step on stack
+      2 index 6 index sub pgfdiff div % put green-step on stack
+      2 index 6 index sub pgfdiff div % put blue-step on stack
+      pgfheight 9 index 9 index 9 index 14 index
+      pgfdiff {
+        3 index 3 index 3 index setrgbcolor % Set color
+        pgfdir
+        stroke
+        4 -1 roll 7 index add % red += incred
+        4 -1 roll 6 index add % green += incgreen
+        4 -1 roll 5 index add % blue += incblue
+        4 -1 roll .5 sub % x += 0.5
+      } repeat
+      mark 15 1 roll cleartomark exch pop % leave only start x on stack
+    }bind def }
+
+  % Parameters to radialshade pre: \pgf@domb y x max
+  \pgf@sys@postscript@header{/pgfR1rgb{
+      newpath dup dup dup 0 360 arc clip newpath
+      dup /pgfendx exch def
+      /pgfendy exch def
+      0.875 setlinewidth
+      [] 0 setdash
+      /pgfshade {pgfRrgb} def
+      /pgfstartx exch def
+      /pgfstarty exch def
+      /pgfdiffx pgfendx pgfstartx sub def
+      /pgfdiffy pgfendy pgfstarty sub def
+      dup /pgfdomb exch def
+    }bind def }
+
+  % Parameters to radialshade post: \pgf@firstcolor \pgf@doma
+  \pgf@sys@postscript@header{/pgfR2rgb{
+      newpath 0.5 add pgfcircx pgfcircy 3 2 roll 0 360 arc
+      setrgbcolor fill pop}bind def }%
+
+  % Parameters to radialshade: end x, start x, r-, g-, b- of first color, r-, g-, b- of second color
+  % Stack afterwards: end x
+  \pgf@sys@postscript@header{/pgfRrgb{
+      /pgfdiff 8 index round cvi 8 index round cvi sub 4 mul 1 add def
+      /pgfcircx pgfstartx 9 index pgfdiffx pgfdomb div mul add def
+      /pgfcircy pgfstarty 9 index pgfdiffy pgfdomb div mul add def
+      /pgfcircxe pgfstartx 8 index pgfdiffx pgfdomb div mul add def
+      /pgfcircye pgfstarty 8 index pgfdiffy pgfdomb div mul add def
+      /pgfxstep pgfcircxe pgfcircx sub pgfdiff div def
+      /pgfystep pgfcircye pgfcircy sub pgfdiff div def
+      2 index 6 index sub pgfdiff div % put red-step on stack
+      2 index 6 index sub pgfdiff div % put green-step on stack
+      2 index 6 index sub pgfdiff div % put green-step on stack
+      8 index 8 index 8 index 13 index
+      pgfdiff {
+        3 index 3 index 3 index setrgbcolor % Set color
+        pgfcircx pgfcircy 2 index 0 360 arc closepath
+        stroke
+        4 -1 roll 6 index add % red += incred
+        4 -1 roll 5 index add % green += incgreen
+        4 -1 roll 4 index add % blue += incblue
+        4 -1 roll .25 sub % x += 0.25
+        /pgfcircx pgfcircx pgfxstep add def
+        /pgfcircy pgfcircy pgfystep add def
+      } repeat
+      mark 14 1 roll cleartomark exch pop % leave only start x on stack
+    }bind def}
+
+  % Parameters to horizontal pre axishade: \pgf@domb x
+  \pgf@sys@postscript@header{/pgfHcmyk{
+      /pgfheight exch def 0.75 setlinewidth [] 0 setdash
+      /pgfshade {pgfAcmyk} def /pgfdir { dup 0 moveto
+        dup 6 index lineto } bind def} bind def}%
+
+  % Parameters to vertical pre axishade: \pgf@domb x
+  \pgf@sys@postscript@header{/pgfVcmyk{
+      /pgfheight exch def 0.75 setlinewidth [] 0 setdash
+      /pgfshade {pgfAcmyk} def /pgfdir { dup 0 exch moveto dup 6 index
+        exch lineto } bind def} bind def}%
+
+  % Parameters to axishade: end x, start x, c-, m-, y-, k- of first color, c-, m-, y-, k- of second color
+  \pgf@sys@postscript@header{/pgfAcmyk{
+      /pgfdiff 10 index round cvi 10 index round cvi sub 2 mul 1 add def
+      3 index 8 index sub pgfdiff div % put cyan-step on stack
+      3 index 8 index sub pgfdiff div % put magenta-step on stack
+      3 index 8 index sub pgfdiff div % put yellow-step on stack
+      3 index 8 index sub pgfdiff div % put black-step on stack
+      pgfheight 12 index 12 index 12 index 12 index 18 index
+      pgfdiff {
+        4 index 4 index 4 index 4 index setcmykcolor % Set color
+        pgfdir
+        stroke
+        5 -1 roll 9 index add % cyan += inccyan
+        5 -1 roll 8 index add % magenta += incmagenta
+        5 -1 roll 7 index add % yellow += incyellow
+        5 -1 roll 6 index add % black += incblack
+        5 -1 roll .5 sub % x += 0.5
+      } repeat
+      mark 19 1 roll cleartomark exch pop % leave only start x on stack
+    }bind def }%
+
+  % Parameters to radialshade pre: \pgf@domb y x max
+  \pgf@sys@postscript@header{/pgfR1cmyk{
+      newpath dup dup dup 0 360 arc clip newpath
+      dup /pgfendx exch def
+      /pgfendy exch def
+      0.875 setlinewidth
+      [] 0 setdash
+      /pgfshade {pgfRcmyk} def
+      /pgfstartx exch def
+      /pgfstarty exch def
+      /pgfdiffx pgfendx pgfstartx sub def
+      /pgfdiffy pgfendy pgfstarty sub def
+      dup /pgfdomb exch def
+    }bind def }%
+
+  % Parameters to radialshade post: \pgf@firstcolor \pgf@doma
+  \pgf@sys@postscript@header{/pgfR2cmyk{
+      newpath 0.5 add pgfcircx pgfcircy 3 2 roll 0 360 arc
+      setcmykcolor fill pop}bind def }%
+
+  % Parameters to radialshade: end x, start x, c-, m-, y-, k- of first color, c-, m-, y-, k- of second color
+  \pgf@sys@postscript@header{/pgfRcmyk{
+      /pgfdiff 10 index round cvi 10 index round cvi sub 4 mul 1 add def
+      /pgfcircx pgfstartx 11 index pgfdiffx pgfdomb div mul add def
+      /pgfcircy pgfstarty 11 index pgfdiffy pgfdomb div mul add def
+      /pgfcircxe pgfstartx 10 index pgfdiffx pgfdomb div mul add def
+      /pgfcircye pgfstarty 10 index pgfdiffy pgfdomb div mul add def
+      /pgfxstep pgfcircxe pgfcircx sub pgfdiff div def
+      /pgfystep pgfcircye pgfcircy sub pgfdiff div def
+      3 index 8 index sub pgfdiff div % put cyan-step on stack
+      3 index 8 index sub pgfdiff div % put magenta-step on stack
+      3 index 8 index sub pgfdiff div % put yellow-step on stack
+      3 index 8 index sub pgfdiff div % put black-step on stack
+      11 index 11 index 11 index 11 index 17 index
+      pgfdiff {
+        4 index 4 index 4 index 4 index setcmykcolor % Set color
+        pgfcircx pgfcircy 2 index 0 360 arc closepath
+        stroke
+        5 -1 roll 8 index add % cyan += inccyan
+        5 -1 roll 7 index add % magenta += incmagenta
+        5 -1 roll 6 index add % yellow += incyellow
+        5 -1 roll 5 index add % black += incblack
+        5 -1 roll .25 sub % x += 0.25
+        /pgfcircx pgfcircx pgfxstep add def
+        /pgfcircy pgfcircy pgfystep add def
+      } repeat
+      mark 18 1 roll cleartomark exch pop % leave only start x on stack
+    }bind def}%
+
+  % Parameters to horizontal pre axishade: \pgf@domb x
+  \pgf@sys@postscript@header{/pgfHgray{
+      /pgfheight exch def 0.75 setlinewidth [] 0 setdash
+      /pgfshade {pgfAgray} def /pgfdir { dup 0 moveto
+        dup 3 index lineto } bind def} bind def}%
+
+  % Parameters to vertical pre axishade: \pgf@domb x
+  \pgf@sys@postscript@header{/pgfVgray{
+      /pgfheight exch def 0.75 setlinewidth [] 0 setdash
+      /pgfshade {pgfAgray} def /pgfdir { dup 0 exch moveto dup 3 index
+        exch lineto } bind def} bind def}%
+
+  % Parameters to axishade: end x, start x, g of first color, g of second color
+  \pgf@sys@postscript@header{/pgfAgray{
+      /pgfdiff 4 index round cvi 4 index round cvi sub 2 mul 1 add def
+      dup 2 index sub pgfdiff div % put gray-step on stack
+      pgfheight 3 index 6 index
+      pgfdiff {
+        1 index setgray % Set color
+        pgfdir
+        stroke
+        exch 3 index add % gray += incgray
+        exch .5 sub % x += 0.5
+      } repeat
+      mark 7 1 roll cleartomark exch pop % leave only start x on stack
+    }bind def }%
+
+  % Parameters to radialshade pre: \pgf@domb y x max
+  \pgf@sys@postscript@header{/pgfR1gray{
+      newpath dup dup dup 0 360 arc clip newpath
+      dup /pgfendx exch def
+      /pgfendy exch def
+      0.875 setlinewidth
+      [] 0 setdash
+      /pgfshade {pgfRgray} def
+      /pgfstartx exch def
+      /pgfstarty exch def
+      /pgfdiffx pgfendx pgfstartx sub def
+      /pgfdiffy pgfendy pgfstarty sub def
+      dup /pgfdomb exch def
+    }bind def }%
+
+  % Parameters to radialshade post: \pgf@firstcolor \pgf@doma
+  \pgf@sys@postscript@header{/pgfR2gray{
+      newpath 0.5 add pgfcircx pgfcircy 3 2 roll 0 360 arc
+      setgray fill pop}bind def }%
+
+  % Parameters to radialshade: end x, start x, g of first color, g of second color
+  \pgf@sys@postscript@header{/pgfRgray{
+      /pgfdiff 4 index round cvi 4 index round cvi sub 4 mul 1 add def
+      /pgfcircx pgfstartx 5 index pgfdiffx pgfdomb div mul add def
+      /pgfcircy pgfstarty 5 index pgfdiffy pgfdomb div mul add def
+      /pgfcircxe pgfstartx 4 index pgfdiffx pgfdomb div mul add def
+      /pgfcircye pgfstarty 4 index pgfdiffy pgfdomb div mul add def
+      /pgfxstep pgfcircxe pgfcircx sub pgfdiff div def
+      /pgfystep pgfcircye pgfcircy sub pgfdiff div def
+      dup 2 index sub pgfdiff div % put gray-step on stack
+      2 index 5 index
+      pgfdiff {
+        1 index setgray % Set color
+        pgfcircx pgfcircy 2 index 0 360 arc closepath
+        stroke
+        exch 2 index add % gray += incgray
+        exch .25 sub % x += 0.25
+        /pgfcircx pgfcircx pgfxstep add def
+        /pgfcircy pgfcircy pgfystep add def
+      } repeat
+      mark 6 1 roll cleartomark exch pop % leave only start x on stack
+    }bind def}%
+}
+
+
+\endinput
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

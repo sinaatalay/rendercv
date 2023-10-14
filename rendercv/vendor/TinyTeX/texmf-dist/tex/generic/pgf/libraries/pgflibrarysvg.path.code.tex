@@ -1,0 +1,829 @@
+% Copyright 2019 by Till Tantau
+% Copyright 2019 by Jonathan P. Spratte
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibrarysvg.path.code.tex}
+
+
+\usepgfmodule{parser}%
+
+
+% Scan an SVG-Path
+%
+% #1 = the path
+%
+% Description:
+%
+% This command takes a path in the compressed SVG-syntax. It then
+% issues a sequences of appropriate \pgfpath commands for this
+% path. For a description of the compressed svg path syntax, see a
+% book on svg.
+%
+% The notion of a pixel used by svg makes no sense in pgf (actually
+% it does not really make sense in svg either, but never mind), and
+% instead of pixels "pt" is used as the basic unit. Use coordinate
+% transformation to change this.
+%
+% Example:
+%
+% \pgfpathsvg{M10 20 L 30-20 0 1}
+%
+% % this has the same effect as
+%
+% \pgfpathmoveto{\pgfpoint{10pt}{20pt}}
+% \pgfpathlineto{\pgfpint{30pt}{-20pt}}
+% \pgfpathlineto{\pgfpint{0pt}{1pt}}
+%
+
+\def\pgfpathsvg#1{%
+  \let\pgf@lib@svg@finish@prev\relax%
+  {%
+    \pgftransforminvert%
+    \pgf@process{\pgfpointtransformed{\pgfqpoint{\pgf@path@lastx}{\pgf@path@lasty}}}%
+  }%
+  \pgf@lib@svg@last@x\pgf@x%
+  \pgf@lib@svg@last@y\pgf@y%
+  \let\pgf@lib@svg@num=\pgfutil@empty%
+  \let\pgf@lib@svg@exp=\pgfutil@empty%
+  \pgfparserparse{svgpath}#1"%
+}%
+
+
+
+\newdimen\pgf@lib@svg@last@x
+\newdimen\pgf@lib@svg@last@y
+\newdimen\pgf@lib@svg@last@c@x
+\newdimen\pgf@lib@svg@last@c@y
+
+\newcount\pgf@lib@svg@count
+\newcount\pgf@lib@svg@max@num
+
+\newif\pgf@lib@svg@relative
+
+
+
+% For the smooth commands (S, s, T, t) we need to keep track of the
+% previous control points. This is done in the following two
+% variables. If they are empty, there was no previous control point of
+% the desired kind, in which case the specification prescribes that
+% the start point is used.
+
+\def\pgf@lib@svg@clear@bezier@quad{%
+  \let\pgf@lib@svg@bezier@last=\pgfutil@empty
+  \let\pgf@lib@svg@quad@last=\pgfutil@empty
+}%
+\pgf@lib@svg@clear@bezier@quad
+
+%
+% Here comes the DFA:
+%
+
+% Handle a moveto:
+
+\pgfparserdef{svgpath}{all}{the letter M}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@moveto}%
+}%
+
+\def\pgf@lib@svg@moveto{%
+  \pgf@lib@svg@clear@bezier@quad%
+  \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{0}pt%
+  \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{1}pt%
+  \pgfpathmoveto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@lineto}%
+}%
+
+
+% Handle a relative moveto:
+
+\pgfparserdef{svgpath}{all}{the letter m}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@moveto@rel}%
+}%
+
+\def\pgf@lib@svg@moveto@rel{%
+  \pgf@lib@svg@clear@bezier@quad%
+  \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{0}pt%
+  \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{1}pt%
+  \pgfpathmoveto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@lineto@rel}%
+}%
+
+
+% Handle a lineto:
+
+\pgfparserdef{svgpath}{all}{the letter L}
+{%
+  \pgf@lib@svg@finish@prev%
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@lineto}%
+}%
+
+\def\pgf@lib@svg@lineto{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    \pgf@lib@svg@clear@bezier@quad%
+    \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{0}pt%
+    \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{1}pt%
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@lineto}%
+  \fi
+}%
+
+
+% Handle a relative lineto:
+
+\pgfparserdef{svgpath}{all}{the letter l}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@lineto@rel}%
+}%
+
+\def\pgf@lib@svg@lineto@rel{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    \pgf@lib@svg@clear@bezier@quad%
+    \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{0}pt%
+    \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{1}pt%
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@lineto@rel}%
+  \fi
+}%
+
+
+% Handle a closepath:
+
+\pgfparserdef{svgpath}{all}{the letter Z}
+{%
+  \pgf@lib@svg@closepath
+}%
+
+\pgfparserdef{svgpath}{all}{the letter z}
+{%
+  \pgf@lib@svg@closepath
+}%
+
+\def\pgf@lib@svg@closepath{%
+  \pgf@lib@svg@finish@prev
+  \pgfpathclose
+  \let\pgf@lib@svg@finish@prev=\relax
+  \pgf@lib@svg@clear@bezier@quad%
+  \pgfparserswitch{initial}%
+}%
+
+
+% Ignore spaces if no other rules says differently:
+
+\pgfparserdef{svgpath}{all}{blank space \space}{}%
+
+
+
+
+% Handle a horizontal lineto:
+
+\pgfparserdef{svgpath}{all}{the letter H}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@hlineto}%
+}%
+
+\def\pgf@lib@svg@hlineto{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    \pgf@lib@svg@clear@bezier@quad%
+    \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{0}pt%
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@hlineto}%
+  \fi
+}%
+
+\pgfparserdef{svgpath}{all}{the letter h}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@hlineto@rel}%
+}%
+
+\def\pgf@lib@svg@hlineto@rel{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    \pgf@lib@svg@clear@bezier@quad%
+    \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{0}pt%
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@hlineto@rel}%
+  \fi
+}%
+
+
+% Handle a horizontal lineto:
+
+\pgfparserdef{svgpath}{all}{the letter V}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@vlineto}%
+}%
+
+\def\pgf@lib@svg@vlineto{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    \pgf@lib@svg@clear@bezier@quad%
+    \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{0}pt%
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@vlineto}%
+  \fi
+}%
+
+\pgfparserdef{svgpath}{all}{the letter v}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@vlineto@rel}%
+}%
+
+\def\pgf@lib@svg@vlineto@rel{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    \pgf@lib@svg@clear@bezier@quad%
+    \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{0}pt%
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \pgf@lib@svg@read@nums{1}{\pgf@lib@svg@vlineto@rel}%
+  \fi
+}%
+
+
+
+
+% Handle a Bezier curve:
+
+\pgfparserdef{svgpath}{all}{the letter C}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{6}{\pgf@lib@svg@curveto}%
+}%
+
+\def\pgf@lib@svg@curveto{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Clear quadratic last point and save new last control point:
+    \let\pgf@lib@svg@quad@last=\pgfutil@empty%
+    \edef\pgf@lib@svg@bezier@last{%
+      \noexpand\pgfqpoint{\pgf@lib@svg@get@num{2}pt}{\pgf@lib@svg@get@num{3}pt}}%
+    % Draw curve
+    \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{4}pt%
+    \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{5}pt%
+    \pgfpathcurveto
+    {\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}%
+    {\pgfqpoint{\pgf@lib@svg@get@num{2}pt}{\pgf@lib@svg@get@num{3}pt}}%
+    {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    % Go on
+    \pgf@lib@svg@read@nums{6}{\pgf@lib@svg@curveto}%
+  \fi
+}%
+
+
+\pgfparserdef{svgpath}{all}{the letter c}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{6}{\pgf@lib@svg@curveto@rel}%
+}%
+
+\def\pgf@lib@svg@curveto@rel{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Clear quadratic last point and save new last control point:
+    \let\pgf@lib@svg@quad@last=\pgfutil@empty%
+    \pgf@process{\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{2}pt}{\pgf@lib@svg@get@num{3}pt}}}%
+    \edef\pgf@lib@svg@bezier@last{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+    % Draw curve
+    \pgfpathcurveto
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}}%
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{2}pt}{\pgf@lib@svg@get@num{3}pt}}}%
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{4}pt}{\pgf@lib@svg@get@num{5}pt}}}%
+    \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{4}pt%
+    \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{5}pt%
+    \pgf@lib@svg@read@nums{6}{\pgf@lib@svg@curveto@rel}%
+  \fi
+}%
+
+
+
+
+
+\pgfparserdef{svgpath}{all}{the letter S}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@curveto@smooth}%
+}%
+
+\def\pgf@lib@svg@curveto@smooth{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Draw curve
+    % Compute first control point
+    \ifx\pgf@lib@svg@bezier@last\pgfutil@empty%
+      \def\pgf@lib@svg@first@cp{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \else
+      \def\pgf@lib@svg@first@cp{%
+        \pgfpointadd
+        {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        {\pgfpointdiff
+          {\pgf@lib@svg@bezier@last}%
+          {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        }%
+      }%
+    \fi
+    \pgfpathcurveto
+    {\pgf@lib@svg@first@cp}%
+    {\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}%
+    {\pgfqpoint{\pgf@lib@svg@get@num{2}pt}{\pgf@lib@svg@get@num{3}pt}}%
+    % Clear quadratic last point and save new last control point:
+    \let\pgf@lib@svg@quad@last=\pgfutil@empty%
+    \edef\pgf@lib@svg@bezier@last{%
+      \noexpand\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}%
+    % Update
+    \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{2}pt%
+    \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{3}pt%
+    % Go on
+    \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@curveto@smooth}%
+  \fi
+}%
+
+
+\pgfparserdef{svgpath}{all}{the letter s}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@curveto@rel@smooth}%
+}%
+
+\def\pgf@lib@svg@curveto@rel@smooth{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Draw curve
+    % Compute first control point
+    \ifx\pgf@lib@svg@bezier@last\pgfutil@empty%
+      \def\pgf@lib@svg@first@cp{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    \else
+      \def\pgf@lib@svg@first@cp{%
+        \pgfpointadd
+        {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        {\pgfpointdiff
+          {\pgf@lib@svg@bezier@last}%
+          {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        }%
+      }%
+    \fi
+    \pgfpathcurveto
+    {\pgf@lib@svg@first@cp}%
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}}%
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{2}pt}{\pgf@lib@svg@get@num{3}pt}}}%
+    % Clear quadratic last point and save new last control point:
+    \let\pgf@lib@svg@quad@last=\pgfutil@empty%
+    \pgf@process{\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}}%
+    \edef\pgf@lib@svg@bezier@last{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+    % update
+    \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{2}pt%
+    \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{3}pt%
+    % Go on
+    \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@curveto@rel@smooth}%
+  \fi
+}%
+
+
+
+
+% Handle a quadratic curve:
+
+\pgfparserdef{svgpath}{all}{the letter Q}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@quad@curveto}%
+}%
+
+\def\pgf@lib@svg@quad@curveto{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Clear bezier last point and save new last control point:
+    \let\pgf@lib@svg@bezier@last=\pgfutil@empty%
+    \edef\pgf@lib@svg@quad@last{%
+      \noexpand\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}%
+    % Draw curve
+    \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{2}pt%
+    \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{3}pt%
+    \pgfpathquadraticcurveto
+    {\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}%
+    {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    % Go on
+    \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@quad@curveto}%
+  \fi
+}%
+
+
+\pgfparserdef{svgpath}{all}{the letter q}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@quad@curveto@rel}%
+}%
+
+\def\pgf@lib@svg@quad@curveto@rel{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Clear quadratic last point and save new last control point:
+    \let\pgf@lib@svg@bezier@last=\pgfutil@empty%
+    \pgf@process{\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}}%
+    \edef\pgf@lib@svg@quad@last{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+    % Draw curve
+    \pgfpathquadraticcurveto
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}}%
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{2}pt}{\pgf@lib@svg@get@num{3}pt}}}%
+    \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{2}pt%
+    \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{3}pt%
+    \pgf@lib@svg@read@nums{4}{\pgf@lib@svg@quad@curveto@rel}%
+  \fi
+}%
+
+
+
+
+\pgfparserdef{svgpath}{all}{the letter T}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@quad@curveto@smooth}%
+}%
+
+\def\pgf@lib@svg@quad@curveto@smooth{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Draw curve
+    % Compute first control point
+    \pgf@process{%
+      \ifx\pgf@lib@svg@quad@last\pgfutil@empty%
+        \pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}%
+      \else
+        \pgfpointadd
+        {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        {\pgfpointdiff
+          {\pgf@lib@svg@quad@last}%
+          {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        }%
+      \fi
+    }%
+    \edef\pgf@lib@svg@first@cp{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+    \pgfpathquadraticcurveto
+    {\pgf@lib@svg@first@cp}%
+    {\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}%
+    % Clear quadratic last point and save new last control point:
+    \let\pgf@lib@svg@bezier@last=\pgfutil@empty%
+    \let\pgf@lib@svg@quad@last=\pgf@lib@svg@first@cp%
+    % Update
+    \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{0}pt%
+    \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{1}pt%
+    % Go on
+    \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@quad@curveto@smooth}%
+  \fi
+}%
+
+
+\pgfparserdef{svgpath}{all}{the letter t}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@quad@curveto@rel@smooth}%
+}%
+
+\def\pgf@lib@svg@quad@curveto@rel@smooth{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Draw curve
+    % Compute first control point
+     \pgf@process{%
+      \ifx\pgf@lib@svg@quad@last\pgfutil@empty%
+        \pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}%
+      \else
+        \pgfpointadd
+        {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        {\pgfpointdiff
+          {\pgf@lib@svg@quad@last}%
+          {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+        }%
+      \fi
+    }%
+    \edef\pgf@lib@svg@first@cp{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+    \pgfpathquadraticcurveto
+    {\pgf@lib@svg@first@cp}%
+    {\pgfpointadd{\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}{\pgfqpoint{\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}}}%
+    % Clear quadratic last point and save new last control point:
+    \let\pgf@lib@svg@bezier@last=\pgfutil@empty%
+    \let\pgf@lib@svg@quad@last=\pgf@lib@svg@first@cp%
+    % update
+    \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{0}pt%
+    \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{1}pt%
+    % Go on
+    \pgf@lib@svg@read@nums{2}{\pgf@lib@svg@quad@curveto@rel@smooth}%
+  \fi
+}%
+
+
+
+% Handle an arcto:
+
+\pgfparserdef{svgpath}{all}{the letter A}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{7}{\pgf@lib@svg@arcto}%
+}%
+
+\def\pgf@lib@svg@arcto{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Clear bezier last point and save new last control point:
+    \pgf@lib@svg@clear@bezier@quad%
+    % Draw curve
+    \pgf@lib@svg@last@x=\pgf@lib@svg@get@num{5}pt%
+    \pgf@lib@svg@last@y=\pgf@lib@svg@get@num{6}pt%
+    \pgfpatharcto
+    {\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}%
+    {\pgf@lib@svg@get@num{2}}%
+    {\pgf@lib@svg@get@num{3}}%
+    {\pgf@lib@svg@get@num{4}}%
+    {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    % Go on
+    \pgf@lib@svg@read@nums{7}{\pgf@lib@svg@arcto}%
+  \fi
+}%
+
+\pgfparserdef{svgpath}{all}{the letter a}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgf@lib@svg@read@nums{7}{\pgf@lib@svg@arcto@rel}%
+}%
+
+\def\pgf@lib@svg@arcto@rel{%
+  \ifnum\pgf@lib@svg@count=0\relax% nothing read
+  \else%
+    % Clear bezier last point and save new last control point:
+    \pgf@lib@svg@clear@bezier@quad%
+    % Draw curve
+    \advance\pgf@lib@svg@last@x by\pgf@lib@svg@get@num{5}pt%
+    \advance\pgf@lib@svg@last@y by\pgf@lib@svg@get@num{6}pt%
+    \pgfpatharcto
+    {\pgf@lib@svg@get@num{0}pt}{\pgf@lib@svg@get@num{1}pt}%
+    {\pgf@lib@svg@get@num{2}}%
+    {\pgf@lib@svg@get@num{3}}%
+    {\pgf@lib@svg@get@num{4}}%
+    {\pgfqpoint{\pgf@lib@svg@last@x}{\pgf@lib@svg@last@y}}%
+    % Go on
+    \pgf@lib@svg@read@nums{7}{\pgf@lib@svg@arcto@rel}%
+  \fi
+}%
+
+
+
+
+
+% Handle to end of the world
+
+\pgfparserdef{svgpath}{all}{the character "}
+{%
+  \pgf@lib@svg@finish@prev
+  \pgfparserswitch{final}%
+}%
+
+
+
+
+% Handle spacers for numbers
+
+\def\pgf@lib@svg@read@nums#1#2{% get #1 number symbols, then do #2
+  \pgf@lib@svg@count=0\relax
+  \pgf@lib@svg@max@num=#1\relax
+  \pgfparserswitch{num}%
+  \def\pgf@lib@svg@finish@prev{%
+    \ifx\pgf@lib@svg@num\pgfutil@empty%
+    \else%
+      \ifx\pgf@lib@svg@exp\pgfutil@empty
+      \else
+        \pgfmathfloatparsenumber{\pgf@lib@svg@num e\pgf@lib@svg@exp}%
+        \pgfmathfloattofixed{\pgfmathresult}%
+        \let\pgf@lib@svg@num=\pgfmathresult
+      \fi
+      \expandafter\let\csname pgf@lib@svg@num@\the\pgf@lib@svg@count\endcsname=\pgf@lib@svg@num
+      \advance\pgf@lib@svg@count by1\relax%
+      \let\pgf@lib@svg@num=\pgfutil@empty%
+      \let\pgf@lib@svg@exp=\pgfutil@empty%
+    \fi
+    #2%
+  }%
+}%
+
+\def\pgf@lib@svg@get@num#1{\csname pgf@lib@svg@num@#1\endcsname}%
+
+
+\pgfparserdef{svgpath}{num}{the character ,}
+{%
+  \pgf@lib@svg@handle@spacer
+}%
+\pgfparserlet{svgpath}{after.}{the character ,}[num]{the character ,}
+\pgfparserlet{svgpath}{exp},[num],
+\pgfparserlet{svgpath}{exp sign},[num],
+
+\pgfparserdef{svgpath}{num}{\meaning\pgfutil@sptoken}
+{%
+  \pgf@lib@svg@handle@spacer
+}%
+\pgfparserlet{svgpath}{after.}{blank space}[num]{blank space}
+\pgfparserlet{svgpath}{exp}{blank space},
+\pgfparserlet{svgpath}{exp sign}{blank space},
+
+\pgfparserdef{svgpath}{num}{the character -}
+{%
+  \pgf@lib@svg@handle@spacer
+  \def\pgf@lib@svg@num{-}%
+}%
+\pgfparserlet{svgpath}{after.}{the character -}[num]{the character -}
+\pgfparserlet{svgpath}{exp}-[num]-
+\pgfparserdef{svgpath}{num}{the character +}
+{%
+  \pgf@lib@svg@handle@spacer
+  \def\pgf@lib@svg@num{+}%
+}
+\pgfparserlet{svgpath}{after.}{the character +}[num]{the character +}
+\pgfparserlet{svgpath}{exp}+[num]+
+
+\def\pgf@lib@svg@handle@spacer{%
+  \ifx\pgf@lib@svg@num\pgfutil@empty%
+    % ignore
+  \else
+    \ifx\pgf@lib@svg@exp\pgfutil@empty
+    \else
+      \pgfmathfloatparsenumber{\pgf@lib@svg@num e\pgf@lib@svg@exp}%
+      \pgfmathfloattofixed{\pgfmathresult}%
+      \let\pgf@lib@svg@num=\pgfmathresult
+    \fi
+    \expandafter\let\csname pgf@lib@svg@num@\the\pgf@lib@svg@count\endcsname=\pgf@lib@svg@num
+    \advance\pgf@lib@svg@count by1\relax%
+    \ifnum\pgf@lib@svg@count=\pgf@lib@svg@max@num\relax%
+      \pgf@lib@svg@finish@prev%
+    \fi
+    \let\pgf@lib@svg@num=\pgfutil@empty%
+    \let\pgf@lib@svg@exp=\pgfutil@empty%
+    \pgfparserswitch{num}%
+  \fi
+}%
+
+
+% Handle digits
+
+\pgfparserdef{svgpath}{num}e
+  {%
+    \pgfparserswitch{exp sign}%
+    \let\pgf@lib@svg@exp=\pgfutil@empty
+  }
+\pgfparserlet{svgpath}{after.}e[num]e
+\pgfparserdef{svgpath}{exp sign}-
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp-}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}+
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp+}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}0
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp0}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}1
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp1}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}2
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp2}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}3
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp3}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}4
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp4}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}5
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp5}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}6
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp6}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}7
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp7}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}8
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp8}%
+    \pgfparserswitch{exp}%
+  }
+\pgfparserdef{svgpath}{exp sign}9
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp9}%
+    \pgfparserswitch{exp}%
+  }
+
+\pgfparserdef{svgpath}{exp}0
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp0}%
+  }
+\pgfparserdef{svgpath}{exp}1
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp1}%
+  }
+\pgfparserdef{svgpath}{exp}2
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp2}%
+  }
+\pgfparserdef{svgpath}{exp}3
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp3}%
+  }
+\pgfparserdef{svgpath}{exp}4
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp4}%
+  }
+\pgfparserdef{svgpath}{exp}5
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp5}%
+  }
+\pgfparserdef{svgpath}{exp}6
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp6}%
+  }
+\pgfparserdef{svgpath}{exp}7
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp7}%
+  }
+\pgfparserdef{svgpath}{exp}8
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp8}%
+  }
+\pgfparserdef{svgpath}{exp}9
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@exp\expandafter{\pgf@lib@svg@exp9}%
+  }
+
+\pgfparserdef{svgpath}{num}{the character .}
+  {%
+    \expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num.}%
+    \pgfparserswitch{after.}%
+  }%
+\pgfparserdef{svgpath}{after.}{the character .}
+  {%
+    \pgf@lib@svg@handle@spacer
+    \def\pgf@lib@svg@num{.}%
+    \pgfparserswitch{after.}%
+  }%
+\pgfparserlet{svgpath}{exp}{the character .}[after.]{the character .}
+
+\pgfparserdef{svgpath}{all}{the character 0}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num0}}%
+
+\pgfparserdef{svgpath}{all}{the character 1}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num1}}%
+
+\pgfparserdef{svgpath}{all}{the character 2}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num2}}%
+
+\pgfparserdef{svgpath}{all}{the character 3}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num3}}%
+
+\pgfparserdef{svgpath}{all}{the character 4}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num4}}%
+
+\pgfparserdef{svgpath}{all}{the character 5}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num5}}%
+
+\pgfparserdef{svgpath}{all}{the character 6}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num6}}%
+
+\pgfparserdef{svgpath}{all}{the character 7}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num7}}%
+
+\pgfparserdef{svgpath}{all}{the character 8}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num8}}%
+
+\pgfparserdef{svgpath}{all}{the character 9}
+{\expandafter\def\expandafter\pgf@lib@svg@num\expandafter{\pgf@lib@svg@num9}}%

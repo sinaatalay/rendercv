@@ -1,0 +1,209 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibrarydatavisualization.formats.functions.code.tex}
+
+\usepgfmodule{datavisualization}%
+
+
+
+
+% Function evaluator
+%
+% (This uses TeX evaluation and is slow. *You have been warned*.)
+%
+% Description:
+%
+% The data contains the description of variables and functions.
+%
+% The format for the variables is
+%
+%   var <name> : interval "["<start>:<end>"]" [ step <steps> | samples <samples>];
+%
+% (The first two [ and ] are "real", the second pair means "optional",
+% see the examples.)
+%
+%
+% The format for the functions is
+%
+%   func <name> = <body>;
+%
+% Additionally, the variables and functions stored in the keys
+% /pgf/data/vars and /pgf/data/funcs will also be used, the format for
+% them is the same as above.
+%
+% The <name> is always the name of a (data point) attribute. Inside
+% the <body> it can be accessed using the \value macro, which is
+% defined locally, here.
+%
+% Newlines are not important, everything is gathered into a single
+% line, the semicolons are used to detect the beginnings and ends of
+% declarations.
+%
+% With everything setup in this way, for each variable, the variable
+% ranges through the values between start and end, either with the
+% given step or the given number of samples. If neither is given, the
+% current value of /pgf/data visualization/samples is used. If there
+% are multiple variables, they all range over their respective
+% intervals independently. Thus, "var x = [0,1]; var y = [0:1];",
+% assuming samples=25, gives you 625 data points.
+%
+% As the variables range over their respective values, the functions
+% are evaluated using the function stored in /pgf/data/evaluator. By
+% default this is set to \pgfmathparse, but
+% you can use a different parser, if you like.
+%
+% Example:
+%
+% data [format=function] {
+%
+%   % This is a parametric plot with the parameter called t.
+%   var t : interval [0:360] samples 60;
+%
+%   % Let's draw a circle:
+%   func x = sin(\value t);
+%   func y = cos(\value t);
+% }
+%
+% data [format=function] {
+%
+%   % This a surface plot data...
+%   var x : interval [0:1];
+%   var y : interval [0:1];
+%
+%   % Let's draw a circle:
+%   func height = \value x*\value x + \value y*\value y;
+% }
+
+\pgfdeclaredataformat{function}
+{ % no catcode code
+}
+{ % Startup
+  % Init collectors
+  \let\value=\relax% avoid expansion
+  \pgfkeysgetvalue{/pgf/data/vars}\pgf@lib@dv@collector
+}
+{% Line arguments
+  #1%
+}
+{ % Line action
+  \edef\pgf@lib@dv@collector{\pgf@lib@dv@collector\space #1}%
+}
+{% Ignore empty lines
+}
+{%
+  \edef\pgf@lib@dv@collector{\pgf@lib@dv@collector\space \pgfkeysvalueof{/pgf/data/funcs}}%
+  \let\pgf@lib@dv@parsed\pgfutil@empty%
+  % launch parser on the result
+  \expandafter\pgf@lib@dv@func@parse \pgf@lib@dv@collector\pgf@stop%
+  \let\value\pgf@lib@dv@getval
+  \pgf@lib@dv@parsed\pgfdatapoint\pgfutil@gobble\pgf@stop%
+}%
+
+\pgfkeys{
+  /pgf/data/vars/.initial=,
+  /pgf/data/funcs/.initial=,
+  /pgf/data/evaluator/.initial=\pgfmathparse,
+  /pgf/data/samples/.initial=25}%
+
+\def\pgf@lib@dv@getval#1{\pgfkeysvalueof{/data point/#1}}%
+
+\def\pgf@lib@dv@func@parse{%
+  \pgfutil@ifnextchar\pgf@stop{% done
+    \pgfutil@gobble%
+  }
+  {%
+    \pgfutil@ifnextchar v{% variable
+      \pgf@lib@dv@var%
+    }{%
+      \pgf@lib@dv@func%
+    }%
+  }%
+}%
+
+\def\pgf@lib@dv@func func #1 =#2;{%
+  \expandafter\def\expandafter\pgf@lib@dv@parsed\expandafter{\pgf@lib@dv@parsed\pgf@lib@dv@eval@func{#1}{#2}}
+  \pgf@lib@dv@func@parse%
+}%
+\def\pgf@lib@dv@var var #1 :{\pgfutil@ifnextchar\bgroup{\pgf@lib@dv@var@group{#1}}{\pgf@lib@dv@var@int{#1}}}%
+\def\pgf@lib@dv@var@group#1#2;{%
+  \expandafter\def\expandafter\pgf@lib@dv@parsed\expandafter{\pgf@lib@dv@parsed\pgf@lib@dv@group@var{#1}{#2}}%
+  \pgf@lib@dv@func@parse%
+}%
+\def\pgf@lib@dv@var@int#1#2[#3:#4]{%
+  \pgfutil@ifnextchar s{%
+    \pgf@lib@dv@samplesorsteps{#1}{#3}{#4}%
+  }{%
+    \expandafter\def\expandafter\pgf@lib@dv@parsed\expandafter{%
+      \pgf@lib@dv@parsed\pgf@lib@dv@samples@var{#1}{#3}{#4}{\pgfkeysvalueof{/pgf/data/samples}}}%
+    \expandafter\pgf@lib@dv@func@parse\pgfutil@gobble%
+  }
+}%
+\def\pgf@lib@dv@samplesorsteps#1#2#3s{%
+  \pgfutil@ifnextchar t{% step
+    \pgf@lib@dv@step{#1}{#2}{#3}%
+  }{% sample
+    \pgf@lib@dv@samples{#1}{#2}{#3}%
+  }%
+}%
+\def\pgf@lib@dv@step#1#2#3tep#4;{%
+  \expandafter\def\expandafter\pgf@lib@dv@parsed\expandafter{\pgf@lib@dv@parsed\pgf@lib@dv@step@var{#1}{#2}{#3}{#4}}%
+  \pgf@lib@dv@func@parse%
+}%
+\def\pgf@lib@dv@samples#1#2#3amples#4;{%
+  \expandafter\def\expandafter\pgf@lib@dv@parsed\expandafter{\pgf@lib@dv@parsed\pgf@lib@dv@samples@var{#1}{#2}{#3}{#4}}%
+  \pgf@lib@dv@func@parse%
+}%
+
+%
+% Executer...
+%
+\def\pgf@lib@dv@samples@var#1#2#3#4{%
+  \pgfmathparse{#3}%
+  \let\pgf@lib@dv@temp=\pgfmathresult%
+  \pgfmathparse{#2}%
+  \pgfmathparse{\pgf@lib@dv@temp-\pgfmathresult}%
+  \pgfmathparse{\pgfmathresult/(#4-1)}%
+  \let\pgf@lib@dv@temp=\pgfmathresult%
+  \pgf@lib@dv@step@var{#1}{#2}{#3}{\pgf@lib@dv@temp}%
+}%
+
+\def\pgf@lib@dv@step@var#1#2#3#4#5\pgf@stop{%
+  {%
+    \def\pgf@loop@body{#5}%
+    \pgfmathparse{#2}%
+    \pgfkeyslet{/data point/#1}{\pgfmathresult}%
+    \pgfmathparse{#3}%
+    \let\pgf@loop@end\pgfmathresult%
+    \pgfmathparse{#4}%
+    \let\pgf@loop@step\pgfmathresult%
+    \pgfmathloop%
+      \pgfmathlessthan{\pgf@loop@end}{\pgfkeysvalueof{/data point/#1}}
+    \ifdim\pgfmathresult pt<1pt\relax%
+      \pgf@loop@body\pgf@stop%
+      \pgfmathparse{\pgfkeysvalueof{/data point/#1}+\pgf@loop@step}%
+      \pgfkeyslet{/data point/#1}{\pgfmathresult}%
+    \repeatpgfmathloop%%
+  }%
+}%
+
+\def\pgf@lib@dv@group@var#1#2#3\pgf@stop{%
+  \foreach \pgf@lib@dv@iterator in {#2} {%
+    \pgfkeyslet{/data point/#1}{\pgf@lib@dv@iterator}%
+    #3\pgf@stop%
+  }%
+}%
+
+\def\pgf@lib@dv@eval@func#1#2{%
+  \pgfkeysvalueof{/pgf/data/evaluator}{#2}%
+  \pgfkeyslet{/data point/#1}{\pgfmathresult}%
+}%
+
+
+\endinput

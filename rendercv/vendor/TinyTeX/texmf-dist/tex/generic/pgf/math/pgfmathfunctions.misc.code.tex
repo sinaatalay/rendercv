@@ -1,0 +1,353 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+% This file defines the mathematical functions and operators.
+%
+% Version 1.414213 29/9/2007
+
+% veclen function adapted from ideas due to Rouben Rostamian.
+%
+% Calculate the Euclidean length of a 2D vector.
+%
+%
+\pgfmathdeclarefunction{veclen}{2}{%
+  \begingroup%
+    \pgfmath@x#1pt\relax%
+    \pgfmath@y#2pt\relax%
+        \ifdim\pgfmath@x<0pt\relax%
+            \pgfmath@x-\pgfmath@x%
+        \fi%
+        \ifdim\pgfmath@y<0pt\relax%
+            \pgfmath@y-\pgfmath@y%
+        \fi%
+        \ifdim\pgfmath@x=0pt\relax%
+            \pgfmath@x\pgfmath@y%
+        \else%
+            \ifdim\pgfmath@y=0pt\relax%
+            \else%
+                \ifdim\pgfmath@x>\pgfmath@y%
+                    \pgfmath@xa\pgfmath@x%
+                    \pgfmath@x\pgfmath@y%
+                    \pgfmath@y\pgfmath@xa%
+                \fi%
+                % We use a scaling factor to reduce errors.
+                \ifdim\pgfmath@y>10000pt\relax%
+                    \c@pgfmath@counta1500\relax%
+                \else%
+                    \ifdim\pgfmath@y>1000pt\relax%
+                        \c@pgfmath@counta150\relax%
+                    \else%
+                        \ifdim\pgfmath@y>100pt\relax%
+                            \c@pgfmath@counta50\relax%
+                        \else%
+                            \c@pgfmath@counta1\relax%
+                        \fi%
+                    \fi%
+                \fi%
+                \divide\pgfmath@x\c@pgfmath@counta\relax%
+                \divide\pgfmath@y\c@pgfmath@counta\relax%
+                \pgfmathreciprocal@{\pgfmath@tonumber{\pgfmath@y}}%
+                \pgfmath@x\pgfmathresult\pgfmath@x%
+                \pgfmath@xa\pgfmath@tonumber{\pgfmath@x}\pgfmath@x%
+                \edef\pgfmath@temp{\pgfmath@tonumber{\pgfmath@xa}}%
+                %
+                % Use A+x^2*(B+x^2*(C+x^2*(D+E*x^2)))
+                % where
+                % A = +1.000012594
+                % B = +0.4993615349
+                % C = -0.1195159052
+                % D = +0.04453994279
+                % E = -0.01019210944
+                %
+                \pgfmath@x-0.01019210944\pgfmath@xa%
+                \advance\pgfmath@x0.04453994279pt\relax%
+                \pgfmath@x\pgfmath@temp\pgfmath@x%
+                \advance\pgfmath@x-0.1195159052pt\relax%
+                \pgfmath@x\pgfmath@temp\pgfmath@x%
+                \advance\pgfmath@x0.4993615349pt\relax%
+                \pgfmath@x\pgfmath@temp\pgfmath@x%
+                \advance\pgfmath@x1.000012594pt\relax%
+                \ifdim\pgfmath@y<0pt\relax%
+                    \pgfmath@y-\pgfmath@y%
+                \fi%
+                \pgfmath@x\pgfmath@tonumber{\pgfmath@y}\pgfmath@x%
+                % Invert the scaling factor.
+                \multiply\pgfmath@x\c@pgfmath@counta\relax%
+            \fi%
+        \fi%
+        \pgfmath@returnone\pgfmath@x%
+    \endgroup%
+}
+
+% Hyperbolic functions contributed by Martin Heller.
+%
+\pgfmathdeclarefunction{cosh}{1}{%
+    \begingroup
+        \edef\pgfmath@arg{#1}%
+        \pgfmathexp@{\pgfmath@arg}%
+        \pgfmath@x=\pgfmathresult pt\relax%
+        \pgfmathexp@{-\pgfmath@arg}%
+        \advance\pgfmath@x by\pgfmathresult pt\relax%
+        \divide\pgfmath@x by2\relax%
+        \pgfmath@returnone\pgfmath@x%
+    \endgroup}
+
+\pgfmathdeclarefunction{sinh}{1}{%
+    \begingroup
+        \edef\pgfmath@arg{#1}%
+        \pgfmathexp@{\pgfmath@arg}%
+        \pgfmath@x=\pgfmathresult pt\relax%
+        \pgfmathexp@{-\pgfmath@arg}%
+        \advance\pgfmath@x by-\pgfmathresult pt\relax%
+        \divide\pgfmath@x by2\relax%
+        \pgfmath@returnone\pgfmath@x%
+    \endgroup
+}%
+
+\pgfmathdeclarefunction{tanh}{1}{%
+    \begingroup
+        \edef\pgfmath@arg{#1}%
+        \pgfmathsinh@{\pgfmath@arg}%
+        \pgfmath@x=\pgfmathresult pt\relax%
+        \pgfmathcosh@{\pgfmath@arg}%
+        \pgfmath@y=\pgfmathresult pt\relax%
+        \pgfmathdivide@{\pgfmath@tonumber{\pgfmath@x}}{\pgfmath@tonumber{\pgfmath@y}}%
+        \pgfmath@x=\pgfmathresult pt\relax%
+        \pgfmath@returnone\pgfmath@x%
+    \endgroup
+}%
+
+% \pgfmathscientific
+%
+% Return the value of #1e#2
+%
+% e.g. \pgfmathscientific{1.23456789123}{4}
+%
+% defines \pgfmathresult as 12345.67891
+%
+% NB These arguments *are not parsed*, as the long mantissa would be lost.
+%
+\def\pgfmathscientific#1#2{%
+    \begingroup%
+        \edef\pgfmath@sci@exponent{#2}%
+        \pgfmath@x#1pt\relax%
+        \ifdim\pgfmath@x<0pt\relax%
+            \pgfmath@x-\pgfmath@x%
+            \edef\pgfmath@sci@sign{-}%
+            \expandafter\edef\expandafter\pgfmath@temp\expandafter{\expandafter\pgfmath@gobbleone#1}%
+        \else%
+            \edef\pgfmath@sci@sign{+}%
+            \edef\pgfmath@temp{#1}%
+        \fi%
+        \expandafter\pgfmath@in@\expandafter.\expandafter{#1}%
+        \ifpgfmath@in@%
+        \else%
+            \edef\pgfmath@temp{\pgfmath@temp.0}%
+        \fi%
+        \expandafter\pgfmath@scientific@@\pgfmath@temp00000000000\pgfmath@}
+
+\def\pgfmath@scientific@@#1.#2#3#4#5#6{%
+        \edef\pgfmath@sci@int{#1}%
+        \edef\pgfmath@sci@mantissaA{#2#3#4#5#6}%
+        \pgfmath@scientific@@@}
+
+\def\pgfmath@scientific@@@#1#2#3#4#5#6\pgfmath@{%
+        \edef\pgfmath@sci@mantissaB{#1#2#3#4#5}%
+        \c@pgfmath@counta\pgfmath@sci@exponent\relax%
+                \ifnum\c@pgfmath@counta<-4\relax%
+                  \pgfmath@x0pt\relax%
+                \else%
+        \c@pgfmath@countb\c@pgfmath@counta%
+        \ifnum\c@pgfmath@counta<0\relax%
+            \c@pgfmath@counta-\c@pgfmath@counta%
+        \fi%
+        \pgfmathpow@{10}{\the\c@pgfmath@counta}%
+        \afterassignment\pgfmath@gobbletilpgfmath@
+        \c@pgfmath@countc\pgfmathresult\relax\pgfmath@
+        \edef\pgfmath@sci@factor{\the\c@pgfmath@countc}%
+        \ifnum\c@pgfmath@countb<0\relax%
+            % xE-y: easy...
+            \pgfmath@x\pgfmath@sci@int.\pgfmath@sci@mantissaA pt\relax%
+            \divide\pgfmath@x\pgfmath@sci@factor\relax%
+        \else%
+            % xE+y:
+            % Must do this way so as not lose digits in a long mantissa. Sigh...
+            \c@pgfmath@counta\pgfmath@sci@int%
+            \c@pgfmath@countb\pgfmath@sci@mantissaA%
+            \multiply\c@pgfmath@counta\pgfmath@sci@factor\relax%
+            \multiply\c@pgfmath@countb\pgfmath@sci@factor\relax%
+            \c@pgfmath@countc\c@pgfmath@countb%
+            \divide\c@pgfmath@countb100000\relax%
+            \advance\c@pgfmath@counta\c@pgfmath@countb%
+            \multiply\c@pgfmath@countb100000\relax%
+            \advance\c@pgfmath@countc-\c@pgfmath@countb%
+            \c@pgfmath@countb\pgfmath@sci@mantissaB\relax%
+            \multiply\c@pgfmath@countb\pgfmath@sci@factor\relax%
+            \divide\c@pgfmath@countb100000\relax%
+            \advance\c@pgfmath@countc\c@pgfmath@countb%
+            \advance\c@pgfmath@countc100000\relax%
+            \edef\pgfmath@sci@result{\pgfmath@sci@sign\the\c@pgfmath@counta.\expandafter\pgfmath@gobbleone\the\c@pgfmath@countc pt}%
+            \pgfmath@x\pgfmath@sci@result\relax%
+        \fi\fi%
+        \pgfmath@returnone\pgfmath@x%
+    \endgroup}
+
+
+
+% width function.
+%
+\pgfmathdeclarefunction{width}{1}{%
+    \begingroup%
+        \setbox\pgfmath@box=\hbox{{\pgfmath@selectfont{#1}}}%
+        \pgfmath@x=\wd\pgfmath@box%
+        \edef\pgfmathresult{\pgfmath@tonumber{\pgfmath@x}}%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup%
+}
+
+
+% height function.
+%
+\pgfmathdeclarefunction{height}{1}{%
+    \begingroup%
+        \setbox\pgfmath@box=\hbox{{\pgfmath@selectfont{#1}}}%
+        \pgfmath@x=\ht\pgfmath@box%
+        \edef\pgfmathresult{\pgfmath@tonumber{\pgfmath@x}}%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup%
+}
+
+% depth function.
+%
+\pgfmathdeclarefunction{depth}{1}{%
+    \begingroup%
+        \setbox\pgfmath@box=\hbox{{\pgfmath@selectfont{#1}}}%
+        \pgfmath@x=\dp\pgfmath@box%
+        \edef\pgfmathresult{\pgfmath@tonumber{\pgfmath@x}}%
+        \pgfmath@smuggleone\pgfmathresult%
+    \endgroup%
+}
+
+
+% array function.
+%
+\pgfmathdeclarefunction{array}{2}{%
+    \begingroup%
+        \afterassignment\pgfmath@gobbletilpgfmath@\pgfmath@count=#2\relax\pgfmath@%
+        \expandafter\pgfmatharray@@#1\pgfmath@stop%
+}
+
+\def\pgfmath@token@stop{\pgfmath@stop}%
+\def\pgfmatharray@@#1{%
+    \def\pgfmath@temp{#1}%
+    \advance\pgfmath@count by-1\relax%
+    \ifx\pgfmath@temp\pgfmath@token@stop%
+        \pgfmath@error{Array index out of bounds.}{}%
+        \def\pgfmathresult{0}%
+        \pgfmath@smuggleone\pgfmathresult\endgroup%
+        \let\pgfmath@next=\relax%
+    \else%
+        \ifnum\pgfmath@count=-1\relax%
+            \def\pgfmathresult{#1}%
+            \let\pgfmath@next=\pgfmatharray@@@%
+        \else%
+            \let\pgfmath@next=\pgfmatharray@@%
+        \fi%
+    \fi%
+    \pgfmath@next}
+
+\def\pgfmatharray@@@#1\pgfmath@stop{%
+    \pgfmath@smuggleone\pgfmathresult\endgroup%
+}
+
+% dim function: return dimension of an array
+% dim({1,2,3}) return 3
+% dim({{1,2,3},{4,5,6}}) return 2
+\pgfmathdeclarefunction{dim}{1}{%
+  \begingroup
+    \pgfmath@count=0\relax
+    \expandafter\pgfmath@dim@i\pgfutil@firstofone#1{\pgfmath@token@stop}%
+    \edef\pgfmathresult{\the\pgfmath@count}%
+    \pgfmath@smuggleone\pgfmathresult%
+  \endgroup}
+
+\def\pgfmath@dim@i#1#{%
+  \pgfutil@ifempty{#1}{}{\advance\pgfmath@count by 1}%
+  \pgfmath@dim@ii{#1}}
+
+\def\pgfmath@dim@ii#1#2{%
+  \ifx\pgfmath@token@stop#2%
+  \else
+    \advance\pgfmath@count by 1\relax
+    \expandafter\pgfmath@dim@i
+  \fi}
+
+
+% max function.
+%
+\pgfmathdeclarefunction{max}{...}{%
+    \begingroup%
+        \pgfmath@x=-16383pt\relax%
+        \pgfmathmax@@#1{}}
+
+\def\pgfmathmax@@#1{%
+    \def\pgfmath@temp{#1}%
+    \ifx\pgfmath@temp\pgfmath@empty%
+        \let\pgfmath@next=\pgfmathmax@@@%
+    \else%
+        \ifdim#1pt>\pgfmath@x%
+            \pgfmath@x=#1pt\relax%
+        \fi%
+        \let\pgfmath@next=\pgfmathmax@@%
+    \fi%
+    \pgfmath@next}
+
+\def\pgfmathmax@@@{\pgfmath@returnone\pgfmath@x\endgroup}%
+
+% For computability with old code.
+\def\pgfmathmax#1#2{%
+    \pgfmathparse{#1,#2}%
+    \expandafter\pgfmathmax@\expandafter{\pgfmathresult}%
+}
+
+% min function.
+%
+\pgfmathdeclarefunction{min}{...}{%
+    \begingroup%
+        \pgfmath@x=16383pt\relax%
+        \pgfmathmin@@#1{}}
+
+\def\pgfmathmin@@#1{%
+    \def\pgfmath@temp{#1}%
+    \ifx\pgfmath@temp\pgfmath@empty%
+        \let\pgfmath@next=\pgfmathmin@@@%
+    \else%
+        \ifdim#1pt<\pgfmath@x%
+            \pgfmath@x=#1pt\relax%
+        \fi%
+        \let\pgfmath@next=\pgfmathmin@@%
+    \fi%
+    \pgfmath@next}
+
+\def\pgfmathmin@@@{\pgfmath@returnone\pgfmath@x\endgroup}%
+
+% For computability with old code.
+\def\pgfmathmin#1#2{%
+    \pgfmathparse{#1,#2}%
+    \expandafter\pgfmathmin@\expandafter{\pgfmathresult}%
+}
+
+
+
+% scalar function.
+%
+\pgfmathdeclarefunction{scalar}{1}{%
+  \def\pgfmathresult{#1}%
+  \global\pgfmathunitsdeclaredfalse%
+}

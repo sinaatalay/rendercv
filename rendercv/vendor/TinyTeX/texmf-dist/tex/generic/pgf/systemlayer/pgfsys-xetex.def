@@ -1,0 +1,79 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-xetex.def}
+
+\input pgfsys-dvipdfmx.def
+
+\def\pgfsys@dvipdfmx@patternobj#1{%
+    % I have NO idea why this is necessary for xdvipdfmx - but without
+    % it, it crashes.
+    \pgfutil@insertatbegincurrentpagefrombox{#1}%
+}%
+
+% XeTeX supports pdftex commands for paper size
+\def\pgfsys@papersize#1#2{%
+  \pdfpageheight#2\relax%
+  \pdfpagewidth#1\relax}
+
+\def\pgfsys@global@papersize#1#2{%
+  \global\pdfpageheight#2\relax%
+  \global\pdfpagewidth#1\relax}
+
+
+% Xetex does not support interpolate and not mask
+\def\pgfsys@defineimage{% width, height, page number
+  \ifx\includegraphics\undefined
+    \ifx\pgf@imagewidth\pgfutil@empty\edef\pgf@imagewidth{1bp}\fi% width?
+    \ifx\pgf@imageheight\pgfutil@empty\edef\pgf@imageheight{1bp}\fi% height?
+    \ifx\pgf@imagepage\pgfutil@empty\else\edef\pgf@imagepage{ page \pgf@imagepage}\fi%
+    \ifx\pgf@imageinterpolate\pgfutil@empty\else\edef\pgf@imageinterpolate{ /Interpolate\space\pgf@imageinterpolate}\fi%
+    \ifx\pgf@imagemask\pgfutil@empty\else\xdef\pgf@imagemask{ /SMask @\pgf@imagemask}\fi%
+    \edef\pgf@image{\noexpand\hbox to \pgf@imagewidth{\vbox to \pgf@imageheight{\vfil\special{pdf:image width \pgf@imagewidth\space height \pgf@imageheight\space\pgf@imagepage\space(\pgf@filename) <<\pgf@imageinterpolate\pgf@imagemask\space>>}}\hfil}}%
+  \else
+    \ifx\pgf@imagewidth\pgfutil@empty\else\edef\pgf@imagewidth{width=\pgf@imagewidth,}\fi%
+    \ifx\pgf@imageheight\pgfutil@empty\else\edef\pgf@imageheight{height=\pgf@imageheight,}\fi%
+    \ifx\pgf@imagepage\pgfutil@empty\else\edef\pgf@imagepage{page=\pgf@imagepage,}\fi%
+    \edef\pgf@image{\noexpand\includegraphics[\pgf@imageheight\pgf@imagewidth\pgf@imagepage]{\pgf@filename}}%
+  \fi%
+}
+
+% XeTeX supports position tracking, now
+\def\pgfsys@markposition#1{%
+  \pdfsavepos%
+  \edef\pgf@temp{#1}%
+  \expandafter\pgfutil@writetoaux\expandafter{%
+    \expandafter\noexpand\expandafter\pgfsyspdfmark\expandafter{\pgf@temp}{\the\pdflastxpos}{\the\pdflastypos}}%
+}
+
+\def\pgfsyspdfmark#1#2#3{%
+  \expandafter\gdef\csname pgf@sys@pdf@mark@pos@#1\endcsname{\pgfqpoint{#2sp}{#3sp}}%
+  \pgfutil@check@rerun{#1}{{#2}{#3}}%
+}
+
+\def\pgfsys@getposition#1#2{%
+  \edef\pgf@marshal{\let\noexpand#2=\expandafter\noexpand\csname pgf@sys@pdf@mark@pos@#1\endcsname}%
+  \pgf@marshal%
+}
+
+\ifnum\the\XeTeXversion\expandafter\pgfutil@gobble\XeTeXrevision>0999991\relax
+  \def\pgf@sys@pdf@mark@pos@pgfpageorigin{\pgfqpoint{\hoffset}{\voffset}}
+\else
+  \def\pgf@sys@pdf@mark@pos@pgfpageorigin{\pgfqpoint{2\hoffset}{0pt}}
+\fi
+
+\ifx\paperheight\@undefined
+\else
+  \pdfpagewidth\paperwidth
+  \pdfpageheight\paperheight % this is to work around a positioning problem in xetex.
+\fi
+
+
+
+\endinput

@@ -1,0 +1,644 @@
+% Copyright 2019 by Till Tantau
+%
+% PS-3 shadings, image and opacity masks (fadings), transparency groups,
+% blend modes copyright 2020 by Alexander Grahn
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-dvips.def}
+
+% Driver commands for dvips
+
+\def\pgfsys@invoke#1{\special{ps\ifpgfsys@ps@boxmode\else:\fi: #1}}
+\def\pgfsys@outerinvoke#1{\special{ps: #1}}
+\def\pgf@sys@postscript@header#1{\pgfutil@insertatbegincurrentpage{\special{! #1}}}
+\def\pgf@sys@postscript@object#1{\special{! #1}}
+
+
+%
+% Load common postscript commands:
+%
+\input pgfsys-common-postscript.def
+
+
+%
+% dvips-specific stuff:
+%
+
+\def\pgfsys@beginpicture{\pgfsys@ps@boxmodefalse\special{ps: }\special{ps::[begin]}\pgfsys@invoke{pgfo}}
+\def\pgfsys@endpicture{\pgfsys@invoke{pgfc}\special{ps::[end]}}
+\def\pgfsys@hbox#1{%
+  \pgfsys@begin@idscope%
+  \pgfsys@invoke{pgfs}%
+    \special{ps::[end]}%
+      \wd#1=0pt
+      \ht#1=0pt
+      \dp#1=0pt
+      \box#1
+    \special{ps::[begin]}%
+  \pgfsys@invoke{pgfr}%
+  \pgfsys@end@idscope%
+}
+\def\pgfsys@begininvisible{%
+  \special{ps::[begin]}%
+  \pgfsys@invoke{gsave nulldevice}%
+  \special{ps::[end]}}
+\def\pgfsys@endinvisible{%
+  \special{ps::[begin]}%
+  \pgfsys@invoke{grestore}%
+  \special{ps::[end]}%
+}
+\def\pgfsys@color@unstacked#1{\special{ps: \XC@usecolor{#1}}}
+\def\pgfsys@imagesuffixlist{.epsi:.eps:.ps:}
+
+\def\pgfsys@papersize#1#2{%
+ \special{papersize=#1,#2}%
+ % \expandafter\gdef\expandafter\pgfsys@atbegindocument\expandafter{\pgfsys@atbegindocument\special{papersize=#1,#2}}%
+}
+\def\pgfsys@prepare@papersize#1#2{%
+ \expandafter\gdef\expandafter\pgfsys@atbegindocument\expandafter{\pgfsys@atbegindocument\special{papersize=#1,#2}}%
+}
+
+\expandafter\gdef\expandafter\pgfsys@atbegindocument\expandafter{\pgfsys@atbegindocument%
+  \pgf@sys@postscript@header{
+    /pgfsc{}bind def% stroke color is empty by default
+    /pgffc{}bind def% fill color is empty by default
+    /pgfstr{stroke}bind def%
+    /pgffill{fill}bind def%
+    /pgfeofill{eofill}bind def%
+    /pgfe{a dup 0 rlineto exch 0 exch rlineto neg 0 rlineto closepath}bind def% rectangle
+    /pgfw{setlinewidth}bind def% setlinewidth
+    /pgfs{save pgfpd 72 Resolution div 72 VResolution div neg scale
+      magscale{1 DVImag div dup scale}if
+      pgfx neg pgfy neg translate pgffoa .setopacityalpha}bind def% save
+    /pgfr{pgfsd restore}bind def %restore
+    userdict begin%
+    /pgfo{pgfsd /pgfx currentpoint /pgfy exch def def @beginspecial}bind def %open
+    /pgfc{newpath @endspecial pgfpd}bind def %close
+    /pgfsd{globaldict /pgfdelta /delta where {pop delta} {0} ifelse put}bind def% save delta
+    /pgfpd{/delta globaldict /pgfdelta get def}bind def % put delta
+    /.setblendmode where {pop} {/.setblendmode{pop}def} ifelse % install .setblendmode
+    /.setfillconstantalpha where {%
+      pop /.setopacityalpha {.setfillconstantalpha} def%
+    } {%
+      /.setopacityalpha where {pop} {/.setopacityalpha {pop} def} ifelse% install .setopacityalpha (fallback)
+    } ifelse
+    /.pgfsetfillopacityalpha{/pgffoa exch def
+      /.setfillconstantalpha where {pop pgffoa .setfillconstantalpha} {%
+        /pgffill{gsave pgffoa .setopacityalpha fill 1 .setopacityalpha newpath fill grestore newpath}bind def
+        /pgfeofill{gsave pgffoa .setopacityalpha eofill 1 .setopacityalpha newpath eofill grestore newpath}bind def%
+      } ifelse%
+    } bind def
+    /.pgfsetstrokeopacityalpha{/pgfsoa exch def
+      /.setstrokeconstantalpha where {pop pgfsoa .setstrokeconstantalpha} {%
+        /pgfstr{gsave pgfsoa .setopacityalpha stroke grestore newpath}bind def%
+      } ifelse%
+    }bind def
+    /pgffoa 1 def
+    /pgfsoa 1 def
+    % mandatory, transparency-related per-page operations, see
+    % https://www.ghostscript.com/doc/current/Language.htm#Transparency
+    % (bop-hook & eop-hook automatically executed if defined in userdict, see texdoc dvips)
+    /.pushpdf14devicefilter where {pop
+      [userdict /bop-hook known {userdict /bop-hook get aload pop} if
+        {0 .pushpdf14devicefilter} aload pop] cvx userdict exch /bop-hook exch put
+      [userdict /eop-hook known {userdict /eop-hook get aload pop} if
+        {.poppdf14devicefilter} aload pop] cvx userdict exch /eop-hook exch put%
+    } if
+    % keeps printers from choking on pdfmark operator
+    systemdict /pdfmark known not {userdict /pdfmark systemdict /cleartomark get put} if
+    end
+  }%
+}
+
+\AtBeginDocument{ % needed for plain TeX
+  \pgfsys@atbegindocument
+  \let\pgfsys@atbegindocument=\pgfutil@empty
+}
+
+
+
+%
+% Position tracking (needs pdftex or luatex in dvi mode)
+%
+\ifx\savepos\@undefined
+  \ifx\pdfsavepos\@undefined
+  \else
+    \let\pgf@savepos\pdfsavepos
+    \let\pgf@lastxpos\pdflastxpos
+    \let\pgf@lastypos\pdflastypos
+  \fi
+\else
+  \let\pgf@savepos\savepos
+  \let\pgf@lastxpos\lastxpos
+  \let\pgf@lastypos\lastypos
+\fi
+
+
+\ifx\pgf@savepos\@undefined
+\else
+
+\def\pgfsys@markposition#1{%
+  \pgf@savepos%
+  \edef\pgf@temp{#1}%
+  \expandafter\pgfutil@writetoaux\expandafter{%
+    \expandafter\noexpand\expandafter\pgfsyspdfmark\expandafter{\pgf@temp}{\the\pgf@lastxpos}{\the\pgf@lastypos}}%
+}
+
+\def\pgfsyspdfmark#1#2#3{%
+  \expandafter\gdef\csname pgf@sys@pdf@mark@pos@#1\endcsname{\pgfqpoint{#2sp}{#3sp}}%
+  \pgfutil@check@rerun{#1}{{#2}{#3}}%
+}
+
+\def\pgfsys@getposition#1#2{%
+  \edef\pgf@marshal{\let\noexpand#2=\expandafter\noexpand\csname pgf@sys@pdf@mark@pos@#1\endcsname}%
+  \pgf@marshal%
+}
+
+\def\pgf@sys@pdf@mark@pos@pgfpageorigin{\pgfpointorigin}
+
+\fi
+
+
+% Path usage:
+\def\pgfsys@discardpath{%
+  \ifpgfsys@@clipnext%
+    \ifpgfsys@eorule%
+      \pgfsysprotocol@literal{%
+        /pgfsmaskinplace dup where {exch get}{pop false} ifelse not {eoclip} if}%
+    \else%
+      \pgfsysprotocol@literal{%
+        /pgfsmaskinplace dup where {exch get}{pop false} ifelse not {clip} if}%
+    \fi%
+    \pgfsys@@clipnextfalse%
+  \fi%
+  \pgfsysprotocol@literal{newpath}}
+
+
+%
+% Blending
+%
+
+\def\pgfsys@blend@mode#1{%
+  \expandafter\ifx\csname pgf@sys@pdf@bm@#1\endcsname\relax%
+    \expandafter\let\expandafter\pgf@temp\csname pgf@sys@pdf@blend@mode@map@#1\endcsname%
+    \expandafter\xdef\csname pgf@sys@pdf@bm@#1\endcsname{/\pgf@temp}%
+    \ifx\pgf@temp\relax%
+      \pgferror{Unknown blend mode '#1'}%
+      \def\pgf@temp{Normal}%
+    \fi%
+  \fi%
+  \pgfsysprotocol@literal{\csname pgf@sys@pdf@bm@#1\endcsname\space .setblendmode}%
+}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@normal\endcsname{Normal}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@multiply\endcsname{Multiply}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@screen\endcsname{Screen}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@overlay\endcsname{Overlay}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@darken\endcsname{Darken}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@lighten\endcsname{Lighten}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@color dodge\endcsname{ColorDodge}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@color burn\endcsname{ColorBurn}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@hard light\endcsname{HardLight}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@soft light\endcsname{SoftLight}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@difference\endcsname{Difference}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@exclusion\endcsname{Exclusion}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@saturation\endcsname{Saturation}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@color\endcsname{Color}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@hue\endcsname{Hue}
+\expandafter\def\csname pgf@sys@pdf@blend@mode@map@luminosity\endcsname{Luminosity}
+
+
+%
+% Shadings
+%
+
+\def\pgfsys@horishading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@xb=\pgf@max
+    \pgfmathsetlength\pgf@y{#2}%
+    \pgf@yb=\pgf@y
+    \pgf@sys@bp@correct{\pgf@xb}%
+    \pgf@sys@bp@correct{\pgf@yb}%
+    \xdef\pgfutil@tempa{\hbox to \the\pgf@max{%
+      \noexpand\vrule width0pt height\the\pgf@y%
+      \noexpand\pgfsys@beginpurepicture%
+        \noexpand\pgfsys@outerinvoke{
+          \pgf@sys@tonumber{\pgf@yb} \pgf@sys@tonumber{\pgf@xb} 0 0 pgfe <<
+            /PatternType 2
+            /Shading <<
+              /ShadingType 2
+              /ColorSpace \pgf@shading@device\space
+              /Domain [\pgf@pdfparseddomain]
+              /Coords [\pgf@doma\space0 \pgf@domb\space0]
+              /Function \pgf@pdfparsedfunction
+            >>
+          >> matrix makepattern setpattern fill
+        }%
+        \hss%
+      \noexpand\pgfsys@endpurepicture%
+    }}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname\pgfutil@tempa%
+}
+\def\pgfsys@vertshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgfmathsetlength\pgf@x{#2}%
+    \pgf@xb=\pgf@x
+    \pgf@yb=\pgf@max
+    \pgf@sys@bp@correct{\pgf@xb}%
+    \pgf@sys@bp@correct{\pgf@yb}%
+    \xdef\pgfutil@tempa{\hbox to \the\pgf@x{%
+      \noexpand\vrule width0pt height\the\pgf@max%
+      \noexpand\pgfsys@beginpurepicture%
+        \noexpand\pgfsys@outerinvoke{
+          \pgf@sys@tonumber{\pgf@yb} \pgf@sys@tonumber{\pgf@xb} 0 0 pgfe <<
+            /PatternType 2
+            /Shading <<
+              /ShadingType 2
+              /ColorSpace \pgf@shading@device\space
+              /Domain [\pgf@pdfparseddomain]
+              /Coords [0 \pgf@doma\space0 \pgf@domb]
+              /Function \pgf@pdfparsedfunction
+            >>
+          >> matrix makepattern setpattern fill
+        }%
+        \hss%
+      \noexpand\pgfsys@endpurepicture%
+    }}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname\pgfutil@tempa%
+}
+\def\pgfsys@radialshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x
+    \pgf@ya=\pgf@y
+    \pgf@process{\pgfpoint{\pgf@max}{\pgf@max}}%
+    \advance\pgf@xa by \pgf@x
+    \advance\pgf@ya by \pgf@y
+    \pgf@sys@bp@correct{\pgf@x}%
+    \pgf@sys@bp@correct{\pgf@y}%
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \pgf@max=2\pgf@max
+    \xdef\pgfutil@tempa{\hbox to \the\pgf@max{%
+      \noexpand\vrule width0pt height\the\pgf@max%
+      \noexpand\pgfsys@beginpurepicture%
+        \noexpand\pgfsys@outerinvoke{
+          <<
+            /ShadingType 3
+            /ColorSpace \pgf@shading@device\space
+            /Domain [\pgf@pdfparseddomain]
+            /Coords [\pgf@sys@tonumber{\pgf@xa} \pgf@sys@tonumber{\pgf@ya} \pgf@doma\space
+              \pgf@sys@tonumber{\pgf@x} \pgf@sys@tonumber{\pgf@y} \pgf@domb]
+            /Function \pgf@pdfparsedfunction
+            /Extend [true false]
+          >> shfill
+        }%
+        \hss%
+      \noexpand\pgfsys@endpurepicture%
+    }}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname\pgfutil@tempa%
+}
+\def\pgfsys@functionalshading#1#2#3#4{%
+  {%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x
+    \pgf@ya=\pgf@y
+    \pgf@process{#3}%
+    \pgf@xb=\pgf@x
+    \pgf@yb=\pgf@y
+    \advance\pgf@x by-\pgf@xa
+    \advance\pgf@y by-\pgf@ya
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \pgf@sys@bp@correct{\pgf@xb}%
+    \pgf@sys@bp@correct{\pgf@yb}%
+    \pgf@xc=-\pgf@xa
+    \pgf@yc=-\pgf@ya
+    \xdef\pgfutil@tempa{%
+      \hbox to\the\pgf@x{\vbox to\the\pgf@y{\vfil
+          \noexpand\pgfsys@beginpurepicture%
+          \noexpand\pgfsys@invoke{%
+            % patch coords
+            /pgfpatchllx \pgf@sys@tonumber{\pgf@xa} def
+            /pgfpatchlly \pgf@sys@tonumber{\pgf@ya} def
+            % shading patch width and height
+            /pgfpatchX \pgf@sys@tonumber{\pgf@xb} pgfpatchllx sub def
+            /pgfpatchY \pgf@sys@tonumber{\pgf@yb} pgfpatchlly sub def
+            % number of samples in each direction (with samples spaced by approx. 1bp)
+            /pgfsamplesx pgfpatchX round cvi 1 add def
+            /pgfsamplesy pgfpatchY round cvi 1 add def
+            % exact sample distance in each direction, in bp
+            /pgfpatchdx pgfpatchX pgfsamplesx 1 sub div def
+            /pgfpatchdy pgfpatchY pgfsamplesy 1 sub div def
+            %
+            pgfpatchllx neg pgfpatchlly neg translate
+            /pgfproc {#4} bind def
+            %
+            % sampling procedure; repeatedly called by /ReusableStreamDecode filter;
+            % on each call, /pgfsamplingproc puts one colour sample (rgb, cmyk or gray)
+            % on the operand stack which is then consumed by the filter
+            userdict /pgfsampleidx 0 put % internal index; updated on each call 
+            /pgfsamplingproc {
+              pgfsampleidx pgfsamplesx pgfsamplesy mul eq {
+                () % push empty string on the stack to signal end-of-data
+              } {
+                pgfcolorsample\pgf@shading@model\space  % -str-
+                pgfsampleidx pgfsamplesx mod pgfpatchdx mul pgfpatchllx add   % -str- x
+                pgfsampleidx pgfsamplesx idiv pgfpatchdy mul pgfpatchlly add  % -str- x y
+                pgfproc                                 % -str- <colour>
+                pgfwritesample\pgf@shading@model\space  % -str-
+                /pgfsampleidx pgfsampleidx 1 add store  % (update index)
+              } ifelse
+            } bind def
+            %
+            pgfpatchY pgfpatchX pgfpatchllx pgfpatchlly pgfe <<
+              /PatternType 2
+              /Shading <<
+                /ShadingType 1
+                /Domain [0 1 0 1]
+                /Matrix [pgfpatchX 0 0 pgfpatchY pgfpatchllx pgfpatchlly]
+                /ColorSpace \pgf@shading@device\space
+                /Function <<
+                  /FunctionType 0
+                  /Order 1
+                  /Domain [0 1 0 1]
+                  /Range pgfrange\pgf@shading@model
+                  /BitsPerSample pgfchanneldepth\pgf@shading@model % bits per channel, actually
+                  /Size [pgfsamplesx pgfsamplesy]
+                  /DataSource /pgfsamplingproc load /ReusableStreamDecode filter
+                >>
+              >>
+            >> matrix makepattern setpattern fill
+          }%
+        \noexpand\pgfsys@endpurepicture%
+      }\hss}%
+    }%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname\pgfutil@tempa%
+}
+
+% helpers for converting FunctionType-4 to FunctionType-0, i. e. sampled, functions;
+% FunctionType-4 functions are not defined in PostScript-3
+%
+% These are the different colour models we are going to use:
+% +-------+-------------------+-----------+------------------+
+% | model | channel depth/bit | max value | sample size/byte |
+% +-------+-------------------+-----------+------------------+
+% |  cmyk |                 8 |       255 |                4 |
+% |   rgb |                 8 |       255 |                3 |
+% |  gray |                24 |  16777215 |                3 |
+% +-------+-------------------+-----------+------------------+
+\expandafter\gdef\expandafter\pgfsys@atbegindocument\expandafter{\pgfsys@atbegindocument%
+  \pgf@sys@postscript@header{
+    %
+    % -str- c m y k pgfwritesamplecmyk ==> -str-
+    % -str- r g b   pgfwritesamplergb  ==> -str-
+    % -str- gray    pgfwritesamplegray ==> -str-
+    % writes a single colour sample into the /pgfcolorsample* string;
+    % colour components (c,m,y,k; r,g,b; gray) between 0.0 to 1.0
+    %
+    /pgfwritesamplecmyk {
+      4 index 0 5 index pgfcheckcolorrange 255 mul round cvi put
+      4 index 1 4 index pgfcheckcolorrange 255 mul round cvi put
+      4 index 2 3 index pgfcheckcolorrange 255 mul round cvi put
+      4 index 3 2 index pgfcheckcolorrange 255 mul round cvi put
+      pop pop pop pop
+    } bind def
+    %
+    /pgfwritesamplergb {
+      3 index 0 4 index pgfcheckcolorrange 255 mul round cvi put
+      3 index 1 3 index pgfcheckcolorrange 255 mul round cvi put
+      3 index 2 2 index pgfcheckcolorrange 255 mul round cvi put
+      pop pop pop
+    } bind def
+    %
+    /pgfwritesamplegray {
+      % grayvalue between 0 and 16777215 (24 bit)
+      pgfcheckcolorrange 16777215 mul round cvi % -str- gray24
+      1 index 0 2 index           -16 bitshift put % high byte
+      1 index 1 2 index 65535 and  -8 bitshift put % middle byte
+      1 index 2 2 index   255 and              put % low byte
+      pop
+    } bind def
+    %
+    % <colour component> pgfcheckcolorrange ==> <something between 0.0 and 1.0>
+    % truncates value to the allowed range (user-defined Type-4 functions may
+    % happen to provide values outside this range)
+    /pgfcheckcolorrange {
+      dup 0.0 lt {pop 0.0} if
+      dup 1.0 gt {pop 1.0} if
+    } bind def
+    %
+    %colour depths per channel (bit)
+    /pgfchanneldepthcmyk 8 def
+    /pgfchanneldepthrgb 8 def
+    /pgfchanneldepthgray 24 def
+    %
+    % allocate strings as buffers for storing a single colour sample
+    /pgfcolorsamplecmyk 4 string def
+    /pgfcolorsamplergb 3 string def
+    /pgfcolorsamplegray 3 string def
+    %
+    %/Range array in the FunctionType 0 dictionary
+    /pgfrangecmyk [0 1 0 1 0 1 0 1] def
+    /pgfrangergb [0 1 0 1 0 1] def
+    /pgfrangegray [0 1] def
+  }%
+}
+
+
+%
+% Opacity masks
+%
+
+\def\pgfsys@fadingfrombox#1#2{%
+  \ifcsname pgfsmaskxform@#1\endcsname
+    \pgfwarning{Fading '#1' already defined.\MessageBreak Going to replace it with new definition}%
+  \fi%
+  \global\advance\pgf@objectcount\@ne%
+  {%
+    \pgf@x=-.5\wd#2%
+    \pgf@y=-.5\ht#2%
+    \advance\pgf@y by.5\dp#2%
+    \expandafter\xdef\csname pgfsmasktrans@#1\endcsname{%
+      \noexpand\pgftransformcm{1}{0}{0}{1}{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}%
+    \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+      % box coordinates (reference point and top) needed for ps2pdf
+      \pgfsys@outerinvoke{currentpoint /pgf@refy exch def /pgf@refx exch def}%
+      \hbox to 0pt {\hbox to \ifdim\ht#2>\ht\strutbox\ht#2\else\ht\strutbox\fi{\hss\pgfsys@outerinvoke{%
+        /pgf@top pgf@refy currentpoint pop pgf@refx sub VResolution Resolution div mul sub def%
+      }}\hss}%
+      % lower-right box corner coordinates for viewing
+      \hbox to 0pt {\hbox to \wd#2{\hss\pgfsys@outerinvoke{/pgf@right currentpoint pop def}}\hss}%
+      \hbox to 0pt {\hbox to \ifdim\dp#2>\dp\strutbox\dp#2\else\dp\strutbox\fi{\hss\pgfsys@outerinvoke{%
+        /pgf@bot pgf@refy currentpoint pop pgf@refx sub VResolution Resolution div mul add def%
+      }}\hss}%
+      \pgfsys@outerinvoke{gsave
+        clippath pathbbox newpath pop pop translate
+        systemdict /pdfmark known {%
+          % for ps2pdf, translate box to upper-left page corner, so we have the whole clipping
+          % path (i. e. page area) available, as outlying parts get clipped
+          pgf@refx neg pgf@top neg translate%
+        } {%
+          % for viewing, however, we want to hide the box by moving it off-page; we do so by aligning
+          % the lower-right box corner with the upper-left page corner
+          pgf@right neg pgf@bot neg translate%
+        } ifelse
+        % translate origin (0,0) to the reference point
+        gsave pgf@refx pgf@refy translate
+        mark /_objdef {pgfsmaskxform@\the\pgf@objectcount}
+          /BBox [clippath pathbbox newpath] /BP pdfmark grestore%
+      }%
+      \wd#2=0pt
+      \ht#2=0pt
+      \dp#2=0pt
+      \box#2%
+      \pgfsys@outerinvoke{mark /EP pdfmark grestore}%
+    }}\@tempa%
+    \expandafter\xdef\csname pgfsmaskxform@#1\endcsname{\the\pgf@objectcount}%
+  }%
+}
+\def\pgfsys@usefading#1#2#3#4#5#6#7{%
+  \ifcsname pgfsmaskxform@#1\endcsname%
+  {%
+     \pgftransformreset%
+     \pgftransformcm{#2}{#3}{#4}{#5}{\pgfpoint{#6}{#7}}%
+     \csname pgfsmasktrans@#1\endcsname%
+     {%
+       \pgflowlevelsynccm%
+       \pgfsys@outerinvoke{%
+         /.begintransparencymaskgroup where {pop
+           /pgf@sys@currentcolorspace currentcolorspace def
+           /pgf@sys@currentcolor [currentcolor] cvx def
+           /pgf@sys@OverrideICC currentuserparams /OverrideICC get def % Chr. Liddell
+           <</OverrideICC true>> setuserparams                         % of Artifex
+           /DeviceGray setcolorspace
+           true <</Subtype/Luminosity>> clippath pathbbox newpath .begintransparencymaskgroup
+           gsave
+           72 Resolution div 72 VResolution div scale
+           1 DVImag div 1 DVImag div neg scale
+           mark {pgfsmaskxform@\csname pgfsmaskxform@#1\endcsname} /SP pdfmark
+           grestore
+           0 .endtransparencymask
+           <</OverrideICC pgf@sys@OverrideICC>> setuserparams % restore orig. settings
+           pgf@sys@currentcolorspace setcolorspace
+           pgf@sys@currentcolor setcolor
+           /pgfsmaskinplace true def
+         } if%
+       }%
+     }%
+     \pgftransforminvert%
+     \pgflowlevelsynccm%
+  }%
+  \else
+    \pgferror{Undefined fading '#1'}%
+  \fi%
+}
+\def\pgfsys@clipfading{%
+  \pgfsyssoftpath@invokecurrentpath%
+  \pgfsys@clipnext%
+  \pgfsys@discardpath%
+}
+
+
+%
+% Transparency groups
+%
+\def\pgfsys@transparencygroupfrombox#1{%
+  \global\advance\pgf@objectcount\@ne%
+  \pgfsys@outerinvoke{%
+    mark /_objdef {pgfxform@\the\pgf@objectcount} /BBox [clippath pathbbox newpath] /BP pdfmark
+    gsave
+    /pgf@sys@foa pgffoa def /pgf@sys@soa pgfsoa def
+    /.setstrokeconstantalpha where
+      {pop 1 .pgfsetfillopacityalpha 1 .pgfsetstrokeopacityalpha} if%
+  }%
+  \wd#1=0pt
+  \ht#1=0pt
+  \dp#1=0pt
+  \hskip\pgf@picminx\box#1\hskip-\pgf@picminx
+  \pgfsys@outerinvoke{%
+    /pgffoa pgf@sys@foa def /pgfsoa pgf@sys@soa def
+    grestore
+    mark /EP pdfmark
+    mark {pgfxform@\the\pgf@objectcount} << /Group << /S /Transparency
+      /I \ifpgfsys@transparency@group@isolated true \else false \fi
+      /K \ifpgfsys@transparency@group@knockout true \else false \fi  >> >> /PUT pdfmark%
+  }%
+  \setbox#1=\hbox{\pgfsys@outerinvoke{mark {pgfxform@\the\pgf@objectcount} /SP pdfmark}}%
+}
+
+
+%
+% Image inclusion, adding SMask reference and image interpolation if mandated
+%
+
+\def\pgfsys@defineimage{%
+  \ifx\pgf@imagewidth\pgfutil@empty\else\edef\pgf@imagewidth{width=\pgf@imagewidth,}\fi%
+  \ifx\pgf@imageheight\pgfutil@empty\else\edef\pgf@imageheight{height=\pgf@imageheight,}\fi%
+  \begingroup%
+  \def\pgf@imageaddedkeys{}\def\@tempa{true}%
+  \ifx\pgf@imageinterpolate\@tempa\def\pgf@imageaddedkeys{/Interpolate true}\fi%
+  \ifx\pgf@imagemask\pgfutil@empty\else\edef\pgf@imageaddedkeys{\pgf@imageaddedkeys /SMask {\pgf@imagemask}}\fi%
+  \edef\@tempa{%
+    \ifx\pgf@imageaddedkeys\pgfutil@empty\else%
+      \noexpand\pgfsys@outerinvoke{%
+        save /pgfparent [(img) cvx cvn rand] cvx def %random name for current image
+        mark /_objdef /pgfparent load /NI pdfmark
+        % sometimes, image metadata contain embedded pdfmarks that prevent us from
+        % writing to the image dictionary ourselves, so we disable them temporarily
+        save /pdfmark /cleartomark load def
+      }%
+    \fi%
+    \noexpand\includegraphics[\pgf@imageheight\pgf@imagewidth]{\pgf@filename}%
+    \ifx\pgf@imageaddedkeys\pgfutil@empty\else%
+      \noexpand\pgfsys@outerinvoke{%
+        % empty image dummy, in case the provided file is not a valid raster image
+        0 0 1 [1 0 0 1 0 0] {} image restore
+        mark /pgfparent load <<\pgf@imageaddedkeys>> /PUT pdfmark restore
+      }%
+    \fi%
+  }%
+  \expandafter\endgroup%
+  \expandafter\def\expandafter\pgf@image\expandafter{\@tempa}%
+}
+
+
+%
+% Image masks
+%
+
+\def\pgfsys@definemask{%
+  \global\advance\pgf@objectcount\@ne%
+  \ifx\pgf@maskmatte\pgfutil@empty%
+  \else%
+    \edef\pgf@maskmatte{/Matte [\pgf@maskmatte]}%
+  \fi%
+  \pgfsys@outerinvoke{%
+    mark /_objdef {pgfmask\the\pgf@objectcount} /NI pdfmark
+    1 dict begin /pdfmark /cleartomark load def
+  }%
+  \special{psfile=\pgf@filename\space hsize=0 vsize=0}%
+  \pgfsys@outerinvoke{%
+    0 0 1 [1 0 0 1 0 0] {} image
+    end mark {pgfmask\the\pgf@objectcount} <</Decode [1 0] \pgf@maskmatte>> /PUT pdfmark
+  }%
+  \edef\pgf@mask{pgfmask\the\pgf@objectcount}%
+}
+
+\endinput
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

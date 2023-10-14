@@ -1,0 +1,1613 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-common-svg.def}
+
+
+% Driver commands for svg
+
+
+
+% Helping functions:
+\def\pgf@sys@svg@make@defs#1{\pgf@sys@fail{svg defs}}
+\def\pgf@sys@svg@ref@defs#1{\pgf@sys@fail{svg defs}}
+\let\pgf@sys@svgpath=\pgfutil@empty
+\def\pgf@sys@svgnum#1{%
+  {%
+    \pgf@x=#1\relax%
+    \edef\temp{\expandafter\Pgf@geT\the\pgf@x\space}%
+    \pgfutil@toks@\expandafter\expandafter\expandafter{\expandafter\pgf@sys@svgpath\temp}%
+    \xdef\pgf@sys@svgpath{\the\pgfutil@toks@}%
+  }%
+}
+\def\pgf@sys@addtosvgpath#1{\pgfutil@g@addto@macro\pgf@sys@svgpath{#1\space}}
+\def\pgf@sys@flushsvgpath{\pgfsysprotocol@literal{\pgf@sys@svgpath}\global\let\pgf@sys@svgpath=\pgfutil@empty}
+\def\pgf@sys@svg@gs#1{%
+  {%
+    \pgfsysprotocol@literal{<g #1>\pgfsys@svg@newline}%
+  }%
+  \global\advance\pgf@sys@svg@scopecount by1\relax%
+}
+\newcount\pgf@sys@svg@objectcount
+
+{\catcode`\%=12
+\gdef\pgf@sys@svg@percentchar{%}
+}
+{\catcode`\#=11
+\gdef\pgf@sys@svg@hash{#}
+}
+
+% Path construction:
+\def\pgfsys@lineto#1#2{\pgf@sys@addtosvgpath{L}\pgf@sys@svgnum{#1}\pgf@sys@svgnum{#2}}
+\def\pgfsys@moveto#1#2{\pgf@sys@addtosvgpath{M}\pgf@sys@svgnum{#1}\pgf@sys@svgnum{#2}}
+\def\pgfsys@curveto#1#2#3#4#5#6{%
+  \pgf@sys@addtosvgpath{C}%
+  \pgf@sys@svgnum{#1}\pgf@sys@svgnum{#2}%
+  \pgf@sys@svgnum{#3}\pgf@sys@svgnum{#4}%
+  \pgf@sys@svgnum{#5}\pgf@sys@svgnum{#6}}
+\def\pgfsys@rect#1#2#3#4{%
+  \pgfsys@moveto{#1}{#2}%
+  \pgf@sys@addtosvgpath{h}\pgf@sys@svgnum{#3}%
+  \pgf@sys@addtosvgpath{v}\pgf@sys@svgnum{#4}%
+  \pgf@sys@addtosvgpath{h}{\pgf@x=#3\pgf@x=-\pgf@x\pgf@sys@svgnum{\pgf@x}}%
+  \pgfsys@closepath}
+\def\pgfsys@closepath{\pgf@sys@addtosvgpath{Z}}
+
+% Path usage:
+\newif\ifpgf@sys@svg@clipnext
+\def\pgf@sys@svg@possiblyclippedpath#1{%
+  \edef\pgf@sys@cacheref{\pgfsys@id@refcurrent}%
+  \pgfsys@if@fresh@currentid{\csname pgf@sys@svg@path@\pgf@sys@cacheref\endcsname}{}%
+  \let\pgfsys@anim@ba@d\pgfutil@empty
+  \csname pgfsys@anim@ba@\pgf@sys@cacheref\endcsname%
+  \ifpgf@sys@svg@clipnext%
+    \global\advance\pgf@sys@svg@objectcount by1\relax%
+    \pgfsysprotocol@literal{%
+      <clipPath id="\pgfsys@if@fresh@currentid{\pgf@sys@cacheref}{pgfcp\the\pgf@sys@svg@objectcount}clip">
+      <path id="\pgfsys@if@fresh@currentid{\pgf@sys@cacheref}{pgfcp\the\pgf@sys@svg@objectcount}" d="}%
+    \ifx\pgfsys@anim@ba@d\pgfutil@empty\pgf@sys@flushsvgpath\else\pgfsysprotocol@literal{\pgfsys@anim@ba@d}\fi%
+    \pgfsysprotocol@literal{"/> </clipPath>\pgfsys@svg@newline }
+    \pgfsysprotocol@literal{<use xlink:href="\#\pgfsys@if@fresh@currentid{\pgf@sys@cacheref}{pgfcp\the\pgf@sys@svg@objectcount}" %
+      \ifx\pgfsys@anim@ba@d\pgfutil@empty\else%
+        \ifx\pgfsys@anim@ba@markerstart\pgfutil@empty\else%
+          marker-start="url(\#\pgfsys@anim@ba@markerstart)" %
+        \fi%
+        \ifx\pgfsys@anim@ba@markerend\pgfutil@empty\else%
+          marker-end="url(\#\pgfsys@anim@ba@markerend)" %
+        \fi%
+      \fi%
+      #1/>\pgfsys@svg@newline }%
+    \pgf@sys@svg@gs{clip-path="url(\#\pgfsys@if@fresh@currentid{\pgfsys@id@refcurrent}{pgfcp\the\pgf@sys@svg@objectcount}clip)"}
+    \pgf@sys@svg@clipnextfalse%
+  \else%
+    \pgfsysprotocol@literal{<path\pgfsys@if@fresh@currentid{ id="\pgfsys@id@refcurrent"}{}  d="}%
+    \ifx\pgfsys@anim@ba@d\pgfutil@empty\pgf@sys@flushsvgpath\else\pgfsysprotocol@literal{\pgfsys@anim@ba@d}\fi%
+    \pgfsysprotocol@literal{" %
+      \ifx\pgfsys@anim@ba@d\pgfutil@empty\else%
+        \ifx\pgfsys@anim@ba@markerstart\pgfutil@empty\else%
+          marker-start="url(\#\pgfsys@anim@ba@markerstart)" %
+        \fi%
+        \ifx\pgfsys@anim@ba@markerend\pgfutil@empty\else%
+          marker-end="url(\#\pgfsys@anim@ba@markerend)" %
+        \fi%
+      \fi%
+      #1/>\pgfsys@svg@newline }%
+  \fi%
+  \pgfsys@invalidate@currentid%
+}
+\def\pgfsys@stroke{\pgf@sys@svg@possiblyclippedpath{fill="none"}}
+\def\pgfsys@fill{\pgf@sys@svg@possiblyclippedpath{stroke="none"}}
+\def\pgfsys@fillstroke{\pgf@sys@svg@possiblyclippedpath{}}
+\def\pgfsys@clipnext{\pgf@sys@svg@clipnexttrue}
+\def\pgfsys@discardpath{%
+  \ifpgf@sys@svg@clipnext%
+    \edef\pgf@sys@cacheref{\pgfsys@id@refcurrent}%
+    \let\pgfsys@anim@ba@d\pgfutil@empty
+    \csname pgfsys@anim@ba@\pgf@sys@cacheref\endcsname%
+    \global\advance\pgf@sys@svg@objectcount by1\relax%
+    \pgfsysprotocol@literal{%
+      <clipPath id="pgfcp\the\pgf@sys@svg@objectcount">%
+      <path\pgfsys@if@fresh@currentid{ id="\pgfsys@id@refcurrent"}{} d="}%
+    \ifx\pgfsys@anim@ba@d\pgfutil@empty\pgf@sys@flushsvgpath\else\pgfsysprotocol@literal{\pgfsys@anim@ba@d}\fi%
+    \pgfsysprotocol@literal{"/> </clipPath>\pgfsys@svg@newline }
+    \pgf@sys@svg@gs{clip-path="url(\#pgfcp\the\pgf@sys@svg@objectcount)"}
+    \pgf@sys@svg@clipnextfalse%
+  \else%
+    \global\let\pgf@sys@svgpath=\pgfutil@empty
+  \fi%
+  \pgfsys@invalidate@currentid%
+}
+
+% Fill rules:
+\def\pgfsys@eoruletrue{\pgf@sys@svg@gs{fill-rule="evenodd"}}
+\def\pgfsys@eorulefalse{\pgf@sys@svg@gs{fill-rule="nonzero"}}
+
+% Transparency:
+\def\pgfsys@opacity#1{\pgf@sys@svg@gs{opacity="#1"}}
+\def\pgfsys@stroke@opacity#1{\pgf@sys@svg@gs{stroke-opacity="#1"}}
+\def\pgfsys@fill@opacity#1{\pgf@sys@svg@gs{fill-opacity="#1"}\def\pgf@sys@svg@opacity{#1}}
+\def\pgf@sys@svg@opacity{1}
+\def\pgfsys@transparencygroupfrombox#1{%
+  \setbox#1=\hbox{%
+  \pgfsys@invoke{<g opacity="\pgf@sys@svg@opacity" stroke-opacity="1" fill-opacity="1">\pgfsys@svg@newline }%
+  \box#1%
+  \pgfsys@invoke{</g>\pgfsys@svg@newline }%
+  }%
+}
+
+% Transformation:
+\def\pgfsys@transformcm#1#2#3#4#5#6{%
+  {\pgf@x=#5\pgf@y=#6%
+    \edef\pgf@temp{#1,#2,#3,#4}%
+    \ifx\pgf@temp\pgf@sys@svg@idtrans@text%
+      \ifdim\pgf@x=0pt\relax%
+        \ifdim\pgf@y=0pt%
+        \else%
+          \pgf@sys@svg@gs{transform="translate(\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})"}%
+        \fi%
+      \else%
+        \pgf@sys@svg@gs{transform="translate(\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})"}%
+      \fi%
+    \else%
+      \pgf@sys@svg@gs{transform="matrix(#1,#2,#3,#4,\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})"}%
+    \fi}}
+\def\pgfsys@transformshift#1#2{%
+  {\pgf@x=#1\pgf@y=#2%
+    \ifdim\pgf@x=0pt\relax%
+      \ifdim\pgf@y=0pt%
+      \else%
+        \pgf@sys@svg@gs{transform="translate(\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})"}%
+      \fi%
+    \else%
+      \pgf@sys@svg@gs{transform="translate(\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})"}%
+    \fi}}
+\def\pgfsys@transformxyscale#1#2{%
+  {\pgf@x=#1pt\pgf@y=#2pt%
+  \pgf@sys@svg@gs{transform="scale(\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})"}}}
+\def\pgfsys@viewboxmeet{\pgf@sys@svg@viewbox{meet}}
+\def\pgfsys@viewboxslice{\pgf@sys@svg@viewbox{slice}}
+\def\pgf@sys@svg@viewbox#1#2#3#4#5#6#7#8#9{%
+  {%
+    \edef\pgf@sys@cacheref{\pgfsys@id@refcurrent}%
+    \csname pgfsys@anim@ba@\pgf@sys@cacheref\endcsname%
+    \pgf@x#2%
+    \pgf@y#3%
+    \pgf@xa#4%
+    \pgf@ya#5%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    \pgf@xb#6%
+    \pgf@yb#7%
+    \pgf@xc#8%
+    \pgf@yc#9%
+    \advance\pgf@xc by-\pgf@xb%
+    \advance\pgf@yc by-\pgf@yb%
+    \pgfsysprotocol@literal{<svg
+      overflow="visible"
+      preserveAspectRatio="xMidYMid #1"
+      \pgfsys@if@fresh@currentid{ id="\pgf@sys@cacheref"}{}
+      x="\pgf@sys@tonumber{\pgf@x}"
+      y="\pgf@sys@tonumber{\pgf@y}"
+      width="\pgf@sys@tonumber{\pgf@xa}"
+      height="\pgf@sys@tonumber{\pgf@ya}"
+      viewBox="%
+        \ifx\pgfsys@anim@ba@viewBox\pgfutil@empty%
+          \pgf@sys@tonumber{\pgf@xb} \pgf@sys@tonumber{\pgf@yb} \pgf@sys@tonumber{\pgf@xc} \pgf@sys@tonumber{\pgf@yc}%
+        \else%
+          \pgfsys@anim@ba@viewBox%
+        \fi%
+        ">}%
+    \pgfsys@invalidate@currentid%
+  }%
+}
+\def\pgfsys@endviewbox{\pgfsysprotocol@literal{</svg>}}
+
+
+% Scopes
+\newcount\pgf@sys@svg@scopecount
+
+\newif\ifpgfsys@svg@boxmode
+\def\pgfsys@begin@text{\pgfsys@beginscope\pgfsys@svg@boxmodetrue}
+\def\pgfsys@end@text{\pgfsys@endscope}
+
+\def\pgfsys@beginscope{%
+  \edef\pgf@sys@svg@thescopecount{\the\pgf@sys@svg@scopecount}%
+  \begingroup%
+    \pgf@sys@svg@scopecount=0\relax%
+}
+\def\pgfsys@beginscope@#1{%
+  \edef\pgf@sys@svg@thescopecount{\the\pgf@sys@svg@scopecount}%
+  \begingroup%
+    \pgf@sys@svg@scopecount=1\relax%
+    \pgfsysprotocol@literal{<g#1>\pgfsys@svg@newline }%
+}
+\def\pgfsys@endscope{%
+    \loop%
+    \ifnum\pgf@sys@svg@scopecount>0\relax%
+      \pgfsysprotocol@literal{</g>\pgfsys@svg@newline }%
+      \advance\pgf@sys@svg@scopecount by-1\relax%
+    \repeat%
+  \endgroup%
+  \global\pgf@sys@svg@scopecount=\pgf@sys@svg@thescopecount\relax%
+}
+\newif\ifpgfsys@svg@close@strokenone
+\def\pgfsys@begin@idscope{%
+  \begingroup%
+    \pgfsys@if@fresh@currentid{%
+      \edef\pgf@sys@cacheref{\pgfsys@id@refcurrent}%
+      \let\pgf@sys@svg@ba@gs\pgfutil@empty%
+      \csname pgfsys@anim@ba@\pgf@sys@cacheref\endcsname%
+      \pgfsys@beginscope@{ id="\pgf@sys@cacheref" \pgf@sys@svg@ba@gs\pgfsys@svg@rdf}%
+      \expandafter\let\expandafter\pgf@sys@svg@end@id@scope@code\csname pgf@sys@att@end@\pgfsys@id@refcurrent\endcsname%
+      \let\pgf@sys@svg@end@id@scope\pgfsys@endscope%
+      \csname pgf@sys@att@beg@\pgfsys@id@refcurrent\endcsname%
+    }{%
+      \ifx\pgfsys@svg@rdf\pgfutil@empty%
+        \let\pgf@sys@svg@end@id@scope@code\relax%
+        \let\pgf@sys@svg@end@id@scope\relax%
+      \else%
+        \pgfsys@beginscope@{\pgfsys@svg@rdf}%
+        \let\pgf@sys@svg@end@id@scope@code\relax%
+        \let\pgf@sys@svg@end@id@scope\pgfsys@endscope%
+      \fi%
+    }%
+    \expandafter\global\expandafter\let\csname pgf@sys@att@beg@\pgfsys@id@refcurrent\endcsname\relax%
+    \expandafter\global\expandafter\let\csname pgf@sys@att@end@\pgfsys@id@refcurrent\endcsname\relax%
+    \ifpgfsys@svg@boxmode\pgfsysprotocol@literal{<g stroke="none">}\pgfsys@svg@close@strokenonetrue\fi%
+    \pgfsys@invalidate@currentid%
+      \begingroup%
+        \global\let\pgfsys@svg@rdf\pgfutil@empty%
+}
+\def\pgfsys@end@idscope{%
+      \endgroup%
+    \ifpgfsys@svg@close@strokenone\pgfsysprotocol@literal{</g>}\fi%
+    \pgf@sys@svg@end@id@scope@code%
+    \pgf@sys@svg@end@id@scope%
+  \endgroup%
+}
+\let\pgfsys@svg@rdf\pgfutil@empty%
+
+% IDs
+
+\newcount\pgf@sys@svg@type@count
+
+\def\pgfsys@clean@type#1#2{%
+  \expandafter\let\expandafter#1\csname pgf@sys@svg@lookup@#2\endcsname%
+  \if#1\relax%
+    \global\advance\pgf@sys@svg@type@count by1\relax%
+    \expandafter\xdef\csname pgf@sys@svg@lookup@#2\endcsname{t\the\pgf@sys@svg@type@count}%
+    \expandafter\let\expandafter#1\csname pgf@sys@svg@lookup@#2\endcsname%
+  \fi%
+}
+
+
+
+% Graphics state
+\def\pgfsys@setdash#1#2{%
+  {%
+    \pgf@xa#2\relax%
+    \edef\pgf@test@dashpattern{#1}%
+    \ifx\pgf@test@dashpattern\pgfutil@empty%
+      \pgf@sys@svg@gs{stroke-dasharray="none" stroke-dashoffset="\pgf@sys@tonumber\pgf@xa"}%
+    \else%
+      \let\pgf@sys@svg@parsed@dash\pgfutil@empty%
+      \expandafter\pgf@sys@svg@parse@dash\pgf@test@dashpattern,\relax%
+      \pgf@sys@svg@gs{stroke-dasharray="\pgf@sys@svg@parsed@dash" stroke-dashoffset="\pgf@sys@tonumber\pgf@xa"}%
+    \fi%
+  }%
+}
+\def\pgf@sys@svg@parse@dash#1,{%
+  \pgf@x#1\relax%
+  \pgfutil@ifnextchar\relax{%
+    \edef\pgf@sys@svg@parsed@dash{\pgf@sys@svg@parsed@dash\pgf@sys@tonumber\pgf@x}%
+  }{%
+    \edef\pgf@sys@svg@parsed@dash{\pgf@sys@svg@parsed@dash\pgf@sys@tonumber\pgf@x,}%
+    \pgf@sys@svg@parse@dash%
+  }%
+}
+\def\pgfsys@setlinewidth#1{{\pgf@x=#1\pgf@sys@svg@gs{stroke-width="\pgf@sys@tonumber{\pgf@x}"}}}
+\def\pgfsys@setmiterlimit#1{\pgf@sys@svg@gs{stroke-miterlimit="#1"}}
+\def\pgfsys@buttcap{\pgf@sys@svg@gs{stroke-linecap="butt"}}
+\def\pgfsys@roundcap{\pgf@sys@svg@gs{stroke-linecap="round"}}
+\def\pgfsys@rectcap{\pgf@sys@svg@gs{stroke-linecap="square"}}
+\def\pgfsys@miterjoin{\pgf@sys@svg@gs{stroke-linejoin="miter"}}
+\def\pgfsys@roundjoin{\pgf@sys@svg@gs{stroke-linejoin="round"}}
+\def\pgfsys@beveljoin{\pgf@sys@svg@gs{stroke-linejoin="bevel"}}
+
+% Invisibility
+\def\pgfsys@begininvisible{\pgfsysprotocol@literal{<g visibility="hidden">\pgfsys@svg@newline }}
+\def\pgfsys@endinvisible{\pgfsysprotocol@literal{</g>}}
+\def\pgfsys@begininvisiblescope{\pgfsys@beginscope@{ visibility="hidden"}}
+\def\pgfsys@endinvisiblescope{\pgfsys@endscope}
+
+
+%
+% Color management
+%
+
+\def\pgf@sys@svg@rgb@to@hash#1#2#3{%
+  {%
+    \pgf@sys@svg@do@color{#1}%
+    \let\pgf@sys@svg@ra\pgf@sys@svg@hex@first%
+    \let\pgf@sys@svg@rb\pgf@sys@svg@hex@second%
+    \pgf@sys@svg@do@color{#2}%
+    \let\pgf@sys@svg@ga\pgf@sys@svg@hex@first%
+    \let\pgf@sys@svg@gb\pgf@sys@svg@hex@second%
+    \pgf@sys@svg@do@color{#3}%
+    \let\pgf@sys@svg@ba\pgf@sys@svg@hex@first%
+    \let\pgf@sys@svg@bb\pgf@sys@svg@hex@second%
+    \xdef\pgf@sys@svg@prepared{\pgf@sys@svg@hash\pgf@sys@svg@ra\pgf@sys@svg@rb\pgf@sys@svg@ga\pgf@sys@svg@gb\pgf@sys@svg@ba\pgf@sys@svg@bb}%
+    \ifx\pgf@sys@svg@ra\pgf@sys@svg@rb%
+      \ifx\pgf@sys@svg@ga\pgf@sys@svg@gb%
+        \ifx\pgf@sys@svg@ba\pgf@sys@svg@bb%
+          \xdef\pgf@sys@svg@prepared{\pgf@sys@svg@hash\pgf@sys@svg@ra\pgf@sys@svg@ga\pgf@sys@svg@ba}%
+        \fi%
+      \fi%
+    \fi%
+  }%
+}
+
+\expandafter\def\csname pgf@svg@0\endcsname{0}
+\expandafter\def\csname pgf@svg@1\endcsname{1}
+\expandafter\def\csname pgf@svg@2\endcsname{2}
+\expandafter\def\csname pgf@svg@3\endcsname{3}
+\expandafter\def\csname pgf@svg@4\endcsname{4}
+\expandafter\def\csname pgf@svg@5\endcsname{5}
+\expandafter\def\csname pgf@svg@6\endcsname{6}
+\expandafter\def\csname pgf@svg@7\endcsname{7}
+\expandafter\def\csname pgf@svg@8\endcsname{8}
+\expandafter\def\csname pgf@svg@9\endcsname{9}
+\expandafter\def\csname pgf@svg@10\endcsname{a}
+\expandafter\def\csname pgf@svg@11\endcsname{b}
+\expandafter\def\csname pgf@svg@12\endcsname{c}
+\expandafter\def\csname pgf@svg@13\endcsname{d}
+\expandafter\def\csname pgf@svg@14\endcsname{e}
+\expandafter\def\csname pgf@svg@15\endcsname{f}
+
+\def\pgf@sys@svg@do@color#1{%
+  \pgf@x#1\relax%
+  \c@pgf@counta\pgf@x%
+  \divide\c@pgf@counta by256\relax%
+  \ifnum\c@pgf@counta>255\relax%
+    \c@pgf@counta=255\relax%
+  \fi%
+  \ifnum\c@pgf@counta<0\relax%
+    \c@pgf@counta=0\relax%
+  \fi%
+  \c@pgf@countb\c@pgf@counta\relax%
+  \divide\c@pgf@countb by16\relax%
+  \expandafter\let\expandafter\pgf@sys@svg@hex@first\csname pgf@svg@\the\c@pgf@countb\endcsname%
+  \multiply\c@pgf@countb by16\relax%
+  \advance\c@pgf@counta by-\c@pgf@countb\relax%
+  \expandafter\let\expandafter\pgf@sys@svg@hex@second\csname pgf@svg@\the\c@pgf@counta\endcsname%
+}
+
+\def\pgf@sys@svg@color@rgb#1,#2,#3\relax{%
+ {%
+   \pgf@sys@svg@rgb@to@hash{#1pt}{#2pt}{#3pt}%
+ }%
+}
+\def\pgf@sys@svg@color@cmy#1,#2,#3\relax{%
+  {%
+    \pgf@xa=1pt%
+    \advance\pgf@xa by-#1pt%
+    \pgf@xb=1pt%
+    \advance\pgf@xb by-#2pt%
+    \pgf@xc=1pt%
+    \advance\pgf@xc by-#3pt%
+    \pgf@sys@svg@rgb@to@hash{\pgf@xa}{\pgf@xb}{\pgf@xc}%
+  }%
+}
+\def\pgf@sys@svg@color@cmyk#1,#2,#3,#4\relax{%
+  {%
+    \pgf@xa=1pt%
+    \advance\pgf@xa by-#4pt%
+    \pgf@xa=#1\pgf@xa%
+    \advance\pgf@xa by#4pt%
+    \advance\pgf@xa by-1pt%
+    \pgf@xa=-\pgf@xa%
+    \pgf@xb=1pt%
+    \advance\pgf@xb by-#4pt%
+    \pgf@xb=#2\pgf@xb%
+    \advance\pgf@xb by#4pt%
+    \advance\pgf@xb by-1pt%
+    \pgf@xb=-\pgf@xb%
+    \pgf@xc=1pt%
+    \advance\pgf@xc by-#4pt%
+    \pgf@xc=#3\pgf@xc%
+    \advance\pgf@xc by#4pt%
+    \advance\pgf@xc by-1pt%
+    \pgf@xc=-\pgf@xc%
+    \pgf@sys@svg@rgb@to@hash{\pgf@xa}{\pgf@xb}{\pgf@xc}%
+  }%
+}
+\def\pgf@sys@svg@color@gray#1\relax{%
+  {%
+    \pgf@xa=#1pt%
+    \pgf@sys@svg@rgb@to@hash{\pgf@xa}{\pgf@xa}{\pgf@xa}%
+  }%
+}
+
+\def\pgf@sys@svg@gs@color#1{%
+  \ifpgfpicture\pgf@sys@svg@gs{#1}\fi%
+}
+
+\def\pgf@sys@svg@colorpop{\special{color pop}}
+
+
+% RGB
+\def\pgfsys@color@rgb@stroke#1#2#3{%
+  \pgf@sys@svg@color@rgb#1,#2,#3\relax%
+  \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+  \pgf@sys@svg@gs@color{stroke="\pgf@sys@svg@prepared"}}
+\def\pgfsys@color@rgb@fill#1#2#3{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@rgb#1,#2,#3\relax%
+    \pgf@sys@svg@gs@color{fill="\pgf@sys@svg@prepared"}%
+  \else%
+    \special{color push rgb #1 #2 #3}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+\def\pgfsys@color@rgb#1#2#3{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@rgb#1,#2,#3\relax%
+    \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+    \pgf@sys@svg@gs@color{\ifpgfsys@svg@boxmode\else stroke="\pgf@sys@svg@prepared" \fi fill="\pgf@sys@svg@prepared"}%
+  \else%
+    \special{color push rgb #1 #2 #3}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+
+%CMYK
+\def\pgfsys@color@cmyk@stroke#1#2#3#4{%
+  \pgf@sys@svg@color@cmyk#1,#2,#3,#4\relax%
+  \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+  \pgf@sys@svg@gs@color{stroke="\pgf@sys@svg@prepared"}}
+\def\pgfsys@color@cmyk@fill#1#2#3#4{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@cmyk#1,#2,#3,#4\relax%
+    \pgf@sys@svg@gs@color{fill="\pgf@sys@svg@prepared"}%
+  \else%
+    \special{color push cmyk #1 #2 #3 #4}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+\def\pgfsys@color@cmyk#1#2#3#4{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@cmyk#1,#2,#3,#4\relax%
+    \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+    \pgf@sys@svg@gs@color{\ifpgfsys@svg@boxmode\else stroke="\pgf@sys@svg@prepared" \fi fill="\pgf@sys@svg@prepared"}%
+  \else%
+    \special{color push cmyk #1 #2 #3 #4}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+
+% CMY
+\def\pgfsys@color@cmy@stroke#1#2#3{%
+  \pgf@sys@svg@color@cmy#1,#2,#3\relax%
+  \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+  \pgf@sys@svg@gs@color{stroke="\pgf@sys@svg@prepared"}}
+\def\pgfsys@color@cmy@fill#1#2#3{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@cmy#1,#2,#3\relax%
+    \pgf@sys@svg@gs@color{fill="\pgf@sys@svg@prepared"}
+  \else%
+    \special{color push cmyk #1 #2 #3 0}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+\def\pgfsys@color@cmy#1#2#3{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@cmy#1,#2,#3\relax%
+    \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+    \pgf@sys@svg@gs@color{\ifpgfsys@svg@boxmode\else stroke="\pgf@sys@svg@prepared" \fi fill="\pgf@sys@svg@prepared"}%
+  \else%
+    \special{color push cmyk #1 #2 #3 0}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+
+% gray
+\def\pgfsys@color@gray@stroke#1{%
+  \pgf@sys@svg@color@gray#1\relax%
+  \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+  \pgf@sys@svg@gs@color{stroke="\pgf@sys@svg@prepared"}}
+\def\pgfsys@color@gray@fill#1{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@gray#1\relax%
+    \pgf@sys@svg@gs@color{fill="\pgf@sys@svg@prepared"}%
+  \else%
+    \special{color push gray #1}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+\def\pgfsys@color@gray#1{%
+  \ifpgfpicture%
+    \pgf@sys@svg@color@gray#1\relax%
+    \let\pgf@sys@svg@last@stroke\pgf@sys@svg@prepared%
+    \pgf@sys@svg@gs@color{\ifpgfsys@svg@boxmode\else stroke="\pgf@sys@svg@prepared" \fi fill="\pgf@sys@svg@prepared"}%
+  \else%
+    \special{color push gray #1}%
+    \aftergroup\pgf@sys@svg@colorpop%
+  \fi}
+
+
+% Shadings:
+\def\pgf@sys@svg@shading@stops{%
+  % Step 1: Compute 1/\pgf@sys@shading@end@pos
+  \pgf@x=\pgf@sys@shading@end@pos\relax%
+  \c@pgf@counta=\pgf@x\relax%
+  \divide\c@pgf@counta by4096\relax%
+  % Step 2: Insert stops.
+  \expandafter\pgf@sys@svg@shading@dostops\pgf@sys@shading@ranges%
+    % dummy for end:
+    {{\pgf@sys@shading@end@pos}{\pgf@sys@shading@end@pos}{\pgf@sys@shading@end@rgb}{\pgf@sys@shading@end@rgb}}%
+    {}% end
+}
+\def\pgf@sys@svg@shading@dostops#1{%
+  \edef\pgf@test{#1}%
+  \ifx\pgf@test\pgfutil@empty%
+  \else%
+    \expandafter\pgf@sys@svg@shading@dostop\pgf@test%
+    \expandafter\pgf@sys@svg@shading@dostops%
+  \fi%
+}
+\def\pgf@sys@svg@shading@dostop#1#2#3#4{%
+  % #1 start pos
+  % #2 end pos
+  % #3 start rgb
+  % #4 end rgb
+  \pgf@x=#1%
+  \pgf@x=16\pgf@x%
+  \divide\pgf@x by \c@pgf@counta\relax%
+  \pgf@sys@svg@addtostops{<stop offset="\pgf@sys@tonumber\pgf@x" stop-color="}%
+  \pgf@sys@svg@shading@dorgb#3%
+  \pgf@sys@svg@addtostops{"/>\noexpand\pgfsys@svg@newline}%
+}
+\def\pgf@sys@svg@shading@dorgb#1#2#3{%
+  \pgf@sys@svg@color@rgb#1,#2,#3\relax%
+  \pgf@sys@svg@addtostops{\pgf@sys@svg@prepared}%
+}
+
+\let\pgf@sys@svg@thestops=\pgfutil@empty
+\def\pgf@sys@svg@addtostops#1{%
+  \edef\pgf@temp{#1}%
+  \expandafter\expandafter\expandafter\def
+  \expandafter\expandafter\expandafter\pgf@sys@svg@thestops
+  \expandafter\expandafter\expandafter{\expandafter\pgf@sys@svg@thestops\expandafter\space\pgf@temp}%
+}
+
+
+\def\pgfsys@horishading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \global\advance\pgf@sys@svg@objectcount by1\relax%
+    \pgf@sys@svg@addtostops{<linearGradient id="pgfsh\the\pgf@sys@svg@objectcount">\noexpand\pgfsys@svg@newline}%
+    \pgf@sys@svg@shading@stops%
+    \pgf@sys@svg@addtostops{</linearGradient>\noexpand\pgfsys@svg@newline}%
+    \pgf@process{\pgfpoint{\pgf@sys@shading@end@pos}{#2}}%
+    \xdef\pgfutil@tempa{%
+      \def\noexpand\pgf@sys@svg@sh@defs{\noexpand\pgfsysprotocol@literal{\pgf@sys@svg@thestops}}%
+      \def\noexpand\pgf@sys@svg@sh{\noexpand\pgfsysprotocol@literal{<rect
+        width="\pgf@sys@tonumber{\pgf@x}"
+        height="\pgf@sys@tonumber{\pgf@y}"
+        style="fill:url(\noexpand\#pgfsh\the\pgf@sys@svg@objectcount);
+          stroke:none"/>\noexpand\pgfsys@svg@newline}}%
+      \def\noexpand\pgf@sys@svg@pos{\noexpand\pgfpoint{\the\pgf@x}{\the\pgf@y}}%
+    }%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+
+\def\pgfsys@functionalshading#1#2#3#4{%
+  \pgf@sys@fail{functional shadings}%
+  \expandafter\gdef\csname @pgfshading#1!\endcsname{%
+    \let\pgf@sys@svg@sh@defs\relax%
+    \let\pgf@sys@svg@sh\relax%
+    \let\pgf@sys@svg@pos\pgfpointorigin%
+  }%
+}
+
+\def\pgfsys@vertshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \global\advance\pgf@sys@svg@objectcount by1\relax%
+    \pgf@sys@svg@addtostops{<linearGradient
+      id="pgfsh\the\pgf@sys@svg@objectcount"
+      gradientTransform="rotate(90)">\noexpand\pgfsys@svg@newline}%
+    \pgf@sys@svg@shading@stops%
+    \pgf@sys@svg@addtostops{</linearGradient>\noexpand\pgfsys@svg@newline}%
+    \pgf@process{\pgfpoint{\pgf@sys@shading@end@pos}{#2}}%
+    \xdef\pgfutil@tempa{%
+      \def\noexpand\pgf@sys@svg@sh@defs{\noexpand\pgfsysprotocol@literal{\pgf@sys@svg@thestops}}%
+      \def\noexpand\pgf@sys@svg@sh{\noexpand\pgfsysprotocol@literal{<rect
+        width="\pgf@sys@tonumber{\pgf@y}"
+        height="\pgf@sys@tonumber{\pgf@x}"
+        style="fill:url(\noexpand\#pgfsh\the\pgf@sys@svg@objectcount);
+          stroke:none"/>\noexpand\pgfsys@svg@newline}}%
+      \def\noexpand\pgf@sys@svg@pos{\noexpand\pgfpoint{\the\pgf@y}{\the\pgf@x}}%
+    }%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+
+\def\pgfsys@radialshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@x=\pgf@sys@shading@end@pos\relax%
+    \c@pgf@counta=\pgf@x\relax%
+    \divide\c@pgf@counta by4096\relax%
+    \global\advance\pgf@sys@svg@objectcount by1\relax%
+    \pgf@process{#2}%
+    % Divide by 2\pgf@sys@shading@end@pos%
+    \pgf@x=8\pgf@x%
+    \divide\pgf@x by \c@pgf@counta\relax%
+    \pgf@y=8\pgf@y%
+    \divide\pgf@y by \c@pgf@counta\relax%
+    \advance\pgf@x by.5pt%
+    \advance\pgf@y by.5pt%
+    \pgf@sys@svg@addtostops{<radialGradient
+      id="pgfsh\the\pgf@sys@svg@objectcount"
+      fx="\pgf@sys@tonumber\pgf@x"
+      fy="\pgf@sys@tonumber\pgf@y"
+      >\noexpand\pgfsys@svg@newline}%
+    \pgf@sys@svg@shading@stops%
+    \pgf@sys@svg@addtostops{</radialGradient>\noexpand\pgfsys@svg@newline}%
+    \pgf@xa=\pgf@sys@shading@end@pos%
+    \pgf@xb=2\pgf@xa%
+    \xdef\pgfutil@tempa{%
+      \def\noexpand\pgf@sys@svg@sh@defs{\noexpand\pgfsysprotocol@literal{\pgf@sys@svg@thestops}}%
+      \def\noexpand\pgf@sys@svg@sh{\noexpand\pgfsysprotocol@literal{<circle
+        cx="\pgf@sys@tonumber{\pgf@xa}"
+        cy="\pgf@sys@tonumber{\pgf@xa}"
+        r="\pgf@sys@tonumber{\pgf@xa}"
+        style="fill:url(\noexpand\#pgfsh\the\pgf@sys@svg@objectcount);
+          stroke:none"/>\noexpand\pgfsys@svg@newline}}%
+      \def\noexpand\pgf@sys@svg@pos{\noexpand\pgfpoint{\the\pgf@xb}{\the\pgf@xb}}%
+    }%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+}
+
+
+% Patterns
+
+\def\pgfsys@declarepattern#1#2#3#4#5#6#7{%
+  % Start building the pattern dictionary:
+  \pgf@xa=#2\relax%
+  \pgf@ya=#3\relax%
+  \pgf@xb=#4\relax%
+  \pgf@yb=#5\relax%
+  \pgf@xc=#6\relax%
+  \pgf@yc=#7\relax%
+  \pgfsys@@declarepattern{#1}%
+}
+
+\def\pgfsys@@declarepattern#1#2#3#4#5#6#7#8#9{%
+  \pgfutil@tempdima=#6\relax%
+  \pgfutil@tempdimb=#7\relax%
+  \ifnum#9=1\relax%
+    % Colored. That's easy:
+    \pgf@sys@svg@make@defs{#1}{
+      <pattern
+        id="pgfpat#1"
+        patternUnits="userSpaceOnUse"
+        width="\pgf@sys@tonumber\pgf@xc"
+        height="\pgf@sys@tonumber\pgf@yc"
+        patternTransform="matrix(#2\space#3\space#4\space#5\space\pgf@sys@tonumber\pgfutil@tempdima\space\pgf@sys@tonumber\pgfutil@tempdimb)">
+        #8
+      </pattern>}%
+  \else%
+    % Uncolored. Yikes!
+    \pgf@sys@svg@make@defs{#1}{
+      <pattern
+        id="pgfpat#1"
+        patternUnits="userSpaceOnUse"
+        width="\pgf@sys@tonumber\pgf@xc"
+        height="\pgf@sys@tonumber\pgf@yc"
+        patternTransform="matrix(#2\space#3\space#4\space#5\space\pgf@sys@tonumber\pgfutil@tempdima\space\pgf@sys@tonumber\pgfutil@tempdimb)"/>
+      <symbol id="pgfsym#1">
+        #8
+      </symbol>}%
+  \fi%
+}
+
+\def\pgfsys@setpatternuncolored#1#2#3#4{%
+  \global\advance\pgf@sys@svg@objectcount by1\relax%
+  \pgf@sys@svg@color@rgb#2,#3,#4\relax%
+  \pgfsysprotocol@literal{
+    <pattern id="pgfupat\the\pgf@sys@svg@objectcount" xlink:href="\#pgfpat#1">
+    <g stroke="\pgf@sys@svg@prepared" fill="\pgf@sys@svg@prepared"> <use xlink:href="\#pgfsym#1"/> </g>
+    </pattern>}%
+  \pgf@sys@svg@ref@defs{#1}%
+  \pgf@sys@svg@gs@color{fill="url(\#pgfupat\the\pgf@sys@svg@objectcount)"}%
+}
+
+\def\pgfsys@setpatterncolored#1{%
+  \pgf@sys@svg@ref@defs{#1}%
+  \pgf@sys@svg@gs@color{fill="url(\#pgfpat#1)"}%
+}
+
+
+
+
+
+
+% Animation
+
+\pgfsysanimationsupportedtrue
+
+\let\pgfsys@anim@val@dur\pgfutil@empty
+\let\pgfsys@anim@val@restart\pgfutil@empty
+\let\pgfsys@anim@val@repeatCount\pgfutil@empty
+\let\pgfsys@anim@val@repeatDur\pgfutil@empty
+\let\pgfsys@anim@val@fill\pgfutil@empty
+\let\pgfsys@anim@val@keyTimes\pgfutil@empty
+\let\pgfsys@anim@val@keyPoints\pgfutil@empty
+\let\pgfsys@anim@val@keySplines\pgfutil@empty
+\let\pgfsys@anim@val@begin\pgfutil@empty
+\let\pgfsys@anim@val@end\pgfutil@empty
+\let\pgfsys@anim@val@additive\pgfutil@empty
+\let\pgfsys@anim@val@accumulate\pgfutil@empty
+\def\pgfsys@anim@val@calcMode{spline}
+\let\pgfsys@anim@val@from\pgfutil@empty
+\let\pgfsys@anim@val@to\pgfutil@empty
+\let\pgfsys@anim@val@path\pgfutil@empty
+\let\pgfsys@anim@val@rotate\pgfutil@empty
+\let\pgfsys@anim@val@values\pgfutil@empty
+\def\pgfsys@anim@val@canvas@trans{{}{}}
+\let\pgfsys@anim@val@@id\pgfutil@empty
+\let\pgfsys@anim@val@@type\pgfutil@empty
+\let\pgfsys@anim@val@base\pgfutil@empty
+\let\pgfsys@anim@val@idref\pgfutil@empty
+\expandafter\let\csname pgfsys@anim@val@xlink:href\endcsname\pgfutil@empty
+
+\def\pgf@sys@svg@key#1{%
+  \expandafter\ifx\csname pgfsys@anim@val@#1\endcsname\pgfutil@empty\else%
+  \space#1="\csname pgfsys@anim@val@#1\endcsname"%
+  \fi%
+}
+
+\def\pgf@svg@anim@keys{
+  \pgf@sys@svg@key{dur}%
+  \pgf@sys@svg@key{restart}%
+  \pgf@sys@svg@key{repeatCount}%
+  \pgf@sys@svg@key{repeatDur}%
+  \pgf@sys@svg@key{fill}%
+  \pgf@sys@svg@key{keyTimes}%
+  \pgf@sys@svg@key{keyPoints}%
+  \pgf@sys@svg@key{keySplines}%
+  \pgf@sys@svg@key{begin}%
+  \pgf@sys@svg@key{end}%
+  \pgf@sys@svg@key{additive}%
+  \pgf@sys@svg@key{accumulate}%
+  \pgf@sys@svg@key{calcMode}%
+  \pgf@sys@svg@key{values}%
+  \pgf@sys@svg@key{from}%
+  \pgf@sys@svg@key{to}%
+  \pgf@sys@svg@key{path}%
+  \pgf@sys@svg@key{rotate}%
+  \pgf@sys@svg@key{xlink:href}%
+}
+
+\newif\ifpgf@sys@at@least@one@event
+\def\pgf@sys@svg@do@events#1{%
+  \pgf@sys@at@least@one@eventfalse%
+  \def\pgf@sys@event@target{#1}%
+  \expandafter\expandafter\expandafter\pgf@sys@svg@do@events@now\csname pgf@sys@event@list@#1\endcsname\relax%
+}
+\def\pgf@sys@svg@do@events@now{%
+  \pgfutil@ifnextchar\relax{}{\pgf@sys@svg@do@event}%
+}
+\def\pgf@sys@svg@do@event#1#2#3#4{%
+  \pgf@sys@at@least@one@eventtrue%
+  %
+  {%
+    \edef\pgf@temp{#1}%
+    \ifx\pgf@temp\pgfutil@empty%
+    \else%
+      \pgfsys@register@type{#2}%
+      \def\pgf@temp{\pgfsys@id@ref{#1}{#2}.}%
+    \fi%
+    \edef\pgf@@temp{#4}%
+    \ifx\pgf@@temp\pgfutil@empty%
+      \pgf@x0pt%
+    \else%
+      \pgf@x#4pt%
+    \fi%
+    \ifx\pgf@sys@event@target\pgf@sys@begin@text%
+      \advance\pgf@x by\pgf@xa\relax%
+    \fi\relax%
+    \ifdim\pgf@x<0pt%
+      \edef\pgf@@temp{ \pgf@sys@tonumber\pgf@x s}%
+    \else
+      \edef\pgf@@temp{ +\pgf@sys@tonumber\pgf@x s}%
+    \fi%
+    \xdef\pgf@svg@anim@temp{\pgf@temp#3\pgf@@temp}%
+  }%
+  \pgf@sys@svg@append{\pgf@sys@event@target}{\pgf@svg@anim@temp}%
+  \global\let\pgf@svg@anim@temp\relax%
+  \pgf@sys@svg@do@events@now%
+}
+
+
+\newif\ifpgf@sys@svg@is@sync@base
+\def\pgf@sys@svg@anim#1#2#3{%
+  \ifx\pgfsys@anim@val@@id\pgfutil@empty%
+    \pgferror{Animation misses ``whom''}%
+  \else%
+  {%
+    \ifx\pgfsys@anim@val@base\pgfutil@empty%
+    \else%
+      % Hook into id:
+      \expandafter\let\expandafter\pgf@sys@temp\csname pgfsys@anim@ba@\pgfsys@anim@val@idref\endcsname%
+      \ifx\pgf@sys@temp\relax%
+        \edef\pgf@sys@temp{\global\let\expandafter\noexpand\csname pgfsys@anim@ba@\pgfsys@anim@val@idref\endcsname\relax\noexpand\pgfsys@anim@ba@setup}%
+      \fi%
+      \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@temp\expandafter\expandafter\expandafter{\expandafter\pgf@sys@temp\expandafter\def\expandafter#3\expandafter{\pgfsys@anim@val@base}}%
+      \expandafter\global\expandafter\let\csname pgfsys@anim@ba@\pgfsys@anim@val@idref\endcsname\pgf@sys@temp%
+    \fi%
+    \pgf@sys@svg@tl@eval%
+    \pgf@sys@svg@do@events{begin}%
+    \ifpgf@sys@at@least@one@event%
+    \else%
+      \pgf@sys@svg@append{begin}{\ifdim\pgf@xa>0pt+\fi\pgf@sys@tonumber\pgf@xa s}%
+    \fi%
+    \pgf@sys@svg@do@events{end}%
+    #2%
+    % Suppress empty, superfluous animations:
+    \pgfutil@tempswatrue%
+    \pgfsys@if@fresh@currentid{}{%
+      \ifx\pgfsys@anim@val@values\pgfutil@empty%
+        \ifx\pgfsys@anim@val@to\pgfutil@empty%
+          \ifx\pgfsys@anim@val@dur\pgfutil@empty%
+            \pgfutil@tempswafalse%
+          \fi%
+        \fi%
+      \fi}
+    \ifpgfutil@tempswa%
+      \edef\pgf@temp{{<animate #1\pgfsys@if@fresh@currentid{ id="\pgfsys@id@refcurrent"}{}\pgf@svg@anim@keys/>\pgfsys@svg@newline}}%
+      \expandafter\pgfsysprotocol@literal\pgf@temp%
+    \fi%
+    \pgfsys@invalidate@currentid%
+  }%
+  \fi%
+}
+
+\def\pgf@sys@svg@anim@path{%
+  % animate a path...
+  \ifx\pgfsys@anim@val@@id\pgfutil@empty%
+    \pgferror{Animation misses ``whom''}%
+  \else%
+  {%
+    \let\pgf@sys@svg@add@code\pgfutil@empty%
+    %
+    % Setup markers:
+    %
+    % Setup start
+    \ifx\pgf@svg@anim@marker@start\pgfutil@empty%
+      \let\pgf@sys@svg@marker@id@start\pgfutil@empty%
+    \else%
+      \global\advance\pgf@sys@svg@objectcount by1\relax%
+      \edef\pgf@sys@svg@marker@id{pgf\the\pgf@sys@svg@objectcount m}%
+      \edef\pgf@sys@svg@add@code{%
+        \noexpand\pgf@sys@svg@ref@defs{pgfs\pgf@svg@anim@marker@start}%
+        \noexpand\pgfsysprotocol@literal{<marker id="\pgf@sys@svg@marker@id" markerUnits="userSpaceOnUse" orient="auto" overflow="visible">
+          <use xlink:href="\#pgfs\pgf@svg@anim@marker@start" transform="scale(-1,-1)"/> </marker>\pgfsys@svg@newline}%
+      }%
+      \let\pgf@sys@svg@marker@id@start\pgf@sys@svg@marker@id%
+    \fi%
+    % Setup end
+    \ifx\pgf@svg@anim@marker@end\pgfutil@empty%
+      \let\pgf@sys@svg@marker@id@end\pgfutil@empty%
+    \else%
+      \global\advance\pgf@sys@svg@objectcount by1\relax%
+      \edef\pgf@sys@svg@marker@id{pgf\the\pgf@sys@svg@objectcount m}%
+      \edef\pgf@sys@svg@add@code@{%
+        \noexpand\pgf@sys@svg@ref@defs{pgfs\pgf@svg@anim@marker@end}%
+        \noexpand\pgfsysprotocol@literal{<marker id="\pgf@sys@svg@marker@id" markerUnits="userSpaceOnUse" orient="auto" overflow="visible">
+          <use xlink:href="\#pgfs\pgf@svg@anim@marker@end"/> </marker>\pgfsys@svg@newline}%
+      }%
+      \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@svg@add@code\expandafter\expandafter\expandafter{\expandafter\pgf@sys@svg@add@code\pgf@sys@svg@add@code@}%
+      \let\pgf@sys@svg@marker@id@end\pgf@sys@svg@marker@id%
+    \fi%
+    \ifx\pgfsys@anim@val@base\pgfutil@empty%
+    \else%
+      % Hook into id of path:
+      \expandafter\let\expandafter\pgf@sys@temp\csname pgfsys@anim@ba@\pgfsys@anim@val@idref\endcsname%
+      \ifx\pgf@sys@temp\relax%
+        \edef\pgf@sys@temp{\global\let\expandafter\noexpand\csname pgfsys@anim@ba@\pgfsys@anim@val@idref\endcsname\relax\noexpand\pgfsys@anim@ba@setup}%
+      \fi%
+      \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@temp\expandafter\expandafter\expandafter{\expandafter\pgf@sys@temp\expandafter\def\expandafter\pgfsys@anim@ba@d\expandafter{\pgfsys@anim@val@base}}%
+      \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@temp\expandafter\expandafter\expandafter{\expandafter\pgf@sys@temp\expandafter\def\expandafter\pgfsys@anim@ba@markerstart\expandafter{\pgf@sys@svg@marker@id@start}}%
+      \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@temp\expandafter\expandafter\expandafter{\expandafter\pgf@sys@temp\expandafter\def\expandafter\pgfsys@anim@ba@markerend\expandafter{\pgf@sys@svg@marker@id@end}}%
+      \expandafter\global\expandafter\let\csname pgfsys@anim@ba@\pgfsys@anim@val@idref\endcsname\pgf@sys@temp%
+    \fi%
+    \pgf@sys@svg@tl@eval%
+    \pgf@sys@svg@do@events{begin}%
+    \ifpgf@sys@at@least@one@event%
+    \else%
+      \pgf@sys@svg@append{begin}{\ifdim\pgf@xa>0pt+\fi\pgf@sys@tonumber\pgf@xa s}%
+    \fi%
+    \pgf@sys@svg@do@events{end}%
+    % Suppress empty, superfluous animations:
+    \pgfutil@tempswatrue%
+    \pgfsys@if@fresh@currentid{}{%
+      \ifx\pgfsys@anim@val@values\pgfutil@empty%
+        \ifx\pgfsys@anim@val@to\pgfutil@empty%
+          \ifx\pgfsys@anim@val@dur\pgfutil@empty%
+            \pgfutil@tempswafalse%
+          \fi%
+        \fi%
+      \fi}
+    \ifpgfutil@tempswa%
+      % Ok, first, animate the path:
+      \edef\pgf@temp{%
+        {%
+          <animate attributeName="d"\pgfsys@if@fresh@currentid{ id="\pgfsys@id@refcurrent"}{}\pgf@svg@anim@keys/>\pgfsys@svg@newline
+          <animate attributeName="marker-start"\pgfsys@if@fresh@currentid{ id="\pgfsys@id@refcurrent-ms"}{}%
+            \pgf@sys@svg@key{dur}%
+            \pgf@sys@svg@key{restart}%
+            \pgf@sys@svg@key{repeatCount}%
+            \pgf@sys@svg@key{repeatDur}%
+            \pgf@sys@svg@key{fill}%
+            \pgf@sys@svg@key{begin}%
+            \pgf@sys@svg@key{end}%
+            \pgf@sys@svg@key{xlink:href}
+            from="\ifx\pgf@svg@anim@marker@start\pgfutil@empty none\else url(\#\pgf@sys@svg@marker@id@start)\fi"
+            to="\ifx\pgf@svg@anim@marker@start\pgfutil@empty none\else url(\#\pgf@sys@svg@marker@id@start)\fi"
+          />\pgfsys@svg@newline%
+          <animate attributeName="marker-end"\pgfsys@if@fresh@currentid{ id="\pgfsys@id@refcurrent-me"}{}%
+            \pgf@sys@svg@key{dur}%
+            \pgf@sys@svg@key{restart}%
+            \pgf@sys@svg@key{repeatCount}%
+            \pgf@sys@svg@key{repeatDur}%
+            \pgf@sys@svg@key{fill}%
+            \pgf@sys@svg@key{begin}%
+            \pgf@sys@svg@key{end}%
+            \pgf@sys@svg@key{xlink:href}
+            from="\ifx\pgf@svg@anim@marker@end\pgfutil@empty none\else url(\#\pgf@sys@svg@marker@id@end)\fi"
+            to="\ifx\pgf@svg@anim@marker@end\pgfutil@empty none\else url(\#\pgf@sys@svg@marker@id@end)\fi"
+          />\pgfsys@svg@newline%
+        }}%
+      \expandafter\pgfsysprotocol@literal\pgf@temp%
+    \fi%
+    \ifx\pgf@sys@svg@add@code\pgfutil@empty%
+    \else%
+      \expandafter\let\expandafter\pgf@sys@svg@add@code@\csname pgf@sys@svg@path@\pgfsys@id@ref{\pgfsys@anim@val@@id}{\pgfsys@anim@val@@type}\endcsname%
+      \ifx\pgf@sys@svg@add@code@\relax%
+      \else%
+        \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@svg@add@code\expandafter\expandafter\expandafter{\expandafter\pgf@sys@svg@add@code\pgf@sys@svg@add@code@}%
+      \fi%
+      \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@svg@add@code%
+      \expandafter\expandafter\expandafter{\expandafter\pgf@sys@svg@add@code\expandafter\global\expandafter\let\csname pgf@sys@svg@path@\pgfsys@id@ref{\pgfsys@anim@val@@id}{\pgfsys@anim@val@@type}\endcsname\relax}%
+      \expandafter\global\expandafter\let\csname pgf@sys@svg@path@\pgfsys@id@ref{\pgfsys@anim@val@@id}{\pgfsys@anim@val@@type}\endcsname\pgf@sys@svg@add@code%
+    \fi%
+    \pgfsys@invalidate@currentid%
+  }%
+  \fi%
+}
+
+\def\pgfsys@anim@ba@setup{%
+  \let\pgfsys@anim@ba@opacity\pgfutil@empty%
+  \let\pgfsys@anim@ba@fillopacity\pgfutil@empty%
+  \let\pgfsys@anim@ba@strokeopacity\pgfutil@empty%
+  \let\pgfsys@anim@ba@visibility\pgfutil@empty%
+  \let\pgfsys@anim@ba@strokewidth\pgfutil@empty%
+  \let\pgfsys@anim@ba@fill\pgfutil@empty%
+  \let\pgfsys@anim@ba@stroke\pgfutil@empty%
+  \let\pgfsys@anim@ba@strokedasharray\pgfutil@empty%
+  \let\pgfsys@anim@ba@strokedashoffset\pgfutil@empty%
+  \let\pgf@sys@svg@ba@gs\pgf@sys@svg@ba@gs@do@now%
+}
+\let\pgfsys@anim@ba@opacity\pgfutil@empty%
+\let\pgfsys@anim@ba@fillopacity\pgfutil@empty%
+\let\pgfsys@anim@ba@strokeopacity\pgfutil@empty%
+\let\pgfsys@anim@ba@visibility\pgfutil@empty%
+\let\pgfsys@anim@ba@strokewidth\pgfutil@empty%
+\let\pgfsys@anim@ba@fill\pgfutil@empty%
+\let\pgfsys@anim@ba@stroke\pgfutil@empty%
+\let\pgfsys@anim@ba@viewBox\pgfutil@empty%
+\let\pgfsys@anim@ba@d\pgfutil@empty%
+\let\pgfsys@anim@ba@strokedasharray\pgfutil@empty%
+\let\pgfsys@anim@ba@strokedashoffset\pgfutil@empty%
+\let\pgfsys@anim@ba@markerstart\pgfutil@empty%
+\let\pgfsys@anim@ba@markerendd\pgfutil@empty%
+
+\def\pgf@sys@svg@ba@gs@do@now{%
+  \ifx\pgfsys@anim@ba@fill\pgfutil@empty\else fill="\pgfsys@anim@ba@fill" \fi%
+  \ifx\pgfsys@anim@ba@stroke\pgfutil@empty\else stroke="\pgfsys@anim@ba@stroke" \fi%
+  \ifx\pgfsys@anim@ba@opacity\pgfutil@empty\else opacity="\pgfsys@anim@ba@opacity" \fi%
+  \ifx\pgfsys@anim@ba@fillopacity\pgfutil@empty\else fill-opacity="\pgfsys@anim@ba@fillopacity" \fi%
+  \ifx\pgfsys@anim@ba@strokeopacity\pgfutil@empty\else stroke-opacity="\pgfsys@anim@ba@strokeopacity" \fi%
+  \ifx\pgfsys@anim@ba@visibility\pgfutil@empty\else visibility="\pgfsys@anim@ba@visibility" \fi%
+  \ifx\pgfsys@anim@ba@strokewidth\pgfutil@empty\else stroke-width="\pgfsys@anim@ba@strokewidth" \fi%
+  \ifx\pgfsys@anim@ba@strokedasharray\pgfutil@empty\else stroke-dasharray="\pgfsys@anim@ba@strokedasharray" \fi%
+  \ifx\pgfsys@anim@ba@strokedashoffset\pgfutil@empty\else stroke-dashoffset="\pgfsys@anim@ba@strokedashoffset" \fi%
+}
+
+
+
+\newcount\pgf@sys@svg@canvascount
+\def\pgf@sys@svg@anim@trans#1#2#3{%
+ \ifx\pgfsys@anim@val@@id\pgfutil@empty%
+    \pgferror{Animation misses ``whom''}%
+  \else%
+  {%
+    %
+    \global\advance\pgf@sys@svg@canvascount by1\relax%
+    \pgf@sys@svg@tl@eval%
+    \pgf@sys@svg@do@events{begin}%
+    \ifpgf@sys@at@least@one@event%
+    \else%
+      \pgf@sys@svg@append{begin}{\ifdim\pgf@xa>0pt+\fi\pgf@sys@tonumber\pgf@xa s}%
+    \fi%
+    \pgf@sys@svg@do@events{end}%
+    #2%
+    \pgfsys@register@type{\pgfsys@anim@val@@type}%
+    \pgf@sys@svg@replace{xlink:href}{\#\pgfsys@id@ref{\pgfsys@anim@val@@id canvas\the\pgf@sys@svg@canvascount}{\pgfsys@anim@val@@type}}%
+    \ifx\pgfsys@anim@val@base\pgfutil@empty%
+      \let\pgf@sys@svg@base@trans\pgfutil@empty%
+    \else%
+      \edef\pgf@sys@svg@base@trans{ transform="#3(\pgfsys@anim@val@base)"}%
+    \fi%
+    \pgfsysprotocol@literal{<#1\pgfsys@if@fresh@currentid{ id="\pgfsys@id@refcurrent"}{}\pgf@svg@anim@keys/>\pgfsys@svg@newline}%
+    \pgfsys@invalidate@currentid%
+    \edef\pgf@temp{{\pgfsys@id@ref{\pgfsys@anim@val@@id
+          canvas\the\pgf@sys@svg@canvascount}{\pgfsys@anim@val@@type}}}%
+    \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\pgf@sys@svg@attacher%
+    \expandafter\expandafter\expandafter\pgf@temp\expandafter\pgfsys@anim@val@canvas@trans\expandafter{\pgf@sys@svg@base@trans}%
+  }%
+  \fi%
+}
+
+\newif\ifpgf@sys@svg@called
+\def\pgf@sys@svg@attacher#1#2#3#4{%
+  \toks0{%
+    {%
+      \let\pgfsys@transformcm\pgfsys@anim@transformcm%
+      \global\pgf@sys@svg@calledfalse%
+      #2%
+      \ifpgf@sys@svg@called\else\pgfsysprotocol@literal{<g>}\fi%
+      \pgfsysprotocol@literal{<g id="#1"#4>}
+      {%
+        \global\pgf@sys@svg@calledfalse%
+        #3%
+        \ifpgf@sys@svg@called\else\pgfsysprotocol@literal{<g>}\fi%
+      }%
+    }%
+  }%
+  \edef\pgf@sys@svg@beg{\the\toks0}%
+  \def\pgf@sys@svg@end{\pgfsysprotocol@literal{</g></g></g>\noexpand\pgfsys@svg@newline}}%
+  \expandafter\expandafter\expandafter\pgfsys@attach@to@id%
+  \expandafter\expandafter\expandafter\pgfsys@anim@val@@id%
+  \expandafter\expandafter\expandafter\pgfsys@anim@val@@type%
+  \expandafter\expandafter\expandafter{\expandafter\pgf@sys@svg@beg\expandafter}\expandafter{\pgf@sys@svg@end}%
+}
+
+
+\def\pgfsys@anim@transformcm#1#2#3#4#5#6{%
+  \ifpgf@sys@svg@called%
+    \pgferror{Double transformation calls in animation}%
+  \else%
+    {%
+      \pgf@x=#5\pgf@y=#6%
+      \edef\pgf@temp{ transform="matrix(#1,#2,#3,#4,\pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})"}%
+      \ifx\pgf@temp\pgf@sys@svg@idmat@stext%
+        \let\pgf@temp\pgfutil@empty%
+      \fi%
+      \pgfsysprotocol@literal{<g\pgf@temp>}%
+    }%
+    \global\pgf@sys@svg@calledtrue%
+  \fi%
+}
+\def\pgf@sys@svg@idtrans@text{1.0,0.0,0.0,1.0}
+\def\pgf@sys@svg@idmat@text{transform="matrix(1.0,0.0,0.0,1.0,0.0,0.0)"}
+\def\pgf@sys@svg@idmat@stext{ transform="matrix(1.0,0.0,0.0,1.0,0.0,0.0)"}
+
+\def\pgf@sys@svg@replace#1#2{%
+  \expandafter\edef\csname pgfsys@anim@val@#1\endcsname{#2}%
+}
+
+\def\pgf@sys@svg@append#1#2{%
+  \expandafter\let\expandafter\pgf@svg@anim@temp@\csname pgfsys@anim@val@#1\endcsname%
+  \ifx\pgf@svg@anim@temp@\pgfutil@empty%
+    \expandafter\edef\csname pgfsys@anim@val@#1\endcsname{#2}%
+  \else\ifx\pgf@svg@anim@temp@\relax%
+    \pgfutil@packageerror{pgfsys}{Unknown animation key '#1'}{}
+  \else%
+    \edef\pgf@svg@anim@temp@{\pgf@svg@anim@temp@;#2}%
+    \expandafter\let\csname pgfsys@anim@val@#1\endcsname\pgf@svg@anim@temp@%
+  \fi\fi%
+}
+
+% The actual animate command
+\def\pgfsys@animate#1{%
+  \expandafter\let\expandafter\pgf@sys@temp\csname pgfsys@svg@animate#1\endcsname\relax%
+  \ifx\pgf@sys@temp\relax%
+    \pgf@sys@fail{animation attribute #1}%
+  \else%
+    \pgf@sys@temp%
+  \fi%
+}
+
+
+% The non-transforming animations
+\def\pgfsys@svg@animatenone{}
+\def\pgfsys@svg@animateopacity{\pgf@sys@svg@anim{attributeName="opacity"}{}{\pgfsys@anim@ba@opacity}}
+\def\pgfsys@svg@animatefillopacity{\pgf@sys@svg@anim{attributeName="fill-opacity"}{}{\pgfsys@anim@ba@fillopacity}}
+\def\pgfsys@svg@animatestrokeopacity{\pgf@sys@svg@anim{attributeName="stroke-opacity"}{}{\pgfsys@anim@ba@strokeopacity}}
+\def\pgfsys@svg@animatevisibility{\pgf@sys@svg@anim{attributeName="visibility"}{}{\pgfsys@anim@ba@visibility}}
+\def\pgfsys@svg@animatelinewidth{\pgf@sys@svg@anim{attributeName="stroke-width"}{}{\pgfsys@anim@ba@strokewidth}}
+\def\pgfsys@svg@animatecolor{\pgf@sys@svg@anim{attributeName="fill"}{}{\pgfsys@anim@ba@fill}\pgf@sys@svg@anim{attributeName="stroke"}{}{\pgfsys@anim@ba@stroke}}
+\def\pgfsys@svg@animatefillcolor{\pgf@sys@svg@anim{attributeName="fill"}{}{\pgfsys@anim@ba@fill}}
+\def\pgfsys@svg@animatestrokecolor{\pgf@sys@svg@anim{attributeName="stroke"}{}{\pgfsys@anim@ba@stroke}}
+\def\pgfsys@svg@animateviewbox{\pgf@sys@svg@anim{attributeName="viewBox"}{}{\pgfsys@anim@ba@viewBox}}
+\def\pgfsys@svg@animatepath{\pgf@sys@svg@anim@path}
+\def\pgfsys@svg@animatesyncbase{{\pgf@sys@svg@is@sync@basetrue\pgf@sys@svg@anim{}{}{}}}
+\def\pgfsys@svg@animatedash{%
+  \pgf@svg@anim@prep@dash{\pgfsys@anim@val@base}{\pgfsys@anim@val@base@array}{\pgfsys@anim@val@base@offset}%
+  \let\pgfsys@anim@val@base\pgfsys@anim@val@base@array%
+  \pgf@sys@svg@anim{attributeName="stroke-dasharray"}{%
+    \pgf@svg@anim@prep@dash{\pgfsys@anim@val@from}{\pgfsys@anim@val@from@array}{\pgfsys@anim@val@from@offset}%
+    \pgf@svg@anim@prep@dash{\pgfsys@anim@val@to}{\pgfsys@anim@val@to@array}{\pgfsys@anim@val@to@offset}%
+    \pgf@svg@anim@prep@dash{\pgfsys@anim@val@values}{\pgfsys@anim@val@values@array}{\pgfsys@anim@val@values@offset}%
+    \let\pgfsys@anim@val@from\pgfsys@anim@val@from@array%
+    \let\pgfsys@anim@val@to\pgfsys@anim@val@to@array%
+    \let\pgfsys@anim@val@values\pgfsys@anim@val@values@array%
+  }{\pgfsys@anim@ba@strokedasharray}%
+  \let\pgfsys@anim@val@base\pgfsys@anim@val@base@offset%
+  \pgf@sys@svg@anim{attributeName="stroke-dashoffset"}{%
+    \pgf@svg@anim@prep@dash{\pgfsys@anim@val@from}{\pgfsys@anim@val@from@array}{\pgfsys@anim@val@from@offset}%
+    \pgf@svg@anim@prep@dash{\pgfsys@anim@val@to}{\pgfsys@anim@val@to@array}{\pgfsys@anim@val@to@offset}%
+    \pgf@svg@anim@prep@dash{\pgfsys@anim@val@values}{\pgfsys@anim@val@values@array}{\pgfsys@anim@val@values@offset}%
+    \let\pgfsys@anim@val@from\pgfsys@anim@val@from@offset%
+    \let\pgfsys@anim@val@to\pgfsys@anim@val@to@offset%
+    \let\pgfsys@anim@val@values\pgfsys@anim@val@values@offset%
+  }{\pgfsys@anim@ba@strokedashoffset}%
+}
+
+% The transforming animations
+\def\pgfsys@svg@animatetranslate{\pgf@sys@svg@anim@trans{animateTransform attributeName="transform" type="translate"}{}{translate}}
+\def\pgfsys@svg@animatescale{\pgf@sys@svg@anim@trans{animateTransform attributeName="transform" type="scale"}{}{scale}}
+\def\pgfsys@svg@animaterotate{\pgf@sys@svg@anim@trans{animateTransform attributeName="transform" type="rotate"}{}{rotate}}
+\def\pgfsys@svg@animateskewx{\pgf@sys@svg@anim@trans{animateTransform attributeName="transform" type="skewX"}{}{skewX}}
+\def\pgfsys@svg@animateskewy{\pgf@sys@svg@anim@trans{animateTransform attributeName="transform" type="skewY"}{}{skewY}}
+\def\pgfsys@svg@animatemotion{\pgf@sys@svg@anim@trans{animateMotion}{%
+    \let\pgfsys@anim@val@base\pgfutil@empty%
+    \let\pgfsys@anim@val@keyPoints\pgfsys@anim@val@values%
+    \let\pgfsys@anim@val@values\pgfutil@empty%
+    \ifx\pgfsys@anim@val@keyTimes\pgfutil@empty%
+      \let\pgfsys@anim@val@keyPoints\pgfutil@empty%
+    \fi%
+  }{}}
+
+% The keys
+\def\pgfsys@animation@whom#1#2{%
+  % Animations must "look forward"...
+  \pgfsys@if@fresh@id{#1}{#2}{}{\pgferror{Animations must precede the to-be-animated objects (``whom'')}}%
+  \pgf@sys@svg@replace{@id}{#1}%
+  \pgf@sys@svg@replace{@type}{#2}%
+  \pgf@sys@svg@replace{xlink:href}{\#\pgfsys@id@ref{#1}{#2}}%
+  \pgf@sys@svg@replace{idref}{\pgfsys@id@ref{#1}{#2}}%
+}
+\def\pgfsys@animation@restart@always{\pgf@sys@svg@replace{restart}{always}}
+\def\pgfsys@animation@restart@never{\pgf@sys@svg@replace{restart}{never}}
+\def\pgfsys@animation@restart@whennotactive{\pgf@sys@svg@replace{restart}{whenNotActive}}
+\def\pgfsys@animation@repeat@indefinite{\pgf@sys@svg@replace{repeatCount}{indefinite}}
+\def\pgfsys@animation@repeat#1{\pgf@sys@svg@replace{repeatCount}{#1}}
+\def\pgfsys@animation@repeat@dur#1{\pgf@sys@svg@replace{repeatDur}{#1}}
+\def\pgfsys@animation@freezeatend{\pgf@sys@svg@replace{fill}{freeze}}
+\def\pgfsys@animation@removeatend{\pgf@sys@svg@replace{fill}{remove}}
+\def\pgfsys@animation@canvas@transform#1#2{\def\pgfsys@anim@val@canvas@trans{{#1}{#2}}}
+\def\pgfsys@animation@offset#1#2{\pgfsys@animation@event{}{}{}{#1}{#2}}
+\def\pgfsys@animation@event#1#2#3#4#5{%
+  \expandafter\edef\csname pgf@sys@event@list@#5\endcsname{\csname pgf@sys@event@list@#5\endcsname{#1}{#2}{#3}{#4}}%
+}%
+\def\pgf@sys@event@list@begin{}
+\def\pgf@sys@event@list@end{}
+\def\pgfsys@animation@syncbegin#1#2#3#4{\pgfsys@animation@event{#1}{#2}{begin}{#3}{#4}}
+\def\pgfsys@animation@syncend#1#2#3#4{\pgfsys@animation@event{#1}{#2}{end}{#3}{#4}}
+\def\pgfsys@animation@repeat@event#1#2#3#4#5{\pgfsys@animation@event{#1}{#2}{repeat(#3)}{#4}{#5}}
+\def\pgfsys@animation@accesskey#1#2#3{\pgfsys@animation@event{}{}{accessKey(#1)}{#2}{#3}}
+%\def\pgfsys@animation@sum{\pgf@sys@svg@replace{additive}{sum}}
+%\def\pgfsys@animation@replace{\pgf@sys@svg@replace{additive}{replace}}
+\def\pgfsys@animation@accumulate{\pgf@sys@svg@replace{accumulate}{sum}}
+\def\pgfsys@animation@noaccumulate{\pgf@sys@svg@replace{accumulate}{}}
+\def\pgfsys@animation@rotatealong{\pgf@sys@svg@replace{rotate}{auto}}
+\def\pgfsys@animation@norotatealong{\pgf@sys@svg@replace{rotate}{}}
+\def\pgfsys@animation@movealong#1{%
+  {%
+    \let\pgf@sys@save@svgpath=\pgf@sys@svgpath%
+    \global\let\pgf@sys@svgpath=\pgfutil@empty%
+    \pgfsyssoftpath@getcurrentpath\pgf@sys@save@path%
+    \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+    #1%
+    \pgfsyssoftpath@invokecurrentpath%
+    \pgfsyssoftpath@setcurrentpath\pgf@sys@save@path%
+    \global\let\pgf@svg@anim@temp\pgf@sys@svgpath%
+    \global\let\pgf@sys@svgpath\pgf@sys@save@svgpath%
+  }%
+  \pgf@sys@svg@replace{path}{\pgf@svg@anim@temp}%
+}
+\def\pgfsys@animation@tip@markers#1#2{%
+  \edef\pgf@svg@anim@marker@start{#1}%
+  \edef\pgf@svg@anim@marker@end{#2}%
+}
+\let\pgf@svg@anim@marker@start\pgfutil@empty
+\let\pgf@svg@anim@marker@end\pgfutil@empty
+
+
+
+% Timelines
+\let\pgf@sys@svg@tl@entries\pgfutil@empty
+\let\pgf@sys@svg@tl@start\pgfutil@empty
+\let\pgf@sys@svg@tl@end\pgfutil@empty
+
+
+\def\pgfsys@animation@time#1#2#3#4#5{%
+  \def\pgf@sys@svg@t{#1}%
+  \let\pgf@sys@last@out@spline\pgf@sys@svg@out@spline%
+  \def\pgf@sys@svg@in@spline{{#2}{#3}}%
+  \def\pgf@sys@svg@out@spline{{#4}{#5}}%
+}
+\def\pgfsys@animation@base{%
+  \let\pgf@sys@svg@t\pgf@sys@svg@base@text%
+}
+\def\pgf@sys@svg@base@text{base}
+
+\def\pgf@sys@svg@entry#1{%
+  \ifx\pgf@sys@svg@t\pgf@sys@svg@base@text%
+    % Ah, base. Save!
+    \edef\pgfsys@anim@val@base{#1}%
+  \else%
+  \ifx\pgf@sys@svg@tl@start\pgfutil@empty%
+    % Ah, first.
+    \let\pgf@sys@svg@tl@start\pgf@sys@svg@t%
+    \edef\pgf@sys@svg@tl@entries{%
+      \noexpand\pgf@sys@svg@add@time{\pgf@sys@svg@t}%
+      \noexpand\pgf@sys@svg@add@value{#1}%
+    }%
+  \else%
+    \ifx\pgf@sys@last@out@spline\pgfsys@stay@text%
+      \ifx\pgf@sys@svg@in@spline\pgfsys@jump@text%
+        {%
+          \pgf@x\pgf@sys@svg@t pt
+          \pgf@xa\pgf@sys@svg@tl@end pt%
+          \advance\pgf@x by\pgf@xa%
+          \pgf@x.5\pgf@x%
+          \edef\pgf@sys@temp{\pgf@sys@tonumber\pgf@x}
+        \expandafter}\expandafter\def\expandafter\pgf@sys@temp\expandafter{\pgf@sys@temp}%
+        \edef\pgf@sys@svg@temp{%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@temp}%
+          \noexpand\pgf@sys@svg@add@spline{0}{0}{1}{1}%
+          \noexpand\pgf@sys@svg@add@value{\pgf@sys@svg@last@value}%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@temp}%
+          \noexpand\pgf@sys@svg@add@spline{0}{0}{1}{1}%
+          \noexpand\pgf@sys@svg@add@value{#1}%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@svg@t}%
+          \noexpand\pgf@sys@svg@add@spline{0}{0}{1}{1}%
+          \noexpand\pgf@sys@svg@add@value{#1}%
+        }%
+      \else
+        \edef\pgf@sys@svg@temp{%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@svg@t}%
+          \noexpand\pgf@sys@svg@add@spline{0}{0}{1}{1}%
+          \noexpand\pgf@sys@svg@add@value{\pgf@sys@svg@last@value}%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@svg@t}%
+          \noexpand\pgf@sys@svg@add@spline{0}{0}{1}{1}%
+          \noexpand\pgf@sys@svg@add@value{#1}%
+        }%
+      \fi%
+    \else%
+      \ifx\pgf@sys@svg@in@spline\pgfsys@jump@text%
+        \edef\pgf@sys@svg@temp{%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@svg@tl@end}%
+          \noexpand\pgf@sys@svg@add@spline{0}{0}{1}{1}%
+          \noexpand\pgf@sys@svg@add@value{#1}%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@svg@t}%
+          \noexpand\pgf@sys@svg@add@spline{0}{0}{1}{1}%
+          \noexpand\pgf@sys@svg@add@value{#1}%
+        }%
+      \else%
+        \edef\pgf@sys@svg@temp{%
+          \noexpand\pgf@sys@svg@add@time{\pgf@sys@svg@t}%
+          \noexpand\pgf@sys@svg@add@spline\pgf@sys@last@out@spline\pgf@sys@svg@in@spline%
+          \noexpand\pgf@sys@svg@add@value{#1}%
+        }%
+      \fi%
+    \fi%
+    \expandafter\expandafter\expandafter\def%
+    \expandafter\expandafter\expandafter\pgf@sys@svg@tl@entries%
+    \expandafter\expandafter\expandafter{\expandafter\pgf@sys@svg@tl@entries\pgf@sys@svg@temp}%
+  \fi%
+  \let\pgf@sys@svg@tl@end\pgf@sys@svg@t%
+  \edef\pgf@sys@svg@last@value{#1}%
+  \fi%
+}
+\newif\ifpgf@sys@svg@do@times
+\def\pgf@sys@svg@tl@eval{%
+  \pgf@xa=0pt%
+  % Overrulings
+  \pgf@sys@svg@do@timestrue%
+  % Ok, we need to compute the time interval
+  \ifx\pgf@sys@svg@tl@end\pgfutil@empty%
+  \else%
+    \ifx\pgf@sys@svg@tl@start\pgfutil@empty\else\pgf@xa=\pgf@sys@svg@tl@start pt\fi%
+    \pgf@xb=\pgf@sys@svg@tl@end pt%
+    \advance\pgf@xb by -\pgf@xa%
+    % Ok, \pgf@xb is now the duration.
+    \ifdim\pgf@xb>0pt\relax%
+      \pgf@sys@svg@replace{dur}{\pgf@sys@tonumber\pgf@xb}%
+    \else%
+      \pgf@sys@svg@replace{dur}{\pgf@sys@svg@indefinitetext}%
+    \fi%
+    % Now, prepare factors
+    \pgf@xc=8192pt%
+    \ifdim\pgf@xb<0.0001pt\relax
+      \pgf@xc=1pt%
+      \pgf@xb=1sp%
+    \else%
+      \divide\pgf@xc by\pgf@xb%
+      \multiply\pgf@xb by\pgf@xc%
+      \divide\pgf@xb by65536%
+    \fi%
+    % Now, run!
+    \pgf@sys@svg@tl@entries%
+    \ifx\pgfsys@anim@val@dur\pgf@sys@svg@indefinitetext%
+      \let\pgfsys@anim@val@from\pgfsys@anim@val@to%
+      \let\pgfsys@anim@val@keyTimes\pgfutil@empty%
+      \let\pgfsys@anim@val@calcMode\pgfutil@empty%
+    \fi%
+  \fi%
+}
+\def\pgf@sys@svg@indefinitetext{indefinite}
+\def\pgf@sys@svg@add@time#1{%
+  \ifpgf@sys@svg@do@times%
+    % Compute fraction:
+    \pgf@yb=#1pt%
+    \advance\pgf@yb by-\pgf@xa%
+    \multiply\pgf@yb by\pgf@xc%
+    \divide\pgf@yb by\pgf@xb%
+    \ifdim\pgf@yb<0pt\pgf@yb=0pt\fi%
+    \ifdim\pgf@yb>1pt\pgf@yb=1pt\fi%
+    \pgf@sys@svg@append{keyTimes}{\pgf@sys@tonumber\pgf@yb}%
+  \fi%
+}
+\def\pgf@sys@svg@add@spline#1#2#3#4{\ifpgf@sys@svg@do@times\pgf@sys@svg@append{keySplines}{#1 #2 #3 #4}\fi}
+\def\pgf@sys@svg@add@value#1{%
+  \ifx\pgfsys@anim@val@values\pgfutil@empty%
+    \ifx\pgfsys@anim@val@to\pgfutil@empty%
+      \pgf@sys@svg@replace{to}{#1}%
+    \else% move
+      \let\pgfsys@anim@val@values\pgfsys@anim@val@to%
+      \let\pgfsys@anim@val@to\pgfutil@empty%
+      \pgf@sys@svg@append{values}{#1}%
+    \fi%
+  \else%
+    \pgf@sys@svg@append{values}{#1}%
+  \fi%
+}
+\def\pgfsys@animation@val@current{\pgf@sys@svg@entry{}}
+\def\pgfsys@animation@val{\pgf@sys@svg@entry{nil}} % will be ignored anyway
+\def\pgfsys@animation@val@text#1{\pgf@sys@svg@entry{#1}}
+\def\pgfsys@animation@val@scalar#1{\pgf@sys@svg@entry{#1}}
+\def\pgfsys@animation@val@dimension#1{%
+  {%
+    \pgf@x=#1\relax%
+    \xdef\pgf@svg@anim@temp{\expandafter\Pgf@geT\the\pgf@x}%
+  }%
+  \pgf@sys@svg@entry{\pgf@svg@anim@temp}%
+}
+\def\pgfsys@animation@val@color@rgb#1#2#3{\pgf@sys@svg@color@rgb#1,#2,#3\relax\pgf@sys@svg@entry{\pgf@sys@svg@prepared}}
+\def\pgfsys@animation@val@color@cmyk#1#2#3#4{\pgf@sys@svg@color@cmyk#1,#2,#3,#4\relax\pgf@sys@svg@entry{\pgf@sys@svg@prepared}}
+\def\pgfsys@animation@val@color@cmy#1#2#3{\pgf@sys@svg@color@cmy#1,#2,#3\relax\pgf@sys@svg@entry{\pgf@sys@svg@prepared}}
+\def\pgfsys@animation@val@color@gray#1{\pgf@sys@svg@color@gray#1\relax\pgf@sys@svg@entry{\pgf@sys@svg@prepared}}
+\def\pgfsys@animation@val@path#1{%
+  {%
+    \let\pgf@sys@save@svgpath=\pgf@sys@svgpath%
+    \global\let\pgf@sys@svgpath=\pgfutil@empty%
+    \pgfsyssoftpath@getcurrentpath\pgf@sys@save@path%
+    \pgfsyssoftpath@setcurrentpath\pgfutil@empty%
+    #1%
+    \pgfsyssoftpath@invokecurrentpath%
+    \pgfsyssoftpath@setcurrentpath\pgf@sys@save@path%
+    \global\let\pgf@svg@anim@temp\pgf@sys@svgpath%
+    \global\let\pgf@sys@svgpath\pgf@sys@save@svgpath%
+  }%
+  \pgf@sys@svg@entry{\pgf@svg@anim@temp}%
+}
+\def\pgfsys@animation@val@translate#1#2{%
+  {%
+    \pgf@x=#1\relax%
+    \pgf@y=#2\relax%
+    \xdef\pgf@svg@anim@temp{\expandafter\Pgf@geT\the\pgf@x,\expandafter\Pgf@geT\the\pgf@y}%
+  }%
+  \pgf@sys@svg@entry{\pgf@svg@anim@temp}%
+}
+\def\pgfsys@animation@val@scale#1#2{\pgf@sys@svg@entry{#1,#2}}
+\def\pgfsys@animation@val@viewbox#1#2#3#4{%
+  {%
+    \pgf@x=#1\relax%
+    \pgf@y=#2\relax%
+    \pgf@xa=#3\relax%
+    \pgf@ya=#4\relax%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    \xdef\pgf@svg@anim@temp{\expandafter\Pgf@geT\the\pgf@x\space\expandafter\Pgf@geT\the\pgf@y\space\expandafter\Pgf@geT\the\pgf@xa\space\expandafter\Pgf@geT\the\pgf@ya}%
+  }%
+  \pgf@sys@svg@entry{\pgf@svg@anim@temp}%
+}
+\def\pgfsys@animation@val@dash#1#2{%
+  \edef\pgf@test@dashpattern{#1}%
+  \let\pgf@sys@svg@parsed@dash\pgfutil@empty%
+  \ifx\pgf@test@dashpattern\pgfutil@empty%
+  \else%
+    \expandafter\pgf@sys@svg@parse@dash\pgf@test@dashpattern,\relax%
+  \fi%
+  {%
+    \pgf@x=#2\relax%
+    \xdef\pgf@svg@anim@temp{\expandafter\Pgf@geT\the\pgf@x}%
+  }%
+  \pgf@sys@svg@entry{{\pgf@sys@svg@parsed@dash}{\pgf@svg@anim@temp}}%
+}
+
+
+
+\def\pgf@svg@anim@prep@dash#1#2#3{%
+  \let\pgf@svg@anim@dash@array\pgfutil@empty%
+  \let\pgf@svg@anim@dash@offset\pgfutil@empty%
+  % #1 = \pgfsys@anim@val@from or \pgfsys@anim@val@to or \pgfsys@anim@val@values
+  \ifx#1\pgfutil@empty%
+  \else%
+    \expandafter\pgf@svg@anim@prep@dash@parse#1\pgf@stop%
+  \fi%
+  \let#2\pgf@svg@anim@dash@array%
+  \let#3\pgf@svg@anim@dash@offset%
+}
+
+\def\pgf@svg@anim@prep@dash@parse#1#2{%
+  \expandafter\def\expandafter\pgf@svg@anim@dash@array\expandafter{\pgf@svg@anim@dash@array#1}%
+  \expandafter\def\expandafter\pgf@svg@anim@dash@offset\expandafter{\pgf@svg@anim@dash@offset#2}%
+  \pgfutil@ifnextchar;{%
+    \expandafter\def\expandafter\pgf@svg@anim@dash@array\expandafter{\pgf@svg@anim@dash@array;}%
+    \expandafter\def\expandafter\pgf@svg@anim@dash@offset\expandafter{\pgf@svg@anim@dash@offset;}%
+    \expandafter\pgf@svg@anim@prep@dash@parse\pgfutil@gobble%
+  }{%
+    \pgfutil@gobble% done, gobble \pgf@stop
+  }%
+}
+
+
+%
+% Markers
+%
+
+\def\pgfsys@marker@declare@{%
+  \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+  \pgfsys@beginscope@{ id="pgfs\the\pgf@sys@id@count"}%
+  \pgfsysprotocol@literal{\csname pgf@sys@marker@prot@\the\pgf@sys@id@count\endcsname}%
+  \pgfsys@endscope%
+  \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
+  \pgf@sys@svg@make@defs{pgfs\the\pgf@sys@id@count}{\pgfsys@temp}%
+}
+
+\def\pgfsys@marker@use#1{%
+  \pgf@sys@svg@ref@defs{pgfs#1}%
+  \pgfsysprotocol@literal{<use xlink:href="\#pgfs#1"/>}%
+}
+
+\def\pgfsys@marker@at@begin@usedpath#1{\def\pgf@sys@svg@marker@begin{#1}\let\pgf@sys@svg@marker@begin@use\pgfutil@empty}
+\def\pgfsys@marker@at@end@usedpath#1{\def\pgf@sys@svg@marker@end{#1}\let\pgf@sys@svg@marker@begin@use\pgfutil@empty}
+
+\let\pgf@sys@svg@marker@begin\relax
+\let\pgf@sys@svg@marker@end\relax
+
+\let\pgf@sys@svg@marker@begin@use\pgfutil@empty
+\let\pgf@sys@svg@marker@end@use\pgfutil@empty
+
+\def\pgf@sys@svg@prep@marker#1#2#3#4#5{%
+  \pgf@sys@svg@ref@defs{pgfs#1}%
+  \global\advance\pgf@sys@svg@objectcount by1\relax%
+  \edef\pgf@sys@svg@marker@id{pgf\the\pgf@sys@svg@objectcount}%
+  \pgfsysprotocol@literal{<marker id="\pgf@sys@svg@marker@id" markerUnits="userSpaceOnUse" orient="auto" overflow="visible">
+    <use xlink:href="\#pgfs#1"#2/> </marker>\pgfsys@svg@newline}%
+  \edef#3{marker-#4="url(\#\pgf@sys@svg@marker@id)" }%
+}
+
+
+%
+% RDF
+%
+
+\def\pgf@svg@rdf@init{%
+  \ifx\pgfsys@svg@rdf\pgfutil@empty%
+    % Ok, first, so init
+    \global\let\pgf@svg@rdf@vocab\relax%
+    \global\let\pgf@svg@rdf@about\relax%
+    \global\let\pgf@svg@rdf@content\relax%
+    \global\let\pgf@svg@rdf@datatype\relax%
+    \global\let\pgf@svg@rdf@href\relax%
+    \global\let\pgf@svg@rdf@inlist\relax%
+    \global\let\pgf@svg@rdf@prefix\relax%
+    \global\let\pgf@svg@rdf@property\relax%
+    \global\let\pgf@svg@rdf@rel\relax%
+    \global\let\pgf@svg@rdf@resource\relax%
+    \global\let\pgf@svg@rdf@rev\relax%
+    \global\let\pgf@svg@rdf@src\relax%
+    \global\let\pgf@svg@rdf@typeof\relax%
+    \global\let\pgfsys@svg@rdf\pgfsys@svg@rdf@initial%
+  \fi%
+}
+\def\pgfsys@svg@rdf@initial{%
+  \ifx\pgf@svg@rdf@vocab\relax\else\space vocab="\pgf@svg@rdf@vocab"\fi%
+  \ifx\pgf@svg@rdf@about\relax\else\space about="\pgf@svg@rdf@about"\fi%
+  \ifx\pgf@svg@rdf@datatype\relax\else\space datatype="\pgf@svg@rdf@datatype"\fi%
+  \ifx\pgf@svg@rdf@href\relax\else\space href="\pgf@svg@rdf@href"\fi%
+  \ifx\pgf@svg@rdf@inlist\relax\else\space inlist="\pgf@svg@rdf@inlist"\fi%
+  \ifx\pgf@svg@rdf@prefix\relax\else\space prefix="\pgf@svg@rdf@prefix"\fi%
+  \ifx\pgf@svg@rdf@property\relax\else\space property="\pgf@svg@rdf@property"\fi%
+  \ifx\pgf@svg@rdf@rel\relax\else\space rel="\pgf@svg@rdf@rel"\fi%
+  \ifx\pgf@svg@rdf@resource\relax\else\space resource="\pgf@svg@rdf@resource"\fi%
+  \ifx\pgf@svg@rdf@rev\relax\else\space rev="\pgf@svg@rdf@rev"\fi%
+  \ifx\pgf@svg@rdf@src\relax\else\space src="\pgf@svg@rdf@src"\fi%
+  \ifx\pgf@svg@rdf@typeof\relax\else\space typeof="\pgf@svg@rdf@typeof"\fi%
+  \ifx\pgf@svg@rdf@content\relax\else\space content="\pgf@svg@rdf@content"\fi%
+}
+
+\def\pgfsys@rdf@about#1{\pgf@svg@rdf@init\gdef\pgf@svg@rdf@about{#1}}
+\def\pgfsys@rdf@content#1{\pgf@svg@rdf@init\gdef\pgf@svg@rdf@content{#1}}
+\def\pgfsys@rdf@datatype#1{\pgf@svg@rdf@init\gdef\pgf@svg@rdf@datatype{#1}}
+\def\pgfsys@rdf@href#1{\pgf@svg@rdf@init\gdef\pgf@svg@rdf@href{#1}}
+\def\pgfsys@rdf@inlist{\pgf@svg@rdf@init\let\pgf@svg@rdf@inlist\pgfutil@empty}
+\def\pgfsys@rdf@prefix#1{\pgf@svg@rdf@init%
+  \ifx\pgf@svg@rdf@prefix\relax%
+    \gdef\pgf@svg@rdf@prefix{#1}
+  \else%
+    \expandafter\gdef\expandafter\pgf@svg@rdf@prefix\expandafter{\pgf@svg@rdf@prefix\space#1}%
+  \fi}
+\def\pgfsys@rdf@property#1{\pgf@svg@rdf@init%
+  \ifx\pgf@svg@rdf@property\relax%
+    \gdef\pgf@svg@rdf@property{#1}
+  \else%
+    \expandafter\gdef\expandafter\pgf@svg@rdf@property\expandafter{\pgf@svg@rdf@property\space#1}%
+  \fi}
+\def\pgfsys@rdf@rel#1{\pgf@svg@rdf@init%
+  \ifx\pgf@svg@rdf@rel\relax%
+    \gdef\pgf@svg@rdf@rel{#1}
+  \else%
+    \expandafter\gdef\expandafter\pgf@svg@rdf@rel\expandafter{\pgf@svg@rdf@rel\space#1}%
+  \fi}
+\def\pgfsys@rdf@rev#1{\pgf@svg@rdf@init%
+  \ifx\pgf@svg@rdf@rev\relax%
+    \gdef\pgf@svg@rdf@rev{#1}
+  \else%
+    \expandafter\gdef\expandafter\pgf@svg@rdf@rev\expandafter{\pgf@svg@rdf@rev\space#1}%
+  \fi}
+\def\pgfsys@rdf@typeof#1{\pgf@svg@rdf@init%
+  \ifx\pgf@svg@rdf@typeof\relax%
+    \gdef\pgf@svg@rdf@typeof{#1}
+  \else%
+    \expandafter\gdef\expandafter\pgf@svg@rdf@typeof\expandafter{\pgf@svg@rdf@typeof\space#1}%
+  \fi}
+\def\pgfsys@rdf@resource#1{\pgf@svg@rdf@init\gdef\pgf@svg@rdf@resource{#1}}
+\def\pgfsys@rdf@src#1{\pgf@svg@rdf@init\gdef\pgf@svg@rdf@src{#1}}
+\def\pgfsys@rdf@vocab#1{\pgf@svg@rdf@init\gdef\pgf@svg@rdf@vocab{#1}}
+
+
+
+
+
+
+%
+
+\def\pgfutil@color{\pgfsetcolor}
+
+\endinput
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

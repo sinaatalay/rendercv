@@ -1,0 +1,198 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibrarydatavisualization.polar.code.tex}
+
+\usepgfmodule{datavisualization}%
+
+% This file defines code for doing plots involving polar
+% coordinates. This includes not only standard polar plots, but also
+% pie charts.
+
+
+
+\pgfooclass{polar transformer}
+{%
+  % Class polar mapper
+  %
+  % A polar mapper is used to transform attributes given as (2d) polar
+  % coordinates to canvas coordinates. Note that no special ranges
+  % can be specified and that the angle must be given in degrees. You
+  % can, however, use a standard mapper to change these things.
+
+  \attribute angle;%
+  % The attribute from which the angle is read.
+
+  \attribute radius;%
+  % The attribute from which the radius is read.
+
+  \attribute unit vector 0 degrees;%
+  % The unit vector 0 degrees
+
+  \attribute unit vector 90 degrees;%
+  % The unit vector 90 degrees
+
+
+
+  % Constructor
+  %
+  % #1 = angle attribute. Example: rotation.
+  % #2 = radius attribute. Example: height.
+  % #3 = unit vector 0 degrees
+  % #4 = unit vector 90 degrees
+  %
+  \method polar transformer(#1,#2,#3,#4) {
+    \pgfooset{angle}{#1}
+    \pgfooset{radius}{#2}
+    \pgfooset{unit vector 0 degrees}{#3}
+    \pgfooset{unit vector 90 degrees}{#4}
+  }%
+
+  % Method
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,transform,transform datapoint signal)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,path,path signal)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,direction,direction signal)
+  }%
+
+  % Getters
+  \method get angle attribute(#1) {
+    \pgfooget{angle}{#1}
+  }%
+
+  \method get radius attribute(#1) {
+    \pgfooget{radius}{#1}
+  }%
+
+
+  % Slot
+  %
+  % This slot should be connected to the transform datapoint
+  % signal. When this signal is emitted, the coordinate system will be
+  % shifted according to the current value of the attribute.
+  \method transform() {
+    \pgfkeysgetvalue{/data point/\pgfoovalueof{angle}/const}\pgf@dv@angle%
+    \ifx\pgf@dv@angle\relax
+      \pgfkeysgetvalue{/data point/\pgfoovalueof{angle}}\pgf@dv@angle%
+    \fi
+    \ifx\pgf@dv@angle\relax\else%
+      \ifx\pgf@dv@angle\pgfutil@empty\else%
+        \pgfkeysgetvalue{/data point/\pgfoovalueof{radius}/const}\pgf@dv@radius%
+        \ifx\pgf@dv@radius\relax
+          \pgfkeysgetvalue{/data point/\pgfoovalueof{radius}}\pgf@dv@radius%
+        \fi
+        \ifx\pgf@dv@radius\pgfutil@empty\else%
+          \ifx\pgf@dv@radius\relax\else%
+            \pgfdvmathenter{\pgf@dv@val}{\pgf@dv@angle}%
+            \pgfdvmathexitbyscientificformat{\pgf@dv@angle}{\pgf@dv@val}%
+            \pgfdvmathenter{\pgf@dv@val}{\pgf@dv@radius}%
+            \pgfdvmathexitbyscientificformat{\pgf@dv@radius}{\pgf@dv@val}%
+            \pgfmathsincos{\pgf@dv@angle}%
+            \pgfmathmultiply{\pgfmathresultx}{\pgf@dv@radius}%
+            \let\pgf@dv@polar@temp=\pgfmathresult
+            \pgftransformshift{\pgfpointscale{\pgf@dv@polar@temp}{\pgfoovalueof{unit vector 0 degrees}}}%
+            \pgfmathmultiply{\pgfmathresulty}{\pgf@dv@radius}%
+            \let\pgf@dv@polar@temp=\pgfmathresult
+            \pgftransformshift{\pgfpointscale{\pgf@dv@polar@temp}{\pgfoovalueof{unit vector 90 degrees}}}%
+          \fi%
+        \fi%
+      \fi%
+    \fi%
+  }%
+
+
+
+  % Reaction to the path signal
+  %
+  % Here is what we do: When a pgfdvpathmoveto is done, the radius and
+  % the angle are recorded. When a pgfdvpathlineto is done, the saved
+  % radius and angle are compared with the new angle and radius. If,
+  % and only if, the radius is the same, but the angle is different,
+  % the lineto is caught and replaced by an arc from the previous
+  % position to the new position.
+
+  \attribute prev angle;%
+  \attribute prev radius;%
+
+  \method path(#1) {%
+    \ifpgfdvhandled%
+    \else%
+      \ifx#1\pgfdvpathlinetotoken
+        % Ok, let us have a look...
+        \pgfooget{prev radius}\pgf@dv@prev@rad
+        \pgfkeysgetvalue{/data point/\pgfoovalueof{radius}}\pgf@dv@current@rad
+        \ifx\pgf@dv@current@rad\relax
+        \else
+          \ifx\pgf@dv@current@rad\pgf@dv@prev@rad%
+            \pgfooget{prev angle}\pgf@dv@prev@angle
+            \pgfkeysgetvalue{/data point/\pgfoovalueof{angle}}\pgf@dv@current@angle
+            \ifx\pgf@dv@current@angle\relax
+            \else
+              \ifx\pgf@dv@current@angle\pgf@dv@prev@angle%
+              % do nothing
+              \else%
+                % Do arc:
+                \pgfdvmathenter{\pgf@dv@val}{\pgf@dv@prev@angle}%
+                \pgfdvmathexitbyscientificformat{\pgf@dv@prev@angle}{\pgf@dv@val}%
+                \pgfdvmathenter{\pgf@dv@val}{\pgf@dv@prev@rad}%
+                \pgfdvmathexitbyscientificformat{\pgf@dv@prev@rad}{\pgf@dv@val}%
+                \pgfdvmathenter{\pgf@dv@val}{\pgf@dv@current@angle}%
+                \pgfdvmathexitbyscientificformat{\pgf@dv@current@angle}{\pgf@dv@val}%
+                \pgfdvmathenter{\pgf@dv@val}{\pgf@dv@current@rad}%
+                \pgfdvmathexitbyscientificformat{\pgf@dv@current@rad}{\pgf@dv@val}%
+                \pgfpatharcaxes{\pgf@dv@prev@angle}{\pgf@dv@current@angle}
+                  {\pgfpointscale{\pgf@dv@current@rad}{\pgfoovalueof{unit vector 0 degrees}}}
+                  {\pgfpointscale{\pgf@dv@current@rad}{\pgfoovalueof{unit vector 90 degrees}}}%
+                \pgfdvhandledtrue%
+              \fi%
+            \fi%
+          \fi%
+        \fi%
+      \fi%
+    \fi%
+    % No matter what, record the current position
+    \pgfooeset{prev angle}{\pgfkeysvalueof{/data point/\pgfoovalueof{angle}}}
+    \pgfooeset{prev radius}{\pgfkeysvalueof{/data point/\pgfoovalueof{radius}}}
+  }%
+
+  % Method
+  %
+  % React to direction signals. See pgfpointdvdirection for an
+  % explanation
+  %
+  \method direction(#1) {%
+    \ifx#1\pgfdvdirectionfromtoken
+      % Record from angle and radius
+      \xdef\pgf@dv@polar@from@angle{\pgfkeysvalueof{/data point/\pgfoovalueof{angle}}}
+      \xdef\pgf@dv@polar@from@radius{\pgfkeysvalueof{/data point/\pgfoovalueof{radius}}}
+    \else\ifx#1\pgfdvdirectiontotoken%
+      % Record to angle and radius
+      \xdef\pgf@dv@polar@to@angle{\pgfkeysvalueof{/data point/\pgfoovalueof{angle}}}
+      \xdef\pgf@dv@polar@to@radius{\pgfkeysvalueof{/data point/\pgfoovalueof{radius}}}
+    \else%
+      \ifx\pgf@dv@polar@from@radius\pgf@dv@polar@to@radius%
+        \pgfdvmathenter{\pgf@dv@a}{\pgf@dv@polar@from@angle}%
+        \pgfdvmathenter{\pgf@dv@b}{\pgf@dv@polar@to@angle}%
+        \pgfdvmathifless{\pgf@dv@a}{\pgf@dv@b}{\def\pgf@dv@temp@sign{+}}{\def\pgf@dv@temp@sign{-}}%
+        \pgfkeysgetvalue{/data point/\pgfoovalueof{angle}}\pgf@temp%
+        \ifx\pgf@temp\relax%
+        \else%
+          \pgfdvmathenter{\pgf@dv@val}{\pgf@temp}%
+          \pgfdvmathexitbyscientificformat{\pgf@dv@polar@angle}{\pgf@dv@val}%
+          \pgf@process{\pgfpointpolar{\pgf@dv@polar@angle\pgf@dv@temp@sign90}{1pt}}%
+          \pgfdvhandledtrue%
+        \fi%
+      \fi%
+    \fi\fi%
+  }%
+}%
+
+
+\endinput

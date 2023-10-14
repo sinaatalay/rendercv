@@ -1,0 +1,1571 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+% This file defines the trigonometric functions/functions.
+%
+% Much of this file is based on ideas and code (particularly
+% the old \pgfcoremath.code.tex) due to Till Tantau.
+%
+% Version 1.414213 29/9/2007
+
+% \pgfmathpi
+%
+\pgfmathdeclarefunction{pi}{0}{\def\pgfmathresult{3.141592654}}
+
+\pgfkeys{
+    /pgf/trig format/.is choice,
+    % attention: the luamath library will hook into these code keys.
+    /pgf/trig format/deg/.code={\def\pgfmath@trig@format@choice{0}},
+    /pgf/trig format/rad/.code={\def\pgfmath@trig@format@choice{1}},
+    /pgf/trig format/deg,
+}
+
+% Executes #1 if 'trig format=deg' and #2 otherwise.
+\def\pgfmathiftrigonometricusesdeg#1#2{%
+    \if0\pgfmath@trig@format@choice
+        #1%
+    \else
+        #2%
+    \fi
+}%
+
+% \pgfmathradians
+% (for compatibility with 1.18 beta, will be deprecated)
+%
+% Convert #1 from radians to degrees (accurate to 1 deg).
+%
+\pgfmathdeclarefunction{radians}{1}{%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@x57.29577\pgfmath@x\relax% 57.29577 = 360/(2*pi)
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+
+% \pgfmathdeg
+%
+% Convert #1 from radians to degrees.
+%
+\pgfmathdeclarefunction{deg}{1}{%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@scale@rad@to@deg\pgfmath@x
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+
+\def\pgfmath@scale@rad@to@deg#1{%
+    #1=57.29577#1\relax% 57.29577 = 360/(2*pi)
+}%
+
+% \pgfmathrad
+%
+% Convert #1 from degrees to radians.
+%
+\pgfmathdeclarefunction{rad}{1}{%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@scale@deg@to@rad\pgfmath@x
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}%
+
+\def\pgfmath@scale@deg@to@rad#1{%
+    #1=3.14159#1%
+    \divide#1180\relax%
+}%
+
+% \pgfmathsin
+%
+% Calculate the sine of #1 (in degrees).
+%
+\pgfmathdeclarefunction{sin}{1}{%
+  % Let #1 = a.b
+  % Then sin(#1) \approx (1-b)*sin(a) + b*sin(a+1)
+  %
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \if1\pgfmath@trig@format@choice
+        % trig format=rad
+        \pgfmath@scale@rad@to@deg\pgfmath@x
+    \fi
+    \advance\pgfmath@x-90pt\relax%
+    \afterassignment\pgfmath@gobbletilpgfmath@
+    \expandafter\c@pgfmath@counta\the\pgfmath@x\relax\pgfmath@
+    \divide\c@pgfmath@counta360\relax%
+    \multiply\c@pgfmath@counta-360\relax%
+    \advance\pgfmath@x\c@pgfmath@counta pt\relax%
+    \ifdim\pgfmath@x<0pt\relax\pgfmath@x-\pgfmath@x\fi%
+    \ifdim\pgfmath@x<180pt\relax%
+    \else
+      \pgfmath@x-\pgfmath@x%
+      \advance\pgfmath@x360pt\relax%
+    \fi%
+    % Now 0 <= x < 179. So split x into integer and decimal...
+    %
+    \afterassignment\pgfmath@xa%
+    \expandafter\c@pgfmath@counta\the\pgfmath@x\relax%
+    %
+    % ...if #1 is an integer, don't do anything fancy.
+    \ifdim\pgfmath@xa=0pt%
+      \expandafter\pgfmath@x\csname pgfmath@cos@\the\c@pgfmath@counta\endcsname pt\relax%
+    \else%
+      \pgfmath@x-\pgfmath@xa%
+      \advance\pgfmath@x1pt\relax%
+      \expandafter\pgfmath@x\csname pgfmath@cos@\the\c@pgfmath@counta\endcsname\pgfmath@x%
+      \advance\c@pgfmath@counta1\relax%
+      \ifnum\c@pgfmath@counta=181\relax\c@pgfmath@counta179\relax\fi%
+      \expandafter\advance\expandafter\pgfmath@x\csname pgfmath@cos@\the\c@pgfmath@counta\endcsname\pgfmath@xa%
+    \fi%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup
+}
+
+% \pgfmathcos
+%
+% Calculate the cosine of #1 (in degrees).
+%
+\pgfmathdeclarefunction{cos}{1}{%
+  % Let x = a.b
+  % Then cos(x) \approx (1-b)*cos(a) + b*cos(a+1)
+  %
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \if1\pgfmath@trig@format@choice
+        % trig format=rad
+        \pgfmath@scale@rad@to@deg\pgfmath@x
+    \fi
+    \afterassignment\pgfmath@gobbletilpgfmath@%
+    \expandafter\c@pgfmath@counta\the\pgfmath@x\relax\pgfmath@%
+    \divide\c@pgfmath@counta360\relax%
+    \multiply\c@pgfmath@counta-360\relax%
+    \advance\pgfmath@x\c@pgfmath@counta pt\relax%
+    \ifdim\pgfmath@x<0pt\relax\pgfmath@x-\pgfmath@x\fi%
+    \ifdim\pgfmath@x<180pt\relax%
+    \else%
+      \pgfmath@x-\pgfmath@x%
+      \advance\pgfmath@x360pt\relax%
+    \fi%
+    % Now 0 <= x < 179. So split x into integer and decimal...
+    %
+    \afterassignment\pgfmath@xa%
+    \expandafter\c@pgfmath@counta\the\pgfmath@x\relax%
+    %
+    % ...if #1 is an integer, don't do anything fancy.
+    \ifdim\pgfmath@xa=0pt%
+      \expandafter\pgfmath@x\csname pgfmath@cos@\the\c@pgfmath@counta\endcsname pt%
+    \else%
+      \pgfmath@x-\pgfmath@xa%
+      \advance\pgfmath@x1pt\relax%
+      \expandafter\pgfmath@x\csname pgfmath@cos@\the\c@pgfmath@counta\endcsname\pgfmath@x%
+      \advance\c@pgfmath@counta1\relax%
+      \ifnum\c@pgfmath@counta=181\relax\c@pgfmath@counta179\relax\fi%
+      \expandafter\advance\expandafter\pgfmath@x\csname pgfmath@cos@\the\c@pgfmath@counta\endcsname\pgfmath@xa%
+    \fi%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}
+
+% \pgfmathsincos
+%
+% Calculate the sin and cosine of #1 (in degrees).
+%
+\def\pgfmathsincos#1{%
+  \pgfmathparse{#1}%
+  \expandafter\pgfmathsincos@\expandafter{\pgfmathresult}}
+\def\pgfmathsincos@#1{%
+  \edef\pgfmath@temparg{#1}%
+  \pgfmathsin@{\pgfmath@temparg}\edef\pgfmathresulty{\pgfmathresult}%
+  \pgfmathcos@{\pgfmath@temparg}\edef\pgfmathresultx{\pgfmathresult}%
+}
+
+% \pgfmathtan
+%
+% Calculate the tangent of #1 (in degrees).
+%
+\pgfmathdeclarefunction{tan}{1}{%
+  \begingroup%
+    \edef\pgfmath@temparg{#1}%
+    \pgfmathcos@{\pgfmath@temparg}%
+    \expandafter\pgfmathreciprocal@\expandafter{\pgfmathresult}%
+    \edef\pgfmath@tantemp{\pgfmathresult}%
+    \pgfmathsin@{\pgfmath@temparg}%
+    \pgfmath@x\pgfmathresult pt\relax%
+    \pgfmath@x\pgfmath@tantemp\pgfmath@x%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}
+
+% \pgfmathcosec
+%
+% Calculate the cosec of #1 (in degrees).
+%
+\pgfmathdeclarefunction{cosec}{1}{%
+  \expandafter\pgfmathsin@\expandafter{#1}%
+  \pgfmathreciprocal@{\pgfmathresult}%
+}
+
+% \pgfmathsec
+%
+% Calculate the sec of #1 (in degrees).
+%
+\pgfmathdeclarefunction{sec}{1}{%
+  \expandafter\pgfmathcos@\expandafter{#1}%
+  \pgfmathreciprocal@{\pgfmathresult}%
+}
+
+% \pgfmathcot
+%
+% Calculate the cotangent of #1 (in degrees).
+%
+\pgfmathdeclarefunction{cot}{1}{%
+  \begingroup%
+    \edef\pgfmath@temparg{#1}%
+    \pgfmathsin@{\pgfmath@temparg}%
+    \expandafter\pgfmathreciprocal@\expandafter{\pgfmathresult}%
+    \edef\pgfmath@tantemp{\pgfmathresult}%
+    \pgfmathcos@{\pgfmath@temparg}%
+    \pgfmath@x\pgfmathresult pt\relax%
+    \pgfmath@x\pgfmath@tantemp\pgfmath@x%
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}
+
+\def\pgfmath@multiply@thousand#1.#2#3#4#5\relax{%
+  \edef\pgfmathresult{#1#2#3#4.#5}%
+}%
+
+% \pgfmathasin
+%
+% The asin of #1
+%
+\pgfmathdeclarefunction{asin}{1}{%
+  \begingroup%
+    \pgfmath@x=#1pt %
+    \pgfmath@xa\pgfmath@x%
+    \edef\pgf@temp{\pgfmath@tonumber\pgfmath@x}%
+    % compute lossless '*1000' operation:
+    \expandafter\pgfmath@multiply@thousand\pgf@temp 000\relax
+    \pgfmath@x=\pgfmathresult pt %
+    \ifdim\pgfmath@x<0pt\relax%
+      \pgfmath@x-\pgfmath@x%
+    \fi%
+    \pgfmath@table@lookup{\pgfmath@x}{pgfmath@acos@}{1001}%
+    \pgfmath@x=-\pgfmath@x
+    \advance\pgfmath@x90pt\relax%
+    \ifdim\pgfmath@xa<0pt\relax%
+      \pgfmath@x-\pgfmath@x%
+    \fi%
+    \if1\pgfmath@trig@format@choice
+        % trig format=rad
+        \pgfmath@scale@deg@to@rad\pgfmath@x
+    \fi
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}
+
+% Defines \pgfmath@x to be the result of the table lookup for value
+% '#1' in table '#2'
+%
+% #1: a value for which lookup should be performed
+% #2: the table's prefix name
+% #3: the table's size
+\def\pgfmath@table@lookup#1#2#3{%
+  \pgfmath@x=#1\relax
+  \expandafter\pgfmath@table@lookup@\the\pgfmath@x\relax{#2}{#3}%
+}
+\def\pgfmath@table@lookup@#1.#2\relax#3#4{%
+  \edef\pgf@temp{\Pgf@geT#2}% strip 'pt' suffix.
+  %
+  % prepare constant interpolant (i.e. the value at node '#1'):
+  \pgfmath@x=\csname #3#1\endcsname pt %
+  %
+  \c@pgfmath@countc=#1 %
+  \advance\c@pgfmath@countc by1 %
+  \ifnum\c@pgfmath@countc<#4 %
+    % Ah - we have enough elements in the table.
+    %
+    % perform linear interpolation:
+    \pgfmath@ya=\csname #3\the\c@pgfmath@countc\endcsname pt %
+    \advance\pgfmath@ya by-\pgfmath@x %
+    \advance\pgfmath@x by0.\pgf@temp\pgfmath@ya
+  \fi
+}%
+
+% \pgfmathacos
+%
+% The acos of #1
+%
+\pgfmathdeclarefunction{acos}{1}{%
+  \begingroup%
+    \pgfmath@x#1pt\relax%
+    \pgfmath@xa\pgfmath@x%
+    \edef\pgf@temp{\pgfmath@tonumber\pgfmath@x}%
+    % compute lossless '*1000' operation:
+    \expandafter\pgfmath@multiply@thousand\pgf@temp 000\relax
+    \pgfmath@x=\pgfmathresult pt %
+    \ifdim\pgfmath@x<0pt\relax%
+      \pgfmath@x-\pgfmath@x%
+    \fi%
+    \pgfmath@table@lookup{\pgfmath@x}{pgfmath@acos@}{1001}%
+    \ifdim\pgfmath@xa<0pt\relax%
+      \pgfmath@x-\pgfmath@x%
+      \advance\pgfmath@x by180pt\relax%
+    \fi%
+    \if1\pgfmath@trig@format@choice
+        % trig format=rad
+        \pgfmath@scale@deg@to@rad\pgfmath@x
+    \fi
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}
+
+\pgfmathdeclarefunction{atan}{1}{%
+  \begingroup%
+    \expandafter\pgfmath@x#1pt\relax%
+    \pgfmath@xa\pgfmath@x%
+    \ifdim\pgfmath@x<0pt\relax%
+      \pgfmath@x-\pgfmath@x%
+    \fi%
+    \pgfmath@xb\pgfmath@x%
+    \ifdim\pgfmath@x>1pt\relax%
+      \edef\pgfmath@temp{\pgfmath@tonumber{\pgfmath@x}}%
+      \pgfmathreciprocal@{\pgfmath@temp}%
+      \pgfmath@x\pgfmathresult pt\relax%
+    \fi%
+    % compute lossless '*1000' operation:
+    \edef\pgf@temp{\pgfmath@tonumber\pgfmath@x}%
+    \expandafter\pgfmath@multiply@thousand\pgf@temp 000\relax
+    \pgfmath@x=\pgfmathresult pt %
+    \pgfmath@table@lookup{\pgfmath@x}{pgfmath@atan@}{1001}%xxx
+    \ifdim\pgfmath@xb>1pt\relax%
+      \pgfmath@x=-\pgfmath@x%
+      \advance\pgfmath@x90pt%
+    \fi%
+    \ifdim\pgfmath@xa<0pt\relax%
+      \pgfmath@x-\pgfmath@x%
+    \fi%
+    \if1\pgfmath@trig@format@choice
+        % trig format=rad
+        \pgfmath@scale@deg@to@rad\pgfmath@x
+    \fi
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}
+
+\pgfmathdeclarefunction{atan2}{2}{%
+  % Note: first parameter is y (!), second is x (!)
+  \begingroup%
+    \let\pgfmath@trig@format@choice@@=\pgfmath@trig@format@choice
+    \def\pgfmath@trig@format@choice{0}%
+    \pgfmath@y=#1pt\relax%
+    \ifdim\pgfmath@y<0pt\relax%
+      \pgfmath@y=-\pgfmath@y%
+    \fi%
+    \ifdim\pgfmath@y<0.001pt\relax%
+      \ifdim#2pt<0pt\relax%
+        \pgfmath@x=+180pt\relax%
+      \else%
+        \ifdim#2pt>0pt\relax%
+          \pgfmath@x=0pt\relax%
+        \else%
+          \ifdim#1pt<0pt%
+            \pgfmath@x=-90pt\relax%
+          \else%
+            \pgfmath@x=90pt\relax%
+          \fi%
+        \fi%
+      \fi%
+    \else%
+      \pgfmathabs@{#1}\let\pgfmath@tempa\pgfmathresult%
+      \pgfmathabs@{#2}\let\pgfmath@tempb\pgfmathresult%
+      \ifdim\pgfmath@tempa pt>\pgfmath@tempb pt%
+        \pgfmathdivide@{#2}{\pgfmath@tempa}%
+        \expandafter\pgfmathatan@\expandafter{\pgfmathresult}%
+        \pgfmath@x=90pt%
+        \advance\pgfmath@x by-\pgfmathresult pt\relax%
+      \else%
+        \pgfmathdivide@{\pgfmath@tempa}{#2}%
+        \expandafter\pgfmathatan@\expandafter{\pgfmathresult}%
+        \pgfmath@x=\pgfmathresult pt\relax%
+        \ifdim#2pt<0pt%
+          \advance\pgfmath@x by180pt\relax%
+        \fi%
+      \fi%
+      \ifdim#1pt<0pt\relax%
+        \pgfmath@x=-\pgfmath@x%
+      \fi%
+    \fi%
+    \if1\pgfmath@trig@format@choice@@
+        % trig format=rad
+        \pgfmath@scale@deg@to@rad\pgfmath@x
+    \fi
+    \pgfmath@returnone\pgfmath@x%
+  \endgroup%
+}
+
+% This is needed since \pgfmathatan2 is not a legal macro name
+\expandafter\let\expandafter\pgfmathatantwo\csname pgfmathatan2\endcsname
+\expandafter\let\expandafter\pgfmathatantwo@\csname pgfmathatan2@\endcsname
+
+\def\pgfmath@def#1#2#3{\expandafter\def\csname pgfmath@#1@#2\endcsname{#3}}
+\pgfmath@def{cos}{0}{1.00000}    \pgfmath@def{cos}{1}{0.99985}
+\pgfmath@def{cos}{2}{0.99939}    \pgfmath@def{cos}{3}{0.99863}
+\pgfmath@def{cos}{4}{0.99756}    \pgfmath@def{cos}{5}{0.99619}
+\pgfmath@def{cos}{6}{0.99452}    \pgfmath@def{cos}{7}{0.99255}
+\pgfmath@def{cos}{8}{0.99027}    \pgfmath@def{cos}{9}{0.98769}
+\pgfmath@def{cos}{10}{0.98481}    \pgfmath@def{cos}{11}{0.98163}
+\pgfmath@def{cos}{12}{0.97815}    \pgfmath@def{cos}{13}{0.97437}
+\pgfmath@def{cos}{14}{0.97030}    \pgfmath@def{cos}{15}{0.96593}
+\pgfmath@def{cos}{16}{0.96126}    \pgfmath@def{cos}{17}{0.95630}
+\pgfmath@def{cos}{18}{0.95106}    \pgfmath@def{cos}{19}{0.94552}
+\pgfmath@def{cos}{20}{0.93969}    \pgfmath@def{cos}{21}{0.93358}
+\pgfmath@def{cos}{22}{0.92718}    \pgfmath@def{cos}{23}{0.92050}
+\pgfmath@def{cos}{24}{0.91355}    \pgfmath@def{cos}{25}{0.90631}
+\pgfmath@def{cos}{26}{0.89879}    \pgfmath@def{cos}{27}{0.89101}
+\pgfmath@def{cos}{28}{0.88295}    \pgfmath@def{cos}{29}{0.87462}
+\pgfmath@def{cos}{30}{0.86603}    \pgfmath@def{cos}{31}{0.85717}
+\pgfmath@def{cos}{32}{0.84805}    \pgfmath@def{cos}{33}{0.83867}
+\pgfmath@def{cos}{34}{0.82904}    \pgfmath@def{cos}{35}{0.81915}
+\pgfmath@def{cos}{36}{0.80902}    \pgfmath@def{cos}{37}{0.79864}
+\pgfmath@def{cos}{38}{0.78801}    \pgfmath@def{cos}{39}{0.77715}
+\pgfmath@def{cos}{40}{0.76604}    \pgfmath@def{cos}{41}{0.75471}
+\pgfmath@def{cos}{42}{0.74314}    \pgfmath@def{cos}{43}{0.73135}
+\pgfmath@def{cos}{44}{0.71934}    \pgfmath@def{cos}{45}{0.70711}
+\pgfmath@def{cos}{46}{0.69466}    \pgfmath@def{cos}{47}{0.68200}
+\pgfmath@def{cos}{48}{0.66913}    \pgfmath@def{cos}{49}{0.65606}
+\pgfmath@def{cos}{50}{0.64279}    \pgfmath@def{cos}{51}{0.62932}
+\pgfmath@def{cos}{52}{0.61566}    \pgfmath@def{cos}{53}{0.60182}
+\pgfmath@def{cos}{54}{0.58779}    \pgfmath@def{cos}{55}{0.57358}
+\pgfmath@def{cos}{56}{0.55919}    \pgfmath@def{cos}{57}{0.54464}
+\pgfmath@def{cos}{58}{0.52992}    \pgfmath@def{cos}{59}{0.51504}
+\pgfmath@def{cos}{60}{0.50000}    \pgfmath@def{cos}{61}{0.48481}
+\pgfmath@def{cos}{62}{0.46947}    \pgfmath@def{cos}{63}{0.45399}
+\pgfmath@def{cos}{64}{0.43837}    \pgfmath@def{cos}{65}{0.42262}
+\pgfmath@def{cos}{66}{0.40674}    \pgfmath@def{cos}{67}{0.39073}
+\pgfmath@def{cos}{68}{0.37461}    \pgfmath@def{cos}{69}{0.35837}
+\pgfmath@def{cos}{70}{0.34202}    \pgfmath@def{cos}{71}{0.32557}
+\pgfmath@def{cos}{72}{0.30902}    \pgfmath@def{cos}{73}{0.29237}
+\pgfmath@def{cos}{74}{0.27564}    \pgfmath@def{cos}{75}{0.25882}
+\pgfmath@def{cos}{76}{0.24192}    \pgfmath@def{cos}{77}{0.22495}
+\pgfmath@def{cos}{78}{0.20791}    \pgfmath@def{cos}{79}{0.19081}
+\pgfmath@def{cos}{80}{0.17365}    \pgfmath@def{cos}{81}{0.15643}
+\pgfmath@def{cos}{82}{0.13917}    \pgfmath@def{cos}{83}{0.12187}
+\pgfmath@def{cos}{84}{0.10453}    \pgfmath@def{cos}{85}{0.08716}
+\pgfmath@def{cos}{86}{0.06976}    \pgfmath@def{cos}{87}{0.05234}
+\pgfmath@def{cos}{88}{0.03490}    \pgfmath@def{cos}{89}{0.01745}
+\pgfmath@def{cos}{90}{0.00000}    \pgfmath@def{cos}{91}{-0.01745}
+\pgfmath@def{cos}{92}{-0.03490}    \pgfmath@def{cos}{93}{-0.05234}
+\pgfmath@def{cos}{94}{-0.06976}    \pgfmath@def{cos}{95}{-0.08716}
+\pgfmath@def{cos}{96}{-0.10453}    \pgfmath@def{cos}{97}{-0.12187}
+\pgfmath@def{cos}{98}{-0.13917}    \pgfmath@def{cos}{99}{-0.15643}
+\pgfmath@def{cos}{100}{-0.17365}    \pgfmath@def{cos}{101}{-0.19081}
+\pgfmath@def{cos}{102}{-0.20791}    \pgfmath@def{cos}{103}{-0.22495}
+\pgfmath@def{cos}{104}{-0.24192}    \pgfmath@def{cos}{105}{-0.25882}
+\pgfmath@def{cos}{106}{-0.27564}    \pgfmath@def{cos}{107}{-0.29237}
+\pgfmath@def{cos}{108}{-0.30902}    \pgfmath@def{cos}{109}{-0.32557}
+\pgfmath@def{cos}{110}{-0.34202}    \pgfmath@def{cos}{111}{-0.35837}
+\pgfmath@def{cos}{112}{-0.37461}    \pgfmath@def{cos}{113}{-0.39073}
+\pgfmath@def{cos}{114}{-0.40674}    \pgfmath@def{cos}{115}{-0.42262}
+\pgfmath@def{cos}{116}{-0.43837}    \pgfmath@def{cos}{117}{-0.45399}
+\pgfmath@def{cos}{118}{-0.46947}    \pgfmath@def{cos}{119}{-0.48481}
+\pgfmath@def{cos}{120}{-0.50000}    \pgfmath@def{cos}{121}{-0.51504}
+\pgfmath@def{cos}{122}{-0.52992}    \pgfmath@def{cos}{123}{-0.54464}
+\pgfmath@def{cos}{124}{-0.55919}    \pgfmath@def{cos}{125}{-0.57358}
+\pgfmath@def{cos}{126}{-0.58779}    \pgfmath@def{cos}{127}{-0.60182}
+\pgfmath@def{cos}{128}{-0.61566}    \pgfmath@def{cos}{129}{-0.62932}
+\pgfmath@def{cos}{130}{-0.64279}    \pgfmath@def{cos}{131}{-0.65606}
+\pgfmath@def{cos}{132}{-0.66913}    \pgfmath@def{cos}{133}{-0.68200}
+\pgfmath@def{cos}{134}{-0.69466}    \pgfmath@def{cos}{135}{-0.70711}
+\pgfmath@def{cos}{136}{-0.71934}    \pgfmath@def{cos}{137}{-0.73135}
+\pgfmath@def{cos}{138}{-0.74314}    \pgfmath@def{cos}{139}{-0.75471}
+\pgfmath@def{cos}{140}{-0.76604}    \pgfmath@def{cos}{141}{-0.77715}
+\pgfmath@def{cos}{142}{-0.78801}    \pgfmath@def{cos}{143}{-0.79864}
+\pgfmath@def{cos}{144}{-0.80902}    \pgfmath@def{cos}{145}{-0.81915}
+\pgfmath@def{cos}{146}{-0.82904}    \pgfmath@def{cos}{147}{-0.83867}
+\pgfmath@def{cos}{148}{-0.84805}    \pgfmath@def{cos}{149}{-0.85717}
+\pgfmath@def{cos}{150}{-0.86603}    \pgfmath@def{cos}{151}{-0.87462}
+\pgfmath@def{cos}{152}{-0.88295}    \pgfmath@def{cos}{153}{-0.89101}
+\pgfmath@def{cos}{154}{-0.89879}    \pgfmath@def{cos}{155}{-0.90631}
+\pgfmath@def{cos}{156}{-0.91355}    \pgfmath@def{cos}{157}{-0.92050}
+\pgfmath@def{cos}{158}{-0.92718}    \pgfmath@def{cos}{159}{-0.93358}
+\pgfmath@def{cos}{160}{-0.93969}    \pgfmath@def{cos}{161}{-0.94552}
+\pgfmath@def{cos}{162}{-0.95106}    \pgfmath@def{cos}{163}{-0.95630}
+\pgfmath@def{cos}{164}{-0.96126}    \pgfmath@def{cos}{165}{-0.96593}
+\pgfmath@def{cos}{166}{-0.97030}    \pgfmath@def{cos}{167}{-0.97437}
+\pgfmath@def{cos}{168}{-0.97815}    \pgfmath@def{cos}{169}{-0.98163}
+\pgfmath@def{cos}{170}{-0.98481}    \pgfmath@def{cos}{171}{-0.98769}
+\pgfmath@def{cos}{172}{-0.99027}    \pgfmath@def{cos}{173}{-0.99255}
+\pgfmath@def{cos}{174}{-0.99452}    \pgfmath@def{cos}{175}{-0.99619}
+\pgfmath@def{cos}{176}{-0.99756}    \pgfmath@def{cos}{177}{-0.99863}
+\pgfmath@def{cos}{178}{-0.99939}    \pgfmath@def{cos}{179}{-0.99985}
+\pgfmath@def{cos}{180}{-1.00000}     \pgfmath@def{cos}{181}{-0.99985}
+
+\pgfmath@def{cosfrac}{0}{1.00000}    \pgfmath@def{cosfrac}{1}{0.99995}
+\pgfmath@def{cosfrac}{2}{0.99980}    \pgfmath@def{cosfrac}{3}{0.99955}
+\pgfmath@def{cosfrac}{4}{0.99920}    \pgfmath@def{cosfrac}{5}{0.99875}
+\pgfmath@def{cosfrac}{6}{0.99820}    \pgfmath@def{cosfrac}{7}{0.99755}
+\pgfmath@def{cosfrac}{8}{0.99681}    \pgfmath@def{cosfrac}{9}{0.99597}
+\pgfmath@def{cosfrac}{10}{0.99503}    \pgfmath@def{cosfrac}{11}{0.99400}
+\pgfmath@def{cosfrac}{12}{0.99287}    \pgfmath@def{cosfrac}{13}{0.99165}
+\pgfmath@def{cosfrac}{14}{0.99034}    \pgfmath@def{cosfrac}{15}{0.98893}
+\pgfmath@def{cosfrac}{16}{0.98744}    \pgfmath@def{cosfrac}{17}{0.98585}
+\pgfmath@def{cosfrac}{18}{0.98418}    \pgfmath@def{cosfrac}{19}{0.98242}
+\pgfmath@def{cosfrac}{20}{0.98058}    \pgfmath@def{cosfrac}{21}{0.97865}
+\pgfmath@def{cosfrac}{22}{0.97664}    \pgfmath@def{cosfrac}{23}{0.97455}
+\pgfmath@def{cosfrac}{24}{0.97238}    \pgfmath@def{cosfrac}{25}{0.97014}
+\pgfmath@def{cosfrac}{26}{0.96782}    \pgfmath@def{cosfrac}{27}{0.96542}
+\pgfmath@def{cosfrac}{28}{0.96296}    \pgfmath@def{cosfrac}{29}{0.96042}
+\pgfmath@def{cosfrac}{30}{0.95782}    \pgfmath@def{cosfrac}{31}{0.95515}
+\pgfmath@def{cosfrac}{32}{0.95242}    \pgfmath@def{cosfrac}{33}{0.94962}
+\pgfmath@def{cosfrac}{34}{0.94677}    \pgfmath@def{cosfrac}{35}{0.94385}
+\pgfmath@def{cosfrac}{36}{0.94088}    \pgfmath@def{cosfrac}{37}{0.93786}
+\pgfmath@def{cosfrac}{38}{0.93478}    \pgfmath@def{cosfrac}{39}{0.93165}
+\pgfmath@def{cosfrac}{40}{0.92847}    \pgfmath@def{cosfrac}{41}{0.92525}
+\pgfmath@def{cosfrac}{42}{0.92198}    \pgfmath@def{cosfrac}{43}{0.91866}
+\pgfmath@def{cosfrac}{44}{0.91531}    \pgfmath@def{cosfrac}{45}{0.91192}
+\pgfmath@def{cosfrac}{46}{0.90849}    \pgfmath@def{cosfrac}{47}{0.90502}
+\pgfmath@def{cosfrac}{48}{0.90152}    \pgfmath@def{cosfrac}{49}{0.89799}
+\pgfmath@def{cosfrac}{50}{0.89442}    \pgfmath@def{cosfrac}{51}{0.89083}
+\pgfmath@def{cosfrac}{52}{0.88721}    \pgfmath@def{cosfrac}{53}{0.88357}
+\pgfmath@def{cosfrac}{54}{0.87990}    \pgfmath@def{cosfrac}{55}{0.87621}
+\pgfmath@def{cosfrac}{56}{0.87250}    \pgfmath@def{cosfrac}{57}{0.86877}
+\pgfmath@def{cosfrac}{58}{0.86503}    \pgfmath@def{cosfrac}{59}{0.86126}
+\pgfmath@def{cosfrac}{60}{0.85749}    \pgfmath@def{cosfrac}{61}{0.85370}
+\pgfmath@def{cosfrac}{62}{0.84990}    \pgfmath@def{cosfrac}{63}{0.84609}
+\pgfmath@def{cosfrac}{64}{0.84227}    \pgfmath@def{cosfrac}{65}{0.83844}
+\pgfmath@def{cosfrac}{66}{0.83460}    \pgfmath@def{cosfrac}{67}{0.83077}
+\pgfmath@def{cosfrac}{68}{0.82692}    \pgfmath@def{cosfrac}{69}{0.82308}
+\pgfmath@def{cosfrac}{70}{0.81923}    \pgfmath@def{cosfrac}{71}{0.81538}
+\pgfmath@def{cosfrac}{72}{0.81153}    \pgfmath@def{cosfrac}{73}{0.80768}
+\pgfmath@def{cosfrac}{74}{0.80384}    \pgfmath@def{cosfrac}{75}{0.80000}
+\pgfmath@def{cosfrac}{76}{0.79616}    \pgfmath@def{cosfrac}{77}{0.79232}
+\pgfmath@def{cosfrac}{78}{0.78850}    \pgfmath@def{cosfrac}{79}{0.78468}
+\pgfmath@def{cosfrac}{80}{0.78086}    \pgfmath@def{cosfrac}{81}{0.77706}
+\pgfmath@def{cosfrac}{82}{0.77326}    \pgfmath@def{cosfrac}{83}{0.76948}
+\pgfmath@def{cosfrac}{84}{0.76570}    \pgfmath@def{cosfrac}{85}{0.76193}
+\pgfmath@def{cosfrac}{86}{0.75818}    \pgfmath@def{cosfrac}{87}{0.75444}
+\pgfmath@def{cosfrac}{88}{0.75071}    \pgfmath@def{cosfrac}{89}{0.74699}
+\pgfmath@def{cosfrac}{90}{0.74329}    \pgfmath@def{cosfrac}{91}{0.73960}
+\pgfmath@def{cosfrac}{92}{0.73593}    \pgfmath@def{cosfrac}{93}{0.73227}
+\pgfmath@def{cosfrac}{94}{0.72862}    \pgfmath@def{cosfrac}{95}{0.72499}
+\pgfmath@def{cosfrac}{96}{0.72138}    \pgfmath@def{cosfrac}{97}{0.71779}
+\pgfmath@def{cosfrac}{98}{0.71421}    \pgfmath@def{cosfrac}{99}{0.71065}
+\pgfmath@def{cosfrac}{100}{0.70710}
+
+% Oh No! Some really loooooong tables.
+\pgfmath@def{atan}{0}{0.00000}    \pgfmath@def{atan}{1}{0.05729}
+\pgfmath@def{atan}{2}{0.11459}    \pgfmath@def{atan}{3}{0.17188}
+\pgfmath@def{atan}{4}{0.22918}    \pgfmath@def{atan}{5}{0.28647}
+\pgfmath@def{atan}{6}{0.34377}    \pgfmath@def{atan}{7}{0.40106}
+\pgfmath@def{atan}{8}{0.45835}    \pgfmath@def{atan}{9}{0.51564}
+\pgfmath@def{atan}{10}{0.57293}    \pgfmath@def{atan}{11}{0.63022}
+\pgfmath@def{atan}{12}{0.68751}    \pgfmath@def{atan}{13}{0.74480}
+\pgfmath@def{atan}{14}{0.80208}    \pgfmath@def{atan}{15}{0.85937}
+\pgfmath@def{atan}{16}{0.91665}    \pgfmath@def{atan}{17}{0.97393}
+\pgfmath@def{atan}{18}{1.03121}    \pgfmath@def{atan}{19}{1.08848}
+\pgfmath@def{atan}{20}{1.14576}    \pgfmath@def{atan}{21}{1.20303}
+\pgfmath@def{atan}{22}{1.26030}    \pgfmath@def{atan}{23}{1.31757}
+\pgfmath@def{atan}{24}{1.37483}    \pgfmath@def{atan}{25}{1.43209}
+\pgfmath@def{atan}{26}{1.48935}    \pgfmath@def{atan}{27}{1.54661}
+\pgfmath@def{atan}{28}{1.60386}    \pgfmath@def{atan}{29}{1.66111}
+\pgfmath@def{atan}{30}{1.71835}    \pgfmath@def{atan}{31}{1.77560}
+\pgfmath@def{atan}{32}{1.83284}    \pgfmath@def{atan}{33}{1.89007}
+\pgfmath@def{atan}{34}{1.94730}    \pgfmath@def{atan}{35}{2.00453}
+\pgfmath@def{atan}{36}{2.06175}    \pgfmath@def{atan}{37}{2.11897}
+\pgfmath@def{atan}{38}{2.17619}    \pgfmath@def{atan}{39}{2.23340}
+\pgfmath@def{atan}{40}{2.29061}    \pgfmath@def{atan}{41}{2.34781}
+\pgfmath@def{atan}{42}{2.40500}    \pgfmath@def{atan}{43}{2.46220}
+\pgfmath@def{atan}{44}{2.51938}    \pgfmath@def{atan}{45}{2.57657}
+\pgfmath@def{atan}{46}{2.63374}    \pgfmath@def{atan}{47}{2.69092}
+\pgfmath@def{atan}{48}{2.74808}    \pgfmath@def{atan}{49}{2.80524}
+\pgfmath@def{atan}{50}{2.86240}    \pgfmath@def{atan}{51}{2.91955}
+\pgfmath@def{atan}{52}{2.97669}    \pgfmath@def{atan}{53}{3.03383}
+\pgfmath@def{atan}{54}{3.09097}    \pgfmath@def{atan}{55}{3.14809}
+\pgfmath@def{atan}{56}{3.20521}    \pgfmath@def{atan}{57}{3.26232}
+\pgfmath@def{atan}{58}{3.31943}    \pgfmath@def{atan}{59}{3.37653}
+\pgfmath@def{atan}{60}{3.43363}    \pgfmath@def{atan}{61}{3.49071}
+\pgfmath@def{atan}{62}{3.54779}    \pgfmath@def{atan}{63}{3.60487}
+\pgfmath@def{atan}{64}{3.66193}    \pgfmath@def{atan}{65}{3.71899}
+\pgfmath@def{atan}{66}{3.77604}    \pgfmath@def{atan}{67}{3.83308}
+\pgfmath@def{atan}{68}{3.89012}    \pgfmath@def{atan}{69}{3.94715}
+\pgfmath@def{atan}{70}{4.00417}    \pgfmath@def{atan}{71}{4.06118}
+\pgfmath@def{atan}{72}{4.11819}    \pgfmath@def{atan}{73}{4.17518}
+\pgfmath@def{atan}{74}{4.23217}    \pgfmath@def{atan}{75}{4.28915}
+\pgfmath@def{atan}{76}{4.34612}    \pgfmath@def{atan}{77}{4.40308}
+\pgfmath@def{atan}{78}{4.46004}    \pgfmath@def{atan}{79}{4.51698}
+\pgfmath@def{atan}{80}{4.57392}    \pgfmath@def{atan}{81}{4.63084}
+\pgfmath@def{atan}{82}{4.68776}    \pgfmath@def{atan}{83}{4.74467}
+\pgfmath@def{atan}{84}{4.80157}    \pgfmath@def{atan}{85}{4.85846}
+\pgfmath@def{atan}{86}{4.91534}    \pgfmath@def{atan}{87}{4.97221}
+\pgfmath@def{atan}{88}{5.02907}    \pgfmath@def{atan}{89}{5.08592}
+\pgfmath@def{atan}{90}{5.14276}    \pgfmath@def{atan}{91}{5.19959}
+\pgfmath@def{atan}{92}{5.25641}    \pgfmath@def{atan}{93}{5.31322}
+\pgfmath@def{atan}{94}{5.37002}    \pgfmath@def{atan}{95}{5.42681}
+\pgfmath@def{atan}{96}{5.48359}    \pgfmath@def{atan}{97}{5.54035}
+\pgfmath@def{atan}{98}{5.59711}    \pgfmath@def{atan}{99}{5.65385}
+\pgfmath@def{atan}{100}{5.71059}    \pgfmath@def{atan}{101}{5.76731}
+\pgfmath@def{atan}{102}{5.82402}    \pgfmath@def{atan}{103}{5.88072}
+\pgfmath@def{atan}{104}{5.93741}    \pgfmath@def{atan}{105}{5.99409}
+\pgfmath@def{atan}{106}{6.05075}    \pgfmath@def{atan}{107}{6.10741}
+\pgfmath@def{atan}{108}{6.16405}    \pgfmath@def{atan}{109}{6.22068}
+\pgfmath@def{atan}{110}{6.27729}    \pgfmath@def{atan}{111}{6.33390}
+\pgfmath@def{atan}{112}{6.39049}    \pgfmath@def{atan}{113}{6.44707}
+\pgfmath@def{atan}{114}{6.50364}    \pgfmath@def{atan}{115}{6.56019}
+\pgfmath@def{atan}{116}{6.61673}    \pgfmath@def{atan}{117}{6.67326}
+\pgfmath@def{atan}{118}{6.72978}    \pgfmath@def{atan}{119}{6.78628}
+\pgfmath@def{atan}{120}{6.84277}    \pgfmath@def{atan}{121}{6.89924}
+\pgfmath@def{atan}{122}{6.95571}    \pgfmath@def{atan}{123}{7.01216}
+\pgfmath@def{atan}{124}{7.06859}    \pgfmath@def{atan}{125}{7.12501}
+\pgfmath@def{atan}{126}{7.18142}    \pgfmath@def{atan}{127}{7.23781}
+\pgfmath@def{atan}{128}{7.29419}    \pgfmath@def{atan}{129}{7.35056}
+\pgfmath@def{atan}{130}{7.40691}    \pgfmath@def{atan}{131}{7.46324}
+\pgfmath@def{atan}{132}{7.51957}    \pgfmath@def{atan}{133}{7.57587}
+\pgfmath@def{atan}{134}{7.63217}    \pgfmath@def{atan}{135}{7.68844}
+\pgfmath@def{atan}{136}{7.74471}    \pgfmath@def{atan}{137}{7.80095}
+\pgfmath@def{atan}{138}{7.85719}    \pgfmath@def{atan}{139}{7.91340}
+\pgfmath@def{atan}{140}{7.96961}    \pgfmath@def{atan}{141}{8.02579}
+\pgfmath@def{atan}{142}{8.08196}    \pgfmath@def{atan}{143}{8.13812}
+\pgfmath@def{atan}{144}{8.19426}    \pgfmath@def{atan}{145}{8.25038}
+\pgfmath@def{atan}{146}{8.30649}    \pgfmath@def{atan}{147}{8.36258}
+\pgfmath@def{atan}{148}{8.41866}    \pgfmath@def{atan}{149}{8.47472}
+\pgfmath@def{atan}{150}{8.53076}    \pgfmath@def{atan}{151}{8.58679}
+\pgfmath@def{atan}{152}{8.64280}    \pgfmath@def{atan}{153}{8.69879}
+\pgfmath@def{atan}{154}{8.75477}    \pgfmath@def{atan}{155}{8.81073}
+\pgfmath@def{atan}{156}{8.86667}    \pgfmath@def{atan}{157}{8.92260}
+\pgfmath@def{atan}{158}{8.97851}    \pgfmath@def{atan}{159}{9.03440}
+\pgfmath@def{atan}{160}{9.09027}    \pgfmath@def{atan}{161}{9.14613}
+\pgfmath@def{atan}{162}{9.20197}    \pgfmath@def{atan}{163}{9.25779}
+\pgfmath@def{atan}{164}{9.31359}    \pgfmath@def{atan}{165}{9.36938}
+\pgfmath@def{atan}{166}{9.42515}    \pgfmath@def{atan}{167}{9.48090}
+\pgfmath@def{atan}{168}{9.53663}    \pgfmath@def{atan}{169}{9.59235}
+\pgfmath@def{atan}{170}{9.64804}    \pgfmath@def{atan}{171}{9.70372}
+\pgfmath@def{atan}{172}{9.75938}    \pgfmath@def{atan}{173}{9.81502}
+\pgfmath@def{atan}{174}{9.87064}    \pgfmath@def{atan}{175}{9.92624}
+\pgfmath@def{atan}{176}{9.98182}    \pgfmath@def{atan}{177}{10.03739}
+\pgfmath@def{atan}{178}{10.09294}    \pgfmath@def{atan}{179}{10.14846}
+\pgfmath@def{atan}{180}{10.20397}    \pgfmath@def{atan}{181}{10.25946}
+\pgfmath@def{atan}{182}{10.31493}    \pgfmath@def{atan}{183}{10.37037}
+\pgfmath@def{atan}{184}{10.42580}    \pgfmath@def{atan}{185}{10.48121}
+\pgfmath@def{atan}{186}{10.53660}    \pgfmath@def{atan}{187}{10.59197}
+\pgfmath@def{atan}{188}{10.64732}    \pgfmath@def{atan}{189}{10.70265}
+\pgfmath@def{atan}{190}{10.75796}    \pgfmath@def{atan}{191}{10.81325}
+\pgfmath@def{atan}{192}{10.86852}    \pgfmath@def{atan}{193}{10.92377}
+\pgfmath@def{atan}{194}{10.97900}    \pgfmath@def{atan}{195}{11.03420}
+\pgfmath@def{atan}{196}{11.08939}    \pgfmath@def{atan}{197}{11.14456}
+\pgfmath@def{atan}{198}{11.19970}    \pgfmath@def{atan}{199}{11.25483}
+\pgfmath@def{atan}{200}{11.30993}    \pgfmath@def{atan}{201}{11.36501}
+\pgfmath@def{atan}{202}{11.42007}    \pgfmath@def{atan}{203}{11.47511}
+\pgfmath@def{atan}{204}{11.53013}    \pgfmath@def{atan}{205}{11.58512}
+\pgfmath@def{atan}{206}{11.64010}    \pgfmath@def{atan}{207}{11.69505}
+\pgfmath@def{atan}{208}{11.74998}    \pgfmath@def{atan}{209}{11.80489}
+\pgfmath@def{atan}{210}{11.85977}    \pgfmath@def{atan}{211}{11.91464}
+\pgfmath@def{atan}{212}{11.96948}    \pgfmath@def{atan}{213}{12.02430}
+\pgfmath@def{atan}{214}{12.07910}    \pgfmath@def{atan}{215}{12.13388}
+\pgfmath@def{atan}{216}{12.18863}    \pgfmath@def{atan}{217}{12.24336}
+\pgfmath@def{atan}{218}{12.29807}    \pgfmath@def{atan}{219}{12.35275}
+\pgfmath@def{atan}{220}{12.40741}    \pgfmath@def{atan}{221}{12.46205}
+\pgfmath@def{atan}{222}{12.51667}    \pgfmath@def{atan}{223}{12.57126}
+\pgfmath@def{atan}{224}{12.62583}    \pgfmath@def{atan}{225}{12.68038}
+\pgfmath@def{atan}{226}{12.73490}    \pgfmath@def{atan}{227}{12.78940}
+\pgfmath@def{atan}{228}{12.84388}    \pgfmath@def{atan}{229}{12.89833}
+\pgfmath@def{atan}{230}{12.95276}    \pgfmath@def{atan}{231}{13.00717}
+\pgfmath@def{atan}{232}{13.06155}    \pgfmath@def{atan}{233}{13.11590}
+\pgfmath@def{atan}{234}{13.17024}    \pgfmath@def{atan}{235}{13.22455}
+\pgfmath@def{atan}{236}{13.27883}    \pgfmath@def{atan}{237}{13.33309}
+\pgfmath@def{atan}{238}{13.38733}    \pgfmath@def{atan}{239}{13.44154}
+\pgfmath@def{atan}{240}{13.49573}    \pgfmath@def{atan}{241}{13.54989}
+\pgfmath@def{atan}{242}{13.60403}    \pgfmath@def{atan}{243}{13.65814}
+\pgfmath@def{atan}{244}{13.71223}    \pgfmath@def{atan}{245}{13.76630}
+\pgfmath@def{atan}{246}{13.82034}    \pgfmath@def{atan}{247}{13.87435}
+\pgfmath@def{atan}{248}{13.92834}    \pgfmath@def{atan}{249}{13.98230}
+\pgfmath@def{atan}{250}{14.03624}    \pgfmath@def{atan}{251}{14.09015}
+\pgfmath@def{atan}{252}{14.14404}    \pgfmath@def{atan}{253}{14.19790}
+\pgfmath@def{atan}{254}{14.25174}    \pgfmath@def{atan}{255}{14.30555}
+\pgfmath@def{atan}{256}{14.35933}    \pgfmath@def{atan}{257}{14.41309}
+\pgfmath@def{atan}{258}{14.46682}    \pgfmath@def{atan}{259}{14.52053}
+\pgfmath@def{atan}{260}{14.57421}    \pgfmath@def{atan}{261}{14.62787}
+\pgfmath@def{atan}{262}{14.68149}    \pgfmath@def{atan}{263}{14.73510}
+\pgfmath@def{atan}{264}{14.78867}    \pgfmath@def{atan}{265}{14.84222}
+\pgfmath@def{atan}{266}{14.89575}    \pgfmath@def{atan}{267}{14.94924}
+\pgfmath@def{atan}{268}{15.00271}    \pgfmath@def{atan}{269}{15.05615}
+\pgfmath@def{atan}{270}{15.10957}    \pgfmath@def{atan}{271}{15.16296}
+\pgfmath@def{atan}{272}{15.21632}    \pgfmath@def{atan}{273}{15.26966}
+\pgfmath@def{atan}{274}{15.32297}    \pgfmath@def{atan}{275}{15.37625}
+\pgfmath@def{atan}{276}{15.42950}    \pgfmath@def{atan}{277}{15.48273}
+\pgfmath@def{atan}{278}{15.53593}    \pgfmath@def{atan}{279}{15.58910}
+\pgfmath@def{atan}{280}{15.64224}    \pgfmath@def{atan}{281}{15.69536}
+\pgfmath@def{atan}{282}{15.74845}    \pgfmath@def{atan}{283}{15.80151}
+\pgfmath@def{atan}{284}{15.85454}    \pgfmath@def{atan}{285}{15.90755}
+\pgfmath@def{atan}{286}{15.96052}    \pgfmath@def{atan}{287}{16.01347}
+\pgfmath@def{atan}{288}{16.06640}    \pgfmath@def{atan}{289}{16.11929}
+\pgfmath@def{atan}{290}{16.17215}    \pgfmath@def{atan}{291}{16.22499}
+\pgfmath@def{atan}{292}{16.27780}    \pgfmath@def{atan}{293}{16.33058}
+\pgfmath@def{atan}{294}{16.38333}    \pgfmath@def{atan}{295}{16.43605}
+\pgfmath@def{atan}{296}{16.48875}    \pgfmath@def{atan}{297}{16.54142}
+\pgfmath@def{atan}{298}{16.59405}    \pgfmath@def{atan}{299}{16.64666}
+\pgfmath@def{atan}{300}{16.69924}    \pgfmath@def{atan}{301}{16.75179}
+\pgfmath@def{atan}{302}{16.80431}    \pgfmath@def{atan}{303}{16.85680}
+\pgfmath@def{atan}{304}{16.90927}    \pgfmath@def{atan}{305}{16.96170}
+\pgfmath@def{atan}{306}{17.01411}    \pgfmath@def{atan}{307}{17.06648}
+\pgfmath@def{atan}{308}{17.11883}    \pgfmath@def{atan}{309}{17.17114}
+\pgfmath@def{atan}{310}{17.22343}    \pgfmath@def{atan}{311}{17.27569}
+\pgfmath@def{atan}{312}{17.32792}    \pgfmath@def{atan}{313}{17.38012}
+\pgfmath@def{atan}{314}{17.43228}    \pgfmath@def{atan}{315}{17.48442}
+\pgfmath@def{atan}{316}{17.53653}    \pgfmath@def{atan}{317}{17.58861}
+\pgfmath@def{atan}{318}{17.64066}    \pgfmath@def{atan}{319}{17.69268}
+\pgfmath@def{atan}{320}{17.74467}    \pgfmath@def{atan}{321}{17.79663}
+\pgfmath@def{atan}{322}{17.84855}    \pgfmath@def{atan}{323}{17.90045}
+\pgfmath@def{atan}{324}{17.95232}    \pgfmath@def{atan}{325}{18.00416}
+\pgfmath@def{atan}{326}{18.05596}    \pgfmath@def{atan}{327}{18.10774}
+\pgfmath@def{atan}{328}{18.15949}    \pgfmath@def{atan}{329}{18.21120}
+\pgfmath@def{atan}{330}{18.26289}    \pgfmath@def{atan}{331}{18.31454}
+\pgfmath@def{atan}{332}{18.36616}    \pgfmath@def{atan}{333}{18.41775}
+\pgfmath@def{atan}{334}{18.46931}    \pgfmath@def{atan}{335}{18.52084}
+\pgfmath@def{atan}{336}{18.57234}    \pgfmath@def{atan}{337}{18.62381}
+\pgfmath@def{atan}{338}{18.67525}    \pgfmath@def{atan}{339}{18.72665}
+\pgfmath@def{atan}{340}{18.77803}    \pgfmath@def{atan}{341}{18.82937}
+\pgfmath@def{atan}{342}{18.88068}    \pgfmath@def{atan}{343}{18.93196}
+\pgfmath@def{atan}{344}{18.98321}    \pgfmath@def{atan}{345}{19.03443}
+\pgfmath@def{atan}{346}{19.08562}    \pgfmath@def{atan}{347}{19.13677}
+\pgfmath@def{atan}{348}{19.18789}    \pgfmath@def{atan}{349}{19.23898}
+\pgfmath@def{atan}{350}{19.29004}    \pgfmath@def{atan}{351}{19.34107}
+\pgfmath@def{atan}{352}{19.39206}    \pgfmath@def{atan}{353}{19.44303}
+\pgfmath@def{atan}{354}{19.49396}    \pgfmath@def{atan}{355}{19.54486}
+\pgfmath@def{atan}{356}{19.59572}    \pgfmath@def{atan}{357}{19.64656}
+\pgfmath@def{atan}{358}{19.69736}    \pgfmath@def{atan}{359}{19.74813}
+\pgfmath@def{atan}{360}{19.79887}    \pgfmath@def{atan}{361}{19.84958}
+\pgfmath@def{atan}{362}{19.90025}    \pgfmath@def{atan}{363}{19.95089}
+\pgfmath@def{atan}{364}{20.00150}    \pgfmath@def{atan}{365}{20.05208}
+\pgfmath@def{atan}{366}{20.10262}    \pgfmath@def{atan}{367}{20.15313}
+\pgfmath@def{atan}{368}{20.20361}    \pgfmath@def{atan}{369}{20.25406}
+\pgfmath@def{atan}{370}{20.30447}    \pgfmath@def{atan}{371}{20.35485}
+\pgfmath@def{atan}{372}{20.40520}    \pgfmath@def{atan}{373}{20.45551}
+\pgfmath@def{atan}{374}{20.50579}    \pgfmath@def{atan}{375}{20.55604}
+\pgfmath@def{atan}{376}{20.60626}    \pgfmath@def{atan}{377}{20.65644}
+\pgfmath@def{atan}{378}{20.70659}    \pgfmath@def{atan}{379}{20.75670}
+\pgfmath@def{atan}{380}{20.80679}    \pgfmath@def{atan}{381}{20.85684}
+\pgfmath@def{atan}{382}{20.90685}    \pgfmath@def{atan}{383}{20.95684}
+\pgfmath@def{atan}{384}{21.00678}    \pgfmath@def{atan}{385}{21.05670}
+\pgfmath@def{atan}{386}{21.10658}    \pgfmath@def{atan}{387}{21.15643}
+\pgfmath@def{atan}{388}{21.20625}    \pgfmath@def{atan}{389}{21.25603}
+\pgfmath@def{atan}{390}{21.30578}    \pgfmath@def{atan}{391}{21.35549}
+\pgfmath@def{atan}{392}{21.40517}    \pgfmath@def{atan}{393}{21.45482}
+\pgfmath@def{atan}{394}{21.50444}    \pgfmath@def{atan}{395}{21.55402}
+\pgfmath@def{atan}{396}{21.60356}    \pgfmath@def{atan}{397}{21.65307}
+\pgfmath@def{atan}{398}{21.70255}    \pgfmath@def{atan}{399}{21.75200}
+\pgfmath@def{atan}{400}{21.80140}    \pgfmath@def{atan}{401}{21.85078}
+\pgfmath@def{atan}{402}{21.90012}    \pgfmath@def{atan}{403}{21.94943}
+\pgfmath@def{atan}{404}{21.99870}    \pgfmath@def{atan}{405}{22.04794}
+\pgfmath@def{atan}{406}{22.09715}    \pgfmath@def{atan}{407}{22.14632}
+\pgfmath@def{atan}{408}{22.19546}    \pgfmath@def{atan}{409}{22.24456}
+\pgfmath@def{atan}{410}{22.29362}    \pgfmath@def{atan}{411}{22.34266}
+\pgfmath@def{atan}{412}{22.39166}    \pgfmath@def{atan}{413}{22.44062}
+\pgfmath@def{atan}{414}{22.48955}    \pgfmath@def{atan}{415}{22.53845}
+\pgfmath@def{atan}{416}{22.58731}    \pgfmath@def{atan}{417}{22.63613}
+\pgfmath@def{atan}{418}{22.68492}    \pgfmath@def{atan}{419}{22.73368}
+\pgfmath@def{atan}{420}{22.78240}    \pgfmath@def{atan}{421}{22.83109}
+\pgfmath@def{atan}{422}{22.87974}    \pgfmath@def{atan}{423}{22.92836}
+\pgfmath@def{atan}{424}{22.97694}    \pgfmath@def{atan}{425}{23.02549}
+\pgfmath@def{atan}{426}{23.07400}    \pgfmath@def{atan}{427}{23.12248}
+\pgfmath@def{atan}{428}{23.17092}    \pgfmath@def{atan}{429}{23.21933}
+\pgfmath@def{atan}{430}{23.26770}    \pgfmath@def{atan}{431}{23.31604}
+\pgfmath@def{atan}{432}{23.36434}    \pgfmath@def{atan}{433}{23.41261}
+\pgfmath@def{atan}{434}{23.46084}    \pgfmath@def{atan}{435}{23.50904}
+\pgfmath@def{atan}{436}{23.55720}    \pgfmath@def{atan}{437}{23.60532}
+\pgfmath@def{atan}{438}{23.65341}    \pgfmath@def{atan}{439}{23.70147}
+\pgfmath@def{atan}{440}{23.74949}    \pgfmath@def{atan}{441}{23.79747}
+\pgfmath@def{atan}{442}{23.84542}    \pgfmath@def{atan}{443}{23.89334}
+\pgfmath@def{atan}{444}{23.94122}    \pgfmath@def{atan}{445}{23.98906}
+\pgfmath@def{atan}{446}{24.03687}    \pgfmath@def{atan}{447}{24.08464}
+\pgfmath@def{atan}{448}{24.13238}    \pgfmath@def{atan}{449}{24.18008}
+\pgfmath@def{atan}{450}{24.22774}    \pgfmath@def{atan}{451}{24.27537}
+\pgfmath@def{atan}{452}{24.32296}    \pgfmath@def{atan}{453}{24.37052}
+\pgfmath@def{atan}{454}{24.41804}    \pgfmath@def{atan}{455}{24.46553}
+\pgfmath@def{atan}{456}{24.51298}    \pgfmath@def{atan}{457}{24.56040}
+\pgfmath@def{atan}{458}{24.60778}    \pgfmath@def{atan}{459}{24.65512}
+\pgfmath@def{atan}{460}{24.70243}    \pgfmath@def{atan}{461}{24.74970}
+\pgfmath@def{atan}{462}{24.79693}    \pgfmath@def{atan}{463}{24.84413}
+\pgfmath@def{atan}{464}{24.89130}    \pgfmath@def{atan}{465}{24.93842}
+\pgfmath@def{atan}{466}{24.98551}    \pgfmath@def{atan}{467}{25.03257}
+\pgfmath@def{atan}{468}{25.07959}    \pgfmath@def{atan}{469}{25.12657}
+\pgfmath@def{atan}{470}{25.17352}    \pgfmath@def{atan}{471}{25.22043}
+\pgfmath@def{atan}{472}{25.26731}    \pgfmath@def{atan}{473}{25.31414}
+\pgfmath@def{atan}{474}{25.36095}    \pgfmath@def{atan}{475}{25.40771}
+\pgfmath@def{atan}{476}{25.45444}    \pgfmath@def{atan}{477}{25.50114}
+\pgfmath@def{atan}{478}{25.54780}    \pgfmath@def{atan}{479}{25.59442}
+\pgfmath@def{atan}{480}{25.64100}    \pgfmath@def{atan}{481}{25.68755}
+\pgfmath@def{atan}{482}{25.73406}    \pgfmath@def{atan}{483}{25.78054}
+\pgfmath@def{atan}{484}{25.82698}    \pgfmath@def{atan}{485}{25.87338}
+\pgfmath@def{atan}{486}{25.91975}    \pgfmath@def{atan}{487}{25.96608}
+\pgfmath@def{atan}{488}{26.01237}    \pgfmath@def{atan}{489}{26.05863}
+\pgfmath@def{atan}{490}{26.10485}    \pgfmath@def{atan}{491}{26.15103}
+\pgfmath@def{atan}{492}{26.19718}    \pgfmath@def{atan}{493}{26.24329}
+\pgfmath@def{atan}{494}{26.28937}    \pgfmath@def{atan}{495}{26.33541}
+\pgfmath@def{atan}{496}{26.38141}    \pgfmath@def{atan}{497}{26.42737}
+\pgfmath@def{atan}{498}{26.47330}    \pgfmath@def{atan}{499}{26.51919}
+\pgfmath@def{atan}{500}{26.56505}    \pgfmath@def{atan}{501}{26.61086}
+\pgfmath@def{atan}{502}{26.65665}    \pgfmath@def{atan}{503}{26.70239}
+\pgfmath@def{atan}{504}{26.74810}    \pgfmath@def{atan}{505}{26.79377}
+\pgfmath@def{atan}{506}{26.83941}    \pgfmath@def{atan}{507}{26.88500}
+\pgfmath@def{atan}{508}{26.93057}    \pgfmath@def{atan}{509}{26.97609}
+\pgfmath@def{atan}{510}{27.02158}    \pgfmath@def{atan}{511}{27.06703}
+\pgfmath@def{atan}{512}{27.11244}    \pgfmath@def{atan}{513}{27.15782}
+\pgfmath@def{atan}{514}{27.20316}    \pgfmath@def{atan}{515}{27.24846}
+\pgfmath@def{atan}{516}{27.29373}    \pgfmath@def{atan}{517}{27.33896}
+\pgfmath@def{atan}{518}{27.38415}    \pgfmath@def{atan}{519}{27.42931}
+\pgfmath@def{atan}{520}{27.47443}    \pgfmath@def{atan}{521}{27.51951}
+\pgfmath@def{atan}{522}{27.56455}    \pgfmath@def{atan}{523}{27.60956}
+\pgfmath@def{atan}{524}{27.65453}    \pgfmath@def{atan}{525}{27.69947}
+\pgfmath@def{atan}{526}{27.74437}    \pgfmath@def{atan}{527}{27.78923}
+\pgfmath@def{atan}{528}{27.83405}    \pgfmath@def{atan}{529}{27.87884}
+\pgfmath@def{atan}{530}{27.92359}    \pgfmath@def{atan}{531}{27.96830}
+\pgfmath@def{atan}{532}{28.01297}    \pgfmath@def{atan}{533}{28.05761}
+\pgfmath@def{atan}{534}{28.10221}    \pgfmath@def{atan}{535}{28.14678}
+\pgfmath@def{atan}{536}{28.19130}    \pgfmath@def{atan}{537}{28.23579}
+\pgfmath@def{atan}{538}{28.28025}    \pgfmath@def{atan}{539}{28.32466}
+\pgfmath@def{atan}{540}{28.36904}    \pgfmath@def{atan}{541}{28.41338}
+\pgfmath@def{atan}{542}{28.45769}    \pgfmath@def{atan}{543}{28.50196}
+\pgfmath@def{atan}{544}{28.54619}    \pgfmath@def{atan}{545}{28.59038}
+\pgfmath@def{atan}{546}{28.63454}    \pgfmath@def{atan}{547}{28.67865}
+\pgfmath@def{atan}{548}{28.72274}    \pgfmath@def{atan}{549}{28.76678}
+\pgfmath@def{atan}{550}{28.81079}    \pgfmath@def{atan}{551}{28.85476}
+\pgfmath@def{atan}{552}{28.89869}    \pgfmath@def{atan}{553}{28.94259}
+\pgfmath@def{atan}{554}{28.98645}    \pgfmath@def{atan}{555}{29.03027}
+\pgfmath@def{atan}{556}{29.07405}    \pgfmath@def{atan}{557}{29.11780}
+\pgfmath@def{atan}{558}{29.16151}    \pgfmath@def{atan}{559}{29.20519}
+\pgfmath@def{atan}{560}{29.24882}    \pgfmath@def{atan}{561}{29.29242}
+\pgfmath@def{atan}{562}{29.33598}    \pgfmath@def{atan}{563}{29.37951}
+\pgfmath@def{atan}{564}{29.42299}    \pgfmath@def{atan}{565}{29.46644}
+\pgfmath@def{atan}{566}{29.50986}    \pgfmath@def{atan}{567}{29.55323}
+\pgfmath@def{atan}{568}{29.59657}    \pgfmath@def{atan}{569}{29.63987}
+\pgfmath@def{atan}{570}{29.68314}    \pgfmath@def{atan}{571}{29.72636}
+\pgfmath@def{atan}{572}{29.76955}    \pgfmath@def{atan}{573}{29.81270}
+\pgfmath@def{atan}{574}{29.85582}    \pgfmath@def{atan}{575}{29.89890}
+\pgfmath@def{atan}{576}{29.94194}    \pgfmath@def{atan}{577}{29.98494}
+\pgfmath@def{atan}{578}{30.02791}    \pgfmath@def{atan}{579}{30.07084}
+\pgfmath@def{atan}{580}{30.11373}    \pgfmath@def{atan}{581}{30.15658}
+\pgfmath@def{atan}{582}{30.19940}    \pgfmath@def{atan}{583}{30.24218}
+\pgfmath@def{atan}{584}{30.28492}    \pgfmath@def{atan}{585}{30.32763}
+\pgfmath@def{atan}{586}{30.37030}    \pgfmath@def{atan}{587}{30.41293}
+\pgfmath@def{atan}{588}{30.45552}    \pgfmath@def{atan}{589}{30.49808}
+\pgfmath@def{atan}{590}{30.54060}    \pgfmath@def{atan}{591}{30.58308}
+\pgfmath@def{atan}{592}{30.62553}    \pgfmath@def{atan}{593}{30.66794}
+\pgfmath@def{atan}{594}{30.71031}    \pgfmath@def{atan}{595}{30.75264}
+\pgfmath@def{atan}{596}{30.79494}    \pgfmath@def{atan}{597}{30.83720}
+\pgfmath@def{atan}{598}{30.87942}    \pgfmath@def{atan}{599}{30.92160}
+\pgfmath@def{atan}{600}{30.96375}    \pgfmath@def{atan}{601}{31.00586}
+\pgfmath@def{atan}{602}{31.04794}    \pgfmath@def{atan}{603}{31.08997}
+\pgfmath@def{atan}{604}{31.13197}    \pgfmath@def{atan}{605}{31.17393}
+\pgfmath@def{atan}{606}{31.21586}    \pgfmath@def{atan}{607}{31.25775}
+\pgfmath@def{atan}{608}{31.29960}    \pgfmath@def{atan}{609}{31.34141}
+\pgfmath@def{atan}{610}{31.38319}    \pgfmath@def{atan}{611}{31.42493}
+\pgfmath@def{atan}{612}{31.46663}    \pgfmath@def{atan}{613}{31.50829}
+\pgfmath@def{atan}{614}{31.54992}    \pgfmath@def{atan}{615}{31.59151}
+\pgfmath@def{atan}{616}{31.63306}    \pgfmath@def{atan}{617}{31.67458}
+\pgfmath@def{atan}{618}{31.71606}    \pgfmath@def{atan}{619}{31.75750}
+\pgfmath@def{atan}{620}{31.79891}    \pgfmath@def{atan}{621}{31.84028}
+\pgfmath@def{atan}{622}{31.88161}    \pgfmath@def{atan}{623}{31.92290}
+\pgfmath@def{atan}{624}{31.96416}    \pgfmath@def{atan}{625}{32.00538}
+\pgfmath@def{atan}{626}{32.04656}    \pgfmath@def{atan}{627}{32.08771}
+\pgfmath@def{atan}{628}{32.12882}    \pgfmath@def{atan}{629}{32.16989}
+\pgfmath@def{atan}{630}{32.21092}    \pgfmath@def{atan}{631}{32.25192}
+\pgfmath@def{atan}{632}{32.29288}    \pgfmath@def{atan}{633}{32.33381}
+\pgfmath@def{atan}{634}{32.37469}    \pgfmath@def{atan}{635}{32.41554}
+\pgfmath@def{atan}{636}{32.45636}    \pgfmath@def{atan}{637}{32.49713}
+\pgfmath@def{atan}{638}{32.53787}    \pgfmath@def{atan}{639}{32.57857}
+\pgfmath@def{atan}{640}{32.61924}    \pgfmath@def{atan}{641}{32.65987}
+\pgfmath@def{atan}{642}{32.70046}    \pgfmath@def{atan}{643}{32.74101}
+\pgfmath@def{atan}{644}{32.78153}    \pgfmath@def{atan}{645}{32.82201}
+\pgfmath@def{atan}{646}{32.86246}    \pgfmath@def{atan}{647}{32.90286}
+\pgfmath@def{atan}{648}{32.94323}    \pgfmath@def{atan}{649}{32.98357}
+\pgfmath@def{atan}{650}{33.02386}    \pgfmath@def{atan}{651}{33.06412}
+\pgfmath@def{atan}{652}{33.10435}    \pgfmath@def{atan}{653}{33.14453}
+\pgfmath@def{atan}{654}{33.18468}    \pgfmath@def{atan}{655}{33.22479}
+\pgfmath@def{atan}{656}{33.26487}    \pgfmath@def{atan}{657}{33.30491}
+\pgfmath@def{atan}{658}{33.34491}    \pgfmath@def{atan}{659}{33.38488}
+\pgfmath@def{atan}{660}{33.42481}    \pgfmath@def{atan}{661}{33.46470}
+\pgfmath@def{atan}{662}{33.50455}    \pgfmath@def{atan}{663}{33.54437}
+\pgfmath@def{atan}{664}{33.58416}    \pgfmath@def{atan}{665}{33.62390}
+\pgfmath@def{atan}{666}{33.66361}    \pgfmath@def{atan}{667}{33.70328}
+\pgfmath@def{atan}{668}{33.74292}    \pgfmath@def{atan}{669}{33.78252}
+\pgfmath@def{atan}{670}{33.82208}    \pgfmath@def{atan}{671}{33.86161}
+\pgfmath@def{atan}{672}{33.90110}    \pgfmath@def{atan}{673}{33.94055}
+\pgfmath@def{atan}{674}{33.97997}    \pgfmath@def{atan}{675}{34.01935}
+\pgfmath@def{atan}{676}{34.05869}    \pgfmath@def{atan}{677}{34.09800}
+\pgfmath@def{atan}{678}{34.13727}    \pgfmath@def{atan}{679}{34.17650}
+\pgfmath@def{atan}{680}{34.21570}    \pgfmath@def{atan}{681}{34.25486}
+\pgfmath@def{atan}{682}{34.29398}    \pgfmath@def{atan}{683}{34.33307}
+\pgfmath@def{atan}{684}{34.37212}    \pgfmath@def{atan}{685}{34.41114}
+\pgfmath@def{atan}{686}{34.45012}    \pgfmath@def{atan}{687}{34.48906}
+\pgfmath@def{atan}{688}{34.52797}    \pgfmath@def{atan}{689}{34.56684}
+\pgfmath@def{atan}{690}{34.60567}    \pgfmath@def{atan}{691}{34.64447}
+\pgfmath@def{atan}{692}{34.68323}    \pgfmath@def{atan}{693}{34.72195}
+\pgfmath@def{atan}{694}{34.76064}    \pgfmath@def{atan}{695}{34.79930}
+\pgfmath@def{atan}{696}{34.83791}    \pgfmath@def{atan}{697}{34.87649}
+\pgfmath@def{atan}{698}{34.91504}    \pgfmath@def{atan}{699}{34.95354}
+\pgfmath@def{atan}{700}{34.99202}    \pgfmath@def{atan}{701}{35.03045}
+\pgfmath@def{atan}{702}{35.06885}    \pgfmath@def{atan}{703}{35.10721}
+\pgfmath@def{atan}{704}{35.14554}    \pgfmath@def{atan}{705}{35.18383}
+\pgfmath@def{atan}{706}{35.22209}    \pgfmath@def{atan}{707}{35.26031}
+\pgfmath@def{atan}{708}{35.29849}    \pgfmath@def{atan}{709}{35.33664}
+\pgfmath@def{atan}{710}{35.37475}    \pgfmath@def{atan}{711}{35.41282}
+\pgfmath@def{atan}{712}{35.45086}    \pgfmath@def{atan}{713}{35.48886}
+\pgfmath@def{atan}{714}{35.52683}    \pgfmath@def{atan}{715}{35.56476}
+\pgfmath@def{atan}{716}{35.60266}    \pgfmath@def{atan}{717}{35.64052}
+\pgfmath@def{atan}{718}{35.67834}    \pgfmath@def{atan}{719}{35.71613}
+\pgfmath@def{atan}{720}{35.75388}    \pgfmath@def{atan}{721}{35.79160}
+\pgfmath@def{atan}{722}{35.82928}    \pgfmath@def{atan}{723}{35.86692}
+\pgfmath@def{atan}{724}{35.90453}    \pgfmath@def{atan}{725}{35.94211}
+\pgfmath@def{atan}{726}{35.97965}    \pgfmath@def{atan}{727}{36.01715}
+\pgfmath@def{atan}{728}{36.05461}    \pgfmath@def{atan}{729}{36.09204}
+\pgfmath@def{atan}{730}{36.12944}    \pgfmath@def{atan}{731}{36.16680}
+\pgfmath@def{atan}{732}{36.20412}    \pgfmath@def{atan}{733}{36.24141}
+\pgfmath@def{atan}{734}{36.27866}    \pgfmath@def{atan}{735}{36.31588}
+\pgfmath@def{atan}{736}{36.35306}    \pgfmath@def{atan}{737}{36.39021}
+\pgfmath@def{atan}{738}{36.42732}    \pgfmath@def{atan}{739}{36.46440}
+\pgfmath@def{atan}{740}{36.50144}    \pgfmath@def{atan}{741}{36.53844}
+\pgfmath@def{atan}{742}{36.57541}    \pgfmath@def{atan}{743}{36.61234}
+\pgfmath@def{atan}{744}{36.64924}    \pgfmath@def{atan}{745}{36.68611}
+\pgfmath@def{atan}{746}{36.72293}    \pgfmath@def{atan}{747}{36.75973}
+\pgfmath@def{atan}{748}{36.79648}    \pgfmath@def{atan}{749}{36.83321}
+\pgfmath@def{atan}{750}{36.86989}    \pgfmath@def{atan}{751}{36.90654}
+\pgfmath@def{atan}{752}{36.94316}    \pgfmath@def{atan}{753}{36.97974}
+\pgfmath@def{atan}{754}{37.01629}    \pgfmath@def{atan}{755}{37.05280}
+\pgfmath@def{atan}{756}{37.08928}    \pgfmath@def{atan}{757}{37.12572}
+\pgfmath@def{atan}{758}{37.16212}    \pgfmath@def{atan}{759}{37.19849}
+\pgfmath@def{atan}{760}{37.23483}    \pgfmath@def{atan}{761}{37.27113}
+\pgfmath@def{atan}{762}{37.30740}    \pgfmath@def{atan}{763}{37.34363}
+\pgfmath@def{atan}{764}{37.37982}    \pgfmath@def{atan}{765}{37.41598}
+\pgfmath@def{atan}{766}{37.45211}    \pgfmath@def{atan}{767}{37.48820}
+\pgfmath@def{atan}{768}{37.52426}    \pgfmath@def{atan}{769}{37.56028}
+\pgfmath@def{atan}{770}{37.59627}    \pgfmath@def{atan}{771}{37.63222}
+\pgfmath@def{atan}{772}{37.66814}    \pgfmath@def{atan}{773}{37.70402}
+\pgfmath@def{atan}{774}{37.73987}    \pgfmath@def{atan}{775}{37.77568}
+\pgfmath@def{atan}{776}{37.81146}    \pgfmath@def{atan}{777}{37.84720}
+\pgfmath@def{atan}{778}{37.88291}    \pgfmath@def{atan}{779}{37.91859}
+\pgfmath@def{atan}{780}{37.95423}    \pgfmath@def{atan}{781}{37.98983}
+\pgfmath@def{atan}{782}{38.02540}    \pgfmath@def{atan}{783}{38.06094}
+\pgfmath@def{atan}{784}{38.09644}    \pgfmath@def{atan}{785}{38.13191}
+\pgfmath@def{atan}{786}{38.16734}    \pgfmath@def{atan}{787}{38.20274}
+\pgfmath@def{atan}{788}{38.23811}    \pgfmath@def{atan}{789}{38.27344}
+\pgfmath@def{atan}{790}{38.30873}    \pgfmath@def{atan}{791}{38.34399}
+\pgfmath@def{atan}{792}{38.37922}    \pgfmath@def{atan}{793}{38.41441}
+\pgfmath@def{atan}{794}{38.44957}    \pgfmath@def{atan}{795}{38.48469}
+\pgfmath@def{atan}{796}{38.51979}    \pgfmath@def{atan}{797}{38.55484}
+\pgfmath@def{atan}{798}{38.58986}    \pgfmath@def{atan}{799}{38.62485}
+\pgfmath@def{atan}{800}{38.65980}    \pgfmath@def{atan}{801}{38.69472}
+\pgfmath@def{atan}{802}{38.72961}    \pgfmath@def{atan}{803}{38.76446}
+\pgfmath@def{atan}{804}{38.79928}    \pgfmath@def{atan}{805}{38.83406}
+\pgfmath@def{atan}{806}{38.86881}    \pgfmath@def{atan}{807}{38.90353}
+\pgfmath@def{atan}{808}{38.93821}    \pgfmath@def{atan}{809}{38.97285}
+\pgfmath@def{atan}{810}{39.00747}    \pgfmath@def{atan}{811}{39.04205}
+\pgfmath@def{atan}{812}{39.07659}    \pgfmath@def{atan}{813}{39.11111}
+\pgfmath@def{atan}{814}{39.14558}    \pgfmath@def{atan}{815}{39.18003}
+\pgfmath@def{atan}{816}{39.21444}    \pgfmath@def{atan}{817}{39.24882}
+\pgfmath@def{atan}{818}{39.28316}    \pgfmath@def{atan}{819}{39.31747}
+\pgfmath@def{atan}{820}{39.35175}    \pgfmath@def{atan}{821}{39.38599}
+\pgfmath@def{atan}{822}{39.42020}    \pgfmath@def{atan}{823}{39.45438}
+\pgfmath@def{atan}{824}{39.48852}    \pgfmath@def{atan}{825}{39.52263}
+\pgfmath@def{atan}{826}{39.55670}    \pgfmath@def{atan}{827}{39.59074}
+\pgfmath@def{atan}{828}{39.62475}    \pgfmath@def{atan}{829}{39.65873}
+\pgfmath@def{atan}{830}{39.69267}    \pgfmath@def{atan}{831}{39.72658}
+\pgfmath@def{atan}{832}{39.76045}    \pgfmath@def{atan}{833}{39.79429}
+\pgfmath@def{atan}{834}{39.82810}    \pgfmath@def{atan}{835}{39.86188}
+\pgfmath@def{atan}{836}{39.89562}    \pgfmath@def{atan}{837}{39.92933}
+\pgfmath@def{atan}{838}{39.96300}    \pgfmath@def{atan}{839}{39.99665}
+\pgfmath@def{atan}{840}{40.03025}    \pgfmath@def{atan}{841}{40.06383}
+\pgfmath@def{atan}{842}{40.09737}    \pgfmath@def{atan}{843}{40.13088}
+\pgfmath@def{atan}{844}{40.16436}    \pgfmath@def{atan}{845}{40.19781}
+\pgfmath@def{atan}{846}{40.23122}    \pgfmath@def{atan}{847}{40.26459}
+\pgfmath@def{atan}{848}{40.29794}    \pgfmath@def{atan}{849}{40.33125}
+\pgfmath@def{atan}{850}{40.36453}    \pgfmath@def{atan}{851}{40.39778}
+\pgfmath@def{atan}{852}{40.43099}    \pgfmath@def{atan}{853}{40.46417}
+\pgfmath@def{atan}{854}{40.49732}    \pgfmath@def{atan}{855}{40.53044}
+\pgfmath@def{atan}{856}{40.56352}    \pgfmath@def{atan}{857}{40.59657}
+\pgfmath@def{atan}{858}{40.62959}    \pgfmath@def{atan}{859}{40.66257}
+\pgfmath@def{atan}{860}{40.69553}    \pgfmath@def{atan}{861}{40.72845}
+\pgfmath@def{atan}{862}{40.76133}    \pgfmath@def{atan}{863}{40.79419}
+\pgfmath@def{atan}{864}{40.82701}    \pgfmath@def{atan}{865}{40.85980}
+\pgfmath@def{atan}{866}{40.89256}    \pgfmath@def{atan}{867}{40.92528}
+\pgfmath@def{atan}{868}{40.95798}    \pgfmath@def{atan}{869}{40.99064}
+\pgfmath@def{atan}{870}{41.02326}    \pgfmath@def{atan}{871}{41.05586}
+\pgfmath@def{atan}{872}{41.08842}    \pgfmath@def{atan}{873}{41.12095}
+\pgfmath@def{atan}{874}{41.15345}    \pgfmath@def{atan}{875}{41.18592}
+\pgfmath@def{atan}{876}{41.21836}    \pgfmath@def{atan}{877}{41.25076}
+\pgfmath@def{atan}{878}{41.28313}    \pgfmath@def{atan}{879}{41.31547}
+\pgfmath@def{atan}{880}{41.34777}    \pgfmath@def{atan}{881}{41.38005}
+\pgfmath@def{atan}{882}{41.41229}    \pgfmath@def{atan}{883}{41.44450}
+\pgfmath@def{atan}{884}{41.47668}    \pgfmath@def{atan}{885}{41.50882}
+\pgfmath@def{atan}{886}{41.54094}    \pgfmath@def{atan}{887}{41.57302}
+\pgfmath@def{atan}{888}{41.60507}    \pgfmath@def{atan}{889}{41.63709}
+\pgfmath@def{atan}{890}{41.66908}    \pgfmath@def{atan}{891}{41.70103}
+\pgfmath@def{atan}{892}{41.73296}    \pgfmath@def{atan}{893}{41.76485}
+\pgfmath@def{atan}{894}{41.79671}    \pgfmath@def{atan}{895}{41.82854}
+\pgfmath@def{atan}{896}{41.86034}    \pgfmath@def{atan}{897}{41.89210}
+\pgfmath@def{atan}{898}{41.92383}    \pgfmath@def{atan}{899}{41.95554}
+\pgfmath@def{atan}{900}{41.98721}    \pgfmath@def{atan}{901}{42.01885}
+\pgfmath@def{atan}{902}{42.05046}    \pgfmath@def{atan}{903}{42.08203}
+\pgfmath@def{atan}{904}{42.11358}    \pgfmath@def{atan}{905}{42.14509}
+\pgfmath@def{atan}{906}{42.17657}    \pgfmath@def{atan}{907}{42.20802}
+\pgfmath@def{atan}{908}{42.23944}    \pgfmath@def{atan}{909}{42.27083}
+\pgfmath@def{atan}{910}{42.30219}    \pgfmath@def{atan}{911}{42.33352}
+\pgfmath@def{atan}{912}{42.36481}    \pgfmath@def{atan}{913}{42.39607}
+\pgfmath@def{atan}{914}{42.42731}    \pgfmath@def{atan}{915}{42.45851}
+\pgfmath@def{atan}{916}{42.48968}    \pgfmath@def{atan}{917}{42.52082}
+\pgfmath@def{atan}{918}{42.55193}    \pgfmath@def{atan}{919}{42.58300}
+\pgfmath@def{atan}{920}{42.61405}    \pgfmath@def{atan}{921}{42.64507}
+\pgfmath@def{atan}{922}{42.67605}    \pgfmath@def{atan}{923}{42.70701}
+\pgfmath@def{atan}{924}{42.73793}    \pgfmath@def{atan}{925}{42.76882}
+\pgfmath@def{atan}{926}{42.79968}    \pgfmath@def{atan}{927}{42.83051}
+\pgfmath@def{atan}{928}{42.86131}    \pgfmath@def{atan}{929}{42.89208}
+\pgfmath@def{atan}{930}{42.92282}    \pgfmath@def{atan}{931}{42.95353}
+\pgfmath@def{atan}{932}{42.98421}    \pgfmath@def{atan}{933}{43.01485}
+\pgfmath@def{atan}{934}{43.04547}    \pgfmath@def{atan}{935}{43.07605}
+\pgfmath@def{atan}{936}{43.10661}    \pgfmath@def{atan}{937}{43.13713}
+\pgfmath@def{atan}{938}{43.16763}    \pgfmath@def{atan}{939}{43.19809}
+\pgfmath@def{atan}{940}{43.22853}    \pgfmath@def{atan}{941}{43.25893}
+\pgfmath@def{atan}{942}{43.28930}    \pgfmath@def{atan}{943}{43.31964}
+\pgfmath@def{atan}{944}{43.34996}    \pgfmath@def{atan}{945}{43.38024}
+\pgfmath@def{atan}{946}{43.41049}    \pgfmath@def{atan}{947}{43.44071}
+\pgfmath@def{atan}{948}{43.47090}    \pgfmath@def{atan}{949}{43.50106}
+\pgfmath@def{atan}{950}{43.53119}    \pgfmath@def{atan}{951}{43.56130}
+\pgfmath@def{atan}{952}{43.59137}    \pgfmath@def{atan}{953}{43.62141}
+\pgfmath@def{atan}{954}{43.65142}    \pgfmath@def{atan}{955}{43.68140}
+\pgfmath@def{atan}{956}{43.71135}    \pgfmath@def{atan}{957}{43.74127}
+\pgfmath@def{atan}{958}{43.77116}    \pgfmath@def{atan}{959}{43.80102}
+\pgfmath@def{atan}{960}{43.83086}    \pgfmath@def{atan}{961}{43.86066}
+\pgfmath@def{atan}{962}{43.89043}    \pgfmath@def{atan}{963}{43.92017}
+\pgfmath@def{atan}{964}{43.94988}    \pgfmath@def{atan}{965}{43.97957}
+\pgfmath@def{atan}{966}{44.00922}    \pgfmath@def{atan}{967}{44.03884}
+\pgfmath@def{atan}{968}{44.06844}    \pgfmath@def{atan}{969}{44.09800}
+\pgfmath@def{atan}{970}{44.12754}    \pgfmath@def{atan}{971}{44.15704}
+\pgfmath@def{atan}{972}{44.18652}    \pgfmath@def{atan}{973}{44.21597}
+\pgfmath@def{atan}{974}{44.24538}    \pgfmath@def{atan}{975}{44.27477}
+\pgfmath@def{atan}{976}{44.30413}    \pgfmath@def{atan}{977}{44.33346}
+\pgfmath@def{atan}{978}{44.36276}    \pgfmath@def{atan}{979}{44.39203}
+\pgfmath@def{atan}{980}{44.42127}    \pgfmath@def{atan}{981}{44.45048}
+\pgfmath@def{atan}{982}{44.47966}    \pgfmath@def{atan}{983}{44.50882}
+\pgfmath@def{atan}{984}{44.53794}    \pgfmath@def{atan}{985}{44.56704}
+\pgfmath@def{atan}{986}{44.59610}    \pgfmath@def{atan}{987}{44.62514}
+\pgfmath@def{atan}{988}{44.65415}    \pgfmath@def{atan}{989}{44.68313}
+\pgfmath@def{atan}{990}{44.71208}    \pgfmath@def{atan}{991}{44.74100}
+\pgfmath@def{atan}{992}{44.76989}    \pgfmath@def{atan}{993}{44.79876}
+\pgfmath@def{atan}{994}{44.82759}    \pgfmath@def{atan}{995}{44.85640}
+\pgfmath@def{atan}{996}{44.88517}    \pgfmath@def{atan}{997}{44.91392}
+\pgfmath@def{atan}{998}{44.94264}    \pgfmath@def{atan}{999}{44.97133}
+\pgfmath@def{atan}{1000}{45.00000}
+
+\pgfmath@def{acos}{0}{90.00000}    \pgfmath@def{acos}{1}{89.94270}
+\pgfmath@def{acos}{2}{89.88540}    \pgfmath@def{acos}{3}{89.82811}
+\pgfmath@def{acos}{4}{89.77081}    \pgfmath@def{acos}{5}{89.71352}
+\pgfmath@def{acos}{6}{89.65622}    \pgfmath@def{acos}{7}{89.59892}
+\pgfmath@def{acos}{8}{89.54162}    \pgfmath@def{acos}{9}{89.48433}
+\pgfmath@def{acos}{10}{89.42703}    \pgfmath@def{acos}{11}{89.36973}
+\pgfmath@def{acos}{12}{89.31243}    \pgfmath@def{acos}{13}{89.25513}
+\pgfmath@def{acos}{14}{89.19783}    \pgfmath@def{acos}{15}{89.14053}
+\pgfmath@def{acos}{16}{89.08322}    \pgfmath@def{acos}{17}{89.02592}
+\pgfmath@def{acos}{18}{88.96862}    \pgfmath@def{acos}{19}{88.91131}
+\pgfmath@def{acos}{20}{88.85400}    \pgfmath@def{acos}{21}{88.79670}
+\pgfmath@def{acos}{22}{88.73939}    \pgfmath@def{acos}{23}{88.68208}
+\pgfmath@def{acos}{24}{88.62476}    \pgfmath@def{acos}{25}{88.56745}
+\pgfmath@def{acos}{26}{88.51014}    \pgfmath@def{acos}{27}{88.45282}
+\pgfmath@def{acos}{28}{88.39550}    \pgfmath@def{acos}{29}{88.33818}
+\pgfmath@def{acos}{30}{88.28086}    \pgfmath@def{acos}{31}{88.22354}
+\pgfmath@def{acos}{32}{88.16622}    \pgfmath@def{acos}{33}{88.10889}
+\pgfmath@def{acos}{34}{88.05156}    \pgfmath@def{acos}{35}{87.99423}
+\pgfmath@def{acos}{36}{87.93690}    \pgfmath@def{acos}{37}{87.87957}
+\pgfmath@def{acos}{38}{87.82223}    \pgfmath@def{acos}{39}{87.76489}
+\pgfmath@def{acos}{40}{87.70755}    \pgfmath@def{acos}{41}{87.65021}
+\pgfmath@def{acos}{42}{87.59286}    \pgfmath@def{acos}{43}{87.53552}
+\pgfmath@def{acos}{44}{87.47817}    \pgfmath@def{acos}{45}{87.42081}
+\pgfmath@def{acos}{46}{87.36346}    \pgfmath@def{acos}{47}{87.30610}
+\pgfmath@def{acos}{48}{87.24874}    \pgfmath@def{acos}{49}{87.19138}
+\pgfmath@def{acos}{50}{87.13401}    \pgfmath@def{acos}{51}{87.07664}
+\pgfmath@def{acos}{52}{87.01927}    \pgfmath@def{acos}{53}{86.96190}
+\pgfmath@def{acos}{54}{86.90452}    \pgfmath@def{acos}{55}{86.84714}
+\pgfmath@def{acos}{56}{86.78975}    \pgfmath@def{acos}{57}{86.73237}
+\pgfmath@def{acos}{58}{86.67497}    \pgfmath@def{acos}{59}{86.61758}
+\pgfmath@def{acos}{60}{86.56018}    \pgfmath@def{acos}{61}{86.50278}
+\pgfmath@def{acos}{62}{86.44538}    \pgfmath@def{acos}{63}{86.38797}
+\pgfmath@def{acos}{64}{86.33056}    \pgfmath@def{acos}{65}{86.27314}
+\pgfmath@def{acos}{66}{86.21572}    \pgfmath@def{acos}{67}{86.15830}
+\pgfmath@def{acos}{68}{86.10087}    \pgfmath@def{acos}{69}{86.04344}
+\pgfmath@def{acos}{70}{85.98601}    \pgfmath@def{acos}{71}{85.92857}
+\pgfmath@def{acos}{72}{85.87113}    \pgfmath@def{acos}{73}{85.81368}
+\pgfmath@def{acos}{74}{85.75623}    \pgfmath@def{acos}{75}{85.69877}
+\pgfmath@def{acos}{76}{85.64131}    \pgfmath@def{acos}{77}{85.58385}
+\pgfmath@def{acos}{78}{85.52638}    \pgfmath@def{acos}{79}{85.46891}
+\pgfmath@def{acos}{80}{85.41143}    \pgfmath@def{acos}{81}{85.35395}
+\pgfmath@def{acos}{82}{85.29646}    \pgfmath@def{acos}{83}{85.23897}
+\pgfmath@def{acos}{84}{85.18147}    \pgfmath@def{acos}{85}{85.12397}
+\pgfmath@def{acos}{86}{85.06646}    \pgfmath@def{acos}{87}{85.00895}
+\pgfmath@def{acos}{88}{84.95144}    \pgfmath@def{acos}{89}{84.89392}
+\pgfmath@def{acos}{90}{84.83639}    \pgfmath@def{acos}{91}{84.77886}
+\pgfmath@def{acos}{92}{84.72132}    \pgfmath@def{acos}{93}{84.66378}
+\pgfmath@def{acos}{94}{84.60623}    \pgfmath@def{acos}{95}{84.54868}
+\pgfmath@def{acos}{96}{84.49112}    \pgfmath@def{acos}{97}{84.43355}
+\pgfmath@def{acos}{98}{84.37598}    \pgfmath@def{acos}{99}{84.31841}
+\pgfmath@def{acos}{100}{84.26083}    \pgfmath@def{acos}{101}{84.20324}
+\pgfmath@def{acos}{102}{84.14564}    \pgfmath@def{acos}{103}{84.08805}
+\pgfmath@def{acos}{104}{84.03044}    \pgfmath@def{acos}{105}{83.97283}
+\pgfmath@def{acos}{106}{83.91521}    \pgfmath@def{acos}{107}{83.85759}
+\pgfmath@def{acos}{108}{83.79996}    \pgfmath@def{acos}{109}{83.74232}
+\pgfmath@def{acos}{110}{83.68468}    \pgfmath@def{acos}{111}{83.62703}
+\pgfmath@def{acos}{112}{83.56938}    \pgfmath@def{acos}{113}{83.51171}
+\pgfmath@def{acos}{114}{83.45405}    \pgfmath@def{acos}{115}{83.39637}
+\pgfmath@def{acos}{116}{83.33869}    \pgfmath@def{acos}{117}{83.28100}
+\pgfmath@def{acos}{118}{83.22330}    \pgfmath@def{acos}{119}{83.16560}
+\pgfmath@def{acos}{120}{83.10789}    \pgfmath@def{acos}{121}{83.05018}
+\pgfmath@def{acos}{122}{82.99245}    \pgfmath@def{acos}{123}{82.93472}
+\pgfmath@def{acos}{124}{82.87698}    \pgfmath@def{acos}{125}{82.81924}
+\pgfmath@def{acos}{126}{82.76149}    \pgfmath@def{acos}{127}{82.70373}
+\pgfmath@def{acos}{128}{82.64596}    \pgfmath@def{acos}{129}{82.58819}
+\pgfmath@def{acos}{130}{82.53040}    \pgfmath@def{acos}{131}{82.47261}
+\pgfmath@def{acos}{132}{82.41482}    \pgfmath@def{acos}{133}{82.35701}
+\pgfmath@def{acos}{134}{82.29920}    \pgfmath@def{acos}{135}{82.24138}
+\pgfmath@def{acos}{136}{82.18355}    \pgfmath@def{acos}{137}{82.12571}
+\pgfmath@def{acos}{138}{82.06786}    \pgfmath@def{acos}{139}{82.01001}
+\pgfmath@def{acos}{140}{81.95215}    \pgfmath@def{acos}{141}{81.89428}
+\pgfmath@def{acos}{142}{81.83640}    \pgfmath@def{acos}{143}{81.77851}
+\pgfmath@def{acos}{144}{81.72062}    \pgfmath@def{acos}{145}{81.66272}
+\pgfmath@def{acos}{146}{81.60480}    \pgfmath@def{acos}{147}{81.54688}
+\pgfmath@def{acos}{148}{81.48895}    \pgfmath@def{acos}{149}{81.43102}
+\pgfmath@def{acos}{150}{81.37307}    \pgfmath@def{acos}{151}{81.31511}
+\pgfmath@def{acos}{152}{81.25715}    \pgfmath@def{acos}{153}{81.19917}
+\pgfmath@def{acos}{154}{81.14119}    \pgfmath@def{acos}{155}{81.08320}
+\pgfmath@def{acos}{156}{81.02520}    \pgfmath@def{acos}{157}{80.96719}
+\pgfmath@def{acos}{158}{80.90917}    \pgfmath@def{acos}{159}{80.85114}
+\pgfmath@def{acos}{160}{80.79310}    \pgfmath@def{acos}{161}{80.73505}
+\pgfmath@def{acos}{162}{80.67699}    \pgfmath@def{acos}{163}{80.61893}
+\pgfmath@def{acos}{164}{80.56085}    \pgfmath@def{acos}{165}{80.50276}
+\pgfmath@def{acos}{166}{80.44466}    \pgfmath@def{acos}{167}{80.38656}
+\pgfmath@def{acos}{168}{80.32844}    \pgfmath@def{acos}{169}{80.27031}
+\pgfmath@def{acos}{170}{80.21218}    \pgfmath@def{acos}{171}{80.15403}
+\pgfmath@def{acos}{172}{80.09587}    \pgfmath@def{acos}{173}{80.03770}
+\pgfmath@def{acos}{174}{79.97953}    \pgfmath@def{acos}{175}{79.92134}
+\pgfmath@def{acos}{176}{79.86314}    \pgfmath@def{acos}{177}{79.80493}
+\pgfmath@def{acos}{178}{79.74671}    \pgfmath@def{acos}{179}{79.68848}
+\pgfmath@def{acos}{180}{79.63024}    \pgfmath@def{acos}{181}{79.57198}
+\pgfmath@def{acos}{182}{79.51372}    \pgfmath@def{acos}{183}{79.45545}
+\pgfmath@def{acos}{184}{79.39716}    \pgfmath@def{acos}{185}{79.33886}
+\pgfmath@def{acos}{186}{79.28056}    \pgfmath@def{acos}{187}{79.22224}
+\pgfmath@def{acos}{188}{79.16391}    \pgfmath@def{acos}{189}{79.10556}
+\pgfmath@def{acos}{190}{79.04721}    \pgfmath@def{acos}{191}{78.98885}
+\pgfmath@def{acos}{192}{78.93047}    \pgfmath@def{acos}{193}{78.87208}
+\pgfmath@def{acos}{194}{78.81368}    \pgfmath@def{acos}{195}{78.75527}
+\pgfmath@def{acos}{196}{78.69685}    \pgfmath@def{acos}{197}{78.63841}
+\pgfmath@def{acos}{198}{78.57997}    \pgfmath@def{acos}{199}{78.52151}
+\pgfmath@def{acos}{200}{78.46304}    \pgfmath@def{acos}{201}{78.40455}
+\pgfmath@def{acos}{202}{78.34606}    \pgfmath@def{acos}{203}{78.28755}
+\pgfmath@def{acos}{204}{78.22903}    \pgfmath@def{acos}{205}{78.17050}
+\pgfmath@def{acos}{206}{78.11195}    \pgfmath@def{acos}{207}{78.05339}
+\pgfmath@def{acos}{208}{77.99482}    \pgfmath@def{acos}{209}{77.93624}
+\pgfmath@def{acos}{210}{77.87764}    \pgfmath@def{acos}{211}{77.81903}
+\pgfmath@def{acos}{212}{77.76041}    \pgfmath@def{acos}{213}{77.70178}
+\pgfmath@def{acos}{214}{77.64313}    \pgfmath@def{acos}{215}{77.58447}
+\pgfmath@def{acos}{216}{77.52579}    \pgfmath@def{acos}{217}{77.46711}
+\pgfmath@def{acos}{218}{77.40841}    \pgfmath@def{acos}{219}{77.34969}
+\pgfmath@def{acos}{220}{77.29096}    \pgfmath@def{acos}{221}{77.23222}
+\pgfmath@def{acos}{222}{77.17347}    \pgfmath@def{acos}{223}{77.11470}
+\pgfmath@def{acos}{224}{77.05591}    \pgfmath@def{acos}{225}{76.99712}
+\pgfmath@def{acos}{226}{76.93831}    \pgfmath@def{acos}{227}{76.87948}
+\pgfmath@def{acos}{228}{76.82064}    \pgfmath@def{acos}{229}{76.76179}
+\pgfmath@def{acos}{230}{76.70292}    \pgfmath@def{acos}{231}{76.64404}
+\pgfmath@def{acos}{232}{76.58515}    \pgfmath@def{acos}{233}{76.52624}
+\pgfmath@def{acos}{234}{76.46731}    \pgfmath@def{acos}{235}{76.40837}
+\pgfmath@def{acos}{236}{76.34942}    \pgfmath@def{acos}{237}{76.29045}
+\pgfmath@def{acos}{238}{76.23147}    \pgfmath@def{acos}{239}{76.17247}
+\pgfmath@def{acos}{240}{76.11346}    \pgfmath@def{acos}{241}{76.05443}
+\pgfmath@def{acos}{242}{75.99538}    \pgfmath@def{acos}{243}{75.93632}
+\pgfmath@def{acos}{244}{75.87725}    \pgfmath@def{acos}{245}{75.81816}
+\pgfmath@def{acos}{246}{75.75906}    \pgfmath@def{acos}{247}{75.69994}
+\pgfmath@def{acos}{248}{75.64080}    \pgfmath@def{acos}{249}{75.58165}
+\pgfmath@def{acos}{250}{75.52248}    \pgfmath@def{acos}{251}{75.46330}
+\pgfmath@def{acos}{252}{75.40410}    \pgfmath@def{acos}{253}{75.34489}
+\pgfmath@def{acos}{254}{75.28566}    \pgfmath@def{acos}{255}{75.22641}
+\pgfmath@def{acos}{256}{75.16715}    \pgfmath@def{acos}{257}{75.10787}
+\pgfmath@def{acos}{258}{75.04857}    \pgfmath@def{acos}{259}{74.98926}
+\pgfmath@def{acos}{260}{74.92993}    \pgfmath@def{acos}{261}{74.87059}
+\pgfmath@def{acos}{262}{74.81123}    \pgfmath@def{acos}{263}{74.75185}
+\pgfmath@def{acos}{264}{74.69245}    \pgfmath@def{acos}{265}{74.63304}
+\pgfmath@def{acos}{266}{74.57361}    \pgfmath@def{acos}{267}{74.51417}
+\pgfmath@def{acos}{268}{74.45471}    \pgfmath@def{acos}{269}{74.39523}
+\pgfmath@def{acos}{270}{74.33573}    \pgfmath@def{acos}{271}{74.27621}
+\pgfmath@def{acos}{272}{74.21668}    \pgfmath@def{acos}{273}{74.15713}
+\pgfmath@def{acos}{274}{74.09757}    \pgfmath@def{acos}{275}{74.03798}
+\pgfmath@def{acos}{276}{73.97838}    \pgfmath@def{acos}{277}{73.91876}
+\pgfmath@def{acos}{278}{73.85912}    \pgfmath@def{acos}{279}{73.79946}
+\pgfmath@def{acos}{280}{73.73979}    \pgfmath@def{acos}{281}{73.68010}
+\pgfmath@def{acos}{282}{73.62039}    \pgfmath@def{acos}{283}{73.56066}
+\pgfmath@def{acos}{284}{73.50091}    \pgfmath@def{acos}{285}{73.44115}
+\pgfmath@def{acos}{286}{73.38136}    \pgfmath@def{acos}{287}{73.32156}
+\pgfmath@def{acos}{288}{73.26174}    \pgfmath@def{acos}{289}{73.20190}
+\pgfmath@def{acos}{290}{73.14204}    \pgfmath@def{acos}{291}{73.08216}
+\pgfmath@def{acos}{292}{73.02226}    \pgfmath@def{acos}{293}{72.96235}
+\pgfmath@def{acos}{294}{72.90241}    \pgfmath@def{acos}{295}{72.84246}
+\pgfmath@def{acos}{296}{72.78248}    \pgfmath@def{acos}{297}{72.72249}
+\pgfmath@def{acos}{298}{72.66248}    \pgfmath@def{acos}{299}{72.60244}
+\pgfmath@def{acos}{300}{72.54239}    \pgfmath@def{acos}{301}{72.48232}
+\pgfmath@def{acos}{302}{72.42223}    \pgfmath@def{acos}{303}{72.36212}
+\pgfmath@def{acos}{304}{72.30198}    \pgfmath@def{acos}{305}{72.24183}
+\pgfmath@def{acos}{306}{72.18166}    \pgfmath@def{acos}{307}{72.12147}
+\pgfmath@def{acos}{308}{72.06125}    \pgfmath@def{acos}{309}{72.00102}
+\pgfmath@def{acos}{310}{71.94077}    \pgfmath@def{acos}{311}{71.88049}
+\pgfmath@def{acos}{312}{71.82019}    \pgfmath@def{acos}{313}{71.75988}
+\pgfmath@def{acos}{314}{71.69954}    \pgfmath@def{acos}{315}{71.63918}
+\pgfmath@def{acos}{316}{71.57880}    \pgfmath@def{acos}{317}{71.51840}
+\pgfmath@def{acos}{318}{71.45798}    \pgfmath@def{acos}{319}{71.39754}
+\pgfmath@def{acos}{320}{71.33707}    \pgfmath@def{acos}{321}{71.27658}
+\pgfmath@def{acos}{322}{71.21608}    \pgfmath@def{acos}{323}{71.15555}
+\pgfmath@def{acos}{324}{71.09499}    \pgfmath@def{acos}{325}{71.03442}
+\pgfmath@def{acos}{326}{70.97382}    \pgfmath@def{acos}{327}{70.91321}
+\pgfmath@def{acos}{328}{70.85257}    \pgfmath@def{acos}{329}{70.79190}
+\pgfmath@def{acos}{330}{70.73122}    \pgfmath@def{acos}{331}{70.67051}
+\pgfmath@def{acos}{332}{70.60978}    \pgfmath@def{acos}{333}{70.54903}
+\pgfmath@def{acos}{334}{70.48826}    \pgfmath@def{acos}{335}{70.42746}
+\pgfmath@def{acos}{336}{70.36664}    \pgfmath@def{acos}{337}{70.30579}
+\pgfmath@def{acos}{338}{70.24493}    \pgfmath@def{acos}{339}{70.18404}
+\pgfmath@def{acos}{340}{70.12312}    \pgfmath@def{acos}{341}{70.06218}
+\pgfmath@def{acos}{342}{70.00122}    \pgfmath@def{acos}{343}{69.94024}
+\pgfmath@def{acos}{344}{69.87923}    \pgfmath@def{acos}{345}{69.81820}
+\pgfmath@def{acos}{346}{69.75714}    \pgfmath@def{acos}{347}{69.69606}
+\pgfmath@def{acos}{348}{69.63496}    \pgfmath@def{acos}{349}{69.57383}
+\pgfmath@def{acos}{350}{69.51268}    \pgfmath@def{acos}{351}{69.45150}
+\pgfmath@def{acos}{352}{69.39030}    \pgfmath@def{acos}{353}{69.32908}
+\pgfmath@def{acos}{354}{69.26783}    \pgfmath@def{acos}{355}{69.20655}
+\pgfmath@def{acos}{356}{69.14525}    \pgfmath@def{acos}{357}{69.08393}
+\pgfmath@def{acos}{358}{69.02258}    \pgfmath@def{acos}{359}{68.96120}
+\pgfmath@def{acos}{360}{68.89980}    \pgfmath@def{acos}{361}{68.83837}
+\pgfmath@def{acos}{362}{68.77692}    \pgfmath@def{acos}{363}{68.71544}
+\pgfmath@def{acos}{364}{68.65394}    \pgfmath@def{acos}{365}{68.59241}
+\pgfmath@def{acos}{366}{68.53086}    \pgfmath@def{acos}{367}{68.46928}
+\pgfmath@def{acos}{368}{68.40767}    \pgfmath@def{acos}{369}{68.34604}
+\pgfmath@def{acos}{370}{68.28438}    \pgfmath@def{acos}{371}{68.22269}
+\pgfmath@def{acos}{372}{68.16098}    \pgfmath@def{acos}{373}{68.09924}
+\pgfmath@def{acos}{374}{68.03748}    \pgfmath@def{acos}{375}{67.97568}
+\pgfmath@def{acos}{376}{67.91386}    \pgfmath@def{acos}{377}{67.85202}
+\pgfmath@def{acos}{378}{67.79014}    \pgfmath@def{acos}{379}{67.72824}
+\pgfmath@def{acos}{380}{67.66631}    \pgfmath@def{acos}{381}{67.60436}
+\pgfmath@def{acos}{382}{67.54237}    \pgfmath@def{acos}{383}{67.48036}
+\pgfmath@def{acos}{384}{67.41832}    \pgfmath@def{acos}{385}{67.35626}
+\pgfmath@def{acos}{386}{67.29416}    \pgfmath@def{acos}{387}{67.23204}
+\pgfmath@def{acos}{388}{67.16988}    \pgfmath@def{acos}{389}{67.10770}
+\pgfmath@def{acos}{390}{67.04550}    \pgfmath@def{acos}{391}{66.98326}
+\pgfmath@def{acos}{392}{66.92099}    \pgfmath@def{acos}{393}{66.85870}
+\pgfmath@def{acos}{394}{66.79637}    \pgfmath@def{acos}{395}{66.73402}
+\pgfmath@def{acos}{396}{66.67164}    \pgfmath@def{acos}{397}{66.60923}
+\pgfmath@def{acos}{398}{66.54679}    \pgfmath@def{acos}{399}{66.48432}
+\pgfmath@def{acos}{400}{66.42182}    \pgfmath@def{acos}{401}{66.35929}
+\pgfmath@def{acos}{402}{66.29673}    \pgfmath@def{acos}{403}{66.23414}
+\pgfmath@def{acos}{404}{66.17152}    \pgfmath@def{acos}{405}{66.10887}
+\pgfmath@def{acos}{406}{66.04619}    \pgfmath@def{acos}{407}{65.98348}
+\pgfmath@def{acos}{408}{65.92074}    \pgfmath@def{acos}{409}{65.85796}
+\pgfmath@def{acos}{410}{65.79516}    \pgfmath@def{acos}{411}{65.73233}
+\pgfmath@def{acos}{412}{65.66946}    \pgfmath@def{acos}{413}{65.60657}
+\pgfmath@def{acos}{414}{65.54364}    \pgfmath@def{acos}{415}{65.48068}
+\pgfmath@def{acos}{416}{65.41769}    \pgfmath@def{acos}{417}{65.35467}
+\pgfmath@def{acos}{418}{65.29161}    \pgfmath@def{acos}{419}{65.22853}
+\pgfmath@def{acos}{420}{65.16541}    \pgfmath@def{acos}{421}{65.10226}
+\pgfmath@def{acos}{422}{65.03908}    \pgfmath@def{acos}{423}{64.97586}
+\pgfmath@def{acos}{424}{64.91261}    \pgfmath@def{acos}{425}{64.84933}
+\pgfmath@def{acos}{426}{64.78602}    \pgfmath@def{acos}{427}{64.72267}
+\pgfmath@def{acos}{428}{64.65929}    \pgfmath@def{acos}{429}{64.59588}
+\pgfmath@def{acos}{430}{64.53244}    \pgfmath@def{acos}{431}{64.46896}
+\pgfmath@def{acos}{432}{64.40544}    \pgfmath@def{acos}{433}{64.34190}
+\pgfmath@def{acos}{434}{64.27832}    \pgfmath@def{acos}{435}{64.21470}
+\pgfmath@def{acos}{436}{64.15105}    \pgfmath@def{acos}{437}{64.08737}
+\pgfmath@def{acos}{438}{64.02365}    \pgfmath@def{acos}{439}{63.95990}
+\pgfmath@def{acos}{440}{63.89611}    \pgfmath@def{acos}{441}{63.83229}
+\pgfmath@def{acos}{442}{63.76844}    \pgfmath@def{acos}{443}{63.70455}
+\pgfmath@def{acos}{444}{63.64062}    \pgfmath@def{acos}{445}{63.57666}
+\pgfmath@def{acos}{446}{63.51266}    \pgfmath@def{acos}{447}{63.44863}
+\pgfmath@def{acos}{448}{63.38456}    \pgfmath@def{acos}{449}{63.32045}
+\pgfmath@def{acos}{450}{63.25631}    \pgfmath@def{acos}{451}{63.19213}
+\pgfmath@def{acos}{452}{63.12792}    \pgfmath@def{acos}{453}{63.06367}
+\pgfmath@def{acos}{454}{62.99938}    \pgfmath@def{acos}{455}{62.93506}
+\pgfmath@def{acos}{456}{62.87070}    \pgfmath@def{acos}{457}{62.80630}
+\pgfmath@def{acos}{458}{62.74187}    \pgfmath@def{acos}{459}{62.67740}
+\pgfmath@def{acos}{460}{62.61289}    \pgfmath@def{acos}{461}{62.54834}
+\pgfmath@def{acos}{462}{62.48376}    \pgfmath@def{acos}{463}{62.41913}
+\pgfmath@def{acos}{464}{62.35447}    \pgfmath@def{acos}{465}{62.28977}
+\pgfmath@def{acos}{466}{62.22504}    \pgfmath@def{acos}{467}{62.16026}
+\pgfmath@def{acos}{468}{62.09545}    \pgfmath@def{acos}{469}{62.03059}
+\pgfmath@def{acos}{470}{61.96570}    \pgfmath@def{acos}{471}{61.90077}
+\pgfmath@def{acos}{472}{61.83580}    \pgfmath@def{acos}{473}{61.77079}
+\pgfmath@def{acos}{474}{61.70574}    \pgfmath@def{acos}{475}{61.64065}
+\pgfmath@def{acos}{476}{61.57552}    \pgfmath@def{acos}{477}{61.51035}
+\pgfmath@def{acos}{478}{61.44514}    \pgfmath@def{acos}{479}{61.37988}
+\pgfmath@def{acos}{480}{61.31459}    \pgfmath@def{acos}{481}{61.24926}
+\pgfmath@def{acos}{482}{61.18389}    \pgfmath@def{acos}{483}{61.11847}
+\pgfmath@def{acos}{484}{61.05302}    \pgfmath@def{acos}{485}{60.98752}
+\pgfmath@def{acos}{486}{60.92199}    \pgfmath@def{acos}{487}{60.85641}
+\pgfmath@def{acos}{488}{60.79078}    \pgfmath@def{acos}{489}{60.72512}
+\pgfmath@def{acos}{490}{60.65941}    \pgfmath@def{acos}{491}{60.59367}
+\pgfmath@def{acos}{492}{60.52787}    \pgfmath@def{acos}{493}{60.46204}
+\pgfmath@def{acos}{494}{60.39616}    \pgfmath@def{acos}{495}{60.33025}
+\pgfmath@def{acos}{496}{60.26428}    \pgfmath@def{acos}{497}{60.19828}
+\pgfmath@def{acos}{498}{60.13223}    \pgfmath@def{acos}{499}{60.06613}
+\pgfmath@def{acos}{500}{60.00000}    \pgfmath@def{acos}{501}{59.93381}
+\pgfmath@def{acos}{502}{59.86759}    \pgfmath@def{acos}{503}{59.80132}
+\pgfmath@def{acos}{504}{59.73500}    \pgfmath@def{acos}{505}{59.66864}
+\pgfmath@def{acos}{506}{59.60224}    \pgfmath@def{acos}{507}{59.53579}
+\pgfmath@def{acos}{508}{59.46929}    \pgfmath@def{acos}{509}{59.40275}
+\pgfmath@def{acos}{510}{59.33617}    \pgfmath@def{acos}{511}{59.26953}
+\pgfmath@def{acos}{512}{59.20285}    \pgfmath@def{acos}{513}{59.13613}
+\pgfmath@def{acos}{514}{59.06936}    \pgfmath@def{acos}{515}{59.00254}
+\pgfmath@def{acos}{516}{58.93568}    \pgfmath@def{acos}{517}{58.86876}
+\pgfmath@def{acos}{518}{58.80180}    \pgfmath@def{acos}{519}{58.73480}
+\pgfmath@def{acos}{520}{58.66774}    \pgfmath@def{acos}{521}{58.60064}
+\pgfmath@def{acos}{522}{58.53349}    \pgfmath@def{acos}{523}{58.46629}
+\pgfmath@def{acos}{524}{58.39905}    \pgfmath@def{acos}{525}{58.33175}
+\pgfmath@def{acos}{526}{58.26441}    \pgfmath@def{acos}{527}{58.19702}
+\pgfmath@def{acos}{528}{58.12957}    \pgfmath@def{acos}{529}{58.06208}
+\pgfmath@def{acos}{530}{57.99454}    \pgfmath@def{acos}{531}{57.92695}
+\pgfmath@def{acos}{532}{57.85931}    \pgfmath@def{acos}{533}{57.79162}
+\pgfmath@def{acos}{534}{57.72388}    \pgfmath@def{acos}{535}{57.65608}
+\pgfmath@def{acos}{536}{57.58824}    \pgfmath@def{acos}{537}{57.52035}
+\pgfmath@def{acos}{538}{57.45240}    \pgfmath@def{acos}{539}{57.38441}
+\pgfmath@def{acos}{540}{57.31636}    \pgfmath@def{acos}{541}{57.24826}
+\pgfmath@def{acos}{542}{57.18010}    \pgfmath@def{acos}{543}{57.11190}
+\pgfmath@def{acos}{544}{57.04364}    \pgfmath@def{acos}{545}{56.97533}
+\pgfmath@def{acos}{546}{56.90697}    \pgfmath@def{acos}{547}{56.83855}
+\pgfmath@def{acos}{548}{56.77008}    \pgfmath@def{acos}{549}{56.70156}
+\pgfmath@def{acos}{550}{56.63298}    \pgfmath@def{acos}{551}{56.56435}
+\pgfmath@def{acos}{552}{56.49567}    \pgfmath@def{acos}{553}{56.42693}
+\pgfmath@def{acos}{554}{56.35813}    \pgfmath@def{acos}{555}{56.28928}
+\pgfmath@def{acos}{556}{56.22038}    \pgfmath@def{acos}{557}{56.15141}
+\pgfmath@def{acos}{558}{56.08240}    \pgfmath@def{acos}{559}{56.01333}
+\pgfmath@def{acos}{560}{55.94420}    \pgfmath@def{acos}{561}{55.87501}
+\pgfmath@def{acos}{562}{55.80577}    \pgfmath@def{acos}{563}{55.73647}
+\pgfmath@def{acos}{564}{55.66712}    \pgfmath@def{acos}{565}{55.59770}
+\pgfmath@def{acos}{566}{55.52823}    \pgfmath@def{acos}{567}{55.45871}
+\pgfmath@def{acos}{568}{55.38912}    \pgfmath@def{acos}{569}{55.31947}
+\pgfmath@def{acos}{570}{55.24977}    \pgfmath@def{acos}{571}{55.18001}
+\pgfmath@def{acos}{572}{55.11019}    \pgfmath@def{acos}{573}{55.04030}
+\pgfmath@def{acos}{574}{54.97036}    \pgfmath@def{acos}{575}{54.90036}
+\pgfmath@def{acos}{576}{54.83030}    \pgfmath@def{acos}{577}{54.76018}
+\pgfmath@def{acos}{578}{54.69000}    \pgfmath@def{acos}{579}{54.61976}
+\pgfmath@def{acos}{580}{54.54945}    \pgfmath@def{acos}{581}{54.47909}
+\pgfmath@def{acos}{582}{54.40866}    \pgfmath@def{acos}{583}{54.33817}
+\pgfmath@def{acos}{584}{54.26762}    \pgfmath@def{acos}{585}{54.19701}
+\pgfmath@def{acos}{586}{54.12633}    \pgfmath@def{acos}{587}{54.05559}
+\pgfmath@def{acos}{588}{53.98479}    \pgfmath@def{acos}{589}{53.91392}
+\pgfmath@def{acos}{590}{53.84299}    \pgfmath@def{acos}{591}{53.77199}
+\pgfmath@def{acos}{592}{53.70093}    \pgfmath@def{acos}{593}{53.62981}
+\pgfmath@def{acos}{594}{53.55862}    \pgfmath@def{acos}{595}{53.48736}
+\pgfmath@def{acos}{596}{53.41604}    \pgfmath@def{acos}{597}{53.34466}
+\pgfmath@def{acos}{598}{53.27320}    \pgfmath@def{acos}{599}{53.20168}
+\pgfmath@def{acos}{600}{53.13010}    \pgfmath@def{acos}{601}{53.05844}
+\pgfmath@def{acos}{602}{52.98672}    \pgfmath@def{acos}{603}{52.91494}
+\pgfmath@def{acos}{604}{52.84308}    \pgfmath@def{acos}{605}{52.77115}
+\pgfmath@def{acos}{606}{52.69916}    \pgfmath@def{acos}{607}{52.62710}
+\pgfmath@def{acos}{608}{52.55497}    \pgfmath@def{acos}{609}{52.48276}
+\pgfmath@def{acos}{610}{52.41049}    \pgfmath@def{acos}{611}{52.33815}
+\pgfmath@def{acos}{612}{52.26574}    \pgfmath@def{acos}{613}{52.19326}
+\pgfmath@def{acos}{614}{52.12070}    \pgfmath@def{acos}{615}{52.04808}
+\pgfmath@def{acos}{616}{51.97538}    \pgfmath@def{acos}{617}{51.90261}
+\pgfmath@def{acos}{618}{51.82976}    \pgfmath@def{acos}{619}{51.75685}
+\pgfmath@def{acos}{620}{51.68386}    \pgfmath@def{acos}{621}{51.61080}
+\pgfmath@def{acos}{622}{51.53766}    \pgfmath@def{acos}{623}{51.46445}
+\pgfmath@def{acos}{624}{51.39117}    \pgfmath@def{acos}{625}{51.31781}
+\pgfmath@def{acos}{626}{51.24437}    \pgfmath@def{acos}{627}{51.17086}
+\pgfmath@def{acos}{628}{51.09728}    \pgfmath@def{acos}{629}{51.02361}
+\pgfmath@def{acos}{630}{50.94987}    \pgfmath@def{acos}{631}{50.87606}
+\pgfmath@def{acos}{632}{50.80216}    \pgfmath@def{acos}{633}{50.72819}
+\pgfmath@def{acos}{634}{50.65414}    \pgfmath@def{acos}{635}{50.58001}
+\pgfmath@def{acos}{636}{50.50580}    \pgfmath@def{acos}{637}{50.43152}
+\pgfmath@def{acos}{638}{50.35715}    \pgfmath@def{acos}{639}{50.28270}
+\pgfmath@def{acos}{640}{50.20818}    \pgfmath@def{acos}{641}{50.13357}
+\pgfmath@def{acos}{642}{50.05888}    \pgfmath@def{acos}{643}{49.98411}
+\pgfmath@def{acos}{644}{49.90926}    \pgfmath@def{acos}{645}{49.83432}
+\pgfmath@def{acos}{646}{49.75930}    \pgfmath@def{acos}{647}{49.68420}
+\pgfmath@def{acos}{648}{49.60902}    \pgfmath@def{acos}{649}{49.53375}
+\pgfmath@def{acos}{650}{49.45839}    \pgfmath@def{acos}{651}{49.38296}
+\pgfmath@def{acos}{652}{49.30743}    \pgfmath@def{acos}{653}{49.23182}
+\pgfmath@def{acos}{654}{49.15613}    \pgfmath@def{acos}{655}{49.08035}
+\pgfmath@def{acos}{656}{49.00448}    \pgfmath@def{acos}{657}{48.92852}
+\pgfmath@def{acos}{658}{48.85248}    \pgfmath@def{acos}{659}{48.77634}
+\pgfmath@def{acos}{660}{48.70012}    \pgfmath@def{acos}{661}{48.62381}
+\pgfmath@def{acos}{662}{48.54741}    \pgfmath@def{acos}{663}{48.47092}
+\pgfmath@def{acos}{664}{48.39434}    \pgfmath@def{acos}{665}{48.31767}
+\pgfmath@def{acos}{666}{48.24091}    \pgfmath@def{acos}{667}{48.16405}
+\pgfmath@def{acos}{668}{48.08710}    \pgfmath@def{acos}{669}{48.01006}
+\pgfmath@def{acos}{670}{47.93293}    \pgfmath@def{acos}{671}{47.85570}
+\pgfmath@def{acos}{672}{47.77838}    \pgfmath@def{acos}{673}{47.70096}
+\pgfmath@def{acos}{674}{47.62345}    \pgfmath@def{acos}{675}{47.54585}
+\pgfmath@def{acos}{676}{47.46814}    \pgfmath@def{acos}{677}{47.39034}
+\pgfmath@def{acos}{678}{47.31244}    \pgfmath@def{acos}{679}{47.23445}
+\pgfmath@def{acos}{680}{47.15635}    \pgfmath@def{acos}{681}{47.07816}
+\pgfmath@def{acos}{682}{46.99987}    \pgfmath@def{acos}{683}{46.92147}
+\pgfmath@def{acos}{684}{46.84298}    \pgfmath@def{acos}{685}{46.76439}
+\pgfmath@def{acos}{686}{46.68569}    \pgfmath@def{acos}{687}{46.60690}
+\pgfmath@def{acos}{688}{46.52800}    \pgfmath@def{acos}{689}{46.44899}
+\pgfmath@def{acos}{690}{46.36989}    \pgfmath@def{acos}{691}{46.29068}
+\pgfmath@def{acos}{692}{46.21136}    \pgfmath@def{acos}{693}{46.13194}
+\pgfmath@def{acos}{694}{46.05241}    \pgfmath@def{acos}{695}{45.97278}
+\pgfmath@def{acos}{696}{45.89304}    \pgfmath@def{acos}{697}{45.81319}
+\pgfmath@def{acos}{698}{45.73323}    \pgfmath@def{acos}{699}{45.65317}
+\pgfmath@def{acos}{700}{45.57299}    \pgfmath@def{acos}{701}{45.49271}
+\pgfmath@def{acos}{702}{45.41231}    \pgfmath@def{acos}{703}{45.33180}
+\pgfmath@def{acos}{704}{45.25118}    \pgfmath@def{acos}{705}{45.17045}
+\pgfmath@def{acos}{706}{45.08961}    \pgfmath@def{acos}{707}{45.00865}
+\pgfmath@def{acos}{708}{44.92757}    \pgfmath@def{acos}{709}{44.84638}
+\pgfmath@def{acos}{710}{44.76508}    \pgfmath@def{acos}{711}{44.68366}
+\pgfmath@def{acos}{712}{44.60212}    \pgfmath@def{acos}{713}{44.52046}
+\pgfmath@def{acos}{714}{44.43869}    \pgfmath@def{acos}{715}{44.35680}
+\pgfmath@def{acos}{716}{44.27478}    \pgfmath@def{acos}{717}{44.19265}
+\pgfmath@def{acos}{718}{44.11039}    \pgfmath@def{acos}{719}{44.02802}
+\pgfmath@def{acos}{720}{43.94552}    \pgfmath@def{acos}{721}{43.86289}
+\pgfmath@def{acos}{722}{43.78014}    \pgfmath@def{acos}{723}{43.69727}
+\pgfmath@def{acos}{724}{43.61427}    \pgfmath@def{acos}{725}{43.53115}
+\pgfmath@def{acos}{726}{43.44790}    \pgfmath@def{acos}{727}{43.36452}
+\pgfmath@def{acos}{728}{43.28101}    \pgfmath@def{acos}{729}{43.19737}
+\pgfmath@def{acos}{730}{43.11360}    \pgfmath@def{acos}{731}{43.02970}
+\pgfmath@def{acos}{732}{42.94567}    \pgfmath@def{acos}{733}{42.86151}
+\pgfmath@def{acos}{734}{42.77721}    \pgfmath@def{acos}{735}{42.69278}
+\pgfmath@def{acos}{736}{42.60821}    \pgfmath@def{acos}{737}{42.52351}
+\pgfmath@def{acos}{738}{42.43867}    \pgfmath@def{acos}{739}{42.35370}
+\pgfmath@def{acos}{740}{42.26858}    \pgfmath@def{acos}{741}{42.18333}
+\pgfmath@def{acos}{742}{42.09793}    \pgfmath@def{acos}{743}{42.01240}
+\pgfmath@def{acos}{744}{41.92672}    \pgfmath@def{acos}{745}{41.84090}
+\pgfmath@def{acos}{746}{41.75493}    \pgfmath@def{acos}{747}{41.66882}
+\pgfmath@def{acos}{748}{41.58257}    \pgfmath@def{acos}{749}{41.49617}
+\pgfmath@def{acos}{750}{41.40962}    \pgfmath@def{acos}{751}{41.32292}
+\pgfmath@def{acos}{752}{41.23607}    \pgfmath@def{acos}{753}{41.14908}
+\pgfmath@def{acos}{754}{41.06193}    \pgfmath@def{acos}{755}{40.97463}
+\pgfmath@def{acos}{756}{40.88717}    \pgfmath@def{acos}{757}{40.79956}
+\pgfmath@def{acos}{758}{40.71180}    \pgfmath@def{acos}{759}{40.62388}
+\pgfmath@def{acos}{760}{40.53580}    \pgfmath@def{acos}{761}{40.44756}
+\pgfmath@def{acos}{762}{40.35916}    \pgfmath@def{acos}{763}{40.27061}
+\pgfmath@def{acos}{764}{40.18189}    \pgfmath@def{acos}{765}{40.09300}
+\pgfmath@def{acos}{766}{40.00396}    \pgfmath@def{acos}{767}{39.91474}
+\pgfmath@def{acos}{768}{39.82537}    \pgfmath@def{acos}{769}{39.73582}
+\pgfmath@def{acos}{770}{39.64611}    \pgfmath@def{acos}{771}{39.55622}
+\pgfmath@def{acos}{772}{39.46617}    \pgfmath@def{acos}{773}{39.37594}
+\pgfmath@def{acos}{774}{39.28554}    \pgfmath@def{acos}{775}{39.19496}
+\pgfmath@def{acos}{776}{39.10421}    \pgfmath@def{acos}{777}{39.01328}
+\pgfmath@def{acos}{778}{38.92218}    \pgfmath@def{acos}{779}{38.83089}
+\pgfmath@def{acos}{780}{38.73942}    \pgfmath@def{acos}{781}{38.64777}
+\pgfmath@def{acos}{782}{38.55594}    \pgfmath@def{acos}{783}{38.46392}
+\pgfmath@def{acos}{784}{38.37171}    \pgfmath@def{acos}{785}{38.27932}
+\pgfmath@def{acos}{786}{38.18673}    \pgfmath@def{acos}{787}{38.09396}
+\pgfmath@def{acos}{788}{38.00100}    \pgfmath@def{acos}{789}{37.90784}
+\pgfmath@def{acos}{790}{37.81448}    \pgfmath@def{acos}{791}{37.72093}
+\pgfmath@def{acos}{792}{37.62719}    \pgfmath@def{acos}{793}{37.53324}
+\pgfmath@def{acos}{794}{37.43909}    \pgfmath@def{acos}{795}{37.34474}
+\pgfmath@def{acos}{796}{37.25019}    \pgfmath@def{acos}{797}{37.15542}
+\pgfmath@def{acos}{798}{37.06046}    \pgfmath@def{acos}{799}{36.96528}
+\pgfmath@def{acos}{800}{36.86989}    \pgfmath@def{acos}{801}{36.77429}
+\pgfmath@def{acos}{802}{36.67848}    \pgfmath@def{acos}{803}{36.58245}
+\pgfmath@def{acos}{804}{36.48621}    \pgfmath@def{acos}{805}{36.38974}
+\pgfmath@def{acos}{806}{36.29305}    \pgfmath@def{acos}{807}{36.19615}
+\pgfmath@def{acos}{808}{36.09901}    \pgfmath@def{acos}{809}{36.00165}
+\pgfmath@def{acos}{810}{35.90406}    \pgfmath@def{acos}{811}{35.80625}
+\pgfmath@def{acos}{812}{35.70820}    \pgfmath@def{acos}{813}{35.60991}
+\pgfmath@def{acos}{814}{35.51139}    \pgfmath@def{acos}{815}{35.41263}
+\pgfmath@def{acos}{816}{35.31364}    \pgfmath@def{acos}{817}{35.21440}
+\pgfmath@def{acos}{818}{35.11491}    \pgfmath@def{acos}{819}{35.01518}
+\pgfmath@def{acos}{820}{34.91520}    \pgfmath@def{acos}{821}{34.81497}
+\pgfmath@def{acos}{822}{34.71449}    \pgfmath@def{acos}{823}{34.61375}
+\pgfmath@def{acos}{824}{34.51276}    \pgfmath@def{acos}{825}{34.41150}
+\pgfmath@def{acos}{826}{34.30999}    \pgfmath@def{acos}{827}{34.20821}
+\pgfmath@def{acos}{828}{34.10616}    \pgfmath@def{acos}{829}{34.00385}
+\pgfmath@def{acos}{830}{33.90126}    \pgfmath@def{acos}{831}{33.79840}
+\pgfmath@def{acos}{832}{33.69526}    \pgfmath@def{acos}{833}{33.59184}
+\pgfmath@def{acos}{834}{33.48814}    \pgfmath@def{acos}{835}{33.38416}
+\pgfmath@def{acos}{836}{33.27989}    \pgfmath@def{acos}{837}{33.17533}
+\pgfmath@def{acos}{838}{33.07047}    \pgfmath@def{acos}{839}{32.96532}
+\pgfmath@def{acos}{840}{32.85988}    \pgfmath@def{acos}{841}{32.75413}
+\pgfmath@def{acos}{842}{32.64807}    \pgfmath@def{acos}{843}{32.54171}
+\pgfmath@def{acos}{844}{32.43504}    \pgfmath@def{acos}{845}{32.32806}
+\pgfmath@def{acos}{846}{32.22076}    \pgfmath@def{acos}{847}{32.11314}
+\pgfmath@def{acos}{848}{32.00520}    \pgfmath@def{acos}{849}{31.89693}
+\pgfmath@def{acos}{850}{31.78833}    \pgfmath@def{acos}{851}{31.67939}
+\pgfmath@def{acos}{852}{31.57012}    \pgfmath@def{acos}{853}{31.46051}
+\pgfmath@def{acos}{854}{31.35056}    \pgfmath@def{acos}{855}{31.24026}
+\pgfmath@def{acos}{856}{31.12961}    \pgfmath@def{acos}{857}{31.01860}
+\pgfmath@def{acos}{858}{30.90724}    \pgfmath@def{acos}{859}{30.79551}
+\pgfmath@def{acos}{860}{30.68341}    \pgfmath@def{acos}{861}{30.57095}
+\pgfmath@def{acos}{862}{30.45811}    \pgfmath@def{acos}{863}{30.34489}
+\pgfmath@def{acos}{864}{30.23128}    \pgfmath@def{acos}{865}{30.11729}
+\pgfmath@def{acos}{866}{30.00291}    \pgfmath@def{acos}{867}{29.88813}
+\pgfmath@def{acos}{868}{29.77294}    \pgfmath@def{acos}{869}{29.65736}
+\pgfmath@def{acos}{870}{29.54136}    \pgfmath@def{acos}{871}{29.42494}
+\pgfmath@def{acos}{872}{29.30810}    \pgfmath@def{acos}{873}{29.19084}
+\pgfmath@def{acos}{874}{29.07315}    \pgfmath@def{acos}{875}{28.95502}
+\pgfmath@def{acos}{876}{28.83645}    \pgfmath@def{acos}{877}{28.71743}
+\pgfmath@def{acos}{878}{28.59796}    \pgfmath@def{acos}{879}{28.47803}
+\pgfmath@def{acos}{880}{28.35763}    \pgfmath@def{acos}{881}{28.23677}
+\pgfmath@def{acos}{882}{28.11542}    \pgfmath@def{acos}{883}{27.99360}
+\pgfmath@def{acos}{884}{27.87128}    \pgfmath@def{acos}{885}{27.74847}
+\pgfmath@def{acos}{886}{27.62516}    \pgfmath@def{acos}{887}{27.50134}
+\pgfmath@def{acos}{888}{27.37700}    \pgfmath@def{acos}{889}{27.25214}
+\pgfmath@def{acos}{890}{27.12675}    \pgfmath@def{acos}{891}{27.00082}
+\pgfmath@def{acos}{892}{26.87434}    \pgfmath@def{acos}{893}{26.74731}
+\pgfmath@def{acos}{894}{26.61973}    \pgfmath@def{acos}{895}{26.49157}
+\pgfmath@def{acos}{896}{26.36283}    \pgfmath@def{acos}{897}{26.23351}
+\pgfmath@def{acos}{898}{26.10359}    \pgfmath@def{acos}{899}{25.97306}
+\pgfmath@def{acos}{900}{25.84193}    \pgfmath@def{acos}{901}{25.71017}
+\pgfmath@def{acos}{902}{25.57778}    \pgfmath@def{acos}{903}{25.44475}
+\pgfmath@def{acos}{904}{25.31106}    \pgfmath@def{acos}{905}{25.17671}
+\pgfmath@def{acos}{906}{25.04169}    \pgfmath@def{acos}{907}{24.90598}
+\pgfmath@def{acos}{908}{24.76958}    \pgfmath@def{acos}{909}{24.63247}
+\pgfmath@def{acos}{910}{24.49464}    \pgfmath@def{acos}{911}{24.35608}
+\pgfmath@def{acos}{912}{24.21678}    \pgfmath@def{acos}{913}{24.07672}
+\pgfmath@def{acos}{914}{23.93588}    \pgfmath@def{acos}{915}{23.79427}
+\pgfmath@def{acos}{916}{23.65185}    \pgfmath@def{acos}{917}{23.50863}
+\pgfmath@def{acos}{918}{23.36457}    \pgfmath@def{acos}{919}{23.21967}
+\pgfmath@def{acos}{920}{23.07391}    \pgfmath@def{acos}{921}{22.92728}
+\pgfmath@def{acos}{922}{22.77975}    \pgfmath@def{acos}{923}{22.63132}
+\pgfmath@def{acos}{924}{22.48195}    \pgfmath@def{acos}{925}{22.33164}
+\pgfmath@def{acos}{926}{22.18036}    \pgfmath@def{acos}{927}{22.02810}
+\pgfmath@def{acos}{928}{21.87483}    \pgfmath@def{acos}{929}{21.72053}
+\pgfmath@def{acos}{930}{21.56518}    \pgfmath@def{acos}{931}{21.40876}
+\pgfmath@def{acos}{932}{21.25124}    \pgfmath@def{acos}{933}{21.09260}
+\pgfmath@def{acos}{934}{20.93281}    \pgfmath@def{acos}{935}{20.77185}
+\pgfmath@def{acos}{936}{20.60969}    \pgfmath@def{acos}{937}{20.44630}
+\pgfmath@def{acos}{938}{20.28165}    \pgfmath@def{acos}{939}{20.11570}
+\pgfmath@def{acos}{940}{19.94844}    \pgfmath@def{acos}{941}{19.77982}
+\pgfmath@def{acos}{942}{19.60981}    \pgfmath@def{acos}{943}{19.43837}
+\pgfmath@def{acos}{944}{19.26546}    \pgfmath@def{acos}{945}{19.09105}
+\pgfmath@def{acos}{946}{18.91509}    \pgfmath@def{acos}{947}{18.73754}
+\pgfmath@def{acos}{948}{18.55835}    \pgfmath@def{acos}{949}{18.37748}
+\pgfmath@def{acos}{950}{18.19487}    \pgfmath@def{acos}{951}{18.01047}
+\pgfmath@def{acos}{952}{17.82423}    \pgfmath@def{acos}{953}{17.63609}
+\pgfmath@def{acos}{954}{17.44598}    \pgfmath@def{acos}{955}{17.25385}
+\pgfmath@def{acos}{956}{17.05962}    \pgfmath@def{acos}{957}{16.86322}
+\pgfmath@def{acos}{958}{16.66457}    \pgfmath@def{acos}{959}{16.46359}
+\pgfmath@def{acos}{960}{16.26020}    \pgfmath@def{acos}{961}{16.05430}
+\pgfmath@def{acos}{962}{15.84580}    \pgfmath@def{acos}{963}{15.63459}
+\pgfmath@def{acos}{964}{15.42057}    \pgfmath@def{acos}{965}{15.20360}
+\pgfmath@def{acos}{966}{14.98357}    \pgfmath@def{acos}{967}{14.76033}
+\pgfmath@def{acos}{968}{14.53374}    \pgfmath@def{acos}{969}{14.30364}
+\pgfmath@def{acos}{970}{14.06986}    \pgfmath@def{acos}{971}{13.83221}
+\pgfmath@def{acos}{972}{13.59049}    \pgfmath@def{acos}{973}{13.34447}
+\pgfmath@def{acos}{974}{13.09392}    \pgfmath@def{acos}{975}{12.83856}
+\pgfmath@def{acos}{976}{12.57811}    \pgfmath@def{acos}{977}{12.31225}
+\pgfmath@def{acos}{978}{12.04060}    \pgfmath@def{acos}{979}{11.76278}
+\pgfmath@def{acos}{980}{11.47834}    \pgfmath@def{acos}{981}{11.18676}
+\pgfmath@def{acos}{982}{10.88748}    \pgfmath@def{acos}{983}{10.57984}
+\pgfmath@def{acos}{984}{10.26309}    \pgfmath@def{acos}{985}{9.93636}
+\pgfmath@def{acos}{986}{9.59863}    \pgfmath@def{acos}{987}{9.24870}
+\pgfmath@def{acos}{988}{8.88512}    \pgfmath@def{acos}{989}{8.50614}
+\pgfmath@def{acos}{990}{8.10961}    \pgfmath@def{acos}{991}{7.69281}
+\pgfmath@def{acos}{992}{7.25224}    \pgfmath@def{acos}{993}{6.78328}
+\pgfmath@def{acos}{994}{6.27958}    \pgfmath@def{acos}{995}{5.73196}
+\pgfmath@def{acos}{996}{5.12640}    \pgfmath@def{acos}{997}{4.43922}
+\pgfmath@def{acos}{998}{3.62430}    \pgfmath@def{acos}{999}{2.56255}
+\pgfmath@def{acos}{1000}{0.00000}
+
+
+
+% Local Variables:
+% tab-width: 2
+% End:

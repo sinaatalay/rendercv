@@ -1,0 +1,558 @@
+% Copyright 2019 by Christophe Jorssen and Mark Wibrow
+% Copyright 2019 by Christian Feuersänger
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+%
+% $Id$
+%
+%
+% This is a library for a LUA math parser and LUA math operations.
+% Advantage compared to its TeX pendant:  it is FASTER and has HIGHER
+% ACCURACY.
+% Disadvantage: any function declared by means of
+% \pgfmathdeclarefunction is NOT automatically transported to the LUA
+% side (at the time of this writing).
+% LUA functions need to be defined by means of LUA code
+%
+% function pgfluamathfunctions.myoperation(a,b)
+%    return a*2*b
+% end
+%
+% this will automatically set up 'myoperation' for use in
+% \pgfluamathparse{myoperation(4,2)}
+%
+% The library has TWO use-cases which are more or less distinct: one
+% is to use LUA for all math function, but not for math expression
+% parsing -- this was still under control of the TeX math parser.
+% This approach works like the 'fpu' library.
+%
+% The second approach is to use LUA to parse all math expressions -
+% but if someone calls \pgfmathadd@{1}{2}, it would use the TeX
+% command. This approach is relatively lightweight because it does not
+% need to substitute all \pgfmath* macros.
+%
+% One can mix both modes.
+
+% *******************************************************************
+% Some luatex stuff. Should be put elsewhere (e.g. in
+% pgfutil-luatex-engine).
+
+\edef\pgfliblua@oldcatcodedoublequote{\the\catcode`\"}%
+\catcode`\"=12
+
+% We assume luatex version > 0.39:
+%   - \directlua <general text> will work
+%   - \directlua is the only luatex primitive that we can assume
+%     accessible without being prefixed by the format via
+%     tex.enableprimitives.
+% Ideas taken from the ifluatex package (Heiko Oberdiek)
+\let\pgfutil@ifluatex\iffalse
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname directlua\endcsname\relax
+\else
+  \expandafter\let\csname pgfutil@ifluatex\expandafter\endcsname
+    \csname iftrue\endcsname
+\fi
+
+\pgfutil@ifluatex
+  \let\pgfutil@directlua\directlua
+  \pgfutil@directlua{%
+    tex.enableprimitives('pgfutil@',{'luaescapestring'})}%
+\else
+  \def\pgfutil@directlua#1{}%
+  \def\pgfutil@luaescapestring#1{}%
+\fi
+
+\pgfutil@directlua{%
+  pgfluamathfunctions = require("pgf.luamath.functions")
+  pgfluamathparser = require("pgf.luamath.parser")}%
+
+
+% Patch some configuration macros such that the modifications are
+% available in LUA as well:
+\pgfkeys{
+    /pgf/trig format/deg/.add code={}{\directlua{pgfluamathfunctions.setTrigFormat("deg")}\aftergroup\pgfmath@settrigformat},
+    /pgf/trig format/rad/.add code={}{\directlua{pgfluamathfunctions.setTrigFormat("rad")}\aftergroup\pgfmath@settrigformat},
+}%
+% ... and reactivate the key:
+\pgfmathiftrigonometricusesdeg{%
+    \pgfkeys{/pgf/trig format/deg}%
+}{%
+    \pgfkeys{/pgf/trig format/rad}%
+}%
+
+% re-activates the current trig format. This is important after a TeX
+% group has been closed.
+\def\pgfmath@settrigformat{%
+    \pgfmathiftrigonometricusesdeg{%
+        \directlua{pgfluamathfunctions.setTrigFormat("deg")}%
+    }{%
+        \directlua{pgfluamathfunctions.setTrigFormat("rad")}%
+    }%
+}%
+
+\let\pgfmathsetseed@pgfbasic = \pgfmathsetseed
+\def\pgfmathsetseed#1{%
+    \pgfmathsetseed@pgfbasic{#1}%
+    \directlua{pgfluamathfunctions.setRandomSeed(pgfluamathfunctions.tonumber("\pgfmathresult"))}%
+}%
+
+% Patch 'declare function' such that it communicates the function
+% directly to LUA.
+\let\pgfmathnotifynewdeclarefunction@orig=\pgfmathnotifynewdeclarefunction
+\def\pgfmathnotifynewdeclarefunction#1#2#3{%
+    \pgfmathnotifynewdeclarefunction@orig{#1}{#2}{#3}%
+    %
+    % we have to check if '#3' contains control sequences.
+    % this is highly tricky as it may contain '#1'...
+    \begingroup
+        \toks0={#3}%
+        \xdef\pgf@marshal@glob{\the\toks0 }%
+    \endgroup
+    \pgfutil@command@to@string\pgf@marshal@glob\pgf@marshal
+    \expandafter\pgfutilifcontainsmacro\expandafter{\pgf@marshal}{%
+        \def\pgf@temp{1}%
+    }{%
+        \def\pgf@temp{0}%
+    }%
+    \if1\pgf@temp
+        % let lua produce an error when evaluating this function -- we cannot possibly expand the macro to its current state:
+        \directlua{pgfluamathparser.pushLocalExpressionFunction(%
+            "\pgfutil@luaescapestring{#1}",%
+            #2,%
+            "functionMustBeEvaluatedInTeX")}%
+    \else
+        \directlua{pgfluamathparser.pushLocalExpressionFunction(%
+            "\pgfutil@luaescapestring{#1}",%
+            #2,%
+            "\pgfutil@luaescapestring{#3}")}%
+    \fi
+    %
+    % ensure that the local function is removed at the end of the
+    % scope. To this end, we maintain a stack on the LUA side.
+    \aftergroup\pgfluamathparse@pop@local@function
+}%
+
+\def\pgfluamathparse@pop@local@function{%
+    \directlua{pgfluamathparser.popLocalExpressionFunction()}%
+}%
+
+% End of luatex stuff
+% *******************************************************************
+
+% Loading part: based on fpu library
+
+
+% if LUA failed to evaluate the expression, it will be evaluated in
+% TeX as fallback. This boolean defines if the error message shall be
+% shown or suppressed. The default is to suppress it and show any
+% resulting TeX errors.
+%
+% If LUA fails \pgfmathresult will be empty.
+%
+% This is actually only for debugging; it will be set implicitly when
+% activating/deactivating TeX fallback.
+\newif\ifpgfluamathshowerrormessage
+
+% Defines what happens if LUA failed to evaluate the expression: if
+% this is true, the TeX parser will be invoked as fallback.
+%
+% This happens
+% - for \chardef'ed boxes for which LUA lacks evaluation capabilities
+% - if the expression includes some function which is unavailable in
+%   LUA (defined only in TeX)
+% - some special cases which simply haven't been added to the LUA
+%   parser (yet).
+%   At the time of this writing, this includes
+% -- arrays created via '{}' and indexed with '[]'
+% -- strings with "<str>"
+% -- 'scalar' function
+% -- hex/octal/binary input
+\newif\ifpgfluamathenableTeXfallback
+
+\newif\ifpgfluamathcomputationactive
+\newif\ifpgfluamathparseractive
+
+\def\pgfluamath@makecomputationactive{%
+  \ifpgfluamathcomputationactive
+  \else
+    \pgfluamath@checkuninstallcmd%
+    \pgfluamath@install%
+    \pgfluamathcomputationactivetrue
+  \fi}%
+
+\def\pgfluamath@makecomputationinactive{%
+  \ifpgfluamathcomputationactive
+    \pgfluamath@uninstall%
+    \pgfluamathcomputationactivefalse
+  \fi}%
+
+\let\pgfluamath@pgfmathparse\pgfmathparse
+\def\pgfluamath@makeparseractive{%
+  \ifpgfluamathparseractive
+  \else
+    \let\pgfluamath@pgfmathparse\pgfmathparse
+    \let\pgfmathparse\pgfluamathparse
+    \let\pgfmath@iftrue=\pgfmathluamath@iftrue
+    \pgfluamathparseractivetrue
+  \fi}%
+
+\let\pgfmath@iftrue@basic=\pgfmath@iftrue
+
+\def\pgfluamath@makeparserinactive{%
+  \ifpgfluamathparseractive
+    \let\pgfmathparse\pgfluamath@pgfmathparse
+    \let\pgfmath@iftrue=\pgfmath@iftrue@basic
+    \pgfluamathparseractivefalse
+  \fi}%
+
+\pgfqkeys{/pgf}{%
+  % Enable lua-side computation of \pgfmathresult
+  % (will be deactivated after the current TeX group)
+  luamath/.is choice,
+  luamath/only computation/.code={%
+    \pgfutil@ifluatex
+      \pgfluamath@makecomputationactive
+      \pgfluamath@makeparserinactive
+    \else
+      \pgfmath@error{Sorry, you need the luaTeX engine to use the
+        luamath library}{}%
+    \fi},
+  luamath/parser and computation/.code={%
+    \pgfutil@ifluatex
+      \pgfluamath@makecomputationactive
+      \pgfluamath@makeparseractive
+    \else
+      \pgfmath@error{Sorry, you need the luaTeX engine to use the
+        luamath library}{}%
+    \fi},
+  luamath/off/.code={%
+    \pgfluamath@makecomputationinactive
+    \pgfluamath@makeparserinactive},
+  luamath/.default=only computation,
+  %
+  % activates ONLY the parser. This is fast and does not replace the
+  % \pgfmath* functions.
+  % @see |parser and computation| which also allows to write
+  % \pgfmathadd{1}{2} to call LUA
+  luamath/parser/.code={%
+    \pgfutil@ifluatex
+      \pgfluamath@makeparseractive
+    \else
+      \pgfmath@error{Sorry, you need the luaTeX engine to use the
+        luamath library}{}%
+    \fi
+  },
+    luamath/output format/.is choice,
+    luamath/output format/fixed/.code=    {\def\pgfluamath@outputformat@choice{0}},
+    % returns results for use in the FPU
+    luamath/output format/float/.code=    {\def\pgfluamath@outputformat@choice{1}},
+    luamath/output format/fixed,
+    % this is merely useful for debugging purposes, I guess.
+    luamath/show error message/.is if=pgfluamathshowerrormessage,
+    luamath/enable TeX fallback/.is choice,
+    luamath/enable TeX fallback/true/.code={\pgfluamathenableTeXfallbacktrue\pgfluamathshowerrormessagefalse},
+    luamath/enable TeX fallback/false/.code={\pgfluamathenableTeXfallbackfalse\pgfluamathshowerrormessagetrue},
+    luamath/enable TeX fallback/.default=true,
+    luamath/enable TeX fallback=true,
+}%
+
+\def\pgfluamath@uninstall@appendcmd#1{%
+  \expandafter\gdef\expandafter\pgfluamath@uninstall\expandafter{%
+    \pgfluamath@uninstall #1}}%
+
+% If the uninstall command is already assembled, it will skip the
+% uninstall assemblation.
+\def\pgfluamath@checkuninstallcmd{%
+  \pgfutil@ifundefined{pgfluamath@uninstall}{%
+    \global\let\pgfluamath@uninstall=\pgfutil@empty
+  }{%
+    % We already HAVE an uninstall command (prepared globally).
+    % So: don't waste time assembling one!
+    \def\pgfluamath@uninstall@appendcmd##1{}%
+    \def\pgfluamath@prepareuninstallcmd##1{}%
+  }%
+}%
+
+% This assembles an uninstall command globally ON FIRST USAGE.
+% See \pgfmathfloat@plots@checkuninstallcmd
+\def\pgfluamath@prepareuninstallcmd#1{%
+  \expandafter\global\expandafter\let
+    \csname pgfluamath@backup@\string#1\endcsname=#1%
+  \expandafter\gdef\expandafter\pgfluamath@uninstall\expandafter{%
+    \pgfluamath@uninstall
+    \expandafter\let\expandafter#1\csname pgfluamath@backup@\string#1\endcsname}%
+}%
+
+\def\pgfluamath@install@function#1=#2{%
+  \pgfluamath@prepareuninstallcmd{#1}%
+  \let#1=#2%
+}%
+
+\def\pgfluamath@install{%
+  \pgfluamath@install@function\pgfmathadd@=\pgfluamathadd@%
+  \pgfluamath@install@function\pgfmathsubtract@=\pgfluamathsubtract@%
+  \pgfluamath@install@function\pgfmathneg@=\pgfluamathneg@%
+  \pgfluamath@install@function\pgfmathmultiply@=\pgfluamathmultiply@%
+  \pgfluamath@install@function\pgfmath@iftrue=\pgfmathluamath@iftrue%
+  \pgfluamath@install@function\pgfmathdivide@=\pgfluamathdivide@%
+  % \pgfluamath@install@function\pgfmathdiv@=\pgfluamathdiv@%
+  \pgfluamath@install@function\pgfmathfactorial@=\pgfluamathfactorial@%
+  \pgfluamath@install@function\pgfmathsqrt@=\pgfluamathsqrt@%
+  % \pgfluamath@install@function\pgfmathpow@=\pgfluamathpow@%
+  \pgfluamath@install@function\pgfmathe@=\pgfluamathe@%
+  \pgfluamath@install@function\pgfmathexp@=\pgfluamathexp@%
+  \pgfluamath@install@function\pgfmathln@=\pgfluamathln@%
+  \pgfluamath@install@function\pgfmathlogten@=\pgfluamathlogten@%
+  % \pgfluamath@install@function\pgfmathlogtwo@=\pgfluamathlogtwo@%
+  \pgfluamath@install@function\pgfmathabs@=\pgfluamathabs@%
+  \pgfluamath@install@function\pgfmathmod@=\pgfluamathmod@%
+  \pgfluamath@install@function\pgfmathMod@=\pgfluamathMod@%
+  \pgfluamath@install@function\pgfmathround@=\pgfluamathround@%
+  \pgfluamath@install@function\pgfmathfloor@=\pgfluamathfloor@%
+  \pgfluamath@install@function\pgfmathceil@=\pgfluamathceil@%
+  % \pgfluamath@install@function\pgfmathint@=\pgfluamathint@%
+  % \pgfluamath@install@function\pgfmathfrac@=\pgfluamathfrac@%
+  % \pgfluamath@install@function\pgfmathreal@=\pgfluamathreal@%
+  \pgfluamath@install@function\pgfmathgcd@=\pgfluamathgcd@%
+  \pgfluamath@install@function\pgfmathisprime@=\pgfluamathisprime@%
+  \pgfluamath@install@function\pgfmathpi@=\pgfluamathpi@%
+  \pgfluamath@install@function\pgfmathrad@=\pgfluamathrad@%
+  \pgfluamath@install@function\pgfmathdeg@=\pgfluamathdeg@%
+  \pgfluamath@install@function\pgfmathsin@=\pgfluamathsin@%
+  \pgfluamath@install@function\pgfmathcos@=\pgfluamathcos@%
+  \pgfluamath@install@function\pgfmathtan@=\pgfluamathtan@%
+  \pgfluamath@install@function\pgfmathsec@=\pgfluamathsec@%
+  \pgfluamath@install@function\pgfmathcosec@=\pgfluamathcosec@%
+  \pgfluamath@install@function\pgfmathcot@=\pgfluamathcot@%
+  \pgfluamath@install@function\pgfmathasin@=\pgfluamathasin@%
+  \pgfluamath@install@function\pgfmathacos@=\pgfluamathacos@%
+  \pgfluamath@install@function\pgfmathatan@=\pgfluamathatan@%
+  \pgfluamath@install@function\pgfmathatantwo@=\pgfluamathatantwo@%
+  \pgfluamath@install@function\pgfmathmax@=\pgfluamathmax@%
+  \pgfluamath@install@function\pgfmathmin@=\pgfluamathmin@%
+  % \pgfluamath@install@function\pgfmath@pi=\pgfluamathpi@%
+  % \pgfluamath@install@function\pgfmathpi=\pgfluamathpi@%
+  % \pgfluamath@install@function\pgfmathe@=\pgfluamathe@%
+  % \pgfluamath@install@function\pgfmathe=\pgfluamathe@%
+  % \pgfluamath@install@function\pgfmathlessthan@=\pgfluamathlessthan@%
+  % \pgfluamath@install@function\pgfmathless@=\pgfluamathlessthan@%
+  % \pgfluamath@install@function\pgfmathgreaterthan@=\pgfluamathgreaterthan@%
+  % \pgfluamath@install@function\pgfmathgreater@=\pgfluamathgreaterthan@%
+  % \pgfluamath@install@function\pgfmathpow@=\pgfluamathpow@
+  \pgfluamath@install@function\pgfmathrand@=\pgfluamathrand@
+  \pgfluamath@install@function\pgfmathrand=\pgfluamathrand@
+  \pgfluamath@install@function\pgfmathrnd@=\pgfluamathrnd@
+  \pgfluamath@install@function\pgfmathrnd=\pgfluamathrnd@
+  % \pgfluamath@install@function\pgfmathtrue@=\pgfluamathtrue@
+  % \pgfluamath@install@function\pgfmathfalse@=\pgfluamathfalse@
+  % \pgfluamath@install@function\pgfmathnot@=\pgfluamathnot@
+  % \pgfluamath@install@function\pgfmathhex@=\pgfluamathhex@
+  % \pgfluamath@install@function\pgfmathHex@=\pgfluamathHex@
+  % \pgfluamath@install@function\pgfmathoct@=\pgfluamathoct@
+  % \pgfluamath@install@function\pgfmathbin@=\pgfluamathbin@
+  % \pgfluamath@install@function\pgfmathand@=\pgfluamathand@
+  % \pgfluamath@install@function\pgfmathor@=\pgfluamathor@
+  % \pgfluamath@install@function\pgfmathfactorial@=\pgfluamathfactorial@
+  % \pgfluamath@install@function\pgfmathveclen@=\pgfluamathveclen@
+  % \pgfluamath@install@function\pgfmathcosh@=\pgfluamathcosh@
+  % \pgfluamath@install@function\pgfmathsinh@=\pgfluamathsinh@
+  % \pgfluamath@install@function\pgfmathtanh@=\pgfluamathtanh@
+  % \pgfluamath@install@function@unimplemented{ceil}%
+  % \pgfluamath@install@function@unimplemented{frac}%
+  % \pgfluamath@install@function@unimplemented{log2}%
+  % \pgfluamath@install@function@unimplemented{log10}%
+  % \pgfluamath@install@function@unimplemented{equalto}%
+  % \pgfluamath@install@function@unimplemented{random}%
+  % \pgfluamath@install@function@unimplemented{setseed}%
+  % \pgfluamath@install@function@unimplemented{Mod}%
+  % \pgfluamath@install@function@unimplemented{real}%
+  % \pgfluamath@install@function@unimplemented{notequal}%
+  \pgfluamath@install@function\pgfmathreciprocal=\pgfluamathreciprocal%
+  \pgfluamath@install@function\pgfpointnormalised=\pgfluamathpointnormalised
+}%
+
+\def\pgfluamathgetresult#1{%
+  \edef\pgfmathresult{\pgfutil@directlua{tex.print(-1,#1)}}}%
+
+\def\pgfmathluamath@iftrue{%
+    \if 0\pgfluamath@outputformat@choice
+        \let\pgfmathluamath@@iftrue@v=\pgfluamathone
+    \else
+        \let\pgfmathluamath@@iftrue@v=\pgfluamathfloatone
+    \fi
+    \pgfmathluamath@iftrue@
+}%
+\def\pgfluamathone{1.0}%
+\def\pgfluamathfloatone{1Y1.0e+00]}%
+\def\pgfmathluamath@iftrue@#1#2{%
+    \ifx\pgfmathresult\pgfmathluamath@@iftrue@v
+        \def\pgfmath@next{#1}%
+    \else
+        \def\pgfmath@next{#2}%
+    \fi
+    \pgfmath@next
+}%
+
+\def\pgfluamathpi@{%
+  \pgfluamathgetresult{pgfluamathfunctions.pi()}}%
+\def\pgfluamathe@{%
+  \pgfluamathgetresult{pgfluamathfunctions.e()}}%
+\def\pgfluamathadd@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.add(#1,#2)}}%
+\def\pgfluamathsubtract@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.subtract(#1,#2)}}%
+\def\pgfluamathneg@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.neg(#1)}}%
+\def\pgfluamathmultiply@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.multiply(#1,#2)}}%
+\def\pgfluamathdivide@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.divide(#1,#2)}}%
+\def\pgfluamathabs@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.abs(#1)}}%
+\def\pgfluamathround@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.round(#1)}}%
+\def\pgfluamathfloor@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.floor(#1)}}%
+\def\pgfluamathceil@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.ceil(#1)}}%
+\def\pgfluamathgcd@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.gcd(#1,#2)}}%
+\def\pgfluamathisprime@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.isprime(#1)}}%
+\def\pgfluamathmax@#1{%
+  \pgfluamathgetresult{%
+    math.max(pgfluamathfunctions.split_braces_to_explist("#1"))}}%
+\def\pgfluamathmin@#1{%
+  \pgfluamathgetresult{%
+    math.min(pgfluamathfunctions.split_braces_to_explist("#1"))}}%
+\def\pgfluamathsin@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.Sin(#1)}}%
+\def\pgfluamathcos@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.Cos(#1)}}%
+\def\pgfluamathtan@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.Tan(#1)}}%
+\def\pgfluamathmod@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.mod(#1,#2)}}%
+\def\pgfluamathMod@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.Mod(#1,#2)}}%
+\def\pgfluamathrad@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.rad(#1)}}%
+\def\pgfluamathdeg@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.deg(#1)}}%
+\def\pgfluamathatan@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.aTan(#1)}}%
+\def\pgfluamathatantwo@#1#2{%
+  \pgfluamathgetresult{pgfluamathfunctions.aTan2(#1,#2)}}%
+\def\pgfluamathasin@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.aSin(#1)}}%
+\def\pgfluamathacos@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.aCos(#1)}}%
+\def\pgfluamathcot@#1{%
+  \pgfluamathgetresult{1/pgfluamathfunctions.Tan(#1)}}%
+\def\pgfluamathsec@#1{%
+  \pgfluamathgetresult{1/pgfluamathfunctions.Cos(#1)}}%
+\def\pgfluamathcosec@#1{%
+  \pgfluamathgetresult{1/pgfluamathfunctions.Sin(#1)}}%
+\def\pgfluamathexp@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.exp(#1)}}%
+\def\pgfluamathln@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.log(#1)}}%
+\def\pgfluamathlogten@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.log10(#1)}}%
+\def\pgfluamathsqrt@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.sqrt(#1)}}%
+\def\pgfluamathrnd@{%
+  \pgfluamathgetresult{pgfluamathfunctions.rnd()}}%
+\def\pgfluamathrand@{%
+  \pgfluamathgetresult{pgfluamathfunctions.rand(-1,1)}}%
+\def\pgfluamathfactorial@#1{%
+  \pgfluamathgetresult{pgfluamathfunctions.factorial(#1)}}%
+\def\pgfluamathreciprocal#1{%
+  \pgfluamathgetresult{1/#1}}%
+% \pgfluamath@install@function\pgfmath@pi=\pgfluamathpi@%
+% \pgfluamath@install@function\pgfmathpi=\pgfluamathpi@%
+% \pgfluamath@install@function\pgfmathe@=\pgfluamathe@%
+% \pgfluamath@install@function\pgfmathe=\pgfluamathe@%
+% \pgfluamath@install@function\pgfmathlessthan@=\pgfluamathlessthan@%
+% \pgfluamath@install@function\pgfmathless@=\pgfluamathlessthan@%
+% \pgfluamath@install@function\pgfmathgreaterthan@=\pgfluamathgreaterthan@%
+% \pgfluamath@install@function\pgfmathgreater@=\pgfluamathgreaterthan@%
+% \pgfluamath@install@function\pgfmathpow@=\pgfluamathpow@
+% \pgfluamath@install@function\pgfmathrand@=\pgfluamathrand@
+% \pgfluamath@install@function\pgfmathrand=\pgfluamathrand@
+% \pgfluamath@install@function\pgfmathrnd@=\pgfluamathrnd@
+% \pgfluamath@install@function\pgfmathrnd=\pgfluamathrnd@
+% \pgfluamath@install@function\pgfmathtrue@=\pgfluamathtrue@
+% \pgfluamath@install@function\pgfmathfalse@=\pgfluamathfalse@
+% \pgfluamath@install@function\pgfmathnot@=\pgfluamathnot@
+% \pgfluamath@install@function\pgfmathhex@=\pgfluamathhex@
+% \pgfluamath@install@function\pgfmathHex@=\pgfluamathHex@
+% \pgfluamath@install@function\pgfmathoct@=\pgfluamathoct@
+% \pgfluamath@install@function\pgfmathbin@=\pgfluamathbin@
+% \pgfluamath@install@function\pgfmathand@=\pgfluamathand@
+% \pgfluamath@install@function\pgfmathor@=\pgfluamathor@
+% \pgfluamath@install@function\pgfmathfactorial@=\pgfluamathfactorial@
+% \pgfluamath@install@function\pgfmathveclen@=\pgfluamathveclen@
+% \pgfluamath@install@function\pgfmathcosh@=\pgfluamathcosh@
+% \pgfluamath@install@function\pgfmathsinh@=\pgfluamathsinh@
+% \pgfluamath@install@function\pgfmathtanh@=\pgfluamathtanh@
+
+\def\pgfluamathpointnormalised#1{%
+  \pgf@process{#1}%
+  \pgfutil@directlua{%
+    pgfluamathfunctions.pointnormalised(%
+      \pgf@sys@tonumber{\pgf@x},\pgf@sys@tonumber{\pgf@y})}%
+  \ignorespaces}%
+
+% Parser
+
+\newif\ifpgfluamathunitsdeclared
+
+% true if and only if LUA failed to evaluate the expression and the
+% expression was evaluated by means of the TeX parser as fallback.
+%
+% This happens
+% - for \chardef'ed boxes for which LUA lacks evaluation capabilities
+% - if the expression includes some function which is unavailable in
+%   LUA (defined only in TeX)
+% - some special cases which simply haven't been added to the LUA
+%   parser (yet).
+%   At the time of this writing, this includes
+% -- arrays created via '{}' and indexed with '[]'
+% -- strings with "<str>"
+% -- 'scalar' function
+% -- hex/octal/binary input
+\newif\ifpgfluamathusedTeXfallback
+
+% Parses the math expression and defines \pgfmathresult and
+% \ifpgfmathunitsdeclared to contain the result.
+%
+% If \ifpgfluamathparseractive then the result is also assigned to
+% \pgfmathresult. Furthermore, if the expression cannot be evaluated (because LUA does not support
+% it), it will be evaluated by mean of TeX as fallback.
+%
+% @see \ifpgfluamathusedTeXfallback
+% @see \ifpgfluamathshowerrormessage
+\def\pgfluamathparse#1{%
+  \pgfluamathusedTeXfallbackfalse
+  \pgfutil@directlua{pgfluamathparser.texCallParser(
+    "\pgfutil@luaescapestring{#1}",
+    \pgfluamath@outputformat@choice,
+    \ifpgfluamathshowerrormessage true\else false\fi)%
+  }%
+  \ifx\pgfmathresult\pgfutil@empty
+      \ifpgfluamathenableTeXfallback
+         \pgfluamathusedTeXfallbacktrue
+         \pgfluamath@pgfmathparse{#1}%
+      \fi
+  \fi
+}%
+
+\catcode`\"=\pgfliblua@oldcatcodedoublequote
+\endinput

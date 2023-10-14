@@ -1,0 +1,132 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibraryfit.code.tex}
+
+\pgfqkeys{/tikz}{%
+  fit/.code=\tikz@lib@fit{#1},
+  rotate fit/.code={%
+    \pgfmathsetmacro\tikz@lib@fit@rotate{#1}%
+    \pgfkeysalso{/tikz/rotate=\tikz@lib@fit@rotate}%
+  },
+}%
+
+\def\tikz@lib@fit@rotate{0}%
+
+\def\tikz@lib@fit#1{%
+  \pgf@xb=-16000pt\relax%
+  \pgf@xa=16000pt\relax%
+  \pgf@yb=-16000pt\relax%
+  \pgf@ya=16000pt\relax%
+  %
+  % Now iterate over the coordinates
+  \tikz@lib@fit@scan#1\pgf@stop%
+  % Now, let's see what has happened
+  \ifdim\pgf@xa>\pgf@xa%
+    % Nothing... Ok, let's just ignore this.
+  \else%
+    % Ok, compute center and width and height
+    \pgf@x=\pgf@xb%
+    \advance\pgf@x by-\pgf@xa%
+    \pgf@y=\pgf@yb%
+    \advance\pgf@y by-\pgf@ya%
+    \advance\pgf@xa by.5\pgf@x%
+    \advance\pgf@ya by.5\pgf@y%
+    \ifdim\tikz@lib@fit@rotate pt=0pt\relax%
+      {%
+        \pgftransforminvert%
+        \pgf@pos@transform{\pgf@xa}{\pgf@ya}%
+        \global\pgf@xa\pgf@xa
+        \global\pgf@ya\pgf@ya
+      }
+    \else%
+      \pgf@xc=\pgf@x%
+      \pgf@yc=\pgf@y%
+      {%
+        \pgf@xc=\pgf@xa%
+        \pgf@yc=\pgf@ya%
+        \pgftransforminvert%
+        \pgf@pos@transform{\pgf@xc}{\pgf@yc}%
+        \pgftransformreset%
+        \pgftransformrotate{\tikz@lib@fit@rotate}%
+        \pgf@pos@transform{\pgf@xc}{\pgf@yc}%
+        \global\pgf@x=\pgf@xc%
+        \global\pgf@y=\pgf@yc%
+      }%
+      \pgf@xa=\pgf@x%
+      \pgf@ya=\pgf@y%
+      \pgf@x=\pgf@xc%
+      \pgf@y=\pgf@yc%
+    \fi%
+    \edef\tikz@node@at{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+    \pgfkeysalso{/tikz/anchor=center,/tikz/text badly centered}%
+    \pgfkeysalso{/tikz/text width/.expanded=\the\pgf@x}%
+    \pgf@x=\pgf@y%
+    \pgf@y=.5\pgf@y%
+    \pgfkeysalso{
+      /tikz/transform shape=false,
+      /tikz/text height/.expanded=\the\pgf@y-.5\dp\pgfnodeparttextbox,
+      /tikz/text depth/.expanded=\the\pgf@x-\noexpand\the\ht\pgfnodeparttextbox}%
+    \pgfkeysalso{every fit/.try}%
+  \fi%
+}%
+
+\def\tikz@lib@fit@scan{%
+  \pgfutil@ifnextchar\pgf@stop{\pgfutil@gobble}
+  {\tikz@scan@one@point\tikz@lib@fit@scan@handle}}%
+
+\def\tikz@lib@fit@scan@handle#1{%
+  \iftikz@shapeborder%
+    % Ok, fit all four external anchors, if they exist
+    \tikz@lib@fit@adjust{\pgfpointanchor{\tikz@shapeborder@name}{west}}%
+    \tikz@lib@fit@adjust{\pgfpointanchor{\tikz@shapeborder@name}{east}}%
+    \tikz@lib@fit@adjust{\pgfpointanchor{\tikz@shapeborder@name}{north}}%
+    \tikz@lib@fit@adjust{\pgfpointanchor{\tikz@shapeborder@name}{south}}%
+  \else%
+    \tikz@lib@fit@adjust{#1}%
+  \fi%
+  \tikz@lib@fit@scan%
+}%
+
+\def\tikz@lib@fit@adjust#1{%
+  \ifdim\tikz@lib@fit@rotate pt=0pt\relax%
+    \pgf@process{\pgfpointtransformed{#1}}%
+  \else%
+    {%
+      \pgf@process{\pgfpointtransformed{#1}}%
+      \pgf@xc=\pgf@x%
+      \pgf@yc=\pgf@y%
+      \pgfgettransform\tikz@lib@fit@transform%
+      \pgftransforminvert%
+      \pgf@pos@transform{\pgf@xc}{\pgf@yc}%
+      \pgftransformreset%
+      \pgftransformrotate{-\tikz@lib@fit@rotate}%
+      \pgf@pos@transform{\pgf@xc}{\pgf@yc}%
+      \pgfsettransform\tikz@lib@fit@transform%
+      \pgf@pos@transform{\pgf@xc}{\pgf@yc}%
+      \global\pgf@x=\pgf@xc%
+      \global\pgf@y=\pgf@yc%
+    }%
+  \fi%
+  \ifdim\pgf@x<\pgf@xa%
+    \pgf@xa=\pgf@x%
+  \fi%
+  \ifdim\pgf@y<\pgf@ya%
+    \pgf@ya=\pgf@y%
+  \fi%
+  \ifdim\pgf@x>\pgf@xb%
+    \pgf@xb=\pgf@x%
+  \fi%
+  \ifdim\pgf@y>\pgf@yb%
+    \pgf@yb=\pgf@y%
+  \fi%
+}%
+
+
+\endinput

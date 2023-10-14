@@ -1,0 +1,913 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+
+%
+% This file provides utility commands that are used throughout pgf.
+%
+% For most commands, the definition of these commands is just given
+% below. We cannot use the LaTeX definition of these commands since
+% LaTeX may not be the current format and since LaTeX packages tend to
+% redefine these commands.
+%
+% For some commands the actual definition of the format (like latex or
+% context) is to be preferred over the generic definition below. In
+% this case, the definition of the format is installed when the file
+% pgfutil-XXXX.tex is read, where XXXX is the format name (latex,
+% plain, or context).
+
+
+
+\catcode`\@=11\relax
+
+
+% Which format is loaded?
+\newif\ifpgfutil@format@is@latex
+\newif\ifpgfutil@format@is@plain
+\newif\ifpgfutil@format@is@context
+
+% Aliases
+
+\let\pgfutil@exp\romannumeral
+\chardef\pgfutil@exp@end=0
+
+% Simple stuff
+
+% \pgfutil@trimspaces{<token list>}
+%
+% Removes spaces on both sides of <token list>.  Same as trimspaces.sty
+\catcode`\Q=3
+\def\pgfutil@trimspaces#1{%
+  \romannumeral-`0\pgfutil@trimspaces@\noexpand#1Q Q}
+\def\pgfutil@trimspaces@#1 Q{\pgfutil@trimspaces@@#1Q}
+\def\pgfutil@trimspaces@@#1Q#2{#1}
+\catcode`\Q=11
+
+% \pgfutil@ifx{<token 1>}{<token 2>}{<true code>}{<false code>}
+%
+% This macro is expandable.
+\long\def\pgfutil@ifx#1#2{%
+  \ifx#1#2%
+    \expandafter\pgfutil@firstoftwo
+  \else
+    \expandafter\pgfutil@secondoftwo
+  \fi}
+
+% \pgfutil@ifstrequal{<lhs>}{<rhs>}{<true code>}{<false code>}
+%
+% Check if <lhs> and <rhs> are equal by string comparison
+%
+% This macro is expandable.
+\long\def\pgfutil@ifstrequal#1#2{%
+  \ifnum\pgfsys@strcmp{\pgfutil@unexpanded{#1}}{\pgfutil@unexpanded{#2}}=0
+    \expandafter\pgfutil@firstoftwo
+  \else
+    \expandafter\pgfutil@secondoftwo
+  \fi
+}
+
+% \pgfutil@ifxempty{<token 1>}{<true code>}{<false code>}
+%
+% Shortcut for \pgfutil@ifx\pgfutil@empty{<token 1>}{<true code>}{<false code>}
+%
+% This macro is expandable.
+\def\pgfutil@ifxempty{\pgfutil@ifx\pgfutil@empty}
+
+% pgfutil@ifempty
+%
+% Check if #1 is empty. No expansion is performed on #1.
+%
+% This macro is expandable.
+\long\def\pgfutil@ifempty#1{%
+  \if\relax\detokenize{#1}\relax
+    \expandafter\pgfutil@firstoftwo
+  \else
+    \expandafter\pgfutil@secondoftwo
+  \fi}
+
+% \pgfutil@ifundefined{<macro name with backslash>}
+%  {<is undefined code>}{<is defined code>}
+%
+% This will let #1 to \relax if it undefined.
+%
+% This macro is expandable.
+\def\pgfutil@ifundefined#1{%
+  \expandafter\pgfutil@ifx\csname#1\endcsname\relax}
+
+% A variant of \pgfutil@ifundefined which will NOT let #1 to \relax it
+% is undefined.
+\def\pgfutil@IfUndefined#1{%
+  \ifcsname#1\endcsname
+    \expandafter\pgfutil@secondoftwo
+  \else
+    \expandafter\pgfutil@firstoftwo
+  \fi
+}
+
+\long\def\pgfutil@firstofone#1{#1}
+\long\def\pgfutil@firstoftwo#1#2{#1}
+\long\def\pgfutil@secondoftwo#1#2{#2}
+\def\pgfutil@empty{}
+\long\def\pgfutil@gobble@until@relax#1\relax{}
+\long\def\pgfutil@gobble#1{}
+\long\def\pgfutil@gobbletwo#1#2{}
+\def\pgfutil@namedef#1{\expandafter\def\csname #1\endcsname}
+\def\pgfutil@namelet#1{\expandafter\pgfutil@@namelet\csname#1\endcsname}
+\def\pgfutil@@namelet#1#2{\expandafter\let\expandafter#1\csname#2\endcsname}
+\long\def\pgfutil@g@addto@macro#1#2{%
+  \begingroup
+    \pgfutil@toks@\expandafter{#1#2}%
+    \xdef#1{\the\pgfutil@toks@}%
+ \endgroup}
+\newif\ifpgfutil@tempswa
+\newif\ifpgfutil@tempswb
+
+% \pgfutil@pushmacro
+% \pgfutil@popmacro
+%
+% Macro stack.  Allows pushing a macro over \egroup.  Taken from ConTeXt
+
+\let\pgfutil@pushmacro@string\pgfutil@empty
+
+\def\pgfutil@pushmacro#1{%
+    \xdef\pgfutil@pushmacro@string{\string#1}%
+    \ifcsname pgfutil@pushedmacro@\pgfutil@pushmacro@string\endcsname\else
+        % \newcount is \outer in Plain
+        \csname newcount\expandafter\endcsname\csname pgfutil@pushedmacro@\pgfutil@pushmacro@string\endcsname
+    \fi
+    \global\advance\csname pgfutil@pushedmacro@\pgfutil@pushmacro@string\endcsname 1\relax
+    \global\expandafter\let\csname\the\csname pgfutil@pushedmacro@\pgfutil@pushmacro@string\endcsname\pgfutil@pushmacro@string\endcsname#1%
+}
+
+\def\pgfutil@popmacro#1{%
+    \xdef\pgfutil@pushmacro@string{\string#1}%
+    \expandafter\let\expandafter#1\csname\the\csname pgfutil@pushedmacro@\pgfutil@pushmacro@string\endcsname\pgfutil@pushmacro@string\endcsname
+    \global\advance\csname pgfutil@pushedmacro@\pgfutil@pushmacro@string\endcsname -1\relax
+}
+
+% pgfutil@ifnextchar
+
+\long\def\pgfutil@ifnextchar#1#2#3{%
+  \let\pgfutil@reserved@d=#1%
+  \def\pgfutil@reserved@a{#2}%
+  \def\pgfutil@reserved@b{#3}%
+  \futurelet\pgfutil@let@token\pgfutil@ifnch}
+\def\pgfutil@ifnch{%
+  \ifx\pgfutil@let@token\pgfutil@sptoken
+    \let\pgfutil@reserved@c\pgfutil@xifnch
+  \else
+    \ifx\pgfutil@let@token\pgfutil@reserved@d
+      \let\pgfutil@reserved@c\pgfutil@reserved@a
+    \else
+      \let\pgfutil@reserved@c\pgfutil@reserved@b
+    \fi
+  \fi
+  \pgfutil@reserved@c}
+{%
+  \def\:{\global\let\pgfutil@sptoken= } \:
+  \def\:{\pgfutil@xifnch} \expandafter\gdef\: {\futurelet\pgfutil@let@token\pgfutil@ifnch}
+}
+
+% pgfutil@ignorespaces
+
+\def\pgfutil@ignorespaces
+  {\ifx\pgfutil@let@token\pgfutil@sptoken
+     \expandafter\pgfutil@ignorespaces@helper
+   \else
+     \expandafter\pgfutil@next
+   \fi}
+
+{
+  \def\:{\pgfutil@ignorespaces@helper}
+  \expandafter\gdef\: {\futurelet\pgfutil@let@token\pgfutil@ignorespaces}
+}
+
+% pgfutil@in@
+
+\newif\ifpgfutil@in@
+
+% Usage:
+% \pgfutil@in@{one}{three two one}
+% \ifpgfutil@in@
+%     -> will be true!
+% \else
+% \fi
+%
+% \pgfutil@in@{,}{1234,456567}
+% \ifpgfutil@in@
+%     -> will be true!
+% \else
+% \fi
+\def\pgfutil@in@#1#2{%
+ \def\pgfutil@in@@##1#1##2##3\pgfutil@in@@{%
+  \ifx\pgfutil@in@##2\pgfutil@in@false\else\pgfutil@in@true\fi}%
+ \pgfutil@in@@#2#1\pgfutil@in@\pgfutil@in@@}
+
+
+% pgfutil@for
+
+\def\pgfutil@nnil{\pgfutil@nil}
+\def\pgfutil@fornoop#1\@@#2#3{}
+\long\def\pgfutil@for#1:=#2\do#3{%
+  \expandafter\def\expandafter\pgfutil@fortmp\expandafter{#2}%
+  \ifx\pgfutil@fortmp\pgfutil@empty \else
+    \expandafter\pgfutil@forloop#2,\pgfutil@nil,\pgfutil@nil\@@#1{#3}\fi}
+\long\def\pgfutil@forloop#1,#2,#3\@@#4#5{\def#4{#1}\ifx #4\pgfutil@nnil \else
+       #5\def#4{#2}\ifx #4\pgfutil@nnil \else#5\pgfutil@iforloop #3\@@#4{#5}\fi\fi}
+\long\def\pgfutil@iforloop#1,#2\@@#3#4{\def#3{#1}\ifx #3\pgfutil@nnil
+       \expandafter\pgfutil@fornoop \else
+      #4\relax\expandafter\pgfutil@iforloop\fi#2\@@#3{#4}}
+\def\pgfutil@tfor#1:={\pgfutil@tf@r#1 }
+\long\def\pgfutil@tf@r#1#2\do#3{\def\pgfutil@fortmp{#2}\ifx\pgfutil@fortmp\pgfutil@space\else
+    \pgfutil@tforloop#2\pgfutil@nil\pgfutil@nil\@@#1{#3}\fi}
+\long\def\pgfutil@tforloop#1#2\@@#3#4{\def#3{#1}\ifx #3\pgfutil@nnil
+       \expandafter\pgfutil@fornoop \else
+      #4\relax\expandafter\pgfutil@tforloop\fi#2\@@#3{#4}}
+
+\def\pgfutil@space{ }
+
+% pgfutil@IfFileExists
+
+\chardef\pgfutil@inputcheck0
+\def\pgfutil@IfFileExists#1#2#3{%
+  \openin\pgfutil@inputcheck=#1 %
+  \ifeof\pgfutil@inputcheck
+     #3\relax
+  \else
+    #2\relax
+  \fi
+  \closein\pgfutil@inputcheck}
+
+\def\pgfutil@InputIfFileExists#1#2#3{\pgfutil@IfFileExists{#1}{\input #1\relax#2}{#3}}%
+
+
+% pgfutil@loop (from plain.tex)
+
+\def\pgfutil@loop#1\pgfutil@repeat{\def\pgfutil@body{#1}\pgfutil@iterate}
+\def\pgfutil@iterate{\pgfutil@body \let\pgfutil@next\pgfutil@iterate \else\let\pgfutil@next\relax\fi \pgfutil@next}
+\let\pgfutil@repeat=\fi % this makes \loop...\if...\repeat skippable
+
+% \pgfutil@switch
+%
+% #1: comparison function of the form
+%     \comp{<lhs>}{<rhs>}{<true code>}{<false code>}
+%     Has to be expandable!
+% #2: lhs
+% #3: sequence of rhs-value pairs
+% #4: default statement in case of match
+% #5: default statement in case of no match
+%
+% Example:
+%
+% \pgfutil@switch\pgfutil@ifx\pgf@let@token{%
+%   {(}{\tikz@movetoabs}%)
+%   {+}{\tikz@movetorel}%
+%   {-}{\tikz@lineto}%
+% }{}{\tikz@expand}
+
+\let\pgfutil@scan@mark\relax
+\let\pgfutil@scan@stop\relax
+
+\long\def\pgfutil@switch#1#2#3#4#5{%
+  \pgfutil@exp
+  \pgfutil@switch@@{#1}%
+  {#2}#3% user-defined cases
+  {#2}{}% default case
+  \pgfutil@scan@mark{#4}% true code
+  \pgfutil@scan@mark{#5}% false code
+  \pgfutil@scan@stop
+}
+\long\def\pgfutil@switch@@#1#2#3#4{%
+  #1{#2}{#3}%
+    {\pgfutil@switch@end{#4}}%
+    {\pgfutil@switch@@{#1}{#2}}%
+}
+\long\def\pgfutil@switch@end#1#2#3\pgfutil@scan@mark#4#5\pgfutil@scan@stop{\pgfutil@exp@end#1#4}
+
+% aux-read-hook
+
+\let\pgfutil@aux@read@hook=\relax
+
+
+% Tokens for the end of the typesetting -- they will be added at the
+% end of every job (hopefully...).
+
+\newtoks\pgfutil@everybye
+
+
+%
+% PDF-Resource management -- might seem strange that this is here, but
+% it turns out to be the correct place since latex and context handle
+% this stuff quite differently
+%
+
+% Adding something to the pdf-resources:
+
+\def\pgfutil@addpdfresource@extgs#1{\pgf@sys@addpdfresource@extgs@plain{#1}}
+\def\pgfutil@addpdfresource@colorspaces#1{\pgf@sys@addpdfresource@colorspaces@plain{#1}}
+\def\pgfutil@addpdfresource@patterns#1{\pgf@sys@addpdfresource@patterns@plain{#1}}
+\def\pgfutil@setuppdfresources{\pgf@sys@setuppdfresources@plain}
+
+
+% Inserts the argument at the begin of the current page (hopefully)
+
+\let\pgfutil@insertatbegincurrentpage=\relax
+
+
+% Ragged left and ragged right
+
+\def\pgfutil@raggedright{\rightskip\z@ plus2em \spaceskip.3333em \xspaceskip.5em\relax}
+\def\pgfutil@raggedleft{\leftskip\z@ plus2em \rightskip\z@ \spaceskip.3333em \xspaceskip.5em\parfillskip0pt\relax}
+
+
+% Error Messages
+\def\pgfutil@packageerror#1#2#3{\errhelp{#3}\errmessage{Package #1 Error: #2}}
+\def\pgfutil@packagewarning#1#2{\immediate\write17{Package #1: Warning! #2.}}
+\def\pgferror#1{\pgfutil@packageerror{pgf}{#1}{}}
+\def\pgfwarning#1{\pgfutil@packagewarning{pgf}{#1}}
+
+
+% Library files inclusion
+
+
+% Include a library file.
+%
+% #1 = List of names of library file.
+%
+% Description:
+%
+% This command includes a list of library files. For each file X in the
+% list, the file pgflibraryX.code.tex is included, provided this has
+% not been done earlier.
+%
+% For the convenience of Context users, both round and square brackets
+% are possible for the argument.
+%
+% Example:
+%
+% \usepgflibrary{arrows}
+% \usepgflibrary[patterns,snakes]
+
+\def\usepgflibrary{\pgfutil@ifnextchar[{\use@pgflibrary}{\use@@pgflibrary}}%}
+\def\use@pgflibrary[#1]{\use@@pgflibrary{#1}}
+\def\use@@pgflibrary#1{%
+  \edef\pgf@list{#1}%
+  \pgfutil@for\pgf@temp:=\pgf@list\do{%
+    \expandafter\pgfkeys@spdef\expandafter\pgf@temp\expandafter{\pgf@temp}%
+    \ifx\pgf@temp\pgfutil@empty
+    \else
+      \expandafter\ifx\csname pgf@library@\pgf@temp @loaded\endcsname\relax%
+      \expandafter\let\csname pgf@library@\pgf@temp @loaded\endcsname=\pgfutil@empty%
+      \expandafter\edef\csname pgf@library@#1@atcode\endcsname{\the\catcode`\@}
+      \expandafter\edef\csname pgf@library@#1@barcode\endcsname{\the\catcode`\|}
+      \expandafter\edef\csname pgf@library@#1@dollarcode\endcsname{\the\catcode`\$}
+      \catcode`\@=11
+      \catcode`\|=12
+      \catcode`\$=3
+      \pgfutil@InputIfFileExists{pgflibrary\pgf@temp.code.tex}{}{%
+          \pgferror{I did not find the pgf library
+            '\pgf@temp'. I looked for the file named
+            pgflibrary\pgf@temp.code.tex, but could not find it in
+            the current texmf trees.}
+        }%
+      \catcode`\@=\csname pgf@library@#1@atcode\endcsname
+      \catcode`\|=\csname pgf@library@#1@barcode\endcsname
+      \catcode`\$=\csname pgf@library@#1@dollarcode\endcsname
+      \fi%
+    \fi
+  }%
+}
+
+
+% Include a module file.
+%
+% #1 = List of names of module files.
+%
+% Description:
+%
+% This command includes a list of module files. For each file X in the
+% list, the file pgfmoduleX.code.tex is included, provided this has
+% not been done earlier.
+%
+% For the convenience of Context users, both round and square brackets
+% are possible for the argument.
+%
+% Example:
+%
+% \usepgfmodule{matrix}
+
+\def\usepgfmodule{\pgfutil@ifnextchar[{\use@pgfmodule}{\use@@pgfmodule}}%}
+\def\use@pgfmodule[#1]{\use@@pgfmodule{#1}}
+\def\use@@pgfmodule#1{%
+  \edef\pgf@list{#1}%
+  \pgfutil@for\pgf@temp:=\pgf@list\do{%
+    \expandafter\ifx\csname pgf@module@\pgf@temp @loaded\endcsname\relax%
+      \expandafter\let\csname pgf@module@\pgf@temp @loaded\endcsname=\pgfutil@empty%
+      \expandafter\edef\csname pgf@module@#1@atcode\endcsname{\the\catcode`\@}
+      \expandafter\edef\csname pgf@module@#1@barcode\endcsname{\the\catcode`\|}
+      \expandafter\edef\csname pgf@module@#1@dollarcode\endcsname{\the\catcode`\$}
+      \catcode`\@=11
+      \catcode`\|=12
+      \catcode`\$=3
+      \input pgfmodule\pgf@temp.code.tex
+      \catcode`\@=\csname pgf@module@#1@atcode\endcsname
+      \catcode`\|=\csname pgf@module@#1@barcode\endcsname
+      \catcode`\$=\csname pgf@module@#1@dollarcode\endcsname
+    \fi%
+  }%
+}
+
+\def\pgfutilensuremath#1{%
+  \ifmmode#1\else$#1$\fi
+}
+
+
+%
+% Guess the driver:
+%
+
+\begingroup
+    \catcode`\"=12
+    \edef\pgf@loc@TMPa{"}%
+    %
+    % prepares file names by checking for double colons.
+    %
+    % If '#1' is a usual file name without anything fancy, \pgfretval
+    % will simply contain it. However, if '#1' contains double colons
+    % (introduces, for example, by pdftex because there are white
+    % spaces in '#1'), the routine
+    % - removes the double colons,
+    % - re-inserts them outside of the string.
+    %
+    % \pgfutilpreparefilename{file.tex} -> file.tex
+    % \pgfutilpreparefilename{"A file name".file} -> "A file name.file"
+    %
+    % The resulting file name is returned in '\pgfretval',
+    % furthermore, a *quoted* version of the file name is returned in
+    % \pgfretvalquoted. The latter result is to have some sort of
+    % output normalisation: if the file name as such contains double
+    % quotes, we don't want to insert another set of them.
+    %
+    % This special handling has the following purposes:
+    % 1. Both, treatment of white spaces and double colons is not
+    % properly defined in TeX. Thus, we should only work with them if
+    % necessary and maintain backwards compatibility as far as
+    % possible.
+    % 2. It *should* work if there are spaces.
+    %
+    \gdef\pgfutilpreparefilename#1{%
+        \begingroup
+            \ifnum\the\catcode`\"=13
+                \pgfutilconvertdcolon
+            \fi
+            \xdef\pgf@temp{#1}%
+        \endgroup
+        \expandafter\pgfutil@in@\expandafter"\expandafter{\pgf@temp}%
+        \ifpgfutil@in@
+            \def\pgf@loc@TMPa{\pgfutilstrreplace{"}{}}%
+            \expandafter\pgf@loc@TMPa\expandafter{\pgf@temp}%
+            \edef\pgfretval{"\pgfretval"}% re-insert quotes! Otherwise, TeX can't use the file name.
+            \let\pgfretvalquoted=\pgfretval
+        \else
+            \let\pgfretval=\pgf@temp
+            \edef\pgfretvalquoted{"\pgfretval"}%
+        \fi
+    }%
+    \catcode`\"=13
+    \xdef\pgfutilconvertdcolon{%
+        \noexpand\def\noexpand"{\pgf@loc@TMPa}%
+    }%
+\endgroup
+
+% Converts an arbitrary command (without arguments) to a string in which all characters
+% have category 12.
+%
+% #1: a macro name (which takes no arguments)
+% #2: a macro name which will be assigned to '#1' converted to string.
+%
+% This uses '\meaning#1' hackery.
+\def\pgfutil@command@to@string#1#2{%
+    \expandafter\pgfutil@command@to@string@@\meaning#1\pgfutil@EOI{#2}%
+}%
+\xdef\pgfutil@glob@TMPa{\meaning\pgfutil@empty}%
+\expandafter\def\expandafter\pgfutil@command@to@string@@\pgfutil@glob@TMPa#1\pgfutil@EOI#2{%
+    \def#2{#1}%
+}%
+\begingroup
+\catcode`\|=0
+\catcode`\\=12
+|gdef|pgfutil@backslash@as@other{\}%
+|endgroup
+
+% Checks if the token sequence #1 (unexpanded) contains a macro and
+% invokes #2 if so and #3 if not.
+\def\pgfutilifcontainsmacro#1#2#3{%
+    \def\pgf@marshal{#1}%
+    \pgfutil@command@to@string\pgf@marshal\pgf@marshal
+    \edef\pgf@marshal{\noexpand\pgfutil@in@{\pgfutil@backslash@as@other}{\pgf@marshal}}%
+    \pgf@marshal
+    \ifpgfutil@in@
+        \def\pgf@marshal{#2}%
+    \else
+        \def\pgf@marshal{#3}%
+    \fi
+    \pgf@marshal
+}%
+
+% Tests if string '#2' starts with pattern '#1'.
+%
+% If so, it executes #3 and defines \pgfretval to contain the
+% suffix which is not equal to #1. Otherwise it executes #4.
+\def\pgfutilifstartswith#1#2#3#4{%
+    \def\pgfutilifstartswith@ ##1#1##2\pgf@EOI{%
+        \def\pgfutil@tmp{##1}%
+        \ifx\pgfutil@tmp\pgfutil@empty
+            % Ah - a hit!
+            %
+            % define \pgfretval to be the suffix...
+            \def\pgfutil@tmp#1####1\pgf@EOI{%
+                \def\pgfretval{####1}%
+            }%
+            \pgfutil@tmp#2\pgf@EOI%
+            %
+            % ... and execute the <true> code:
+            #3\relax%
+        \else
+            % hm. No such prefix.
+            #4\relax%
+        \fi
+    }%
+    \pgfutilifstartswith@#2--#1\pgf@EOI%
+}%
+
+% Usage:
+% \pgfutilstrreplace{<token>}{<replacement>}{<string>}
+%
+% -> will assign the modified string into \pgfretval.
+%
+% #1: the string to search (one or more tokens)
+% #2: zero, one or more tokens which will be inserted instead of '#1'.
+% #3: the string to search in
+\long\def\pgfutilstrreplace#1#2#3{%
+    \def\pgfretval{}%
+    \long\def\pgfutil@search@and@replace@@##1#1##2\pgf@EOI{%
+        \expandafter\def\expandafter\pgfretval\expandafter{\pgfretval ##1#2}%
+        \pgfutil@search@and@replace@loop{#1}{##2}%
+    }%
+    \pgfutil@search@and@replace@loop{#1}{#3}%
+}
+\long\def\pgfutil@search@and@replace@loop#1#2{%
+    \pgfutil@in@{#1}{#2}%
+    \ifpgfutil@in@
+        \def\pgf@loc@TMPa{\pgfutil@search@and@replace@@ #2\pgf@EOI}%
+    \else
+        \expandafter\def\expandafter\pgfretval\expandafter{\pgfretval #2}%
+        \let\pgf@loc@TMPa=\relax
+    \fi
+    \pgf@loc@TMPa
+}%
+
+% Solves a linear equation system of size 2x2 using gauss elimination.
+%
+% It employs TeX register arithmetics to do so.
+% #1: should contain 4 sets of braces with matrix entries,
+%     {<a11>}{<a12>}
+%     {<a21>}{<a22>}
+%     where each entry should be a number without unit.
+%     It is acceptable if '#1' is a macro which expands to the expected
+%     format.
+% #2: should contain 2 sets of braces with the right-hand-side,
+%     {<r1>}{<r2>}
+%     where each entry should be a number without unit.
+%     It is acceptable if '#2' is a macro which expands to the expected
+%     format.
+%
+% It will assign \pgfmathresult to contain two sets of braces with the
+% result.
+%
+% Example:
+% \pgfutilsolvetwotwoleq{
+%     {0.24}{1}
+%     {-0.97}{0}
+% }{
+%     {-7}
+%     {18}
+% }
+% -> yields \pgfmathresult={−18.55618}{−2.54642}
+%
+% The algorithm employs column pivotisation.
+%
+% If the matrix is singular, the routine will return {}.
+\def\pgfutilsolvetwotwoleq#1#2{%
+    \begingroup
+        \dimendef\aa=0
+        \dimendef\ab=1
+        \dimendef\ba=2
+        \dimendef\bb=3
+        \dimendef\ra=4
+        \dimendef\rb=5
+        \dimendef\tmpa=6
+        \dimendef\tmpb=7
+        \edef\pgf@temp{#1}%
+        \expandafter\pgfutilsolvetwotwoleq@A\pgf@temp
+        \edef\pgf@temp{#2}%
+        \expandafter\pgfutilsolvetwotwoleq@r\pgf@temp
+        %
+        \pgfutilsolvetwotwoleq@ifislarger\aa\ba{%
+            % identity "permutation":
+            \def\Pa{a}%
+            \def\Pb{b}%
+        }{%
+            % permutation matrix: switch rows!
+            \def\Pa{b}%
+            \def\Pb{a}%
+        }%
+        % \pivot := 1/aa
+        \tmpa=\csname m\Pa a\endcsname pt %
+        \ifdim\tmpa<0pt \tmpa=-\tmpa\fi
+        \ifdim\tmpa<0.0001pt
+            % singular matrix!
+            \let\pgfmathresult=\pgfutil@empty
+        \else
+            \pgfmathreciprocal@
+                {\csname m\Pa a\endcsname}%
+            \let\pivot=\pgfmathresult
+            %
+            % \factor := 1/aa * ba
+            \csname \Pb a\endcsname=\pivot\csname \Pb a\endcsname
+            \edef\factor{\expandafter\pgf@sys@tonumber\csname \Pb a\endcsname}%
+            %
+            % bb -= ba/aa * ab
+            \tmpa=-\factor\csname \Pa b\endcsname
+            \advance\csname \Pb b\endcsname by\tmpa
+            %
+            % rb -= ba/aa * ra
+            \tmpa=-\factor\csname r\Pa\endcsname
+            \advance\csname r\Pb\endcsname by\tmpa
+            %
+            \tmpa=\csname \Pb b\endcsname%
+            \ifdim\tmpa<0pt \tmpa=-\tmpa\fi
+            \ifdim\tmpa<0.0001pt
+                % singular matrix!
+                \let\pgfmathresult=\pgfutil@empty
+            \else
+                % xb := rb / bb (the modified rb and modified bb!)
+                \pgfmathdivide@
+                    {\expandafter\pgf@sys@tonumber\csname r\Pb\endcsname}
+                    {\expandafter\pgf@sys@tonumber\csname \Pb b\endcsname}%
+                \expandafter\let\csname pgfmathresult\Pb\endcsname=\pgfmathresult
+                %
+                % ra := ra - xb * ab
+                \tmpa=\csname pgfmathresult\Pb\endcsname\csname \Pa b\endcsname
+                \advance\csname r\Pa\endcsname by-\tmpa
+                %
+                % xa := 1/aa * ra  (the modified ra!)
+                \tmpa=\pivot\csname r\Pa\endcsname
+                \expandafter\edef\csname pgfmathresult\Pa\endcsname{\pgf@sys@tonumber\tmpa}%
+                %
+                \edef\pgfmathresult{%
+                    {\csname pgfmathresult\Pa\endcsname}%
+                    {\csname pgfmathresult\Pb\endcsname}%
+                }%
+            \fi
+        \fi
+        \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}%
+
+\def\pgfutilsolvetwotwoleq@ifislarger#1#2#3#4{%
+    \tmpa=#1
+    \ifdim\tmpa<0pt
+        \multiply\tmpa by-1
+    \fi
+    \tmpb=#2
+    \ifdim\tmpb<0pt
+        \multiply\tmpb by-1
+    \fi
+    \ifdim\tmpa>\tmpb
+        #3%
+    \else
+        #4%
+    \fi
+}%
+
+\def\pgfutilsolvetwotwoleqfloat@ifislarger#1#2#3#4{%
+    \pgfmathfloatabs@{#1}\let\tmpa=\pgfmathresult
+    \pgfmathfloatabs@{#2}\let\tmpb=\pgfmathresult
+    \pgfmathfloatlessthan@{\tmpb}{\tmpa}%
+    \ifpgfmathfloatcomparison
+        #3%
+    \else
+        #4%
+    \fi
+}%
+\def\pgfutilsolvetwotwoleq@A#1#2#3#4{%
+    \def\maa{#1}\def\mab{#2}%
+    \def\mba{#3}\def\mbb{#3}%
+    \aa=#1pt \ab=#2pt
+    \ba=#3pt \bb=#4pt
+}
+\def\pgfutilsolvetwotwoleq@r#1#2{%
+    \ra=#1pt \rb=#2pt
+}%
+\def\pgfutilsolvetwotwoleqfloat@A#1#2#3#4{%
+    \pgfmathfloatparsenumber{#1}\let\maa=\pgfmathresult
+    \pgfmathfloatparsenumber{#2}\let\mab=\pgfmathresult
+    \pgfmathfloatparsenumber{#3}\let\mba=\pgfmathresult
+    \pgfmathfloatparsenumber{#4}\let\mbb=\pgfmathresult
+}
+\def\pgfutilsolvetwotwoleqfloat@r#1#2{%
+    \pgfmathfloatparsenumber{#1}\let\ra=\pgfmathresult
+    \pgfmathfloatparsenumber{#2}\let\rb=\pgfmathresult
+}%
+
+% Same as \pgfutilsolvetwotwoleq, but using floating point
+% arithmetics. The return value is still in fixed point.
+\def\pgfutilsolvetwotwoleqfloat#1#2{%
+    \begingroup
+        \pgfmathfloatcreate{1}{1.0}{-4}% FIXME : use a smaller threshold for FPU?
+        \let\thresh=\pgfmathresult
+        %
+        \edef\pgf@temp{#1}%
+        \expandafter\pgfutilsolvetwotwoleqfloat@A\pgf@temp
+        \edef\pgf@temp{#2}%
+        \expandafter\pgfutilsolvetwotwoleqfloat@r\pgf@temp
+        %
+        \pgfutilsolvetwotwoleqfloat@ifislarger\maa\mba{%
+            % identity "permutation":
+            \def\Pa{a}%
+            \def\Pb{b}%
+        }{%
+            % permutation matrix: switch rows!
+            \def\Pa{b}%
+            \def\Pb{a}%
+        }%
+        % \pivot := 1/aa
+        \expandafter\pgfmathfloatabs@\expandafter{\csname m\Pa a\endcsname}%
+        \let\tmpa=\pgfmathresult
+        \pgfmathfloatlessthan@{\tmpa}{\thresh}%
+        \ifpgfmathfloatcomparison
+            % singular matrix!
+            \let\pgfmathresult=\pgfutil@empty
+        \else
+            \expandafter\pgfmathfloatreciprocal@\expandafter{\csname m\Pa a\endcsname}%
+            \let\pivot=\pgfmathresult
+            %
+            % \factor := 1/aa * ba
+            \expandafter\pgfmathfloatmultiply@\expandafter{\csname m\Pb a\endcsname}{\pivot}%
+            \let\factor=\pgfmathresult
+            \expandafter\let\csname m\Pb a\endcsname=\factor
+            %
+            % bb -= ba/aa * ab
+            \expandafter\pgfmathfloatmultiply@\expandafter{\csname m\Pa b\endcsname}{\factor}%
+            \let\tmpa=\pgfmathresult
+            \expandafter\pgfmathfloatsubtract@\expandafter{\csname m\Pb b\endcsname}{\tmpa}%
+            \expandafter\let\csname m\Pb b\endcsname=\pgfmathresult
+            %
+            % rb -= ba/aa * ra
+            \expandafter\pgfmathfloatmultiply@\expandafter{\csname r\Pa\endcsname}{\factor}%
+            \let\tmpa=\pgfmathresult
+            \expandafter\pgfmathfloatsubtract@\expandafter{\csname r\Pb\endcsname}{\tmpa}%
+            \expandafter\let\csname r\Pb\endcsname=\pgfmathresult
+            %
+            \expandafter\pgfmathfloatabs@\expandafter{\csname m\Pb b\endcsname}%
+            \let\tmpa=\pgfmathresult
+            \pgfmathfloatlessthan@{\tmpa}{\thresh}%
+            \ifpgfmathfloatcomparison
+                % singular matrix!
+                \let\pgfmathresult=\pgfutil@empty
+            \else
+                % xb := rb / bb (the modified rb and modified bb!)
+                \edef\pgf@marshal{%
+                    \noexpand\pgfmathfloatdivide@
+                        {\csname r\Pb\endcsname}
+                        {\csname m\Pb b\endcsname}%
+                }%
+                \pgf@marshal
+                \expandafter\let\csname pgfmathresult\Pb\endcsname=\pgfmathresult
+                \let\tmpa=\pgfmathresult
+                %
+                % ra := ra - xb * ab
+                \expandafter\pgfmathfloatmultiply@\expandafter{\csname m\Pa b\endcsname}{\tmpa}%
+                \let\tmpa=\pgfmathresult
+                \expandafter\pgfmathfloatsubtract@\expandafter{\csname r\Pa\endcsname}{\tmpa}%
+                \expandafter\let\csname r\Pa\endcsname=\pgfmathresult
+                %
+                % xa := 1/aa * ra  (the modified ra!)
+                \expandafter\pgfmathfloatmultiply@\expandafter{\csname r\Pa\endcsname}{\pivot}%
+                \expandafter\let\csname pgfmathresult\Pa\endcsname=\pgfmathresult
+                %
+                \edef\pgfmathresult{%
+                    {\csname pgfmathresult\Pa\endcsname}%
+                    {\csname pgfmathresult\Pb\endcsname}%
+                }%
+                \expandafter\pgfutilsolvetwotwoleqfloat@to@pgf@range\pgfmathresult
+            \fi
+        \fi
+        \pgfmath@smuggleone\pgfmathresult
+    \endgroup
+}%
+
+
+\def\pgfutilsolvetwotwoleqfloat@to@pgf@range#1#2{%
+    \pgfmathfloatcreate{1}{1.6}{4}\let\pgfutilsolvetwotwoleqfloat@to@pgf@range@max=\pgfmathresult
+    \pgfmathfloatabs@{#1}%
+    \expandafter\pgfmathfloatlessthan@\expandafter{\pgfmathresult}{\pgfutilsolvetwotwoleqfloat@to@pgf@range@max}%
+    \ifpgfmathfloatcomparison
+        \pgfmathfloatabs@{#2}%
+        \expandafter\pgfmathfloatlessthan@\expandafter{\pgfmathresult}{\pgfutilsolvetwotwoleqfloat@to@pgf@range@max}%
+        \ifpgfmathfloatcomparison
+            % ok.
+            \pgfmathfloattofixed{#1}\let\tmpa=\pgfmathresult
+            \pgfmathfloattofixed{#2}%
+            \edef\pgfmathresult{{\tmpa}{\pgfmathresult}}%
+        \else
+            % singular (because PGF cannot represent its result
+            \let\pgfmathresult=\pgfutil@empty
+        \fi
+    \else
+        % singular (because PGF cannot represent its result
+        \let\pgfmathresult=\pgfutil@empty
+    \fi
+}%
+
+% there are funny programs which overwrite \read and \write (like
+% tabularx).
+\let\pgfutil@write=\write
+\let\pgfutil@read=\read
+
+% curtesy for latex:
+\let\pgfutil@protect\relax
+
+% Used by latex for doing reruns
+% #1 = an internal label
+% #2 = a to-be-tested text
+\def\pgfutil@check@rerun#1#2{}
+
+% new tempdims:
+\newdimen\pgfutil@tempdima
+\newdimen\pgfutil@tempdimb
+
+
+% luatex stuff
+% We assume luatex version > 0.39:
+%   - \directlua <general text> will work
+%   - \directlua is the only luatex primitive that we can assume
+%     accessible without being prefixed by the format via
+%     tex.enableprimitives.
+% Ideas taken from the ifluatex package (Heiko Oberdiek)
+\let\pgfutil@ifluatex\iffalse
+\begingroup\expandafter\expandafter\expandafter\endgroup
+\expandafter\ifx\csname directlua\endcsname\relax
+\else
+  \expandafter\let\csname pgfutil@ifluatex\expandafter\endcsname
+    \csname iftrue\endcsname
+\fi
+
+\pgfutil@ifluatex
+  \let\pgfutil@directlua\directlua
+  \pgfutil@directlua{%
+    tex.enableprimitives('pgfutil@',{'luaescapestring'})}
+\else
+  \def\pgfutil@directlua#1{}
+  \def\pgfutil@luaescapestring#1{}
+\fi
+
+
+\def\pgfutil@shellescape@lua@eightseven#1{%
+    \pgfutil@directlua{os.execute("\pgfutil@luaescapestring{#1}")}%
+}%
+\def\pgfutil@shellescape#1{%
+    \immediate\write18{#1}%
+}%
+\pgfutil@IfUndefined{directlua}{%
+}{%
+    \pgfutil@IfUndefined{lastsavedimageresourcepages}{%
+        % Ah - an old version of luatex. It still supports \write18
+    }{%
+        % take the new variant...
+        \let\pgfutil@shellescape=\pgfutil@shellescape@lua@eightseven
+    }%
+}%
+
+% End of luatex stuff
+
+% Advances a number stored in a macro and writes the result back into
+% the macro.
+% #1 is a macro containing a number.
+\def\pgfutil@advancestringcounter#1{%
+    \begingroup
+        \c@pgf@counta=#1\relax
+        \advance\c@pgf@counta by1
+        \edef#1{\the\c@pgf@counta}%
+        \pgfmath@smuggleone#1%
+    \endgroup
+}%
+
+\endinput

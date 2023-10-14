@@ -1,0 +1,1074 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbbreakable.code.tex: Code for breakable colorboxes
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\tcb@set@library@version{6.1.0}
+
+\RequirePackage{pdfcol}
+\pdfcolInitStack{tcb@breakable}
+
+\newif\iftcb@usecolorstack
+
+\let\tcb@parboxrestore@true=\tcb@parboxrestore
+\let\tcb@parboxrestore@false\tcb@parbox@false@settings
+
+% total height for boxes smaller than 0.4375\maxdimen and 0.4375\maxdimen else (ca 2.5m)
+\def\tcb@defToTotalHeightBreakable#1#2{%
+  \ifnum\ht#2<0\relax%
+    \edef#1{7168pt}%
+  \else\ifnum\ht#2<469762048\relax%
+    \tcbdimto#1{\ht#2+\dp#2}%
+  \else%
+    \edef#1{7168pt}%
+  \fi\fi%
+}
+
+\newbox\tcb@testbox
+
+% for oversized boxes height is detected as \textheight or larger
+\def\tcb@defToTotalHeightUnlimited#1#2{%
+  \tcb@defToTotalHeightBreakable#1#2%
+  \ifdim\dimexpr#1<\textheight\relax%
+    \edef\tcb@thevfuzz{\the\vfuzz}%
+    \edef\tcb@thevbadness{\the\vbadness}%
+    \vfuzz=\maxdimen\vbadness=10000%
+    \splittopskip=0pt%
+    \splitmaxdepth=0pt%
+    \savingvdiscards=1%
+    \setbox\tcb@testbox=\vsplit#2 to \textheight%
+    \vbadness=\tcb@thevbadness\vfuzz=\tcb@thevfuzz%
+    \ifdim\wd#2=0pt\relax%
+      \tcb@swap{#2}{\tcb@testbox}%
+      \tcbdimto#1{\ht#2+\dp#2}%
+    \else%
+      \setbox#2=\vbox{%
+        \unvbox\tcb@testbox%
+        \splitdiscards%
+        \unvbox#2}%
+      \edef#1{7168pt}%
+    \fi%
+    \savingvdiscards=0%
+  \fi%
+}
+
+\def\tcb@@break{\par\xleaders\vbox{\rule{0pt}{2\textheight}}\vskip 2\textheight\par}
+
+
+% #1 box
+% #2 width
+% #3 color (for color stack)
+\def\tcb@vbox#1#2#3{%
+  \edef\reserved@a{%
+    \endgroup%
+    \setbox#1\vbox{\hsize=#2%
+      \begingroup\aftergroup}%
+      \def\noexpand\@currenvir{\@currenvir}%
+      \def\noexpand\@currenvline{\on@line}}%
+  \reserved@a%
+  \@endpefalse%
+  \global\@newlistfalse%
+  \let\tcbbreak\tcb@@break%
+  \iftcb@usecolorstack%
+    \pdfcolSwitchStack{tcb@breakable}%
+  \fi%
+  \color@begingroup%
+  \textwidth\hsize%
+  \columnwidth\hsize%
+  \csname tcb@parboxrestore@\kvtcb@parbox\endcsname%
+  \def\@mpfn{mpfootnote}%
+  \def\thempfn{\thempfootnote}%
+  \c@mpfootnote\z@%
+  \let\@footnotetext\@mpfootnotetext%
+  \let\@listdepth\@mplistdepth \@mplistdepth\z@%
+  \@setminipage%
+  \color{#3}%
+  \tcb@hyph@fix%
+  \let\tcb@drawcolorbox\tcb@drawcolorbox@standalone%
+  \let\FN@pp@footnote\@empty% disable perpage mode of 'footmisc' package
+}
+
+\def\endtcb@vbox{%
+  \par%
+  \unskip%
+  \ifvoid\@mpfootins\else%
+    \vskip\skip\@mpfootins%
+    \normalcolor%
+    \footnoterule%
+    \unvbox\@mpfootins%
+  \fi%
+  \@minipagefalse%
+  \color@endgroup}
+
+% remaining height
+\def\tcb@comp@h@page{%
+  \tcb@breakat@next%
+  \ifdim\tcb@breakat@dim>0pt\relax%
+    \tcbdimto\tcb@h@page{\tcb@breakat@dim-\kvtcb@shrinkbreakgoal}%
+  \else%
+    \ifx\kvtcb@float\@empty\relax%
+      \iftcb@multicol%
+        \ifnum\c@tcbbreakpart>1\relax%
+          \tcbdimto\tcb@h@page{\@colroom}%
+        \else%
+          \ifdim\pagegoal=16383.99998pt\relax%
+            \tcbdimto\tcb@h@page{\@colroom}%
+          \else%
+            \@tempdima\pagetotal%
+            \@whiledim \@tempdima>\@colroom \do{\advance\@tempdima-\@colroom}%
+            \tcbdimto\tcb@h@page{\@colroom-\@tempdima}%
+          \fi%
+        \fi%
+      \else%
+        \ifdim\pagegoal=16383.99998pt\relax%
+          \tcbdimto\tcb@h@page{\vsize}% detects floating objects
+        \else%
+          \tcb@comp@compress%
+          \tcbdimto\tcb@h@page{\pagegoal-\pagetotal+\tcb@compress@height}%
+        \fi%
+      \fi%
+    \else%
+      \tcbdimto\tcb@h@page{\textheight}%
+    \fi%
+    \tcbdimto\tcb@h@page{\tcb@h@page+\tcb@breakat@dim-\kvtcb@shrinkbreakgoal}%
+  \fi%
+}
+
+\def\tcb@comp@h@total@standalone{%
+  \tcbdimto\tcb@h@padding{\kvtcb@bbtop@stand+\kvtcb@bbbottom@stand+\kvtcb@top@rule@stand+\kvtcb@bottom@rule@stand+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom}%
+  \tcbdimto\tcb@h@total{\tcb@h@padding+\tcb@h@padtitle+\tcb@h@upper+\tcb@h@segment+\tcb@h@lower}%
+}
+
+
+\newif\iftcb@final@box
+
+\def\tcb@check@for@final@box{%
+  \ifdim\tcb@h@total>\tcb@h@page\relax%
+    \iftcb@multicol%
+      \tcb@final@boxfalse%
+    \else%
+      \ifdim\tcb@h@total>\dimexpr\tcb@h@page+\kvtcb@enlargepage@flex\relax%
+        \tcb@final@boxfalse%
+      \else%
+        \tcbdimto\tcb@temp{\tcb@h@total-\tcb@h@page}%
+        \enlargethispage*{\tcb@temp}%
+        \tcbdimto\tcb@h@page{\tcb@h@page+\tcb@temp}%
+        \tcb@final@boxtrue%
+      \fi%
+    \fi%
+  \else%
+    \tcb@final@boxtrue%
+  \fi%
+}
+
+\def\tcb@following@title{%
+  \ifx\kvtcb@followingtitle\@empty\relax%
+    \tcb@hasTitlefalse%
+    \let\tcb@h@title=\tcb@zpt%
+    \let\tcb@h@padtitle=\tcb@zpt%
+  \else%
+    \tcb@hasTitletrue%
+    \tcbdimto\tcb@w@title{\tcb@innerwidth-\kvtcb@boxsep*2-\kvtcb@lefttitle-\kvtcb@righttitle}%
+    \begin{tcb@savebox}{\tcb@titlebox}{\tcb@w@title}{tcbcoltitle}\tcb@extras@followingtitle\kvtcb@fonttitle\kvtcb@haligntitle\kvtcb@followingtitle\end{tcb@savebox}%
+    \tcbdimto\tcb@h@title{\ht\tcb@titlebox+\dp\tcb@titlebox}%
+    \tcbdimto\tcb@h@padtitle{\kvtcb@title@rule+\kvtcb@boxsep*2+\kvtcb@toptitle+\kvtcb@bottomtitle+\tcb@h@title}%
+  \fi%
+}
+
+\newbox\tcb@totalupperbox
+\newbox\tcb@totallowerbox
+\newif\iftcb@break@allowed
+
+\def\tcb@enlbreak@next@final{%
+  \ifdim\dimexpr\tcb@enlbreak@dim=0pt\relax
+  \else%
+    \iftcb@multicol\else\enlargethispage{\tcb@enlbreak@dim}\fi%
+  \fi%
+}
+
+\def\tcb@enlbreak@next@scan#1/#2@{%
+  \def\temp@a{#2}%
+  \tcbdimto\tcb@enlbreak@dim{#1}%
+  \ifx\temp@a\@empty\relax%
+    \let\tcb@enlbreak@next=\tcb@enlbreak@next@final%
+  \else%
+     \edef\tcb@enlbreak@seq{\temp@a @}%
+  \fi%
+  \tcb@enlbreak@next@final%
+}
+
+\def\tcb@enlbreak@next@step{%
+  \edef\tcb@temp{\noexpand\tcb@enlbreak@next@scan\tcb@enlbreak@seq}%
+  \tcb@temp%
+}
+
+\def\tcb@enlbreak@init{%
+  \edef\tcb@enlbreak@seq{\kvtcb@enlargepage/@}%
+  \let\tcb@enlbreak@next=\tcb@enlbreak@next@step%
+  \tcb@enlbreak@next%
+}
+
+
+\def\tcb@breakat@next@scan#1/#2@{%
+  \def\temp@a{#2}%
+  \tcbdimto\tcb@breakat@dim{#1}%
+  \ifx\temp@a\@empty\relax%
+    \let\tcb@breakat@next=\@empty%
+  \else%
+     \edef\tcb@breakat@seq{\temp@a @}%
+  \fi%
+}
+
+\def\tcb@breakat@next@step{%
+  \edef\tcb@temp{\noexpand\tcb@breakat@next@scan\tcb@breakat@seq}%
+  \tcb@temp%
+}
+
+\def\tcb@breakat@init{%
+  \edef\tcb@breakat@seq{\kvtcb@breakatdim/@}%
+  \let\tcb@breakat@next=\tcb@breakat@next@step%
+}
+
+
+\newif\iftcb@multicol
+\newif\iftcb@vfillbeforefirst
+
+\def\tcb@do@nobreak@warning{%
+  \iftcb@ignorenobreak%
+    \tcb@warning{Using nobreak failed. You should set `ignore nobreak=false' to avoid this}%
+  \else%
+    \tcb@warning{Using nobreak failed. Try to enlarge `lines before break' or set page breaks manually}%
+  \fi%
+}
+
+\def\tcb@handle@nobreak{%
+  \tcb@enlbreak@init%
+  \tcb@breakat@init%
+  \tcb@comp@h@page%
+  \tcbdimto\tcb@h@page{\tcb@h@page-1.5\baselineskip-\parskip-\lineskip}% security surcharge
+  \tcb@comp@h@total@standalone%
+  \tcb@check@for@final@box%
+  \iftcb@final@box%
+  \else%
+    \ifdim\dimexpr\tcb@h@page-\tcb@h@padding-\tcb@h@padtitle<\kvtcb@breakminlines\baselineskip\relax%
+      \tcbdimto\tcb@h@page{\tcb@h@page+3.5\baselineskip+\parskip+\lineskip}%
+      \vspace{\tcb@h@page}%
+      {\parskip\z@\nointerlineskip\noindent}%
+      \vspace{-\tcb@h@page}%
+      \par%
+    \fi%
+  \fi%
+}
+
+\def\tcb@prepare@break@operation{%
+  \setcounter{tcbbreakpart}{0}%
+  \let\tcb@nobreak@warning\@empty%
+  \@ifundefined{columnbreak}{\tcb@multicolfalse}{%
+    \ifnum\doublecol@number>\z@\relax%
+      \tcb@multicoltrue%
+    \else%
+      \tcb@multicolfalse%
+    \fi}%
+  \ifx\kvtcb@float\@empty\relax%
+    \iftcb@nobreak%
+      \let\tcb@nobreak@warning\tcb@do@nobreak@warning%
+      \iftcb@ignorenobreak%
+        \kvtcb@beforebox%
+      \else%
+        \tcb@handle@nobreak%
+      \fi%
+    \else%
+      \kvtcb@beforebox%
+    \fi%
+    \def\kvtcb@beforebox{\parskip\z@\nointerlineskip\noindent}%
+    \noindent% applies parskip
+    \vskip\lineskip{\parskip\z@\par\vskip\z@}\bgroup\@nobreakfalse\addpenalty\z@\egroup% force update vertical list
+    \tcb@break@allowedtrue%
+    \tcb@enlbreak@init%
+  \else%
+    \tcb@break@allowedfalse%
+  \fi%
+}
+
+\def\tcb@height@fill@unbroken#1{%
+  \ifnum\c@tcblayer<2\relax%
+    \tcb@ignorenobreaktrue%
+    \tcb@prepare@break@operation%
+    \tcb@breakat@init%
+    \tcbset{compress page=#1}%
+    \tcb@comp@h@page%
+    \tcbset{height=\tcb@h@page-\kvtcb@bbtop@stand-\kvtcb@bbbottom@stand}%
+  \fi%
+}
+
+\def\tcb@height@fill@unbroken@normal{\tcb@height@fill@unbroken{none}}
+\def\tcb@height@fill@unbroken@compressed{\tcb@height@fill@unbroken{all}}
+
+\def\tcb@use@after@lastbox{\bgroup\tcb@after@lastbox\egroup}
+
+\def\tcb@drawcolorbox@breakable{%
+  \tcbdimto\kvtcb@topsep{\kvtcb@topsep}%
+  \tcb@prepare@break@operation%
+  \global\let\tcb@after@lastbox=\kvtcb@afterbox%
+  \let\kvtcb@afterbox=\@empty%
+  \begingroup%
+    \parskip\z@skip%
+    \parindent\z@%
+    \lineskip\z@skip%
+    \topskip\z@skip%
+    \tcb@parfillskip@check%
+    \tcb@split@start%
+  \endgroup%
+  \color{.}% hack for some special cases
+  \ifx\kvtcb@float\@empty\relax%
+    \aftergroup\tcb@use@after@lastbox%
+  \fi%
+}
+
+\def\tcb@split@pagebreak{%
+  \iftcb@multicol\columnbreak\else\pagebreak\fi%
+  \tcb@nobreak@warning%
+  \tcb@enlbreak@init\tcb@break@allowedfalse%
+}
+
+\def\tcb@split@start{%
+  \tcb@breakat@init%
+  \tcb@comp@h@page%
+  % height calculation
+  \tcb@comp@h@total@standalone%
+  %
+  \let\tcb@split@next=\relax%
+  \tcb@check@for@final@box%
+  \iftcb@final@box%
+    \tcb@drawcolorbox@standalone%
+  \else%
+    \iftcb@break@allowed%
+      \ifdim\dimexpr\tcb@h@page-\tcb@h@padding-\tcb@h@padtitle<\kvtcb@breakminlines\baselineskip\relax%
+        \tcb@split@pagebreak%
+        \tcb@comp@h@page%
+        \tcb@check@for@final@box%
+        \iftcb@final@box%
+          \tcb@drawcolorbox@standalone%
+        \else%
+          \let\tcb@split@next=\tcb@split@first%
+        \fi%
+      \else%
+        \let\tcb@split@next=\tcb@split@first%
+      \fi%
+    \else%
+      \let\tcb@split@next=\tcb@split@first%
+    \fi%
+  \fi%
+  \tcb@split@next%
+}
+
+
+\def\tcb@setbox#1#2#3{%
+  \setbox#1=\vbox{\unvbox#3}%
+  \ifdim\dimexpr\ht#1+\dp#1>#2\relax%
+    %\tcb@warning{Splitted box part too large by \the\dimexpr\ht#1+\dp#1-#2\relax}% switched off (99% useless/annoying)
+    \setbox#1=\vbox to\the\dimexpr#2-\dp#1\relax{\unvbox#1}%
+  \fi%
+}
+
+
+\def\tcb@setbox@upper#1#2{%
+  \tcb@setbox\tcb@upperbox{#1}{#2}%
+  \tcbdimto\tcb@h@upper{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+}
+
+\def\tcb@vsplit@upper{%
+  \setbox\tcb@upperbox=\vsplit\tcb@totalupperbox to\tcb@split@dim%
+  \edef\tcb@upper@box@badness{\the\badness}%
+}
+
+\def\tcb@split@upper@box@and@assemble{%
+  \vfuzz=\maxdimen\vbadness=10000\savingvdiscards=1%
+  \tcb@vsplit@upper%
+  \ifnum\tcb@upper@box@badness=1000000\relax%
+    \setbox\tcb@totalupperbox=\vbox{%
+      \unvbox\tcb@upperbox%
+      \splitdiscards%
+      \unvbox\tcb@totalupperbox}%
+  \else%
+    \tcb@setbox@upper{\tcb@split@dim}{\tcb@upperbox}%
+    \ifdim\dimexpr\tcb@h@upper=0pt\relax%
+      \setbox\tcb@totalupperbox=\vbox{%
+        \unvbox\tcb@upperbox%
+        \splitdiscards%
+        \unvbox\tcb@totalupperbox}%
+      \def\tcb@upper@box@badness{1000000}%
+    \fi%
+  \fi%
+  \vbadness=\tcb@thevbadness\vfuzz=\tcb@thevfuzz\savingvdiscards=0%
+}
+
+\def\tcb@split@upper@box{%
+  \vfuzz=\maxdimen\vbadness=10000%
+  \tcb@vsplit@upper%
+  \ifnum\tcb@upper@box@badness=1000000\relax%
+    \tcb@warning{The upper box part has become overfull}%
+  \fi%
+  \tcb@setbox@upper{\tcb@split@dim}{\tcb@upperbox}%
+  \vbadness=\tcb@thevbadness\vfuzz=\tcb@thevfuzz%
+}
+
+\def\tcb@setbox@lower#1#2{%
+  \tcb@setbox\tcb@lowerbox{#1}{#2}%
+  \tcbdimto\tcb@h@lower{\ht\tcb@lowerbox+\dp\tcb@lowerbox}%
+}
+
+\def\tcb@vsplit@lower{%
+  \setbox\tcb@lowerbox=\vsplit\tcb@totallowerbox to\tcb@split@dim%
+  \edef\tcb@lower@box@badness{\the\badness}%
+}
+
+\def\tcb@split@lower@box@and@assemble{%
+  \vfuzz=\maxdimen\vbadness=10000\savingvdiscards=1%
+  \tcb@vsplit@lower%
+  \ifnum\tcb@lower@box@badness=1000000\relax%
+    \setbox\tcb@totallowerbox=\vbox{%
+      \unvbox\tcb@lowerbox%
+      \splitdiscards%
+      \unvbox\tcb@totallowerbox}%
+  \else%
+    \tcb@setbox@lower{\tcb@split@dim}{\tcb@lowerbox}%
+    \ifdim\dimexpr\tcb@h@lower=0pt\relax%
+      \setbox\tcb@totallowerbox=\vbox{%
+        \unvbox\tcb@lowerbox%
+        \splitdiscards%
+        \unvbox\tcb@totallowerbox}%
+      \def\tcb@lower@box@badness{1000000}%
+    \fi%
+  \fi%
+  \vbadness=\tcb@thevbadness\vfuzz=\tcb@thevfuzz\savingvdiscards=0%
+}
+
+\def\tcb@split@lower@box{%
+  \vfuzz=\maxdimen\vbadness=10000%
+  \tcb@vsplit@lower%
+  \ifnum\tcb@lower@box@badness=1000000\relax%
+    \tcb@warning{The lower box part has become overfull}%
+  \fi%
+  \tcb@setbox@lower{\tcb@split@dim}{\tcb@lowerbox}%
+  \vbadness=\tcb@thevbadness\vfuzz=\tcb@thevfuzz%
+}
+
+% patch for luatex 0.95 (thanks to Jeremy Engel)
+\ifdefined\directlua
+  \RequirePackage{ifluatex}
+  \ifnum\luatexversion=95\relax
+  \def\tcb@vsplit@upper{%
+    \directlua{%
+      tex.savingvdiscards = 1
+      local vlist = tex.splitbox("tcb@totalupperbox", tex.sp("\tcb@split@dim"), "exactly")
+      tex.setbox("tcb@upperbox", vlist)
+      tex.savingvdiscards = 0
+    }%
+    \edef\tcb@upper@box@badness{\the\badness}%
+  }
+  \def\tcb@vsplit@lower{%
+    \directlua{%
+      tex.savingvdiscards = 1
+      local vlist = tex.splitbox("tcb@totallowerbox", tex.sp("\tcb@split@dim"), "exactly")
+      tex.setbox("tcb@lowerbox", vlist)
+      tex.savingvdiscards = 0
+    }%
+    \edef\tcb@lower@box@badness{\the\badness}%
+  }
+\fi\fi
+
+\def\tcb@split@setstate@first{%
+  \edef\tcb@split@state{first}%
+  \let\kvtcb@top@rule=\kvtcb@top@rule@stand%
+  \let\kvtcb@bottom@rule=\kvtcb@bottom@rule@break%
+  \let\kvtcb@bbtop=\kvtcb@bbtop@stand%
+  \let\kvtcb@bbbottom=\kvtcb@bbbottom@break%
+  \let\tcb@break@topsep=\tcb@zpt%
+  \let\tcb@break@bottomsep=\kvtcb@bottomsep%
+}
+
+\def\tcb@split@setstate@middle{%
+  \edef\tcb@split@state{middle}%
+  \let\kvtcb@top@rule=\kvtcb@top@rule@break%
+  \let\kvtcb@bottom@rule=\kvtcb@bottom@rule@break%
+  \let\kvtcb@bbtop=\kvtcb@bbtop@break%
+  \let\kvtcb@bbbottom=\kvtcb@bbbottom@break%
+  \let\tcb@break@topsep=\kvtcb@topsep%
+  \let\tcb@break@bottomsep=\kvtcb@bottomsep%
+}
+
+\def\tcb@split@setstate@last{%
+  \edef\tcb@split@state{last}%
+  \let\kvtcb@top@rule=\kvtcb@top@rule@break%
+  \let\kvtcb@bottom@rule=\kvtcb@bottom@rule@stand%
+  \let\kvtcb@bbtop=\kvtcb@bbtop@break%
+  \let\kvtcb@bbbottom=\kvtcb@bbbottom@stand%
+  \let\tcb@break@topsep=\kvtcb@topsep%
+  \let\tcb@break@bottomsep=\tcb@zpt%
+}
+
+
+\def\tcb@split@force@standalone{%
+  \tcb@comp@h@total@standalone%
+  \ifdim\tcb@h@total>\tcb@h@page\relax%
+    \tcbdimto\kvtcb@bbbottom@stand{\kvtcb@bbbottom@stand+\tcb@h@page-\tcb@h@total}%
+  \fi%
+}
+
+
+\def\tcb@split@break@to@start{%
+  \tcb@swap{\tcb@totalupperbox}{\tcb@upperbox}%
+  \tcb@swap{\tcb@totallowerbox}{\tcb@lowerbox}%
+  \tcbdimto\tcb@h@upper{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+  \tcbdimto\tcb@h@lower{\ht\tcb@lowerbox+\dp\tcb@lowerbox}%
+  \tcb@split@pagebreak%
+  \let\tcb@split@next=\tcb@split@start%
+}
+
+\def\tcb@split@first{%
+  \setcounter{tcbbreakpart}{1}%
+  \ifx\kvtcb@float\@empty\relax%
+    \iftcb@vfillbeforefirst%
+      \let\tcb@before@first=\vfill%
+    \else%
+    \let\tcb@before@first=\@empty%
+    \fi%
+    \let\tcb@before@middle=\@empty%
+    \let\tcb@before@last=\@empty%
+    \iftcb@multicol%
+      \long\def\tcb@after@first{\par}% using \columnbreak here kills multicols' algortihm sometimes
+      \long\def\tcb@after@middle{\par\vfill}%
+    \else%
+      \long\def\tcb@after@first{\par\pagebreak\tcb@enlbreak@next}%
+      \long\def\tcb@after@middle{\par\vfill\eject\tcb@enlbreak@next}%
+    \fi%
+    \let\tcb@after@last=\par%
+  \else%
+    \edef\tcb@before@first{\noexpand\tcb@float@env@begin{tcbfloat}[\kvtcb@float]\noexpand\kvtcb@everyfloat}%
+    \let\tcb@before@middle=\tcb@before@first%
+    \let\tcb@before@last=\tcb@before@first%
+    \let\tcb@after@first=\tcb@float@env@end%
+    \let\tcb@after@middle=\tcb@float@env@end%
+    \let\tcb@after@last=\tcb@float@env@end%
+  \fi%
+  %
+  \edef\kvtcb@skin@@first{\kvtcb@skin@first}%
+  \edef\kvtcb@skin@@middle{\kvtcb@skin@middle}%
+  \edef\kvtcb@skin@@last{\kvtcb@skin@last}%
+  %
+  \let\tcb@h@breaksep@first=\kvtcb@bottomsep%
+  \tcbdimto\tcb@h@breaksep@middle{\kvtcb@bottomsep+\kvtcb@topsep}%
+  \let\tcb@h@breaksep@last=\kvtcb@topsep%
+  \tcbdimto\tcb@h@padding@first{\kvtcb@bbtop@stand+\kvtcb@bbbottom@break+\kvtcb@top@rule@stand+\kvtcb@bottom@rule@break+\tcb@h@breaksep@first+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom}%
+  \tcbdimto\tcb@h@padding@middle{\kvtcb@bbtop@break+\kvtcb@bbbottom@break+\kvtcb@top@rule@break+\kvtcb@bottom@rule@break+\tcb@h@breaksep@middle+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom}%
+  \tcbdimto\tcb@h@padding@last{\kvtcb@bbtop@break+\kvtcb@bbbottom@stand+\kvtcb@top@rule@break+\kvtcb@bottom@rule@stand+\tcb@h@breaksep@last+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom}%
+  %
+  \tcb@split@setstate@first%
+  %
+  \splittopskip=0pt%
+  \splitmaxdepth=0pt%
+  \edef\tcb@thevfuzz{\the\vfuzz}%
+  \edef\tcb@thevbadness{\the\vbadness}%
+  %
+  \tcb@swap{\tcb@totalupperbox}{\tcb@upperbox}%
+  \tcb@swap{\tcb@totallowerbox}{\tcb@lowerbox}%
+  %
+  \let\tcb@split@next=\relax%
+  \tcbdimto\tcb@split@dim{\tcb@h@page-\tcb@h@padding@first-\tcb@h@padtitle}%
+  \ifdim\tcb@split@dim<\tcb@h@upper\relax%
+    %
+    %
+    \iftcb@break@allowed%
+      \tcb@split@upper@box@and@assemble%
+      \ifnum\tcb@upper@box@badness=1000000\relax%
+        \tcb@split@break@to@start%
+      \else%
+        \ifdim\wd\tcb@totalupperbox=0pt\relax%
+          \iftcb@lowerspace%
+            \tcb@sdraw@U%
+            \let\tcb@split@next=\tcb@split@SL%
+          \else%
+            \tcb@split@force@standalone%
+            \tcb@drawcolorbox@standalone%
+          \fi%
+        \else%
+          %\ifdim\dimexpr\tcb@h@upper=0pt\relax%
+          %  \tcb@warning{Discard zero height first box part due to break problems (possible loss of zero height content)}%
+          %  \tcb@split@break@to@start%
+          %\else%
+            \tcb@sdraw@U%
+            \let\tcb@split@next=\tcb@split@USL%
+          %\fi%
+        \fi%
+      \fi%
+    \else%
+      \tcb@split@upper@box%
+      \ifdim\wd\tcb@totalupperbox=0pt\relax%
+        \iftcb@lowerspace%
+          \tcb@sdraw@U%
+          \let\tcb@split@next=\tcb@split@SL%
+        \else%
+          \tcb@split@force@standalone%
+          \tcb@drawcolorbox@standalone%
+        \fi%
+      \else%
+        \tcb@sdraw@U%
+        \let\tcb@split@next=\tcb@split@USL%
+      \fi%
+    \fi%
+  \else%
+    \tcb@swap{\tcb@totalupperbox}{\tcb@upperbox}%
+    \iftcb@lowerspace%
+      \tcbdimto\tcb@split@dim{\tcb@split@dim-\tcb@h@upper-\tcb@h@segment}%
+      \ifdim\tcb@split@dim<\kvtcb@breakminlines\baselineskip\relax%
+        \tcb@sdraw@U%
+        \let\tcb@split@next=\tcb@split@SL%
+      \else
+        \tcb@split@lower@box@and@assemble%
+        \ifnum\tcb@lower@box@badness=1000000\relax%
+          \tcb@sdraw@U%
+          \let\tcb@split@next=\tcb@split@SL%
+        \else%
+          \ifdim\wd\tcb@totallowerbox=0pt\relax%
+            \tcb@split@force@standalone%
+            \tcb@drawcolorbox@standalone%
+          \else%
+            \tcb@sdraw@USL%
+            \let\tcb@split@next=\tcb@split@L%
+          \fi%
+        \fi%
+      \fi%
+    \else%
+      \tcb@split@force@standalone%
+      \tcb@drawcolorbox@standalone%
+    \fi%
+  \fi%
+  \tcb@split@next%
+}
+
+
+\def\tcb@split@force@last{%
+  \tcb@split@setstate@last%
+  \ifdim\tcb@h@total>\tcb@h@page\relax%
+    \gdef\tcb@after@lastbox{\clearpage}%
+    \tcbdimto\kvtcb@bbbottom{\kvtcb@bbbottom+\tcb@h@page-\tcb@h@total}%
+  \fi%
+}
+
+\def\tcb@nextbreakpart{%
+  \stepcounter{tcbbreakpart}%
+  \tcb@count@boxes%
+  \iftcb@checkpage%
+    \tcb@phantom@savepage%
+    \tcb@hasPhantomtrue%
+    \sbox\tcb@phantombox{\kvtcb@phantom}%
+    \let\kvtcb@phantom\@empty%
+  \fi%
+  \tcb@following@title%
+}
+
+
+\def\tcb@split@USL{%
+  \tcb@nextbreakpart%
+  \tcb@comp@h@page%
+  \tcb@defToTotalHeight\tcb@h@upper{\tcb@totalupperbox}%
+  \tcbdimto\tcb@h@total{\tcb@h@padding@last+\tcb@h@padtitle+\tcb@h@upper+\tcb@h@segment+\tcb@h@lower}%
+  %
+  \let\tcb@split@next=\relax%
+  \tcb@check@for@final@box%
+  \iftcb@final@box%
+    \tcb@split@setstate@last%
+    \tcb@setbox@upper{\tcb@h@upper}{\tcb@totalupperbox}%
+    \iftcb@lowerspace%
+      \tcb@setbox@lower{\tcb@h@lower}{\tcb@totallowerbox}%
+      \tcb@sdraw@USL%
+    \else
+      \tcb@sdraw@U%
+    \fi%
+  \else
+    \tcb@split@setstate@middle%
+    \tcbdimto\tcb@split@dim{\tcb@h@page-\tcb@h@padding@middle-\tcb@h@padtitle}%
+    \ifdim\tcb@split@dim<\tcb@h@upper\relax%
+      \tcb@split@upper@box%
+      \ifdim\wd\tcb@totalupperbox=0pt\relax%
+        \iftcb@lowerspace%
+          \tcb@sdraw@U%
+          \let\tcb@split@next=\tcb@split@SL%
+        \else%
+          \tcb@split@force@last%
+          \tcb@sdraw@U%
+        \fi%
+      \else%
+        \tcb@sdraw@U%
+        \let\tcb@split@next=\tcb@split@USL%
+      \fi%
+    \else%
+      \tcb@setbox@upper{\tcb@h@upper}{\tcb@totalupperbox}%
+      \iftcb@lowerspace%
+        \tcbdimto\tcb@split@dim{\tcb@split@dim-\tcb@h@upper-\tcb@h@segment}
+        \ifdim\tcb@split@dim<\kvtcb@breakminlines\baselineskip\relax%
+          \tcb@sdraw@U%
+          \let\tcb@split@next=\tcb@split@SL%
+        \else
+          \tcb@split@lower@box@and@assemble%
+          \ifnum\tcb@lower@box@badness=1000000\relax%
+            \tcb@sdraw@U%
+            \let\tcb@split@next=\tcb@split@SL%
+          \else%
+            \ifdim\wd\tcb@totallowerbox=0pt\relax%
+              \tcb@split@force@last%
+              \tcb@sdraw@USL%
+            \else%
+              \tcb@sdraw@USL%
+              \let\tcb@split@next=\tcb@split@L%
+            \fi%
+          \fi%
+        \fi%
+      \else%
+        \tcb@split@force@last%
+        \tcb@sdraw@U%
+      \fi%
+    \fi%
+  \fi%
+  \tcb@split@next%
+}
+
+
+\def\tcb@split@SL@displayed{%
+  \tcb@nextbreakpart%
+  \tcb@comp@h@page%
+  \let\tcb@h@upper=\tcb@zpt%
+  \tcb@defToTotalHeight\tcb@h@lower{\tcb@totallowerbox}%
+  \tcbdimto\tcb@h@total{\tcb@h@padding@last-\kvtcb@top-\kvtcb@boxsep+\tcb@h@padtitle+\tcb@h@segment+\tcb@h@lower}%
+  %
+  \let\tcb@split@next=\relax%
+  \tcb@check@for@final@box%
+  \iftcb@final@box%
+    \tcb@split@setstate@last%
+    \tcb@setbox@lower{\tcb@h@lower}{\tcb@totallowerbox}%
+    \tcb@sdraw@SL%
+  \else
+    \tcb@split@setstate@middle%
+    \tcbdimto\tcb@split@dim{\tcb@h@page-\tcb@h@padding@middle+\kvtcb@top+\kvtcb@boxsep-\tcb@h@padtitle-\tcb@h@segment}%
+    \tcb@split@lower@box%
+    \ifdim\wd\tcb@totallowerbox=0pt\relax%
+      \tcb@split@force@last%
+      \tcb@sdraw@SL%
+    \else
+      \tcb@sdraw@SL%
+      \let\tcb@split@next=\tcb@split@L%
+    \fi%
+  \fi%
+  \tcb@split@next%
+}
+
+
+\def\tcb@split@L{%
+  \tcb@nextbreakpart%
+  \tcb@comp@h@page%
+  \let\tcb@h@upper=\tcb@zpt%
+  \tcb@defToTotalHeight\tcb@h@lower{\tcb@totallowerbox}%
+  \tcbdimto\tcb@h@total{\tcb@h@padding@last+\tcb@h@padtitle+\tcb@h@lower}%
+  %
+  \let\tcb@split@next=\relax%
+  \tcb@check@for@final@box%
+  \iftcb@final@box%
+    \tcb@split@setstate@last%
+    \tcb@setbox@lower{\tcb@h@lower}{\tcb@totallowerbox}%
+    \tcb@sdraw@L%
+  \else
+    \tcb@split@setstate@middle%
+    \tcbdimto\tcb@split@dim{\tcb@h@page-\tcb@h@padding@middle-\tcb@h@padtitle}%
+    \tcb@split@lower@box%
+    \ifdim\wd\tcb@totallowerbox=0pt\relax%
+      \tcb@split@force@last%
+      \tcb@sdraw@L%
+    \else
+      \tcb@sdraw@L%
+      \let\tcb@split@next=\tcb@split@L%
+    \fi%
+  \fi%
+  \tcb@split@next%
+}
+
+
+\def\tcb@break@ch@fixed{%
+  \ifdim\tcb@natheight<\tcb@h@page\relax%
+    \tcbdimto\kvtcb@height@fixed{\tcb@h@page-\kvtcb@bbtop-\kvtcb@bbbottom}%
+    \tcb@ch@fixed%
+  \else%
+    \tcb@ch@natural%
+  \fi%
+}
+
+
+\def\tcb@sdraw@USL{%
+  \begingroup%
+  \tcbset{skin=\csname kvtcb@skin@@\tcb@split@state\endcsname}%
+  \csuse{tcb@extras@\tcb@split@state}%
+  \tcb@afteroptions@hook%
+  \def\tcbsegmentstate{1}%
+  \tcbdimto\tcb@natheight{\tcb@h@padtitle+\kvtcb@top@rule+\kvtcb@bottom@rule+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom+\tcb@h@upper+\tcb@h@segment+\tcb@h@lower+\csname tcb@h@breaksep@\tcb@split@state\endcsname}%
+  \csname tcb@break@ch@\tcb@split@state\endcsname%
+  \tcbdimto\tcb@innerheight{\tcb@height-\kvtcb@top@rule-\kvtcb@bottom@rule-\tcb@h@padtitle}%
+  \tcbdimto\tcbtextheight{\tcb@innerheight-\kvtcb@boxsep*2-\kvtcb@top-\kvtcb@bottom}%
+  \tcb@drawing@env@begin%
+    \tcb@extensions@preframe%
+     % draw frame and interior
+    \tcb@adraw@frame%
+    \tcb@adraw@interior%
+    \iftcb@lowerseparated%
+      \tcb@segmentation@code%
+    \fi%
+    \tcb@adraw@title%
+    \tcb@extensions@postframe%
+    % draw text boxes
+    \tcb@tdraw@title%
+    \tcb@tdraw@upper%
+    \tcb@tdraw@lower%
+    \tcb@extensions@final%
+  \tcb@drawing@env@end%
+  \endgroup%
+}
+
+
+\def\tcb@sdraw@U{%
+  \begingroup%
+  \tcbset{skin=\csname kvtcb@skin@@\tcb@split@state\endcsname}%
+  \csuse{tcb@extras@\tcb@split@state}%
+  \tcb@afteroptions@hook%
+  \def\tcbsegmentstate{0}%
+  \tcbdimto\tcb@natheight{\tcb@h@padtitle+\kvtcb@top@rule+\kvtcb@bottom@rule+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom+\tcb@h@upper+\csname tcb@h@breaksep@\tcb@split@state\endcsname}%
+  \csname tcb@break@ch@\tcb@split@state\endcsname%
+  \tcbdimto\tcb@innerheight{\tcb@height-\kvtcb@top@rule-\kvtcb@bottom@rule-\tcb@h@padtitle}%
+  \tcbdimto\tcbtextheight{\tcb@innerheight-\kvtcb@boxsep*2-\kvtcb@top-\kvtcb@bottom}%
+  \tcb@drawing@env@begin%
+    \tcb@extensions@preframe%
+    % draw frame and interior
+    \tcb@adraw@frame%
+    \tcb@adraw@interior%
+    \tcb@adraw@title%
+    \tcb@extensions@postframe%
+    % draw text boxes
+    \tcb@tdraw@title%
+    \tcb@tdraw@upper%
+    \tcb@extensions@final%
+  \tcb@drawing@env@end%
+  \endgroup%
+}
+
+
+\def\tcb@sdraw@SL{%
+  \begingroup%
+  \tcbset{skin=\csname kvtcb@skin@@\tcb@split@state\endcsname}%
+  \csuse{tcb@extras@\tcb@split@state}%
+  \tcb@afteroptions@hook%
+  \def\tcbsegmentstate{1}%
+  \tcbdimto\tcb@natheight{\tcb@h@padtitle+\kvtcb@top@rule+\kvtcb@bottom@rule+\kvtcb@bottom+\kvtcb@boxsep+\tcb@h@segment+\tcb@h@lower+\csname tcb@h@breaksep@\tcb@split@state\endcsname}%
+  \csname tcb@break@ch@\tcb@split@state\endcsname%
+  \tcbdimto\tcb@innerheight{\tcb@height-\kvtcb@top@rule-\kvtcb@bottom@rule-\tcb@h@padtitle}%
+  \tcbdimto\tcbtextheight{\tcb@innerheight-\kvtcb@boxsep*2-\kvtcb@top-\kvtcb@bottom}%
+  \tcb@drawing@env@begin%
+    \tcb@extensions@preframe%
+    % draw frame and interior
+    \tcb@adraw@frame%
+    \tcb@adraw@interior%
+    \iftcb@lowerseparated%
+      \tcb@segmentation@code%
+    \fi%
+    \tcb@adraw@title%
+    \tcb@extensions@postframe%
+    % draw text boxes
+    \tcb@tdraw@title%
+    \tcb@tdraw@lower%
+    \tcb@extensions@final%
+  \tcb@drawing@env@end%
+  \endgroup%
+}
+
+
+\def\tcb@sdraw@L{%
+  \begingroup%
+  \tcbset{skin=\csname kvtcb@skin@@\tcb@split@state\endcsname}%
+  \csuse{tcb@extras@\tcb@split@state}%
+  \tcb@afteroptions@hook%
+  \def\tcbsegmentstate{2}%
+  \tcbdimto\tcb@natheight{\tcb@h@padtitle+\kvtcb@top@rule+\kvtcb@bottom@rule+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom+\ht\tcb@lowerbox+\dp\tcb@lowerbox+\csname tcb@h@breaksep@\tcb@split@state\endcsname}%
+  \csname tcb@break@ch@\tcb@split@state\endcsname%
+  \tcbdimto\tcb@innerheight{\tcb@height-\kvtcb@top@rule-\kvtcb@bottom@rule-\tcb@h@padtitle}%
+  \tcbdimto\tcbtextheight{\tcb@innerheight-\kvtcb@boxsep*2-\kvtcb@top-\kvtcb@bottom}%
+  \tcb@drawing@env@begin%
+    \tcb@extensions@preframe%
+    % draw frame and interior
+    \tcb@adraw@frame%
+    \tcb@adraw@interior%
+    \tcb@adraw@title%
+    \tcb@extensions@postframe%
+    % draw text boxes
+    \tcb@tdraw@title%
+    \tcb@tdraw@lower%
+    \tcb@extensions@final%
+  \tcb@drawing@env@end%
+  \endgroup%
+}
+
+
+\def\tcb@init@breakable{%
+  \let\tcb@savebox=\tcb@vbox%
+  \let\endtcb@savebox=\endtcb@vbox%
+  \let\tcb@drawcolorbox=\tcb@drawcolorbox@breakable%
+  \iftcb@usecolorstack%
+    \def\tcb@upperdraw@begin@hook{\pdfcolSetCurrent{tcb@breakable}}%
+    \def\tcb@lowerdraw@begin@hook{\pdfcolSetCurrent{tcb@breakable}}%
+  \else%
+    \def\tcb@upperdraw@begin@hook{\color{tcbcolupper}}%
+    \def\tcb@lowerdraw@begin@hook{\color{tcbcollower}}%
+  \fi%
+}
+
+\tcbset{%
+  breakable@true/.code={%
+    \tcb@isbreakabletrue%
+    \tcb@sidebysidefalse%
+    \let\tcb@defToTotalHeight=\tcb@defToTotalHeightBreakable},
+  breakable@unlimited/.code={%
+    \tcb@isbreakabletrue%
+    \tcb@sidebysidefalse%
+    \let\tcb@defToTotalHeight=\tcb@defToTotalHeightUnlimited},
+  breakable/.style={breakable@#1},
+  breakable/.default=true,%
+  unbreakable/.style={breakable=false},%
+  enforce breakable/.code={%
+    \tcb@isbreakabletrue%
+    \tcb@sidebysidefalse%
+    \let\tcb@defToTotalHeight=\tcb@defToTotalHeightBreakable},
+  title after break/.store in=\kvtcb@followingtitle,%
+  notitle after break/.style={title after break=},%
+  adjusted title after break/.style={title after break={#1\vphantom{\kvtcb@adjusttext}}},%
+  lines before break/.store in=\kvtcb@breakminlines,%
+  shrink break goal/.store in=\kvtcb@shrinkbreakgoal,%
+  toprule at break/.store in=\kvtcb@top@rule@break,
+  bottomrule at break/.store in=\kvtcb@bottom@rule@break,
+  topsep at break/.store in=\kvtcb@topsep,%
+  bottomsep at break/.store in=\kvtcb@bottomsep,%
+  pad before break/.code={\let\kvtcb@bottom@rule@break=\tcb@zpt%
+    \tcbdimto\kvtcb@bottomsep{#1-\kvtcb@bottom-\kvtcb@boxsep}},%
+  pad before break*/.style={pad before break={#1},%
+    code={\tcbdimto\tcb@temp{\kvtcb@bottom@rule@stand-\kvtcb@bottomsep}%
+      \ifdim\tcb@temp>0pt\relax%
+        \tcbdimto\kvtcb@enlargepage@flex{\kvtcb@enlargepage@flex+\tcb@temp}\fi}},%
+  pad after break/.code={\let\kvtcb@top@rule@break=\tcb@zpt%
+    \def\kvtcb@topsep{#1-\kvtcb@top-\kvtcb@boxsep}},%
+  pad at break/.style={pad before break={#1},pad after break={#1}},%
+  pad at break*/.style={pad before break*={#1},pad after break={#1}},%
+  enlargepage/.store in=\kvtcb@enlargepage,%
+  enlargepage flexible/.store in=\kvtcb@enlargepage@flex,%
+  break at/.store in=\kvtcb@breakatdim,%
+  height fixed for/.is choice,%
+  height fixed for/none/.code={%
+    \let\tcb@break@ch@first=\tcb@ch@natural%
+    \let\tcb@break@ch@middle=\tcb@ch@natural%
+    \let\tcb@break@ch@last=\tcb@ch@natural},%
+  height fixed for/first/.code={%
+    \let\tcb@break@ch@first=\tcb@break@ch@fixed%
+    \let\tcb@break@ch@middle=\tcb@ch@natural%
+    \let\tcb@break@ch@last=\tcb@ch@natural},%
+  height fixed for/middle/.code={%
+    \let\tcb@break@ch@first=\tcb@ch@natural%
+    \let\tcb@break@ch@middle=\tcb@break@ch@fixed%
+    \let\tcb@break@ch@last=\tcb@ch@natural},%
+  height fixed for/last/.code={%
+    \let\tcb@break@ch@first=\tcb@ch@natural%
+    \let\tcb@break@ch@middle=\tcb@ch@natural%
+    \let\tcb@break@ch@last=\tcb@break@ch@fixed},%
+  height fixed for/first and middle/.code={%
+    \let\tcb@break@ch@first=\tcb@break@ch@fixed%
+    \let\tcb@break@ch@middle=\tcb@break@ch@fixed%
+    \let\tcb@break@ch@last=\tcb@ch@natural},%
+  height fixed for/middle and last/.code={%
+    \let\tcb@break@ch@first=\tcb@ch@natural%
+    \let\tcb@break@ch@middle=\tcb@break@ch@fixed%
+    \let\tcb@break@ch@last=\tcb@break@ch@fixed},%
+  height fixed for/all/.code={%
+    \let\tcb@break@ch@first=\tcb@break@ch@fixed%
+    \let\tcb@break@ch@middle=\tcb@break@ch@fixed%
+    \let\tcb@break@ch@last=\tcb@break@ch@fixed},%
+  vfill before first/.is if=tcb@vfillbeforefirst,%
+  height fill/true/.code={\let\tcb@height@adjust\tcb@height@fill@unbroken@normal},%
+  height fill/maximum/.code={\let\tcb@height@adjust\tcb@height@fill@unbroken@compressed},%
+  height fill/.default=true,%
+  compress page/.is choice,%
+  compress page/all/.code={\def\tcb@comp@compress{\def\tcb@compress@height{\pageshrink-1sp}}},%
+  compress page/none/.code={\def\tcb@comp@compress{\let\tcb@compress@height\tcb@zpt}},%
+  compress page/baselineskip/.code={\def\tcb@comp@compress{%
+    \ifdim\pageshrink>\baselineskip\relax%
+      \let\tcb@compress@height\baselineskip%
+    \else%
+      \def\tcb@compress@height{\pageshrink-1sp}%
+    \fi}},%
+  compress page/.default=all,%
+  compress page=baselineskip,% global setting
+  extras unbroken/.code={\appto\tcb@extras@unbroken{\tcbset{#1}}},%
+  extras first/.code={\appto\tcb@extras@first{\tcbset{#1}}},%
+  extras middle/.code={\appto\tcb@extras@middle{\tcbset{#1}}},%
+  extras last/.code={\appto\tcb@extras@last{\tcbset{#1}}},%
+  extras title after break/.code={\appto\tcb@extras@followingtitle{\tcbset{#1}}},%
+  extras/.style={extras unbroken={#1},extras first={#1},extras middle={#1},extras last={#1}},%
+  extras broken/.style={extras first={#1},extras middle={#1},extras last={#1}},%
+  extras unbroken and first/.style={extras unbroken={#1},extras first={#1}},%
+  extras unbroken and last/.style={extras unbroken={#1},extras last={#1}},%
+  extras middle and last/.style={extras middle={#1},extras last={#1}},%
+  extras first and middle/.style={extras first={#1},extras middle={#1}},%
+  no extras unbroken/.code={\let\tcb@extras@unbroken\@empty},%
+  no extras first/.code={\let\tcb@extras@first\@empty},%
+  no extras middle/.code={\let\tcb@extras@middle\@empty},%
+  no extras last/.code={\let\tcb@extras@last\@empty},%
+  no extras title after break/.code={\let\tcb@extras@followingtitle\@empty},
+  no extras/.code={\let\tcb@extras@unbroken\@empty\let\tcb@extras@first\@empty\let\tcb@extras@middle\@empty\let\tcb@extras@last\@empty\let\tcb@extras@followingtitle\@empty},%
+  if odd page*/.style 2 args={check odd page,extras={if odd page={#1}{#2}}},%
+  if odd page or oneside*/.style 2 args={check odd page,extras={if odd page or oneside={#1}{#2}}},%
+  segmentation at break/.is choice,%
+  segmentation at break/true/.code={\let\tcb@split@SL\tcb@split@SL@displayed},
+  segmentation at break/false/.code={\let\tcb@split@SL\tcb@split@L},
+  segmentation at break/.default=true,
+  use color stack/.is choice,%
+  use color stack/true/.code={%
+    \pdfcolIfStackExists{tcb@breakable}{\tcb@usecolorstacktrue}{\tcb@usecolorstackfalse}%
+  },%
+  use color stack/false/.code={\tcb@usecolorstackfalse},%
+  use color stack/.default=true,%
+}
+
+
+\tcbset{%
+  reset@breakable/.style={%
+    unbreakable,notitle after break,
+    use color stack=false,
+    shrink break goal=0pt,
+    lines before break=2,
+    topsep at break=0pt,
+    bottomsep at break=0pt,
+    enlargepage=0pt,enlargepage flexible=0pt,
+    break at=0pt,
+    height fixed for=none,
+    vfill before first=false,
+    no extras,
+    segmentation at break
+  },
+  initialize@reset=reset@breakable,
+}

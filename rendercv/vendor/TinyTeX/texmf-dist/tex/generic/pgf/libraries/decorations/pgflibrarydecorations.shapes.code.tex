@@ -1,0 +1,468 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgfmodule{decorations}%
+
+
+% Options for shape decorations
+
+\pgfkeys{
+  /pgf/decoration/.cd,
+  shape/.initial=circle,
+  anchor/.initial=center,
+  shape start width/.initial=2.5pt,
+  shape start height/.initial=2.5pt,
+  shape end width/.initial=2.5pt,
+  shape end height/.initial=2.5pt,
+  shape sep/.store in=\pgf@lib@shapedecoration@sep,
+  shape sloped/.is if=pgfshapedecorationsloped,
+  shape scaled/.is if=pgfshapedecorationscaled,
+  shape evenly spread/.store in=\pgf@lib@shapedecoration@spread,
+  shape start size/.style={%
+    shape start width={#1},
+    shape start height={#1}%
+  },%
+  shape end size/.style={%
+    shape end width={#1},
+    shape end height={#1}%
+  },%
+  shape size/.style={%
+    shape start size={#1},
+    shape end size={#1}%
+  },%
+  shape width/.style={%
+    shape start width={#1},
+    shape end width={#1}
+  },
+  shape height/.style={%
+    shape start height={#1},
+    shape end height={#1}
+  }
+}%
+
+\def\pgf@lib@shapedecoration@sep{.25cm, between centers}%
+\newif\ifpgfshapedecorationsloped
+\pgfshapedecorationslopedtrue
+\newif\ifpgfshapedecorationscaled
+\let\pgf@lib@shapedecoration@spread\pgfutil@empty%
+
+
+
+% triangle decoration
+
+\pgfdeclaredecoration{triangles}{init}
+{%
+  \state{init}[width=+0pt,next state=triangle,persistent precomputation={
+    \pgfmathparse{\pgfkeysvalueof{/pgf/decoration/shape start width}}
+    \edef\pgf@lib@dec@ssw{\pgfmathresult pt}
+    \pgfmathparse{\pgfkeysvalueof{/pgf/decoration/shape start height}/2}
+    \edef\pgf@lib@dec@ssh{\pgfmathresult pt}
+  }]{}%
+  \state{triangle}[switch if less than=+\pgfdecorationsegmentlength to last,
+                   width=+\pgfdecorationsegmentlength]
+  {
+    \pgfpathmoveto{\pgfqpoint{0pt}{\pgf@lib@dec@ssh}}
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@dec@ssw}{0pt}}
+    \pgfpathlineto{\pgfqpoint{0pt}{-\pgf@lib@dec@ssh}}
+    \pgfpathclose
+  }%
+  \state{last}[switch if less than=\pgf@lib@dec@ssw to skip,
+               width=\pgfdecoratedremainingdistance,next state=final]
+  {
+    \pgfpathmoveto{\pgfqpoint{0pt}{\pgf@lib@dec@ssh}}
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@dec@ssw}{0pt}}
+    \pgfpathlineto{\pgfqpoint{0pt}{-\pgf@lib@dec@ssh}}
+    \pgfpathclose
+  }%
+  \state{skip}[width=\pgfdecoratedremainingdistance]
+  {}%
+  \state{final}
+  {
+    \pgfpathmoveto{\pgfpointdecoratedpathlast}
+  }%
+}%
+
+
+
+
+% crosses decoration
+
+\pgfdeclaredecoration{crosses}{init}
+{%
+  \state{init}[width=+0pt,next state=crosses,persistent precomputation={
+    \pgfmathparse{\pgfkeysvalueof{/pgf/decoration/shape start width}/2}
+    \edef\pgf@lib@dec@ssw{\pgfmathresult pt}
+    \pgfmathparse{\pgfkeysvalueof{/pgf/decoration/shape start height}/2}
+    \edef\pgf@lib@dec@ssh{\pgfmathresult pt}
+  }]{}%
+  \state{crosses}[switch if less than=+\pgfdecorationsegmentlength to last,
+                  width=+\pgfdecorationsegmentlength]
+  {
+    \pgfpathmoveto{\pgfqpoint{-\pgf@lib@dec@ssw}{\pgf@lib@dec@ssh}}
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@dec@ssw}{-\pgf@lib@dec@ssh}}
+    \pgfpathmoveto{\pgfqpoint{-\pgf@lib@dec@ssw}{-\pgf@lib@dec@ssh}}
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@dec@ssw}{\pgf@lib@dec@ssh}}
+  }%
+  \state{last}[width=+\pgfdecoratedremainingdistance]
+  {
+    \pgfpathmoveto{\pgfqpoint{-\pgf@lib@dec@ssw}{\pgf@lib@dec@ssh}}
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@dec@ssw}{-\pgf@lib@dec@ssh}}
+    \pgfpathmoveto{\pgfqpoint{-\pgf@lib@dec@ssw}{-\pgf@lib@dec@ssh}}
+    \pgfpathlineto{\pgfqpoint{\pgf@lib@dec@ssw}{\pgf@lib@dec@ssh}}
+  }%
+  \state{final}{
+    \pgfpathmoveto{\pgfpointdecoratedpathlast}
+  }%
+}%
+
+
+
+
+
+
+% The shape background decoration
+%
+% The shape background decoration adds repeated instances of
+% the background path of a specified shape along the path. The shape
+% must have been declared  by \pgfdeclareshape. If a shape has
+% specialized keys (e.g. the number of points on a star, or the apex
+% angle the isosceles triangle), these can be specified in the usual manner.
+%
+% The separation between shapes in the path can be specified and can
+% be between the center of the shape or the border of the shape.
+%
+% The height and width of the shape can be independently or
+% simultaneously scaled (linearly) along the path. It is also
+% possible to prevent the shapes being sloped parallel to the
+% path.
+
+% internal if
+\newif\ifpgf@lib@shapedecoration@betweenborders
+
+\edef\pgf@lib@shapedecoration@initialise{0pt}%
+
+\pgfdeclaredecoration{shape backgrounds}{initialise}
+{%
+  \state{initialise}
+  [
+    width=+\pgf@lib@shapedecoration@initialise,
+    next state=shape,
+    persistent precomputation=
+    {
+      %
+      % \egroup ends the group started by the automaton before executing
+      % a decoration state. This prevents the need for (most) \global variables.
+      %
+      %
+      % Check the shape exists.
+      %
+      \pgfutil@ifundefined{pgf@sh@bg@\pgfkeysvalueof{/pgf/decoration/shape}}{%
+        \pgferror{I do not know the shape `\pgfkeysvalueof{/pgf/decoration/shape}',
+          so I cannot use it in a decoration. Check if its library been loaded or if you
+          simply mistyped the name}}{}%
+      %
+      % Calculate a `default' path size.
+      %
+      \pgfinterruptpath%
+        \pgfinterruptboundingbox%
+          \pgftransformreset%
+          \pgf@relevantforpicturesizetrue%
+          %
+          % This size of this shape is unimportant, but it should
+          % be just large/small enough to avoid huge errors when
+          % calculating the scaling factors later on.
+          %
+          \pgfkeys{/pgf/inner sep=50pt, /pgf/minimum size=1pt}% Arbitrary lengths.
+          \setbox\pgfnodeparttextbox\hbox{}% Assume shape does nothing special if box is empty.
+          \let\pgf@sh@savedmacros\pgfutil@empty%
+          \let\pgf@sh@savedpoints\pgfutil@empty%
+          \csname pgf@sh@s@\pgfkeysvalueof{/pgf/decoration/shape}\endcsname%
+          \pgf@sh@savedpoints%
+          \pgf@sh@savedmacros%
+          %
+          % Save the macros and points.
+          %
+          \expandafter\gdef\expandafter\pgf@lib@shapedecoration@points\expandafter{\pgf@sh@savedpoints}%
+          \expandafter\gdef\expandafter\pgf@lib@shapedecoration@macros\expandafter{\pgf@sh@savedmacros}%
+          \csname pgf@sh@bg@\pgfkeysvalueof{/pgf/decoration/shape}\endcsname%
+          %
+          % Save the dimensions of the shape path.
+          %
+          \pgf@x\pgf@picmaxx%
+          \pgf@y\pgf@picmaxy%
+          \advance\pgf@x-\pgf@picminx%
+          \advance\pgf@y-\pgf@picminy%
+          \xdef\pgf@lib@shapedecoration@shapepathsize{%
+            \noexpand\pgf@x\the\pgf@x%
+            \noexpand\pgf@y\the\pgf@y%
+          }%
+        \endpgfinterruptboundingbox%
+      \endpgfinterruptpath%
+      %
+      \edef\pgf@lib@shapedecoration@beforeshape{0pt}%
+      \edef\pgf@lib@shapedecoration@aftershape{0pt}%
+      %
+      \pgfmathsetlength\pgf@x{\pgfkeysvalueof{/pgf/decoration/shape start width}}%
+      \edef\pgf@lib@shapedecoration@startwidth{\the\pgf@x}%
+      \edef\pgf@lib@shapedecoration@width{\the\pgf@x}%
+      \pgf@x-\pgf@x%
+      \pgfmathaddtolength\pgf@x{\pgfkeysvalueof{/pgf/decoration/shape end width}}%
+      \edef\pgf@lib@shapedecoration@widthchange{\the\pgf@x}%
+      %
+      \pgfmathsetlength\pgf@y{\pgfkeysvalueof{/pgf/decoration/shape start height}}%
+      \edef\pgf@lib@shapedecoration@initialheight{\the\pgf@y}%
+      \edef\pgf@lib@shapedecoration@height{\the\pgf@y}%
+      \pgf@y-\pgf@y%
+      \pgfmathaddtolength\pgf@y{\pgfkeysvalueof{/pgf/decoration/shape end height}}%
+      \edef\pgf@lib@shapedecoration@heightchange{\the\pgf@y}%
+      %
+      % Calculate the sep.
+      %
+      \ifx\pgf@lib@shapedecoration@spread\pgfutil@empty%
+        %
+        % Not spreading, so easy:
+        %
+        \def\pgf@lib@shapedecoration@borderstext{between borders}%
+        \afterassignment\pgf@lib@shapedecoration@setkeyword%
+        \expandafter\pgf@x\pgf@lib@shapedecoration@sep,\pgf@stop%
+        \edef\pgf@lib@shapedecoration@sep{\the\pgf@x}%
+      \else%
+        %
+        % Spreading (a bit of a nuiscence actually).
+        %
+        \def\pgf@lib@shapedecoration@borderstext{by borders}%
+        \afterassignment\pgf@lib@shapedecoration@setkeyword%
+        \expandafter\c@pgf@counta\pgf@lib@shapedecoration@spread,\pgf@stop%
+        \ifpgf@lib@shapedecoration@betweenborders%
+          %
+          % Ok. The required sep between borders is:
+          %
+          % (r -(n-1)((a+b)/2))/(n-1)
+          %
+          % r = decoration length (here, the remaining distance)
+          % a = initial width
+          % b = end width
+          % n = the number of shapes
+          %
+          \ifnum\c@pgf@counta>1\relax%
+            \advance\c@pgf@counta-1\relax%
+            \pgfmathsetlength\pgf@x{\pgfkeysvalueof{/pgf/decoration/shape start width}}%
+            \ifpgfshapedecorationscaled%
+              \pgfmathaddtolength\pgf@x{\pgfkeysvalueof{/pgf/decoration/shape end width}}%
+            \else%
+              \advance\pgf@x\pgf@x%
+            \fi%
+            \pgf@x.5\pgf@x% (a+b)/2
+            \multiply\pgf@x-\c@pgf@counta% -(n-1)((a+b)/2)
+            \advance\pgf@x\pgfdecoratedremainingdistance%
+            \divide\pgf@x\c@pgf@counta%
+            \pgf@x.9999\pgf@x% Hackery to control some native TeX inaccuracies.
+            %
+            % Unfortunately if the shape is scaled, and evenly spread by borders,
+            % it is necessary to do something a bit different to control for
+            % (most) inaccuracies.
+            %
+            \ifpgfshapedecorationscaled%
+              \pgf@xa\pgf@lib@shapedecoration@widthchange\relax%
+              \divide\pgf@xa\c@pgf@counta%
+              \edef\pgf@lib@shapedecoration@specialwidth{\the\pgf@xa}%
+            \fi%
+          \else%
+            \pgf@lib@shapedecoration@betweenbordersfalse%
+            \pgf@x\pgfdecoratedremainingdistance%
+            \ifnum\c@pgf@counta=1\relax%
+              \pgf@y.5\pgf@x%
+              \edef\pgf@lib@shapedecoration@initialise{\the\pgf@y}%
+            \else%
+              \advance\pgf@x5pt\relax% An arbitrary value >0pt.
+              \edef\pgf@lib@shapedecoration@initialise{\the\pgf@x}%
+            \fi%
+          \fi%
+        \else%
+          %
+          % Between centers.
+          %
+          \pgf@x\pgfdecoratedremainingdistance%
+          \ifnum\c@pgf@counta>1\relax%
+            \advance\c@pgf@counta-1\relax%
+            \divide\pgf@x\c@pgf@counta\relax%
+          \else%
+            \ifnum\c@pgf@counta=1\relax%
+              \pgf@y.5\pgf@x%
+              \edef\pgf@lib@shapedecoration@initialise{\the\pgf@y}%
+            \else%
+              \advance\pgf@x5pt\relax% An arbitrary value >0pt.
+              \edef\pgf@lib@shapedecoration@initialise{\the\pgf@x}%
+            \fi%
+          \fi%
+        \fi%
+        \edef\pgf@lib@shapedecoration@sep{\the\pgf@x}%
+      \fi%
+    }]
+  {}%
+  \state{before shape}
+  [
+    width=\pgf@lib@shapedecoration@beforeshape-1sp,
+    next state=shape,
+    persistent precomputation=
+    {
+      \ifpgfshapedecorationscaled%
+        \ifpgf@lib@shapedecoration@betweenborders%
+          \ifx\pgf@lib@shapedecoration@spread\pgfutil@empty%
+            %
+            % Not so straightforward. The required ratio is given by
+            %
+            % R = (c+W/2)/(c+r-.5*w)
+            %
+            % c = completed distance
+            % r = remaining distance
+            % W = initial width
+            % w = the change in width (i.e., end - start)
+            %
+            \pgf@x\pgfdecoratedcompleteddistance%
+            \advance\pgf@x\pgfdecoratedremainingdistance%
+            \pgf@xa\pgf@lib@shapedecoration@startwidth\relax%
+            \pgf@xa.5\pgf@xa%
+            \advance\pgf@xa\pgfdecoratedcompleteddistance% c+W/2
+            %
+            \pgf@xb\pgf@lib@shapedecoration@widthchange\relax%
+            \pgf@xb-.5\pgf@xb%
+            \advance\pgf@xb\pgf@x% c+r-.5*w
+            %
+            \pgfmathdivide@{\pgfmath@tonumber{\pgf@xa}}{\pgfmath@tonumber{\pgf@xb}}%
+          \fi%
+        \else%
+          %
+          % Easy peasy. The required ratio is
+          %
+          % R = c / (c+r)
+          %
+          \pgf@y\pgfdecoratedcompleteddistance%
+          \advance\pgf@y\pgfdecoratedremainingdistance%
+          \pgfmathdivide@{\pgfmath@tonumber{\pgfdecoratedcompleteddistance}}{\pgfmath@tonumber{\pgf@y}}%
+        \fi%
+        %
+        % Get the new width.
+        %
+        \ifx\pgf@lib@shapedecoration@spread\pgfutil@empty%
+          \pgf@x\pgf@lib@shapedecoration@widthchange\relax%
+          \pgf@x\pgfmathresult\pgf@x%
+          \advance\pgf@x\pgf@lib@shapedecoration@startwidth\relax%
+        \else%
+          \ifpgf@lib@shapedecoration@betweenborders%
+            %
+            % Special case when decoration is scaled, and evenly spread by borders.
+            %
+            \pgf@x\pgf@lib@shapedecoration@width\relax%
+            \advance\pgf@x\pgf@lib@shapedecoration@specialwidth\relax%
+            \pgf@xa\pgf@x%
+            \advance\pgf@xa-\pgf@lib@shapedecoration@startwidth\relax%
+            \pgf@xb\pgf@lib@shapedecoration@widthchange\relax%
+            \pgfmathdivide@{\pgfmath@tonumber{\pgf@xa}}{\pgfmath@tonumber{\pgf@xb}}%
+          \else%
+            \pgf@x\pgf@lib@shapedecoration@widthchange\relax%
+            \pgf@x\pgfmathresult\pgf@x%
+            \advance\pgf@x\pgf@lib@shapedecoration@startwidth\relax%
+          \fi%
+        \fi%
+        \edef\pgf@lib@shapedecoration@width{\the\pgf@x}%
+        %
+        % New height = R*h + H
+        %
+        \pgf@y\pgf@lib@shapedecoration@heightchange\relax%
+        \pgf@y\pgfmathresult\pgf@y%
+        \advance\pgf@y\pgf@lib@shapedecoration@initialheight\relax%
+        \edef\pgf@lib@shapedecoration@height{\the\pgf@y}%
+      \fi%
+      %
+      \ifpgf@lib@shapedecoration@betweenborders%
+        \pgf@x\pgf@lib@shapedecoration@width\relax%
+        \pgf@x.5\pgf@x%
+        \edef\pgf@lib@shapedecoration@beforeshape{\the\pgf@x}%
+      \else%
+        \def\pgf@lib@shapedecoration@beforeshape{0pt}%
+      \fi%
+    }]
+  {}%
+  \state{shape}[width=+0sp,next state=after shape]
+  {
+    \ifpgfshapedecorationsloped%
+    \else%
+      \pgftransformrotate{-\pgfdecoratedangle}%
+    \fi%
+    %
+    % Scale the path when it is actually drawn.
+    %
+    \pgf@lib@shapedecoration@shapepathsize%
+    \pgfutil@tempdima\pgf@x%
+    \pgfutil@tempdimb\pgf@y%
+    \pgf@xa\pgf@lib@shapedecoration@width\relax%
+    \pgf@xb\pgfutil@tempdima%
+    \pgfmathdivide@{\pgfmath@tonumber{\pgf@xa}}{\pgfmath@tonumber{\pgf@xb}}%
+    \expandafter\pgftransformxscale\expandafter{\pgfmathresult}%
+    %
+    \pgf@ya\pgf@lib@shapedecoration@height\relax%
+    \pgf@yb\pgfutil@tempdimb%
+    \pgfmathdivide@{\pgfmath@tonumber{\pgf@ya}}{\pgfmath@tonumber{\pgf@yb}}%
+    \expandafter\pgftransformyscale\expandafter{\pgfmathresult}%
+    %
+    % Move to the center anchor.
+    %
+    \pgf@lib@shapedecoration@points%
+    \pgf@lib@shapedecoration@macros%
+    \pgftransformshift{%
+      \pgf@sh@reanchor{\pgfkeysvalueof{/pgf/decoration/shape}}{\pgfkeysvalueof{/pgf/decoration/anchor}}%
+      \pgf@x-\pgf@x%
+      \pgf@y-\pgf@y%
+    }%
+    %
+    % And draw the shape path.
+    %
+    \csname pgf@sh@bg@\pgfkeysvalueof{/pgf/decoration/shape}\endcsname%
+  }%
+  \state{after shape}
+  [
+    width=\pgf@lib@shapedecoration@aftershape-1sp,
+    next state=sep,
+    persistent precomputation=
+    {
+      \ifpgf@lib@shapedecoration@betweenborders%
+        \pgf@x\pgf@lib@shapedecoration@width\relax%
+        \pgf@x.5\pgf@x%
+        \edef\pgf@lib@shapedecoration@aftershape{\the\pgf@x}%
+      \else%
+        \edef\pgf@lib@shapedecoration@aftershape{0pt}%
+      \fi%
+    }
+  ]
+  {}%
+  \state{sep}[width=\pgf@lib@shapedecoration@sep,next state=before shape,
+              persistent precomputation=\def\pgf@lib@shapedecoration@beforeshape{0pt}]
+  {}%
+  \state{final}
+  {
+    \pgfpathmoveto{\pgfpointdecoratedpathlast}%
+  }%
+}%
+
+\def\pgf@lib@shapedecoration@setkeyword,{%
+  \pgfutil@ifnextchar\pgf@stop{\def\pgf@temp{}\pgf@lib@@@shapedecoration@setkeyword}{\pgf@lib@@shapedecoration@setkeyword}%
+}%
+\def\pgf@lib@@shapedecoration@setkeyword#1,{\def\pgf@temp{#1}\pgf@lib@@@shapedecoration@setkeyword}%
+\def\pgf@lib@@@shapedecoration@setkeyword\pgf@stop{%
+  \ifx\pgf@temp\pgf@lib@shapedecoration@borderstext%
+    \pgf@lib@shapedecoration@betweenborderstrue%
+  \else%
+    \pgf@lib@shapedecoration@betweenbordersfalse%
+  \fi%
+}%
+
+
+
+\endinput

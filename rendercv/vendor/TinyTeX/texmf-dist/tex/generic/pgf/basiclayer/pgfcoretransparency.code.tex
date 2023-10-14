@@ -1,0 +1,312 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcoretransparency.code.tex}
+
+
+% Sets the opacity of stroking operations.
+%
+% #1 = opacity, where 1 means fully opaque and 0 means fully
+% transparent.
+%
+% Example:
+%
+% \pgfsetstrokeopacity{0.5}
+
+\def\pgfsetstrokeopacity#1{%
+  \pgfmathparse{#1}%
+  \expandafter\pgfsys@stroke@opacity\expandafter{\pgfmathresult}}
+
+
+% Sets the opacity of stroking operations.
+%
+% #1 = opacity, where 1 means fully opaque and 0 means fully
+% transparent.
+%
+% Example:
+%
+% \pgfsetfillopacity{0.5}
+
+\def\pgfsetfillopacity#1{%
+  \pgfmathparse{#1}%
+  \expandafter\pgfsys@fill@opacity\expandafter{\pgfmathresult}}
+
+
+
+% Sets the current blend mode. See Section 7.2.4 of the PDF
+% Specification 1.7 for an introduction to blend modes in general.
+%
+% #1 = One of the following modes, see also section 7.2.4 of the
+% PDF Specification 1.7. (The PGF names, which are all lowercase with
+% spaces as usual, must be mapped to the PDF or SVG by the drivers.)
+%
+% normal
+% multiply
+% screen
+% overlay
+% darken
+% lighten
+% color dodge
+% color burn
+% hard light
+% soft light
+% difference
+% exclusion
+% saturation
+% color
+% hue
+% luminosity
+%
+% Example:
+%
+% \pgfsetblendmode{multiply}
+
+\def\pgfsetblendmode#1{\pgfsys@blend@mode{#1}}
+
+
+% Declares a new fading based on the contents of a box.
+%
+% #1 = name of the fading
+% #2 = content of a TeX box that specifies the fading
+%
+% Description:
+%
+% This command declares a new fading based on the contents of
+% the TeX box. The mask can later be used to mask other graphics.
+%
+% The box is used to determine where the mask is opaque: At the
+% beginning, the mask is completely transparent. Wherever the box
+% contains something (like text or a picture or whatever), the
+% luminosity of the text/graphic is used to determine how opaque the
+% point will be. The greater the luminosity, the more opaque. The net
+% effect is that white corresponds to "completely opaque" and black to
+% "completely transparent". This is rather counterintuitive. Because
+% of this, the special color "pgftransparent" is defined, which is the
+% same as black. By setting the color to, say,
+% \color{pgftransparent!10} you get something that is 10% transparent
+% and \color{pgftransparent!90} gives you 90% transparency.
+%
+% By default, the drawing color is set to opaque.
+%
+% Example:
+%
+% \pgfdeclarefading{mymask}{
+%  \fontsize{200}{200}\bfseries
+%  Ti\emph{k}Z
+% }
+% \pgfdeclarefading{myothermask}{
+%  \tikz \shade [left color=transparent,right color=transparent!0]
+%    (0,0) rectangle (5,5);
+% }
+
+\def\pgfdeclarefading#1#2{%
+  \setbox\pgfutil@tempboxa=\hbox{{\pgfsys@beginscope\pgfutil@color{white}\ignorespaces#2\pgfsys@endscope}}%
+  \pgfsys@fadingfrombox{#1}\pgfutil@tempboxa%
+}
+
+\pgfutil@colorlet{pgftransparent}{black}
+
+
+% Use a previously declared fading.
+%
+% #1 = name of the fading
+% #2 = transformation code
+%
+% Description:
+%
+% The command should be used *inside* a pgfpicture to install a
+% fading. The fading is a part of the graphic state. (This command
+% works much like \pgfsetstrokeopacity).
+%
+% The mask will be centered on the origin. The transformation code #2 is
+% applied to the mask (but not the contents of the actual picture).
+
+\def\pgfsetfading#1#2{%
+  {%
+    \pgftransformreset%
+    #2%
+    \pgfgettransform{\pgftrans@temp}%
+    \edef\pgf@marshal{\noexpand\pgfsys@usefading{#1}\pgftrans@temp}%
+    \pgf@marshal%
+  }%
+}
+
+
+
+% Use a previously declared fading scaled for the current path.
+%
+% #1 - an fading
+% #2 - extra transformations
+%
+% Description:
+%
+% This command works a bit like \pgfshadepath. "Works a bit like"
+% means the following: The masks's original size should
+% completely cover the area between (0,0) and (100bp,100bp). The
+% mask is then rescaled so that it completely covers the path. Then
+% the additional transformation #2 is applied. Finally, the mask is
+% made part of the graphic state (as with \pgfsetfading). The path
+% used for computation purposes only -- it is not drawn or otherwise
+% used.
+%
+% If no transformations occur, the lower left corner of the path will
+% lie on (25bp, 25bp), the upper right corner on (75bp, 75bp).
+%
+% If the path was empty, the fading will be used at its natural size,
+% centered on the origin.
+%
+% Example:
+%
+% \pgfdeclarefading{fade right}
+% {\tikz[left color=transparent!0,right color=transparent!100]
+%    (0,0) rectangle (100bp,100bp);}
+%
+% \pgfpathmoveto{\pgforigin}
+% \pgfpathlineto{\pgfxy(1,0)}
+% \pgfpathlineto{\pgfxy(1,1)}
+% \pgfsetfadingforcurrentpath{fade right}{}
+% \pgfusepath{fill}
+
+\def\pgfsetfadingforcurrentpath#1#2{%
+  \ifdim\pgf@pathminx=16000pt%
+    % Path was empty -> use natural size
+    \pgfsetfading{#1}{#2}%
+  \else%
+    \pgfsetfading{#1}{%
+      % Calculate center:
+      \pgf@xb=.5\pgf@pathmaxx%
+      \advance\pgf@xb by.5\pgf@pathminx%
+      \pgf@yb=.5\pgf@pathmaxy%
+      \advance\pgf@yb by.5\pgf@pathminy%
+      % Calculate scaling:
+      \pgf@xc=\pgf@pathmaxx%
+      \advance\pgf@xc by-\pgf@pathminx%
+      \ifdim\pgf@xc<0.1pt\pgf@xc=0.1pt\fi%
+      \pgf@yc=\pgf@pathmaxy%
+      \advance\pgf@yc by-\pgf@pathminy%
+      \ifdim\pgf@yc<0.1pt\pgf@yc=0.1pt\fi%
+      \pgf@xc=.02\pgf@xc%
+      \pgf@yc=.02\pgf@yc%
+      % Compute new transformation matrix:
+      \pgftransformcm{1}{0}{0}{1}{\pgfqpoint{\pgf@xb}{\pgf@yb}}%
+      \pgftransformcm{\pgf@sys@tonumber{\pgf@xc}}{0}{0}{\pgf@sys@tonumber{\pgf@yc}}{\pgfpointorigin}%
+      \pgfsys@clipfading%
+      #2%
+    }%
+  \fi%
+}
+
+
+
+
+% Use a previously declared fading scaled for the current path.
+%
+% #1 - an fading
+% #2 - extra transformations
+%
+% Description:
+%
+% This command works like \pgfsetfadingforcurrentpath, only it takes
+% the current line width into account: Before the path is considered,
+% it is enlarged by half the line width in all directions.
+
+\def\pgfsetfadingforcurrentpathstroked#1#2{%
+  \ifdim\pgf@pathminx=16000pt%
+    % Path was empty -> use natural size
+    \pgfsetfading{#1}{#2}%
+  \else%
+    \pgfsetfading{#1}{%
+      % Calculate center:
+      \pgf@xb=.5\pgf@pathmaxx%
+      \advance\pgf@xb by.5\pgf@pathminx%
+      \pgf@yb=.5\pgf@pathmaxy%
+      \advance\pgf@yb by.5\pgf@pathminy%
+      % Calculate scaling:
+      \pgf@xc=\pgf@pathmaxx%
+      \advance\pgf@xc by-\pgf@pathminx%
+      \advance\pgf@xc by\pgflinewidth%
+      \ifdim\pgf@xc<0.1pt\pgf@xc=0.1pt\fi%
+      \pgf@yc=\pgf@pathmaxy%
+      \advance\pgf@yc by-\pgf@pathminy%
+      \advance\pgf@yc by\pgflinewidth%
+      \ifdim\pgf@yc<0.1pt\pgf@yc=0.1pt\fi%
+      \pgf@xc=.02\pgf@xc%
+      \pgf@yc=.02\pgf@yc%
+      % Compute new transformation matrix:
+      \pgftransformcm{1}{0}{0}{1}{\pgfqpoint{\pgf@xb}{\pgf@yb}}%
+      \pgftransformcm{\pgf@sys@tonumber{\pgf@xc}}{0}{0}{\pgf@sys@tonumber{\pgf@yc}}{\pgfpointorigin}%
+      \pgfsys@clipfading%
+      #2%
+    }%
+  \fi%
+}
+
+
+% Group things in a a transparency group
+%
+% Description:
+%
+% This takes groups pgf commands inside a pgfpicture in a transparency
+% group. This means that any transparency settings apply to commands a
+% whole. For instance, if a box contains two overlapping black
+% circles and you draw them normally with 50% transparency, then the
+% overlap will be darker than the rest. By comparison, if the circles
+% are part of a transparency group, the overlap will get the same
+% color as the rest.
+%
+%
+
+\def\pgftransparencygroup{%
+  \pgfutil@ifnextchar[{\pgftransparencygroup@}{\pgftransparencygroup@[]}%
+}
+\def\pgftransparencygroup@[#1]{%
+  \begingroup%
+    \pgfkeys{/pgf/transparency group options/.cd,%
+      isolated=false,
+      knockout=false,
+      #1}%
+    \setbox\pgfutil@tempboxa=\hbox\bgroup%
+}
+\pgfkeys{
+  /pgf/transparency group options/.cd,
+  isolated/.is if=pgfsys@transparency@group@isolated,
+  knockout/.is if=pgfsys@transparency@group@knockout
+}
+
+\def\endpgftransparencygroup{%
+    \egroup%
+    % Now compute the correct position. This is a bit tricky...
+    \ifdim\pgf@picminx=16000pt%
+      % Nothing needs to be done
+    \else%
+      % Safety margin to avoid clipping:
+      \advance\pgf@picminx by-1cm%
+      \advance\pgf@picmaxx by1cm%
+      \advance\pgf@picminy by-1cm%
+      \advance\pgf@picmaxy by1cm%
+      % Ok, set the box size to current picture size.
+      \setbox\pgfutil@tempboxa=\hbox{%
+        \vrule width0pt height\pgf@picmaxy depth-\pgf@picminy%
+        \hskip-\pgf@picminx%
+        \box\pgfutil@tempboxa%
+        \hskip\pgf@picmaxx%
+      }%
+      \pgfsys@transparencygroupfrombox\pgfutil@tempboxa%
+      \wd\pgfutil@tempboxa=0pt%
+      \ht\pgfutil@tempboxa=0pt%
+      \dp\pgfutil@tempboxa=0pt%
+      \hskip\pgf@picminx\box\pgfutil@tempboxa\hskip-\pgf@picminx%
+    \fi%
+  \endgroup%
+}
+
+\let\startpgftransparencygroup=\pgftransparencygroup
+\let\stoppgftransparencygroup=\endpgftransparencygroup
+
+\endinput

@@ -1,0 +1,565 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarydatavisualization.polar.code.tex}
+
+\usetikzlibrary{datavisualization}%
+\usepgflibrary{datavisualization.polar}%
+
+
+\tikzdatavisualizationset{%
+  new polar axes/.style 2 args={
+    new axis base=#1,
+    #1={attribute=angle},
+    new axis base=#2,
+    #2={attribute=radius},
+    #2/scaling/default=0 at 0 and 1 at 1cm,
+    new object={
+      store=/tikz/data visualization/#1/polar transformer,
+      class=polar transformer,
+      arg1/.expanded=\pgfkeysvalueof{/tikz/data visualization/angle axis/attribute}/scaled,
+      arg2/.expanded=\pgfkeysvalueof{/tikz/data visualization/radius axis/attribute}/scaled,
+      arg3 from key=/tikz/data visualization/#1/unit vector 0 degrees,
+      arg4 from key=/tikz/data visualization/#1/unit vector 90 degrees
+    },
+    /tikz/data visualization/#1/unit vector 0 degrees/.initial=\pgfqpoint{1pt}{0pt},
+    /tikz/data visualization/#1/unit vector 90 degrees/.initial=\pgfqpoint{0pt}{1pt},
+  },
+  new polar axes/.default={angle axis}{radius axis}
+}%
+\def\tikz@lib@dv@polar@a#1{
+  \pgfkeyssetvalue{\tikz@dv@axis/unit vector 0 degrees}{#1}
+}%
+\def\tikz@lib@dv@polar@b#1{
+  \pgfkeyssetvalue{\tikz@dv@axis/unit vector 90 degrees}{#1}
+}%
+
+
+
+%
+% Scientific polar axes
+%
+
+\tikzset{
+  /tikz/data visualization/axis options/.cd,
+  unit vectors/.code 2 args={
+    \tikz@scan@one@point\tikz@lib@dv@polar@a#1
+    \tikz@scan@one@point\tikz@lib@dv@polar@b#2
+  },
+  degrees/.style={\tikz@dv@axis/scaling=0 at 0 and 1 at 1},
+  radians/.style={\tikz@dv@axis/scaling=0 at 0 and 0.03141592653589793 at 1.8},
+}%
+
+
+
+\tikzdatavisualizationset{
+  new axis system={scientific polar axes}{%
+    new polar axes,
+    angle axis={attribute=angle},
+    radius axis={attribute=radius},
+    every axis/.append style={style={draw=black!50}},
+    every ticks/.append style={style={draw=black!50}},
+  }{%
+    0 to 360,%
+    outer ticks,
+  }{%
+    @make axes,
+    scientific polar axes/@setup axes,
+    /utils/exec={
+      \edef\pgf@marshal{\noexpand\tikzdatavisualizationset{\pgfkeysvalueof{/tikz/data visualization/@which visualize radius axis}/.list={\pgfkeysvalueof{/tikz/data visualization/\pgfkeysvalueof{/tikz/data visualization/@which radius axes at}}}}}
+      \pgf@marshal
+    },
+    @make labels
+  },
+  @which radius axes at/.initial=@inner radius axes at,
+  @which visualize radius axis/.initial=@visualize radius axis,
+  @inner radius axes at/.initial=,
+  @clean radius axes at/.initial=,
+  @visualize radius axis/.style 2 args={
+    radius axis={
+      visualize axis={angle axis={goto=#1},high=padded max,low=0},
+      visualize ticks={
+        common={angle axis={goto=#1}, direction axis=angle axis},
+        major={tick text at #2,
+          options at=0 as [{style={draw=none},no tick text}]
+        }
+      }
+    }
+  },
+  @visualize clean radius axis/.style n args={5}{
+    radius axis={
+      visualize axis={angle
+        axis={goto=#1},high=max,low=0,style={black!25,line cap=rect}},
+      visualize axis={angle
+        axis={goto=#1},high=max,low=0,style={line cap=rect,#4}},
+      visualize ticks={
+        style={#4},
+        common={angle axis={goto=#1}, direction axis=angle axis, #3=0},
+        major={tick text at #2,#5}
+      }
+    }
+  },
+  @visualize zero/.style={@inner visualize zero={#1}},
+  @clean visualize zero/.style={},
+  @inner visualize zero/.style={
+    radius axis={
+      visualize ticks={
+        common={angle axis={goto=0}, direction axis=angle axis},
+        major={tick text at low,low=0,high=0,at=0 as
+          [{style={draw=none},node style={anchor=#1}}]
+        }
+      }
+    }
+  },
+  @degrees/.style={
+    angle axis={degrees, ticks={step=15, tick suffix=$^\circ$, major={
+          options at=360 as [{style={draw=none},no tick text}],
+          options at=-180 as [{style={draw=none},no tick text}]}}}
+  },
+  @rad/.style={
+    angle axis={radians, ticks={
+        step=(pi/12),
+        node style={
+          /pgf/number format/frac,
+          /pgf/number format/frac shift={1}
+        },
+        tick typesetter/.code={%
+          \pgfmathsetmacro{\tikz@lib@dv@pol}{round(####1*3.819718634205488)/12}%
+          \pgfmathapproxequalto{\tikz@lib@dv@pol}{0}%
+          \ifdim\pgfmathresult pt=1.0pt%
+            $0$%
+          \else%
+            \pgfmathapproxequalto{\tikz@lib@dv@pol}{1}%
+            \ifdim\pgfmathresult pt=1.0pt%
+              $\pi$%
+            \else
+              \pgfmathapproxequalto{\tikz@lib@dv@pol}{-1}%
+              \ifdim\pgfmathresult pt=1.0pt%
+                $-\pi$%
+              \else%
+                \pgfmathprintnumber{\tikz@lib@dv@pol}$\pi$%
+              \fi%
+            \fi%
+          \fi%
+        },
+        major={
+          options at=6.2831985e0 as [{style={draw=none},no tick text}],
+          options at=6.2831192e0 as [{style={draw=none},no tick text}],
+          options at=6.2830794e0 as [{style={draw=none},no tick text}],
+          options at=6.2828787e0 as [{style={draw=none},no tick text}],
+          options at=6.2831598e0 as [{style={draw=none},no tick text}],
+          options at=-3.1415991e0 as [{style={draw=none},no tick text}],
+          options at=-3.1415802e0 as [{style={draw=none},no tick text}],
+          options at=-3.1415602e0 as [{style={draw=none},no tick text}],
+          options at=-3.14153961e0 as [{style={draw=none},no tick text}],
+          options at=-3.1414406e0 as [{style={draw=none},no tick text}],
+        }
+      }
+    }
+  },
+  @make labels/.style={},
+}%
+
+\tikzdatavisualizationset{
+  scientific polar axes/.cd,
+  %
+  %
+  %
+  outer ticks/.style={
+    /tikz/data visualization/@make axes/.style={
+      radius axis={
+        min value=0,
+        length=\pgfkeysvalueof{/tikz/data visualization/scientific polar axes/radius},
+        padding=0em,
+        ticks={few},
+        visualize grid={common={direction axis=angle axis,low=min,high=max}},
+      },
+      angle axis={
+        visualize axis={radius axis={goto=padded max},low=min,high=max},
+        visualize ticks={common={radius axis={goto=padded max},direction
+            axis=radius axis},common={low=0},major={tick text at high}},
+        visualize grid={common={direction axis=radius axis},low=0,high=padded max},
+      }
+    },
+    /tikz/data visualization/@which radius axes at=@inner radius axes at,
+    /tikz/data visualization/@which visualize radius axis=@visualize radius axis,
+    /tikz/data visualization/@visualize zero/.style={@inner visualize zero={##1}},
+  },
+  inner ticks/.style={
+    /tikz/data visualization/@make axes/.style={
+      radius axis={
+        min value=0,
+        length=\pgfkeysvalueof{/tikz/data visualization/scientific polar axes/radius},
+        padding=0em,
+        ticks={few},
+        visualize grid={common={direction axis=angle axis,low=min,high=max}},
+      },
+      angle axis={
+        visualize axis={radius axis={goto=padded max},low=min,high=max},
+        visualize ticks={common={radius axis={goto=padded max},direction
+            axis=radius axis},common={high=0},major={tick text at high}},
+        visualize grid={common={direction axis=radius axis},low=0,high=padded max},
+      }
+    },
+    /tikz/data visualization/@which radius axes at=@inner radius axes at,
+    /tikz/data visualization/@which visualize radius axis=@visualize radius axis,
+    /tikz/data visualization/@visualize zero/.style={@inner visualize zero={##1}},
+  },
+  clean/.style={
+    /tikz/data visualization/@make axes/.style={
+      radius axis={
+        min value=0,
+        length=\pgfkeysvalueof{/tikz/data visualization/scientific polar axes/radius},
+        padding=.5em,
+        ticks={few},
+        visualize grid={common={direction axis=angle axis,low=min,high=max}},
+      },
+      angle axis={
+        padding=.5em,
+        visualize axis={radius axis={goto=max}, style={black!25, line cap=rect},low=min,high=max},
+        visualize axis={radius axis={goto=padded max}, style={line cap=rect}, low=min,high=max},
+        visualize ticks={common={radius axis={goto=padded max}, direction axis=radius axis},common={low=0},major={tick text at high}},
+        visualize grid={common={direction axis=radius axis},low=0,high=max},
+      }
+    },
+    /tikz/data visualization/@which radius axes at=@clean radius axes at,
+    /tikz/data visualization/@which visualize radius axis=@visualize clean radius axis,
+    /tikz/data visualization/@visualize zero/.style={@clean visualize zero={##1}},
+  },
+  radius/.initial=3.25cm,
+  %
+  % First quadrant
+  %
+  0 to pi half/.style={
+    @setup axes/.style={
+      angle axis={min value=0, max value=1.570796326794897},
+      @rad,
+      @visualize zero=north east,
+      @inner radius axes at={{0}{low},{1.570796326794897}{high}},
+      @clean radius axes at={%
+        {0}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {1.570796326794897}{high}{low}{xshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  0 to 90/.style={
+    @setup axes/.style={
+      angle axis={min value=0, max value=90},
+      @degrees,
+      @visualize zero=north east,
+      @inner radius axes at={{0}{low},{90}{high}},
+      @clean radius axes at={%
+        {0}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {90}{high}{low}{xshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  quadrant/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 0 and max at 90, ticks},
+      @visualize zero=north east,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{xshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  quadrant clockwise/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 90 and max at 0, ticks},
+      @visualize zero=north east,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {max}{high}{low}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {min}{low}{high}{xshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  %
+  % Fourth quadrant
+  %
+  -pi half to 0/.style={
+    @setup axes/.style={
+      angle axis={min value=-1.570796326794897, max value=0},
+      @rad,
+      @visualize zero=south east,
+      @inner radius axes at={{-1.570796326794897}{low},{0}{high}},
+      @clean radius axes at={%
+        {-1.570796326794897}{low}{high}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {0}{high}{low}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  -90 to 0/.style={
+    @setup axes/.style={
+      angle axis={min value=-90, max value=0},
+      @degrees,
+      @visualize zero=south east,
+      @inner radius axes at={{-90}{low},{0}{high}},
+      @clean radius axes at={%
+        {-90}{low}{high}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {0}{high}{low}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  fourth quadrant/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at -90 and max at 0, ticks},
+      @visualize zero=south east,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  fourth quadrant clockwise/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 0 and max at -90, ticks},
+      @visualize zero=south east,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {max}{high}{low}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {min}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding max}}{}
+      }
+    }
+  },
+  %
+  % Upper half
+  %
+  0 to pi/.style={
+    @setup axes/.style={
+      angle axis={min value=0, max value=3.141592653589793},
+      @rad,
+      @visualize zero=north,
+      @inner radius axes at={{0}{low},{1.570796326794897}{high},{3.141592653589793}{high}},
+      @clean radius axes at={%
+        {0}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {3.141592653589793}{high}{low}{yshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  0 to 180/.style={
+    @setup axes/.style={
+      angle axis={min value=0, max value=180},
+      @degrees,
+      @visualize zero=north,
+      @inner radius axes at={{0}{low},{90}{high},{180}{high}},
+      @clean radius axes at={%
+        {0}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {180}{high}{low}{yshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  upper half/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 0 and max at 180, ticks},
+      @visualize zero=north,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{yshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  upper half clockwise/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 180 and max at 0, ticks},
+      @visualize zero=north,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{yshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{yshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  %
+  % Lower half
+  %
+  lower half/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at -180 and max at 0, ticks},
+      @visualize zero=south,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{yshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{yshift=\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  lower half clockwise/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 0 and max at -180, ticks},
+      @visualize zero=south,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{yshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{yshift=\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  %
+  % Right half
+  %
+  -pi half to pi half/.style={
+    @setup axes/.style={
+      @rad,
+      angle axis={min value=-1.570796326794897, max value=1.570796326794897},
+      @visualize zero=east,
+      @inner radius axes at={{0}{low},{1.570796326794897}{low},{-1.570796326794897}{high}},
+      @clean radius axes at={%
+        {-1.570796326794897}{low}{high}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {1.570796326794897}{high}{low}{xshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  -90 to 90/.style={
+    @setup axes/.style={
+      angle axis={min value=-90, max value=90},
+      @degrees,
+      @visualize zero=east,
+      @inner radius axes at={{-90}{low},{0}{low},{90}{high}},
+      @clean radius axes at={%
+        {-90}{low}{high}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {90}{high}{low}{xshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  right half/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at -90 and max at 90, ticks},
+      @visualize zero=east,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{xshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  right half clockwise/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 90 and max at -90, ticks},
+      @visualize zero=east,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{xshift=\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{xshift=-\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  %
+  % Left half
+  %
+  left half/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 90 and max at 270, ticks},
+      @visualize zero=west,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{xshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{xshift=\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  left half clockwise/.style={
+    @setup axes/.style={
+      angle axis={scaling=min at 270 and max at 90, ticks},
+      @visualize zero=west,
+      @inner radius axes at={{min}{low},{max}{high}},
+      @clean radius axes at={%
+        {min}{low}{high}{xshift=-\pgfkeysvalueof{/tikz/data visualization/angle axis/padding min}}{},%
+        {max}{high}{low}{xshift=\pgfkeysvalueof{/tikz/data
+            visualization/angle axis/padding max}}{options at=0 as
+          [{style={draw=none}, no tick text}]}
+      }
+    }
+  },
+  %
+  % Full circle
+  %
+  0 to 2pi/.style={
+    @setup axes/.style={
+      angle axis={min value=0, max value=6.283185307179586},
+      @rad,
+      @visualize zero=north east,
+      @inner radius axes at={{0}{low},{1.570796326794897}{high},{3.141592653589793}{high},{4.71238898038469}{low}},
+      @clean radius axes at={{0}{low}{high}{}{}}
+    }
+  },
+  -pi to pi/.style={
+    @setup axes/.style={
+      angle axis={min value=-3.141592653589793, max value=3.141592653589793},
+      @rad,
+      @visualize zero=north east,
+      @inner radius axes at={{0}{low},{1.570796326794897}{high},{3.141592653589793}{high},{-1.57079632679489}{low}},
+      @clean radius axes at={{0}{low}{high}{}{}}
+    }
+  },
+  0 to 360/.style={
+    @setup axes/.style={
+      angle axis={min value=0, max value=360},
+      @degrees,
+      @visualize zero=north east,
+      @inner radius axes at={{0}{low},{90}{high},{180}{high},{270}{low}},
+      @clean radius axes at={{0}{low}{high}{}{}}
+    }
+  },
+  -180 to 180/.style={
+    @setup axes/.style={
+      angle axis={min value=-180, max value=180},
+      @degrees,
+      @visualize zero=north east,
+      @inner radius axes at={{0}{low},{90}{high},{180}{high},{-90}{low}},
+      @clean radius axes at={{0}{low}{high}{}{}}
+    }
+  },
+}%
+
+
+
+
+%
+% Pie-charts -- still under construction...
+%
+
+\tikzset{
+  /tikz/data visualization/axis options/.cd,
+  percent/.style={\tikz@dv@axis/scaling=0 at 0 and 1 at 3.6},
+  full circle/.style={\tikz@dv@axis/scaling=min at 0 and max at 360},
+  half circle/.style={\tikz@dv@axis/scaling=min at 0 and max at 180},
+  quarter circle/.style={\tikz@dv@axis/scaling=min at 0 and max at 90}
+}%
+
+
+
+
+\endinput

@@ -1,0 +1,1028 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbdocumentation.code.tex: Code for LaTeX documentations
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\tcb@set@library@version{6.1.0}
+
+\tcbuselibrary{listings,skins,xparse,external,raster}
+
+\ifdefined\printindex\else%
+  \RequirePackage{makeidx}[2000/03/29]%
+  \AddToHook{begindocument/before}{%
+    \@ifpackageloaded{imakeidx}{%
+      \tcb@warning{`imakeidx' package should be loaded before `documentation' library}%
+  }{}}%
+\fi
+\RequirePackage{refcount}[2011/10/16]
+\RequirePackage{hyperref}[2012/02/06]
+\ifdefined\marginnote\else\RequirePackage{marginnote}[2012/03/29]\fi
+\IfFileExists{pifont.sty}{}{\tcb@warning{Library 'documentation' may need symbols from package 'pifont' (not installed)}}
+\IfFileExists{marvosym.sty}{}{\tcb@warning{Library 'documentation' may need symbols from package 'marvosym' (not installed)}}
+
+\definecolor{Option}{rgb}{0.118,0.546,0.222}
+\definecolor{Definition}{rgb}{0.784,0.06,0.176}
+\definecolor{ExampleFrame}{rgb}{0.628,0.705,0.942}
+\definecolor{ExampleBack}{rgb}{0.963,0.971,0.994}
+\definecolor{Hyperlink}{rgb}{0.281,0.275,0.485}
+\definecolor{Fade}{rgb}{0.5,0.5,0.5}
+
+\def\colDef#1{\textcolor{\kvtcb@col@command}{#1}}
+\def\colOpt#1{\textcolor{\kvtcb@col@opt}{#1}}
+\def\colFade#1{\textcolor{\kvtcb@col@fade}{#1}}
+
+\newcommand{\tcb@doc@mvchr}[1]{{\fontfamily{mvs}\fontencoding{U}%
+  \fontseries{m}\fontshape{n}\selectfont\char#1}}
+
+\lstdefinestyle{tcbdocumentation}{language={[LaTeX]TeX},
+    aboveskip={0\p@ \@plus 6\p@},
+    belowskip={0\p@ \@plus 6\p@},
+    columns=fullflexible,
+    keepspaces=true,
+    breaklines=true,
+    prebreak={\tcb@doc@mvchr{39}},%\Righttorque,
+    postbreak={\space\tcb@doc@mvchr{38}},%\Lefttorque
+    breakatwhitespace=true,
+    basicstyle=\ttfamily\footnotesize,
+    extendedchars=true,
+    moredelim={[is][\itshape\rmfamily]{^^a7}{^^a7}},
+    nolol,inputencoding=\kvtcb@listingencoding}
+
+% The following macros are taken from ltxdoc
+\DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
+\def\meta@font@select{\rmfamily\itshape}
+
+\AtEndPreamble{%
+  \@ifpackageloaded{doc}{%
+  }{% code taken from doc.sty
+    \ifx\l@nohyphenation\undefined
+      \newlanguage\l@nohyphenation
+    \fi
+    \DeclareRobustCommand\meta[1]{%
+         \ensuremath\langle
+         \ifmmode \expandafter \nfss@text \fi
+         {%
+          \meta@font@select
+          \edef\meta@hyphen@restore
+            {\hyphenchar\the\font\the\hyphenchar\font}%
+          \hyphenchar\font\m@ne
+          \language\l@nohyphenation
+          #1\/%
+          \meta@hyphen@restore
+         }\ensuremath\rangle
+    }%
+  }%
+}%
+
+\def\marg#1{%
+  {\ttfamily\char`\{}\meta{#1}{\ttfamily\char`\}}}
+\def\oarg#1{%
+  \colOpt{{\ttfamily[}\meta{#1}{\ttfamily]}}}
+\def\sarg{\colOpt{\ttfamily*}}
+\def\brackets#1{{\ttfamily\char`\{}#1{\ttfamily\char`\}}}
+
+\newif\iftcb@doc@colorize
+\newif\iftcb@doc@annotate
+
+% language specific texts
+\tcbset{
+  doclang/.cd,
+  color/.store in=\kvtcb@text@color,
+  colors/.store in=\kvtcb@text@colors,
+  counter/.store in=\kvtcb@text@counter,
+  counters/.store in=\kvtcb@text@counters,
+  environment content/.store in=\kvtcb@text@envcontent,
+  environment/.store in=\kvtcb@text@env,
+  environments/.store in=\kvtcb@text@envs,
+  commands/.store in=\kvtcb@text@coms,
+  index/.store in=\kvtcb@text@index,
+  key/.store in=\kvtcb@text@key,
+  keys/.store in=\kvtcb@text@keys,
+  length/.store in=\kvtcb@text@length,
+  lengths/.store in=\kvtcb@text@lengths,
+  new/.store in=\kvtcb@text@new,
+  path/.store in=\kvtcb@text@path,
+  paths/.store in=\kvtcb@text@paths,
+  pageshort/.store in=\kvtcb@text@pageshort,
+  updated/.store in=\kvtcb@text@updated,
+  value/.store in=\kvtcb@text@value,
+  values/.store in=\kvtcb@text@values,
+}
+
+% documentation options
+\tcbset{
+  documentation listing options/.store in=\kvtcb@doclistingoptions,%
+  documentation listing style/.style={documentation listing options={style=#1}},%
+  documentation minted language/.store in=\kvtcb@docminted@language,
+  documentation minted style/.store in=\kvtcb@docmintstyle,
+  documentation minted options/.store in=\kvtcb@docmintoptions,
+  color command/.store in=\kvtcb@col@command,
+  color environment/.store in=\kvtcb@col@environment,
+  color key/.store in=\kvtcb@col@key,
+  color value/.store in=\kvtcb@col@value,
+  color counter/.store in=\kvtcb@col@counter,
+  color length/.store in=\kvtcb@col@length,
+  color color/.store in=\kvtcb@col@color,
+  color fade/.store in=\kvtcb@col@fade,
+  color path/.store in=\kvtcb@col@path,
+  color definition/.style={color command={#1},color environment={#1},color key={#1},
+    color value={#1},color color={#1},color counter={#1},color length={#1}, color path={#1}},
+  color option/.store in=\kvtcb@col@opt,
+  color hyperlink/.store in=\kvtcb@colhyper,
+  index actual/.store in=\idx@actual,
+  index quote/.store in=\idx@quote,
+  index level/.store in=\idx@level,
+  index format/.store in=\idx@format,
+  index colorize/.is if=tcb@doc@colorize,%
+  index annotate/.is if=tcb@doc@annotate,%
+  index command/.code={\def\kvtcb@index@command##1{#1{##1}}},%
+  index command name/.code={\def\kvtcb@index@command##1{\index[{#1}]{##1}}},%
+  doc left/.dimstore in=\kvtcb@doc@left,
+  doc right/.dimstore in=\kvtcb@doc@right,
+  doc left indent/.dimstore in=\kvtcb@doc@indentleft,
+  doc right indent/.dimstore in=\kvtcb@doc@indentright,
+  doc head command/.style={doc@head@command/.style={#1}},
+  doc head environment/.style={doc@head@environment/.style={#1}},
+  doc head key/.style={doc@head@key/.style={#1}},
+  doc head path/.style={doc@head@path/.style={#1}},
+  doc head/.style={doc head command={#1},doc head environment={#1},doc head key={#1},
+    doc head path={#1}},
+  doc raster command/.style={doc@raster@command/.style={#1}},
+  doc raster environment/.style={doc@raster@environment/.style={#1}},
+  doc raster key/.style={doc@raster@key/.style={#1}},
+  doc raster path/.style={doc@raster@path/.style={#1}},
+  doc raster/.style={doc raster command={#1},doc raster environment={#1},doc raster key={#1},
+    doc raster path={#1}},
+  doc label/.store in=\kvtcb@doc@label,
+  doc index/.store in=\kvtcb@doc@index,
+  doc sort index/.store in=\kvtcb@doc@sortindex,
+  doc@name/.store in=\kvtcb@doc@name,
+  doc parameter/.store in=\kvtcb@doc@parameter,
+  doc name/.style={doc@name={#1},doc label={#1},doc index={#1},doc sort index={#1}},
+  doc keypath/.store in=\kvtcb@doc@keypath,
+  doc@sub@keypath/.style={doc keypath/.code={
+    \ifblank{##1}{\def\kvtcb@doc@keypath{#1}}{\def\kvtcb@doc@keypath{#1/##1}}}},
+  before doc body command/.store in=\kvtcb@doc@body@command@before,
+  after doc body command/.store in=\kvtcb@doc@body@command@after,
+  before doc body environment/.store in=\kvtcb@doc@body@environment@before,
+  after doc body environment/.store in=\kvtcb@doc@body@environment@after,
+  before doc body key/.store in=\kvtcb@doc@body@key@before,
+  after doc body key/.store in=\kvtcb@doc@body@key@after,
+  before doc body path/.store in=\kvtcb@doc@body@path@before,
+  after doc body path/.store in=\kvtcb@doc@body@path@after,
+  before doc body/.style={before doc body command={#1},before doc body environment={#1},
+    before doc body key={#1},before doc body path={#1}},
+  after doc body/.style={after doc body command={#1},after doc body environment={#1}
+    ,after doc body key={#1},after doc body path={#1}},
+  doc description/.store in=\kvtcb@doc@description,%
+  doc no index/.style={doc into index=false},
+  doc updated/.style={before upper={\tcbdocmarginnote{\tcbdocupdated{#1}}}},
+  doc new/.style={before upper={\tcbdocmarginnote{\tcbdocnew{#1}}}},
+  doc new and updated/.style 2 args={before upper={\tcbdocmarginnote{\tcbdocnew{#1}\\\tcbdocupdated{#2}}}},
+  doc marginnote/.style={doc@marginnote/.style={#1}},
+  keywords bold/.is choice,%
+  keywords bold/.default=true,%
+  keywords bold/true/.code={\let\tcb@doc@bfseries\bfseries},
+  keywords bold/false/.code={\let\tcb@doc@bfseries\mdseries},
+}
+
+
+% styles
+\tcbset{
+  docexample/.style={colframe=ExampleFrame,colback=ExampleBack,
+    before skip=\medskipamount,after skip=\medskipamount,
+    fontlower=\footnotesize},
+  documentation minted language=latex,
+  documentation minted style=,
+  documentation minted options={tabsize=2,fontsize=\small},
+  index default settings/.style={index actual={@},index quote={"},index level={!}},
+  index german settings/.style={index actual={=},index quote={!},index level={>}},
+  english language/.code={\tcbset{doclang/.cd,
+    color=color,colors=Colors,
+    counter=counter,counters=Counters,
+    environment content=environment content,
+    environment=environment,environments=Environments,
+    commands=Commands,
+    path=path operation,paths=Path operations,
+    index=Index,
+    key=key,keys=Keys,
+    length=length,lengths=Lengths,
+    new=New,
+    pageshort={P.},
+    updated=Updated,
+    value=value,values=Values}},
+}
+
+\AtBeginDocument{%
+  \csname tcb@doc@index@\idx@format\endcsname%
+  \hypersetup{
+  citecolor=\kvtcb@colhyper,
+  linkcolor=\kvtcb@colhyper,
+  urlcolor=\kvtcb@colhyper,
+  filecolor=\kvtcb@colhyper,
+  menucolor=\kvtcb@colhyper
+}}
+
+\def\dispExample{\tcb@layer@pushup\tcbset{docexample}\begingroup\tcbwritetemp}
+
+\def\enddispExample{%
+  \endtcbwritetemp\endgroup%
+  \begin{tcolorbox}%
+  \tcb@doc@usetemplisting%
+  \tcblower%
+  \tcbusetemp%
+  \end{tcolorbox}%
+}
+
+\newenvironment{dispExample*}[1]{%
+  \tcb@layer@pushup\tcbset{docexample,#1}\begingroup\tcbwritetemp%
+  }{\enddispExample}
+
+\def\dispListing{\tcb@layer@pushup\tcbset{docexample}\begingroup\tcbwritetemp}
+
+\def\enddispListing{%
+  \endtcbwritetemp\endgroup%
+  \begin{tcolorbox}%
+  \tcb@doc@usetemplisting%
+  \end{tcolorbox}%
+}
+
+\newenvironment{dispListing*}[1]{%
+  \tcb@layer@pushup\tcbset{docexample,#1}\begingroup\tcbwritetemp%
+  }{\enddispListing}
+
+% index auxiliary macros
+\def\tcb@Index@Print@CA#1#2#3{%
+  \iftcb@doc@colorize\textcolor{#2}{\tcb@scantokens{#1}}\else\tcb@scantokens{#1}\fi%
+  \iftcb@doc@annotate\ #3\fi%
+}
+
+\def\tcb@Index@Print@C#1#2{%
+  \iftcb@doc@colorize\textcolor{#2}{\tcb@scantokens{#1}}\else\tcb@scantokens{#1}\fi%
+}
+
+\def\tcb@Index@Print@ComCA#1#2#3{%
+  \iftcb@doc@colorize\textcolor{#2}{\tcb@cs{#1}}\else\tcb@cs{#1}\fi%
+  \iftcb@doc@annotate\ #3\fi%
+}
+
+\def\tcb@Index@Print@ComC#1#2{%
+  \iftcb@doc@colorize\textcolor{#2}{\tcb@cs{#1}}\else\tcb@cs{#1}\fi%
+}
+
+\NewDocumentCommand{\tcbIndexPrintComC}{m}{\tcb@Index@Print@ComC{#1}{\kvtcb@col@command}}
+
+\NewDocumentCommand{\tcbIndexPrintEnvCA}{m}{\tcb@Index@Print@CA{#1}{\kvtcb@col@environment}{\kvtcb@text@env}}
+\NewDocumentCommand{\tcbIndexPrintEnvC}{m}{\tcb@Index@Print@C{#1}{\kvtcb@col@environment}}
+
+\NewDocumentCommand{\tcbIndexPrintKeyCA}{m}{\tcb@Index@Print@CA{#1}{\kvtcb@col@key}{\kvtcb@text@key}}
+\NewDocumentCommand{\tcbIndexPrintKeyC}{m}{\tcb@Index@Print@C{#1}{\kvtcb@col@key}}
+
+\NewDocumentCommand{\tcbIndexPrintPathCA}{m}{\tcb@Index@Print@CA{#1}{\kvtcb@col@path}{\kvtcb@text@path}}
+\NewDocumentCommand{\tcbIndexPrintPathC}{m}{\tcb@Index@Print@C{#1}{\kvtcb@col@path}}
+
+\NewDocumentCommand{\tcbIndexPrintValCA}{m}{\tcb@Index@Print@CA{#1}{\kvtcb@col@value}{\kvtcb@text@value}}
+\NewDocumentCommand{\tcbIndexPrintValC}{m}{\tcb@Index@Print@C{#1}{\kvtcb@col@value}}
+
+\NewDocumentCommand{\tcbIndexPrintColCA}{m}{\tcb@Index@Print@CA{#1}{\kvtcb@col@color}{\kvtcb@text@color}}
+\NewDocumentCommand{\tcbIndexPrintColC}{m}{\tcb@Index@Print@C{#1}{\kvtcb@col@color}}
+
+\NewDocumentCommand{\tcbIndexPrintCountCA}{m}{\tcb@Index@Print@CA{#1}{\kvtcb@col@counter}{\kvtcb@text@counter}}
+\NewDocumentCommand{\tcbIndexPrintCountC}{m}{\tcb@Index@Print@C{#1}{\kvtcb@col@counter}}
+
+\NewDocumentCommand{\tcbIndexPrintLenCA}{m}{\tcb@Index@Print@ComCA{#1}{\kvtcb@col@length}{\kvtcb@text@length}}
+\NewDocumentCommand{\tcbIndexPrintLenC}{m}{\tcb@Index@Print@ComC{#1}{\kvtcb@col@length}}
+
+
+\newenvironment{tcb@manual@entry}{\begin{list}{}{%
+  \setlength{\leftmargin}{\kvtcb@doc@left}%
+  \setlength{\itemindent}{0pt}%
+  \setlength{\itemsep}{0pt}%
+  \setlength{\parsep}{0pt}%
+  \setlength{\rightmargin}{\kvtcb@doc@right}%
+  }\item}{\end{list}}
+
+\def\tcb@doc@do@description{%
+  \ifx\kvtcb@doc@description\@empty\else\tcblower\raggedleft\strut(\kvtcb@doc@description)\strut\fi%
+}
+
+\newtcolorbox{tcb@doc@head}[1]{blank,colback=white,colframe=white,
+  code={\tcbdimto\tcb@temp@grow@left{-\kvtcb@doc@indentleft}%
+        \tcbdimto\tcb@temp@grow@right{-\kvtcb@doc@indentright}},
+  grow to left by=\tcb@temp@grow@left,
+  grow to right by=\tcb@temp@grow@right,
+  sidebyside,sidebyside align=top,
+  sidebyside gap=-\tcb@w@upper@real,
+  phantom=\phantomsection,#1}
+
+
+\ExplSyntaxOn
+
+
+\cs_new_nopar:Npn \__tcobox_new_bool_key:nn #1 #2
+  {
+    \bool_new:N #1
+    \tcbset
+      {
+        #2/.is~choice,
+        #2/true/.code  = { \bool_set_true:N  #1 },
+        #2/false/.code = { \bool_set_false:N #1 },
+        #2/.default = true,
+      }
+  }
+
+\__tcobox_new_bool_key:nn \l__tcobox_doc_toindex_bool { doc~into~index }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_colors_bool       { index~gather~colors }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_commands_bool     { index~gather~commands }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_counters_bool     { index~gather~counters }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_environments_bool { index~gather~environments }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_keys_bool         { index~gather~keys }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_lengths_bool      { index~gather~lengths }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_paths_bool        { index~gather~paths }
+\__tcobox_new_bool_key:nn \l__tcobox_doc_gather_values_bool       { index~gather~values }
+
+
+\cs_new_nopar:Npn \__tcobox_sanitize_tl:n #1
+  {
+    \group_begin:
+    \tl_rescan:nn
+      {
+        \char_set_catcode_letter:N \_
+        \char_set_catcode_letter:N \@
+      }
+      {
+        #1
+      }
+    \group_end:
+  }
+\cs_generate_variant:Nn \__tcobox_sanitize_tl:n { V }
+
+
+\cs_new_nopar:Npn \__tcobox_print_docname:
+  {
+    \texttt{\tcb@doc@bfseries\__tcobox_sanitize_tl:V\kvtcb@doc@name}
+  }
+
+\cs_new_nopar:Npn \__tcobox_print_cs_docname:
+  {
+    \texttt{\tcb@doc@bfseries\c_backslash_str\__tcobox_sanitize_tl:V\kvtcb@doc@name}
+  }
+
+
+\NewDocumentCommand \tcb@scantokens { m }
+  {
+    \texttt{\__tcobox_sanitize_tl:n{#1}}
+  }
+
+\NewDocumentCommand \tcb@cs { m }
+  {
+    \texttt{\c_backslash_str\__tcobox_sanitize_tl:n{#1}}
+  }
+
+
+% main documentation environments
+
+\seq_new:N \g__tcobox_label_seq
+
+
+\cs_new:Npn \__tcobox_doc_entry_begin:nnn #1#2#3
+  {
+    \tcbset{doc~name=, doc~parameter=, doc~description=, #1}
+    \begin{tcb@manual@entry}
+    \seq_gclear:N \g__tcobox_label_seq
+    \begin{tcbraster}[raster~columns=1,raster~row~skip=0pt,
+      raster~after~skip=4.1pt,raster~force~size=false,doc@raster@#3]
+    \seq_set_from_clist:Nn \l_tmpa_seq {#2}
+    \seq_if_empty:NT \l_tmpa_seq
+    {
+      \seq_put_left:Nn \l_tmpa_seq {}
+    }
+    \seq_map_inline:Nn \l_tmpa_seq
+      {
+        \group_begin:
+        \tcbset{##1}
+        \begin{tcb@doc@head}{doc@head@#3}
+        \strut
+        \use:c { __tcobox_doc_head_#3: }
+        \strut
+        \end{tcb@doc@head}
+        \group_end:
+      }
+    \end{tcbraster}
+    \seq_gclear:N \g__tcobox_label_seq
+    \nobreak
+    \tcbset{before~upper=}
+    \use:c { kvtcb@doc@body@#3@before }
+    \ignorespaces
+  }
+
+
+\cs_new:Npn \__tcobox_doc_entry_end:n #1
+  {
+    \ifvmode\else\unskip\fi
+    \use:c { kvtcb@doc@body@#1@after }
+    \end{tcb@manual@entry}
+  }
+
+
+\cs_new_nopar:Npn \__tcobox_print_command:
+  {
+    \textcolor{\kvtcb@col@command}{\__tcobox_print_cs_docname:}
+  }
+
+\cs_new_nopar:Npn \__tcobox_index_command:
+  {
+    \bool_if:NT \l__tcobox_doc_toindex_bool
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintComC{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_commands_bool
+          {
+            \kvtcb@index@command{\kvtcb@text@coms\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintComC{\kvtcb@doc@index}}
+          }
+      }
+  }
+
+\cs_new:Npn \__tcobox_doc_head_command:
+  {
+    \__tcobox_print_command:
+    \__tcobox_index_command:
+    \seq_if_in:NVF \g__tcobox_label_seq \kvtcb@doc@label
+      {
+        \protected@edef\@currentlabel{\noexpand\tcb@cs{\kvtcb@doc@name}}
+        \label{com:\kvtcb@doc@label}
+        \seq_gput_left:NV \g__tcobox_label_seq \kvtcb@doc@label
+      }
+    {\ttfamily\kvtcb@doc@parameter}
+    \tcb@doc@do@description
+  }
+
+
+\NewDocumentEnvironment{docCommands}{ +O{} +m }
+  {
+    \__tcobox_doc_entry_begin:nnn {#1}{#2}{command}
+  }
+  {
+    \__tcobox_doc_entry_end:n { command }
+  }
+
+
+\NewDocumentEnvironment{docCommand}{ +O{} m +m }
+  {
+    \__tcobox_doc_entry_begin:nnn {doc~name={#2},doc~parameter={#3},#1}{}{command}
+  }
+  {
+    \__tcobox_doc_entry_end:n { command }
+  }
+
+
+\NewDocumentEnvironment{docCommand*}{}
+  {
+    \group_begin:
+    \bool_set_false:N \l__tcobox_doc_toindex_bool
+    \begin{docCommand}
+  }
+  {
+    \end{docCommand}
+    \group_end:
+  }
+
+
+\cs_new_nopar:Npn \__tcobox_print_environment:
+  {
+    \textcolor{\kvtcb@col@environment}{\__tcobox_print_docname:}
+  }
+
+\cs_new_nopar:Npn \__tcobox_index_environment:
+  {
+    \bool_if:NT \l__tcobox_doc_toindex_bool
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintEnvCA{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_environments_bool
+          {
+            \kvtcb@index@command{\kvtcb@text@envs\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintEnvC{\kvtcb@doc@index}}
+          }
+      }
+  }
+
+\cs_new:Npn \__tcobox_doc_head_environment:
+  {
+    \strut\cs{begin}\brackets{\__tcobox_print_environment:}
+    \__tcobox_index_environment:
+    \seq_if_in:NVF \g__tcobox_label_seq \kvtcb@doc@label
+      {
+        \protected@edef\@currentlabel{\kvtcb@doc@name}
+        \label{env:\kvtcb@doc@label}
+        \seq_gput_left:NV \g__tcobox_label_seq \kvtcb@doc@label
+      }
+    {\ttfamily\kvtcb@doc@parameter}\par
+    \strut{\ttfamily\nobreakspace\nobreakspace}\meta{\kvtcb@text@envcontent}\par
+    \strut\cs{end}\brackets{\__tcobox_print_environment:}
+    \tcb@doc@do@description
+  }
+
+
+\NewDocumentEnvironment{docEnvironments}{ +O{} +m }
+  {
+    \__tcobox_doc_entry_begin:nnn {#1}{#2}{environment}
+  }
+  {
+    \__tcobox_doc_entry_end:n { environment }
+  }
+
+
+\NewDocumentEnvironment{docEnvironment}{ +O{} m +m }
+  {
+    \__tcobox_doc_entry_begin:nnn {doc~name={#2},doc~parameter={#3},#1}{}{environment}
+  }
+  {
+    \__tcobox_doc_entry_end:n { environment }
+  }
+
+
+\NewDocumentEnvironment{docEnvironment*}{}
+  {
+    \group_begin:
+    \bool_set_false:N \l__tcobox_doc_toindex_bool
+    \begin{docEnvironment}
+  }
+  {
+    \end{docEnvironment}
+    \group_end:
+  }
+
+
+\cs_new_nopar:Npn \__tcobox_print_key:
+  {
+    \textcolor{\kvtcb@col@key}{\tcb@doc@bfseries\ttfamily
+    \tl_if_empty:NF \kvtcb@doc@keypath
+      {
+        /\__tcobox_sanitize_tl:V\kvtcb@doc@keypath/
+      }
+    \__tcobox_sanitize_tl:V\kvtcb@doc@name}
+  }
+
+\cs_new_nopar:Npn \__tcobox_index_key:
+  {
+    \bool_if:NT \l__tcobox_doc_toindex_bool
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintKeyCA{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_keys_bool
+          {
+            \tl_if_empty:NTF \kvtcb@doc@keypath
+              {
+                \kvtcb@index@command{\kvtcb@text@keys\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintKeyC{\kvtcb@doc@index}}
+              }
+              {
+                \kvtcb@index@command{\kvtcb@text@keys\idx@level\kvtcb@doc@keypath\idx@actual\tcbIndexPrintKeyC{/\kvtcb@doc@keypath/}
+                  \idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintKeyC{\kvtcb@doc@index}}
+              }
+          }
+      }
+  }
+
+\cs_new:Npn \__tcobox_doc_head_key:
+  {
+    \__tcobox_print_key:
+    \__tcobox_index_key:
+    \tl_if_empty:NTF \kvtcb@doc@keypath
+      {
+        \seq_if_in:NVF \g__tcobox_label_seq \kvtcb@doc@label
+          {
+            \protected@edef\@currentlabel{\kvtcb@doc@name}
+            \label{key:\kvtcb@doc@label}
+            \seq_gput_left:NV \g__tcobox_label_seq \kvtcb@doc@label
+          }
+      }
+      {
+        \tl_set:Nx \l_tmpa_tl {/\kvtcb@doc@keypath/\kvtcb@doc@label}
+        \seq_if_in:NVF \g__tcobox_label_seq \l_tmpa_tl
+          {
+            \protected@edef\@currentlabel{/\kvtcb@doc@keypath/\kvtcb@doc@name}
+            \label{key:/\kvtcb@doc@keypath/\kvtcb@doc@label}
+            \seq_gput_left:NV \g__tcobox_label_seq \l_tmpa_tl
+          }
+      }
+    {\ttfamily\kvtcb@doc@parameter}
+    \tcb@doc@do@description
+  }
+
+
+\NewDocumentEnvironment{docKeys}{ +O{} +m }
+  {
+    \__tcobox_doc_entry_begin:nnn {doc~keypath=,#1}{#2}{key}
+  }
+  {
+    \__tcobox_doc_entry_end:n { key }
+  }
+
+
+\NewDocumentEnvironment{docKey}{ O{} +O{} m m +m }
+  {
+    \__tcobox_doc_entry_begin:nnn
+      {
+        doc~keypath=#1,doc~name={#3},doc~parameter={#4},doc~description={#5},#2
+      }
+      {}{key}
+  }
+  {
+    \__tcobox_doc_entry_end:n { key }
+  }
+
+
+\NewDocumentEnvironment{docKey*}{}
+  {
+    \group_begin:
+    \bool_set_false:N \l__tcobox_doc_toindex_bool
+    \begin{docKey}
+  }
+  {
+    \end{docKey}
+    \group_end:
+  }
+
+
+\NewDocumentCommand \tcbmakedocSubKey { m m }
+  {
+    \NewDocumentEnvironment{#1}{ O{} +O{} m m +m }
+      {
+        \__tcobox_doc_entry_begin:nnn
+          {
+            doc@sub@keypath=#2,
+            doc~keypath=##1,
+            doc~name={##3},
+            doc~parameter={##4},
+            doc~description={##5},
+            ##2
+          }
+          {}{key}
+      }
+      {
+        \__tcobox_doc_entry_end:n { key }
+      }
+    \NewDocumentEnvironment{#1*}{}
+      {
+        \group_begin:
+        \bool_set_false:N \l__tcobox_doc_toindex_bool
+        \begin{#1}
+      }
+      {
+        \end{#1}
+        \group_end:
+      }
+  }
+
+
+\NewDocumentCommand \tcbmakedocSubKeys { m m }
+  {
+    \NewDocumentEnvironment{#1}{ +O{} +m }
+      {
+        \__tcobox_doc_entry_begin:nnn
+          {
+            doc@sub@keypath=#2,
+            doc~keypath=,
+            ##1
+          }
+          {##2}{key}
+      }
+      {
+        \__tcobox_doc_entry_end:n { key }
+      }
+  }
+
+
+\cs_new_nopar:Npn \__tcobox_print_path:
+  {
+    \textcolor{\kvtcb@col@path}{\__tcobox_print_docname:}
+  }
+
+\cs_new_nopar:Npn \__tcobox_index_path:
+  {
+    \bool_if:NT \l__tcobox_doc_toindex_bool
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintPathCA{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_paths_bool
+          {
+            \kvtcb@index@command{\kvtcb@text@paths\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintPathC{\kvtcb@doc@index}}
+          }
+      }
+  }
+
+\cs_new:Npn \__tcobox_doc_head_path:
+  {
+    \colFade{\tcb@cs{path~...}}~\__tcobox_print_path:
+    \__tcobox_index_path:
+    \seq_if_in:NVF \g__tcobox_label_seq \kvtcb@doc@label
+      {
+        \protected@edef\@currentlabel{\kvtcb@doc@name}
+        \label{path:\kvtcb@doc@label}
+        \seq_gput_left:NV \g__tcobox_label_seq \kvtcb@doc@label
+      }
+    {\ttfamily\kvtcb@doc@parameter{}~\colFade{...;}}
+    \tcb@doc@do@description
+  }
+
+
+\NewDocumentEnvironment{docPathOperations}{ +O{} +m }
+  {
+    \__tcobox_doc_entry_begin:nnn {#1}{#2}{path}
+  }
+  {
+    \__tcobox_doc_entry_end:n { path }
+  }
+
+
+\NewDocumentEnvironment{docPathOperation}{ +O{} m +m }
+  {
+    \__tcobox_doc_entry_begin:nnn {doc~name={#2},doc~parameter={#3},#1}{}{path}
+  }
+  {
+    \__tcobox_doc_entry_end:n { path }
+  }
+
+
+\NewDocumentEnvironment{docPathOperation*}{}
+  {
+    \group_begin:
+    \bool_set_false:N \l__tcobox_doc_toindex_bool
+    \begin{docPathOperation}
+  }
+  {
+    \end{docPathOperation}
+    \group_end:
+  }
+
+
+\NewDocumentCommand \docAuxCommand { s +O{} m }
+  {
+    \group_begin:
+    \tcbset{doc~name={#3},#2}
+    \__tcobox_print_command:
+    \IfBooleanF{#1}{\__tcobox_index_command:}
+    \group_end:
+  }
+
+\NewDocumentCommand \docAuxEnvironment { s +O{} m }
+  {
+    \group_begin:
+    \tcbset{doc~name={#3},#2}
+    \__tcobox_print_environment:
+    \IfBooleanF{#1}{\__tcobox_index_environment:}
+    \group_end:
+  }
+
+
+\NewDocumentCommand \docAuxKey { s O{} +O{} m }
+  {
+    \group_begin:
+    \tcbset{doc~keypath={#2},doc~name={#4},#3}
+    \__tcobox_print_key:
+    \IfBooleanF{#1}{\__tcobox_index_key:}
+    \group_end:
+  }
+
+
+\NewDocumentCommand \docValue { s +O{} m }
+  {
+    \group_begin:
+    \tcbset{doc~name={#3},#2}
+    \textcolor{\kvtcb@col@value}{\__tcobox_print_docname:}
+    \IfBooleanF{#1}
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintValCA{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_values_bool
+          {
+            \kvtcb@index@command{\kvtcb@text@values\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintValC{\kvtcb@doc@index}}
+          }
+      }
+    \group_end:
+  }
+
+
+\NewDocumentCommand \docColor { s +O{} m }
+  {
+    \group_begin:
+    \tcbset{doc~name={#3},#2}
+    \textcolor{\kvtcb@col@color}{\__tcobox_print_docname:}
+    \IfBooleanF{#1}
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintColCA{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_colors_bool
+          {
+            \kvtcb@index@command{\kvtcb@text@colors\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintColC{\kvtcb@doc@index}}
+          }
+      }
+    \group_end:
+  }
+
+
+\NewDocumentCommand \docCounter { s +O{} m }
+  {
+    \group_begin:
+    \tcbset{doc~name={#3},#2}
+    \textcolor{\kvtcb@col@counter}{\__tcobox_print_docname:}
+    \IfBooleanF{#1}
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintCountCA{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_counters_bool
+          {
+            \kvtcb@index@command{\kvtcb@text@counters\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintCountC{\kvtcb@doc@index}}
+          }
+      }
+    \group_end:
+  }
+
+
+\NewDocumentCommand \docLength { s +O{} m }
+  {
+    \group_begin:
+    \tcbset{doc~name={#3},#2}
+    \textcolor{\kvtcb@col@length}{\__tcobox_print_cs_docname:}
+    \IfBooleanF{#1}
+      {
+        \kvtcb@index@command{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintLenCA{\kvtcb@doc@index}}
+        \bool_if:NT \l__tcobox_doc_gather_lengths_bool
+          {
+            \kvtcb@index@command{\kvtcb@text@lengths\idx@level\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintLenC{\kvtcb@doc@index}}
+          }
+      }
+    \group_end:
+  }
+
+
+\ExplSyntaxOff
+
+
+\setrefcountdefault{-1}
+\NewDocumentCommand\tcb@ref@doc{msm}{%
+  \hyperref[{#1:#3}]{\texttt{\ref*{#1:#3}}%
+  \IfBooleanTF{#2}{}{%
+    \ifnum\getpagerefnumber{#1:#3}=\thepage\relax%
+    \else%
+      \textsuperscript{{\fontfamily{pzd}\fontencoding{U}\fontseries{m}\fontshape{n}\selectfont\char213}%
+      \,\kvtcb@text@pageshort\,\pageref*{#1:#3}}%
+    \fi}}%
+}
+
+\def\refCom{\tcb@ref@doc{com}}
+\def\refEnv{\tcb@ref@doc{env}}
+\def\refKey{\tcb@ref@doc{key}}
+\def\refPathOperation{\tcb@ref@doc{path}}
+
+\AtBeginDocument{%
+  \ifHy@colorlinks
+    \def\refAux#1{\textcolor{\kvtcb@colhyper}{\tcb@scantokens{#1}}}%
+    \def\refAuxcs#1{\textcolor{\kvtcb@colhyper}{\tcb@cs{#1}}}%
+  \else
+    \def\refAux#1{\tcb@scantokens{#1}}%
+    \def\refAuxcs#1{\tcb@cs{#1}}%
+  \fi%
+}
+
+\newenvironment{absquote}
+               {\list{}{\leftmargin2cm\rightmargin\leftmargin}%
+                \item\relax\footnotesize}
+               {\endlist}
+
+\newcommand{\tcbdocmarginnote}[2][]{%
+  \marginnote{%
+  \begin{tcolorbox}[{enhanced jigsaw,size=fbox,boxrule=1pt,leftrule=0pt,rightrule=0pt,
+    arc=0pt,outer arc=1pt,boxsep=1pt,top=1pt,bottom=1pt,
+    nobeforeafter,width=\marginparwidth,
+    colframe=red!50!white,colback=red!25!yellow!5!white,fontupper=\scriptsize,
+    if odd page or oneside={flushright upper}{flushleft upper},
+    doc@marginnote,#1}]#2\end{tcolorbox}}}
+
+\newcommand*{\tcbdocnew}[1]{\kvtcb@text@new: #1}
+\newcommand*{\tcbdocupdated}[1]{\kvtcb@text@updated: #1}
+
+%--- index macros taken from pgfmanual-en-macros
+\def\tcb@doc@index@pgf@{%
+  \ifdefined\c@IndexColumns%
+    \c@IndexColumns=2%
+  \fi%
+  \def\theindex{\@restonecoltrue
+    \columnseprule \z@  \columnsep 29\p@
+    \twocolumn[\index@prologue]%
+    \parindent -30pt%
+    \columnsep 15pt%
+    \parskip 0pt plus 1pt%
+    \leftskip 30pt%
+    \rightskip 0pt plus 2cm%
+    \small%
+    \def\@idxitem{\par}%
+    \let\item\@idxitem\ignorespaces}
+  \def\endtheindex{\onecolumn}%
+  \def\noindexing{\let\index=\@gobble}%
+}
+
+\def\tcb@doc@index@pgfsection{%
+  \def\index@prologue{\section*{\kvtcb@text@index}\addcontentsline{toc}{section}{\kvtcb@text@index}%
+    \par\noindent%
+  }%
+  \tcb@doc@index@pgf@%
+}
+
+\def\tcb@doc@index@pgfchapter{%
+  \def\index@prologue{\ifdefined\phantomsection\phantomsection\fi\@makeschapterhead{\kvtcb@text@index}\addcontentsline{toc}{chapter}{\kvtcb@text@index}}%
+  \tcb@doc@index@pgf@%
+}
+
+\let\tcb@doc@index@pgf=\tcb@doc@index@pgfsection
+
+
+\ExplSyntaxOn
+\def\tcb@doc@index@doc{
+  \cs_set_nopar:Npn \__tcobox_index_command:
+  {
+    \bool_if:NT \l__tcobox_doc_toindex_bool
+      {
+        \SpecialMainIndex{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintComC{\kvtcb@doc@index}}
+      }
+  }
+  \cs_set_nopar:Npn \__tcobox_index_environment:
+  {
+    \bool_if:NT \l__tcobox_doc_toindex_bool
+      {
+        \SpecialMainEnvIndex{\kvtcb@doc@sortindex\idx@actual\tcbIndexPrintEnvC{\kvtcb@doc@index}}
+      }
+  }
+  \tcbset{index~german~settings}
+  \EnableCrossrefs
+  \PageIndex
+}
+\ExplSyntaxOff
+
+\def\tcb@doc@index@off{}
+
+\tcbset{%
+  index gather all/.style={%
+    index gather colors=true,
+    index gather commands=true,
+    index gather counters=true,
+    index gather environments=true,
+    index gather keys=true,
+    index gather lengths=true,
+    index gather paths=true,
+    index gather values=true},
+  index gather none/.style={%
+    index gather colors=false,
+    index gather commands=false,
+    index gather counters=false,
+    index gather environments=false,
+    index gather keys=false,
+    index gather lengths=false,
+    index gather paths=false,
+    index gather values=false},
+}
+
+
+\tcbset{%
+  reset@documentation/.style={%
+  },
+  initialize@reset=reset@documentation,
+  doc left=2em,
+  doc right=0pt,
+  doc left indent=-2em,
+  doc right indent=0pt,
+  doc head=,
+  doc raster=,
+  before doc body=,
+  after doc body=,
+  documentation listing style=tcbdocumentation,
+  doc into index=true,
+  index gather all,
+  doc marginnote=,
+  color option=Option,
+  color definition=Definition,
+  color hyperlink=Hyperlink,
+  color fade=Fade,
+  index command=\index,%
+  index format=pgf,
+  index default settings,
+  index colorize=false,
+  index annotate=true,
+  english language,
+  keywords bold,
+}
+
+% deprecated
+\tcbset{
+  before example/.store in=\kvtcb@beforeexample,
+  after example/.store in=\kvtcb@afterexample,
+    before example=\par\smallskip,
+    after example=,
+}

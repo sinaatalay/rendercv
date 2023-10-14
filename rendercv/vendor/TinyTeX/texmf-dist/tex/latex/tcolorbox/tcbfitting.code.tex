@@ -1,0 +1,490 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbfitting.code.tex: Code for fit boxes
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+%\makeatletter
+\tcb@set@library@version{6.1.0}
+
+\newdimen\tcbfitdim
+\newdimen\tcb@lowerfitdim
+\newdimen\tcb@upperfitdim
+\newif\iftcb@continue
+
+\tcbset{%
+  fit/.style={capture=fitbox},%
+  fit to/.style args={#1 and #2}{capture=fitbox,width=#1,height=#2},%
+  fit to height/.style={capture=fitbox,height=#1},%
+  fit basedim/.code={\def\kvtcb@fit@basedim{#1}\tcbfitdim\kvtcb@fit@basedim},%
+  fit skip/.store in=\kvtcb@fit@skip,%
+  fit fontsize macros/.code={%
+    \renewcommand\tiny{\tcb@setfontsize\tiny{0.5}}%
+    \renewcommand\scriptsize{\tcb@setfontsize\scriptsize{0.7}}%
+    \renewcommand\footnotesize{\tcb@setfontsize\footnotesize{0.8}}%
+    \renewcommand\small{\tcb@setfontsize\small{0.9}}%
+    \renewcommand\normalsize{\tcb@setfontsize\normalsize{1}}%
+    \renewcommand\large{\tcb@setfontsize\large{1.2}}%
+    \renewcommand\Large{\tcb@setfontsize\Large{1.44}}%
+    \renewcommand\LARGE{\tcb@setfontsize\LARGE{1.728}}%
+    \renewcommand\huge{\tcb@setfontsize\huge{2.0736}}%
+    \renewcommand\Huge{\tcb@setfontsize\Huge{2.48832}}},%
+  fit height plus/.style={fit,height plus=#1},%
+  fit width plus/.dimstore in=\kvtcb@fit@plus@width,%
+  fit height from/.style args={#1 to #2}{fit,height from={#1} to {#2}},
+  fit width from/.style args={#1 to #2}{fit,width={#1},fit width plus={#2-#1}},
+  fit maxstep/.store in=\kvtcb@fit@maxstep,%
+  fit maxfontdiff/.store in=\kvtcb@fit@maxfontdiff,%
+  fit maxfontdiffgap/.store in=\kvtcb@fit@maxfontdiffgap,%
+  fit maxwidthdiff/.store in=\kvtcb@fit@maxwidthdiff,%
+  fit maxwidthdiffgap/.store in=\kvtcb@fit@maxwidthdiffgap,%
+  fit warning/.is choice,
+  fit warning/on/.code={\let\tcb@fit@warn@begin=\@empty%
+    \let\tcb@fit@warn@end=\@empty},
+  fit warning/off/.code={\def\tcb@fit@warn@begin{\hbadness=10000\relax}%
+    \let\tcb@fit@warn@end=\@empty},
+  fit warning/final/.code={\tcb@cur@hbadness=\hbadness\def\tcb@fit@warn@begin{\hbadness=10000\relax}%
+    \def\tcb@fit@warn@end{\hbadness=\tcb@cur@hbadness\relax\tcb@fit@@box}},
+  fit algorithm/.is choice,
+  fit algorithm/fontsize/.code={\let\tcbox@fitalgorithm=\tcbox@fitalgorithm@fontsize},
+  fit algorithm/fontsize*/.code={\let\tcbox@fitalgorithm=\tcbox@fitalgorithm@fontsize@star},
+  fit algorithm/areasize/.code={\let\tcbox@fitalgorithm=\tcbox@fitalgorithm@areasize},
+  fit algorithm/areasize*/.code={\let\tcbox@fitalgorithm=\tcbox@fitalgorithm@areasize@star},
+  fit algorithm/hybrid/.code={\let\tcbox@fitalgorithm=\tcbox@fitalgorithm@hybrid},
+  fit algorithm/hybrid*/.code={\let\tcbox@fitalgorithm=\tcbox@fitalgorithm@hybrid@star},
+  fit algorithm/squeeze/.code={\let\tcbox@fitalgorithm=\tcbox@fitalgorithm@squeeze},
+  spartan@fit/.style={fit algorithm=squeeze},
+}
+
+\def\tcb@@capture@fitbox{%
+  \let\endtcolorbox=\relax%
+  \iftcb@wrap@environment%
+    \expandafter\@firstoftwo%
+  \else%
+    \expandafter\@secondoftwo%
+  \fi%
+  {\begingroup\tcb@hack@currenvir%
+   \Collect@Body\tcbox@inner@fitbox@collected@for@wrapping}%
+  {\Collect@Body\tcbox@inner@fitbox@collected}%
+}
+
+\long\def\tcbox@inner@fitbox@collected@for@wrapping#1\end#2{%
+  \endgroup%
+  \let\tcb@end@tcolorboxenvironment\relax%
+  \tcbox@inner@fitbox@collected{#1\end{#2}}%
+  \end{tcolorbox}%
+}
+
+\def\tcbfontsize#1{\fontsize{#1\tcbfitdim}{#1\dimexpr\kvtcb@fit@skip\tcbfitdim}\selectfont}
+
+\def\tcb@setfontsize#1#2{\@setfontsize#1{#2\tcbfitdim}{#2\dimexpr\kvtcb@fit@skip\tcbfitdim}}
+
+\long\def\tcbox@inner@fitbox@collected#1{%
+  \tcbox@inner@fitbox{#1}%
+  \tcb@finalize@environment%
+}
+
+\newcount\tcb@cur@hbadness
+
+\def\tcbox@fitalgorithm@fontsize{%
+  \tcb@continuetrue%
+  \loop%
+    \tcbfitdim.5\tcbfitdim%
+    \tcb@fit@@box%
+    \ifnum\count@=\kvtcb@fit@maxstep\relax%
+      \tcb@continuefalse%
+    \else%
+      \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+        \ifdim\tcbfitdim<18000sp\relax%
+          \count@\kvtcb@fit@maxstep\relax%
+          \tcb@continuefalse%
+        \fi%
+      \else%
+        \tcb@continuefalse%
+      \fi%
+    \fi%
+  \iftcb@continue \repeat%
+  \ifnum\count@<\kvtcb@fit@maxstep\relax%
+    \tcbdimto\tcb@fit@@gap{\tcb@fit@@target-\tcb@fit@@h}%
+    \tcb@lowerfitdim\tcbfitdim%
+    \tcb@upperfitdim2\tcbfitdim%
+    \tcbfitdim1.5\tcbfitdim%
+    \loop%
+      \tcb@fit@@box%
+      \tcb@continuetrue%
+      \ifnum\count@<\kvtcb@fit@maxstep\relax%
+        \ifdim\dimexpr\tcb@upperfitdim-\tcb@lowerfitdim<\kvtcb@fit@maxfontdiff\relax%
+          \tcb@continuefalse%
+        \else%
+          \ifdim\dimexpr\tcb@upperfitdim-\tcb@lowerfitdim<\kvtcb@fit@maxfontdiffgap\relax%
+            \ifdim\dimexpr\tcb@fit@@gap<\tcb@fit@@line\relax%
+              \tcb@continuefalse%
+            \fi%
+          \fi%
+        \fi%
+      \else%
+        \tcb@continuefalse%
+      \fi%
+      \iftcb@continue%
+        \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+          \tcb@upperfitdim\tcbfitdim%
+          \advance\tcbfitdim\tcb@lowerfitdim%
+          \tcbfitdim0.5\tcbfitdim%
+        \else%
+          \tcbdimto\tcb@fit@@gap{\tcb@fit@@target-\tcb@fit@@h}%
+          \tcb@lowerfitdim\tcbfitdim%
+          \advance\tcbfitdim\tcb@upperfitdim%
+          \tcbfitdim0.5\tcbfitdim%
+        \fi%
+      \else%
+        \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+          \tcbfitdim\tcb@lowerfitdim%
+          \tcb@fit@@box%
+        \fi%
+      \fi%
+    \iftcb@continue \repeat%
+  \fi%
+}
+
+\def\tcbox@fitalgorithm@fontsize@star{%
+  \tcbox@fitalgorithm@fontsize%
+  \tcb@resize@box{\tcb@upperbox}{\tcb@w@upper}{\tcb@fit@@target}%
+  \tcbdimto\tcb@fit@@h{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+}
+
+\def\tcbox@fitalgorithm@areasize@core{%
+  \pgfmathdivide{\tcb@fit@@h}{\tcb@fit@@target}%
+  \pgfmathsqrt{\pgfmathresult}%
+  \let\tcb@temp=\pgfmathresult%
+  \tcbdimto\tcb@w@upper@temp{\pgfmathresult\dimexpr\tcb@w@upper}%
+  \tcb@fit@@boxsave{\tcb@w@upper@temp}%
+  %
+  \tcbdimto\tcb@fit@@h{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+  \pgfmathdivide{\tcb@fit@@h}{\tcb@fit@@target}%
+  \pgfmathdivide{\pgfmathresult}{\tcb@temp}%
+  \pgfmathsqrt{\pgfmathresult}%
+  \ifdim\dimexpr\pgfmathresult pt<0.98pt\relax
+    \tcbdimto\tcb@w@upper@temp{\pgfmathresult\dimexpr\tcb@w@upper@temp}%
+    \tcb@fit@@boxsave{\tcb@w@upper@temp}%
+  \else\ifdim\dimexpr\pgfmathresult pt>1.02pt\relax
+    \tcbdimto\tcb@w@upper@temp{\pgfmathresult\dimexpr\tcb@w@upper@temp}%
+    \tcb@fit@@boxsave{\tcb@w@upper@temp}%
+  \fi\fi%
+  %
+  \tcbdimto\tcb@fit@@h{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+}
+
+\def\tcbox@fitalgorithm@areasize{%
+  \tcbox@fitalgorithm@areasize@core%
+  \pgfmathdivide{\tcb@w@upper}{\tcb@w@upper@temp}%
+  \tcbdimto\tcb@fit@@h{\pgfmathresult\dimexpr\tcb@fit@@h}%
+  \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+    \let\tcb@fit@@h=\tcb@fit@@target%
+  \fi
+  \tcb@resize@box{\tcb@upperbox}{\tcb@w@upper}{\tcb@fit@@h}%
+  %
+  \tcbdimto\tcb@fit@@h{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+}
+
+\def\tcbox@fitalgorithm@areasize@star{%
+  \tcbox@fitalgorithm@areasize@core%
+  \tcb@resize@box{\tcb@upperbox}{\tcb@w@upper}{\tcb@fit@@target}%
+  \tcbdimto\tcb@fit@@h{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+}
+
+\def\tcbox@fitalgorithm@squeeze{%
+  \tcb@resize@box{\tcb@upperbox}{\tcb@w@upper}{\tcb@fit@@target}%
+  \tcbdimto\tcb@fit@@h{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+}
+
+\def\tcbox@fitalgorithm@hybrid@core{%
+  \pgfmathdivide{\tcb@fit@@target}{\tcb@fit@@h}%
+  \pgfmathsqrt{\pgfmathresult}%
+  \tcbfitdim=\pgfmathresult\tcbfitdim%
+  \tcb@fit@@box%
+  %
+  \pgfmathdivide{\tcb@fit@@target}{\tcb@fit@@h}%
+  \pgfmathsqrt{\pgfmathresult}%
+  \ifdim\dimexpr\pgfmathresult pt<0.85pt\relax
+    \tcbfitdim=\pgfmathresult\tcbfitdim%
+    \tcb@fit@@box%
+  \else\ifdim\dimexpr\pgfmathresult pt>1.15pt\relax
+    \tcbfitdim=\pgfmathresult\tcbfitdim%
+    \tcb@fit@@box%
+  \fi\fi%
+}
+
+\def\tcbox@fitalgorithm@hybrid{%
+  \tcbox@fitalgorithm@hybrid@core%
+  \tcbox@fitalgorithm@areasize%
+}
+
+\def\tcbox@fitalgorithm@hybrid@star{%
+  \tcbox@fitalgorithm@hybrid@core%
+  \tcbox@fitalgorithm@areasize@star%
+}
+
+\def\tcb@fit@@box{%
+  \iftcb@hasTitle%
+    \tcbdimto\tcb@w@title{\kvtcb@width-(\kvtcb@left@rule)-(\kvtcb@right@rule)-(\kvtcb@boxsep)*2-(\kvtcb@lefttitle)-(\kvtcb@righttitle)}%
+    \begin{tcb@savebox}{\tcb@titlebox}{\tcb@w@title}{tcbcoltitle}\kvtcb@fonttitle\kvtcb@haligntitle\tcb@insert@before@title\kvtcb@title\tcb@insert@after@title\end{tcb@savebox}%
+    \tcbdimto\tcb@h@titletotal{\ht\tcb@titlebox+\dp\tcb@titlebox+\kvtcb@title@rule+(\kvtcb@boxsep)*2+\kvtcb@toptitle+\kvtcb@bottomtitle}%
+  \else%
+    \let\tcb@h@titletotal=\tcb@zpt%
+  \fi%
+  \tcbdimto\tcb@fit@@line{\kvtcb@fit@skip\tcbfitdim}%
+  \tcbdimto\tcb@w@upper{\kvtcb@width-(\kvtcb@left@rule)-(\kvtcb@right@rule)-(\kvtcb@boxsep)*2-(\kvtcb@leftupper)-(\kvtcb@rightupper)}%
+  \tcb@fit@@boxsave{\tcb@w@upper}%
+  \tcbdimto\tcb@fit@@h{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+  \tcbdimto\tcb@fit@@target{\kvtcb@height@fixed-(\kvtcb@top@rule@stand)-(\kvtcb@bottom@rule@stand)-(\kvtcb@top)-(\kvtcb@bottom)-(\kvtcb@boxsep)*2-\tcb@h@titletotal}%
+}%
+
+\long\def\tcbox@inner@fitbox#1{%
+  \let\tcb@space\tcb@zpt%
+  \let\tcb@val@raisebase=\tcb@zpt%
+  \unless\ifdefined\kvtcb@height@fixed%
+    \tcbset{height=\kvtcb@width}%
+  \fi%
+  \tcb@hasLowerfalse%
+  %
+  \count@\z@%
+  \tcbfitdim\kvtcb@fit@basedim%
+  \tcb@fit@warn@begin%
+  %
+  \def\tcb@fit@@boxsave##1{%
+    \tcbdimto\tcb@innerwidth{\kvtcb@width-\kvtcb@left@rule-\kvtcb@right@rule}%
+    \begin{tcb@savebox}{\tcb@upperbox}{##1}{tcbcolupper}%
+      \kvtcb@fontupper\fontsize{\tcbfitdim}{\tcb@fit@@line}\selectfont%
+      \kvtcb@halignupper\tcb@insert@before@upper#1\tcb@insert@after@upper%
+    \end{tcb@savebox}%
+    \advance\count@ 1\relax%
+  }%
+  %
+  \tcb@set@@phantom%
+  \tcb@set@@title%
+  \tcb@fit@@box%
+  %
+  % height fit
+  \ifdim\kvtcb@height@fixed@plus>0pt\relax%
+    \let\tcb@fit@@minheight=\kvtcb@height@fixed%
+    \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+      \ifdim\dimexpr\tcb@fit@@h>\dimexpr\tcb@fit@@target+\kvtcb@height@fixed@plus\relax%
+        \tcbdimto\kvtcb@height@fixed{\kvtcb@height@fixed+\kvtcb@height@fixed@plus}%
+        \tcbdimto\tcb@fit@@target{\tcb@fit@@target+\kvtcb@height@fixed@plus}%
+      \else%
+        \tcbdimto\kvtcb@height@fixed{\kvtcb@height@fixed+\tcb@fit@@h-\tcb@fit@@target}%
+        \let\tcb@fit@@target=\tcb@fit@@h%
+      \fi%
+    \fi%
+  \fi%
+  %
+  % width fit
+  \ifdim\kvtcb@fit@plus@width>0pt\relax%
+    \ifnum\count@<\kvtcb@fit@maxstep\relax%
+      \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+        \tcb@lowerfitdim\dimexpr\kvtcb@width\relax%
+        \tcb@upperfitdim\dimexpr\kvtcb@width+\kvtcb@fit@plus@width\relax%
+        \tcbdimto\kvtcb@width{\tcb@upperfitdim}%
+        \tcb@fit@@box%
+        \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+        \else%
+          \ifnum\count@<\kvtcb@fit@maxstep\relax%
+            \tcbdimto\tcb@fit@@gap{\tcb@fit@@target-\tcb@fit@@h}%
+            \tcbdimto\kvtcb@width{(\tcb@lowerfitdim+\tcb@upperfitdim)/2}%
+            \loop%
+              \tcb@fit@@box%
+              \tcb@continuetrue%
+              \ifnum\count@<\kvtcb@fit@maxstep\relax%
+                \ifdim\dimexpr\tcb@upperfitdim-\tcb@lowerfitdim<\kvtcb@fit@maxwidthdiff\relax%
+                  \tcb@continuefalse%
+                \else%
+                  \ifdim\dimexpr\tcb@upperfitdim-\tcb@lowerfitdim<\kvtcb@fit@maxwidthdiffgap\relax%
+                    \ifdim\dimexpr\tcb@fit@@gap<\tcb@fit@@line\relax%
+                      \tcb@continuefalse%
+                    \fi%
+                  \fi%
+                \fi%
+              \else%
+                \tcb@continuefalse%
+              \fi%
+              \iftcb@continue%
+                \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+                  \tcb@lowerfitdim\dimexpr\kvtcb@width\relax%
+                  \tcbdimto\kvtcb@width{(\tcb@lowerfitdim+\tcb@upperfitdim)/2}%
+                \else%
+                  \tcb@upperfitdim\dimexpr\kvtcb@width\relax%
+                  \tcbdimto\tcb@fit@@gap{\tcb@fit@@target-\tcb@fit@@h}%
+                  \tcbdimto\kvtcb@width{(\tcb@lowerfitdim+\tcb@upperfitdim)/2}%
+                \fi%
+              \else%
+                \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+                  \tcbdimto\kvtcb@width{\tcb@upperfitdim}%
+                  \tcb@fit@@box%
+                \fi%
+              \fi%
+            \iftcb@continue \repeat%
+          \fi%
+        \fi%
+      \fi%
+    \fi%
+  \fi%
+  %
+  % (font) fit
+  \ifnum\count@<\kvtcb@fit@maxstep\relax%
+    \ifdim\dimexpr\tcb@fit@@h>\tcb@fit@@target\relax%
+    \tcbox@fitalgorithm%
+    \fi%
+  \fi%
+  %
+  \tcb@fit@warn@end%
+  %
+  % last height fit
+  \ifdim\kvtcb@height@fixed@plus>0pt\relax%
+    \ifdim\dimexpr\tcb@fit@@h<\tcb@fit@@target\relax%
+      \tcbdimto\tcb@temp{\kvtcb@height@fixed+\tcb@fit@@h-\tcb@fit@@target}%
+      \ifdim\dimexpr\tcb@temp<\tcb@fit@@minheight\relax%
+      \else%
+        \let\kvtcb@height@fixed=\tcb@temp%
+      \fi%
+    \fi%
+  \fi%
+  %
+  \edef\tcbfitsteps{\the\count@}%
+  \tcb@set@@dimensions%
+  \tcb@draw@color@box%
+}
+
+\newcommand{\tcboxfit}[2][]{%
+  \tcb@ox{capture=fitbox}{#1}{#2}%
+}
+
+
+\ExplSyntaxOn
+
+
+\NewDocumentCommand \__tcobox_new_tcboxfit_ii:w { m +m m o +o +m }
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \tl_if_novalue:nTF { #4 }
+      {
+        \exp_args:Nc #1 { #3 }{ \tcboxfit[{#6,options@for=#3}] }
+      }
+      {
+        \tl_if_novalue:nTF { #5 }
+        {
+          \exp_args:Nc #1 { #3 }[ #4 ]{ \tcboxfit[{#6,options@for=#3}] }
+        }
+        {
+          \exp_args:Nc #1 { #3 }[ #4 ][ #5 ]{ \tcboxfit[{#6,options@for=#3}] }
+        }
+      }
+  }
+\NewDocumentCommand \__tcobox_new_tcboxfit_i:w { m +O{} m }
+  {
+    \__tcobox_set_backslash_removed:Nn \l_tmpa_tl { #3 }
+    \exp_args:NNnV \__tcobox_new_tcboxfit_ii:w #1 {#2} \l_tmpa_tl
+  }
+\NewDocumentCommand \newtcboxfit { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_tcboxfit_i:w \newcommand
+  }
+\NewDocumentCommand \renewtcboxfit { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_tcboxfit_i:w \renewcommand
+  }
+
+
+\cs_new:Npn \__tcobox_new_TCBoxFit:Nnnnn #1#2#3#4#5
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \exp_args:Nc #1 { #3 }{ #4 }{ \tcboxfit[#5,options@for=#3] }
+  }
+\NewDocumentCommand \__tcobox_new_TCBoxFit:w { m +O{} m }
+  {
+    \__tcobox_set_backslash_removed:Nn \l_tmpa_tl { #3 }
+    \exp_args:NNnV \__tcobox_new_TCBoxFit:Nnnnn #1 {#2} \l_tmpa_tl
+  }
+\NewDocumentCommand \DeclareTCBoxFit { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBoxFit:w \DeclareDocumentCommand
+  }
+\NewDocumentCommand \NewTCBoxFit { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBoxFit:w \NewDocumentCommand
+  }
+\NewDocumentCommand \RenewTCBoxFit { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBoxFit:w \RewewDocumentCommand
+  }
+\NewDocumentCommand \ProvideTCBoxFit { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBoxFit:w \ProvideDocumentCommand
+  }
+
+
+\cs_new:Npn \__tcobox_new_TotalTCBoxFit:Nnnnnn #1#2#3#4#5#6
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \exp_args:Nc #1 { #3 }{ #4 }{ \tcboxfit[#5,options@for=#3]{#6} }
+  }
+\NewDocumentCommand \__tcobox_new_TotalTCBoxFit:w { m +O{} m }
+  {
+    \__tcobox_set_backslash_removed:Nn \l_tmpa_tl { #3 }
+    \exp_args:NNnV \__tcobox_new_TotalTCBoxFit:Nnnnnn #1 {#2} \l_tmpa_tl
+  }
+\NewDocumentCommand \DeclareTotalTCBoxFit { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBoxFit:w \DeclareDocumentCommand
+  }
+\NewDocumentCommand \NewTotalTCBoxFit { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBoxFit:w \NewDocumentCommand
+  }
+\NewDocumentCommand \RenewTotalTCBoxFit { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBoxFit:w \RewewDocumentCommand
+  }
+\NewDocumentCommand \ProvideTotalTCBoxFit { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBoxFit:w \ProvideDocumentCommand
+  }
+
+
+\ExplSyntaxOff
+
+
+\tcbset{%
+  reset@fitting/.style={%
+    fit algorithm=fontsize,%
+    fit basedim=10pt,fit skip=1.2,
+    height plus=0pt,fit width plus=0pt,
+    fit maxstep=20,fit maxfontdiff=0.1pt,fit maxfontdiffgap=1pt,
+    fit maxwidthdiff=1pt,fit maxwidthdiffgap=10pt,
+    fit warning=off
+  },
+  initialize@reset=reset@fitting,
+}
+

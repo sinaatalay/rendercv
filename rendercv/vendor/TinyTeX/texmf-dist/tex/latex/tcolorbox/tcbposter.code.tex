@@ -1,0 +1,274 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbposter.code.tex: Code for posters
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\tcb@set@library@version{6.1.0}
+
+\tcbuselibrary{breakable,magazine,skins,fitting}
+
+\newif\iftcb@poster@showframe
+\newif\iftcb@posterbox@sequence
+\newboxarray{tcb@poster}
+
+\def\tcb@poster@compute@poster@boxheight#1#2{%
+  \pgfpointanchor{\tcb@poster@prefix#1}{south}\unskip%
+  \@tempdima\pgf@y%
+  \pgfpointanchor{\tcb@poster@prefix#2}{north}\unskip%
+  \advance \@tempdima by -\pgf@y\relax%
+  \advance \@tempdima by -\tcbposterrowspacing\relax%
+  \advance \@tempdima by -\tcbposterrowspacing\relax%
+  \edef\tcb@poster@boxheight{\the\@tempdima}%
+}
+
+\def\poster@scan@sequence#1 between #2 and #3 then#4\@nil{%
+  \tcb@poster@compute@poster@boxheight{#2}{#3}%
+  \ifundef{\tcb@poster@firstboxheight}{\edef\tcb@poster@firstboxheight{\tcb@poster@boxheight}}{}%
+  \eappto\tcb@poster@breakat{\tcb@poster@boxheight/}%
+  \@tempcnta\numexpr#1\relax%
+  \listeadd\tcb@poster@list{{\tcb@poster@prefix col\@arabic\@tempcnta.west|-\tcb@poster@prefix#2.south}{\tcb@poster@boxheight}}%
+  \ifblank{#4}{}{\poster@scan@sequence#4\@nil}%
+}
+
+\newenvironment{tcb@poster@env}{%
+  \let\posterbox\tcb@poster@box%
+  \let\posterboxenv\tcb@poster@boxenv%
+  \let\endposterboxenv\endtcb@poster@boxenv%
+  \ifundef\tcb@poster@height{%
+    \ifnum\c@tcblayer=0\relax%
+      \def\tcb@poster@height{\textheight}%
+    \else%
+      \ifdim\dimexpr\tcbtextheight>0pt\relax%
+        \def\tcb@poster@height{\tcbtextheight}%
+      \else%
+        \def\tcb@poster@height{0.75\textheight}%
+      \fi%
+    \fi}{}%
+  \tcbset{poster/.cd,poster@poster}%
+  \tcbdimto\tcbposterwidth{\tcb@poster@width}%
+  \tcbdimto\tcbposterheight{\tcb@poster@height}%
+  \tcbdimto\tcbpostercolspacing{\tcb@poster@colspacing}%
+  \tcbdimto\tcbposterrowspacing{\tcb@poster@rowspacing}%
+  \edef\tcbpostercolumns{\the\numexpr\tcb@poster@columns\relax}%
+  \edef\tcbposterrows{\the\numexpr\tcb@poster@rows\relax}%
+  \tcbdimto\tcbpostercolwidth{(\tcbposterwidth+\tcbpostercolspacing)/\tcbpostercolumns-\tcbpostercolspacing}%
+  \tcbdimto\tcbposterrowheight{(\tcbposterheight+\tcbposterrowspacing)/\tcbposterrows-\tcbposterrowspacing}%
+  \begin{tikzpicture}%
+  \path[use as bounding box] (0,0) rectangle (\tcbposterwidth,\tcbposterheight);
+  \node[name=\tcb@poster@prefix poster,at={(0,0)},line width=0mm,inner sep=0mm,outer sep=0mm,draw=none,fill=none,rectangle,
+    above right,minimum width=\tcbposterwidth,minimum height=\tcbposterheight]{};
+  \coordinate (\tcb@poster@prefix top) at (0,\tcbposterheight+\tcbposterrowspacing);
+  \coordinate (\tcb@poster@prefix bottom) at (0,-\tcbposterrowspacing);
+  \coordinate (\tcb@poster@prefix middle) at (0,\the\dimexpr0.5\dimexpr\tcbposterheight\relax);
+  \begin{scope}[every node/.style={inner sep=0pt,outer sep=0,above right,minimum height=\tcbposterheight,minimum width=\tcbpostercolwidth}]%
+    \node (\tcb@poster@prefix col1) at (0,0) {};
+    \@tempcnta 1%
+    \@tempcntb\numexpr\tcbpostercolumns\relax%
+    \@tempdima\dimexpr\tcbpostercolwidth+\tcbpostercolspacing\relax%
+    \@whilenum \@tempcnta<\@tempcntb \do{%
+      \edef\tcb@temp{\tcb@poster@prefix col\@arabic\@tempcnta}%
+      \advance\@tempcnta 1\relax%
+      \node[xshift=\tcbpostercolspacing] (\tcb@poster@prefix col\@arabic\@tempcnta) at (\tcb@temp.south east) {};
+    }%
+  \end{scope}%
+  \begin{scope}[every node/.style={inner sep=0pt,outer sep=0,below right,minimum height=\tcbposterrowheight,minimum width=\tcbposterwidth}]%
+    \node (\tcb@poster@prefix row1) at (0,\tcbposterheight) {};
+    \@tempcnta 1%
+    \@tempcntb\numexpr\tcbposterrows\relax%
+    \@tempdima\dimexpr\tcbposterrowheight+\tcbposterrowspacing\relax%
+    \@whilenum \@tempcnta<\@tempcntb \do{%
+      \edef\tcb@temp{\tcb@poster@prefix row\@arabic\@tempcnta}%
+      \advance\@tempcnta 1\relax%
+      \node[yshift=-\tcbposterrowspacing] (\tcb@poster@prefix row\@arabic\@tempcnta) at (\tcb@temp.south west) {};
+    }%
+  \end{scope}%
+  \iftcb@poster@showframe%
+    \@tempcnta 0%
+    \@tempcntb\numexpr\tcbpostercolumns\relax%
+    \@whilenum \@tempcnta<\@tempcntb \do{%
+      \advance\@tempcnta 1\relax%
+      \edef\tcb@temp{\tcb@poster@prefix col\@arabic\@tempcnta}%
+      \draw[red] (\tcb@temp.north west) node[above right]{col\@arabic\@tempcnta} rectangle (\tcb@temp.south east);
+    }%
+    \@tempcnta 0%
+    \@tempcntb\numexpr\tcbposterrows\relax%
+    \@whilenum \@tempcnta<\@tempcntb \do{%
+      \advance\@tempcnta 1\relax%
+      \edef\tcb@temp{\tcb@poster@prefix row\@arabic\@tempcnta}%
+      \draw[red] (\tcb@temp.north west) node[below left]{row\@arabic\@tempcnta} rectangle (\tcb@temp.south east);
+    }%
+    \gdef\tcb@poster@framelist{}%
+  \fi%
+}{%
+  \iftcb@poster@showframe%
+    \renewcommand*{\do}[1]{%
+      \node[red,fill=white,opacity=0.7,font=\Large] at (\tcb@poster@prefix##1) {##1};}%
+    \dolistloop{\tcb@poster@framelist}%
+    \gdef\tcb@poster@framelist{}%
+  \fi%
+\end{tikzpicture}}
+
+% #1 tcolorbox options
+% #2 position
+% #3 Inhalt
+\newcommand{\tcb@poster@box}[3][]{%
+  \bgroup%
+  \tcbset{posterloc/.cd,#2}%
+  \tcbdimto\tcb@poster@boxwidth{\tcb@poster@span\dimexpr\tcbpostercolwidth+\tcbpostercolspacing\relax-\tcbpostercolspacing}%
+  \iftcb@posterbox@sequence%
+    \begin{pgfinterruptpicture}%
+      \begin{tcolorbox}[{tcb@poster@style,width=\tcb@poster@boxwidth,tcb@poster@boxheight,
+        height fixed for=all,#1,
+        enforce breakable,reset box array=tcb@poster,store to box array=tcb@poster}]#3\end{tcolorbox}%
+    \end{pgfinterruptpicture}%
+    \def\tcb@poster@boxcount{0}%
+    \renewcommand*{\do}[1]{\edef\tcb@poster@boxcount{\the\numexpr\tcb@poster@boxcount+1\relax}%
+      \node[inner sep=0pt,outer sep=0,tcb@poster@node,name=\tcb@poster@prefix\tcb@poster@boxname\tcb@poster@boxcount] at (\@firstoftwo##1) {%
+        \ifboxarrayempty[tcb@poster]{\tcb@poster@boxcount}%
+          {\begin{tcolorbox}[placeholder,width=\tcb@poster@boxwidth,height=\@secondoftwo##1]\end{tcolorbox}}%
+          {\consumeboxarray[tcb@poster]{\tcb@poster@boxcount}}%
+      };}%
+    \dolistloop{\tcb@poster@list}%
+    \iftcb@poster@showframe%
+      \ifdefstring{\tcb@poster@boxname}{@}{}{%
+        \def\tcb@poster@boxcount{0}%
+        \renewcommand*{\do}[1]{\edef\tcb@poster@boxcount{\the\numexpr\tcb@poster@boxcount+1\relax}%
+          \listxadd\tcb@poster@framelist{\tcb@poster@boxname\tcb@poster@boxcount}}%
+        \dolistloop{\tcb@poster@list}%
+       }%
+    \fi%
+  \else%
+    \begin{pgfinterruptpicture}%
+      \begin{tcolorbox}[{tcb@poster@style,width=\tcb@poster@boxwidth,tcb@poster@boxheight,#1,
+        reset box array=tcb@poster,store to box array=tcb@poster}]#3\end{tcolorbox}%
+    \end{pgfinterruptpicture}%
+    \node[inner sep=0pt,outer sep=0,tcb@poster@node,name=\tcb@poster@prefix\tcb@poster@boxname] at (\tcb@poster@xpos|-\tcb@poster@ypos)
+      {\consumeboxarray[tcb@poster]{1}};%
+    \iftcb@poster@showframe%
+      \ifdefstring{\tcb@poster@boxname}{@}{}{\listxadd\tcb@poster@framelist{\tcb@poster@boxname}}%
+    \fi%
+  \fi%
+  \egroup%
+}
+
+\newenvironment{tcb@poster@boxenv}[2][]{%
+  \newcommand{\tcb@poster@box@saved}{\posterbox[{#1}]{#2}{\tcbusetemp}}%
+  \tcbwritetemp}%
+  {\endtcbwritetemp\tcb@poster@box@saved}
+
+\newenvironment{tcbposter@coverage}{}{}
+
+\newenvironment{tcbposter}[1][]{%
+  \tcbposterset{#1}%
+  \begin{tcbposter@coverage}\begin{tcb@poster@env}%
+}{\end{tcb@poster@env}\end{tcbposter@coverage}}
+
+\newcommand{\tcbposterset}[1]{\tcbset{posterset/.cd,#1}}
+
+\tcbset{%
+  poster/.cd,
+  width/.store in=\tcb@poster@width,
+  height/.store in=\tcb@poster@height,
+  colspacing/.store in=\tcb@poster@colspacing,
+  rowspacing/.store in=\tcb@poster@rowspacing,
+  spacing/.style={colspacing={#1},rowspacing={#1}},
+  columns/.store in=\tcb@poster@columns,
+  rows/.store in=\tcb@poster@rows,
+  showframe/.is if=tcb@poster@showframe,
+  prefix/.store in=\tcb@poster@prefix,
+  %
+  width=\linewidth,
+  spacing=4mm,
+  columns=3,
+  rows=4,
+  showframe=false,
+  prefix=TCBPOSTER@,
+}
+
+\tcbset{%
+  posterloc/.cd,
+  name/.store in=\tcb@poster@boxname,
+  column/.code={\edef\tcb@poster@xpos{\tcb@poster@prefix col#1.west}\edef\tcb@poster@orientation{right}},%
+  column*/.code={\edef\tcb@poster@xpos{\tcb@poster@prefix col#1.east}\edef\tcb@poster@orientation{left}},%
+  below/.code={\tcb@posterbox@sequencefalse%
+    \tikzset{tcb@poster@node/.style={below \tcb@poster@orientation,yshift=\the\dimexpr\tcb@poster@yshift-\tcbposterrowspacing\relax,xshift=\tcb@poster@xshift}}%
+    \tcbset{tcb@poster@boxheight/.style={natural height}}%
+    \edef\tcb@poster@ypos{\tcb@poster@prefix#1.south}},
+  above/.code={\tcb@posterbox@sequencefalse%
+    \tikzset{tcb@poster@node/.style={above \tcb@poster@orientation,yshift=\the\dimexpr\tcb@poster@yshift+\tcbposterrowspacing\relax,xshift=\tcb@poster@xshift}}%
+    \tcbset{tcb@poster@boxheight/.style={natural height}}%
+    \edef\tcb@poster@ypos{\tcb@poster@prefix#1.north}},
+  at/.code={\tcb@posterbox@sequencefalse%
+    \tikzset{tcb@poster@node/.style={\tcb@poster@orientation,yshift=\tcb@poster@yshift,xshift=\tcb@poster@xshift}}%
+    \tcbset{tcb@poster@boxheight/.style={natural height}}%
+    \edef\tcb@poster@ypos{\tcb@poster@prefix#1}},
+  between/.code args={#1 and #2}{\tcb@posterbox@sequencefalse%
+    \tikzset{tcb@poster@node/.style={below \tcb@poster@orientation,yshift=\the\dimexpr\tcb@poster@yshift-\tcbposterrowspacing\relax,xshift=\tcb@poster@xshift}}%
+    \edef\tcb@poster@ypos{\tcb@poster@prefix#1.south}%
+    \tcb@poster@compute@poster@boxheight{#1}{#2}%
+    \tcbset{tcb@poster@boxheight/.style={height=\tcb@poster@boxheight}}%
+  },
+  sequence/.code={\tcb@posterbox@sequencetrue%
+    \tikzset{tcb@poster@node/.style={below \tcb@poster@orientation,yshift=\the\dimexpr\tcb@poster@yshift-\tcbposterrowspacing\relax,xshift=\tcb@poster@xshift}}%
+    \undef\tcb@poster@firstboxheight%
+    \def\tcb@poster@breakat{}%
+    \def\tcb@poster@list{}%
+    \poster@scan@sequence #1 then\@nil%
+    \eappto\tcb@poster@breakat{\tcbposterheight}%
+    \tcbset{tcb@poster@boxheight/.style={break at=\tcb@poster@breakat,height=\tcb@poster@firstboxheight}}%
+    },
+  row/.code={\tcb@posterbox@sequencefalse%
+    \tikzset{tcb@poster@node/.style={below \tcb@poster@orientation,yshift=\tcb@poster@yshift,xshift=\tcb@poster@xshift}}%
+    \tcbset{posterloc/fixed height}%
+    \edef\tcb@poster@ypos{\tcb@poster@prefix row#1.north}},
+  %
+  span/.store in=\tcb@poster@span,%
+  row@span/.store in=\tcb@poster@rowspan,%
+  rowspan/.style={row@span=#1,fixed height},%
+  xshift/.store in=\tcb@poster@xshift,%
+  yshift/.store in=\tcb@poster@yshift,%
+  fixed height/.code={\tcbset{tcb@poster@boxheight/.style={height=\tcb@poster@rowspan\dimexpr\tcbposterrowheight+\tcbposterrowspacing\relax-\tcbposterrowspacing}}},%
+  %
+  name=@,
+  column=1,
+  below=top,
+  span=1,
+  row@span=1,
+  xshift=0pt,
+  yshift=0pt,
+}
+
+\tcbposterset{%
+  coverage/.code={\renewtcolorbox{tcbposter@coverage}{%
+    enhanced,frame hidden,sharp corners,boxsep=0pt,boxrule=0pt,
+    top=4mm,bottom=4mm,left=4mm,right=4mm,
+    toptitle=2mm,bottomtitle=2mm,colback=white,#1}},
+  no coverage/.code={\renewenvironment{tcbposter@coverage}{}{}},
+  poster/.code={\tcbset{poster/.cd,poster@poster/.style={#1}}},
+  boxes/.code={\tcbset{tcb@poster@style/.style={nobeforeafter,enhanced standard,#1}}},
+  fontsize/.code={\tcbset{fit fontsize macros}\tcbsetforeverylayer{fit basedim=#1}\normalsize},
+  %
+  poster,boxes
+}
+
+\tcbset{placeholder/.style={enhanced jigsaw,
+  size=small,sharp corners,colframe=red!50!black,
+  interior style={bottom color=red!15!white,top color=blue!15!white},
+  opacityback=0.5,
+  underlay={\draw[red!50!black,line cap=round] (interior.south west)--(interior.north east);
+    \draw[red!50!black,line cap=round] (interior.south east)--(interior.north west);},
+}}%

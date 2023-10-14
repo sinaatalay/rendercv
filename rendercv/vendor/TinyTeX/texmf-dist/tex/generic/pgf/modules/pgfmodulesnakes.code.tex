@@ -1,0 +1,369 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmodulesnakes.code.tex}
+
+\pgfwarning{Snakes have been superseded by decorations. Use the module decorations instead of snakes}
+
+\usepgfmodule{decorations}%
+
+\endinput
+
+
+
+\newdimen\pgfsnakeremainingdistance
+\newdimen\pgfsnakecompleteddistance
+
+
+% Creates a new pgf snake
+%
+% #1 = snake name
+% #1 = initial state
+% #3 = states of the snake
+%
+%
+% This command declares a new snake for later use. The second
+% parameter specifies the states of the snake, see also the
+% description of pgfpathsnake.
+%
+% Inside the code of #3 the command \state may be used. This command
+% will only be defined while #3 is executed.
+%
+% Example:
+%
+% \pgfdeclaresnake{zig zag}{one zig zag}
+% {
+%   \state{one zig zag}[width=10pt]
+%   {
+%     \pgfpathlineto{\pgfpoint{2.5pt}{2.5pt}}
+%     \pgfpathlineto{\pgfpoint{7.5pt}{-2.5pt}}
+%     \pgfpathlineto{\pgfpoint{10pt}{0pt}}
+%   }
+%   \state{final}
+%   {
+%     \pgfpathlineto{\pgfpoint{\pgfsnakeremainingdistance}{0pt}}
+%   }
+% }
+
+\long\def\pgfdeclaresnake#1#2#3{%
+  \def\pgf@snake@name{#1}%
+  \pgfutil@namedef{pgf@snake@@#1@initial}{#2}%
+  \let\pgf@orig@state=\state%
+  \let\state=\pgf@snake@state
+  #3
+  \let\state=\pgf@orig@state%
+}%
+
+
+% Sets the additional transformation applied to every segment of a snake
+%
+% #1 = transformation
+%
+% Example:
+%
+% \pgfsetsnakesegmenttransformation{\pgftransformyshift{5pt}}
+
+\def\pgfsetsnakesegmenttransformation#1{\def\pgf@snakeadditionaltransform{#1}}%
+\pgfsetsnakesegmenttransformation{}%
+
+
+% Declares a new state
+%
+% #1 = state name
+% #2 = options
+% #3 = path element
+%
+% Description:
+%
+% When a snake is drawn and the current state is #1, the following
+% happens. First, the options are executed, which will possible change
+% the state. If that does not happen, the path element is added to the
+% path and the coordinate system is translated by the path element's
+% width (which is specified using the width option).
+%
+% Example:
+%
+% \state{initial}[width=10pt]
+% {
+%   \pgfpathlineto{\pgfpoint{2.5pt}{2.5pt}}
+%   \pgfpathlineto{\pgfpoint{7.5pt}{-2.5pt}}
+%   \pgfpathlineto{\pgfpoint{10pt}{0pt}}
+% }
+
+\def\pgf@snake@state#1{\pgfutil@ifnextchar[{\pgf@@snake@start#1}{\pgf@@snake@start#1[]}}%}%
+\def\pgf@@snake@start#1[#2]#3{%
+  \pgfutil@namedef{pgf@snake@@\pgf@snake@name @#1@options}{#2}%
+  \pgfutil@namedef{pgf@snake@@\pgf@snake@name @#1@code}{#3}%
+}%
+
+
+
+% Use multiple snakes
+%
+% #1 = list of snake names/length pairs
+% #2 = point to which the snake leads
+%
+% This operation uses the snakes in parameter #1 to get to the point
+% #4. The parameter #1 should contain pairs consisting of a snake name
+% and a length for which this snake should be used. When the length is
+% computed, the dimensions \pgfsnakeremainingdistance and
+% \pgfsnakecompleteddistance will have been set to the length of the
+% total distance to #2 that has already been covered/that still needs
+% to be covered.
+%
+% Example:
+%
+% \pgfpathsnakesto{{lineto}{1cm},{zig zag}{\pgfsnakeremainingdistance}}{\pgfpoint{2cm}{3cm}}
+
+\def\pgfpathsnakesto#1#2{%
+  \begingroup%
+    % compute target vector
+    \pgfpointtransformed{#2}%
+    \advance\pgf@x by-\pgf@path@lastx%
+    \advance\pgf@y by-\pgf@path@lasty%
+    %
+    % MW: Calculate the angle of the snake.
+    %
+    \edef\pgf@marshal{%
+        \noexpand\pgfmathanglebetweenpoints{\noexpand\pgfpointorigin}{%
+            \noexpand\pgf@x\the\pgf@x\noexpand\pgf@y\the\pgf@y}%
+    }%
+    \pgf@marshal%
+    \let\pgfsnakeangle\pgfmathresult%
+    %
+    % MW: Use this instead for length (?). More accurate and only a few operations slower.
+    %
+    \pgfmathveclen@{\pgfmath@tonumber{\pgf@x}}{\pgfmath@tonumber{\pgf@y}}%
+    \pgfsnakeremainingdistance\pgfmathresult pt\relax%
+    %
+    % Ok, now normalize the vector...
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgfpointnormalised{}}%
+    % ok, now computer length (arghh...)
+    % In theory that's easy: divide the larger of the values x or y by
+    % the normalized x or y. Well...
+    %
+    % First, make xa and ya positive:
+   % \ifdim\pgf@xa<0pt%
+%      \pgf@xa=-\pgf@xa%
+%    \fi%
+%    \ifdim\pgf@ya<0pt%
+%      \pgf@ya=-\pgf@ya%
+%    \fi%
+%    % Now do division:
+%    \ifdim\pgf@xa>\pgf@ya%
+%      \c@pgf@counta=\pgf@x%
+%      \ifnum\c@pgf@counta=0\relax%
+%      \else%
+%        \divide\c@pgf@counta by 255\relax%
+%        \pgf@xa=16\pgf@xa\relax%
+%        \divide\pgf@xa by\c@pgf@counta%
+%        \pgf@xa=16\pgf@xa\relax%
+%      \fi%
+%    \else%
+%      \c@pgf@counta=\pgf@y%
+%      \ifnum\c@pgf@counta=0\relax%
+%      \else%
+%        \divide\c@pgf@counta by 255\relax%
+%        \pgf@ya=16\pgf@ya\relax%
+%        \divide\pgf@ya by\c@pgf@counta%
+%        \pgf@xa=16\pgf@ya\relax%
+%      \fi%
+%    \fi%
+%    % Make positive:
+%    \ifdim\pgf@xa<0pt%
+%      \pgf@xa=-\pgf@xa%
+%    \fi%
+%    % Ok, now we draw things...
+    \edef\pgf@list{#1}%
+%   \pgfsnakeremainingdistance=\pgf@xa%
+    \pgfsnakecompleteddistance=0pt%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgfutil@for\pgf@temp:=\pgf@list\do{%
+      \ifx\pgf@temp\pgfutil@empty%
+      \else%
+        \expandafter\pgf@snake@invoke\pgf@temp%
+      \fi%
+    }%
+  \endgroup%
+}%
+
+\def\pgf@snake@invoke#1#2{%
+  \pgfmathsetlength\pgf@xa{#2}%
+  {%
+    \edef\pgf@marshal{\noexpand\pgfpathsnakealongvector{#1}{\the\pgf@xa}{\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}}%
+    \pgf@marshal%
+  }%
+  \advance\pgfsnakecompleteddistance by\pgf@xa%
+  \advance\pgfsnakeremainingdistance by-\pgf@xa%
+}%
+
+% Use a snake
+%
+% #1 = snake name
+% #2 = point to which the snake leads
+%
+% This operation mainly computes \pgfpathsnakealongvector for a vector
+% appropriately chosen. See \pgfpathsnakealongvector for details.
+%
+% Example:
+%
+% \pgfpathsnaketo{zig zag}{\pgfpoint{2cm}{3cm}}
+
+\def\pgfpathsnaketo#1#2{\pgfpathsnakesto{{#1}{\pgfsnakeremainingdistance}}{#2}}%
+
+
+
+% Use a snake
+%
+% #1 = snake name
+% #2 = length of the snake
+% #3 = vector along which the snake grows, should have unit length.
+%
+% This command draws a snake (more precisely, it adds a snake to the
+% path). This works as follows:
+%
+% First, the coordinate system is transformed such that the vector #3
+% points to the right.
+%
+% Next, the state `initial' of the snake is entered. Unless the
+% options of this state cause it to switch to another state, the path
+% element is added to the path. Then, the coordinate system is
+% translated by the width of the path element as specified in the
+% width option of the path element. The dimensions
+% \pgfsnakeremainingdistance and \pgfsnakecompleteddistance are
+% updated.
+%
+% The process ends when the state `final' is entered. The code of the
+% final state is executed and the process stops.
+%
+% Example:
+%
+% \pgfpathsnakealongvector{zig zag}{100pt}{\pgfpolar{30}{1pt}}
+
+\def\pgfpathsnakealongvector#1#2#3{%
+  \pgfutil@ifundefined{pgf@snake@@#1@initial}{\pgferror{Undefined snake ``#1''}}
+  {
+  \begingroup% keep things local
+    \pgftransformreset%
+    \pgf@pt@x=\pgf@path@lastx% evil trickery to transform to the last point
+    \pgf@pt@y=\pgf@path@lasty%
+    \pgf@process{#3}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@xb=-\pgf@y%
+    \pgf@yb=\pgf@x%
+    \pgftransformcm
+      {\pgf@sys@tonumber{\pgf@xa}}{\pgf@sys@tonumber{\pgf@ya}}
+      {\pgf@sys@tonumber{\pgf@xb}}{\pgf@sys@tonumber{\pgf@yb}}
+      {\pgfpointorigin}%
+    % Now, setup the automaton
+    \expandafter\let\expandafter\pgf@snake@current@state\expandafter=\csname pgf@snake@@#1@initial\endcsname%
+    \def\pgf@snake@name{#1}%
+    \pgfsnakecompleteddistance=0pt%
+    \pgfmathsetlength\pgfsnakeremainingdistance{#2}%
+    \pgf@snake@run%
+    % Last step:
+    {%
+      \pgftransformxshift{\pgfsnakecompleteddistance}%
+      \pgf@snakeadditionaltransform%
+      \csname pgf@snake@@#1@final@code\endcsname%
+    }%
+  \endgroup%
+  }%
+}%
+
+\def\pgf@final@text{final}%
+
+\def\pgf@snake@run{%
+  \let\pgf@snake@next=\pgf@snake@do@state%
+  \ifx\pgf@snake@current@state\pgf@final@text%
+    \let\pgf@snake@next=\relax%
+  \fi%
+  \pgf@snake@next%
+}%
+
+\def\pgf@snake@do@state{%
+  \let\pgf@snake@next=\relax%
+  \let\pgf@snake@next@state=\pgf@snake@current@state%
+  % execute options
+  \expandafter\expandafter\expandafter\pgf@snakes@setter
+  \expandafter\expandafter\expandafter{\csname pgf@snake@@\pgf@snake@name @\pgf@snake@current@state @options\endcsname}%
+  \ifx\pgf@snake@next\relax%
+    \let\pgf@snake@next=\pgf@snake@do@code%
+  \fi%
+  \pgf@snake@next%
+}%
+\def\pgf@snakes@setter{%
+  \pgfqkeys{/pgf/snakes}%
+}%
+
+\def\pgf@snake@do@code{%
+  % Ok, execute code:
+  {%
+    \pgftransformxshift{\pgfsnakecompleteddistance}%
+    \pgf@snakeadditionaltransform%
+    \csname pgf@snake@@\pgf@snake@name @\pgf@snake@current@state @code\endcsname%
+  }%
+  % next, do transformation and update
+  \pgfmathsetlength{\pgf@xa}{\pgf@snake@width}%
+  \advance\pgfsnakeremainingdistance by-\pgf@xa%
+  \advance\pgfsnakecompleteddistance by\pgf@xa%
+  % Next iteration:
+  \let\pgf@snake@current@state=\pgf@snake@next@state%
+  \pgf@snake@run%
+}%
+
+\pgfkeys{
+  /pgf/snakes/width/.code=\def\pgf@snake@width{#1}\pgf@snake@switch@if#1 to final\pgf@stop,%
+  /pgf/snakes/switch if less than/.code=\pgf@snake@switch@if#1\pgf@stop,%
+  /pgf/snakes/next state/.store in=\pgf@snake@next@state%
+}%
+
+\def\pgf@snake@switch@if#1to #2\pgf@stop{%
+  \ifx\pgf@snake@next\relax%
+    \pgfmathsetlength\pgf@x{#1}%
+    \ifdim\pgfsnakeremainingdistance<\pgf@x%
+      \def\pgf@snake@current@state{#2}%
+      \let\pgf@snake@next=\pgf@snake@run%
+    \fi%
+  \fi%
+}%
+
+
+
+% lineto snake
+%
+% This snake simply adds a straight line. This snake is mainly useful
+% in conjunction with other snakes.
+
+\pgfdeclaresnake{lineto}{final}
+{%
+  \state{final}
+  { \pgfpathlineto{\pgfqpoint{\pgfsnakeremainingdistance}{0pt}} }
+}%
+
+
+
+% moveto snake
+%
+% This snake simply jumps to the end. This snake, too, is mainly
+% useful in conjunction with other snakes.
+
+\pgfdeclaresnake{moveto}{final}
+{%
+  \state{final}
+  { \pgfpathmoveto{\pgfqpoint{\pgfsnakeremainingdistance}{0pt}} }
+}%
+
+
+
+\endinput

@@ -1,0 +1,504 @@
+% Copyright 2019 by Till Tantau
+% CMYK and grayscale shadings adaptation copyright 2019 by David Purton
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-dvipdfmx.def}
+
+% Driver commands for dvipdfmx
+%
+% Modified by Jin-Hwan Cho <chofchof@ktug.or.kr> on April 18, 2009.
+% This driver requires the version DVIPDFMX-20080605 that is contained
+% in texlive 2008 or later.
+
+%
+% Load common pdf and pdf in dvi commands:
+%
+\input pgfsys-common-pdf.def
+
+
+% For unique object name:
+\newcount\pgfsys@objnum\pgfsys@objnum\@ne
+
+% `pdf:code' is an abbreviation of `pdf:literal direct', the idea of which
+% came from pdfTeX's primitive \pdfliteral direct.
+\def\pgfsys@invoke#1{\special{pdf:code #1}}
+
+% If color is changed by \pgfsys@invoke explicitly, the color
+% optimization routine in dvipdfmx does not work correctly
+% because the routine checks color specials only. For example,
+%
+% \special{color push 0}\pgfsys@invoke{1 g 1 G}\special{color push 0}
+%
+% the last color special will be ignored the optimization routine
+% thinks that the color has changed to the same color.
+% To avoid this problem, we need to change the color temporarily to another.
+%
+% We assume that black is the default color when no color is specified.
+\def\pgfsys@dvipdfmx@start@force@reset@color{%
+  \special{pdf:bcolor [1]}%
+  \special{pdf:bcolor [0]}%
+}
+\def\pgfsys@dvipdfmx@stop@force@reset@color{%
+  \special{pdf:ecolor}%
+  \special{pdf:ecolor}%
+}
+
+
+\def\pgfsys@dvipdfmx@suspendcontent{%
+  \special{pdf:code q -1 0 0 -1 0 0 cm q}%
+  \special{pdf: econtent}%
+  \special{pdf: bcontent}%
+  \special{pdf:code -1 0 0 -1 0 0 cm}%
+  \special{pdf:code q}% translate to original system
+  \special{pdf: econtent}%
+}
+
+\def\pgfsys@dvipdfmx@unsuspendcontent{%
+  \special{pdf: bcontent}%
+  \special{pdf:code Q Q Q}%
+}
+
+\def\pgfsys@hbox#1{%
+  \pgfsys@begin@idscope%
+  \pgfsys@beginscope%
+    \setbox#1=\hbox{\box#1}%
+    \wd#1=0pt%
+    \ht#1=0pt%
+    \dp#1=0pt%
+    \pgfsys@dvipdfmx@suspendcontent%
+    \pgfsys@invoke{0 J [] 0 d}% reset line cap and dash
+    \pgfsys@dvipdfmx@start@force@reset@color%
+    \box#1%
+    \pgfsys@dvipdfmx@stop@force@reset@color%
+    \pgfsys@dvipdfmx@unsuspendcontent%
+  \pgfsys@endscope%
+  \pgfsys@end@idscope%
+}
+
+% We cannot use many codes in pgfsys-common-pdf-via-dvi.def.
+% So it is rewritten here (with some bugs fixed).
+\def\pgfsys@hboxsynced#1{%
+  \pgfsys@begin@idscope%
+  \pgfsys@beginscope%
+    \setbox#1=\hbox{\box#1}%
+    \wd#1=0pt%
+    \ht#1=0pt%
+    \dp#1=0pt%
+    \pgfsys@dvipdfmx@suspendcontent%
+    \pgfsys@invoke{0 J [] 0 d}% reset line cap and dash
+    \pgfsys@dvipdfmx@start@force@reset@color%
+    \pgf@sys@bp@correct\pgf@pt@x%
+    \pgf@sys@bp@correct\pgf@pt@y%
+    \special{pdf:btrans matrix \pgf@pt@aa\space \pgf@pt@ab\space \pgf@pt@ba\space \pgf@pt@bb\space
+      \pgf@sys@tonumber{\pgf@pt@x} \pgf@sys@tonumber{\pgf@pt@y}}%
+    \box#1%
+    \special{pdf:etrans}%
+    \pgfsys@dvipdfmx@stop@force@reset@color%
+    \pgfsys@dvipdfmx@unsuspendcontent%
+  \pgfsys@endscope%
+  \pgfsys@end@idscope%
+}
+
+% All text materials between `pdf:bcontent' and `pdf:econtent' are
+% treated in the relative coordinate.
+\def\pgfsys@beginpicture{\special{pdf:bcontent}}
+\def\pgfsys@endpicture{\special{pdf:econtent}}
+
+\def\pgfsys@imagesuffixlist{.pdf:.jpg:.jpeg:.png:.bmp:}
+
+% Shaidng came from pgfsys-pdftex.def
+\def\pgfsys@horishading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgfmathparse{#2}%
+    \pgf@process{\pgfpoint{\pgf@max}{#2}}%
+    \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+      \special{pdf:bxobj @pgfshade\the\pgfsys@objnum\space width \the\pgf@max\space height \pgfmathresult pt}%
+      \special{pdf:put @resources
+      <<
+        /Shading << /Sh << /ShadingType 2
+        /ColorSpace \pgf@shading@device\space
+        /Domain [\pgf@pdfparseddomain]
+        /Coords [\pgf@doma\space0 \pgf@domb\space0]
+        /Function \pgf@pdfparsedfunction
+        /Extend [false false] >> >>
+      >>}%
+      \pgfsys@invoke{/Sh sh}%
+      \special{pdf:exobj}}}\@tempa% <<
+    \xdef\pgfutil@tempa{%
+      \hbox to\the\pgf@max{\vbox to\pgfmathresult pt{\vfil\special{pdf:uxobj @pgfshade\the\pgfsys@objnum}}\hfil}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+  \global\advance\pgfsys@objnum\@ne%
+}
+\def\pgfsys@vertshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgfmathparse{#2}%
+    \pgf@process{\pgfpoint{\pgf@max}{#2}}%
+    \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+      \special{pdf:bxobj @pgfshade\the\pgfsys@objnum\space width \pgfmathresult pt\space height \the\pgf@max}%
+      \special{pdf:put @resources
+      <<
+        /Shading << /Sh << /ShadingType 2
+        /ColorSpace \pgf@shading@device\space
+        /Domain [\pgf@pdfparseddomain]
+        /Coords [0 \pgf@doma\space0 \pgf@domb]
+        /Function \pgf@pdfparsedfunction
+        /Extend [false false] >> >>
+      >>}%
+      \pgfsys@invoke{/Sh sh}%
+      \special{pdf:exobj}}}\@tempa% <<
+    \xdef\pgfutil@tempa{%
+      \hbox to\pgfmathresult pt{\vbox to\the\pgf@max{\vfil\special{pdf:uxobj @pgfshade\the\pgfsys@objnum}}\hfil}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+  \global\advance\pgfsys@objnum\@ne%
+}
+\def\pgfsys@radialshading#1#2#3{%
+  {%
+    \pgf@parsefunc{#3}%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgfpoint{\pgf@max}{\pgf@max}}%
+    \advance\pgf@xa by \pgf@x%
+    \advance\pgf@ya by \pgf@y%
+    \pgf@sys@bp@correct{\pgf@x}%
+    \pgf@sys@bp@correct{\pgf@y}%
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \pgfutil@tempdima=2\pgf@max%
+    \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+      \special{pdf:bxobj @pgfshade\the\pgfsys@objnum\space width \the\pgfutil@tempdima\space height \the\pgfutil@tempdima}%
+      \special{pdf:put @resources
+      <<
+        /Shading << /Sh << /ShadingType 3
+        /ColorSpace \pgf@shading@device\space
+        /Domain [\pgf@pdfparseddomain]
+        /Coords [\pgf@sys@tonumber{\pgf@xa} \pgf@sys@tonumber{\pgf@ya} \pgf@doma\space \pgf@sys@tonumber{\pgf@x} \pgf@sys@tonumber{\pgf@y} \pgf@domb]
+        /Function \pgf@pdfparsedfunction
+        /Extend [true false] >> >>
+      >>}%
+      \pgfsys@invoke{/Sh sh}%
+      \special{pdf:exobj}}}\@tempa% <<
+    \xdef\pgfutil@tempa{%
+      \hbox to\the\pgfutil@tempdima{\vbox to\the\pgfutil@tempdima{\vfil\special{pdf:uxobj @pgfshade\the\pgfsys@objnum}}\hfil}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+  \global\advance\pgfsys@objnum\@ne%
+}
+\def\pgfsys@functionalshading#1#2#3#4{%
+  {%
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{#3}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    \pgf@sys@bp@correct{\pgf@xa}%
+    \pgf@sys@bp@correct{\pgf@ya}%
+    \pgf@sys@bp@correct{\pgf@xb}%
+    \pgf@sys@bp@correct{\pgf@yb}%
+    \pgf@xc=-\pgf@xa%
+    \pgf@yc=-\pgf@ya%
+    % Now build the function
+    \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+      \special{pdf:stream @pgfstream\the\pgfsys@objnum\space({#4}) <</FunctionType 4
+        /Domain [\pgf@sys@tonumber{\pgf@xa}\space\pgf@sys@tonumber{\pgf@xb}\space\pgf@sys@tonumber{\pgf@ya}\space\pgf@sys@tonumber{\pgf@yb}]
+        /Range [\pgf@shading@functional@range]>>}}}\@tempa%
+    \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+      \special{pdf:bxobj @pgfshade\the\pgfsys@objnum\space width \the\pgf@x\space height \the\pgf@y}%
+      \special{pdf:put @resources <</Shading <</Sh <</ShadingType 1
+        /ColorSpace \pgf@shading@device\space
+        /Matrix [1 0 0 1 \pgf@sys@tonumber{\pgf@xc}\space\pgf@sys@tonumber{\pgf@yc}]
+        /Domain [\pgf@sys@tonumber{\pgf@xa}\space\pgf@sys@tonumber{\pgf@xb}\space\pgf@sys@tonumber{\pgf@ya}\space\pgf@sys@tonumber{\pgf@yb}]
+        /Function @pgfstream\the\pgfsys@objnum>> >> >>}%
+      \pgfsys@invoke{/Sh sh}%
+      \special{pdf:exobj}}}\@tempa% <<
+    \xdef\pgfutil@tempa{%
+      \hbox to\the\pgf@x{\vbox to\the\pgf@y{\vfil\special{pdf:uxobj @pgfshade\the\pgfsys@objnum}}\hfil}}%
+  }%
+  \global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@tempa
+  \global\advance\pgfsys@objnum\@ne%
+}
+
+% \pgf@sys@pdf@dvi@tracker was not touched!
+\def\pgf@sys@pdf@dvi@tracker{
+  \def\pgfsys@markposition##1{%
+    \pdfsavepos%
+    \edef\pgf@temp{##1}%
+    \expandafter\pgfutil@writetoaux\expandafter{%
+      \expandafter\noexpand\expandafter\pgfsyspdfmark\expandafter{\pgf@temp}{\the\pdflastxpos}{\the\pdflastypos}}%
+  }
+  \def\pgfsyspdfmark##1##2##3{%
+    \expandafter\gdef\csname pgf@sys@pdf@mark@pos@##1\endcsname{\pgfqpoint{##2sp}{##3sp}}%
+    \pgfutil@check@rerun{##1}{{##2}{##3}}%
+  }
+  \def\pgfsys@getposition##1##2{%
+    \edef\pgf@marshal{\let\noexpand##2=\expandafter\noexpand\csname pgf@sys@pdf@mark@pos@##1\endcsname}%
+    \pgf@marshal%
+  }
+  \def\pgf@sys@pdf@mark@pos@pgfpageorigin{\pgfpointorigin}
+}
+
+% Resource management: bugs were fixed.
+\newif\ifpgf@sys@pdf@colorspaces@exists
+\newif\ifpgf@sys@pdf@patterns@exists
+\newif\ifpgf@sys@pdf@extgs@exists
+\newif\ifpgf@sys@pdf@colorspaces@created
+\newif\ifpgf@sys@pdf@patterns@created
+\newif\ifpgf@sys@pdf@extgs@created
+\newif\ifpgf@sys@pdf@any@resources
+
+\def\pgf@sys@setuppdfresources@plain{%
+  % This command will setup pdf resource in plain and in latex
+  % mode. ConTeXt has its own handler
+  \pgfutil@insertatbegineverypage{%
+    \pgf@sys@pdf@any@resourcesfalse%
+    \ifpgf@sys@pdf@extgs@exists%
+      \pgf@sys@pdf@any@resourcestrue%
+      \ifpgf@sys@pdf@extgs@created\else\special{pdf:obj @pgfextgs <<>>}\global\pgf@sys@pdf@extgs@createdtrue\fi% <<
+    \fi%
+    \ifpgf@sys@pdf@colorspaces@exists%
+      \pgf@sys@pdf@any@resourcestrue%
+      \ifpgf@sys@pdf@colorspaces@created\else\special{pdf:obj @pgfcolorspaces <<>>}\global\pgf@sys@pdf@colorspaces@createdtrue\fi% <<
+    \fi%
+    \ifpgf@sys@pdf@patterns@exists%
+      \pgf@sys@pdf@any@resourcestrue%
+      \ifpgf@sys@pdf@patterns@created\else\special{pdf:obj @pgfpatterns <<>>}\global\pgf@sys@pdf@patterns@createdtrue\fi% <<
+    \fi%
+    \ifpgf@sys@pdf@any@resources%
+      \special{pdf:put @resources
+      <<
+        \ifpgf@sys@pdf@extgs@exists /ExtGState @pgfextgs \fi
+        \ifpgf@sys@pdf@patterns@exists /Pattern @pgfpatterns \fi
+        \ifpgf@sys@pdf@colorspaces@exists /ColorSpace @pgfcolorspaces \fi
+      >>}% <<
+    \fi%
+  }
+  \def\pgf@sys@addpdfresource@extgs@plain##1{%
+    \global\pgf@sys@pdf@extgs@existstrue%
+    \pgfutil@insertatbegincurrentpage{\special{pdf:put @pgfextgs << ##1 >>}}% <<
+  }
+  \def\pgf@sys@addpdfresource@colorspaces@plain##1{%
+    \global\pgf@sys@pdf@colorspaces@existstrue%
+    \pgfutil@insertatbegincurrentpage{\special{pdf:put @pgfcolorspaces << ##1 >>}}% <<
+  }
+  \def\pgf@sys@addpdfresource@patterns@plain##1{%
+    \global\pgf@sys@pdf@patterns@existstrue%
+    \pgfutil@insertatbegincurrentpage{\special{pdf:put @pgfpatterns << ##1 >>}}% <<
+  }
+}
+\pgfutil@setuppdfresources % possibly call the above
+
+% As pgfsys-pdftex.def, the following code is required
+% to give colors on pattern objects.
+\pgfutil@addpdfresource@colorspaces{ /pgfprgb [/Pattern /DeviceRGB] }
+
+% Image Mask came from pgfsys-pdftex.def
+% generic/pgf/basiclayer/pgfcoreimage.code.tex must be modified!
+\def\pgfsys@defineimage{% width, height, page number
+  \ifx\pgf@imagewidth\pgfutil@empty\edef\pgf@imagewidth{1bp}\fi% width?
+  \ifx\pgf@imageheight\pgfutil@empty\edef\pgf@imageheight{1bp}\fi% height?
+  \ifx\pgf@imagepage\pgfutil@empty\else\edef\pgf@imagepage{ page \pgf@imagepage}\fi%
+  \ifx\pgf@imageinterpolate\pgfutil@empty\else\edef\pgf@imageinterpolate{ /Interpolate\space\pgf@imageinterpolate}\fi%
+  \ifx\pgf@imagemask\pgfutil@empty\else\xdef\pgf@imagemask{ /SMask @\pgf@imagemask}\fi%
+  \edef\pgf@image{\noexpand\hbox to \pgf@imagewidth{\vbox to \pgf@imageheight{\vfil\special{pdf:image width \pgf@imagewidth\space height \pgf@imageheight\space\pgf@imagepage\space(\pgf@filename) <<\pgf@imageinterpolate\pgf@imagemask\space>>}}\hfil}}%
+}
+\def\pgfsys@definemask{%
+  \ifx\pgf@maskmatte\pgfutil@empty%
+  \else%
+    \edef\pgf@maskmatte{/Matte [\pgf@maskmatte]}%
+  \fi%
+  \edef\pgf@attr{\pgf@maskmatte\space /Decode [1 0]}%
+  \special{pdf:image @pgfmask\the\pgfsys@objnum\space hide (\pgf@filename) << \pgf@attr >>}%
+  \edef\pgf@mask{pgfmask\the\pgfsys@objnum}%
+  \global\advance\pgfsys@objnum\@ne%
+}
+
+% Patterns came from pgfsys-pdftex.def
+% dvipdfmx provides a new special `pdf:stream' for a stream object.
+\def\pgfsys@declarepattern#1#2#3#4#5#6#7{%
+  % Start building the pattern dictionary:
+  \pgf@xa=#2\relax%
+  \pgf@ya=#3\relax%
+  \pgf@xb=#4\relax%
+  \pgf@yb=#5\relax%
+  \pgf@xc=#6\relax%
+  \pgf@yc=#7\relax%
+  \pgf@sys@bp@correct\pgf@xa%
+  \pgf@sys@bp@correct\pgf@ya%
+  \pgf@sys@bp@correct\pgf@xb%
+  \pgf@sys@bp@correct\pgf@yb%
+  \pgf@sys@bp@correct\pgf@xc%
+  \pgf@sys@bp@correct\pgf@yc%
+  \pgfsys@@declarepattern{#1}%
+}
+
+\def\pgfsys@@declarepattern#1#2#3#4#5#6#7#8#9{%
+  \pgfutil@tempdima=#6\relax%
+  \pgfutil@tempdimb=#7\relax%
+  \pgf@sys@bp@correct\pgfutil@tempdima%
+  \pgf@sys@bp@correct\pgfutil@tempdimb%
+  % Now create the pattern object:
+  \pgfsys@dvipdfmx@patternobj{%
+      \pgfsys@dvipdfmx@stream{@pgfpatternobject#1}{#8}{%
+           /Type /Pattern
+           /PatternType 1
+           /PaintType \ifnum#9=0 2 \else 1 \fi
+           /TilingType 1
+           /BBox [\pgf@sys@tonumber\pgf@xa\space\pgf@sys@tonumber\pgf@ya\space\pgf@sys@tonumber\pgf@xb\space\pgf@sys@tonumber\pgf@yb]
+           /XStep \pgf@sys@tonumber\pgf@xc\space
+           /YStep \pgf@sys@tonumber\pgf@yc\space
+           /Matrix [#2\space#3\space#4\space#5\space\pgf@sys@tonumber\pgfutil@tempdima\space\pgf@sys@tonumber\pgfutil@tempdimb]
+           /Resources <</Pattern<<>>>> %<<
+      }%
+  }%
+  \pgfutil@addpdfresource@patterns{/pgfpat#1\space @pgfpatternobject#1}%
+}
+
+% hook for xdvipdfmx:
+\def\pgfsys@dvipdfmx@patternobj#1{%
+    \pgfutil@insertatbegincurrentpagefrombox{#1}%
+}%
+
+% hook for xdvipdfmx:
+\def\pgfsys@dvipdfmx@stream#1#2#3{%
+  \special{pdf:stream #1 (#2) << #3 >>}%
+}%
+
+
+\def\pgfsys@setpatternuncolored#1#2#3#4{%
+  \pgfsysprotocol@literal{/pgfprgb cs #2 #3 #4 /pgfpat#1\space scn}%
+}
+\def\pgfsys@setpatterncolored#1{%
+  \pgfsysprotocol@literal{/Pattern cs /pgfpat#1\space scn}%
+}
+
+% Opacity masks (fadings) came from pgfsys-pdftex.def
+%
+% One problem was that the second argument of \pgfsys@fadingfrombox
+% is a box so that \pgfutil@insertatbegincurrentpage cannot be used.
+% So, the new command \pgfutil@insertatbegincurrentpagefrombox is written
+% in generic/pgf/utilities/pgfutil-[context,latex,plain].def.
+\def\pgfsys@fadingfrombox#1#2{%
+  \expandafter\ifx\csname pgfsmaskxform@#1\endcsname\relax%
+    {%
+      \pgf@x=-.5\wd#2%
+      \pgf@y=-.5\ht#2%
+      \advance\pgf@y by.5\dp#2%
+      \expandafter\xdef\csname pgfsmasktrans@#1\endcsname{%
+        \noexpand\pgftransformcm{1}{0}{0}{1}{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}%
+      \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+        \special{pdf:bxobj @pgfsmask\the\pgfsys@objnum\space%
+          width \the\wd#2\space height \the\ht#2\space depth \the\dp#2}%
+        \wd#2=0pt%
+        \ht#2=0pt%
+        \dp#2=0pt%
+        \box#2%
+        \special{pdf:put @resources
+          <<
+          \ifpgf@sys@pdf@extgs@exists /ExtGState @pgfextgs \fi
+          \ifpgf@sys@pdf@patterns@exists /Pattern @pgfpatterns \fi
+          \ifpgf@sys@pdf@colorspaces@exists /ColorSpace @pgfcolorspaces \fi
+          >>}% <<
+        \special{pdf:exobj <</Group <</S/Transparency /CS/DeviceGray>> >>}}}\@tempa%
+      \expandafter\xdef\csname pgfsmaskxform@#1\endcsname{\the\pgfsys@objnum}%
+    }%
+    \global\advance\pgfsys@objnum\@ne%
+  \fi%
+}
+\def\pgfsys@usefading#1#2#3#4#5#6#7{%
+  \expandafter\ifx\csname pgfsmaskxform@#1\endcsname\relax%
+    \pgferror{Undefined fading '#1'}%
+  \else%
+    {%
+      \expandafter\ifx\csname pgfsmask@#1\endcsname\relax%
+        \pgf@sys@pdf@install@mask{#1}%
+      \fi%
+      \pgftransformreset%
+      \pgftransformcm{#2}{#3}{#4}{#5}{\pgfpoint{#6}{#7}}%
+      \csname pgfsmasktrans@#1\endcsname%
+      {%
+        \pgflowlevelsynccm%
+        \pgfsys@invoke{/pgfsmask\csname pgfsmaskxform@#1\endcsname\space gs}%
+      }%
+      \pgftransforminvert%
+      \pgflowlevelsynccm%
+    }%
+  \fi
+}
+\def\pgf@sys@pdf@install@mask#1{%
+  \pgfutil@addpdfresource@extgs{%
+    /pgfsmask\csname pgfsmaskxform@#1\endcsname\space <<
+      /SMask <<
+        /S /Luminosity
+        /G @pgfsmask\csname pgfsmaskxform@#1\endcsname
+      >> >>}%<<
+  \expandafter\let\csname pgfsmask@#1\expandafter\endcsname\csname pgfsmaskxform@#1\endcsname%
+}
+
+% Transparency groups came from pgfsys-pdftex.def
+\def\pgfsys@transparencygroupfrombox#1{%
+  {%
+    \pgfutil@tempdima=\pgf@picminx
+    \pgf@sys@bp@correct\pgf@picminx%
+    \pgf@sys@bp@correct\pgf@picmaxx%
+    \pgf@sys@bp@correct\pgf@picminy%
+    \pgf@sys@bp@correct\pgf@picmaxy%
+    \edef\@tempa{\noexpand\pgfutil@insertatbegincurrentpagefrombox{%
+      \special{pdf:bxobj @pgftransgroup\the\pgfsys@objnum\space bbox \pgf@sys@tonumber\pgf@picminx\space\pgf@sys@tonumber\pgf@picminy\space\pgf@sys@tonumber\pgf@picmaxx\space\pgf@sys@tonumber\pgf@picmaxy}%
+      \wd#1=0pt%
+      \ht#1=0pt%
+      \dp#1=0pt%
+      \hskip\pgfutil@tempdima\box#1\hskip-\pgfutil@tempdima%
+      \special{pdf:put @resources
+      <<
+        \ifpgf@sys@pdf@extgs@exists /ExtGState @pgfextgs \fi
+        \ifpgf@sys@pdf@patterns@exists /Pattern @pgfpatterns \fi
+        \ifpgf@sys@pdf@colorspaces@exists /ColorSpace @pgfcolorspaces \fi
+      >>}% <<
+      \special{pdf:exobj <</Group << /S /Transparency
+    /I \ifpgfsys@transparency@group@isolated true \else false \fi
+    /K \ifpgfsys@transparency@group@knockout true \else false \fi>> >>}%
+    }}\@tempa%
+    \special{pdf:uxobj @pgftransgroup\the\pgfsys@objnum}%
+  }%
+  \global\advance\pgfsys@objnum\@ne%
+}
+
+%
+% Position tracking (needs pdftex >= 1.40.0-alpha-20051205 in dvi mode)
+%
+\ifx\pdfsavepos\@undefined
+\else
+  \pgf@sys@pdf@dvi@tracker
+\fi
+
+\def\pgfsys@papersize#1#2{%
+%  \expandafter\gdef\expandafter\pgfsys@atbegindocument%%
+%  \expandafter{\pgfsys@atbegindocument
+    \special{papersize=#1,#2}%
+%  }
+}
+\def\pgfsys@prepare@papersize#1#2{%
+  \expandafter\gdef\expandafter\pgfsys@atbegindocument%%
+  \expandafter{\pgfsys@atbegindocument
+    \special{papersize=#1,#2}%
+  }
+}
+
+\endinput
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

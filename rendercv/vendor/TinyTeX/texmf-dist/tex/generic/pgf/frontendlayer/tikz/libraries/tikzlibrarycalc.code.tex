@@ -1,0 +1,618 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarycalc.code.tex}
+
+%
+%
+% Part I: The let path command
+%
+%
+
+
+%
+% Syntax: let \p{name1} = (coord), \p{name2} = (coord), ... in ...
+%
+% Currently (this may get more fancy in the future), the (coord)s are
+% evaluated one by one. If the first evaluates to, say, (10pt,20pt),
+% the macro \p{name1} is set to "10pt,20pt" (without parentheses), the
+% macro \x{name1} is set to "10pt" and the macro \y{name1} is set to
+% "20pt".
+%
+% If you use a number for {name}, you need no parentheses, so you
+% could write:
+%
+% \draw let
+%         \p1 = (1,1),
+%         \p2 = ($ 2.5*(3,2) $)
+%       in
+%         (\x1,\x2) -- (\y1,\y2);
+
+\def\tikz@let@command et{%
+  \let\p=\tikz@cc@dop%
+  \let\x=\tikz@cc@dox%
+  \let\y=\tikz@cc@doy%
+  \let\n=\tikz@cc@don%
+  \pgfutil@ifnextchar i{\tikz@cc@stop@let}{\tikz@cc@handle@line}%
+}%
+\def\tikz@cc@handle@line{%
+  \pgfutil@ifnextchar\p{%
+    \tikz@cc@handle@coor%
+  }{%
+    \pgfutil@ifnextchar\n{%
+      \tikz@cc@handle@num%
+    }{%
+      \pgfutil@ifnextchar i{%
+        \tikz@cc@stop@let
+      }{%
+        \tikzerror{``\string\p'' or ``\string\n'' expected}%
+      }%
+    }%
+  }%
+}%
+\def\tikz@cc@handle@num\n#1#2=#3{%
+  \pgfmathparse{#3}%
+  \expandafter\edef\csname tikz@cc@n@#1\endcsname{\pgfmathresult\ifpgfmathunitsdeclared pt\fi}
+  \pgfutil@ifnextchar,{\tikz@cc@handle@nextline}{\tikz@cc@stop@let}%
+}%
+\def\tikz@cc@handle@coor\p#1#2={%
+  \def\tikz@cc@coord@name{#1}%
+  \tikz@scan@one@point\tikz@cc@dolet%
+}%
+\def\tikz@cc@dolet#1{%
+  \pgf@process{#1}%
+  \expandafter\edef\csname tikz@cc@p@\tikz@cc@coord@name\endcsname{\the\pgf@x,\the\pgf@y}%
+  \expandafter\edef\csname tikz@cc@x@\tikz@cc@coord@name\endcsname{\the\pgf@x}%
+  \expandafter\edef\csname tikz@cc@y@\tikz@cc@coord@name\endcsname{\the\pgf@y}%
+  \pgfutil@ifnextchar,{\tikz@cc@handle@nextline}{\tikz@cc@stop@let}%
+}%
+\def\tikz@cc@handle@nextline,{%
+  \tikz@cc@handle@line%
+}%
+\def\tikz@cc@stop@let in{%
+  \tikz@scan@next@command%
+}%
+
+\def\tikz@cc@dop#1{\csname tikz@cc@p@#1\endcsname}%
+\def\tikz@cc@dox#1{\csname tikz@cc@x@#1\endcsname}%
+\def\tikz@cc@doy#1{\csname tikz@cc@y@#1\endcsname}%
+\def\tikz@cc@don#1{\csname tikz@cc@n@#1\endcsname}%
+
+
+
+%
+%
+% Part II: The ($...$) parser
+%
+%
+
+\def\tikz@parse@calculator#1(${%$
+  \def\tikz@cc@command{#1}%
+  \begingroup%
+    %
+    % Parse main computation. It's a series of optional factors in front
+    % of coordinates.
+    %
+    \pgf@xa=0pt% We accumulate the result in here.
+    \pgf@ya=0pt%
+    \tikz@cc@parse+%
+}%
+
+\def\tikz@cc@parse{%
+  \pgfutil@ifnextchar${%$
+    % Ok, we found the end...
+    \tikz@cc@end%
+  }
+  {\pgfutil@ifnextchar+{%
+      % Ok, we found a coordinate...
+      \tikz@cc@add%
+    }{%
+      \pgfutil@ifnextchar-{%
+        \tikz@cc@sub%
+      }{%
+        \tikzerror{+ or - expected}%
+        \tikz@cc@end$%$
+      }%
+    }%
+  }%
+}%
+
+%
+% The end is reached with $
+%
+\def\tikz@cc@end$#1){%$
+    \xdef\tikz@marshal{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \endgroup%
+  \expandafter\tikz@cc@command\expandafter{\tikz@marshal}%
+}%
+
+
+%
+% Another coordinate with +/-, possibly with a factor
+%
+\def\tikz@cc@add+{%
+  \def\tikz@cc@factor{1}%
+  \tikz@cc@factororcoordinate%
+}%
+\def\tikz@cc@sub-{%
+  \def\tikz@cc@factor{-1}%
+  \tikz@cc@factororcoordinate%
+}%
+
+%
+% Check for a factor: If we see a (, its a coordinate...
+%
+\def\tikz@cc@factororcoordinate{%
+  \pgfutil@ifnextchar({%)
+    % Ok, found coordinate
+    \tikz@cc@coordinate%
+  }{%
+    \tikz@cc@parse@factor%
+  }%
+}%
+
+%
+% ... otherwise it's a factor. It ends at ...*(
+%
+\def\tikz@cc@parse@factor#1*({%
+  \pgfmathparse{#1*\tikz@cc@factor}%
+  \let\tikz@cc@factor=\pgfmathresult%
+  \tikz@cc@coordinate(%)
+}%
+
+\def\tikz@cc@coordinate{%
+  \tikz@scan@absolute\tikz@cc@after@coordinate%
+}%
+\def\tikz@cc@after@coordinate#1{%
+  \pgf@process{#1}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \tikz@cc@mid@checks%
+}%
+
+
+%
+% A coordinate can be followed by !...!(...)
+%
+
+\def\tikz@cc@mid@checks{%
+  \ifnum\the\catcode`\!=\active\relax
+    \expandafter\tikz@cc@mid@checks@active
+  \else
+    \expandafter\tikz@cc@mid@checks@nonactive
+  \fi
+}%
+
+\def\tikz@cc@mid@checks@nonactive{%
+  \pgfutil@ifnextchar!{%
+    \tikz@cc@mid@nonactive%
+  }{%
+    \advance\pgf@xa by\tikz@cc@factor\pgf@xb
+    \advance\pgf@ya by\tikz@cc@factor\pgf@yb
+    \tikz@cc@parse%
+  }%
+}%
+
+\def\tikz@cc@mid@nonactive!{%
+  \pgfutil@ifnextchar({%
+    \tikz@scan@one@point\tikz@cc@project%
+  }{%
+    \tikz@cc@mid@num@nonactive%
+  }%
+}%
+
+\begingroup
+  \catcode`\!=\active
+  \gdef\tikz@cc@mid@checks@active{%
+    \pgfutil@ifnextchar!{%
+      \tikz@cc@mid@active%
+    }{%
+      \advance\pgf@xa by\tikz@cc@factor\pgf@xb
+      \advance\pgf@ya by\tikz@cc@factor\pgf@yb
+      \tikz@cc@parse%
+    }%
+  }%
+
+  \gdef\tikz@cc@mid@active!{%
+    \pgfutil@ifnextchar({%
+      \tikz@scan@one@point\tikz@cc@project%
+    }{%
+      \tikz@cc@mid@num@active%
+    }%
+  }%
+\endgroup
+
+%
+% Partway case: (coord a)!number!(coord b)
+%
+% Returns the position that is at <number> fraction on the way from a
+% to b. This, (a)!0!(b) is (a), (a)!.5!(b) is the middle and (a)!1!(b)
+% is (b)
+%
+
+\def\tikz@cc@mid@num@nonactive#1!{\tikz@cc@mid@num{#1}}%
+
+\begingroup
+  \catcode`\!=\active
+  \gdef\tikz@cc@mid@num@active#1!{\tikz@cc@mid@num{#1}}%
+\endgroup
+
+\def\tikz@cc@mid@num#1{%
+  \pgfmathparse{#1}%
+  \ifpgfmathunitsdeclared%
+    \let\tikz@cc@mid@unit=\pgfmathresult%
+    \expandafter\tikz@cc@scan@rot\expandafter\tikz@cc@after@unit%
+  \else%
+    \let\tikz@cc@mid@factor=\pgfmathresult%
+    \pgfmathparse{1-\tikz@cc@mid@factor}%
+    \let\tikz@cc@mid@factor@one=\pgfmathresult%
+    \expandafter\tikz@cc@scan@rot\expandafter\tikz@cc@after@num%
+  \fi%
+}%
+
+\def\tikz@cc@after@num#1{%
+  \pgf@process{#1}%
+  \pgf@xb=\tikz@cc@mid@factor@one\pgf@xb%
+  \pgf@yb=\tikz@cc@mid@factor@one\pgf@yb%
+  \advance\pgf@xb by\tikz@cc@mid@factor\pgf@x%
+  \advance\pgf@yb by\tikz@cc@mid@factor\pgf@y%
+  \tikz@cc@mid@checks%
+}%
+
+
+
+%
+% Distance case: (coord a)!dimension!(coord b)
+%
+% Returns the position that is at <dimension> removed from (coord a)
+% in the direction of (coord b).
+%
+
+\def\tikz@cc@after@unit#1{%
+  \pgf@process{#1}%
+  \advance\pgf@x by-\pgf@xb%
+  \advance\pgf@y by-\pgf@yb%
+  \pgf@process{\pgfpointnormalised{}}%
+  \advance\pgf@xb by\tikz@cc@mid@unit\pgf@x%
+  \advance\pgf@yb by\tikz@cc@mid@unit\pgf@y%
+  \tikz@cc@mid@checks%
+}%
+
+%
+% Projection case: (a)!(p)!(b)
+%
+% Projection of p on line from a to b
+%
+\def\tikz@cc@project#1{%
+  \pgf@process{#1}%
+  % Save in c
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \begingroup
+    \ifnum\the\catcode`\!=\active
+      \def\tikz@next{%
+        \endgroup
+        \expandafter\tikz@cc@scan@rot\expandafter\tikz@cc@after@project
+        \tikz@cc@scan@ex@active}%
+    \else
+      \def\tikz@next{%
+        \endgroup
+        \expandafter\tikz@cc@scan@rot\expandafter\tikz@cc@after@project
+        \tikz@cc@scan@ex@nonactive}%
+    \fi
+    \tikz@next%
+}%
+
+\def\tikz@cc@scan@ex@nonactive!{}%
+
+\begingroup
+  \catcode`\!=\active
+  \gdef\tikz@cc@scan@ex@active!{}%
+\endgroup
+
+\def\tikz@cc@after@project#1{%
+  \pgf@process{#1}%
+  % Ok, now we need to project (xc,yc) on the line (xb,xc) to (x,y)
+  \advance\pgf@x by-\pgf@xb%
+  \advance\pgf@y by-\pgf@yb%
+  \advance\pgf@xc by-\pgf@xb%
+  \advance\pgf@yc by-\pgf@yb%
+  \pgf@process{\pgfpointnormalised{}}%
+  % Scalar product
+  \pgf@xc=\pgf@sys@tonumber{\pgf@xc}\pgf@x%
+  \advance\pgf@xc by\pgf@sys@tonumber{\pgf@yc}\pgf@y%
+  % and add
+  \advance\pgf@xb by\pgf@sys@tonumber{\pgf@xc}\pgf@x%
+  \advance\pgf@yb by\pgf@sys@tonumber{\pgf@xc}\pgf@y%
+  \tikz@cc@mid@checks%
+}%
+
+%
+% Rotational scanner: radius:(x)
+%
+
+\def\tikz@cc@scan@rot#1{%
+  \pgfutil@ifnextchar({%)
+    \tikz@scan@one@point#1% normal
+  }%
+  {%
+    \def\tikz@cc@scan@rot@cmd{#1}%
+    \ifnum\the\catcode`\:=\active\relax
+      \expandafter\tikz@cc@scan@one@rot@active%
+    \else
+      \expandafter\tikz@cc@scan@one@rot@nonactive%
+    \fi
+  }%
+}%
+
+\def\tikz@cc@scan@one@rot@nonactive#1:{%
+  \def\tikz@cc@scan@rot@angle{#1}%
+  \tikz@scan@one@point\tikz@cc@handle@rot%
+}%
+
+\begingroup
+  \catcode`\:=\active
+  \gdef\tikz@cc@scan@one@rot@active#1:{%
+    \def\tikz@cc@scan@rot@angle{#1}%
+    \tikz@scan@one@point\tikz@cc@handle@rot%
+  }%
+\endgroup
+
+\def\tikz@cc@handle@rot#1{%
+  \pgf@process{#1}%
+  % Ok, now we need to rotate x/y around xb/xb by ...rot@angle
+  {%
+    \pgftransformreset%
+    % Save them...
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    \pgftransformshift{\pgfqpoint{\pgf@xb}{\pgf@yb}}%
+    \pgftransformrotate{\tikz@cc@scan@rot@angle}%
+    \pgftransformshift{\pgfqpoint{-\pgf@xb}{-\pgf@yb}}%
+    \pgfpointtransformed{\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+    \expandafter
+  }%
+  \edef\tikz@marshal{\noexpand\tikz@cc@scan@rot@cmd{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}%
+  \tikz@marshal%
+}%
+
+
+
+
+%
+%
+% Part III: Calculation coordinate systems
+%
+%
+
+% Tangent cs: Keys are a node and a point. Depending on the type of
+% node, the appropriate tangent computation should be done.
+
+\tikzdeclarecoordinatesystem{tangent}
+{%
+  \tikzset{cs/.cd,#1}%
+  \expandafter\ifx\csname tikz@tangent@\tikz@cs@type\endcsname\relax%
+    \tikzerror{I do not know how to compute the tangent to
+    a \tikz@cs@type}%
+    \pgfpointorigin%
+  \else%
+    \expandafter\tikz@scan@one@point\expandafter\tikz@lib@do@tangent\tikz@cs@point%
+  \fi%
+}%
+
+\tikzset{cs/node/.code=\tikz@cs@unpack{\tikz@cs@node}{\tikz@cs@type}{#1}}%
+\tikzset{cs/point/.store in=\tikz@cs@point}%
+
+\def\tikz@lib@do@tangent{\csname tikz@tangent@\tikz@cs@type\endcsname}%
+
+\def\tikz@tangent@coordinate#1{%
+  \pgfpointanchor{\tikz@cs@node}{center}%
+}%
+
+\def\tikz@tangent@circle#1{%
+  {%
+    % Step 1: Compute the transformed position of the input:
+    \pgf@process{\pgfpointtransformed{#1}}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    %
+    % Step 2: Compute vector from center of circle to transformed #1
+    %
+    \pgf@process{\pgfpointtransformed{\pgfpointanchor{\tikz@cs@node}{center}}}%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    %
+    % Step 2: Reset transformations, they distract...
+    %
+    \pgftransformreset%
+    %
+    % Step 3: Transform to the center of the circle.
+    %
+    \pgftransformshift{\pgfpointanchor{\tikz@cs@node}{center}}%
+    %
+    % Step 4: Compute the radius
+    %
+    \pgf@process{\pgfpointanchor{\tikz@cs@node}{east}}%
+    \pgf@xc=\pgf@x%
+    %
+    % Now, (xa,ya) is a point. Compute the tangent from this point to
+    % a circle around the origin of radius xc.
+    %
+    % acos(radius/veclen(xa,ya)) is the angle of the tangent.
+    \pgfmathparse{veclen(\the\pgf@xa,\the\pgf@ya)}
+    \pgfmathparse{acos(\the\pgf@xc/\pgfmathresult)}
+    \ifnum\pgfkeysvalueof{/tikz/cs/solution}>1\relax%
+      \pgfmathparse{0-\pgfmathresult}%
+    \fi%
+    \let\tikz@lib@temp=\pgfmathresult%
+    %
+    % Now \pgfmathparse contains the desired angle. Use this to
+    % compute the correct position on the circle...
+    %
+    % But, first, rotate to the point.
+    \pgf@process{\pgfpointnormalised{\pgfqpoint{\pgf@xa}{\pgf@ya}}}%
+    \pgf@ya=-\pgf@y%
+    \pgftransformcm{\pgf@sys@tonumber{\pgf@x}}{\pgf@sys@tonumber{\pgf@y}}{\pgf@sys@tonumber{\pgf@ya}}{\pgf@sys@tonumber{\pgf@x}}{\pgfpointorigin}%
+    % Finally, rotate...
+    \pgf@process{\pgfpointtransformed{\pgfpointpolar{\tikz@lib@temp}{\the\pgf@xc}}}%
+    %
+    % Ok, undo transformations...
+  }%
+  % \pgf@x, \pgf@y have been smuggled outside by \pgf@process
+  {%
+    \pgftransforminvert%
+    \pgf@process{\pgfpointtransformed{}}%
+  }%
+}%
+
+
+% Implementation of intersections
+
+
+\def\tikz@intersect@circle@and@circle{%
+  {%
+    \pgftransformreset% transformations only confuse us, here...
+    %
+    % Compute origin and radius of first circle
+    %
+    \pgf@process{\pgfpointanchor{\tikz@cs@node@a}{center}}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgfpointanchor{\tikz@cs@node@a}{east}}%
+    \advance\pgf@x by-\pgf@xa%
+    \pgf@xc=\pgf@x% ok, pgf@xc is first radius, (xa,ya) is center
+    %
+    % Compute origin and radius of second circle
+    %
+    \pgf@process{\pgfpointanchor{\tikz@cs@node@b}{center}}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgf@process{\pgfpointanchor{\tikz@cs@node@b}{east}}%
+    \advance\pgf@x by-\pgf@xb%
+    \pgf@yc=\pgf@x% \pgf@yc is second radius, (xb,yb) is center
+    %
+    \pgf@process{%
+      \pgfpointintersectionofcircles{\pgfqpoint{\pgf@xa}{\pgf@ya}}{\pgfqpoint{\pgf@xb}{\pgf@yb}}{\pgf@xc}{\pgf@yc}{\pgfkeysvalueof{/tikz/cs/solution}}%
+    }%
+  }%
+  % \pgf@x, \pgf@y have been smuggled outside by \pgf@process,
+  % reinstall transformations...
+  {%
+    \pgftransforminvert%
+    \pgf@process{\pgfpointtransformed{}}%
+  }%
+}%
+
+
+\def\tikz@intersect@line@and@circle{%
+  {%
+    %
+    % Step 1: Get line
+    %
+    \expandafter\tikz@scan@one@point\expandafter\tikz@parse@line\tikz@cs@line@a%
+    \pgf@process{\pgfpointtransformed{}}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgf@process{\pgfpointtransformed{\pgfqpoint{\pgf@xc}{\pgf@yc}}}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    %
+    % Step 2: Subtract center of circle
+    %
+    \pgf@process{\pgfpointtransformed{\pgfpointanchor{\tikz@cs@node@b}{center}}}%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    \advance\pgf@xb by-\pgf@x%
+    \advance\pgf@yb by-\pgf@y%
+    %
+    % Step 3: Reset transformations, they distract...
+    %
+    \pgftransformreset%
+    %
+    % Step 4: Transform to the center of the circle.
+    %
+    \pgftransformshift{\pgfpointanchor{\tikz@cs@node@b}{center}}%
+    %
+    % Step 5: Compute the radius
+    %
+    \pgf@process{\pgfpointanchor{\tikz@cs@node@b}{east}}%
+    \edef\tikz@lib@saved@radius{\pgf@sys@tonumber{\pgf@x}}%
+    %
+    % Step 6: Compute projection of origin on line (xa,ya) -- (xb,yb),
+    % store in (xa,ya)
+    \pgf@x=\pgf@xb%
+    \pgf@y=\pgf@yb%
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    \pgf@process{\pgfpointnormalised{}}%
+    % Scalar product
+    \pgf@xc=\pgf@sys@tonumber{\pgf@xa}\pgf@x%
+    \advance\pgf@xc by\pgf@sys@tonumber{\pgf@ya}\pgf@y%
+    \pgf@xc=-\pgf@xc%
+    % and add
+    \advance\pgf@xa by\pgf@sys@tonumber{\pgf@xc}\pgf@x%
+    \advance\pgf@ya by\pgf@sys@tonumber{\pgf@xc}\pgf@y%
+    %
+    % Now, we have a triangle with a right angle at (xa,ya). The
+    % second point of the triangle is the origin. The third point is
+    % sought.
+    % Save x/y
+    \pgf@xc=\pgf@x%
+    \pgf@yc=\pgf@y%
+    % Square radius
+    \pgf@xb=\tikz@lib@saved@radius pt%
+    %
+    % First, make numbers smaller, in case they are too large
+    %
+    \c@pgf@counta=1\relax%
+    \loop%
+    \ifdim\pgf@xb>50pt%
+      \multiply\c@pgf@counta by2\relax%
+      \divide\pgf@xa by2\relax%
+      \divide\pgf@ya by2\relax%
+      \divide\pgf@xb by2\relax%
+    \repeat%
+    \pgf@xb=\pgf@sys@tonumber{\pgf@xb}\pgf@xb%
+    % Subtract xa^2 + ya^2
+    \pgf@yb=\pgf@sys@tonumber{\pgf@xa}\pgf@xa%
+    \advance\pgf@xb by-\pgf@yb%
+    \pgf@yb=\pgf@sys@tonumber{\pgf@ya}\pgf@ya%
+    \advance\pgf@xb by-\pgf@yb%
+    % Square root
+    \ifdim\pgf@xb<0pt%
+      \pgf@xb=0pt%
+    \fi%
+    \pgfmathsqrt@{\pgf@sys@tonumber{\pgf@xb}}%
+    \pgfmathmultiply@{\pgfmathresult}{\the\c@pgf@counta}%
+    \multiply\pgf@xa by\c@pgf@counta\relax%
+    \multiply\pgf@ya by\c@pgf@counta\relax%
+    \ifnum\pgfkeysvalueof{/tikz/cs/solution}>1\relax%
+      \pgfmathsubtract{0}{\pgfmathresult}%
+    \fi%
+    % Ok, now add things...
+    \advance\pgf@xa by \pgfmathresult\pgf@xc%
+    \advance\pgf@ya by \pgfmathresult\pgf@yc%
+    \pgf@process{\pgfpointtransformed{\pgfqpoint{\pgf@xa}{\pgf@ya}}}%
+    % Ok, undo transformations...
+  }%
+  % \pgf@x, \pgf@y have been smuggled outside by \pgf@process
+  {%
+    \pgftransforminvert%
+    \pgf@process{\pgfpointtransformed{}}%
+  }%
+}%
+
+\def\tikz@intersect@circle@and@line{%
+  % Swap
+  {%
+    \let\tikz@cs@node@b=\tikz@cs@node@a%
+    \let\tikz@cs@line@a=\tikz@cs@line@b%
+    \tikz@intersect@line@and@circle%
+  }%
+}%

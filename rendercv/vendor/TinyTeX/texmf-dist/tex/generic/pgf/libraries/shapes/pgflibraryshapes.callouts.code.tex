@@ -1,0 +1,951 @@
+% Copyright 2018 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgflibrary{shapes.symbols}%
+
+% Keys for callouts
+%
+% Common to all callouts:
+%    /pgf/callout absolute pointer
+%    /pgf/callout relative pointer
+%
+% ellipse callout only:
+%    /pgf/callout pointer arc
+%
+% rectangle callout only:
+%    /pgf/callout pointer width
+%
+% cloud callout only:
+%    /pgf/callout pointer start size
+%    /pgf/callout pointer end size
+%    /pgf/callout pointer segments
+%
+\newif\ifpgf@lib@callout@absolutepointer
+\pgfkeys{/pgf/.cd,
+    callout pointer arc/.initial=15,
+    callout pointer width/.initial=.25cm,
+    callout pointer start size/.initial=.2 of callout,
+    callout pointer end size/.initial=.1 of callout,
+    callout pointer segments/.initial=2,
+    callout absolute pointer/.code={\pgf@lib@callout@makeabsolutepointer{#1}},
+    callout relative pointer/.code={\pgf@lib@callout@makerelativepointer{#1}},
+    callout pointer shorten/.initial=0cm,
+}%
+
+
+
+\def\pgf@lib@callout@makeabsolutepointer#1{%
+    \pgf@lib@callout@absolutepointertrue%
+    {%
+        \pgftransformshift{#1}%
+        \pgfmultipartnode{coordinate}{center}{pgf@lib@callout@pointer}{}%
+    }%
+}%
+
+\def\pgf@lib@callout@makerelativepointer#1{%
+    \pgf@lib@callout@absolutepointerfalse%
+    \def\pgf@lib@callout@relativepointer{#1}%
+}%
+\pgfkeys{/pgf/callout relative pointer=\pgfpointpolar{300}{.5cm}}%
+
+
+% Shape ellipse callout
+%
+%
+\pgfdeclareshape{ellipse callout}{%
+    \savedmacro\ellipsecalloutpoints{%
+        %
+        % Get the larger of the outer sep.
+        %
+        \pgfmathsetlength\pgf@x{\pgfkeysvalueof{/pgf/outer xsep}}%
+        \pgfmathsetlength\pgf@y{\pgfkeysvalueof{/pgf/outer ysep}}%
+        \ifdim\pgf@x>\pgf@y%
+            \edef\outersep{\the\pgf@x}%
+        \else%
+            \edef\outersep{\the\pgf@y}%
+        \fi%
+        \addtosavedmacro\outersep%
+        %
+        % Calculate the node dimensions...
+        %
+        \pgfmathsetlength\pgf@x{\pgfkeysvalueof{/pgf/inner xsep}}%
+        \advance\pgf@x.5\wd\pgfnodeparttextbox%
+    \pgf@x1.4142136\pgf@x%
+    \pgfmathsetlength\pgf@xa{\pgfkeysvalueof{/pgf/minimum width}}%
+    \ifdim\pgf@x<.5\pgf@xa%
+      \pgf@x.5\pgf@xa%
+    \fi%
+    %
+    \pgfmathsetlength\pgf@y{\pgfkeysvalueof{/pgf/inner ysep}}%
+        \advance\pgf@y.5\ht\pgfnodeparttextbox%
+    \advance\pgf@y.5\dp\pgfnodeparttextbox%
+    \pgf@y1.4142136\pgf@y%
+    \pgfmathsetlength\pgf@ya{\pgfkeysvalueof{/pgf/minimum height}}%
+    \ifdim\pgf@y<.5\pgf@ya%
+      \pgf@y.5\pgf@ya%
+    \fi%
+    %
+    % ...without outer sep...
+    %
+    \edef\xpathradius{\the\pgf@x}%
+    \edef\ypathradius{\the\pgf@y}%
+    %
+    % ...and width outer sep.
+    %
+    \pgfmathaddtolength\pgf@x{\pgfkeysvalueof{/pgf/outer xsep}}%
+    \edef\xradius{\the\pgf@x}%
+    \pgfmathaddtolength\pgf@y{\pgfkeysvalueof{/pgf/outer ysep}}%
+    \edef\yradius{\the\pgf@y}%
+    %
+    \addtosavedmacro\xradius%
+    \addtosavedmacro\xpathradius%
+    \addtosavedmacro\yradius%
+    \addtosavedmacro\ypathradius%
+    %
+      \pgfmathsetmacro\pointerarc{\pgfkeysvalueof{/pgf/callout pointer arc}}%
+        \addtosavedmacro\pointerarc%
+      %
+      \pgfextract@process\centerpoint{%
+        \pgf@x.5\wd\pgfnodeparttextbox%
+        \pgf@y.5\ht\pgfnodeparttextbox%
+        \advance\pgf@y-.5\dp\pgfnodeparttextbox%
+      }%
+      %
+      % Get the relative pointer.
+      %
+      \ifpgf@lib@callout@absolutepointer%
+      \else%
+        \pgfextract@process\calloutpointer{%
+                \pgfextract@process\borderpoint{%
+                    \expandafter\pgfpointborderellipse\expandafter{\pgf@lib@callout@relativepointer}{\pgfqpoint{\xpathradius}{\ypathradius}}%
+                }%
+                \pgfmathanglebetweenpoints{\pgfpointorigin}{\borderpoint}%
+                \let\pointerangle\pgfmathresult%
+                \expandafter\pgf@process\expandafter{\pgf@lib@callout@relativepointer}%
+                \pgfmathveclen@{\pgfmath@tonumber{\pgf@x}}{\pgfmath@tonumber{\pgf@y}}%
+                \edef\pointerradius{\pgfmathresult pt}%
+                \pgfpointadd{\borderpoint}{\pgfqpointpolar{\pointerangle}{\pointerradius}}%
+                \pgf@xa\pgf@x%
+                \pgf@ya\pgf@y%
+                \centerpoint%
+                \advance\pgf@x\pgf@xa%
+                \advance\pgf@y\pgf@ya%
+            }%
+            %
+            \addtosavedmacro\calloutpointer%
+            \pgf@lib@callouts@shortenpointer%
+            \pgf@lib@ellipsecallout@getpoints%
+        \addtosavedmacro\calloutpointeranchor%
+        \addtosavedmacro\beforecalloutangle%
+        \addtosavedmacro\aftercalloutangle%
+    \fi%
+  }%
+  \savedanchor\centerpoint{%
+    \pgf@x.5\wd\pgfnodeparttextbox%
+    \pgf@y.5\ht\pgfnodeparttextbox%
+    \advance\pgf@y-.5\dp\pgfnodeparttextbox%
+  }%
+  \savedanchor\midpoint{%
+    \pgf@x.5\wd\pgfnodeparttextbox%
+    \pgfmathsetlength\pgf@y{+.5ex}%
+  }%
+  \savedanchor\basepoint{%
+    \pgf@x.5\wd\pgfnodeparttextbox%
+    \pgf@y0pt\relax%
+  }%
+  \anchor{center}{\centerpoint}%
+  \anchor{mid}{\midpoint}%
+  \anchor{mid east}{%
+    \ellipsecalloutpoints%
+    \pgfmathpointintersectionoflineandarc{\midpoint\advance\pgf@x\xradius}{\midpoint}%
+        {\centerpoint}{270}{450}{\xradius and \yradius}%
+  }%
+  \anchor{mid west}{%
+    \ellipsecalloutpoints%
+    \pgfmathpointintersectionoflineandarc{\midpoint\advance\pgf@x-\xradius}{\midpoint}%
+        {\centerpoint}{90}{270}{\xradius and \yradius}%
+  }%
+  \anchor{base}{\basepoint}%
+  \anchor{base east}{%
+    \ellipsecalloutpoints%
+    \pgfmathpointintersectionoflineandarc{\basepoint\advance\pgf@x\xradius}{\basepoint}%
+        {\centerpoint}{270}{450}{\xradius and \yradius}%
+  }%
+  \anchor{base west}{%
+    \ellipsecalloutpoints%
+    \pgfmathpointintersectionoflineandarc{\basepoint\advance\pgf@x-\xradius}{\basepoint}%
+        {\centerpoint}{90}{270}{\xradius and \yradius}%
+  }%
+  \anchor{north}{%
+    \ellipsecalloutpoints%
+    \centerpoint%
+    \advance\pgf@y\yradius\relax%
+  }%
+  \anchor{south}{%
+    \ellipsecalloutpoints%
+    \centerpoint%
+    \advance\pgf@y-\yradius\relax%
+  }%
+  \anchor{east}{%
+    \ellipsecalloutpoints%
+    \centerpoint%
+    \advance\pgf@x\xradius\relax%
+  }%
+  \anchor{west}{%
+    \ellipsecalloutpoints%
+    \centerpoint%
+    \advance\pgf@x-\xradius\relax%
+  }%
+  \anchor{north west}{%
+    \ellipsecalloutpoints%
+    \pgf@xa\xradius\relax%
+    \pgf@ya\yradius\relax%
+    \centerpoint%
+    \advance\pgf@y0.7071067\pgf@ya%
+    \advance\pgf@x-0.7071067\pgf@xa%
+  }%
+  \anchor{north east}{%
+    \ellipsecalloutpoints%
+    \pgf@xa\xradius\relax%
+    \pgf@ya\yradius\relax%
+    \centerpoint%
+    \advance\pgf@y0.7071067\pgf@ya%
+    \advance\pgf@x0.7071067\pgf@xa%
+  }%
+  \anchor{south west}{%
+    \ellipsecalloutpoints%
+    \pgf@xa\xradius\relax%
+    \pgf@ya\yradius\relax%
+    \centerpoint%
+    \advance\pgf@y-0.7071067\pgf@ya%
+    \advance\pgf@x-0.7071067\pgf@xa%
+  }%
+  \anchor{south east}{%
+    \ellipsecalloutpoints%
+    \pgf@xa\xradius\relax%
+    \pgf@ya\yradius\relax%
+    \centerpoint%
+    \advance\pgf@y-0.7071067\pgf@ya%
+    \advance\pgf@x0.7071067\pgf@xa%
+  }%
+  \anchor{pointer}{%
+    \ellipsecalloutpoints%
+    \calloutpointeranchor%
+    }%
+  \backgroundpath{%
+    \ellipsecalloutpoints%
+    \ifpgf@lib@callout@absolutepointer%
+        \pgfextract@process\calloutpointer{%
+                \pgfpointanchor{pgf@lib@callout@pointer}{center}%
+            }%
+            \pgf@lib@callouts@shortenpointer%
+            \pgf@lib@ellipsecallout@getpoints%
+            \calloutpointeranchor%
+            \ifx\pgf@node@name\pgfutil@empty%
+            \else%
+                \edef\pgf@sh@@temp{\noexpand\expandafter\noexpand\pgfutil@g@addto@macro\noexpand\csname pgf@sh@np@\pgf@node@name\noexpand\endcsname}%
+                \edef\pgf@sh@@@temp{%
+                    \noexpand\def\noexpand\calloutpointeranchor{%
+                        \noexpand\pgf@x\the\pgf@x%
+                        \noexpand\pgf@y\the\pgf@y%
+                    }%
+                }%
+                \expandafter\pgf@sh@@temp\expandafter{\pgf@sh@@@temp}
+            \fi%
+        \fi%
+        \pgfpathmoveto{\calloutpointer}%
+        \pgfpathlineto{\aftercalloutpointer}%
+        \ifdim\aftercalloutangle pt<\beforecalloutangle pt\relax%
+            \pgfpatharc{\aftercalloutangle}{\beforecalloutangle}{\xpathradius and \ypathradius}%
+        \else%
+            \pgfpatharc{\aftercalloutangle}{360}{\xpathradius and \ypathradius}%
+            \pgfpatharc{0}{\beforecalloutangle}{\xpathradius and \ypathradius}%
+        \fi%
+        \pgfpathclose%
+  }%
+  \anchorborder{%
+    \pgfextract@process\externalpoint{}%
+    \ellipsecalloutpoints%
+    \pgfpointadd{\pgfpointborderellipse{\externalpoint}{\pgfpoint{\xradius}{\yradius}}%
+    }{\centerpoint}%
+  }%
+}%
+
+% Internal macro for calculating the points for the
+% ellipse callout pointer.
+%
+% The following must be set up:
+%
+% \centerpoint    - the center of the ellipse.
+% \calloutpointer - the location of the callout point.
+% \pointerarc     - the width of the pointer.
+% \xpathradius    - the x radius of the ellipse.
+% \ypathradius    - the y radius of the ellipse.
+%
+\def\pgf@lib@ellipsecallout@getpoints{%
+    \pgfextract@process\borderpoint{%
+        \pgfpointborderellipse{%
+            \centerpoint%
+            \pgf@xa\pgf@x%
+            \pgf@ya\pgf@y%
+            \calloutpointer%
+            \advance\pgf@x-\pgf@xa%
+            \advance\pgf@y-\pgf@ya%
+        }{\pgfqpoint{\xpathradius}{\ypathradius}}%
+    }%
+    \pgfmathangleonellipse{\borderpoint}{\xpathradius and \ypathradius}%
+    \pgfutil@tempdima\pointerarc pt\relax%
+    \pgfutil@tempdimb\pgfmathresult pt\relax%
+    \advance\pgfutil@tempdimb-.5\pgfutil@tempdima%
+    \ifdim\pgfutil@tempdimb<0pt\relax%
+        \advance\pgfutil@tempdimb360pt\relax%
+    \fi%
+    \edef\beforecalloutangle{\pgfmath@tonumber{\pgfutil@tempdimb}}%
+    \advance\pgfutil@tempdimb\pgfutil@tempdima%
+    \ifdim\pgfutil@tempdimb<360pt\relax%
+    \else%
+        \advance\pgfutil@tempdimb-360pt\relax%
+    \fi%
+    \edef\aftercalloutangle{\pgfmath@tonumber{\pgfutil@tempdimb}}%
+    %
+    \pgfextract@process\beforecalloutpointer{%
+        \pgfpointadd{\centerpoint}{%
+            \pgfpointpolar{\beforecalloutangle}{\xpathradius and \ypathradius}%
+        }%
+    }%
+    \pgfextract@process\aftercalloutpointer{%
+        \pgfpointadd{\centerpoint}{%
+            \pgfpointpolar{\aftercalloutangle}{\xpathradius and \ypathradius}%
+        }%
+    }%
+    %
+    % Calculate the pointer anchor.
+    %
+    \pgf@lib@callouts@pointeranchor%
+}%
+
+
+% If the callout pointer is very pointed and stroked, the anchor will be
+% miles away from the end of the pointer which will (typically) be
+% bevelled.
+% Using outer sep=0pt is one solution, however, another is provided
+% using this special key:
+%
+% /pgf/callout pointer anchor aspect
+%
+% which takes a value from 0 (ignore any outer sep) to 1 (use
+% the full outer sep).
+
+\pgfkeys{/pgf/callout pointer anchor aspect/.initial=1}%
+
+% Internal macro for calculating the anchor for the callout pointer.
+%
+% Requires the following to be set up (points are anti-clockwise)
+%
+% \beforecalloutpointer - point on the border before the callout pointer
+% \calloutpointer
+% \aftercalloutpointer  - point on the border after the callout pointer
+% \outersep             - the largest of the outer xsep or ysep.
+%
+\def\pgf@lib@callouts@pointeranchor{%
+    \pgfutil@tempdimb\outersep\relax%
+    %
+    \pgfmathanglebetweenlines{\calloutpointer}{\aftercalloutpointer}{\calloutpointer}{\beforecalloutpointer}%
+    \pgfmathdivide@{\pgfmathresult}{2}%
+    \pgfutil@tempdima\pgfmathresult pt\relax%
+    \pgfmathcosec@{\pgfmathresult}%
+    \pgfutil@tempdimb\pgfmathresult\pgfutil@tempdimb%
+    \pgfmathanglebetweenpoints{\calloutpointer}{\aftercalloutpointer}%
+    \advance\pgfutil@tempdima\pgfmathresult pt\relax%
+    \advance\pgfutil@tempdima180pt\relax%
+    %
+    \pgfextract@process\calloutpointeranchor{%
+        \pgfpointadd{%
+            \pgfmathparse{\pgfkeysvalueof{/pgf/callout pointer anchor aspect}}%
+            \pgfutil@tempdimb\pgfmathresult\pgfutil@tempdimb%
+            \pgfqpointpolar{\pgfmath@tonumber{\pgfutil@tempdima}}{\the\pgfutil@tempdimb}%
+        }{%
+            \calloutpointer%
+        }%
+    }%
+}%
+
+\def\pgf@lib@callouts@shortenpointer{%
+    \pgfextract@process\calloutpointer{%
+        \pgfmathanglebetweenpoints{\calloutpointer}{\centerpoint}%
+        \let\angle\pgfmathresult%
+        \pgfmathsin@{\angle}%
+        \let\sinpointerangle\pgfmathresult%
+        \pgfmathcos@{\angle}%
+        \let\cospointerangle\pgfmathresult%
+        \pgfpointadd{\calloutpointer}{%
+            \pgfmathsetlength\pgfutil@tempdima{\pgfkeysvalueof{/pgf/callout pointer shorten}}%
+            \pgf@x\cospointerangle\pgfutil@tempdima%
+            \pgf@y\sinpointerangle\pgfutil@tempdima%
+        }%
+    }%
+}%
+
+
+\pgfdeclareshape{rectangle callout}{%
+    \savedmacro\rectanglecalloutpoints{%
+        %
+        \pgfmathsetlength\pgf@x{\pgfkeysvalueof{/pgf/inner xsep}}%
+        \advance\pgf@x.5\wd\pgfnodeparttextbox%
+        \pgfmathsetlength\pgf@xa{\pgfkeysvalueof{/pgf/minimum width}}%
+        \ifdim\pgf@x<.5\pgf@xa%
+            \pgf@x.5\pgf@xa%
+        \fi%
+        \edef\xtemp{\the\pgf@x}%
+        \pgfmathaddtolength\pgf@x{\pgfkeysvalueof{/pgf/outer xsep}}%
+        %
+        \pgfmathsetlength\pgf@y{\pgfkeysvalueof{/pgf/inner ysep}}%
+        \advance\pgf@y.5\ht\pgfnodeparttextbox%
+        \advance\pgf@y.5\dp\pgfnodeparttextbox%
+        \pgfmathsetlength\pgf@ya{\pgfkeysvalueof{/pgf/minimum height}}%
+        \ifdim\pgf@y<.5\pgf@ya%
+            \pgf@y.5\pgf@ya%
+        \fi%
+        \edef\ytemp{\the\pgf@y}%
+        \pgfmathaddtolength\pgf@y{\pgfkeysvalueof{/pgf/outer ysep}}%
+        %
+        \edef\xlength{\the\pgf@x}%
+        \edef\ylength{\the\pgf@y}%
+        \addtosavedmacro\xlength%
+        \addtosavedmacro\ylength%
+        %
+        \pgfmathsetlengthmacro\pointerwidth{\pgfkeysvalueof{/pgf/callout pointer width}}%
+        \addtosavedmacro\pointerwidth%
+        %
+        \pgfextract@process\centerpoint{%
+            \pgf@x.5\wd\pgfnodeparttextbox%
+            \pgf@y.5\ht\pgfnodeparttextbox%
+            \advance\pgf@y-.5\dp\pgfnodeparttextbox%
+        }%
+        %
+        % Process the relative callout pointer.
+        %
+        \ifpgf@lib@callout@absolutepointer%
+        \else%
+            \pgfextract@process\calloutpointer{%
+                \pgfextract@process\borderpoint{%
+                    \expandafter\pgfpointborderrectangle\expandafter{\pgf@lib@callout@relativepointer}%
+                        {\pgfqpoint{\xtemp}{\ytemp}}%
+                }%
+                \pgfmathanglebetweenpoints{\pgfpointorigin}{\borderpoint}%
+                \let\pointerangle\pgfmathresult%
+                \expandafter\pgf@process\expandafter{\pgf@lib@callout@relativepointer}%
+                \pgfmathveclen@{\pgfmath@tonumber{\pgf@x}}{\pgfmath@tonumber{\pgf@y}}%
+                \edef\pointerradius{\pgfmathresult pt}%
+                \pgfpointadd{\borderpoint}{\pgfqpointpolar{\pointerangle}{\pointerradius}}%
+                \pgf@xa\pgf@x%
+                \pgf@ya\pgf@y%
+                \centerpoint%
+                \advance\pgf@x\pgf@xa%
+                \advance\pgf@y\pgf@ya%
+            }%
+            \pgf@lib@callouts@shortenpointer%
+            \addtosavedmacro\calloutpointer%
+            \pgf@lib@rectanglecallout@pointer%
+            \addtosavedmacro\calloutpointeranchor%
+            \addtosavedmacro\beforecalloutpointer%
+            \addtosavedmacro\aftercalloutpointer%
+            \addtosavedmacro\firstpoint%
+            \addtosavedmacro\secondpoint%
+            \addtosavedmacro\thirdpoint%
+            \addtosavedmacro\fourthpoint%
+        \fi%
+    }%
+    \savedanchor\centerpoint{%
+        \pgf@x.5\wd\pgfnodeparttextbox%
+        \pgf@y.5\ht\pgfnodeparttextbox%
+        \advance\pgf@y-.5\dp\pgfnodeparttextbox%
+    }%
+    \savedanchor\basepoint{%
+        \pgf@x.5\wd\pgfnodeparttextbox%
+        \pgf@y0pt\relax%
+    }%
+    \savedanchor\midpoint{%
+        \pgf@x.5\wd\pgfnodeparttextbox%
+        \pgfmathsetlength\pgf@y{+.5em}%
+    }%
+    \anchor{center}{\centerpoint}%
+    \anchor{mid}{\midpoint}%
+    \anchor{mid east}{%
+        \rectanglecalloutpoints%
+        \midpoint%
+        \advance\pgf@x\xlength\relax%
+    }%
+    \anchor{mid west}{%
+        \rectanglecalloutpoints%
+        \midpoint%
+        \advance\pgf@x-\xlength\relax%
+    }%
+    \anchor{base}{\basepoint}%
+    \anchor{base east}{%
+        \rectanglecalloutpoints%
+        \basepoint%
+        \advance\pgf@x\xlength\relax%
+    }%
+    \anchor{base west}{%
+        \rectanglecalloutpoints%
+        \basepoint%
+        \advance\pgf@x-\xlength\relax%
+    }%
+    \anchor{north}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@y\ylength\relax%
+    }%
+    \anchor{south}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@y-\ylength\relax%
+    }%
+    \anchor{east}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@x\xlength\relax%
+    }%
+    \anchor{west}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@x-\xlength\relax%
+    }%
+    \anchor{north east}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@x\xlength\relax%
+        \advance\pgf@y\ylength\relax%
+    }%
+    \anchor{south west}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@x-\xlength\relax%
+        \advance\pgf@y-\ylength\relax%
+    }%
+    \anchor{south east}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@x\xlength\relax%
+        \advance\pgf@y-\ylength\relax%
+    }%
+    \anchor{north west}{%
+        \rectanglecalloutpoints%
+        \centerpoint%
+        \advance\pgf@x-\xlength\relax%
+        \advance\pgf@y\ylength\relax%
+    }%
+    \anchor{pointer}{%
+        \rectanglecalloutpoints%
+        \calloutpointeranchor%
+    }%
+    \backgroundpath{%
+        \rectanglecalloutpoints%
+        \pgf@x\xlength\relax%
+        \pgf@y\ylength\relax%
+        \pgfmathaddtolength\pgf@x{-\pgfkeysvalueof{/pgf/outer xsep}}%
+        \pgfmathaddtolength\pgf@y{-\pgfkeysvalueof{/pgf/outer ysep}}%
+        \edef\xtemp{\the\pgf@x}%
+        \edef\ytemp{\the\pgf@y}%
+        %
+        % The absolute pointer must be calculated here because the
+        % anchor of the shape (which is calculated after the saved
+        % macros and points) affects how the pointer joins the
+        % main rectangle.
+        %
+        \ifpgf@lib@callout@absolutepointer%
+            \pgfextract@process\calloutpointer{%
+                \pgfpointanchor{pgf@lib@callout@pointer}{center}%
+            }%
+            \pgf@lib@callouts@shortenpointer%
+            \pgfmathsetlengthmacro\pointerwidth{\pgfkeysvalueof{/pgf/callout pointer width}}%
+            \pgf@lib@rectanglecallout@pointer%
+            %
+            % \pgf@node@name = the shape name (from \pgfmultipartnode)
+            %
+            \ifx\pgf@node@name\pgfutil@empty%
+            \else%
+                %
+                % Now hack an extra saved anchor \calloutpointeranchor,
+                % with the new anchor for the callout pointer.
+                %
+                \edef\pgf@sh@@temp{\noexpand\expandafter\noexpand\pgfutil@g@addto@macro\noexpand\csname pgf@sh@np@\pgf@node@name\noexpand\endcsname}%
+                \edef\pgf@sh@@@temp{%
+                    \noexpand\def\noexpand\calloutpointeranchor{%
+                        \noexpand\pgf@x\the\pgf@x%
+                        \noexpand\pgf@y\the\pgf@y%
+                    }%
+                }%
+                \expandafter\pgf@sh@@temp\expandafter{\pgf@sh@@@temp}%
+            \fi%
+        \fi%
+        {%
+            \pgfsetcornersarced{\pgfqpoint{0pt}{0pt}}%
+            \pgfpathmoveto{\beforecalloutpointer}%
+        }%
+        \pgfpathlineto{\calloutpointer}%
+        {%
+            \pgfsetcornersarced{\pgfqpoint{0pt}{0pt}}%
+            \pgfpathlineto{\aftercalloutpointer}%
+        }%
+        {%
+            \pgftransformshift{\centerpoint}%
+            \pgfpathlineto{\firstpoint}%
+            \pgfpathlineto{\secondpoint}%
+            \pgfpathlineto{\thirdpoint}%
+            \pgfpathlineto{\fourthpoint}%
+            {%
+                \pgfsetcornersarced{\pgfqpoint{0pt}{0pt}}%
+                \pgfpathclose%
+            }%
+        }
+    }%
+    \anchorborder{%
+        \pgfextract@process\externalpoint{}%
+        \rectanglecalloutpoints%
+        \pgfpointadd{\centerpoint}%
+        {%
+            \pgfpointborderrectangle{\pgfpointadd{\centerpoint}{\externalpoint}}%
+            {\pgfqpoint{\xlength}{\ylength}}%
+        }%
+    }%
+}%
+
+
+
+% \pgf@lib@rectanglecallout@pointer
+%
+% Internal macro for calculations relating to the rectangle callout.
+%
+% Requires the following to be set up:
+%
+% \calloutpointer - the location of the callout point.
+% \xtemp          - the half width of the rectangle
+% \ytemp          - the half height of the rectangle
+% \pointerwidth   - the width of the pointer.
+%
+\def\pgf@lib@rectanglecallout@pointer{%
+    %
+    % Ensure that the pointer never connects to the main shape
+    % too near to a corner. This is done for two reasons:
+    % 1. It can look ugly.
+    % 2. If the corners are rounded, a mess can result.
+    %
+    \pgfextract@process\borderpoint{%
+            \pgfpointborderrectangle{%
+                \centerpoint%
+                \pgf@xa\pgf@x%
+                \pgf@ya\pgf@y%
+                \calloutpointer%
+                \advance\pgf@x-\pgf@xa%
+                \advance\pgf@y-\pgf@ya%
+            }{\pgfqpoint{\xtemp}{\ytemp}}%
+        }%
+    \pgfmathanglebetweenpoints{\pgfpointorigin}{\borderpoint}%
+    \let\borderangle\pgfmathresult%
+    %
+    \pgfutil@tempdima\pointerwidth\relax%
+    \pgf@xa\xtemp\relax%
+    \advance\pgf@xa-\pgfutil@tempdima%
+    \pgf@ya\ytemp\relax%
+    \advance\pgf@ya-\pgfutil@tempdima%
+    %
+    \pgf@process{%
+        \pgfutil@ifundefined{pgf@corner@arc}{\pgfpointorigin}{%
+            \expandafter\pgfqpoint\pgf@corner@arc}%
+    }%
+    \advance\pgf@xa-\pgf@x%
+    \advance\pgf@ya-\pgf@y%
+    %
+    \borderpoint%
+    \pgf@xb\pgf@x%
+    \pgf@yb\pgf@y%
+    %
+    \pgf@xc0pt\relax%
+    \pgf@yc0pt\relax%
+    %
+    \pgfmathanglebetweenpoints{\pgfpointorigin}{\pgfqpoint{\xtemp}{\ytemp}}%
+    \ifdim\borderangle pt<\pgfmathresult pt\relax%
+        \pgf@yc.5\pgfutil@tempdima%
+        \ifdim\pgf@yb>\pgf@ya%
+            \pgf@yb\pgf@ya%
+        \fi%
+        %
+        % Establish the order for drawing the rectangle corners.
+        %
+        \edef\firstpoint{\noexpand\pgfqpoint{\xtemp}{\ytemp}}%
+        \edef\secondpoint{\noexpand\pgfqpoint{-\xtemp}{\ytemp}}%
+        \edef\thirdpoint{\noexpand\pgfqpoint{-\xtemp}{-\ytemp}}%
+        \edef\fourthpoint{\noexpand\pgfqpoint{\xtemp}{-\ytemp}}%
+    \else%
+        \pgfmathanglebetweenpoints{\pgfpointorigin}{\pgfqpoint{-\xtemp}{\ytemp}}%
+        \ifdim\borderangle pt<\pgfmathresult pt\relax%
+            \pgf@xc-.5\pgfutil@tempdima%
+            \ifdim\pgf@xb>\pgf@xa%
+                \pgf@xb\pgf@xa%
+            \else%
+                \ifdim\pgf@xb<-\pgf@xa%
+                    \pgf@xb-\pgf@xa%
+                \fi%
+            \fi%
+            \edef\firstpoint{\noexpand\pgfqpoint{-\xtemp}{\ytemp}}%
+            \edef\secondpoint{\noexpand\pgfqpoint{-\xtemp}{-\ytemp}}%
+            \edef\thirdpoint{\noexpand\pgfqpoint{\xtemp}{-\ytemp}}%
+            \edef\fourthpoint{\noexpand\pgfqpoint{\xtemp}{\ytemp}}%
+        \else%
+            \pgfmathanglebetweenpoints{\pgfpointorigin}{\pgfqpoint{-\xtemp}{-\ytemp}}%
+            \ifdim\borderangle pt<\pgfmathresult pt\relax%
+                \pgf@yc-.5\pgfutil@tempdima%
+                \ifdim\pgf@yb>\pgf@ya%
+                    \pgf@yb\pgf@ya%
+                \else%
+                    \ifdim\pgf@yb<-\pgf@ya%
+                        \pgf@yb-\pgf@ya%
+                    \fi%
+                \fi%
+                \edef\firstpoint{\noexpand\pgfqpoint{-\xtemp}{-\ytemp}}%
+                \edef\secondpoint{\noexpand\pgfqpoint{\xtemp}{-\ytemp}}%
+                \edef\thirdpoint{\noexpand\pgfqpoint{\xtemp}{\ytemp}}%
+                \edef\fourthpoint{\noexpand\pgfqpoint{-\xtemp}{\ytemp}}%
+            \else%
+                \pgfmathanglebetweenpoints{\pgfpointorigin}{\pgfqpoint{\xtemp}{-\ytemp}}%
+                \ifdim\borderangle pt<\pgfmathresult pt\relax%
+                    \pgf@xc.5\pgfutil@tempdima%
+                    \ifdim\pgf@xb>\pgf@xa%
+                        \pgf@xb\pgf@xa%
+                    \else%
+                        \ifdim\pgf@xb<-\pgf@xa%
+                            \pgf@xb-\pgf@xa%
+                        \fi%
+                    \fi%
+                    \edef\firstpoint{\noexpand\pgfqpoint{\xtemp}{-\ytemp}}%
+                    \edef\secondpoint{\noexpand\pgfqpoint{\xtemp}{\ytemp}}%
+                    \edef\thirdpoint{\noexpand\pgfqpoint{-\xtemp}{\ytemp}}%
+                    \edef\fourthpoint{\noexpand\pgfqpoint{-\xtemp}{-\ytemp}}%
+                \else%
+                    \pgf@yc.5\pgfutil@tempdima%
+                    \ifdim\pgf@yb<-\pgf@ya%
+                        \pgf@yb-\pgf@ya%
+                    \fi%
+                    \edef\firstpoint{\noexpand\pgfqpoint{\xtemp}{\ytemp}}%
+                    \edef\secondpoint{\noexpand\pgfqpoint{-\xtemp}{\ytemp}}%
+                    \edef\thirdpoint{\noexpand\pgfqpoint{-\xtemp}{-\ytemp}}%
+                    \edef\fourthpoint{\noexpand\pgfqpoint{\xtemp}{-\ytemp}}%
+                \fi%
+            \fi%
+        \fi%
+    \fi%
+    \pgfextract@process\beforecalloutpointer{%
+        \centerpoint%
+        \advance\pgf@x\pgf@xb%
+        \advance\pgf@y\pgf@yb%
+        \advance\pgf@x-\pgf@xc%
+        \advance\pgf@y-\pgf@yc%
+    }%
+    \pgfextract@process\aftercalloutpointer{%
+        \centerpoint%
+        \advance\pgf@x\pgf@xb%
+        \advance\pgf@y\pgf@yb%
+        \advance\pgf@x\pgf@xc%
+        \advance\pgf@y\pgf@yc%
+    }%
+    %
+    % Now calculate the pointer anchor.
+    %
+    \pgfmathsetlength\pgf@x{\pgfkeysvalueof{/pgf/outer xsep}}%
+    \pgfmathsetlength\pgf@y{\pgfkeysvalueof{/pgf/outer ysep}}%
+    \ifdim\pgf@x>\pgf@y%
+        \edef\outersep{\the\pgf@x}%
+    \else%
+        \edef\outersep{\the\pgf@y}%
+    \fi%
+    \pgf@lib@callouts@pointeranchor%
+}%
+
+
+% Internal macro for parsing the size of
+% the cloud callout pointer.
+%
+% \pgf@x and \pgf@y should be set up as the
+% width and height of the main shape.
+%
+% \pgf@xa and \pgf@ya are returned appropriately.
+%
+\def\pgf@lib@callout@setpointersize#1{%
+    \edef\pgf@lib@callout@temp{#1}%
+    \edef\pgf@marshall{\noexpand\pgfutil@in@{of callout}{\pgf@lib@callout@temp}}%
+    \pgf@marshall%
+    \ifpgfutil@in@%
+        \expandafter\pgf@xa\expandafter\pgf@lib@callout@setpointerrelativesize%
+            \pgf@lib@callout@temp\pgf@lib@stop\pgf@x%
+        \expandafter\pgf@ya\expandafter\pgf@lib@callout@setpointerrelativesize%
+            \pgf@lib@callout@temp\pgf@lib@stop\pgf@y%
+    \else%
+        \edef\pgf@marshall{\noexpand\pgfutil@in@{and}{\pgf@lib@callout@temp}}%
+        \pgf@marshall%
+        \ifpgfutil@in@%
+            \expandafter\pgf@lib@callout@setpointerbothsizes\pgf@lib@callout@temp\pgf@lib@stop%
+        \else%
+            \pgfmathsetlength\pgf@xa{#1}%
+            \pgfmathsetlength\pgf@ya{#1}%
+        \fi%
+    \fi%
+}%
+\def\pgf@lib@callout@setpointerrelativesize#1of callout#2\pgf@lib@stop{#1}%
+\def\pgf@lib@callout@setpointerbothsizes#1and#2\pgf@lib@stop{%
+    \pgfmathsetlength\pgf@xa{#2}%
+    \pgfmathsetlength\pgf@ya{#2}%
+}%
+
+% Shape: cloud callout.
+%
+\pgfdeclareshape{cloud callout}{%
+    \savedanchor\calloutpointer{%
+        \pgfutil@ifundefined{pgf@sh@s@cloud}{%
+            \pgferror{I cannot find the cloud shape. Please load the `symbol shapes' library}}{}%
+        \pgf@sh@s@cloud%
+        \pgf@sh@savedmacros%
+        %
+        \pgfextract@process\centerpoint{%
+            \pgf@x.5\wd\pgfnodeparttextbox%
+            \pgf@y.5\ht\pgfnodeparttextbox%
+            \advance\pgf@y-.5\dp\pgfnodeparttextbox%
+        }%
+        \ifpgf@lib@callout@absolutepointer%
+      \else%
+        \pgfextract@process\calloutpointer{%
+                \pgfextract@process\borderpoint{%
+                    \expandafter\pgfpointborderellipse\expandafter{\pgf@lib@callout@relativepointer}%
+                        {\pgfqpoint{\xouterradius}{\youterradius}}%
+                }%
+                \pgfmathanglebetweenpoints{\pgfpointorigin}{\borderpoint}%
+                \let\pointerangle\pgfmathresult%
+                \expandafter\pgf@process\expandafter{\pgf@lib@callout@relativepointer}%
+                \pgfmathveclen@{\pgfmath@tonumber{\pgf@x}}{\pgfmath@tonumber{\pgf@y}}%
+                \edef\pointerradius{\pgfmathresult pt}%
+                \pgfpointadd{\borderpoint}{\pgfqpointpolar{\pointerangle}{\pointerradius}}%
+                \pgf@xa\pgf@x%
+                \pgf@ya\pgf@y%
+                \centerpoint%
+                \advance\pgf@x\pgf@xa%
+                \advance\pgf@y\pgf@ya%
+            }%
+            \pgf@lib@callouts@shortenpointer%
+        \fi%
+    }%
+    \anchor{pointer}{%
+        \calloutpointer%
+    }%
+    \inheritsavedanchors[from=cloud]%
+    \inheritanchor[from=cloud]{center}%
+    \inheritanchor[from=cloud]{base}%
+    \inheritanchor[from=cloud]{mid}%
+    \inheritanchor[from=cloud]{north}%
+    \inheritanchor[from=cloud]{south}%
+    \inheritanchor[from=cloud]{east}%
+    \inheritanchor[from=cloud]{west}%
+    \inheritanchor[from=cloud]{north east}%
+    \inheritanchor[from=cloud]{south west}%
+    \inheritanchor[from=cloud]{south east}%
+    \inheritanchor[from=cloud]{north west}%
+    \inheritanchorborder[from=cloud]%
+    \backgroundpath{%
+        \pgf@sh@bg@cloud%
+        \ifpgf@lib@callout@absolutepointer%
+        \pgfextract@process\calloutpointer{%
+                \pgfpointanchor{pgf@lib@callout@pointer}{center}%
+            }%
+            \ifx\pgf@node@name\pgfutil@empty%
+            \else%
+                \edef\pgf@sh@@temp{\noexpand\expandafter\noexpand\pgfutil@g@addto@macro\noexpand\csname pgf@sh@np@\pgf@node@name\noexpand\endcsname}%
+                \edef\pgf@sh@@@temp{%
+                    \noexpand\def\noexpand\calloutpointeranchor{%
+                        \noexpand\pgf@x\the\pgf@x%
+                        \noexpand\pgf@y\the\pgf@y%
+                    }%
+                }%
+                \expandafter\pgf@sh@@temp\expandafter{\pgf@sh@@@temp}
+            \fi%
+        \fi%
+        %
+        \pgfextract@process\borderpoint{%
+            \pgfpointadd{%
+                \pgfpointborderellipse{\pgfpointdiff{\centerpoint}{\calloutpointer}}%
+                        {\pgfqpoint{\xouterradius}{\youterradius}}%
+            }{\centerpoint}%
+        }%
+        \pgf@lib@callouts@shortenpointer%
+        \pgfmathanglebetweenpoints{\calloutpointer}{\centerpoint}%
+        \let\angle\pgfmathresult%
+        \pgfmathsin@{\angle}%
+        \let\sinpointerangle\pgfmathresult%
+        \pgfmathcos@{\angle}%
+        \let\cospointerangle\pgfmathresult%
+        %
+        \pgf@x\xouterradius\relax%
+        \pgf@x2.0\pgf@x%
+        \pgf@y\yinnerradius\relax%
+        \pgf@y2.0\pgf@y%
+        \pgf@lib@callout@setpointersize{\pgfkeysvalueof{/pgf/callout pointer start size}}%
+        \pgf@xb\pgf@xa%
+        \pgf@yb\pgf@ya%
+        \pgf@lib@callout@setpointersize{\pgfkeysvalueof{/pgf/callout pointer end size}}%
+        \advance\pgf@xb-\pgf@xa%
+        \advance\pgf@yb-\pgf@ya%
+        %
+        \pgfmathsetcount\c@pgf@counta{\pgfkeysvalueof{/pgf/callout pointer segments}}%
+        \divide\pgf@xb\c@pgf@counta%
+        \divide\pgf@yb\c@pgf@counta%
+        %
+        \pgf@process{\pgfpointdiff{\borderpoint}{\calloutpointer}}%
+        \pgfmathveclen@{\pgfmath@tonumber{\pgf@x}}{\pgfmath@tonumber{\pgf@y}}%
+        \pgfutil@tempdima\pgfmathresult pt\relax%
+        \divide\pgfutil@tempdima\c@pgf@counta%
+        %
+        \pgfutil@tempdimb0pt\relax%
+        \pgfmathloop%
+        \ifnum\pgfmathcounter>\c@pgf@counta%
+        \else%
+            {%
+                \pgf@xa.5\pgf@xa%
+                \pgf@ya.5\pgf@ya%
+                \edef\tempxradius{\the\pgf@xa}%
+                \edef\tempyradius{\the\pgf@ya}%
+                \pgfpathellipse%
+                    {%
+                        \calloutpointer%
+                        \advance\pgf@x\cospointerangle\pgfutil@tempdimb%
+                        \advance\pgf@y\sinpointerangle\pgfutil@tempdimb%
+                    }%
+                    {\pgfqpoint{\tempxradius}{0pt}}{\pgfqpoint{0pt}{\tempyradius}}%
+            }%
+            \advance\pgf@xa\pgf@xb%
+            \advance\pgf@ya\pgf@yb%
+            \advance\pgfutil@tempdimb\pgfutil@tempdima%
+        \repeatpgfmathloop%
+    }%
+    %
+    % Hack the puff anchors for the callout.
+    %
+    \expandafter\pgfutil@g@addto@macro\csname pgf@sh@s@cloud callout\endcsname{%
+        \c@pgf@counta\puffs\relax%
+        \pgfmathloop%
+            \ifnum\c@pgf@counta>0\relax%
+                \pgfutil@ifundefined{pgf@anchor@cloud callout@puff\space\the\c@pgf@counta}{%
+                \expandafter\xdef\csname pgf@anchor@cloud callout@puff\space\the\c@pgf@counta\endcsname{%
+                    \noexpand\pgf@sh@@cloudpuffanchor{\the\c@pgf@counta}%
+                }%
+            }{\c@pgf@counta0\relax}%
+            \advance\c@pgf@counta-1\relax%
+        \repeatpgfmathloop%
+    }%
+}%
+
+\endinput

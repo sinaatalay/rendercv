@@ -1,0 +1,2808 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcolorbox.sty: Text color boxes
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\NeedsTeXFormat{LaTeX2e}[2020/10/01]
+\ProvidesPackage{tcolorbox}[2023/09/26 version 6.1.0 text color boxes]
+\def\tcb@version{6.1.0}
+
+\RequirePackage{pgf}[2008/01/15]
+\RequirePackage{verbatim}[2003/08/22]
+\RequirePackage{environ}[2013/04/01]
+\RequirePackage{etoolbox}[2011/01/03]
+
+% register
+\newif\iftcb@lowerignored
+\newif\iftcb@lowervisible
+\newif\iftcb@redirectlowerto
+\newif\iftcb@uppervisible
+\newif\iftcb@titlevisible
+\newif\iftcb@hasTitle
+\newif\iftcb@hasLower
+\newif\iftcb@lowerspace
+\newif\iftcb@sidebyside
+\newif\iftcb@hasPhantom
+\newif\iftcb@lowerseparated
+\newif\iftcb@titlefilled
+\newif\iftcb@fixedheight
+\newif\iftcb@ignorenobreak
+\newif\iftcb@checkpage
+\newif\iftcb@resetcounteronoverlays
+\newif\iftcb@wrap@environment
+\newif\iftcb@isbreakable
+
+\newbox\tcb@titlebox
+\newbox\tcb@upperbox
+\newbox\tcb@lowerbox
+\newbox\tcb@phantombox
+
+\newcounter{tcbbreakpart}
+\newcounter{tcblayer}
+\newcounter{tcolorbox@number}
+
+\def\tcb@info#1{\PackageInfo{tcolorbox}{#1}}
+\def\tcb@warning#1{\PackageWarning{tcolorbox}{#1}}
+\def\tcb@error#1#2{\PackageError{tcolorbox}{#1}{#2}}
+
+% key management
+\pgfkeys{/tcb/.is family}
+
+\def\tcbset{\pgfqkeys{/tcb}}
+\long\def\tcbset@late@options#1{\appto\tcb@lateoptions@hook{\tcbset{#1}}}
+
+\def\tcb@dim@to#1#2{\def#1{\the\dimexpr#2\relax}}
+\def\tcbdimto#1#2{\edef#1{\the\dimexpr#2\relax}}
+\def\tcbglueto#1#2{\edef#1{\the\glueexpr#2\relax}}
+
+\def\tcb@defToTotalHeightStandard#1#2{\tcbdimto#1{\ht#2+\dp#2}}
+\let\tcb@defToTotalHeight\tcb@defToTotalHeightStandard
+
+\def\tcb@zpt{0pt}
+
+\def\tcb@comp@arc@auto{%
+  \let\tcb@outer@arc=\kvtcb@top@rule@stand%
+  \ifdim\kvtcb@bottom@rule@stand<\tcb@outer@arc\relax%
+    \let\tcb@outer@arc=\kvtcb@bottom@rule@stand\fi%
+  \ifdim\kvtcb@left@rule<\tcb@outer@arc\relax%
+    \let\tcb@outer@arc=\kvtcb@left@rule\fi%
+  \ifdim\kvtcb@right@rule<\tcb@outer@arc\relax%
+    \let\tcb@outer@arc=\kvtcb@right@rule\fi%
+  \tcbdimto\tcb@outer@arc{\tcb@arc@scale\dimexpr\tcb@outer@arc\relax+\kvtcb@arc}%
+}
+
+\def\tcb@comp@arc@fix{%
+  \tcbdimto\tcb@outer@arc{\kvtcb@outerarc}%
+}
+
+\def\tcb@use@auto@parskip{%
+  \tcbset{autoparskip}%
+}
+
+\def\tcb@hack@currenvir{\edef\@currenvir{\kvtcb@savedelimiter}}
+
+\def\tcb@sbs@quota@leftwidth{%
+  \tcbdimto\tcb@w@upper{\kvtcb@sbs@ratio}%
+  \tcbdimto\tcb@w@lower{\tcb@w@sbs-\tcb@w@upper}%
+}
+
+\def\tcb@sbs@quota@rightwidth{%
+  \tcbdimto\tcb@w@lower{\kvtcb@sbs@ratio}%
+  \tcbdimto\tcb@w@upper{\tcb@w@sbs-\tcb@w@lower}%
+}
+
+\def\tcb@sbs@quota@leftratio{%
+  \tcbdimto\tcb@w@upper{\kvtcb@sbs@ratio\dimexpr\tcb@w@sbs}%
+  \tcbdimto\tcb@w@lower{\tcb@w@sbs-\tcb@w@upper}%
+}
+
+\def\tcb@sbs@quota@rightratio{%
+  \tcbdimto\tcb@w@lower{\kvtcb@sbs@ratio\dimexpr\tcb@w@sbs}%
+  \tcbdimto\tcb@w@upper{\tcb@w@sbs-\tcb@w@lower}%
+}
+
+\def\tcb@shield@@externalize{%
+  \ifdefined\tikzexternaldisable%
+    \ifdefined\pgfpictureid%
+    \else%
+      \tikzexternaldisable%
+    \fi%
+  \fi}
+
+\def\tcb@set@embed@tcbox#1{%
+  \long\def\tcb@embed@tcbox##1{%
+    \tcbdimto\tcb@w@upper{\kvtcb@width-(\kvtcb@left@rule+\kvtcb@leftupper+(\kvtcb@boxsep)*2+\kvtcb@rightupper+\kvtcb@right@rule)}%
+    #1}%
+}
+
+\def\tcb@new@skin#1#2{\tcbset{skin@#1/.style={#2}}}
+\newcommand{\tcbsubskin}[3]{\tcb@new@skin{#1}{skin@#2,#3}}
+
+\pgfkeys{/handlers/.dimstore in/.code=\pgfkeysalso{\pgfkeyscurrentpath/.code=\def#1{\the\dimexpr##1\relax}}}
+\pgfkeys{/handlers/.colorlet/.code=\pgfkeysalso{\pgfkeyscurrentpath/.code=\colorlet{#1}{##1}}}
+
+\ExplSyntaxOn
+
+\pgfkeys{/handlers/.tl_set:N/.code=\pgfkeysalso{\pgfkeyscurrentpath/.code=\tl_set:Nn#1{##1}}}
+
+\ExplSyntaxOff
+
+
+\newcommand\tcbtitle{\ifx\tcbtitletext\@empty\else%
+  \leavevmode{\color{tcbcoltitle}\kvtcb@fonttitle\kvtcb@haligntitle\tcb@insert@before@title\tcbtitletext\tcb@insert@after@title}\fi}
+
+\def\tcb@detach@title@code@{%
+  \let\tcbtitletext\kvtcb@title%
+  \let\kvtcb@title\@empty%
+  \tcbset{title/.store in=\tcbtitletext}%
+  \let\tcb@detach@title@code\@empty%
+  \let\tcb@attach@title@code\tcb@attach@title@code@%
+  \let\tcb@specialtitle@hook\@empty%
+}
+
+\def\tcb@attach@title@code@{%
+  \let\kvtcb@title\tcbtitletext%
+  \let\tcbtitletext\@empty%
+  \tcbset{title/.store in=\kvtcb@title}%
+  \let\tcb@attach@title@code\@empty%
+  \let\tcb@detach@title@code\tcb@detach@title@code@%
+  \let\tcb@specialtitle@hook\@empty%
+}
+
+\def\tcb@gettitle#1{\protected@edef\@currentlabelname{#1}}
+
+\AfterEndPreamble{%
+  \ifdefined\NR@gettitle%
+    \let\tcb@gettitle\NR@gettitle%
+  \fi%
+}
+
+\def\tcb@parfillskip@restore{\ifdim\parfillskip>0pt\relax\parfillskip\@flushglue\fi}
+
+% analog to plain.tex
+\def\tcb@raggedright@plain{\raggedright\rightskip0pt plus2em \spaceskip.3333em \xspaceskip.5em\relax}
+\def\tcb@raggedleft@plain{\raggedleft\leftskip0pt plus2em \spaceskip.3333em \xspaceskip.5em \hbadness=10000\relax}
+\def\tcb@raggedcenter@plain{\centering\leftskip0pt plus2em\rightskip0pt plus2em\spaceskip.3333em \xspaceskip.5em \hbadness=10000\relax}
+
+\def\tcb@insert@before@upper@ignore{\kvtcb@before@upper\ignorespaces}
+\def\tcb@insert@before@upper@noignore{\kvtcb@before@upper}
+\def\tcb@insert@before@lower@ignore{\kvtcb@before@lower\ignorespaces}
+\def\tcb@insert@before@lower@noignore{\kvtcb@before@lower}
+\def\tcb@insert@before@title@ignore{\kvtcb@before@title\ignorespaces}
+\def\tcb@insert@before@title@noignore{\kvtcb@before@title}
+
+\def\tcb@insert@after@upper@unskip{\ifvmode\else\unskip\fi\kvtcb@after@upper}
+\def\tcb@insert@after@upper@nounskip{\kvtcb@after@upper}
+\def\tcb@insert@after@lower@unskip{\ifvmode\else\unskip\fi\kvtcb@after@lower}
+\def\tcb@insert@after@lower@nounskip{\kvtcb@after@lower}
+\def\tcb@insert@after@title@unskip{\ifvmode\else\unskip\fi\kvtcb@after@title}
+\def\tcb@insert@after@title@nounskip{\kvtcb@after@title}
+
+
+\tcbset{%
+  title/.store in=\kvtcb@title,
+  notitle/.style={title=},
+  adjust text/.store in=\kvtcb@adjusttext,
+  adjusted title/.style={title={#1\vphantom{\kvtcb@adjusttext}}},
+  squeezed title/.style={title={%
+    \setbox\z@=\color@hbox#1\color@endbox%
+    \ifdim\wd\z@>\linewidth\relax%
+      \resizebox{\linewidth}{\height}{\unhbox\z@}%
+    \else%
+      \unhbox\z@%
+    \fi%
+  }},
+  squeezed title*/.style={squeezed title={#1\vphantom{\kvtcb@adjusttext}}},%
+  detach title/.code=\tcb@detach@title@code,%
+  attach title/.code=\tcb@attach@title@code,%
+  attach title to upper/.style={detach title,before upper={\ifx\tcbtitletext\@empty\else\tcbtitle#1\fi}},
+  attach title to upper/.default=,
+  subtitle style/.store in=\kvtcb@subtitle@style,%
+  width/.store in=\kvtcb@width,
+  text width/.style={width={#1+\kvtcb@left@rule+\kvtcb@right@rule+\kvtcb@boxsep*2+\kvtcb@leftupper+\kvtcb@rightupper}},%
+  add to width/.code={\tcbdimto\kvtcb@width{\kvtcb@width+(#1)}},%
+  boxsep/.store in=\kvtcb@boxsep,
+  toprule/.code={%
+    \def\kvtcb@top@rule@stand{#1}%
+    \let\kvtcb@top@rule@break=\kvtcb@top@rule@stand%
+    },
+  bottomrule/.code={%
+    \def\kvtcb@bottom@rule@stand{#1}%
+    \let\kvtcb@bottom@rule@break=\kvtcb@bottom@rule@stand%
+    },
+  leftrule/.store in=\kvtcb@left@rule,
+  rightrule/.store in=\kvtcb@right@rule,
+  titlerule/.store in=\kvtcb@title@rule,
+  boxrule/.code={
+    \def\kvtcb@top@rule@stand{#1}%
+    \let\kvtcb@top@rule@break=\kvtcb@top@rule@stand%
+    \let\kvtcb@bottom@rule@stand=\kvtcb@top@rule@stand%
+    \let\kvtcb@bottom@rule@break=\kvtcb@top@rule@stand%
+    \let\kvtcb@left@rule=\kvtcb@top@rule@stand%
+    \let\kvtcb@right@rule=\kvtcb@top@rule@stand%
+    \let\kvtcb@title@rule=\kvtcb@top@rule@stand%
+    },
+  arc/.store in=\kvtcb@arc,
+  outer arc/.code={\def\kvtcb@outerarc{#1}\let\tcb@comp@arc=\tcb@comp@arc@fix},
+  auto outer arc/.code={\let\tcb@comp@arc=\tcb@comp@arc@auto},
+  circular arc/.style={arc=\tcb@innerwidth/2},
+  bean arc/.code={%
+    \iftcb@fixedheight%
+      \ifdim\dimexpr\kvtcb@width-(\kvtcb@left@rule+\kvtcb@right@rule)>\dimexpr\kvtcb@height@fixed-(\kvtcb@top@rule@stand+\kvtcb@bottom@rule@stand)\relax%
+        \def\kvtcb@arc{(\kvtcb@height@fixed-(\kvtcb@top@rule@stand+\kvtcb@bottom@rule@stand))/2}%
+      \else%
+        \def\kvtcb@arc{(\kvtcb@width-(\kvtcb@left@rule+\kvtcb@right@rule))/2}%
+      \fi%
+    \else%
+      \def\kvtcb@arc{\tcb@innerwidth/2}%
+    \fi%
+  },
+  octogon arc/.style={arc=0.292893218\dimexpr\tcb@innerwidth\relax},
+  arc is curved/.code={%
+    \def\tcb@arc@scale{1}%
+    \let\tcb@apply@graph@patches=\tcbpatcharcround%
+  },
+  arc is angular/.code={%
+    \def\tcb@arc@scale{0.58578644}%
+    \let\tcb@apply@graph@patches=\tcbpatcharcangular%
+  },
+  sharpish corners/.style={arc=\z@,outer arc=\z@},
+  lefttitle/.store in=\kvtcb@lefttitle,
+  leftupper/.store in=\kvtcb@leftupper,
+  leftlower/.store in=\kvtcb@leftlower,
+  left/.style={lefttitle=#1,leftupper=#1,leftlower=#1},
+  left*/.style={left={#1-(\kvtcb@left@rule)-(\kvtcb@boxsep)-(\kvtcb@bbleft)}},
+  righttitle/.store in=\kvtcb@righttitle,
+  rightupper/.store in=\kvtcb@rightupper,
+  rightlower/.store in=\kvtcb@rightlower,
+  right/.style={righttitle=#1,rightupper=#1,rightlower=#1},
+  right*/.style={right={#1-(\kvtcb@right@rule)-(\kvtcb@boxsep)-(\kvtcb@bbright)}},
+  top/.store in=\kvtcb@top,
+  toptitle/.store in=\kvtcb@toptitle,
+  bottom/.store in=\kvtcb@bottom,
+  bottomtitle/.store in=\kvtcb@bottomtitle,
+  middle/.store in=\kvtcb@middle,
+  colback/.colorlet=tcbcolback,
+  colframe/.colorlet=tcbcolframe,
+  colupper/.colorlet=tcbcolupper,
+  collower/.colorlet=tcbcollower,
+  coltext/.style={colupper=#1,collower=#1},
+  coltitle/.colorlet=tcbcoltitle,
+  fonttitle/.store in=\kvtcb@fonttitle,
+  fontupper/.store in=\kvtcb@fontupper,
+  fontlower/.store in=\kvtcb@fontlower,
+  tempfile/.store in=\kvtcb@tempfile,
+  savelowerto/.code={\tcb@redirectlowertofalse\def\kvtcb@savelowerto{#1}},
+  redirectlowerto/.code={\tcb@lowerignoredtrue\tcb@lowervisiblefalse\tcb@redirectlowertotrue\def\kvtcb@savelowerto{#1}},
+  saveto/.store in=\kvtcb@saveupperto,
+  savedelimiter/.estore in=\kvtcb@savedelimiter,
+  floatplacement/.store in=\kvtcb@floatplacement,
+  float/.code={\def\kvtcb@float{#1}\def\tcb@float@env@begin{\@float}\def\tcb@float@env@end{\end@float}},
+  float/.default=\kvtcb@floatplacement,
+  float*/.code={\def\kvtcb@float{#1}\def\tcb@float@env@begin{\@dblfloat}\def\tcb@float@env@end{\end@dblfloat}},
+  float*/.default=\kvtcb@floatplacement,
+  every float/.store in=\kvtcb@everyfloat,%
+  nofloat/.style={float=},
+  parfillskip restore/.is choice,%
+  parfillskip restore/.default=true,%
+  parfillskip restore/true/.code={\let\tcb@parfillskip@check=\tcb@parfillskip@restore},%
+  parfillskip restore/false/.code={\let\tcb@parfillskip@check=\@empty},%
+  before/.code={\def\kvtcb@beforebox{#1}\let\tcb@use@autoparskip=\relax},
+  after/.code={\def\kvtcb@afterbox{#1}\let\tcb@use@autoparskip=\relax},
+  before skip balanced/.style={before={%
+    \ifnum\lastnodetype=-1\relax%
+    \else%
+      \par%
+      \ifvmode%
+        \iftcb@minipage%
+          \ifdim\parskip>\z@\relax%
+            \addvspace{-\parskip}%
+          \fi%
+        \else%
+          \ifdim\prevdepth<\z@\relax%
+            \addvspace{\glueexpr#1-\parskip}%
+          \else%
+            \ifdim\prevdepth>.3\baselineskip\relax%
+              \addvspace{\glueexpr#1-\parskip}%
+            \else%
+              \addvspace{\glueexpr#1+.3\baselineskip-\prevdepth-\parskip}%
+            \fi%
+          \fi%
+        \fi%
+        \nointerlineskip%
+      \fi%
+    \fi%
+    \lineskip\z@skip%
+    \noindent%
+  }},
+  after skip balanced/.style={after={%
+    \tcb@parfillskip@check%
+    \par%
+    \ifvmode%
+      \prevdepth=.3\baselineskip%
+      \addvspace{\glueexpr#1-\parskip}%
+    \fi%
+  }},
+  beforeafter skip balanced/.style={before skip balanced={#1},after skip balanced={#1}},
+  autoparskip/.code={\let\tcb@use@autoparskip=\tcb@use@auto@parskip},
+  parskip/.style={%
+    before={\ifnum\lastnodetype=-1\relax\else\par%
+            \ifvmode\pagebreak[0]\fi\fi\noindent},
+    after={\tcb@parfillskip@check\par}},
+  noparskip/.style={%
+    before={\ifnum\lastnodetype=-1\relax\else\par%
+            \ifvmode\pagebreak[0]\smallskip\fi\fi\noindent},
+    after={\tcb@parfillskip@check\par\smallskip}},
+  nobeforeafter/.style={before=,after=},
+  force nobeforeafter/.code={\tcbset@late@options{nobeforeafter}},
+  before skip/.style={before={%
+    \ifnum\lastnodetype=-1\relax%
+    \else%
+      \par%
+      \ifvmode%
+        \iftcb@minipage%
+          \ifdim\parskip>\z@\relax%
+            \addvspace{-\parskip}%
+          \fi%
+        \else%
+          \addvspace{\glueexpr#1-\parskip}%
+        \fi%
+        \nointerlineskip%
+      \fi%
+    \fi%
+    \lineskip\z@skip%
+    \noindent%
+    }},
+  after skip/.style={after={%
+    \tcb@parfillskip@check%
+    \par%
+    \ifvmode%
+      \nointerlineskip%
+      \addvspace{\glueexpr#1-\parskip}%
+    \fi%
+    }},
+  beforeafter skip/.style={before skip={#1},after skip={#1}},
+  before nobreak/.store in=\kvtcb@beforebox@nobreak,
+  before float/.store in=\kvtcb@beforefloat,
+  after float/.store in=\kvtcb@afterfloat,
+  lowerbox/.is choice,
+  lowerbox/visible/.code={\tcb@lowerignoredfalse\tcb@lowervisibletrue},
+  lowerbox/invisible/.code={\tcb@lowerignoredfalse\tcb@lowervisiblefalse},
+  lowerbox/ignored/.code={\tcb@lowerignoredtrue\tcb@lowervisiblefalse},
+  upperbox/.is choice,
+  upperbox/visible/.code={\tcb@uppervisibletrue},
+  upperbox/invisible/.code={\tcb@uppervisiblefalse},
+  titlebox/.is choice,
+  titlebox/visible/.code={\tcb@titlevisibletrue},
+  titlebox/invisible/.code={\tcb@titlevisiblefalse},
+  visible/.style={upperbox=visible,lowerbox=visible,titlebox=visible},
+  invisible/.style={upperbox=invisible,lowerbox=invisible,titlebox=invisible},
+  natural height/.code={\tcb@fixedheightfalse\tcb@@ch@@operation{\tcb@ch@natural}},
+  height/.code={\tcb@fixedheighttrue\tcb@dim@to\kvtcb@height@fixed{#1}\tcb@@ch@@operation{\tcb@ch@fixed}},
+  text height/.code={\tcb@fixedheighttrue\tcb@dim@to\kvtcb@height@fixed{#1}\tcb@@ch@@operation{\tcb@ch@innerfixed}},
+  inherit height/.code={%
+    \ifdim\dimexpr\tcb@outer@textheight>\z@\relax%
+      \tcbdimto\tcb@inherited@height{#1\dimexpr\tcb@outer@textheight}%
+      \tcbset{height=\tcb@inherited@height}%
+    \else%
+      \tcbset{natural height}%
+    \fi},
+  inherit height/.default=1,
+  add to height/.code={\iftcb@fixedheight\tcbdimto\kvtcb@height@fixed{\kvtcb@height@fixed+(#1)}\fi},
+  add to natural height/.code={\tcb@fixedheightfalse\def\kvtcb@height@natural@plus{#1}\tcb@@ch@@operation{\tcb@ch@natural@plus}},
+  height plus/.dimstore in=\kvtcb@height@fixed@plus,%
+  height from/.style args={#1 to #2}{height={#1},height plus={#2-(#1)}},%
+  height fill/.is choice,%
+  height fill/false/.code={\let\tcb@height@adjust\@empty},%
+  square/.style={height=\kvtcb@width},
+  equal height group/.code={\tcb@fixedheightfalse\edef\tcb@ehgid{#1}\tcb@@ch@@operation{\tcb@ch@equalheight}},
+  minimum for equal height group/.code args={#1:#2}{\bgroup\edef\tcb@ehgid{#1}\tcbdimto\tcb@min@ehg{#2}\tcb@ehgadd{\tcb@min@ehg}\egroup},
+  minimum for current equal height group/.code={\ifcsundef{tcb@ehgid}{}{%
+    \tcbset{minimum for equal height group=\tcb@ehgid:#1}}},
+  use height from group/.code={\ifcsundef{tcb@ehg@height@#1}{}{\tcbset{height=\csuse{tcb@ehg@height@#1}}}},
+  use height from group/.default={\csuse{tcb@ehgid}},
+  space/.code={\def\tcb@height@fraction{#1}%
+    \let\tcb@ch@fixed@both=\tcb@ch@fixed@space%
+    \let\tcb@ch@fixed@upper=\tcb@ch@fixed@upper@standard%
+    },
+  space to upper/.style={space=1},
+  space to lower/.style={space=0},
+  space to both/.style={space=0.5},
+  split/.code={\def\tcb@height@fraction{#1}%
+    \let\tcb@ch@fixed@both=\tcb@ch@fixed@space%
+    \let\tcb@ch@fixed@upper=\tcb@ch@fixed@upper@standard%
+    },
+  space to/.code={%
+    \ifcsdef{tcb@space@\thetcolorboxnumber}{%
+      \letcs{\tcb@space}{tcb@space@\thetcolorboxnumber}%
+    }{}%
+    \let#1\tcb@space%
+    \let\tcb@ch@fixed@both=\tcb@ch@fixed@spacesave%
+    \let\tcb@ch@fixed@upper=\tcb@ch@fixed@spacesave%
+  },
+  %
+  halign/.is choice,
+  halign/flush left/.code={\let\kvtcb@halignupper=\raggedright},
+  halign/flush right/.code={\let\kvtcb@halignupper=\raggedleft},
+  halign/flush center/.code={\let\kvtcb@halignupper=\centering},
+  halign/left/.code={\let\kvtcb@halignupper=\tcb@raggedright@plain},
+  halign/right/.code={\let\kvtcb@halignupper=\tcb@raggedleft@plain},
+  halign/center/.code={\let\kvtcb@halignupper=\tcb@raggedcenter@plain},
+  halign/justify/.code={\let\kvtcb@halignupper=\@empty},
+  halign upper/.style={halign=#1},
+  halign upper code/.store in=\kvtcb@halignupper,
+  halign code/.store in=\kvtcb@halignupper,
+  %
+  halign lower/.is choice,
+  halign lower/flush left/.code={\let\kvtcb@halignlower=\raggedright},
+  halign lower/flush right/.code={\let\kvtcb@halignlower=\raggedleft},
+  halign lower/flush center/.code={\let\kvtcb@halignlower=\centering},
+  halign lower/left/.code={\let\kvtcb@halignlower=\tcb@raggedright@plain},
+  halign lower/right/.code={\let\kvtcb@halignlower=\tcb@raggedleft@plain},
+  halign lower/center/.code={\let\kvtcb@halignlower=\tcb@raggedcenter@plain},
+  halign lower/justify/.code={\let\kvtcb@halignlower=\@empty},
+  halign lower code/.store in=\kvtcb@halignlower,
+  %
+  halign title/.is choice,
+  halign title/flush left/.code={\let\kvtcb@haligntitle=\raggedright},
+  halign title/flush right/.code={\let\kvtcb@haligntitle=\raggedleft},
+  halign title/flush center/.code={\let\kvtcb@haligntitle=\centering},
+  halign title/left/.code={\let\kvtcb@haligntitle=\tcb@raggedright@plain},
+  halign title/right/.code={\let\kvtcb@haligntitle=\tcb@raggedleft@plain},
+  halign title/center/.code={\let\kvtcb@haligntitle=\tcb@raggedcenter@plain},
+  halign title/justify/.code={\let\kvtcb@haligntitle=\@empty},
+  halign title code/.store in=\kvtcb@haligntitle,
+  %
+  valign scale limit/.store in=\kvtcb@valignscalelimit,
+  valign scale limit=1.1,
+  valign/.is choice,
+  valign/top/.code={\def\kvtcb@valignupper{top}},
+  valign/center/.code={\def\kvtcb@valignupper{center}},
+  valign/bottom/.code={\def\kvtcb@valignupper{bottom}},
+  valign/scale/.code={\def\kvtcb@valignupper{resize}},
+  valign/scale*/.code={\def\kvtcb@valignupper{resizelimited}},
+  valign upper/.style={valign=#1},
+  valign lower/.is choice,
+  valign lower/top/.code={\def\kvtcb@valignlower{top}},
+  valign lower/center/.code={\def\kvtcb@valignlower{center}},
+  valign lower/bottom/.code={\def\kvtcb@valignlower{bottom}},
+  valign lower/scale/.code={\def\kvtcb@valignlower{resize}},
+  valign lower/scale*/.code={\def\kvtcb@valignlower{resizelimited}},
+  enlarge top initially by/.store in=\kvtcb@bbtop@stand,%
+  enlarge top at break by/.store in=\kvtcb@bbtop@break,%
+  enlarge top by/.style={enlarge top initially by={#1},enlarge top at break by={#1}},%
+  enlarge bottom finally by/.store in=\kvtcb@bbbottom@stand,%
+  enlarge bottom at break by/.store in=\kvtcb@bbbottom@break,%
+  enlarge bottom by/.style={enlarge bottom finally by={#1},enlarge bottom at break by={#1}},%
+  enlarge left by/.store in=\kvtcb@bbleft,
+  enlarge right by/.store in=\kvtcb@bbright,
+  enlarge by/.style={enlarge top by={#1},enlarge bottom by={#1},enlarge left by={#1},enlarge right by={#1}},%
+  grow to left by/.code={%
+    \tcbdimto\kvtcb@width{\kvtcb@width+#1}%
+    \pgfkeysalso{enlarge left by={-\the\dimexpr#1\relax}}},%
+  grow to right by/.code={%
+    \tcbdimto\kvtcb@width{\kvtcb@width+#1}%
+    \pgfkeysalso{enlarge right by={-\the\dimexpr#1\relax}}},%
+  grow sidewards by/.style={grow to left by={#1},grow to right by={#1}},%
+  left skip/.style={grow to left by={-\dimexpr#1\relax}},
+  right skip/.style={grow to right by={-\dimexpr#1\relax}},
+  leftright skip/.style={left skip={#1},right skip={#1}},
+  spread inwards/.style={%
+    if odd page={grow to left by=1in+\hoffset+\oddsidemargin+\@totalleftmargin+(#1)}%
+      {grow to right by=\paperwidth-\textwidth-1in-\hoffset-\evensidemargin+(#1)}%
+  },
+  spread inwards/.default=\z@,
+  spread outwards/.style={%
+    if odd page={grow to right by=\paperwidth-\textwidth-1in-\hoffset-\oddsidemargin+(#1)}%
+      {grow to left by=1in+\hoffset+\evensidemargin+\@totalleftmargin+(#1)}%
+  },
+  spread outwards/.default=\z@,
+  move upwards/.style={before={\clearpage%
+    \lineskip\z@skip%
+    \hrule\@height\z@%
+    \nobreak%
+    \vskip\glueexpr-1in-\voffset-\topmargin-\headheight-\headsep-\topskip-\parskip-(#1)\relax%
+    \noindent}},
+  move upwards/.default=\z@,
+  move upwards*/.style={before={%
+    \lineskip\z@skip%
+    \hrule\@height\z@%
+    \vskip\z@%
+    \bgroup\@nobreakfalse\addpenalty\z@\egroup%
+    \vskip\glueexpr-1in-\voffset-\topmargin-\headheight-\headsep-\parskip+\pagegoal-\textheight-\pagetotal-(#1)\relax%
+    \noindent}},
+  move upwards*/.default=\z@,
+  fill downwards/.style={height fill,enlarge bottom by={\dimexpr-\paperheight+\textheight+1in+\voffset+\topmargin+\headheight+\headsep-(#1)\relax}},
+  fill downwards/.default=\z@,
+  spread sidewards/.style={spread inwards=#1,spread outwards=#1},
+  spread sidewards/.default=\z@,
+  spread upwards/.style={move upwards=#1,spread inwards=#1,spread outwards=#1},
+  spread upwards/.default=\z@,
+  spread upwards*/.style={move upwards*=#1,spread inwards=#1,spread outwards=#1},
+  spread upwards*/.default=\z@,
+  spread downwards/.style={fill downwards=#1,spread inwards=#1,spread outwards=#1},
+  spread downwards/.default=\z@,
+  spread/.style={move upwards=#1,fill downwards=#1,spread inwards=#1,spread outwards=#1},
+  spread/.default=\z@,
+  toggle enlargement/.is choice,
+  toggle enlargement/none/.code={\let\tcb@setbb@toggle=\tcb@setbb@toggle@none},
+  toggle enlargement/evenpage/.code={\let\tcb@setbb@toggle=\tcb@setbb@toggle@evenpage\tcbset{check odd page}},
+  toggle enlargement/forced/.code={\let\tcb@setbb@toggle=\tcb@setbb@toggle@forced},
+  toggle enlargement/.default=evenpage,
+  toggle left and right/.is choice,
+  toggle left and right/none/.code={\let\tcb@lrtoggle=\tcb@lrtoggle@none},
+  toggle left and right/evenpage/.code={\let\tcb@lrtoggle=\tcb@lrtoggle@evenpage\tcbset{check odd page}},
+  toggle left and right/forced/.code={\let\tcb@lrtoggle=\tcb@lrtoggle@forced},
+  toggle left and right/.default=evenpage,
+  graphical environment/.store in=\kvtcb@graphenv,
+  %
+  frame engine/.is choice,
+  frame engine/standard/.style={frame code=\tcb@drawframe@standard},
+  frame engine/standardjigsaw/.style={frame code=\tcb@drawframe@standardjigsaw},
+  frame code/.code={\def\tcb@frame@code{#1}},%
+  frame code/.default=\tcb@drawframe@standard,%
+  frame empty/.style={frame code=},
+  %
+  interior titled engine/.is choice,
+  interior titled engine/standard/.style={interior titled code=\tcb@drawwithtitle@standard},
+  interior titled code/.code={\def\tcb@interiortitled@code{#1}},%
+  interior titled code/.default=\tcb@drawwithtitle@standard,%
+  interior titled empty/.style={interior titled code=},
+  %
+  interior engine/.is choice,
+  interior engine/standard/.style={interior code=\tcb@drawwithouttitle@standard},
+  interior code/.code={\def\tcb@interior@code{#1}},%
+  interior code/.default=\tcb@drawwithouttitle@standard,%
+  interior empty/.style={interior code=},
+  %
+  segmentation engine/.is choice,
+  segmentation engine/standard/.style={segmentation code=\tcb@drawlower@standard},
+  segmentation code/.code={\def\tcb@segmentation@code{#1}},%
+  segmentation code/.default=\tcb@drawlower@standard,%
+  segmentation empty/.style={segmentation code=},
+  %
+  title engine/.is choice,
+  title engine/standard/.style={@title code=\tcb@drawtitle@standard},
+  @title code/.code={\def\tcb@title@code{#1}},%
+  @title code/.default=\tcb@drawtitle@standard,%
+  title code/.style={title filled,@title code={#1}},%
+  title code/.default=\tcb@drawtitle@standard,%
+  title empty/.style={@title code=},
+  %
+  geometry nodes/.store in=\kvtcb@geonodes,
+  geometry nodes/.default=true,%
+  set@extensions@preframe/.store in=\tcb@extensions@preframe,%
+  set@extensions@postframe/.store in=\tcb@extensions@postframe,%
+  set@extensions@final/.store in=\tcb@extensions@final,%
+  set@outerboundary/.store in=\tcb@outerboundary,%
+  skin first/.store in=\kvtcb@skin@first,
+  skin middle/.store in=\kvtcb@skin@middle,
+  skin last/.store in=\kvtcb@skin@last,
+  skin/.style={code={\edef\kvtcb@skin@current{#1}},skin@#1},
+  skin first is subskin of/.style 2 args={skin@local@first/.style={skin@#1,#2},skin first=local@first},%
+  skin middle is subskin of/.style 2 args={skin@local@middle/.style={skin@#1,#2},skin middle=local@middle},%
+  skin last is subskin of/.style 2 args={skin@local@last/.style={skin@#1,#2},skin last=local@last},%
+  parbox/.is choice,
+  parbox/true/.code={%
+    \def\kvtcb@parbox{true}%
+    },
+  parbox/false/.code={%
+    \def\kvtcb@parbox{false}%
+    \appto\tcb@lateoptions@hook{\csname tcb@parbox@\kvtcb@parbox @indent\endcsname}%
+    },
+  parbox/.default=true,%
+  hyphenationfix/.is choice,%
+  hyphenationfix/.default=true,%
+  hyphenationfix/true/.code={\def\tcb@hyph@fix{\everypar=\expandafter{\the\everypar\everypar{\hspace{0pt}}\hspace{0pt}}}},%
+  hyphenationfix/false/.code={\let\tcb@hyph@fix=\@empty},%
+  overlay unbroken/.code={\def\tcb@overlay@unbroken{#1}},%
+  overlay first/.code={\def\tcb@overlay@first{#1}},%
+  overlay middle/.code={\def\tcb@overlay@middle{#1}},%
+  overlay last/.code={\def\tcb@overlay@last{#1}},%
+  overlay/.code={\def\tcb@overlay@temp{#1}%
+    \let\tcb@overlay@unbroken=\tcb@overlay@temp%
+    \let\tcb@overlay@first=\tcb@overlay@temp%
+    \let\tcb@overlay@middle=\tcb@overlay@temp%
+    \let\tcb@overlay@last=\tcb@overlay@temp},%
+  overlay broken/.code={\def\tcb@overlay@temp{#1}%
+    \let\tcb@overlay@first=\tcb@overlay@temp%
+    \let\tcb@overlay@middle=\tcb@overlay@temp%
+    \let\tcb@overlay@last=\tcb@overlay@temp},%
+  overlay unbroken and first/.code={\def\tcb@overlay@temp{#1}%
+    \let\tcb@overlay@unbroken=\tcb@overlay@temp%
+    \let\tcb@overlay@first=\tcb@overlay@temp},%
+  overlay unbroken and last/.code={\def\tcb@overlay@temp{#1}%
+    \let\tcb@overlay@unbroken=\tcb@overlay@temp%
+    \let\tcb@overlay@last=\tcb@overlay@temp},%
+  overlay middle and last/.code={\def\tcb@overlay@temp{#1}%
+    \let\tcb@overlay@middle=\tcb@overlay@temp%
+    \let\tcb@overlay@last=\tcb@overlay@temp},%
+  overlay first and middle/.code={\def\tcb@overlay@temp{#1}%
+    \let\tcb@overlay@first=\tcb@overlay@temp%
+    \let\tcb@overlay@middle=\tcb@overlay@temp},%
+  no overlay/.style={overlay=},%
+  standard/.style={skin=standard},%
+  standard jigsaw/.style={skin=standard jigsaw},%
+  before upper/.code={\def\kvtcb@before@upper{#1}\let\tcb@insert@before@upper\tcb@insert@before@upper@ignore},%
+  before upper*/.code={\def\kvtcb@before@upper{#1}\let\tcb@insert@before@upper\tcb@insert@before@upper@noignore},%
+  after upper/.code={\def\kvtcb@after@upper{#1}\let\tcb@insert@after@upper\tcb@insert@after@upper@unskip},%
+  after upper*/.code={\def\kvtcb@after@upper{#1}\let\tcb@insert@after@upper\tcb@insert@after@upper@nounskip},%
+  before lower/.code={\def\kvtcb@before@lower{#1}\let\tcb@insert@before@lower\tcb@insert@before@lower@ignore},%
+  before lower*/.code={\def\kvtcb@before@lower{#1}\let\tcb@insert@before@lower\tcb@insert@before@lower@noignore},%
+  after lower/.code={\def\kvtcb@after@lower{#1}\let\tcb@insert@after@lower\tcb@insert@after@lower@unskip},%
+  after lower*/.code={\def\kvtcb@after@lower{#1}\let\tcb@insert@after@lower\tcb@insert@after@lower@nounskip},%
+  before title/.code={\def\kvtcb@before@title{#1}\let\tcb@insert@before@title\tcb@insert@before@title@ignore},%
+  before title*/.code={\def\kvtcb@before@title{#1}\let\tcb@insert@before@title\tcb@insert@before@title@noignore},%
+  after title/.code={\def\kvtcb@after@title{#1}\let\tcb@insert@after@title\tcb@insert@after@title@unskip},%
+  after title*/.code={\def\kvtcb@after@title{#1}\let\tcb@insert@after@title\tcb@insert@after@title@nounskip},%
+  center title/.style={halign title=flush center},%
+  center upper/.style={halign upper=flush center},%
+  center lower/.style={halign lower=flush center},%
+  flushleft title/.style={halign title=flush left},%
+  flushleft upper/.style={halign upper=flush left},%
+  flushleft lower/.style={halign lower=flush left},%
+  flushright title/.style={halign title=flush right},%
+  flushright upper/.style={halign upper=flush right},%
+  flushright lower/.style={halign lower=flush right},%
+  tabularx*/.style 2 args={%
+    boxsep=\z@,top=\z@,bottom=\z@,leftupper=\z@,rightupper=\z@,
+    toptitle=1mm,bottomtitle=1mm,boxrule=0.5mm,
+    before upper*={%
+      \let\tcb@CT@arc@save\CT@arc@%
+      \arrayrulecolor{tcbcolframe}\def\arraystretch{1.1}#1%
+      \tcb@hack@currenvir\tabularx{\linewidth}{#2}},
+    after upper*={\endtabularx\global\let\CT@arc@\tcb@CT@arc@save}%
+  },
+  tabularx/.style={tabularx*={}{#1}},
+  tabulars*/.style 2 args={%
+    boxsep=\z@,top=\z@,bottom=\z@,leftupper=\z@,rightupper=\z@,
+    toptitle=1mm,bottomtitle=1mm,boxrule=0.5mm,
+    before upper*={%
+      \let\tcb@CT@arc@save\CT@arc@%
+      \arrayrulecolor{tcbcolframe}\def\arraystretch{1.1}#1%
+      \begin{tabular*}{\linewidth}{#2}},
+    after upper*={\end{tabular*}\global\let\CT@arc@\tcb@CT@arc@save}
+  },
+  tabulars/.style={tabulars*={}{#1}},
+  tikz upper/.style={before upper*={\centering\tcb@shield@externalize\begin{tikzpicture}[{#1}]},after upper*=\end{tikzpicture}},%
+  tikz lower/.style={before lower*={\centering\tcb@shield@externalize\begin{tikzpicture}[{#1}]},after lower*=\end{tikzpicture}},%
+  tikznode upper/.style={before upper={\centering\tcb@shield@externalize\begin{tikzpicture}\node[{align=center,inner sep=\z@,outer sep=\z@,#1}]\bgroup},after upper={\egroup;\end{tikzpicture}}},%
+  tikznode lower/.style={before lower={\centering\tcb@shield@externalize\begin{tikzpicture}\node[{align=center,inner sep=\z@,outer sep=\z@,#1}]\bgroup},after lower={\egroup;\end{tikzpicture}}},%
+  tikznode/.style={tikznode upper={#1},tikznode lower={#1}},%
+  varwidth upper/.style={%
+    before upper={%
+      \tcbdimto\tcb@w@upper{#1-(\kvtcb@left@rule+\kvtcb@right@rule+(\kvtcb@boxsep)*2+\kvtcb@leftupper+\kvtcb@rightupper)}%
+      \begin{varwidth}{\tcb@w@upper}%
+      \kvtcb@halignupper%
+    },%
+    after upper={\end{varwidth}}%
+  },%
+  varwidth upper/.default=\kvtcb@width,
+  text fill/.style={before upper={%
+    \ifdim\dimexpr\tcbtextheight>\z@\relax%
+      \edef\tcb@temp{\noexpand\minipage[c][\tcbtextheight]}%
+    \else%
+      \let\tcb@temp\minipage%
+    \fi%
+    \tcb@temp{\linewidth}\kvtcb@halignupper},
+    after upper=\endminipage},
+  oversize/.style={%
+    width=\the\dimexpr\dimexpr\linewidth+#1+\kvtcb@left@rule+\kvtcb@leftupper+\kvtcb@boxsep*2+\kvtcb@rightupper+\kvtcb@right@rule\relax,%
+    enlarge left by=-\the\dimexpr\kvtcb@left@rule+\kvtcb@leftupper+\kvtcb@boxsep+(#1)/2\relax,%
+    enlarge right by=-\the\dimexpr\kvtcb@boxsep+\kvtcb@rightupper+\kvtcb@right@rule+(#1)/2\relax},%
+  oversize/.default=\z@,%
+  flush right/.style={enlarge left by=\linewidth-(\kvtcb@width)},
+  flush left/.style={enlarge right by=\linewidth-(\kvtcb@width)},
+  center/.style={enlarge left by=(\linewidth-(\kvtcb@width))/2,enlarge right by=\kvtcb@bbleft},
+  baseline/.store in=\kvtcb@baseline,%
+  tcbox raise/.style={baseline=-\the\dimexpr#1\relax},%
+  tcbox raise base/.style={baseline=\tcb@val@raisebase},%
+  box align/.is choice,%
+  box align/bottom/.style={baseline=\z@},%
+  box align/top/.style={baseline=\tcb@height},%
+  box align/center/.style={baseline=\tcb@height/2},%
+  box align/base/.style={baseline=\tcb@val@raisebase},%
+  shrink tight/.style={boxsep=0mm,top=-\the\dimexpr\kvtcb@top@rule@stand\relax,bottom=-\the\dimexpr\kvtcb@bottom@rule@stand\relax,%
+    left=-\the\dimexpr\kvtcb@left@rule\relax,right=-\the\dimexpr\kvtcb@right@rule\relax},%
+  extrude left by/.code={%
+    \tcbdimto\kvtcb@leftupper{\kvtcb@leftupper+#1}%
+    \tcbdimto\kvtcb@leftlower{\kvtcb@leftlower+#1}%
+    \tcbdimto\kvtcb@lefttitle{\kvtcb@lefttitle+#1}%
+    \tcbdimto\kvtcb@bbleft{\kvtcb@bbleft-(#1)}%
+    \tcbdimto\kvtcb@width{\kvtcb@width+#1}},%
+  extrude right by/.code={%
+    \tcbdimto\kvtcb@rightupper{\kvtcb@rightupper+#1}%
+    \tcbdimto\kvtcb@rightlower{\kvtcb@rightlower+#1}%
+    \tcbdimto\kvtcb@righttitle{\kvtcb@righttitle+#1}%
+    \tcbdimto\kvtcb@bbright{\kvtcb@bbright-(#1)}%
+    \tcbdimto\kvtcb@width{\kvtcb@width+#1}},%
+  extrude top by/.code={\tcbdimto\kvtcb@top{\kvtcb@top+#1}\tcbdimto\kvtcb@bbtop@stand{\kvtcb@bbtop@stand-(#1)}},%
+  extrude bottom by/.code={\tcbdimto\kvtcb@bottom{\kvtcb@bottom+#1}\tcbdimto\kvtcb@bbbottom@stand{\kvtcb@bbbottom@stand-(#1)}},%
+  extrude by/.style={extrude left by=#1,extrude right by=#1,extrude top by=#1,extrude bottom by=#1},%
+  sidebyside@true/.code={%
+    \tcb@sidebysidetrue%
+    \tcb@isbreakablefalse},%
+  sidebyside@false/.code={\tcb@sidebysidefalse},%
+  sidebyside/.style={sidebyside@#1},%
+  sidebyside/.default=true,%
+  sidebyside align/.is choice,%
+  sidebyside align/top/.code={\def\kvtcb@sbs@align{top}\def\tcb@box@align##1{}},%
+  sidebyside align/center/.code={\def\kvtcb@sbs@align{center}\def\tcb@box@align##1{}},%
+  sidebyside align/bottom/.code={\def\kvtcb@sbs@align{bottom}\def\tcb@box@align##1{}},%
+  sidebyside align/top seam/.code={\def\kvtcb@sbs@align{top}\let\tcb@box@align\tcb@box@align@top},%
+  sidebyside align/center seam/.code={\def\kvtcb@sbs@align{center}\let\tcb@box@align\tcb@box@align@center},%
+  sidebyside align/bottom seam/.code={\def\kvtcb@sbs@align{bottom}\let\tcb@box@align\tcb@box@align@bottom},%
+  sidebyside gap/.dimstore in=\kvtcb@sbs@gap,%
+  sidebyside adapt/.is choice,
+  sidebyside adapt/none/.style={%
+    sidebyside@adapt@process/.style={%
+      code={\let\tcb@sbs@content\tcb@sbs@content@none},
+    }%
+  },
+  sidebyside adapt/left/.style={%
+    sidebyside@adapt@process/.style={%
+      code={\tcb@sbs@save@upper\let\tcb@sbs@content\tcb@sbs@content@left},
+      lefthand width=\wd\tcb@upperbox,
+    }%
+  },
+  sidebyside adapt/right/.style={%
+    sidebyside@adapt@process/.style={%
+      code={\tcb@sbs@save@lower\let\tcb@sbs@content\tcb@sbs@content@right},
+      righthand width=\wd\tcb@lowerbox,
+    }%
+  },
+  sidebyside adapt/both/.style={%
+    sidebyside@adapt@process/.style={%
+      code={\tcb@sbs@save@upper\tcb@sbs@save@lower\let\tcb@sbs@content\tcb@sbs@content@both},
+      text width=\wd\tcb@upperbox+\kvtcb@sbs@gap+\wd\tcb@lowerbox,
+      lefthand width=\wd\tcb@upperbox,
+    }%
+  },
+  sidebyside switch/.is choice,
+  sidebyside switch/true/.style={%
+    sidebyside@switch/.code={%
+      \tcb@swap{\tcb@sbs@text@left}{\tcb@sbs@text@right}
+    }%
+  },
+  sidebyside switch/false/.style={%
+    sidebyside@switch/.style=%
+  },
+  sidebyside switch/.default=true,
+  lefthand width/.code={\def\kvtcb@sbs@ratio{#1}\let\tcb@sbs@quota=\tcb@sbs@quota@leftwidth},
+  righthand width/.code={\def\kvtcb@sbs@ratio{#1}\let\tcb@sbs@quota=\tcb@sbs@quota@rightwidth},
+  lefthand ratio/.code={\def\kvtcb@sbs@ratio{#1}\let\tcb@sbs@quota=\tcb@sbs@quota@leftratio},
+  righthand ratio/.code={\def\kvtcb@sbs@ratio{#1}\let\tcb@sbs@quota=\tcb@sbs@quota@rightratio},
+  breakable@false/.code={%
+    \tcb@isbreakablefalse%
+    \let\tcb@defToTotalHeight=\tcb@defToTotalHeightStandard%
+  },
+  code/.code={#1},
+  capture/.code={%
+    \def\kvtcb@capture{#1}%
+    \ifcsname tcb@@capture@\kvtcb@capture\endcsname\else%
+      \tcb@error{Unknown capture mode `\kvtcb@capture'. Use `minipage', `hbox', or `fitbox'}{}%
+      \def\kvtcb@capture{minipage}%
+    \fi%
+  },%
+  hbox/.style={capture=hbox},%
+  minipage/.style={capture=minipage},%
+  void/.style={capture=v@@d,capture/.code=,options@for/.code=,code={\def\tcbinputlisting@core{}}},
+  nirvana/.code={\let\tcb@draw@color@box\@empty},
+  check odd page/.is if=tcb@checkpage,
+  if odd page/.code n args={2}{%
+    \tcbset{check odd page}%
+    \tcbifoddpage{\tcbset{#1}}{\tcbset{#2}}%
+  },
+  if odd page or oneside/.code n args={2}{%
+    \tcbset{check odd page}%
+    \tcbifoddpageoroneside{\tcbset{#1}}{\tcbset{#2}}%
+  },
+  phantom/.code={\appto\kvtcb@phantom{#1}},
+  step/.style={phantom={\refstepcounter{#1}}},%
+  hypertarget/.style={phantom={\ifdefined\hypertarget\Hy@raisedlink{\hypertarget{#1}{}}\fi}},
+  bookmark*/.style 2 args={phantom={\ifdefined\bookmark%
+    \Hy@raisedlink{\hypertarget{tcb@\thetcolorboxnumber}{}}%
+    \bookmark[{dest=tcb@\thetcolorboxnumber,rellevel=1,keeplevel,#1}]{#2}%
+    \fi}},
+  bookmark/.style={bookmark*={}{#1}},
+  index/.style={phantom={\index{#1}}},%
+  index*/.style 2 args={phantom={\index[{#1}]{#2}}},%
+  add to list/.style 2 args={phantom={\tcb@addcontentsline{#1}{#2}}},
+  nophantom/.code={\def\kvtcb@phantom{}},%
+  shield externalize/.is choice,
+  shield externalize/true/.code={\let\tcb@shield@externalize=\tcb@shield@@externalize},
+  shield externalize/false/.code={\let\tcb@shield@externalize=\relax},
+  shield externalize/.default=true,
+  external/.code={\tikzsetnextfilename{#1}},
+  remake/.code={\tikzset{external/remake next={#1}}},
+  remake/.default=true,
+  lower separated/.is if=tcb@lowerseparated,
+  options@for/.code={\letcs\tcb@new@colop{tcb@opt@#1}\pgfkeysalsofrom\tcb@new@colop},
+  list entry/.store in=\kvtcb@listentry,
+  list text/.style={list entry={\protect\numberline{\thetcbcounter}{\ignorespaces #1}}},
+  short title/.style={list text={#1},nameref={#1}},
+  title filled/.is if=tcb@titlefilled,%
+  @colbacktitle/.colorlet=tcbcolbacktitle,
+  colbacktitle/.style={title filled,@colbacktitle={#1}},
+  opacityupper/.store in=\kvtcb@opacityupper,
+  opacitylower/.store in=\kvtcb@opacitylower,
+  opacitytitle/.store in=\kvtcb@opacitytitle,
+  opacityframe/.store in=\kvtcb@opacityframe,
+  opacityback/.store in=\kvtcb@opacityback,
+  @opacitybacktitle/.store in=\kvtcb@opacitybacktitle,
+  opacitybacktitle/.style={title filled,@opacitybacktitle={#1}},
+  opacityfill/.style={opacityframe={#1},opacityback={#1},@opacitybacktitle={#1}},
+  opacitytext/.style={opacityupper={#1},opacitylower={#1}},
+  spartan@fit/.code={},%
+  %
+  size/.is choice,
+  size/normal/.style={boxrule=0.5mm,boxsep=1mm,left=4mm,right=4mm,top=2mm,bottom=2mm,toptitle=0pt,bottomtitle=0pt,
+    middle=2mm,arc=1mm,auto outer arc},
+  size/title/.style={boxrule=0.4mm,boxsep=1mm,left=2mm,right=2mm,top=0.25mm,bottom=0.25mm,toptitle=0pt,bottomtitle=0pt,
+    middle=0.75mm,arc=0.75mm,auto outer arc},
+  size/small/.style={boxrule=0.3mm,boxsep=1mm,left=1mm,right=1mm,top=0pt,bottom=0pt,toptitle=0pt,bottomtitle=0pt,
+    middle=0.5mm,arc=0.5mm,auto outer arc},
+  size/fbox/.style={boxrule=0.4pt,boxsep=3pt,left=0pt,right=0pt,top=0pt,bottom=0pt,toptitle=0pt,bottomtitle=0pt,
+    middle=1pt,arc=1pt,auto outer arc},
+  size/tight/.style={boxrule=0.4pt,boxsep=0pt,left=0pt,right=0pt,top=0pt,bottom=0pt,toptitle=0pt,bottomtitle=0pt,
+    middle=0.2pt,arc=0pt,outer arc=0pt},
+  size/minimal/.style={boxrule=0pt,boxsep=0pt,left=0pt,right=0pt,top=0pt,bottom=0pt,toptitle=0pt,bottomtitle=0pt,
+    middle=0pt,arc=0pt,outer arc=0pt},
+  on line/.style={tcbox raise base,nobeforeafter},
+  shape@of@skin/.store in=\tcb@shapeofskin,
+  ignore nobreak/.is if=tcb@ignorenobreak,%
+  %
+  tcbox width/.is choice,
+  tcbox width/auto/.code={\def\tcb@embed@tcbox{}},
+  tcbox width/auto limited/.code={\tcb@set@embed@tcbox{%
+    \setbox\z@=\color@hbox##1\color@endbox\ifdim\wd\z@<\tcb@w@upper\relax\box\z@\else%
+    \begin{minipage}{\tcb@w@upper}##1\end{minipage}\fi}},
+  tcbox width/forced center/.code={\tcb@set@embed@tcbox{\makebox[\tcb@w@upper]{##1}}},
+  tcbox width/forced left/.code={\tcb@set@embed@tcbox{\makebox[\tcb@w@upper][l]{##1}}},
+  tcbox width/forced right/.code={\tcb@set@embed@tcbox{\makebox[\tcb@w@upper][r]{##1}}},
+  tcbox width/minimum center/.code={\tcb@set@embed@tcbox{%
+    \setbox\z@=\color@hbox##1\color@endbox\ifdim\wd\z@<\tcb@w@upper\relax\makebox[\tcb@w@upper]{\box\z@}\else\box\z@\fi}},
+  tcbox width/minimum left/.code={\tcb@set@embed@tcbox{%
+    \setbox\z@=\color@hbox##1\color@endbox\ifdim\wd\z@<\tcb@w@upper\relax\makebox[\tcb@w@upper][l]{\box\z@}\else\box\z@\fi}},
+  tcbox width/minimum right/.code={\tcb@set@embed@tcbox{%
+    \setbox\z@=\color@hbox##1\color@endbox\ifdim\wd\z@<\tcb@w@upper\relax\makebox[\tcb@w@upper][r]{\box\z@}\else\box\z@\fi}},
+  verbatim ignore percent/.is choice,
+  verbatim ignore percent/true/.code={\def\tcb@verbatim@change@percent{\catcode`\^^e=9}},
+  verbatim ignore percent/false/.code={\let\tcb@verbatim@change@percent\@empty},
+  verbatim ignore percent/.default=true,
+  verbatim/.style={fontupper=\ttfamily,nobeforeafter,tcbox raise base,top=0pt,bottom=0pt,left=1mm,right=1mm,boxrule=0.3mm},
+  wrap@environment/.is if=tcb@wrap@environment,
+}
+
+\ExplSyntaxOn
+
+\tl_new:N \l__tcobox_kv_labeltype_tl
+
+
+\cs_new:Npn \__tcobox_label_label:n #1
+  {
+    \quark_if_nil:NTF \l__tcobox_kv_labeltype_tl
+      {
+        \label{#1}
+      }
+      {
+        \exp_last_unbraced:NNV \label[\l__tcobox_kv_labeltype_tl]{#1}
+      }
+  }
+
+
+\cs_new_protected:Npn \__tcobox_zcsetup_reftype:n #1
+  {
+    \cs_if_exist:NT \zcsetup
+      {
+        \zcsetup { reftype={#1} }
+      }
+  }
+
+
+\cs_new_protected:Npn \__tcobox_label_zlabel:n #1
+  {
+    \group_begin:
+    \quark_if_nil:NF \l__tcobox_kv_labeltype_tl
+      {
+        \exp_args:NV \__tcobox_zcsetup_reftype:n \l__tcobox_kv_labeltype_tl
+      }
+    \cs_if_exist:NT \zlabel
+      {
+        \zlabel {#1}
+      }
+    \group_end:
+  }
+
+
+\tcbset
+  {
+    label          /.style = { phantom={\__tcobox_label:n{#1}} },
+    phantomlabel   /.style = { phantom={\cs_if_exist_use:N\phantomsection\__tcobox_label:n{#1}} },
+    step~and~label /.style~n~args = { 2 }{ phantom={\refstepcounter{#1}\__tcobox_label:n{#2}} },
+    nameref        /.code =
+      {
+        \tcb@gettitle{#1}
+        \cs_if_exist:NT \zref@titleref@setcurrent { \zref@titleref@setcurrent{#1} }
+      },
+    label~type    / .store~in = \l__tcobox_kv_labeltype_tl,
+    no~label~type / .style    = { label~type=\q_nil },
+    label~is~label/.code=
+      {
+        \cs_set_eq:NN \__tcobox_label:n \__tcobox_label_label:n
+      },
+    label~is~zlabel/.code=
+      {
+        \cs_set_eq:NN \__tcobox_label:n \__tcobox_label_zlabel:n
+      },
+    IfBlankTF/.code~n~args={3}{\tl_if_blank:nTF{#1}{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}},
+    IfBlankT/.code~n~args={2}{\tl_if_blank:nT{#1}{\pgfkeysalso{#2}}},
+    IfBlankF/.code~n~args={2}{\tl_if_blank:nF{#1}{\pgfkeysalso{#2}}},
+    IfEmptyTF/.code~n~args={3}{\tl_if_empty:nTF{#1}{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}},
+    IfEmptyT/.code~n~args={2}{\tl_if_empty:nT{#1}{\pgfkeysalso{#2}}},
+    IfEmptyF/.code~n~args={2}{\tl_if_empty:nF{#1}{\pgfkeysalso{#2}}},
+    IfNoValueTF/.code~n~args={3}{\tl_if_novalue:nTF{#1}{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}},
+    IfNoValueT/.code~n~args={2}{\tl_if_novalue:nT{#1}{\pgfkeysalso{#2}}},
+    IfNoValueF/.code~n~args={2}{\tl_if_novalue:nF{#1}{\pgfkeysalso{#2}}},
+    IfValueTF/.code~n~args={3}{\tl_if_novalue:nTF{#1}{\pgfkeysalso{#3}}{\pgfkeysalso{#2}}},
+    IfValueT/.code~n~args={2}{\tl_if_novalue:nF{#1}{\pgfkeysalso{#2}}},
+    IfValueF/.code~n~args={2}{\tl_if_novalue:nT{#1}{\pgfkeysalso{#2}}},
+    IfBooleanTF/.code~n~args={3}{\IfBooleanTF{#1}{\pgfkeysalso{#2}}{\pgfkeysalso{#3}}},
+    IfBooleanT/.code~n~args={2}{\IfBooleanT{#1}{\pgfkeysalso{#2}}},
+    IfBooleanF/.code~n~args={2}{\IfBooleanF{#1}{\pgfkeysalso{#2}}},
+  }
+\ExplSyntaxOff
+
+\def\kvtcb@beforebox{}
+\def\kvtcb@afterbox{}
+
+\IfFormatAtLeastTF{2023-06-01}
+  {
+    \def\tcb@set@parbox@indent@{%
+      \noindent%
+      \let\tcb@set@parbox@indent\@empty%
+    }
+  }
+  {
+    % Note: To be removed in future
+    \def\tcb@set@parbox@indent@{%
+      \vspace{-\parskip}\noindent%
+      \let\tcb@set@parbox@indent\@empty%
+    }
+  }
+
+\def\tcb@parbox@true@indent{}%
+\def\tcb@parbox@false@indent{%
+  \preto\kvtcb@before@title{\tcb@set@parbox@indent}%
+  \preto\kvtcb@before@upper{\tcb@set@parbox@indent}%
+  \preto\kvtcb@before@lower{\tcb@set@parbox@indent}%
+}%
+
+\let\tcb@parboxrestore=\@parboxrestore
+
+\def\tcb@parbox@false@settings{%
+  \let\par\@@par%
+  \linewidth\hsize%
+  \@totalleftmargin\z@%
+  \leftskip\z@skip%
+  \rightskip\z@skip%
+  \@rightskip\z@skip%
+}
+
+\let\tcb@parbox@use@true\relax
+\def\tcb@parbox@use@false{%
+  \def\@parboxrestore{%
+    \tcb@parbox@false@settings%
+    \let\@parboxrestore=\tcb@parboxrestore%
+    }%
+}
+
+\let\tcb@afteroptions@hook\@empty
+
+\def\tcb@minipage@top{\minipage[t]}
+\let\tcb@minipage@center=\minipage
+\def\tcb@minipage@bottom{\minipage[b]}
+\let\tcb@minipage=\tcb@minipage@bottom
+
+% lrbox with integrated minipage
+% #1 box
+% #2 width
+% #3 color (for color stack)
+\def\tcb@lrbox#1#2#3{%
+  \edef\reserved@a{%
+    \endgroup
+    \setbox#1\hbox{%
+      \begingroup\aftergroup}%
+    \def\noexpand\@currenvir{\@currenvir}%
+    \def\noexpand\@currenvline{\on@line}}%
+  \reserved@a
+    \@endpefalse%
+    \global\@newlistfalse%
+    \let\tcbbreak\@@par%
+    \csname tcb@parbox@use@\kvtcb@parbox\endcsname%
+    \tcb@minipage{#2}%
+    \color{#3}%
+    \tcb@hyph@fix\ignorespaces}
+\let\endtcb@lrbox=\endminipage
+
+\let\tcb@savebox=\tcb@lrbox
+\let\endtcb@savebox=\endtcb@lrbox
+
+\def\tcb@saveupperbox{%
+\begin{tcb@savebox}{\tcb@upperbox}{\tcb@w@upper}{tcbcolupper}\kvtcb@fontupper\kvtcb@halignupper\tcb@insert@before@upper}
+
+\def\tcb@savelowerbox{%
+\begin{tcb@savebox}{\tcb@lowerbox}{\tcb@w@lower}{tcbcollower}\kvtcb@fontlower\kvtcb@halignlower\tcb@insert@before@lower}
+
+
+% counter for float
+\AtBeginDocument{%
+\@ifundefined{c@float@type}%
+    {\edef\ftype@tcbfloat{\ifx\c@figure\@undefined 1\else 4\fi}}%
+    {\edef\ftype@tcbfloat{\the\c@float@type}%
+     \addtocounter{float@type}{\value{float@type}}}%
+\def\c@tcbfloat{\c@float@type}% tricking the caption package
+\ifdim\parskip>\z@\relax%
+  \tcbset{autoparskip/.style=parskip}%
+\else%
+  \tcbset{autoparskip/.style=noparskip}%
+\fi%
+\tcb@use@autoparskip%
+%\ifx\luacolorProcessBox\@undefined%
+%  \def\tcb@lua@color#1{}%
+%\else%
+%  \def\tcb@lua@color#1{\color{#1}}%
+%\fi%
+}
+
+\long\def\tcb@colorbox{%
+  \@ifnextchar[{\tcb@@icolorbox}{\tcb@@icolorbox[]}}
+
+
+\def\tcb@set@@phantom{%
+  \iftcb@checkpage\tcb@phantom@savepage\fi%
+  \ifx\kvtcb@phantom\@empty\tcb@hasPhantomfalse\else%
+    \tcb@hasPhantomtrue%
+    \sbox\tcb@phantombox{\kvtcb@phantom}%
+    \let\kvtcb@phantom\@empty%
+  \fi%
+}
+
+\def\tcb@set@@title{%
+  \ifx\kvtcb@title\@empty\tcb@hasTitlefalse\tcb@specialtitle@hook\else%
+    \tcb@hasTitletrue%
+    \tcbdimto\tcb@w@title{\kvtcb@width-(\kvtcb@left@rule+\kvtcb@right@rule+(\kvtcb@boxsep)*2+\kvtcb@lefttitle+\kvtcb@righttitle)}%
+    \begin{tcb@savebox}{\tcb@titlebox}{\tcb@w@title}{tcbcoltitle}\kvtcb@fonttitle\kvtcb@haligntitle\tcb@insert@before@title\kvtcb@title\tcb@insert@after@title\end{tcb@savebox}%
+  \fi%
+}
+
+\def\tcb@set@@dimensions{%
+  % sanitize
+  \tcbdimto\kvtcb@left@rule{\kvtcb@left@rule}%
+  \tcbdimto\kvtcb@right@rule{\kvtcb@right@rule}%
+  \tcbdimto\kvtcb@title@rule{\kvtcb@title@rule}%
+  \tcbdimto\kvtcb@top@rule@stand{\kvtcb@top@rule@stand}%
+  \tcbdimto\kvtcb@top@rule@break{\kvtcb@top@rule@break}%
+  \tcbdimto\kvtcb@bottom@rule@stand{\kvtcb@bottom@rule@stand}%
+  \tcbdimto\kvtcb@bottom@rule@break{\kvtcb@bottom@rule@break}%
+  \tcbdimto\kvtcb@boxsep{\kvtcb@boxsep}%
+  \tcbdimto\kvtcb@lefttitle{\kvtcb@lefttitle}%
+  \tcbdimto\kvtcb@leftupper{\kvtcb@leftupper}%
+  \tcbdimto\kvtcb@leftlower{\kvtcb@leftlower}%
+  \tcbdimto\kvtcb@righttitle{\kvtcb@righttitle}%
+  \tcbdimto\kvtcb@rightupper{\kvtcb@rightupper}%
+  \tcbdimto\kvtcb@rightlower{\kvtcb@rightlower}%
+  \tcbdimto\kvtcb@top{\kvtcb@top}%
+  \tcbdimto\kvtcb@toptitle{\kvtcb@toptitle}%
+  \tcbdimto\kvtcb@bottom{\kvtcb@bottom}%
+  \tcbdimto\kvtcb@bottomtitle{\kvtcb@bottomtitle}%
+  \tcbdimto\kvtcb@middle{\kvtcb@middle}%
+  \tcbdimto\kvtcb@bbtop@stand{\kvtcb@bbtop@stand}%
+  \tcbdimto\kvtcb@bbtop@break{\kvtcb@bbtop@break}%
+  \tcbdimto\kvtcb@bbbottom@stand{\kvtcb@bbbottom@stand}%
+  \tcbdimto\kvtcb@bbbottom@break{\kvtcb@bbbottom@break}%
+  \tcbdimto\kvtcb@bbleft{\kvtcb@bbleft}%
+  \tcbdimto\kvtcb@bbright{\kvtcb@bbright}%
+  % computation of text width
+  \tcbdimto\tcb@width{\kvtcb@width}%
+  \tcbdimto\tcb@innerwidth{\tcb@width-\kvtcb@left@rule-\kvtcb@right@rule}%
+  \tcbdimto\tcb@w@upper{\tcb@innerwidth-\kvtcb@boxsep*2-\kvtcb@leftupper-\kvtcb@rightupper}%
+  \let\tcbtextwidth=\tcb@w@upper%
+  \tcbdimto\kvtcb@arc{\kvtcb@arc}%
+  % computation of text height
+  \iftcb@fixedheight%
+    \tcbdimto\tcbtextheight{\kvtcb@top@rule@stand+\kvtcb@bottom@rule@stand+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom}%
+    \iftcb@hasTitle%
+      \tcbdimto\tcbtextheight{\tcbtextheight+\ht\tcb@titlebox+\dp\tcb@titlebox+\kvtcb@title@rule+\kvtcb@boxsep*2+\kvtcb@toptitle+\kvtcb@bottomtitle}%
+    \fi%
+    \tcbdimto\tcbtextheight{\kvtcb@height@fixed-\tcbtextheight}%
+  \fi%
+}
+
+\def\tcb@set@@sidebyside{%
+  \iftcb@sidebyside%
+    \def\tcb@minipage{\csname tcb@minipage@\kvtcb@sbs@align\endcsname}%
+    \tcbdimto\tcb@w@upper@real{\tcb@w@upper}%
+    \tcbdimto\kvtcb@sbs@gap{\kvtcb@sbs@gap}%
+    \tcbdimto\tcb@w@sbs{\tcb@w@upper@real-\kvtcb@sbs@gap}%
+    \tcb@sbs@quota%
+  \fi%
+}
+
+\def\tcb@sbs@content@none{\tcb@sbs@text@left\tcblower\tcb@sbs@text@right}
+\def\tcb@sbs@content@left{\box\tcb@upperbox\tcblower\tcb@sbs@text@right}
+\def\tcb@sbs@content@right{\tcb@sbs@text@left\tcblower\box\tcb@lowerbox}
+\def\tcb@sbs@content@both{\box\tcb@upperbox\tcblower\box\tcb@lowerbox}
+
+\def\tcb@sbs@save@upper{%
+  \sbox{\tcb@upperbox}{\color{tcbcolupper}\kvtcb@fontupper\kvtcb@halignupper\tcb@insert@before@upper\tcb@sbs@text@left\tcb@insert@after@upper}%
+}
+\def\tcb@sbs@save@lower{%
+  \sbox{\tcb@lowerbox}{\color{tcbcollower}\kvtcb@fontlower\kvtcb@halignlower\tcb@insert@before@lower\tcb@sbs@text@right\tcb@insert@after@lower}%
+}
+
+\def\tcb@set@@upper@and@lower{%
+  \let\tcb@insert@after@part=\tcb@insert@after@upper%
+  % switch for lower box
+  \def\tcblower{%
+    \tcb@insert@after@part%
+    \end{tcb@savebox}%
+    \unless\iftcb@sidebyside%
+      \tcbdimto\tcb@w@lower{\tcb@innerwidth-\kvtcb@boxsep*2-\kvtcb@leftlower-\kvtcb@rightlower}%
+    \fi%
+    \tcb@hasLowertrue%
+    \let\tcb@insert@after@part=\tcb@insert@after@lower%
+    \ifx\kvtcb@savelowerto\@empty%
+      \let\tcb@startbox\tcb@savelowerbox%
+      \let\endtcolorbox\tcb@endboxanddraw%
+    \else%
+      \let\tcb@startbox\tcb@lowerverbatim%
+      \expandafter\let\csname end\kvtcb@savedelimiter\expandafter\endcsname\csname tcb@endlowerverbatimanddraw\endcsname%
+    \fi%
+    \tcb@startbox}%
+  % start of upper box
+  \ifx\kvtcb@saveupperto\@empty%
+    \let\tcb@startbox\tcb@saveupperbox%
+    \let\endtcolorbox\tcb@endboxanddraw%
+  \else%
+    \let\tcb@startbox\tcb@upperverbatim%
+    \expandafter\let\csname end\kvtcb@savedelimiter\expandafter\endcsname\csname tcb@endupperverbatimanddraw\endcsname%
+    \ifx\kvtcb@savelowerto\@empty%
+    \else%
+      \tcb@warning{'saveto' and 'savelowerto' cannot be combined. I deactivate 'savelowerto'}%
+      \tcbset{savelowerto=}%
+    \fi%
+  \fi%
+  \tcb@startbox%
+}
+
+
+\def\tcb@@capture@minipage{%
+  \let\tcb@val@raisebase=\tcb@zpt%
+  \tcb@set@@phantom%
+  \tcb@set@@title%
+  \tcb@set@@dimensions%
+  \tcb@set@@sidebyside%
+  \tcb@set@@upper@and@lower%
+}
+
+\def\tcb@@capture@hbox{%
+  \let\endtcolorbox\relax%
+  \iftcb@wrap@environment%
+    \expandafter\@firstoftwo%
+  \else%
+    \expandafter\@secondoftwo%
+  \fi%
+  {\begingroup\tcb@hack@currenvir%
+   \Collect@Body\tcbox@inner@hbox@collected@for@wrapping}%
+  {\Collect@Body\tcbox@inner@hbox@collected}%
+}
+
+\long\def\tcbox@inner@hbox@collected@for@wrapping#1\end#2{%
+  \endgroup%
+  \let\tcb@end@tcolorboxenvironment\relax%
+  \tcbox@inner@hbox@collected{#1\end{#2}}%
+  \end{tcolorbox}%
+}
+
+% will be overwritten in `fitting` library
+\def\tcb@@capture@fitbox{%
+  \tcb@error{You need to load `fitting' library to use capture mode `fitbox'}{}%
+  % fallback
+  \tcb@@capture@minipage%
+}
+
+% will be overwritten in `fitting` library
+\def\tcbox@inner@fitbox{%
+  \tcb@error{You need to load `fitting' library to use capture mode `fitbox'}{}%
+  % fallback
+  \tcbox@inner@hbox%
+}
+
+% save 'comment' from 'verbatim'
+\let\tcb@verbatim@comment\comment
+\let\tcb@verbatim@endcomment\endcomment
+
+\def\tcb@@end@v@@d{%
+  \tcb@verbatim@endcomment%
+  \tcb@layer@dec%
+}
+
+\def\tcb@@capture@v@@d{%
+  \let\endtcolorbox\tcb@@end@v@@d%
+  \tcb@verbatim@comment%
+}
+
+\long\def\tcbox@inner@hbox@collected#1{%
+  \tcbox@inner@hbox{#1}%
+  \tcb@finalize@environment%
+}
+
+\def\tcb@count@boxes{%
+  \global\advance\c@tcolorbox@number 1\relax%
+  \edef\thetcolorboxnumber{\number\c@tcolorbox@number}%
+  \expandafter\ifx\csname tcolorboxpage@\thetcolorboxnumber\endcsname\relax%
+    \edef\thetcolorboxpage{\number\c@page}%
+  \else%
+    \expandafter\let\expandafter\thetcolorboxpage\csname tcolorboxpage@\thetcolorboxnumber\endcsname%
+  \fi%
+}
+
+\def\tcolorbox@label{\@newl@bel{tcolorboxpage}}%
+
+\def\tcolorbox@savepage#1{%
+    \@bsphack%
+    \write\@auxout{\string\tcolorbox@label{#1}{\number\c@page}}%
+    \@esphack%
+}%
+
+\def\tcb@phantom@savepage{\preto\kvtcb@phantom{\expandafter\tcolorbox@savepage\expandafter{\thetcolorboxnumber}}}
+
+\def\tcbifoddpage{%
+  \ifodd\thetcolorboxpage\relax%
+    \expandafter\@firstoftwo%
+  \else%
+    \expandafter\@secondoftwo%
+  \fi%
+}
+
+\def\tcbifoddpageoroneside{%
+  \if@twoside%
+    \ifodd\thetcolorboxpage\relax%
+      \let\reserved@a\@firstoftwo%
+    \else%
+      \let\reserved@a\@secondoftwo%
+    \fi%
+  \else%
+    \let\reserved@a\@firstoftwo%
+  \fi%
+  \expandafter\reserved@a%
+}
+
+\def\tcb@managed@layers@max{0}
+\def\tcbsetmanagedlayers#1{%
+  \global\c@tcblayer\tcb@managed@layers@max\relax%
+  \ifnum\c@tcblayer<#1\relax%
+    \loop
+      \global\advance\c@tcblayer 1\relax%
+      \newbox\tcb@temp%
+      \cslet{tcb@footnote@\romannumeral\c@tcblayer}{\tcb@temp}%
+      \tcbset{every box on layer \number\c@tcblayer/.style={reset,every box}}
+    \ifnum\c@tcblayer<#1 \repeat%
+  \else%
+  \fi%
+  \xdef\tcb@managed@layers@max{#1}%
+  \global\c@tcblayer 0\relax%
+}
+\@onlypreamble\tcbsetmanagedlayers
+\tcbsetmanagedlayers{4}%
+
+\tcbset{%
+  every box/.style={},
+  every box on layer 1/.style={every box},
+  every box on higher layers/.style={reset,every box},
+}
+
+\def\tcb@layer@inc{%
+  \tcb@count@boxes%
+  \global\advance\c@tcblayer 1\relax%
+  \ifnum\c@tcblayer>1\relax%
+    \tcbset{breakable@true/.code=}%
+  \else%
+    \ifinner\ifhmode\tcbset{breakable@true/.code=}\fi\fi%
+  \fi%
+  \ifnum\c@tcblayer>\tcb@managed@layers@max\relax%
+    \tcbset{every box on higher layers}%
+  \else%
+    \expandafter\setbox\csname tcb@footnote@\romannumeral\c@tcblayer\endcsname\box\@mpfootins%
+    \csedef{tcb@footnote@cnt@\romannumeral\c@tcblayer}{\the\c@mpfootnote}%
+    \tcbset{every box on layer \number\c@tcblayer}%
+  \fi%
+}
+
+\def\tcb@layer@pushup{%
+  \tcb@count@boxes%
+  \global\advance\c@tcolorbox@number -1\relax%
+  \global\advance\c@tcblayer 1\relax%
+  \ifnum\c@tcblayer>1\relax%
+    \tcbset{breakable@true/.code=}%
+  \else%
+    \ifinner\ifhmode\tcbset{breakable@true/.code=}\fi\fi%
+  \fi%
+  \ifnum\c@tcblayer>\tcb@managed@layers@max\relax%
+    \tcbset{every box on higher layers}%
+    \tcbset{every box on higher layers/.code=}%
+  \else%
+    \tcbset{every box on layer \number\c@tcblayer}%
+    \tcbset{every box on layer \number\c@tcblayer/.code=}%
+  \fi%
+  \global\advance\c@tcblayer -1\relax%
+}
+
+\def\tcb@layer@dec{%
+  \ifnum\c@tcblayer>\tcb@managed@layers@max\relax%
+  \else%
+    \expandafter\global\setbox\@mpfootins\box\csname tcb@footnote@\romannumeral\c@tcblayer\endcsname%
+    \setcounter{mpfootnote}{\csname tcb@footnote@cnt@\romannumeral\c@tcblayer\endcsname}%
+  \fi%
+  \global\advance\c@tcblayer -1\relax%
+}
+
+\let\tcbtextheight\tcb@zpt%
+
+\def\tcb@init@breakable{}
+
+\def\tcb@init@unbreakable{%
+  \let\tcb@savebox=\tcb@lrbox%
+  \let\endtcb@savebox=\endtcb@lrbox%
+  \let\tcb@drawcolorbox=\tcb@drawcolorbox@standalone%
+  \def\tcb@upperdraw@begin@hook{\color{tcbcolupper}}%
+  \def\tcb@lowerdraw@begin@hook{\color{tcbcollower}}%
+}%
+
+\def\tcb@error@nolower{\tcb@error{%
+  \string\tcblower\space cannot be used for \string\tcbox, \string\tcboxfit, and similar box macros,
+  also not for capture=hbox, capture=fitbox, etc.
+  I'll drop this `\string\tcblower'}{}}
+
+\long\def\tcb@apply@box@options#1{%
+  \let\tcb@space\tcb@zpt%
+  \let\tcb@outer@textheight\tcbtextheight%
+  \let\tcbtextheight\tcb@zpt%
+  \let\tcbtextwidth\tcb@zpt%
+  \tcbset{#1}%
+  \tcb@lateoptions@hook\let\tcb@lateoptions@hook\@empty%
+  \tcb@afteroptions@hook%
+  \iftcb@isbreakable%
+    \tcb@init@breakable%
+  \else%
+    \tcb@init@unbreakable%
+  \fi%
+  \let\iftcb@minipage\if@minipage%
+  \let\iftcb@nobreak\if@nobreak%
+  \let\tcblower\tcb@error@nolower%
+}
+
+\long\def\tcb@@icolorbox[#1]{%
+  \tcbset{capture=minipage}%
+  \tcb@layer@inc%
+  \tcb@apply@box@options{#1}\tcb@height@adjust%
+  \tcb@hasLowerfalse%
+  \csname tcb@@capture@\kvtcb@capture\endcsname%
+}
+
+\let\tcolorbox\tcb@colorbox
+
+\def\tcb@endboxanddraw{%
+  \tcb@insert@after@part%
+  \end{tcb@savebox}%
+  \tcb@draw@color@box%
+  \tcb@finalize@environment%
+}
+
+\def\tcb@finalize@environment{%
+  %\color{.}% hack for xelatex
+  \tcb@layer@dec%
+}
+
+\let\endtcolorbox=\tcb@endboxanddraw
+
+% height computations
+\def\tcb@@ch@@operation#1{%
+  \let\tcb@ch=#1%
+  \let\tcb@height@adjust\@empty%
+}
+
+
+\def\tcb@ch@natural{%
+  \let\tcb@height\tcb@natheight%
+  \let\tcbheightspace\tcb@zpt%
+  \tcbdimto\tcb@height@upper{\ht\tcb@upperbox+\dp\tcb@upperbox}%
+  \iftcb@lowerspace%
+  \tcbdimto\tcb@height@lower{\ht\tcb@lowerbox+\dp\tcb@lowerbox}%
+  \fi%
+}
+
+\def\tcb@ch@natural@plus{%
+  \tcbdimto\tcbheightspace{\kvtcb@height@natural@plus}%
+  \tcbdimto\tcb@height{\tcb@natheight+\tcbheightspace}%
+  \iftcb@lowerspace\tcb@ch@fixed@both\else\tcb@ch@fixed@upper\fi%
+}
+
+
+\def\tcb@ch@fixed@upper@standard{%
+  \tcbdimto\tcb@height@upper{\ht\tcb@upperbox+\dp\tcb@upperbox+\tcbheightspace}%
+}
+
+\def\tcb@ch@fixed@space{%
+  \tcbdimto\tcb@height@spaceupper{\tcb@height@fraction\dimexpr\tcbheightspace\relax}%
+  \tcbdimto\tcb@height@upper{\ht\tcb@upperbox+\dp\tcb@upperbox+\tcb@height@spaceupper}%
+  \tcbdimto\tcb@height@lower{\ht\tcb@lowerbox+\dp\tcb@lowerbox+\tcbheightspace-\tcb@height@spaceupper}%
+}
+
+\def\tcb@savespace#1#2{%
+  \immediate\write\@auxout{\string\csgdef{tcb@space@#1}{#2}}%
+}
+
+
+\ExplSyntaxOn
+\def\tcb@ch@fixed@spacesave
+  {
+    \fp_set:Nn \l_tmpa_fp { \tcb@space+\tcbheightspace }
+    \fp_compare:nTF { \l_tmpa_fp < 0 }
+      {
+        \fp_zero_new:N \l_tmpa_fp
+      }
+      {
+        \fp_compare:nT { \l_tmpa_fp > \tcb@height }
+          {
+            \fp_set:Nn \l_tmpa_fp { \tcb@height }
+          }
+      }
+    \tcbdimto\tcb@space { \fp_to_dim:n { trunc(\l_tmpa_fp,2) } }
+    \use:x { \exp_not:N\tcb@savespace{\thetcolorboxnumber}{\tcb@space} }
+    \tcbdimto\tcb@height@upper{\ht\tcb@upperbox+\dp\tcb@upperbox+\tcbheightspace}
+    \let\tcbheightspace\tcb@zpt
+    \iftcb@lowerspace
+      \tcbdimto\tcb@height@lower{\ht\tcb@lowerbox+\dp\tcb@lowerbox}
+    \fi
+  }
+\ExplSyntaxOff
+
+
+\def\tcb@ch@fixed@split{%
+  \tcbdimto\tcb@height@space{\tcbheightspace+\ht\tcb@upperbox+\dp\tcb@upperbox+\ht\tcb@lowerbox+\dp\tcb@lowerbox}%
+  \tcbdimto\tcb@height@upper{\tcb@height@fraction\dimexpr\tcb@height@space\relax}%
+  \tcbdimto\tcb@height@lower{\tcb@height@space-\tcb@height@upper}%
+}
+
+\def\tcb@ch@fixed{%
+  \ifdim\tcb@natheight<\dimexpr\kvtcb@height@fixed\relax%
+    \tcbdimto\tcb@height{\kvtcb@height@fixed}%
+  \else%
+    \tcbdimto\tcb@space{\tcb@space+\kvtcb@height@fixed-\tcb@natheight}%
+    \tcbdimto\tcb@temp{\kvtcb@height@fixed+\kvtcb@height@fixed@plus}%
+    \ifdim\tcb@natheight>\tcb@temp\relax%
+      \let\tcb@height\tcb@temp%
+    \else%
+      \let\tcb@height\tcb@natheight%
+    \fi%
+  \fi%
+  \tcbdimto\tcbheightspace{\tcb@height-\tcb@natheight}%
+  \iftcb@lowerspace\tcb@ch@fixed@both\else\tcb@ch@fixed@upper\fi%
+}
+
+\def\tcb@ch@innerfixed{%
+  \tcbdimto\kvtcb@height@fixed{\kvtcb@height@fixed+\kvtcb@top@rule+\kvtcb@bottom@rule+\tcb@h@padtitle+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom}%
+  \tcb@ch@fixed%
+}
+
+\def\tcbheightfromgroup#1#2{%
+  \ifcsundef{tcb@ehg@height@#2}{%
+    \let#1\tcb@zpt%
+  }{%
+    \letcs{#1}{tcb@ehg@height@#2}%
+  }%
+}
+
+\def\tcb@saveehg#1{%
+  \immediate\write\@auxout{\string\csgdef{tcb@ehg@height@#1}{\csuse{tcb@ehg@current@#1}}}%
+}
+
+\def\tcb@ehgadd#1{%
+  \ifcsdef{tcb@ehg@current@\tcb@ehgid}{%
+    \ifdim\csuse{tcb@ehg@current@\tcb@ehgid}<#1\relax%
+      \csxdef{tcb@ehg@current@\tcb@ehgid}{#1}%
+    \fi%
+  }{%
+    \csxdef{tcb@ehg@current@\tcb@ehgid}{#1}%
+    \begingroup\edef\x{\endgroup\noexpand\AtEndDocument{\noexpand\tcb@saveehg{\tcb@ehgid}}}\x%
+  }%
+}
+
+\def\tcb@ch@equalheight{%
+  \tcbdimto\tcb@ehg@currentheight{\tcb@natheight-\tcb@space}%
+  \tcb@ehgadd{\tcb@ehg@currentheight}%
+  \ifcsdef{tcb@ehg@height@\tcb@ehgid}{%
+    \ifdim\csuse{tcb@ehg@height@\tcb@ehgid}<\tcb@ehg@currentheight\relax%
+      \let\tcb@height\tcb@ehg@currentheight%
+    \else%
+      \letcs{\tcb@height}{tcb@ehg@height@\tcb@ehgid}%
+    \fi%
+  }{%
+    \let\tcb@height\tcb@ehg@currentheight%
+  }%
+  \tcbdimto\tcbheightspace{\tcb@height-\tcb@natheight}%
+  \iftcb@lowerspace\tcb@ch@fixed@both\else\tcb@ch@fixed@upper\fi%
+}
+
+\def\tcb@dbox@top#1#2#3#4#5{\pgftext[x=#1,y=#2+#3,left,top]{#5}}
+
+\def\tcb@dbox@bottom#1#2#3#4#5{\pgftext[x=#1,y=#2,left,bottom]{#5}}
+
+\def\tcb@dbox@center#1#2#3#4#5{\pgftext[x=#1,y=#2+#3/2,left]{#5}}
+
+\def\tcb@resize@box#1#2#3{%
+  \setbox#1\hbox{\resizebox*{#2}{#3}{\box#1}}%
+  \wd#1=#2\relax%
+  \ht#1=\the\dimexpr#3-\dp#1\relax%
+}
+
+\def\tcb@dbox@resize#1#2#3#4#5{%
+  \iftcb@fixedheight%
+    \tcbdimto\tcb@box@w@target{\wd#4}%
+    \tcbdimto\tcb@box@h@target{#3}%
+    \tcb@resize@box{#4}{\tcb@box@w@target}{\tcb@box@h@target}%
+  \fi%
+  \pgftext[x=#1,y=#2+#3,left,top]{#5}}%
+
+\def\tcb@dbox@resizelimited#1#2#3#4#5{%
+  \iftcb@fixedheight%
+    \tcbdimto\tcb@box@w@target{\wd#4}%
+    \tcbdimto\tcb@box@h@target{\kvtcb@valignscalelimit\dimexpr(\ht#4+\dp#4)}%
+    \ifdim\dimexpr\tcb@box@h@target>#3\relax%
+      \tcbdimto\tcb@box@h@target{#3}%
+    \fi%
+    \tcb@resize@box{#4}{\tcb@box@w@target}{\tcb@box@h@target}%
+  \fi%
+  \pgftext[x=#1,y=#2+#3,left,top]{#5}}%
+
+\let\tcb@pgfprocess@@specialround@orig=\pgfprocess@@specialround
+
+% patch for \pgfprocess@@specialround
+\def\tcb@pgfprocess@@specialround@angular#1#2#3{%
+  \pgfutil@g@addto@macro\pgfprocess@segment{#1}%
+  % start point
+  \pgf@xb=#2%
+  \pgf@yb=#3%
+  %
+  \edef\pgf@marshal%
+  {\noexpand\pgfpointlineatdistance{\pgfprocess@savex}%
+    {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}%
+    {\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}}%
+  \pgf@process{\pgf@marshal}%
+  \pgf@xa=\pgf@x% save start point
+  \pgf@ya=\pgf@y%
+  \edef\pgfprocess@addition{{\the\pgf@x}{\the\pgf@y}}%
+  \expandafter\pgfutil@g@addto@macro\expandafter\pgfprocess@segment\expandafter{\pgfprocess@addition}%
+  %
+  \edef\pgf@marshal%
+  {\noexpand\pgfpointlineatdistance{\pgfprocess@savey}%
+    {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}%
+    {\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}}%
+  \pgf@process{\pgf@marshal}%
+  \pgf@xc=\pgf@x% save end point
+  \pgf@yc=\pgf@y%
+  \edef\pgfprocess@addition{\noexpand\pgfsyssoftpath@linetotoken{\the\pgf@xc}{\the\pgf@yc}}%
+  \expandafter\pgfutil@g@addto@macro\expandafter\pgfprocess@segment\expandafter{\pgfprocess@addition}%
+  %
+  \pgf@xa=#2%
+  \pgf@ya=#3%
+  \pgfprocess@continueafterrounding%
+}
+
+\def\tcbpatcharcround{\let\pgfprocess@@specialround=\tcb@pgfprocess@@specialround@orig}
+\def\tcbpatcharcangular{\let\pgfprocess@@specialround=\tcb@pgfprocess@@specialround@angular}
+
+\def\tcb@arc@zpt{\pgfsetcornersarced{\pgfpointorigin}}%
+\def\tcb@arc@ins{\pgfsetcornersarced{\pgfqpoint{\kvtcb@arc}{\kvtcb@arc}}}%
+\def\tcb@arc@out{\pgfsetcornersarced{\pgfqpoint{\tcb@outer@arc}{\tcb@outer@arc}}}%
+
+\def\tcb@define@corner@mode#1{%
+\tcbset{%
+  #1 corners/.is choice,%
+  #1 corners/northwest/.code={\edef\tcb@corner@mode@NW{#1}},%
+  #1 corners/northeast/.code={\edef\tcb@corner@mode@NE{#1}},%
+  #1 corners/southwest/.code={\edef\tcb@corner@mode@SW{#1}},%
+  #1 corners/southeast/.code={\edef\tcb@corner@mode@SE{#1}},%
+  #1 corners/north/.code={\edef\tcb@corner@mode@NW{#1}\edef\tcb@corner@mode@NE{#1}},%
+  #1 corners/south/.code={\edef\tcb@corner@mode@SW{#1}\edef\tcb@corner@mode@SE{#1}},%
+  #1 corners/east/.code={\edef\tcb@corner@mode@NE{#1}\edef\tcb@corner@mode@SE{#1}},%
+  #1 corners/west/.code={\edef\tcb@corner@mode@NW{#1}\edef\tcb@corner@mode@SW{#1}},%
+  #1 corners/downhill/.code={\edef\tcb@corner@mode@NW{#1}\edef\tcb@corner@mode@SE{#1}},%
+  #1 corners/uphill/.code={\edef\tcb@corner@mode@NE{#1}\edef\tcb@corner@mode@SW{#1}},%
+  #1 corners/all/.code={\edef\tcb@corner@mode@NW{#1}\edef\tcb@corner@mode@NE{#1}\edef\tcb@corner@mode@SW{#1}\edef\tcb@corner@mode@SE{#1}},%
+  #1 corners/.default=all}}%
+
+\tcb@define@corner@mode{rounded}
+\tcb@define@corner@mode{sharp}
+
+\def\tcb@arc@out@NW{\csname tcb@arc@out@NW@\tcb@corner@mode@NW\endcsname}
+\def\tcb@arc@out@NE{\csname tcb@arc@out@NE@\tcb@corner@mode@NE\endcsname}
+\def\tcb@arc@out@SW{\csname tcb@arc@out@SW@\tcb@corner@mode@SW\endcsname}
+\def\tcb@arc@out@SE{\csname tcb@arc@out@SE@\tcb@corner@mode@SE\endcsname}
+
+\def\tcb@arc@ins@NW{\csname tcb@arc@ins@NW@\tcb@corner@mode@NW\endcsname}
+\def\tcb@arc@ins@NE{\csname tcb@arc@ins@NE@\tcb@corner@mode@NE\endcsname}
+\def\tcb@arc@ins@SW{\csname tcb@arc@ins@SW@\tcb@corner@mode@SW\endcsname}
+\def\tcb@arc@ins@SE{\csname tcb@arc@ins@SE@\tcb@corner@mode@SE\endcsname}
+
+\let\tcb@arc@out@NW@sharp\tcb@arc@zpt
+\let\tcb@arc@out@NE@sharp\tcb@arc@zpt
+\let\tcb@arc@out@SW@sharp\tcb@arc@zpt
+\let\tcb@arc@out@SE@sharp\tcb@arc@zpt
+
+\let\tcb@arc@ins@NW@sharp\tcb@arc@zpt
+\let\tcb@arc@ins@NE@sharp\tcb@arc@zpt
+\let\tcb@arc@ins@SW@sharp\tcb@arc@zpt
+\let\tcb@arc@ins@SE@sharp\tcb@arc@zpt
+
+\let\tcb@arc@out@NW@rounded\tcb@arc@out
+\let\tcb@arc@out@NE@rounded\tcb@arc@out
+\let\tcb@arc@out@SW@rounded\tcb@arc@out
+\let\tcb@arc@out@SE@rounded\tcb@arc@out
+
+\let\tcb@arc@ins@NW@rounded\tcb@arc@ins
+\let\tcb@arc@ins@NE@rounded\tcb@arc@ins
+\let\tcb@arc@ins@SW@rounded\tcb@arc@ins
+\let\tcb@arc@ins@SE@rounded\tcb@arc@ins
+
+
+% boundaries
+\def\tcb@boundary@base#1#2#3#4#5#6#7#8{%
+  \tcbdimto\tcb@xa{#1}%
+  \tcbdimto\tcb@ya{#2}%
+  \tcbdimto\tcb@xb{#3}%
+  \tcbdimto\tcb@yb{#4}%
+  \pgfpathmoveto{\pgfqpoint{\tcb@xa}{\tcb@ya}}%
+  #6\pgfpathlineto{\pgfqpoint{\tcb@xa}{\tcb@yb}}%
+  #7\pgfpathlineto{\pgfqpoint{\tcb@xb}{\tcb@yb}}%
+  #8\pgfpathlineto{\pgfqpoint{\tcb@xb}{\tcb@ya}}%
+  #5\pgfpathclose%
+}
+
+\def\tcb@boundaryframe@standard{%
+  \tcb@boundary@base{\z@}{\z@}%
+    {\tcb@width}{\tcb@height}%
+    {\tcb@arc@out@SW}{\tcb@arc@out@NW}{\tcb@arc@out@NE}{\tcb@arc@out@SE}%
+}
+
+\def\tcb@boundaryframe@standardjigsaw{%
+  \pgfseteorule%
+  \tcb@boundaryframe@standard%
+  \iftcb@hasTitle%
+    \tcb@boundaryinterior@title@standard%
+    \iftcb@titlefilled%
+      \tcb@boundarytitle@standard%
+    \fi%
+  \else%
+    \tcb@boundaryinterior@notitle@standard%
+  \fi%
+}
+
+\def\tcb@boundaryinterior@title@standard{%
+  \tcb@boundary@base{\kvtcb@left@rule}{\kvtcb@bottom@rule}%
+    {\tcb@width-\kvtcb@right@rule}{\kvtcb@bottom@rule+\tcb@innerheight}%
+    {\tcb@arc@ins@SW}{\tcb@arc@zpt}{\tcb@arc@zpt}{\tcb@arc@ins@SE}%
+}
+
+\def\tcb@boundaryinterior@notitle@standard{%
+  \tcb@boundary@base{\kvtcb@left@rule}{\kvtcb@bottom@rule}%
+    {\tcb@width-\kvtcb@right@rule}{\tcb@height-\kvtcb@top@rule}%
+    {\tcb@arc@ins@SW}{\tcb@arc@ins@NW}{\tcb@arc@ins@NE}{\tcb@arc@ins@SE}%
+}
+
+\def\tcb@boundarytitle@standard{%
+  \tcb@boundary@base{\kvtcb@left@rule}{\kvtcb@bottom@rule+\tcb@innerheight+\kvtcb@title@rule}%
+    {\tcb@width-\kvtcb@right@rule}{\tcb@height-\kvtcb@top@rule}%
+    {\tcb@arc@zpt}{\tcb@arc@ins@NW}{\tcb@arc@ins@NE}{\tcb@arc@zpt}%
+}
+
+% fill frame
+\def\tcb@drawframe@standard{%
+  \begin{pgfscope}%
+  \tcb@boundaryframe@standard%
+  \pgfsetfillcolor{tcbcolframe}%
+  \pgfsetfillopacity{\kvtcb@opacityframe}%
+  \pgfusepath{fill}%
+  \end{pgfscope}%
+}
+
+% fill frame
+\def\tcb@drawframe@standardjigsaw{%
+  \begin{pgfscope}%
+  \tcb@boundaryframe@standardjigsaw%
+  \pgfsetfillcolor{tcbcolframe}%
+  \pgfsetfillopacity{\kvtcb@opacityframe}%
+  \pgfusepath{fill}%
+  \end{pgfscope}%
+}
+
+% fill inner box with title
+\def\tcb@drawwithtitle@standard{%
+  \begin{pgfscope}%
+  \tcb@boundaryinterior@title@standard%
+  \pgfsetfillcolor{tcbcolback}%
+  \pgfsetfillopacity{\kvtcb@opacityback}%
+  \pgfusepath{fill}%
+  \end{pgfscope}%
+}
+
+% fill inner box without title
+\def\tcb@drawwithouttitle@standard{%
+  \begin{pgfscope}%
+  \tcb@boundaryinterior@notitle@standard%
+  \pgfsetfillcolor{tcbcolback}%
+  \pgfsetfillopacity{\kvtcb@opacityback}%
+  \pgfusepath{fill}%
+  \end{pgfscope}%
+}
+
+% draw title box
+\def\tcb@drawtitle@standard{%
+  \begin{pgfscope}%
+  \tcb@boundarytitle@standard%
+  \pgfsetfillcolor{tcbcolbacktitle}%
+  \pgfsetfillopacity{\kvtcb@opacitybacktitle}%
+  \pgfusepath{fill}%
+  \end{pgfscope}%
+}
+
+% draw segmentation line
+\def\tcb@drawlower@standard{%
+  \begin{pgfscope}%
+  \pgfsetdash{{1mm}{1mm}}{0.5mm}%
+  \iftcb@sidebyside%
+  \tcbdimto\tcb@seg@pos{\kvtcb@left@rule+\kvtcb@boxsep+\kvtcb@leftupper+\tcb@w@upper+\kvtcb@sbs@gap/2}%
+  \pgfpathmoveto{\pgfqpoint{\tcb@seg@pos}{\the\dimexpr\kvtcb@bottom@rule+\tcb@innerheight\relax}}%
+  \pgfpathlineto{\pgfqpoint{\tcb@seg@pos}{\kvtcb@bottom@rule}}%
+  \else%
+  \tcbdimto\tcb@seg@pos{\kvtcb@bottom@rule+\kvtcb@boxsep*2+\tcb@break@bottomsep+\kvtcb@middle+\kvtcb@bottom+\tcb@height@lower}%
+  \pgfpathmoveto{\pgfqpoint{\kvtcb@left@rule}{\tcb@seg@pos}}%
+  \pgfpathlineto{\pgfqpoint{\the\dimexpr\tcb@width-\kvtcb@right@rule\relax}{\tcb@seg@pos}}%
+  \fi%
+  \pgfsetcolor{tcbcolframe}%
+  \pgfsetstrokeopacity{\kvtcb@opacityframe}%
+  \pgfusepath{stroke}%
+  \end{pgfscope}%
+}
+
+\def\tcb@setbb@toggle@none{%
+  \pgfpathrectanglecorners{\pgfqpoint{\the\dimexpr\z@-\kvtcb@bbleft\relax}{\the\dimexpr\z@-\kvtcb@bbbottom\relax}}%
+     {\pgfqpoint{\the\dimexpr\tcb@width+\kvtcb@bbright\relax}{\the\dimexpr\tcb@height+\kvtcb@bbtop\relax}}%
+}
+
+\def\tcb@setbb@toggle@forced{%
+  \pgfpathrectanglecorners{\pgfqpoint{\the\dimexpr\z@-\kvtcb@bbright\relax}{\the\dimexpr\z@-\kvtcb@bbbottom\relax}}%
+    {\pgfqpoint{\the\dimexpr\tcb@width+\kvtcb@bbleft\relax}{\the\dimexpr\tcb@height+\kvtcb@bbtop\relax}}%
+}
+
+\def\tcb@setbb@toggle@evenpage{%
+  \tcbifoddpage{\tcb@setbb@toggle@none}{\tcb@setbb@toggle@forced}%
+}
+
+\def\tcb@creategeonodes@false{}
+
+\def\tcb@swap#1#2{%
+  \let\tcb@temp=#1%
+  \let#1=#2%
+  \let#2=\tcb@temp%
+}
+
+\let\tcb@lrtoggle@none=\relax
+
+\def\tcb@lrtoggle@forced{%
+  \tcb@swap{\kvtcb@left@rule}{\kvtcb@right@rule}%
+  \tcb@swap{\kvtcb@lefttitle}{\kvtcb@righttitle}%
+  \tcb@swap{\kvtcb@leftupper}{\kvtcb@rightupper}%
+  \tcb@swap{\kvtcb@leftlower}{\kvtcb@rightlower}%
+  \tcb@swap{\tcb@corner@mode@NW}{\tcb@corner@mode@NE}%
+  \tcb@swap{\tcb@corner@mode@SW}{\tcb@corner@mode@SE}%
+}
+
+\def\tcb@lrtoggle@evenpage{%
+  \tcbifoddpage{}{\tcb@lrtoggle@forced}%
+}
+
+\def\tcb@bbdraw{%
+  \tcb@lrtoggle%
+  \tcb@setbb@toggle%
+  \pgfusepath{use as bounding box}%
+  \iftcb@hasPhantom%
+    \pgftext[x=\z@,y=\tcb@height-\baselineskip,left,top]{\box\tcb@phantombox}%
+    \tcb@hasPhantomfalse%
+  \fi%
+  \csname tcb@creategeonodes@\kvtcb@geonodes\endcsname%
+}
+
+\def\tcb@tdraw@title@core{%
+  \iftcb@hasTitle\iftcb@titlevisible%%
+    \begin{pgfscope}%
+    \pgfsetfillopacity{\kvtcb@opacitytitle}%
+    \pgftext[x=\the\dimexpr\kvtcb@left@rule+\kvtcb@boxsep+\kvtcb@lefttitle\relax,
+             y=\the\dimexpr\tcb@height-\kvtcb@top@rule-\kvtcb@boxsep-\kvtcb@toptitle\relax,
+             left,top]{\color@begingroup\color{tcbcoltitle}\box\tcb@titlebox\color@endgroup}%
+    \end{pgfscope}%
+  \fi\fi%
+}
+\let\tcb@tdraw@title=\tcb@tdraw@title@core
+
+\def\tcb@tdraw@upper@core{%
+  \iftcb@uppervisible%
+    \begin{pgfscope}%
+    \pgfsetfillopacity{\kvtcb@opacityupper}%
+    \csname tcb@dbox@\kvtcb@valignupper\endcsname{\the\dimexpr\kvtcb@left@rule+\kvtcb@boxsep+\kvtcb@leftupper\relax}%
+            {\the\dimexpr\tcb@innerheight+\kvtcb@bottom@rule-\kvtcb@boxsep-\tcb@break@topsep-\kvtcb@top-\tcb@height@upper\relax}%
+            {\tcb@height@upper}{\tcb@upperbox}{%
+              \color@begingroup\tcb@upperdraw@begin@hook\box\tcb@upperbox\tcb@upperdraw@end@hook\color@endgroup%
+            }%
+    \end{pgfscope}%
+  \fi%
+}
+\let\tcb@tdraw@upper=\tcb@tdraw@upper@core
+
+\def\tcb@tdraw@lower@core{%
+  \iftcb@lowervisible%
+    \begin{pgfscope}%
+    \pgfsetfillopacity{\kvtcb@opacitylower}%
+    \csname tcb@dbox@\kvtcb@valignlower\endcsname{\the\dimexpr\kvtcb@left@rule+\kvtcb@boxsep+\kvtcb@leftlower\relax}%
+            {\the\dimexpr\kvtcb@bottom@rule+\kvtcb@boxsep+\tcb@break@bottomsep+\kvtcb@bottom\relax}%
+            {\tcb@height@lower}{\tcb@lowerbox}{%
+              \color@begingroup\tcb@lowerdraw@begin@hook\box\tcb@lowerbox\tcb@lowerdraw@end@hook\color@endgroup%
+            }%
+    \end{pgfscope}%
+  \fi%
+}
+\let\tcb@tdraw@lower=\tcb@tdraw@lower@core
+
+\def\tcb@box@align@top#1{%
+  \setbox#1=\hbox{\raise-\ht#1\box#1}%
+}
+
+\def\tcb@box@align@center#1{%
+  \setbox#1=\hbox{\raise\dimexpr(\dp#1-\ht#1)/2\relax\box#1}%
+}
+
+\def\tcb@box@align@bottom#1{%
+  \setbox#1=\hbox{\raise\dp#1\box#1}%
+}
+
+\def\tcb@sbs@mix{%
+  \begin{tcb@savebox}{\tcb@upperbox}{\tcb@w@upper@real}{tcbcolupper}%
+    \tcb@box@align{\tcb@upperbox}%
+    \iftcb@uppervisible%
+      \tcbdimto{\tcb@temp@wd}{\tcb@w@upper-\wd\tcb@upperbox+\kvtcb@sbs@gap}%
+      \noindent\unhbox\tcb@upperbox\kern\tcb@temp@wd%
+    \else%
+      \tcbdimto{\tcb@temp@wd}{\tcb@w@upper+\kvtcb@sbs@gap}%
+      \noindent\kern\tcb@temp@wd%
+      \rule[-\dp\tcb@upperbox]{\z@}{\the\dimexpr\ht\tcb@upperbox+\dp\tcb@upperbox\relax}%
+    \fi%
+    \iftcb@hasLower%
+      \tcb@box@align{\tcb@lowerbox}%
+      \iftcb@lowervisible\leavevmode\color{tcbcollower}\unhbox\tcb@lowerbox%
+      \else%
+        \iftcb@lowerignored\else\rule[-\dp\tcb@lowerbox]{\z@}{\the\dimexpr\ht\tcb@lowerbox+\dp\tcb@lowerbox\relax}\fi%
+      \fi%
+    \fi%
+  \end{tcb@savebox}%
+  \tcb@hasLowerfalse%
+  \tcb@uppervisibletrue%
+}
+
+\def\tcb@draw@color@box{%
+  \iftcb@sidebyside\tcb@sbs@mix\fi%
+  \tcb@comp@arc%
+  \iftcb@hasTitle%
+    \tcbdimto\tcb@h@title{\ht\tcb@titlebox+\dp\tcb@titlebox}%
+    \tcbdimto\tcb@h@padtitle{\kvtcb@title@rule+\kvtcb@boxsep*2+\kvtcb@toptitle+\kvtcb@bottomtitle+\tcb@h@title}%
+  \else%
+    \let\tcb@h@title=\tcb@zpt%
+    \let\tcb@h@padtitle=\tcb@zpt%
+  \fi%
+  %
+  \tcb@defToTotalHeight\tcb@h@upper{\tcb@upperbox}%
+  %
+  \iftcb@hasLower%
+  \iftcb@lowerignored\tcb@lowerspacefalse\else\tcb@lowerspacetrue\fi%
+  \else\tcb@lowerspacefalse\fi%
+  \iftcb@lowerspace%
+    \tcbdimto\tcb@h@segment{\kvtcb@boxsep*2+\kvtcb@middle*2}%
+    \tcb@defToTotalHeight\tcb@h@lower{\tcb@lowerbox}%
+  \else
+    \let\tcb@h@segment=\tcb@zpt%
+    \let\tcb@h@lower=\tcb@zpt%
+  \fi%
+  %
+  \tcb@shield@externalize%
+  \tcb@drawcolorbox%
+}
+
+\def\tcb@apply@overlay{\csname tcb@overlay@\tcb@split@state\endcsname}%
+
+\def\tcb@adraw@frame{%
+  \tcb@frame@code%
+}
+
+\def\tcb@adraw@interior{%
+  \iftcb@hasTitle%
+    \tcb@interiortitled@code%
+  \else%
+    \tcb@interior@code%
+  \fi%
+}
+
+\def\tcb@adraw@title{%
+  \iftcb@hasTitle%
+    \iftcb@titlefilled%
+      \tcb@title@code%
+    \fi%
+  \fi%
+}
+
+\def\tcb@drawing@env@begin{%
+  \csname tcb@before@\tcb@split@state\endcsname%
+  \begin{\kvtcb@graphenv}%
+  \tcb@bbdraw%
+  \tcb@apply@graph@patches%
+}
+
+\def\tcb@drawing@env@end{%
+  \end{\kvtcb@graphenv}%
+  \csname tcb@after@\tcb@split@state\endcsname%
+}
+
+\def\tcb@set@normal@unbroken@beforeafter{%
+  \let\tcb@before@unbroken=\kvtcb@beforebox%
+  \iftcb@nobreak%
+    \iftcb@ignorenobreak\else%
+      \let\tcb@before@unbroken=\kvtcb@beforebox@nobreak%
+    \fi%
+  \fi%
+  \let\tcb@after@unbroken=\kvtcb@afterbox%
+}
+
+\let\tcb@extras@unbroken\@empty
+
+\def\tcb@drawcolorbox{%
+  \edef\tcb@split@state{unbroken}%
+  \tcb@extras@unbroken%
+  \let\kvtcb@top@rule=\kvtcb@top@rule@stand%
+  \let\kvtcb@bottom@rule=\kvtcb@bottom@rule@stand%
+  \let\kvtcb@bbtop=\kvtcb@bbtop@stand%
+  \let\kvtcb@bbbottom=\kvtcb@bbbottom@stand%
+  \let\tcb@break@topsep=\tcb@zpt%
+  \let\tcb@break@bottomsep=\tcb@zpt%
+  % floats
+  \ifx\kvtcb@float\@empty%
+    \tcb@set@normal@unbroken@beforeafter%
+  \else%
+    \edef\tcb@before@unbroken{\noexpand\tcb@float@env@begin{tcbfloat}[\kvtcb@float]\noexpand\kvtcb@beforefloat\noexpand\kvtcb@everyfloat}%
+    \def\tcb@after@unbroken{\kvtcb@afterfloat\tcb@float@env@end}%
+  \fi%
+  \setcounter{tcbbreakpart}{1}%
+  % computation of total height
+  \tcbdimto\tcb@natheight{\tcb@h@padtitle+\kvtcb@top@rule+\kvtcb@bottom@rule+\kvtcb@boxsep*2+\kvtcb@top+\kvtcb@bottom+\tcb@h@upper}%
+  \iftcb@lowerspace%
+    \tcbdimto\tcb@natheight{\tcb@natheight+\tcb@h@segment+\tcb@h@lower}%
+    \def\tcbsegmentstate{1}%
+  \else%
+    \def\tcbsegmentstate{0}%
+  \fi%
+  \tcb@ch%
+  \tcbdimto\tcb@innerheight{\tcb@height-\kvtcb@top@rule-\kvtcb@bottom@rule-\tcb@h@padtitle}%
+  \tcbdimto\tcbtextheight{\tcb@innerheight-\kvtcb@boxsep*2-\kvtcb@top-\kvtcb@bottom}%
+  \tcb@drawing@env@begin%
+    \pgfsetbaseline{\the\dimexpr\kvtcb@baseline-\kvtcb@bbbottom\relax}%
+    \tcb@extensions@preframe%
+    % draw frame and interior
+    \tcb@adraw@frame%
+    \tcb@adraw@interior%
+    \iftcb@lowerseparated%
+      \iftcb@lowerspace%
+        \tcb@segmentation@code%
+      \else\iftcb@sidebyside%
+        \tcb@segmentation@code%
+      \fi\fi%
+    \fi%
+    \tcb@adraw@title%
+    \tcb@extensions@postframe%
+    % draw text boxes
+    \tcb@tdraw@title%
+    \tcb@tdraw@upper%
+    \iftcb@hasLower\tcb@tdraw@lower\fi%
+    \tcb@extensions@final%
+  \tcb@drawing@env@end%
+}
+
+\let\tcb@drawcolorbox@standalone=\tcb@drawcolorbox
+
+\def\tcb@draw@border#1{}
+
+\long\def\tcbox@inner@hbox#1{%
+  \tcb@set@@phantom%
+  \sbox\tcb@upperbox{\tcb@embed@tcbox{%
+    \csname tcb@parbox@use@\kvtcb@parbox\endcsname%
+    \@parboxrestore%
+    \color{tcbcolupper}%
+    \kvtcb@fontupper\kvtcb@halignupper\tcb@insert@before@upper#1\tcb@insert@after@upper}}%
+  \tcbdimto\tcb@val@raisebase{\the\dimexpr\dp\tcb@upperbox+\kvtcb@bottom+\kvtcb@boxsep+\kvtcb@bottom@rule@stand+\kvtcb@bbbottom@stand\relax}%
+  \tcbdimto\kvtcb@width{\wd\tcb@upperbox+\kvtcb@left@rule+\kvtcb@leftupper+\kvtcb@boxsep*2+\kvtcb@rightupper+\kvtcb@right@rule}%
+  \tcb@hasLowerfalse%
+  \tcb@set@@title%
+  \tcb@set@@dimensions%
+  \tcb@draw@color@box%
+}
+
+\long\def\tcbox@inner@minipage#1{%
+  \let\tcb@val@raisebase=\tcb@zpt%
+  \tcb@set@@phantom%
+  \tcb@set@@title%
+  \tcb@set@@dimensions%
+  \begin{tcb@savebox}{\tcb@upperbox}{\tcb@w@upper}{tcbcolupper}\kvtcb@fontupper\kvtcb@halignupper\tcb@insert@before@upper#1\tcb@insert@after@upper\end{tcb@savebox}%
+  \tcb@hasLowerfalse%
+  \tcb@draw@color@box%
+}
+
+\long\def\tcbox@inner@v@@d#1{}%
+
+\long\def\tcb@ox#1#2#3{%
+  \begingroup%
+  \tcbset{#1}%
+  \tcb@layer@inc%
+  \tcb@apply@box@options{#2,breakable@false,sidebyside@false}\tcb@height@adjust%
+  \csname tcbox@inner@\kvtcb@capture\endcsname{#3}%
+  \tcb@layer@dec%
+  \endgroup%
+}
+
+\newcommand{\tcbox}[2][]{%
+  \tcb@ox{capture=hbox}{#1}{#2}%
+}
+
+\newcommand{\tcbsubtitle}[2][]{%
+  \begingroup%
+  \colorlet{tcbtranscol@frame}{tcbcolframe}%
+  \iftcb@titlefilled%
+    \colorlet{tcbtranscol@back}{tcbcolbacktitle}%
+  \else%
+    \colorlet{tcbtranscol@back}{tcbcolframe}%
+  \fi%
+  \colorlet{tcbtranscol@upper}{tcbcoltitle}%
+  \let\tcb@trans@fontupper\kvtcb@fonttitle%
+  \let\tcb@trans@boxsep\kvtcb@boxsep%
+  \let\tcb@trans@left\kvtcb@leftupper%
+  \let\tcb@trans@right\kvtcb@rightupper%
+  \let\tcb@trans@top\kvtcb@toptitle%
+  \let\tcb@trans@bottom\kvtcb@bottomtitle%
+  \let\tcb@trans@rule\kvtcb@title@rule%
+  \let\tcb@trans@style\kvtcb@subtitle@style%
+  \begin{tcolorbox}[{sharp corners,
+    before skip={0.5\baselineskip},after skip={0.5\baselineskip},
+    colframe=tcbtranscol@frame,colback=tcbtranscol@back,
+    colupper=tcbtranscol@upper,fontupper=\tcb@trans@fontupper,
+    boxsep=\tcb@trans@boxsep,left=\tcb@trans@left,right=\tcb@trans@right,
+    top=\tcb@trans@top,bottom=\tcb@trans@bottom,
+    boxrule=\tcb@trans@rule,leftrule=\z@,rightrule=\z@,oversize,
+    code={\pgfkeysalsofrom\tcb@trans@style},#1}]%
+  #2%
+  \end{tcolorbox}%
+  \endgroup%
+}
+
+
+\def\tcb@new@label@type{\begingroup\edef\x{\endgroup\noexpand\appto\noexpand\tcb@new@colopt{,label type=\tcb@new@boxname}}\x}
+
+\def\tcb@blend@beforetitle#1{#1:\ }
+
+\tcbset{%
+  blend before title code/.code={\def\tcb@blend@beforetitle##1{#1}},
+  blend before title/.is choice,
+  blend before title/colon/.style={blend before title code={##1:\ }},
+  blend before title/dash/.style={blend before title code={##1 --\ }},
+  blend before title/colon hang/.style={blend before title code={%
+    \setbox\z@=\hbox{##1:\ }\hangindent\wd\z@\hangafter=1\mbox{\unhbox\z@}}},
+  blend before title/dash hang/.style={blend before title code={%
+    \setbox\z@=\hbox{##1 --\ }\hangindent\wd\z@\hangafter=1\mbox{\unhbox\z@}}},
+  blend before title=colon,
+}
+
+\tcbset{%
+  new/.cd,%
+  use counter/.code={\edef\kvtcb@new@counter{#1}\let\tcb@proc@counter=\tcb@proc@counter@use},
+  use counter*/.code={\edef\kvtcb@new@counter{#1}\let\tcb@proc@counter=\tcb@proc@counter@from},
+  auto counter/.code={\let\tcb@proc@counter=\tcb@proc@counter@auto},
+  use counter from/.code={\edef\kvtcb@new@counter{\csname tcb@cnt@#1\endcsname}\let\tcb@proc@counter=\tcb@proc@counter@from},
+  no counter/.code={\let\tcb@proc@counter=\tcb@proc@counter@no},
+  reset counter on overlays/.is if=tcb@resetcounteronoverlays,
+  %
+  number within/.store in=\kvtcb@new@numberwithin,
+  number format/.store in=\kvtcb@new@format,
+  number freestyle/.store in=\kvtcb@new@freestyle,
+  %
+  list inside/.store in=\kvtcb@new@listof,
+  list type/.store in=\kvtcb@new@listtype,
+  %
+  init@hook@clear/.code={\def\kvtcb@init@hook{}},
+  crefname/.code n args={2}{\begingroup\edef\x{\endgroup\noexpand\crefname{\tcb@new@boxname}}\x{#1}{#2}\tcb@new@label@type},
+  Crefname/.code n args={2}{\begingroup\edef\x{\endgroup\noexpand\Crefname{\tcb@new@boxname}}\x{#1}{#2}\tcb@new@label@type},
+  %
+  blend into/.is choice,%
+  blend into/figures/.style={%
+    use counter* = figure,
+    list inside  = lof,
+    list type    = figure,
+    /tcb/code={\appto\tcb@new@colopt{,before title={\tcb@blend@beforetitle{\fnum@figure}}}}%
+  },%
+  blend into/tables/.style={%
+    use counter* = table,
+    list inside  = lot,
+    list type    = table,
+    /tcb/code={\appto\tcb@new@colopt{,before title={\tcb@blend@beforetitle{\fnum@table}}}}%
+  },%
+  blend into/listings/.style={%
+    use counter* = lstlisting,
+    list inside  = lol,
+    list type    = lstlisting,
+    /tcb/code={\appto\tcb@new@colopt{,before title={\tcb@blend@beforetitle{\lstlistingname~\thetcbcounter}}}}%
+  },%
+  %
+  reset@new/.style={no counter,number within=,number format=\arabic,number freestyle=,
+    list inside=,list type=tcolorbox,init@hook@clear,reset counter on overlays=false},
+}
+
+\def\tcb@proc@counter@autoanduse#1{%
+  \let\tcb@tcbcounter@savetemp=\tcbcounter%
+  \letcs\tcbcounter{tcb@cnt@#1}%
+  \ifx\kvtcb@new@numberwithin\@empty%
+    \csxdef{the\tcbcounter}{\expandafter\noexpand\kvtcb@new@format{\tcbcounter}}%
+  \else%
+    \@addtoreset{\tcbcounter}{\kvtcb@new@numberwithin}%
+    \csxdef{the\tcbcounter}{\expandafter\noexpand\csname the\kvtcb@new@numberwithin\endcsname .\expandafter\noexpand\kvtcb@new@format{\tcbcounter}}%
+  \fi%
+  \ifx\kvtcb@new@freestyle\@empty%
+  \else%
+    \csxdef{the\tcbcounter}{\kvtcb@new@freestyle}%
+  \fi%
+  \global\csletcs{thetcb@cnt@#1}{the\tcbcounter}%
+  \appto\tcb@new@colopt{,code={\letcs\tcbcounter{tcb@cnt@#1}\letcs\thetcbcounter{thetcb@cnt@#1}\stepcounter{\tcbcounter}\preto\kvtcb@phantom{\addtocounter{\tcbcounter}{-1}\refstepcounter{\tcbcounter}}}}%
+  \let\tcbcounter=\tcb@tcbcounter@savetemp%
+}
+
+\def\tcb@proc@counter@auto#1{%
+  \newcounter{tcb@cnt@#1}%
+  \csxdef{tcb@cnt@#1}{tcb@cnt@#1}%
+  \tcb@proc@counter@autoanduse{#1}%
+}
+
+\def\tcb@proc@counter@use#1{%
+  \csxdef{tcb@cnt@#1}{\kvtcb@new@counter}%
+  \tcb@proc@counter@autoanduse{#1}%
+}
+
+\def\tcb@proc@counter@from#1{%
+  \csxdef{tcb@cnt@#1}{\kvtcb@new@counter}%
+  \global\csletcs{thetcb@cnt@#1}{the\kvtcb@new@counter}%
+  \appto\tcb@new@colopt{,code={\letcs\tcbcounter{tcb@cnt@#1}\letcs\thetcbcounter{thetcb@cnt@#1}\stepcounter{\tcbcounter}\preto\kvtcb@phantom{\addtocounter{\tcbcounter}{-1}\refstepcounter{\tcbcounter}}}}%
+}
+
+\def\tcb@proc@counter@no#1{%
+  \appto\tcb@new@colopt{,code={\let\tcbcounter=\@empty\let\thetcbcounter=\@empty}}%
+}%
+
+\long\def\tcb@proc@options@init#1#2{%
+  \tcbset{new/.cd,reset@new,#1}%
+  \tcb@proc@counter{#2}%
+  \iftcb@resetcounteronoverlays%
+    \ifcsname resetcounteronoverlays\endcsname%
+      \ifcsname tcb@cnt@#2\endcsname%
+        \resetcounteronoverlays{\csname tcb@cnt@#2\endcsname}%
+      \fi%
+    \fi%
+  \fi%
+  \ifx\kvtcb@new@listof\@empty%
+  \else%
+    \csedef{tcb@lstof@#2}{\kvtcb@new@listof}%
+    \csedef{tcb@lsttp@#2}{\kvtcb@new@listtype}%
+    \appto\tcb@new@colopt{,add to list={\csname tcb@lstof@#2\endcsname}{\csname tcb@lsttp@#2\endcsname}}%
+  \fi%
+  \kvtcb@init@hook%
+}%
+
+
+\ExplSyntaxOn
+
+\bool_new:N \l__tcobox_prevent_init_overwrite_bool
+
+\cs_new:Npn \__tcobox_process_newtcolorbox:nn #1#2
+  {
+    \bool_lazy_and:nnF
+      { \l__tcobox_prevent_init_overwrite_bool }
+      { \cs_if_exist_p:c { tcb@opt@#2 } }
+      {
+        \edef\tcb@new@boxname{#2}
+        \def\tcb@new@colopt{}
+        \tcb@proc@options@init{#1}{#2}
+        \preto\tcb@new@colopt{savedelimiter=#2}
+        \exp_args:Nc \cs_set_eq:NN { tcb@opt@#2 } \tcb@new@colopt
+      }
+  }
+
+
+\cs_new:Npn \__tcobox_set_backslash_removed:Nn #1#2
+  {
+    \tl_set:Nn #1 { #2 }
+    \tl_trim_spaces:N #1
+    \tl_set:Nx #1 { \exp_last_unbraced:NV \cs_to_str:N #1 }
+  }
+
+
+\NewDocumentCommand \__tcobox_new_tcolorbox:w { m +O{} >{\TrimSpaces} m o +o +m }
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \tl_if_novalue:nTF { #4 }
+      {
+        #1 { #3 }{ \tcolorbox[{#6,options@for=#3}] }{ \endtcolorbox }
+      }
+      {
+        \tl_if_novalue:nTF { #5 }
+        {
+          #1 { #3 }[ #4 ]{ \tcolorbox[{#6,options@for=#3}] }{ \endtcolorbox }
+        }
+        {
+          #1 { #3 }[ #4 ][ #5 ]{ \tcolorbox[{#6,options@for=#3}] }{ \endtcolorbox }
+        }
+      }
+  }
+\NewDocumentCommand \newtcolorbox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_tcolorbox:w \newenvironment
+  }
+\NewDocumentCommand \renewtcolorbox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_tcolorbox:w \renewenvironment
+  }
+
+
+\NewDocumentCommand \__tcobox_new_TColorBox:w { m +O{} >{\TrimSpaces} m +m +m }
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    #1 { #3 }{ #4 }{ \tcolorbox[{#5,options@for=#3}] }{ \endtcolorbox }
+  }
+\NewDocumentCommand \DeclareTColorBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TColorBox:w \DeclareDocumentEnvironment
+  }
+\NewDocumentCommand \NewTColorBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TColorBox:w \NewDocumentEnvironment
+  }
+\NewDocumentCommand \RenewTColorBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TColorBox:w \RenewDocumentEnvironment
+  }
+\NewDocumentCommand \ProvideTColorBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TColorBox:w \ProvideDocumentEnvironment
+  }
+
+
+\cs_new:Npn \__tcobox_new_TotalTColorBox:Nnnnnn #1#2#3#4#5#6
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \exp_args:Nc #1 { #3 }{ #4 }{ \begin{tcolorbox}[{#5,options@for=#3}]#6\end{tcolorbox} }
+  }
+\NewDocumentCommand \__tcobox_new_TotalTColorBox:w { m +O{} m }
+  {
+    \__tcobox_set_backslash_removed:Nn \l_tmpa_tl { #3 }
+    \exp_args:NNnV \__tcobox_new_TotalTColorBox:Nnnnnn #1 {#2} \l_tmpa_tl
+  }
+\NewDocumentCommand \DeclareTotalTColorBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTColorBox:w \DeclareDocumentCommand
+  }
+\NewDocumentCommand \NewTotalTColorBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTColorBox:w \NewDocumentCommand
+  }
+\NewDocumentCommand \RenewTotalTColorBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTColorBox:w \RenewDocumentCommand
+  }
+\NewDocumentCommand \ProvideTotalTColorBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTColorBox:w \ProvideDocumentCommand
+  }
+
+
+\NewDocumentCommand \__tcobox_new_tcbox_ii:w { m +m m o +o +m }
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \tl_if_novalue:nTF { #4 }
+      {
+        \exp_args:Nc #1 { #3 }{ \tcbox[{#6,options@for=#3}] }
+      }
+      {
+        \tl_if_novalue:nTF { #5 }
+        {
+          \exp_args:Nc #1 { #3 }[ #4 ]{ \tcbox[{#6,options@for=#3}] }
+        }
+        {
+          \exp_args:Nc #1 { #3 }[ #4 ][ #5 ]{ \tcbox[{#6,options@for=#3}] }
+        }
+      }
+  }
+\NewDocumentCommand \__tcobox_new_tcbox_i:w { m +O{} m }
+  {
+    \__tcobox_set_backslash_removed:Nn \l_tmpa_tl { #3 }
+    \exp_args:NNnV \__tcobox_new_tcbox_ii:w #1 {#2} \l_tmpa_tl
+  }
+\NewDocumentCommand \newtcbox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_tcbox_i:w \newcommand
+  }
+\NewDocumentCommand \renewtcbox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_tcbox_i:w \renewcommand
+  }
+
+
+\cs_new:Npn \__tcobox_new_TCBox:Nnnnn #1#2#3#4#5
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \exp_args:Nc #1 { #3 }{ #4 }{ \tcbox[{#5,options@for=#3}] }
+  }
+\NewDocumentCommand \__tcobox_new_TCBox:w { m +O{} m }
+  {
+    \__tcobox_set_backslash_removed:Nn \l_tmpa_tl { #3 }
+    \exp_args:NNnV \__tcobox_new_TCBox:Nnnnn #1 {#2} \l_tmpa_tl
+  }
+\NewDocumentCommand \DeclareTCBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBox:w \DeclareDocumentCommand
+  }
+\NewDocumentCommand \NewTCBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBox:w \NewDocumentCommand
+  }
+\NewDocumentCommand \RenewTCBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBox:w \RenewDocumentCommand
+  }
+\NewDocumentCommand \ProvideTCBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TCBox:w \ProvideDocumentCommand
+  }
+
+
+\cs_new:Npn \__tcobox_new_TotalTCBox:Nnnnnn #1#2#3#4#5#6
+  {
+    \__tcobox_process_newtcolorbox:nn { #2 }{ #3 }
+    \exp_args:Nc #1 { #3 }{ #4 }{ \tcbox[{#5,options@for=#3}]{#6} }
+  }
+\NewDocumentCommand \__tcobox_new_TotalTCBox:w { m +O{} m }
+  {
+    \__tcobox_set_backslash_removed:Nn \l_tmpa_tl { #3 }
+    \exp_args:NNnV \__tcobox_new_TotalTCBox:Nnnnnn #1 {#2} \l_tmpa_tl
+  }
+\NewDocumentCommand \DeclareTotalTCBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBox:w \DeclareDocumentCommand
+  }
+\NewDocumentCommand \NewTotalTCBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBox:w \NewDocumentCommand
+  }
+\NewDocumentCommand \RenewTotalTCBox { }
+  {
+    \bool_set_false:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBox:w \RenewDocumentCommand
+  }
+\NewDocumentCommand \ProvideTotalTCBox { }
+  {
+    \bool_set_true:N \l__tcobox_prevent_init_overwrite_bool
+    \__tcobox_new_TotalTCBox:w \ProvideDocumentCommand
+  }
+
+
+\ExplSyntaxOff
+
+
+\newcommand{\tcolorboxenvironment}[2]{%
+  \AddToHook{env/#1/before}{%
+    \begin{tcolorbox}[{savedelimiter={#1},#2,wrap@environment,%
+      code={\def\tcb@end@tcolorboxenvironment{\end{tcolorbox}}}}]%
+  }%
+  \AddToHook{env/#1/after}{%
+    \tcb@end@tcolorboxenvironment%
+  }%
+}
+
+\DeclareTotalTCBox{\tcboxverb}{ O{} v }{verbatim,#1}{#2}
+
+\DeclareTotalTColorBox{\tcbsidebyside}{ +O{} +m +m }{%
+  code={\long\def\tcb@sbs@text@left{#2}\long\def\tcb@sbs@text@right{#3}},%
+  #1,%
+  sidebyside,%
+  sidebyside@switch,sidebyside@adapt@process%
+}{\tcb@sbs@content}
+
+
+\def\tcb@addcontentsline#1#2{%
+  \ifx\kvtcb@listentry\@empty%
+    \ifx\kvtcb@title\@empty%
+      \ifx\tcbtitletext\@empty%
+        \addcontentsline{#1}{#2}{\protect\numberline{\thetcbcounter}{\ignorespaces\kvtcb@savedelimiter}}%
+      \else%
+        \addcontentsline{#1}{#2}{\protect\numberline{\thetcbcounter}{\ignorespaces\tcbtitletext}}%
+      \fi%
+    \else%
+      \addcontentsline{#1}{#2}{\protect\numberline{\thetcbcounter}{\ignorespaces\kvtcb@title}}%
+    \fi%
+  \else%
+    \addcontentsline{#1}{#2}{\kvtcb@listentry}%
+  \fi%
+}
+
+\newcommand*\l@tcolorbox{\@dottedtocline{1}{1.5em}{2.3em}}
+
+\ExplSyntaxOn
+\NewDocumentCommand{\tcblistof}{ O{\section} m o m }
+  {
+    \ifnum\c@tocdepth<1\relax
+      \tcb@warning{'tocdepth'~value~lower~than~1~for~'tcblistof'}
+    \fi
+    \tl_set:Nx \l_tmpa_tl {\tl_trim_spaces:n{#1}}
+    \tl_set:Nx \l_tmpb_tl {\str_range:Nnn \l_tmpa_tl {2}{8}}
+    \str_if_eq:VnT \l_tmpb_tl { chapter }
+      {
+        \if@twocolumn
+          \@restonecoltrue\onecolumn
+        \else
+          \@restonecolfalse
+        \fi
+      }
+    \tl_set:Nx \l_tmpa_tl {\str_item:Nn \l_tmpa_tl {-1}}
+    \str_if_eq:VnTF \l_tmpa_tl { * }
+      {
+        #1{#4}
+        \IfNoValueTF{#3}
+          {
+            \@mkboth{\MakeUppercase{#4}}
+                    {\MakeUppercase{#4}}
+          }
+          {
+            \@mkboth{\MakeUppercase{#3}}
+                    {\MakeUppercase{#3}}
+          }
+      }
+      {
+        \IfNoValueTF{#3}
+          {
+            #1{#4}
+          }
+          {
+            #1[{#3}]{#4}
+          }
+      }
+    \@starttoc{#2}
+    \if@restonecol\twocolumn\fi
+  }
+\ExplSyntaxOff
+
+
+% verbatim output as in 'verbatim'
+
+\def\tcb@allocate@tcb@out{%
+  \newwrite\tcb@out%
+  \xdef\tcb@allocate@tcb@out{}%
+}
+
+\let\tcb@verbatim@begin@hook\@empty
+\let\tcb@verbatim@end@hook\@empty
+\let\tcb@verbatim@change@percent\@empty
+\let\tcb@set@verbatim@finish\@empty
+
+\def\tcbverbatimwrite#1{%
+  \@bsphack
+  \tcb@set@verbatim@finish%
+  \tcb@allocate@tcb@out%
+  \immediate\openout\tcb@out #1
+  \tcb@verbatim@begin@hook%
+  \let\do\@makeother\dospecials
+  \tcb@verbatim@change@percent\catcode`\^^M\active \catcode`\^^I=12
+  \def\verbatim@processline{%
+    \immediate\write\tcb@out
+      {\the\verbatim@line}}%
+  \verbatim@start}%'
+
+
+\def\endtcbverbatimwrite{%
+  \tcb@verbatim@end@hook%
+  \immediate\closeout\tcb@out
+  \@esphack%
+}
+
+
+\ExplSyntaxOn
+
+\cs_new_nopar:Npn \__tcobox_verbatim_finish:
+  {
+    \tl_set_rescan:Nnx \l_tmpa_tl
+      {
+        \char_set_catcode_space:n { 9 }
+        \char_set_catcode_space:n { 32 }
+      } { \the\verbatim@line }
+    \tl_if_blank:VF \l_tmpa_tl
+      {
+        \verbatim@processline
+      }
+  }
+
+\tcbset{%
+  verbatim~ignore~indention~at~end/.is~choice,
+  verbatim~ignore~indention~at~end/true/.code=
+    {
+      \cs_set:Npn \tcb@set@verbatim@finish
+        {
+          \cs_set_eq:NN \verbatim@finish \__tcobox_verbatim_finish:
+        }
+    },
+  verbatim~ignore~indention~at~end/false/.code=
+    {
+      \cs_set_eq:NN \tcb@set@verbatim@finish \prg_do_nothing:
+    },
+  verbatim~ignore~indention~at~end/.default=true,
+  verbatim~ignore~indention~at~end
+}
+
+\ExplSyntaxOff
+
+
+% saving of the lower box
+
+\def\tcb@lowerverbatim{%
+  \begingroup%
+  \tcbverbatimwrite\kvtcb@savelowerto}
+
+\def\tcb@endlowerverbatimanddraw{%
+  \endtcbverbatimwrite%
+  \endgroup%
+  \iftcb@redirectlowerto\else%
+    \IfFileExists{\kvtcb@savelowerto}{%
+      \tcb@savelowerbox\input{\kvtcb@savelowerto}\end{tcb@savebox}}{}%
+  \fi%
+  \tcb@draw@color@box%
+  \tcb@finalize@environment%
+}
+
+% saving of the upper box
+
+\def\tcb@upperverbatim{%
+  \begingroup%
+  \tcbverbatimwrite\kvtcb@saveupperto}
+
+\def\tcb@endupperverbatimanddraw{%
+  \endtcbverbatimwrite%
+  \endgroup%
+  \IfFileExists{\kvtcb@saveupperto}{%
+    \tcb@saveupperbox\input{\kvtcb@saveupperto}\end{tcb@savebox}}{}%
+  \tcb@draw@color@box%
+  \tcb@finalize@environment%
+}
+
+\def\tcbwritetemp{%
+  \begingroup%
+  \tcbverbatimwrite\kvtcb@tempfile}
+
+\def\endtcbwritetemp{%
+  \endtcbverbatimwrite%
+  \endgroup%
+}
+
+\def\tcbusetemp{\input{\kvtcb@tempfile}}
+
+% recording
+
+\def\tcb@allocate@tcb@record@out{%
+  \newwrite\tcb@record@out%
+  \xdef\tcb@allocate@tcb@record@out{}%
+}
+
+
+\def\tcb@null#1{}
+\newcommand{\tcb@record}[1]{\immediate\write\tcb@record@out{#1}}
+
+\newcommand{\tcbstartrecording}[1][\jobname.records]{%
+  \let\tcbrecord\tcb@record%
+  \edef\tcb@record@file{#1}%
+  \tcb@allocate@tcb@record@out%
+  \immediate\openout\tcb@record@out\tcb@record@file%
+}
+
+\newcommand{\tcbstoprecording}{%
+  \immediate\closeout\tcb@record@out%
+  \let\tcbrecord\tcb@null%
+}
+
+\tcbset{%
+  record/.style={phantom={\tcbrecord{#1}}},
+  no recording/.code={\let\tcbrecord\tcb@null},
+  no recording
+}
+
+\newcommand{\tcbinputrecords}[1][\tcb@record@file]{%
+  \IfFileExists{#1}{\input{#1}}{\tcb@error{record file `#1' not found}{The record file `#1' was not found}}%
+}
+
+\tcb@new@skin{standard}{frame engine=standard,interior titled engine=standard,
+  interior engine=standard,segmentation engine=standard,title engine=standard,
+  graphical environment=pgfpicture,geometry nodes=false,
+  set@extensions@preframe=,set@extensions@postframe={\tcb@apply@overlay},set@extensions@final=,%
+  set@outerboundary=\tcb@boundaryframe@standard,%
+  shape@of@skin=unbroken,
+  skin first=standard,skin middle=standard,skin last=standard%
+}
+
+\tcb@new@skin{standard jigsaw}{skin@standard,frame engine=standardjigsaw,%
+  skin first=standard jigsaw,skin middle=standard jigsaw,skin last=standard jigsaw}
+
+\def\tcb@reset{}%
+\tcbset{%
+  initialize@reset/.code={\tcbset{#1}\appto\tcb@reset{\tcbset{#1}}},%
+  reset/.code={\tcb@reset},%
+  reset@core/.style={%
+    code={%
+      \let\tcbtitletext\@empty%
+      \tcb@attach@title@code@%
+      \let\tcb@lateoptions@hook\@empty%
+      \let\tcb@upperdraw@begin@hook\@empty%
+      \let\tcb@upperdraw@end@hook\@empty%
+      \let\tcb@lowerdraw@begin@hook\@empty%
+      \let\tcb@lowerdraw@end@hook\@empty%
+      \let\tcb@set@parbox@indent\tcb@set@parbox@indent@%
+    },
+    breakable@false,
+    width=\linewidth,beforeafter skip balanced=0.5\baselineskip plus 2pt,arc is curved,
+    natural height,height plus=0pt,space to lower,valign=top,valign lower=top,
+    size=normal,rounded corners,parfillskip restore,
+    enlarge top by=0mm,enlarge bottom by=0mm,enlarge left by=0mm,enlarge right by=0mm,
+    toggle enlargement=none,toggle left and right=none,
+    baseline=0pt,adjust text={\"Apgjy},upperbox=visible,lowerbox=visible,titlebox=visible,lower separated,
+    colback=black!5!white,colframe=black!75!white,@colbacktitle=black!50!white,coltext=black,coltitle=white,
+    fonttitle=,fontupper=,fontlower=,floatplacement=htb,nofloat,saveto=,savelowerto=,
+    tempfile={\jobname.tcbtemp},
+    standard,parbox,hyphenationfix=false,overlay=,
+    halign=justify,halign lower=justify,halign title=justify,
+    before title=,after title=,before upper=,after upper=,before lower=,after lower=,
+    before float=,after float=,
+    sidebyside=false,sidebyside align=center,sidebyside gap=10mm,
+    sidebyside adapt=none,sidebyside switch=false,%
+    lefthand ratio=0.5,check odd page=false,nophantom,
+    list entry=,no label type,
+    opacityupper=1.0,opacitylower=1.0,opacitytitle=1.0,opacityframe=1.0,opacityback=1.0,@opacitybacktitle=1.0,
+    subtitle style=,title filled=false,every float=,ignore nobreak=false,before nobreak=\noindent,
+    tcbox width=auto,wrap@environment=false,
+  },
+  initialize@reset=reset@core,
+  shield externalize=false,
+}
+
+\tcbset{%
+  minipage,savedelimiter=tcolorbox,%
+  set@extensions@preframe=,set@extensions@postframe=,set@extensions@final=,%
+  label is label,
+}%
+
+\def\tcbsetforeverylayer#1{\tcbset{initialize@reset={#1}}}
+
+% libraries
+\def\tcb@optionlist{}
+
+\def\tcb@set@library@version#1{%
+  \def\tcb@library@version{#1}%
+  \typeout{Library (tcolorbox): '\@currname' version '\tcb@library@version'}
+  \tcb@check@library@version%
+}
+
+\def\tcb@check@library@version{%
+  \ifx\tcb@library@version\tcb@version\else%
+  \tcb@error{tcolorbox version '\tcb@version' loads library '\@currname' with version '\tcb@library@version'}%
+    {tcolorbox is not installed correctly. At least one library is not compatible to the main package.}%
+  \fi%
+}
+
+\def\tcbuselibrary#1{\tcbset{library/.cd,#1}}
+\@onlypreamble\tcbuselibrary
+
+\providecommand{\tcbpkgprefix}{}
+
+\def\tcb@load@library#1#2{%
+  \pgfkeysifdefined{/tcb/libload/#1}{}{%
+    \pgfkeyssetvalue{/tcb/libload/#1}{}%
+    \@pushfilename%
+    \xdef\@currname{#2}%
+    \makeatletter%
+    \def\tcb@library@version{-}%
+    \input\tcbpkgprefix#2\relax%
+    \tcb@check@library@version%
+    \@popfilename%
+  }%
+}
+
+\def\tcb@add@library#1#2{%
+  \tcbset{library/#1/.code={\tcb@load@library{#1}{#2}}}%
+  \DeclareOption{#1}{\appto\tcb@optionlist{,#1}}%
+}
+\def\tcb@add@library@style#1#2{%
+  \tcbset{library/#1/.style={#2}}%
+  \DeclareOption{#1}{\appto\tcb@optionlist{,#1}}%
+}
+
+\tcb@add@library{pro@cessing}{tcbprocessing.code.tex}
+\tcb@add@library{listings@core}{tcblistingscore.code.tex}
+\tcb@add@library{listings}{tcblistings.code.tex}
+\tcb@add@library{listingsutf8}{tcblistingsutf8.code.tex}
+\tcb@add@library{minted}{tcbminted.code.tex}
+\tcb@add@library{theorems}{tcbtheorems.code.tex}
+\tcb@add@library{documentation}{tcbdocumentation.code.tex}
+\tcb@add@library{raster}{tcbraster.code.tex}
+\tcb@add@library{skins@jigsaw}{tcbskinsjigsaw.code.tex}
+\tcb@add@library{skins}{tcbskins.code.tex}
+\tcb@add@library{breakable}{tcbbreakable.code.tex}
+\tcb@add@library{magazine}{tcbmagazine.code.tex}
+\tcb@add@library{hooks}{tcbhooks.code.tex}
+\tcb@add@library{fitting}{tcbfitting.code.tex}
+\tcb@add@library{xparse}{tcbxparse.code.tex}
+\tcb@add@library{external}{tcbexternal.code.tex}
+\tcb@add@library{vignette}{tcbvignette.code.tex}
+\tcb@add@library{poster}{tcbposter.code.tex}
+
+\tcb@add@library@style{many}{raster,skins,breakable,hooks,theorems,fitting}
+\tcb@add@library@style{most}{many,listingsutf8,external,magazine,vignette,poster}
+\tcb@add@library@style{all}{many,minted,listingsutf8,external,magazine,vignette,poster,documentation,xparse}
+
+\ProcessOptions*
+\begingroup\edef\x{\endgroup\noexpand\tcbuselibrary{\tcb@optionlist}}\x

@@ -1,0 +1,194 @@
+% Copyright 2018 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usepgfmodule{decorations}%
+
+% Define the basic decoration stuff for tikz. Load more libraries to
+% "actually use" decorations
+
+\tikzset{decorate/.is if=tikz@decoratepath,
+  /pgf/decoration/name/.store in=\tikz@decoration@name,
+  /pgf/decoration/.unknown/.code=%
+    \pgfifdecoration{\pgfkeyscurrentname}{\edef\tikz@decoration@name{\pgfkeyscurrentname}}
+    {\pgfifmetadecoration{\pgfkeyscurrentname}{\edef\tikz@decoration@name{\pgfkeyscurrentname}}
+    % Fully expand `\pgfkeyscurrentname' before being used in first-arg of
+    % `/errors/unknown key'.
+    {\pgfkeys{/errors/unknown
+        key/.expanded={/pgf/decoration/\pgfkeyscurrentname}{\pgfutil@unexpanded{#1}}}}},%
+  /pgf/decoration/raise/.code={\def\tikz@dec@shift{\pgftransformyshift{#1}}\tikz@dec@trans},
+  /pgf/decoration/mirror/.code={%
+    \csname if#1\endcsname
+      \def\tikz@dec@mirror{\pgftransformyscale{-1}}%
+    \else%
+      \let\tikz@dec@mirror=\relax%
+    \fi%
+    \tikz@dec@trans%
+  },
+  /pgf/decoration/mirror/.default=true,
+  /pgf/decoration/transform/.code={%
+    {%
+      \pgftransformreset%
+      \def\tikz@transform{}%
+      \pgfkeysalso{/tikz/.cd, #1}%
+      \expandafter\gdef\expandafter\tikz@g@temptransform\expandafter{\tikz@transform}%
+    }%
+    \let\tikz@dec@user@transform=\tikz@g@temptransform%
+    \tikz@dec@trans%
+  },%
+  /pgf/decoration/pre/.initial=lineto,
+  /pgf/decoration/post/.initial=lineto,
+  /pgf/decoration/pre length/.initial=0pt,
+  /pgf/decoration/post length/.initial=0pt,
+}%
+
+\let\tikz@decoration@name=\tikz@nonetext
+
+\def\tikz@dec@trans{\pgfsetdecorationsegmenttransformation{\tikz@dec@user@transform\tikz@dec@mirror\tikz@dec@shift}}%
+\let\tikz@dec@user@transform=\relax
+\let\tikz@dec@shift=\relax
+\let\tikz@dec@mirror=\relax
+
+\pgfdeclaremetadecoration{tikz@internal}{pre}{%
+  \state{pre}[width=\pgfkeysvalueof{/pgf/decoration/pre length}, next state=main]
+  {
+    \tikz@dec@trans
+    \decoration{\pgfkeysvalueof{/pgf/decoration/pre}}
+  }%
+  \state{main}[width=\pgfmetadecoratedremainingdistance-\pgfkeysvalueof{/pgf/decoration/post length}, next state=final]
+  {
+    \tikz@dec@trans
+    \decoration{\tikz@decoration@name}
+  }%
+  \state{final}
+  {
+    \tikz@dec@trans
+    \decoration{\pgfkeysvalueof{/pgf/decoration/post}}
+  }%
+}%
+
+
+\newif\iftikz@metadecoration
+
+\def\tikz@lib@dec@addtomacro#1#2{\expandafter\def\expandafter#1\expandafter{#1#2}}%
+
+\def\tikz@lib@decoration[#1]{%
+  \begingroup%
+    % Just to be on the save side...
+    %
+    % Now, let's parse the options:
+    \tikzset{#1}%
+    %
+    \ifx\tikz@decoration@name\tikz@nonetext%
+    % Ok, let's forget about this decoration stuff...
+    \else
+      \expandafter\tikz@lib@do@dec%
+    \fi%
+      % Now, we expect a brace.
+      \pgfutil@ifnextchar\bgroup{%
+        \begingroup%
+          \tikz@auto@end@pathfalse%
+          \aftergroup\tikz@enddecoration%
+          \afterassignment\tikz@scan@next@command%
+          \let\tikz@lib@next% gobble \bgroup%
+      }%
+      {%
+        \tikzerror{A decoration must begin with a brace}%
+        \tikz@enddecoration%
+      }%
+}%
+\def\tikz@lib@do@dec{%
+  % Ok, now what?
+  \pgfifmetadecoration{\tikz@decoration@name}%
+  {\expandafter\pgfmetadecoration\expandafter{\tikz@decoration@name}}%
+  {%
+    \pgfifdecoration{\tikz@decoration@name}%
+    {\tikz@lib@dec@startdecoration}%
+    {\tikzerror{Unknown (meta-)decoration '\tikz@decoration@name'. Perhaps you
+        misspelled it?}}%
+  }%
+  \ifx\pgfdecorateexistingpath\pgfutil@empty%
+    \pgfpathmoveto{\pgfqpoint{\the\tikz@lastxsaved}{\the\tikz@lastysaved}}%
+  \fi%
+}%
+\newbox\tikz@lib@dec@box
+\def\tikz@enddecoration{%
+    \global\setbox\tikz@lib@dec@box=\box\tikz@tempbox%
+    \ifx\tikz@decoration@name\tikz@nonetext%
+    % ignore this.
+    \else
+      % Ok, now what?
+      \iftikz@metadecoration%
+        \endpgfmetadecoration%
+      \else%
+        \tikz@lib@dec@stopdecoration%
+      \fi%
+    \fi
+  \endgroup%
+  \setbox\tikz@tempbox=\box\tikz@lib@dec@box%
+}%
+
+
+\def\tikz@lib@dec@decorate@path{%
+  \ifx\tikz@decoration@name\tikz@nonetext%
+  \else%
+    \pgfgetpath\tikz@lib@dec@currentpath%
+    \pgfsetpath\pgfutil@empty%
+    \pgfifmetadecoration{\tikz@decoration@name}
+    {
+      \expandafter\pgfmetadecoration\expandafter{\tikz@decoration@name}%
+        \pgfsetpath\tikz@lib@dec@currentpath%
+      \endpgfmetadecoration%
+    }
+    {
+      \pgfifdecoration{\tikz@decoration@name}
+      {
+        \tikz@lib@dec@startdecoration%
+          \pgfsetpath\tikz@lib@dec@currentpath%
+        \tikz@lib@dec@stopdecoration%
+      }
+      {
+        \tikzerror{Unknown (meta-)decoration '\tikz@decoration@name'. Perhaps
+          you misspelled it?}
+      }
+    }
+  \fi%
+}%
+
+\def\tikz@lib@dec@zpttext{0pt}%
+
+\newif\iftikz@lib@dec@temp
+\def\tikz@lib@dec@startdecoration{%
+  \pgfkeysgetvalue{/pgf/decoration/pre length}{\tikz@lib@pre}%
+  \pgfkeysgetvalue{/pgf/decoration/post length}{\tikz@lib@post}%
+  \tikz@lib@dec@tempfalse%
+  \ifx\tikz@lib@pre\tikz@lib@dec@zpttext%
+    \ifx\tikz@lib@post\tikz@lib@dec@zpttext%
+    \else%
+      \tikz@lib@dec@temptrue%
+    \fi%
+  \else%
+    \tikz@lib@dec@temptrue%
+  \fi%
+  \iftikz@lib@dec@temp%
+    \pgfmetadecoration{tikz@internal}%
+  \else%
+    \expandafter\pgfdecoration\expandafter{\expandafter{\tikz@decoration@name}{\pgfdecoratedpathlength}{}{}}%
+  \fi%
+}%
+
+\def\tikz@lib@dec@stopdecoration{%
+  \iftikz@lib@dec@temp%
+    \endpgfmetadecoration%
+  \else%
+    \endpgfdecoration%
+  \fi%
+}%
+
+
+\endinput

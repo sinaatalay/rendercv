@@ -1,0 +1,109 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarytrees.code.tex}
+
+
+
+%
+% Three point growth
+%
+
+\tikzoption{grow via three points}{\let\tikz@grow=\tikz@grow@three\tikz@parse@three#1}%
+
+\def\tikz@parse@three one child at#1(#2)#3and two children at#4(#5)#6and#7(#8){%
+  \def\tikz@tree@one@child{\tikz@scan@one@point\pgf@process(#2)}
+  \def\tikz@tree@left@child{\tikz@scan@one@point\pgf@process(#5)}
+  \def\tikz@tree@right@child{\tikz@scan@one@point\pgf@process(#8)}
+}%
+
+\def\tikz@grow@three{%
+  \pgf@process{\tikz@tree@one@child}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{\tikz@tree@left@child}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \pgf@process{\tikz@tree@right@child}%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \advance\pgf@xc by-\pgf@xa%
+  \advance\pgf@yc by-\pgf@ya%
+  \advance\pgf@xc by-\pgf@xb%
+  \advance\pgf@yc by-\pgf@yb%
+  \advance\tikznumberofchildren by-1\relax%
+  \pgf@xb=\tikznumberofchildren\pgf@xb\relax%
+  \pgf@yb=\tikznumberofchildren\pgf@yb\relax%
+  \advance\tikznumberofcurrentchild by-1\relax%
+  \pgf@xc=\tikznumberofcurrentchild\pgf@xc\relax%
+  \pgf@yc=\tikznumberofcurrentchild\pgf@yc\relax%
+  \advance\pgf@xa by\pgf@xb%
+  \advance\pgf@xa by\pgf@xc%
+  \advance\pgf@ya by\pgf@yb%
+  \advance\pgf@ya by\pgf@yc%
+  \edef\pgf@temp{\noexpand\pgftransformshift{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}}%
+  \pgf@temp%
+}%
+
+
+
+%
+% Circle grow
+%
+
+\tikzset{
+  grow cyclic/.style={
+    edge from parent/.append style={reset cm},
+    growth function=\tikz@grow@circle,
+  }
+}%
+
+\tikzset{sibling angle/.initial=20}%
+
+\def\tikz@grow@circle{%
+  \pgftransformrotate{%
+    (\pgfkeysvalueof{/tikz/sibling angle})*(-.5-.5*\tikznumberofchildren+\tikznumberofcurrentchild)}%
+  \pgftransformxshift{\the\tikzleveldistance}%
+}%
+
+\tikzoption{counterclockwise from}{\let\tikz@grow=\tikz@grow@circle@from\def\tikz@grow@circle@from@start{#1}}%
+
+\def\tikz@grow@circle@from{%
+  \pgftransformshift{\pgfpointpolar{\tikz@grow@circle@from@start+(\pgfkeysvalueof{/tikz/sibling angle})*(\tikznumberofcurrentchild-1)}{\the\tikzleveldistance}}%
+}%
+
+\tikzoption{clockwise from}{\let\tikz@grow=\tikz@grow@circle@from@\def\tikz@grow@circle@from@start{#1}}%
+
+\def\tikz@grow@circle@from@{%
+  \pgftransformshift{\pgfpointpolar{\tikz@grow@circle@from@start-(\pgfkeysvalueof{/tikz/sibling angle})*(\tikznumberofcurrentchild-1)}{\the\tikzleveldistance}}%
+}%
+
+
+
+%
+% Connections
+%
+
+\tikzset{edge from parent fork down/.style=
+  {edge from parent path={(\tikzparentnode\tikzparentanchor) -- +(0pt,-.5\tikzleveldistance)  -| (\tikzchildnode\tikzchildanchor)}}}%
+
+\tikzset{edge from parent fork up/.style=
+  {edge from parent path={(\tikzparentnode\tikzparentanchor) -- +(0pt,.5\tikzleveldistance)  -| (\tikzchildnode\tikzchildanchor)}}}%
+
+\tikzset{edge from parent fork left/.style=
+  {edge from parent path={(\tikzparentnode\tikzparentanchor) -- +(-.5\tikzleveldistance,0pt) |- (\tikzchildnode\tikzchildanchor)}}}%
+
+\tikzset{edge from parent fork right/.style=
+  {edge from parent path={(\tikzparentnode\tikzparentanchor) -- +(.5\tikzleveldistance,0pt) |- (\tikzchildnode\tikzchildanchor)}}}%
+
+
+
+\endinput

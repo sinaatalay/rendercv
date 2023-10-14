@@ -1,0 +1,458 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\def\pgf@pat@type@uncolored{0}%
+\def\pgf@pat@type@colored{1}%
+\newif\ifpgf@pat@makepatternimmutable
+
+\pgfkeys{/pgf/patterns/.cd,
+  name/.store in=\pgf@pat@name,
+  number ../.store in=\pgf@pat@number,
+  type/.is choice,
+    type/uncolored/.code={\let\pgf@pat@type=\pgf@pat@type@uncolored},
+    type/colored/.code={\let\pgf@pat@type=\pgf@pat@type@colored},
+    type/form only/.style={/pgf/patterns/type=uncolored},
+    type/inherently colored/.style={/pgf/patterns/type=colored},
+  x/.store in=\pgf@pat@xvec,
+  y/.store in=\pgf@pat@yvec,
+  parameters/.store in=\pgf@pat@parameters,
+  defaults/.store in=\pgf@pat@defaults,
+  append to defaults/.code={%
+    \pgf@pat@addto@macro\pgf@pat@defaults{,#1}%
+  },
+  bottom left/.store in=\pgf@pat@bottomleft,
+  top right/.store in=\pgf@pat@topright,
+  tile size/.store in=\pgf@pat@tilesize,
+  tile transformation/.store in=\pgf@pat@transformation,
+  code/.store in=\pgf@pat@code,
+  set up code/.store in=\pgf@pat@declarebefore,
+  %
+  name=,
+  number ..=,
+  type=uncolored,
+  x=1cm, y=1cm,
+  parameters=,
+  defaults=,
+  bottom left=,
+  top right=,
+  tile size=,
+  tile transformation=,
+  code=,
+  set up code=,
+}%
+
+\def\pgf@pat@name@prefix{pgf@pattern@name@meta@}%
+
+\def\pgfifpatternundefined#1{%
+  \pgfutil@ifundefined{\pgf@pat@name@prefix#1}%
+}%
+
+\def\pgf@pat@adddef@to@macro#1#2{%
+  \expandafter\expandafter\expandafter\def%
+    \expandafter\expandafter\expandafter#1%
+      \expandafter\expandafter\expandafter{\expandafter#1\expandafter%
+        \def\expandafter#2\expandafter{#2}}%
+}%
+
+\def\pgf@pat@addto@macro#1#2{%
+  \expandafter\def\expandafter#1\expandafter{#1#2}}%
+
+\def\pgf@pat@process#1{%
+  \pgf@process{#1}%
+}%
+
+\def\pgf@pat@doifnotempty#1{%
+  \ifx#1\pgfutil@empty%
+    \let\pgf@pat@next=\relax%
+  \else%
+    \let\pgf@pat@next=#1%
+  \fi%
+  \pgf@pat@next%
+}%
+
+\def\pgf@pat@processtransformations#1{#1}%
+\def\pgf@pat@processpoint#1{%
+  \pgf@process{#1}%
+}%
+
+
+\def\pgfdeclarepattern#1{%
+  \begingroup%
+    \nullfont%
+    \def\pgf@pat@options{,#1}%
+    \pgfkeys{/pgf/patterns/.cd,#1}%
+    \ifx\pgf@pat@name\pgfutil@empty
+        \pgferror{Declaring unnamed pattern}%
+    \fi
+    \ifx\pgf@pat@bottomleft\pgfutil@empty
+        \pgferror{Bottom left corner of the bounding box unset}%
+    \fi
+    \ifx\pgf@pat@topright\pgfutil@empty
+        \pgferror{Top right corner of the bounding box unset}%
+    \fi
+    \ifx\pgf@pat@tilesize\pgfutil@empty
+        \pgferror{Tile size unset}%
+    \fi
+    \ifx\pgf@pat@code\pgfutil@empty
+        \pgferror{Pattern code is empty}%
+    \fi
+    \pgf@declarepattern@meta%
+  \endgroup%
+}%
+\def\pgf@declarepattern@meta{%
+    \pgfifpatternundefined{\pgf@pat@name}{%
+      \ifx\pgf@pat@parameters\pgfutil@empty%
+        % No parameters, so pattern is declared now.
+        \pgf@pat@declare%
+        \edef\pgf@marshal{%
+          \noexpand\pgf@pat@addto@macro\noexpand\pgf@pat@options{,number ..=\pgf@pattern@number}}%
+        \pgf@marshal%
+      \fi%
+      % It is a bit inefficient that all the options for
+      % immutable patterns are saved when only the type
+      % and number are needed.
+      \expandafter\global\expandafter\let\csname\pgf@pat@name@prefix\pgf@pat@name\endcsname=\pgf@pat@options%
+    }{%
+      \pgferror{Pattern `\pgf@pat@name' already defined}%
+    }%
+}%
+\let\pgf@pat@declarebefore=\pgfutil@empty
+\let\pgf@pat@declareafter=\pgfutil@empty
+\let\pgf@pat@codebefore=\pgfutil@empty
+\let\pgf@pat@codeafter=\pgfutil@empty
+
+\def\pgf@pat@declare{%
+   \pgfsysprotocol@getcurrentprotocol\pgf@pattern@temp%
+   {%
+     % Set up x and y vectors. Should use a scope rather than TeX group?
+     % Vectors may be needed when the tile bounding box is
+     % calculated.
+     \pgfsetxvec{\pgfpoint{\pgf@pat@xvec}{+0pt}}%
+     \pgfsetyvec{\pgfpoint{+0pt}{\pgf@pat@yvec}}%
+     \pgf@pat@doifnotempty\pgf@pat@declarebefore%
+     \pgfinterruptpath%
+       \pgfpicturetrue%
+       \pgf@relevantforpicturesizetrue%
+       \pgftransformreset%
+       \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+       \pgfsysprotocol@bufferedtrue%
+       \pgfsys@beginscope%
+         \pgfinterruptboundingbox%
+           \pgfsetarrows{-}%
+           \pgf@pat@doifnotempty\pgf@pat@codebefore
+           \pgf@pat@code%
+           \pgf@pat@doifnotempty\pgf@pat@codeafter%
+         \endpgfinterruptboundingbox%
+       \pgfsys@endscope%
+       \pgfsysprotocol@getcurrentprotocol\pgf@pattern@code%
+       \global\let\pgf@pattern@code=\pgf@pattern@code%
+     \endpgfinterruptpath%
+     \pgf@pat@doifnotempty\pgf@pat@declareafter%
+     \pgf@pat@processpoint{\pgf@pat@bottomleft}%
+     \pgf@xa=\pgf@x%
+     \pgf@ya=\pgf@y%
+     \pgf@pat@processpoint{\pgf@pat@topright}%
+     \pgf@xb=\pgf@x%
+     \pgf@yb=\pgf@y%
+     \pgf@pat@processpoint{\pgf@pat@tilesize}%
+     \pgf@xc=\pgf@x%
+     \pgf@yc=\pgf@y%
+     \begingroup%
+       \pgftransformreset%
+       \pgf@pat@processtransformations\pgf@pat@transformation%
+       \pgfgettransformentries\aa\ab\ba\bb\shiftx\shifty%
+       \global\edef\pgf@pattern@matrix{{\aa}{\ab}{\ba}{\bb}{\shiftx}{\shifty}}%
+     \endgroup%
+     % Now, build a name for the pattern
+     \pgfutil@tempcnta=\pgf@pattern@number\relax%
+     \advance\pgfutil@tempcnta by1\relax%
+     \xdef\pgf@pattern@number{\the\pgfutil@tempcnta}%
+     \xdef\pgf@marshal{\noexpand\pgfsys@declarepattern%
+       {\pgf@pattern@number}%
+       {\the\pgf@xa}{\the\pgf@ya}{\the\pgf@xb}{\the\pgf@yb}{\the\pgf@xc}{\the\pgf@yc}\pgf@pattern@matrix{\pgf@pattern@code}{\pgf@pat@type}}%
+   }%
+   \pgf@marshal%
+   \pgfsysprotocol@setcurrentprotocol\pgf@pattern@temp%
+}%
+
+\def\pgf@pat@checkname#1{%
+  \pgf@pat@@checkname#1[]\pgf@patstop}%
+
+\def\pgf@pat@@checkname#1[#2]#3\pgf@patstop{%
+  \expandafter\def\expandafter\pgf@pat@onlinename\expandafter{\romannumeral-`0\pgfutil@trimspaces{#1}}%
+  \def\pgf@pat@onlineoptions{#2}%
+}%
+
+
+\def\pgf@pat@unravel#1/{%
+  \pgfutil@ifnextchar\pgf@stop{\def\pgf@pat@unravelled{#1}}{\pgf@pat@unravel}}%
+
+\pgfkeys{/handlers/.pattern/.code={%
+    \expandafter\expandafter\expandafter\pgf@pat@unravel\pgfkeyscurrentpath/\pgf@stop%
+    \pgfpatternalias{#1}{\pgf@pat@unravelled}%
+}}%
+
+\def\pgfpatternalias#1#2{%
+  \begingroup%
+    \pgf@pat@checkname{#1}%
+    \expandafter\let\expandafter\pgf@pat@options\expandafter=%
+      \csname\pgf@pat@name@prefix\pgf@pat@onlinename\endcsname%
+    \pgf@pat@macroaskeys{/pgf/patterns/.cd}{\pgf@pat@options}%
+    \pgfutil@toks@\expandafter{\pgf@pat@onlineoptions}%
+    \edef\pgf@pat@tmp{append to defaults={\the\pgfutil@toks@}}%
+    \expandafter\pgf@pat@addto@macro\expandafter\pgf@pat@options\expandafter{\expandafter,\pgf@pat@tmp}%
+    \pgf@pat@addto@macro\pgf@pat@options{,name=#2}%
+    \expandafter\global\expandafter\let\csname\pgf@pat@name@prefix#2\endcsname=\pgf@pat@options%
+  \endgroup%
+}%
+
+
+\let\pgfsetfillpattern@old=\pgfsetfillpattern
+
+\def\pgf@pat@macroaskeys#1#2{%
+  \pgfutil@toks@\expandafter{#2}%
+  \edef\pgf@marshal{\noexpand\pgfkeys{,#1,\the\pgfutil@toks@}}%
+  \pgf@marshal%
+}%
+\def\pgfsetfillpattern#1#2{%
+  \pgf@pat@checkname{#1}%
+  \pgfutil@ifundefined{\pgf@pat@name@prefix\pgf@pat@onlinename}{%
+    \pgfsetfillpattern@old{\pgf@pat@onlinename}{#2}%
+  }{%
+    \let\pgf@pat@parameters=\pgfutil@empty%
+    % Get pattern parameters, type, and number
+    \expandafter\let\expandafter\pgf@pat@options\expandafter=%
+      \csname\pgf@pat@name@prefix\pgf@pat@onlinename\endcsname%
+    \pgf@pat@macroaskeys{/pgf/patterns/.cd}{\pgf@pat@options}%
+    \ifx\pgf@pat@parameters\pgfutil@empty%
+      % Immutable pattern. Do nothing.
+    \else%
+      % Mutable. Do a *lot*.
+      \begingroup%
+          \pgf@pat@macroaskeys{/pgf/pattern keys/.cd}{\pgf@pat@defaults}%
+          \pgf@pat@macroaskeys{/pgf/pattern keys/.cd}{\pgf@pat@onlineoptions}%
+          % ...to get the values of the current parameters...
+          \edef\pgf@pat@current@parameters{\pgf@pat@parameters}%
+          % ...and the internal pattern name.
+          \edef\pgf@pat@onlinename{\pgf@pat@onlinename\pgf@pat@current@parameters}%
+          \let\pgf@pat@name=\pgf@pat@onlinename%
+          \pgfutil@ifundefined{\pgf@pat@name@prefix\pgf@pat@onlinename}{%
+            %\ifpgf@pat@makepatternimmutable%
+              \let\pgf@pat@parameters=\pgfutil@empty%
+            %\fi%
+            \pgf@declarepattern@meta%
+          }{}%
+          \expandafter%
+        \endgroup%
+        \expandafter\def\expandafter\pgf@pat@onlinename\expandafter{\pgf@pat@onlinename}%
+        \expandafter\let\expandafter\pgf@pat@options\expandafter=%
+      \csname\pgf@pat@name@prefix\pgf@pat@onlinename\endcsname%
+      \pgf@pat@macroaskeys{/pgf/patterns/.cd}{\pgf@pat@options}%
+    \fi%
+    \ifx\pgf@pat@type\pgf@pat@type@uncolored%
+      \pgf@pat@setpatternuncolored{\pgf@pat@number}{#2}%
+    \else%
+      \pgfsys@setpatterncolored{\pgf@pat@number}%
+    \fi%
+  }%
+}%
+
+\def\pgf@pat@setpatternuncolored#1#2{%
+  \pgfutil@colorlet{pgf@tempcolor}{#2}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgf@tempcolor}}%
+  \pgfutil@extractcolorspec{pgf@tempcolor}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{rgb}{\pgf@rgbcolor}%
+  \expandafter\pgf@pat@set@fill@patternuncolored\pgf@rgbcolor\relax{#1}%
+}%
+\def\pgf@pat@set@fill@patternuncolored#1,#2,#3\relax#4{%
+  \pgfsys@setpatternuncolored{#4}{#1}{#2}{#3}%
+}%
+
+% Predefined patterns
+
+\pgfdeclarepattern{
+  name=Lines,
+  parameters={
+      \pgfkeysvalueof{/pgf/pattern keys/distance},
+      \pgfkeysvalueof{/pgf/pattern keys/angle},
+      \pgfkeysvalueof{/pgf/pattern keys/xshift},
+      \pgfkeysvalueof{/pgf/pattern keys/yshift},
+      \pgfkeysvalueof{/pgf/pattern keys/line width},
+  },
+  bottom left={%
+    \pgfpoint
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  top right={%
+    \pgfpoint
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  tile size={%
+    \pgfpoint
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}%
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}},
+  tile transformation={%
+    \pgftransformshift{%
+      \pgfpoint
+        {\pgfkeysvalueof{/pgf/pattern keys/xshift}}%
+        {\pgfkeysvalueof{/pgf/pattern keys/yshift}}}%
+    \pgftransformrotate{\pgfkeysvalueof{/pgf/pattern keys/angle}}},
+  defaults={
+    distance/.initial=3pt,
+    angle/.initial=0,
+    xshift/.initial=0pt,
+    yshift/.initial=0pt,
+    line width/.initial=\the\pgflinewidth,
+  },
+  code={%
+    \pgfsetlinewidth{\pgfkeysvalueof{/pgf/pattern keys/line width}}%
+    \pgfpathmoveto{\pgfpoint{-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}{0pt}}%
+    \pgfpathlineto{\pgfpoint{.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}{0pt}}%
+    \pgfusepath{stroke}%
+  },
+}
+
+\pgfdeclarepattern{
+  name=Hatch,
+  parameters={
+      \pgfkeysvalueof{/pgf/pattern keys/distance},
+      \pgfkeysvalueof{/pgf/pattern keys/angle},
+      \pgfkeysvalueof{/pgf/pattern keys/xshift},
+      \pgfkeysvalueof{/pgf/pattern keys/yshift},
+      \pgfkeysvalueof{/pgf/pattern keys/line width},
+  },
+  bottom left={%
+    \pgfpoint
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  top right={%
+    \pgfpoint
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  tile size={%
+    \pgfpoint
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}%
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}},
+  tile transformation={%
+    \pgftransformshift{%
+      \pgfpoint
+        {\pgfkeysvalueof{/pgf/pattern keys/xshift}}%
+        {\pgfkeysvalueof{/pgf/pattern keys/yshift}}}%
+    \pgftransformrotate{\pgfkeysvalueof{/pgf/pattern keys/angle}}},
+  defaults={
+    distance/.initial=3pt,
+    angle/.initial=0,
+    xshift/.initial=0pt,
+    yshift/.initial=0pt,
+    line width/.initial=\the\pgflinewidth,
+  },
+  code={%
+    \pgfsetlinewidth{\pgfkeysvalueof{/pgf/pattern keys/line width}}%
+    \pgfpathmoveto{\pgfpoint{-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}{0pt}}%
+    \pgfpathlineto{\pgfpoint{.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}{0pt}}%
+    \pgfpathmoveto{\pgfpoint{0pt}{-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}}%
+    \pgfpathlineto{\pgfpoint{0pt}{.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}}%
+    \pgfusepath{stroke}%
+  },
+}
+
+\pgfdeclarepattern{
+  name=Dots,
+  parameters={
+      \pgfkeysvalueof{/pgf/pattern keys/distance},
+      \pgfkeysvalueof{/pgf/pattern keys/angle},
+      \pgfkeysvalueof{/pgf/pattern keys/xshift},
+      \pgfkeysvalueof{/pgf/pattern keys/yshift},
+      \pgfkeysvalueof{/pgf/pattern keys/radius},
+  },
+  bottom left={%
+    \pgfpoint
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  top right={%
+    \pgfpoint
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  tile size={%
+    \pgfpoint
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}%
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}},
+  tile transformation={%
+    \pgftransformshift{%
+      \pgfpoint
+        {\pgfkeysvalueof{/pgf/pattern keys/xshift}}%
+        {\pgfkeysvalueof{/pgf/pattern keys/yshift}}}%
+    \pgftransformrotate{\pgfkeysvalueof{/pgf/pattern keys/angle}}},
+  defaults={
+    distance/.initial=3pt,
+    angle/.initial=0,
+    xshift/.initial=0pt,
+    yshift/.initial=0pt,
+    radius/.initial=.5pt,
+  },
+  code={%
+    \pgfpathcircle%
+      {\pgfpointorigin}%
+      {\pgfkeysvalueof{/pgf/pattern keys/radius}}
+    \pgfusepath{fill}%
+  },
+}
+
+\pgfdeclarepattern{
+  name=Stars,
+  parameters={
+      \pgfkeysvalueof{/pgf/pattern keys/distance},
+      \pgfkeysvalueof{/pgf/pattern keys/angle},
+      \pgfkeysvalueof{/pgf/pattern keys/xshift},
+      \pgfkeysvalueof{/pgf/pattern keys/yshift},
+      \pgfkeysvalueof{/pgf/pattern keys/radius},
+      \pgfkeysvalueof{/pgf/pattern keys/points},
+  },
+  bottom left={%
+    \pgfpoint
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {-.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  top right={%
+    \pgfpoint
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}%
+      {.5*(\pgfkeysvalueof{/pgf/pattern keys/distance})}},
+  tile size={%
+    \pgfpoint
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}%
+      {\pgfkeysvalueof{/pgf/pattern keys/distance}}},
+  tile transformation={%
+    \pgftransformshift{%
+      \pgfpoint
+        {\pgfkeysvalueof{/pgf/pattern keys/xshift}}%
+        {\pgfkeysvalueof{/pgf/pattern keys/yshift}}}%
+    \pgftransformrotate{\pgfkeysvalueof{/pgf/pattern keys/angle}}},
+  defaults={
+    distance/.initial=3mm,
+    angle/.initial=0,
+    xshift/.initial=0pt,
+    yshift/.initial=0pt,
+    radius/.initial=1mm,
+    points/.initial=5,
+  },
+  code={%
+    \pgfmathsetmacro\a{180/(\pgfkeysvalueof{/pgf/pattern keys/points})}%
+    \pgfpathmoveto{\pgfpointpolar{90}{\pgfkeysvalueof{/pgf/pattern keys/radius}}}%
+    \foreach \i in {1,...,\pgfkeysvalueof{/pgf/pattern keys/points}}{%
+        \pgfpathlineto{\pgfpointpolar{90+2*\i*\a-\a}{.5*(\pgfkeysvalueof{/pgf/pattern keys/radius})}}%
+        \pgfpathlineto{\pgfpointpolar{90+2*\i*\a}{\pgfkeysvalueof{/pgf/pattern keys/radius}}}%
+    }%
+    \pgfpathclose%
+    \pgfusepath{fill}%
+  },
+}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

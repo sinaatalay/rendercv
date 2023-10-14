@@ -1,0 +1,1334 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmoduleshapes.code.tex}
+
+
+
+\newbox\pgfnodeparttextbox
+
+
+% Creates a node
+%
+% #1 = shape type
+% #2 = anchor
+% #3 = name for later reference
+% #4 = path usage command
+%
+% Description:
+%
+% This command draws a shape that has previously been defined using
+% \pgfdeclareshape. The shape is shifted such that the anchor is at
+% the origin. In order to transform the whole shape, you should setup
+% pgf's transformation matrix prior to calling this command.
+%
+% When this command is called, the shape-specific TeX boxes of the
+% node must have been setup correctly.
+%
+% Example:
+%
+% \pgftransformshift{\pgfpoint{1cm}{1cm}}
+% \pgfmultipartnode{rectangle}{center}{hellonode}{\pgfusepath{stroke}}
+
+\def\pgfmultipartnode#1#2#3#4{%
+  \pgfutil@ifundefined{pgf@sh@s@#1}%
+  {\pgferror{Unknown shape ``#1''}}%
+  {%
+    {%
+      \ifpgflatenodepositioning%
+        \pgfsys@beginscope%
+      \fi%
+      \pgf@outer@adjust@hook%
+      \let\pgf@sh@savedmacros=\pgfutil@empty% MW
+      \let\pgf@sh@savedpoints=\pgfutil@empty%
+      \def\pgf@sm@shape@name{#1}% CJ % TT added prefix!
+      \csname pgf@sh@s@#1\endcsname%
+      \pgf@sh@savedpoints%
+      \pgf@sh@savedmacros% MW
+      \pgftransformshift{%
+        \pgf@sh@reanchor{#1}{#2}%
+        \pgf@x=-\pgf@x%
+        \pgf@y=-\pgf@y%
+      }%
+      \expandafter\pgfsavepgf@process\csname pgf@sh@sa@#3\endcsname{%
+        \pgf@sh@reanchor{#1}{#2}% FIXME : this is double work!
+      }%
+      % Save the saved points and the transformation matrix
+      \edef\pgf@node@name{#3}%
+      \ifpgflatenodepositioning%
+        \pgf@shapes@late@pos@begin%
+      \fi%
+      \ifx\pgf@node@name\pgfutil@empty%
+      \else%
+        \expandafter\xdef\csname pgf@sh@ns@\pgf@node@name\endcsname{#1}%
+        \edef\pgf@sh@@temp{\noexpand\gdef\expandafter\noexpand\csname pgf@sh@np@\pgf@node@name\endcsname}%
+        \expandafter\pgf@sh@@temp\expandafter{\pgf@sh@savedpoints}%
+        \edef\pgf@sh@@temp{\noexpand\gdef\expandafter\noexpand\csname pgf@sh@ma@\pgf@node@name\endcsname}% MW
+        \expandafter\pgf@sh@@temp\expandafter{\pgf@sh@savedmacros}% MW
+        \pgfgettransform\pgf@temp%
+        \expandafter\xdef\csname pgf@sh@nt@\pgf@node@name\endcsname{\pgf@temp}%
+        \expandafter\xdef\csname pgf@sh@pi@\pgf@node@name\endcsname{\pgfpictureid}%
+      \fi%
+      \pgfutil@ifundefined{pgf@sh@bbg@#1}{}
+      {{\pgfusetype{.behind background}\pgfidscope\pgfscope\csname pgf@sh@bbg@#1\endcsname\endpgfscope\endpgfidscope}}%
+      \pgfutil@ifundefined{pgf@sh@bg@#1}{%
+        \global\let\pgfpositionnodelaterpath\pgfutil@empty%
+      }%
+      {\pgfpushtype%
+       \pgfusetype{.background}\csname pgf@sh@bg@#1\endcsname%
+        \ifpgflatenodepositioning%
+          \pgfsyssoftpath@getcurrentpath\pgfpositionnodelaterpath%
+          \pgfprocessround{\pgfpositionnodelaterpath}{\pgfpositionnodelaterpath}%
+          \global\let\pgfpositionnodelaterpath\pgfpositionnodelaterpath%
+        \fi%
+        #4\pgfpoptype}%
+      \pgfutil@ifundefined{pgf@sh@fbg@#1}{}
+      {{\pgfusetype{.before background}\pgfidscope\pgfscope\csname pgf@sh@fbg@#1\endcsname\endpgfscope\endpgfidscope}}%
+      {%
+        \expandafter\pgfutil@for\expandafter\pgf@shape@com\expandafter:\expandafter=\csname pgf@sh@boxes@#1\endcsname\do{%
+          {%
+            \pgfusetype{.\pgf@shape@com}%
+            \pgftransformshift{\pgf@sh@reanchor{#1}{\pgf@shape@com}}%
+            \pgfapproximatenonlineartransformation%
+            \expandafter\pgfqboxsynced\expandafter{\csname pgfnodepart\pgf@shape@com box\endcsname}%
+          }%
+        }%
+      }%
+      \pgfutil@ifundefined{pgf@sh@bfg@#1}{}%
+      {{\pgfusetype{.behind foreground}\pgfidscope\pgfscope\csname pgf@sh@bfg@#1\endcsname\endpgfscope\endpgfidscope}}%
+      \pgfutil@ifundefined{pgf@sh@fg@#1}{}%
+      {\pgfpushtype\pgfusetype{.foreground}\csname pgf@sh@fg@#1\endcsname#4\pgfpoptype}%
+      \pgfutil@ifundefined{pgf@sh@ffg@#1}{}%
+      {{\pgfusetype{.before foreground}\pgfidscope\pgfscope\csname pgf@sh@ffg@#1\endcsname\endpgfscope\endpgfidscope}}%
+      \ifpgflatenodepositioning%
+        \pgf@shapes@late@pos@end%
+        \pgfsys@endscope%
+      \else%
+        \expandafter\pgf@nodecallback\expandafter{\pgf@node@name}%
+      \fi%
+    }%
+  }%
+}%
+\let\pgf@outer@adjust@hook\relax
+
+\def\pgf@shapes@late@pos@begin{%
+  % Rename node
+  \edef\pgf@node@name{not yet positionedPGFINTERNAL\pgf@node@name}%
+  % Interrupt bounding box!
+  \pgfinterruptboundingbox%
+    % Put everything in our box:
+    \pgf@relevantforpicturesizetrue%
+    \setbox\pgfpositionnodelaterbox=\hbox%
+      \bgroup%
+        \pgfsys@beginscope%
+}%
+
+\def\pgf@shapes@late@pos@end{%
+       \pgfsys@endscope%
+      \egroup% Close box
+    \ifdim\pgf@picminx>\pgf@picmaxx\relax% happens for empty nodes
+      \def\pgfpositionnodelaterminx{0.0pt}%
+      \let\pgfpositionnodelaterminy\pgfpositionnodelaterminx%
+      \let\pgfpositionnodelatermaxx\pgfpositionnodelaterminx%
+      \let\pgfpositionnodelatermaxy\pgfpositionnodelaterminx%
+    \else%
+      \edef\pgfpositionnodelaterminx{\the\pgf@picminx}%
+      \edef\pgfpositionnodelaterminy{\the\pgf@picminy}%
+      \edef\pgfpositionnodelatermaxx{\the\pgf@picmaxx}%
+      \edef\pgfpositionnodelatermaxy{\the\pgf@picmaxy}%
+    \fi%
+    \let\pgfpositionnodelatername=\pgf@node@name%
+    \pgf@positionnodelater@macro%
+  \endpgfinterruptboundingbox%
+}%
+
+\def\pgf@shift@node#1#2{%
+  % This internal command shifts the recorded coordinates for node #1
+  % by the vector #2. It is used to
+  % correct the position of the node if the recorded coordinate
+  % happens to be wrong
+  {%
+    \pgfsettransform{\csname pgf@sh@nt@#1\endcsname}%
+    \pgf@process{#2}%
+    \advance\pgf@pt@x by\pgf@x%
+    \advance\pgf@pt@y by\pgf@y%
+    \pgfgettransform{\pgf@temp}%
+    \expandafter\xdef\csname pgf@sh@nt@#1\endcsname{\pgf@temp}%
+  }%
+}%
+
+
+
+% Creates a node
+%
+% #1 = shape type
+% #2 = anchor
+% #3 = normal TeX text
+% #4 = name for later reference
+% #5 = path usage command
+%
+% Description:
+%
+% This command draws a shape that has previously been defined using
+% \pgfdeclareshape. The shape is shifted such that the anchor is at
+% the origin. In order to transform the whole shape, you should setup
+% pgf's transformation matrix prior to calling this command.
+%
+% Example:
+%
+% \pgftransformshift{\pgfpoint{1cm}{1cm}}
+% \pgfnode{rectangle}{center}{Hello}{hellonode}{\pgfusepath{stroke}}
+
+\def\pgfnode#1#2#3#4#5{%
+  {%
+    \setbox\pgfnodeparttextbox=\hbox%
+    {%
+      \pgfinterruptpicture%
+        {#3}%
+      \endpgfinterruptpicture%
+    }%
+    \pgfmultipartnode{#1}{#2}{#4}{#5}%
+  }
+}%
+
+
+
+% Create a node that is positioned later
+%
+% #1 = macro to be called after the next node has been created
+%
+% Description:
+%
+% You can use this command to create a node that is "positioned
+% later". The idea is the following: Normally, when a node is created
+% using a command like \pgfnode, the node is immediately inserted into
+% the current picture. In particular, you have no chance to change the
+% position of a created node after it has been create.
+%
+% Using \pgfpositionnodelater, you can change the default
+% behaviour. This command is not a replacement for \pgfnode, but is
+% called before such a command and will cause the following to happen:
+% The node is created, but not inserted into the picture. Instead, it
+% is stored in the box \pgfpositionnodelaterbox. Furthermore, the node
+% is not relevant for the picture's bounding box, but a bounding box
+% for the node is computed and stored in the macros
+% \pgfpositionnodelaterboundboxminx to
+% \pgfpositionnodelaterboundboxmaxy. Finally, the
+% macro #1 is called with the following macros setup:
+%
+%   \pgfpositionnodelaterbox
+%   A box register (box 0 by default) that stores the node's paths and
+%   texts. You should move the contents of this box to a box of your
+%   choice.
+%
+%   \pgfpositionnodelatername
+%   The name of the just-created-node. This name will be the
+%   originally "desired" name of the box plus the prefix "not yet
+%   positioned boxPGFINTERNAL".
+%
+%   \pgfpositionnodelaterminx
+%   \pgfpositionnodelatermaxx
+%   \pgfpositionnodelaterminy
+%   \pgfpositionnodelatermaxy
+%   These four macros store the bounding box as dimensions that are
+%   guarenteed to end with "pt".
+%
+% By setting #1 to \relax (which is the default), you can switch off
+% the whole mechanism
+%
+% Once a late node has been created, you can add arbitrary code in the
+% same picture. Then, at some later point, you call
+% \pgfpositionnodenow to finally position the node at a given position.
+%
+% When \pgfpositionnodenow is called, the macros mentioned above
+% should have the exact same values they had when #1 is called.
+
+\def\pgfpositionnodelater#1{%
+  \let\pgf@positionnodelater@macro=#1%
+  \ifx\pgf@positionnodelater@macro\relax%
+    \pgflatenodepositioningfalse%
+  \else%
+    \pgflatenodepositioningtrue%
+  \fi%
+}%
+\newif\ifpgflatenodepositioning
+\pgfpositionnodelater{\relax}%
+\def\pgfpositionnodelaterbox{0}%
+
+
+
+
+% Position a node that has been scheduled for later insertion
+%
+% #1 = position in the picture, where the original anchor should go,
+%      now
+%
+% Description:
+%
+% This command works in concert with \pgfpositionnodelater, see the
+% description there. When \pgfpositionnodenow is called, the macros
+% \pgfpositionnodelaterbox and so on should be set to the values they
+% had when the macro given to \pgfpositionnodelater was called. Then,
+% the box described by these macros will be inserted into the picture
+% at the position given #1. More precisely, the original node will
+% have been positioned such that the anchor given upon invocation is
+% at (0,0) and the node is now shifted by #1 before being inserted
+% into the actual picture.
+
+\def\pgfpositionnodenow#1{%
+  \pgfinterruptpath%
+  {%
+    \pgfpointtransformed{#1}%
+    \edef\pgf@temp@shift{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+    \pgftransformreset%
+    \pgftransformshift{\pgf@temp@shift}%
+    \pgfsys@pictureboxsynced\pgfpositionnodelaterbox%
+    \pgf@shift@node{\pgfpositionnodelatername}{\pgf@temp@shift}%
+    % Bounding box update...
+    \pgfpointtransformed{\pgfqpoint{\pgfpositionnodelaterminx}{\pgfpositionnodelaterminy}}%
+    \pgf@protocolsizes{\pgf@x}{\pgf@y}
+    \pgfpointtransformed{\pgfqpoint{\pgfpositionnodelatermaxx}{\pgfpositionnodelatermaxy}}%
+    \pgf@protocolsizes{\pgf@x}{\pgf@y}
+    % Naming and callbacks
+    \expandafter\pgfpositionnodenow@rename\pgfpositionnodelatername\relax%
+  }%
+  % Late setup%
+  {%
+    \csname pgf@lns@\pgfpositionnodelatername\endcsname%
+    \expandafter\global\expandafter\let\csname pgf@lns@\pgfpositionnodelatername\endcsname\relax%
+  }%
+  \endpgfinterruptpath%
+}%
+
+\def\pgfpositionnodenow@rename not yet positionedPGFINTERNAL#1\relax{%
+  \pgfnoderename{#1}{not yet positionedPGFINTERNAL#1}
+}%
+
+
+
+% "Fake" a node
+%
+% #1 = node name
+%
+% Description:
+%
+% This command will setup things so that it "looks like" a node named
+% #1 has been created, but, in reality, no node is created. The idea
+% is that a node created in this way can be referenced by systems
+% using the late positioning, which will only create the node later
+% on.
+%
+\def\pgffakenode#1{%
+  \edef\pgf@temp{\ifpgflatenodepositioning not yet positionedPGFINTERNAL\fi#1}%
+  \expandafter\gdef\csname pgf@sh@ns@\pgf@temp\endcsname{coordinate}%
+  \expandafter\gdef\csname pgf@sh@np@\pgf@temp\endcsname{\def\centerpoint{\pgfpointorigin}}%
+  \expandafter\gdef\csname pgf@sh@nt@\pgf@temp\endcsname{{1}{0}{0}{1}{0pt}{0pt}}%
+  \expandafter\global\expandafter\let\csname pgf@sh@ma@\pgf@temp\endcsname\pgfutil@empty%
+  \expandafter\xdef\csname pgf@sh@pi@\pgf@temp\endcsname{\pgfpictureid}%
+}%
+
+
+
+% Specify code that should be executed after a node has been created
+%
+% #1 = node name
+% #2 = later code
+%
+% Description:
+%
+% This macro allows you to provide some code #2 that will be executed
+% right after a node has been positioned using \pgfpositionnodenow. If
+% the node has already been positioned (if the late positioning is not
+% switched on), nothing happens.
+
+\def\pgfnodepostsetupcode#1#2{%
+  \ifpgflatenodepositioning%
+    \expandafter\ifx\csname pgf@lns@not yet positionedPGFINTERNAL#1\endcsname\relax%
+      \expandafter\gdef\csname pgf@lns@not yet positionedPGFINTERNAL#1\endcsname{#2}%
+    \else%
+      \expandafter\pgfutil@g@addto@macro\csname pgf@lns@not yet positionedPGFINTERNAL#1\endcsname{#2}%
+    \fi%
+  \fi%
+}%
+
+
+
+% Alias a node
+%
+% #1 = new node name
+% #2 = existing node name
+%
+% Description:
+%
+% This command allows you to subsequently access the node #2 using the
+% name #1.
+%
+% Example:
+%
+% \pgfnode{rectangle}{center}{Hallo}{hellonode}{}
+% \pgfnodealias{mynode}{hellonode}
+
+\def\pgfnodealias#1#2{%
+  \pgf@node@gnamelet{pgf@sh@ns@#1}{pgf@sh@ns@#2}%
+  \pgf@node@gnamelet{pgf@sh@np@#1}{pgf@sh@np@#2}%
+  \pgf@node@gnamelet{pgf@sh@nt@#1}{pgf@sh@nt@#2}%
+  \pgf@node@gnamelet{pgf@sh@pi@#1}{pgf@sh@pi@#2}%
+  \pgf@node@gnamelet{pgf@sh@ma@#1}{pgf@sh@ma@#2}%
+  \pgf@nodecallback{#1}%
+}%
+\def\pgf@node@gnamelet#1#2{%
+  \expandafter\let\expandafter\pgf@temp\csname #2\endcsname%
+  \expandafter\global\expandafter\let\csname #1\endcsname=\pgf@temp%
+}%
+
+% Rename a node
+%
+% #1 = new name
+% #2 = old name
+%
+% Description:
+%
+% Renames a node. This is like an alias, only the memory used for the
+% old name is freed.
+
+\def\pgfnoderename#1#2{%
+  \pgfnodealias{#1}{#2}%
+  \expandafter\global\expandafter\let\csname pgf@sh@ns@#2\endcsname\relax
+  \expandafter\global\expandafter\let\csname pgf@sh@np@#2\endcsname\relax
+  \expandafter\global\expandafter\let\csname pgf@sh@nt@#2\endcsname\relax
+  \expandafter\global\expandafter\let\csname pgf@sh@pi@#2\endcsname\relax
+  \expandafter\global\expandafter\let\csname pgf@sh@ma@#2\endcsname\relax
+}%
+
+
+
+
+% Quickly create a coordinate node
+%
+% #1 = name
+% #2 = coordinate
+%
+% Description:
+%
+% Creates a node of shape coordinate. The following have the same
+% effect, only the second is much faster:
+%
+% { \pgftransformshift{\pgfpoint{1cm}{2cm} \pgfnode{coordinate}{center}{}{foo}{} }
+% \pgfcoordinate{foo}{\pgfpoint{1cm}{2cm}}
+
+\def\pgfcoordinate#1#2{%
+  \edef\pgf@temp{#1}%
+  \ifx\pgf@temp\pgfutil@empty% do nothing
+  \else%
+    \ifpgflatenodepositioning%
+      {\pgftransformshift{#2}\pgfnode{coordinate}{center}{}{#1}{}}%
+    \else%
+      \pgf@process{\pgfpointtransformed{#2}}%
+      \expandafter\gdef\csname pgf@sh@ns@#1\endcsname{coordinate}%
+      \expandafter\xdef\csname pgf@sh@np@#1\endcsname{%
+        \noexpand\def\noexpand\centerpoint{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+      }
+      \expandafter\gdef\csname pgf@sh@nt@#1\endcsname{{1}{0}{0}{1}{0pt}{0pt}}%
+      \expandafter\global\expandafter\let\csname pgf@sh@ma@#1\endcsname\pgfutil@empty%
+      \expandafter\xdef\csname pgf@sh@pi@#1\endcsname{\pgfpictureid}%
+    \fi%
+  \fi%
+}%
+
+\def\pgf@sh@redeferredanchor#1#2{% CJ
+  \expandafter\gdef\csname pgf@anchor@\pgf@sm@shape@name @#1\endcsname{#2}}% CJ
+
+
+
+
+
+
+\def\pgf@sh@resavedanchor#1#2{%
+  \pgf@process{#2}%
+  \edef\pgf@sh@marshal{%
+    \noexpand\pgfutil@g@addto@macro\noexpand\pgf@sh@savedpoints{%
+      \noexpand\def\noexpand#1{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+    }}%
+  \pgf@sh@marshal%
+}%
+
+
+\def\pgf@sh@resaveddimen#1#2{%
+  {#2\global\pgf@x=\pgf@x}%
+  \edef\pgf@sh@marshal{%
+    \noexpand\pgfutil@g@addto@macro\noexpand\pgf@sh@savedpoints{%
+      \noexpand\def\noexpand#1{\the\pgf@x}%
+    }}%
+  \pgf@sh@marshal%
+}%
+
+\def\pgf@sh@resavedmacro#1#2{%
+    \let#1\pgfutil@empty%
+    \def\addtosavedmacro##1{%
+        \expandafter\def\expandafter\pgf@sh@addtomacro@temp\expandafter{#1\noexpand\def\noexpand##1{##1}}%
+        {\expandafter\pgfutil@toks@\expandafter{\pgf@sh@addtomacro@temp}\expandafter}%
+        \expandafter\def\expandafter#1\expandafter{\the\pgfutil@toks@}%
+    }%
+  #2\relax%
+  \edef\pgf@sh@marshal{%
+    \noexpand\pgfutil@g@addto@macro\noexpand\pgf@sh@savedmacros{%
+      \noexpand\def\noexpand#1{#1}%
+    }}%
+  \pgf@sh@marshal%
+}%
+
+% Invoke an anchor
+\def\pgf@sh@reanchor#1#2{%
+  \pgfutil@ifundefined{pgf@anchor@#1@#2}%
+  {%
+    \pgfutil@ifundefined{pgf@anchor@generic@#2}{%
+        \pgfmathsetcounter{pgf@counta}{#2}%
+        \csname pgf@anchor@#1@border\endcsname{\pgfqpointpolar{\the\c@pgf@counta}{1pt}}%
+    }{%
+        \csname pgf@anchor@generic@#2\endcsname{#1}%
+    }%
+  }%
+  {\csname pgf@anchor@#1@#2\endcsname}%
+}%
+
+% Defines a generic anchor, i.e. one which gets the associated shape
+% as first argument.
+%
+% #1: the anchor name.
+% #2: the code of the anchor. It may depend upon '##1', the shape's
+% name.
+%
+% The anchor will be defined locally in the current TeX scope.
+%
+% If the anchor will be referenced later by \pgfpointanchor, the macro \pgfreferencednodename
+% can be used to query the referenced node's name.
+% This macro is not defined during node creation.
+\def\pgfdeclaregenericanchor#1#2{%
+  \expandafter\def\csname pgf@anchor@generic@#1\endcsname##1{#2}%
+}%
+
+
+% Retrieves an anchor of a shape
+%
+% #1 = name
+% #2 = anchor or a number (corresponding to a degree)
+%
+% Description:
+%
+% This command yields a point at the anchor of the given named shape.
+%
+% Example:
+%
+% \pgfshape{rectangle}{center}{Hello}{hellonode}{\pgfusepath[stroke]}
+% \pgfpathmoveto{\pgfpointanchor{hellonode}{center}}
+
+\def\pgfpointanchor#1#2{%
+  % Ok, check whether #1 is known!
+  \pgfutil@ifundefined{pgf@sh@ns@#1}
+  {\pgfutil@ifundefined{pgf@sh@ns@not yet positionedPGFINTERNAL#1}{%
+      \pgferror{No shape named `#1' is known}}{
+      % else, fail silently
+    }%
+    \pgfpointorigin}%
+  {%
+    \pgf@process{%
+      \edef\pgfreferencednodename{#1}% for use inside of anchors.
+      % MW install special macros
+      \csname pgf@sh@ma@#1\endcsname% MW
+      % install special coordinates
+      \csname pgf@sh@np@#1\endcsname
+      \pgf@sh@reanchor{\csname pgf@sh@ns@#1\endcsname}{#2}%
+      {%
+        \pgfsettransform{\csname pgf@sh@nt@#1\endcsname}%
+        \pgf@pos@transform@glob%
+      }%
+      % Add inter picture transformation
+      \pgf@shape@interpictureshift{#1}%
+      % Undo current transformation
+      \pgftransforminvert%
+      \pgf@pos@transform@glob%
+    }%
+  }%
+}%
+
+\def\pgf@shape@interpictureshift#1{%
+  \expandafter\ifx\csname pgf@sh@pi@#1\endcsname\pgfpictureid%
+  \else%
+    \pgfsys@getposition{\csname pgf@sh@pi@#1\endcsname}\pgf@shape@original@pos%
+    \pgfsys@getposition{\pgfpictureid}\pgf@shape@current@pos%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{\pgfpointorigin\pgf@shape@current@pos}%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    \pgf@process{\pgfpointorigin\pgf@shape@original@pos}%
+    \advance\pgf@xa by\pgf@x%
+    \advance\pgf@ya by\pgf@y%
+    \pgf@x=\pgf@xa%
+    \pgf@y=\pgf@ya%
+  \fi%
+}%
+
+
+
+% Retrieves a border point of a shape
+%
+% #1 = name
+% #2 = another point
+%
+% Description:
+%
+% This command yields a point on the border of the shape that is on a
+% straight line from the center to the point #2.
+%
+% Example:
+%
+% \pgfshape{rectangle}{center}{Hello}{hellonode}{\pgfusepath[stroke]}
+% \pgfpathmoveto{\pgfpointshapeborder{hellonode}{\pgfpoint{2cm}{1cm}}
+% \pgfpathlineto{\pgfpoint{2cm}{1cm}}
+% \pgfusepath{stroke}
+
+\def\pgfpointshapeborder#1#2{%
+  % Ok, check whether #1 is known!
+  \pgfutil@ifundefined{pgf@sh@ns@#1}
+  {\pgferror{No shape named `#1' is known}%
+    \pgfpointorigin}%
+  {%
+    \pgf@process{%
+      \edef\pgfreferencednodename{#1}% for use inside of anchors.
+      % MW install special macros
+      \csname pgf@sh@ma@#1\endcsname% MW
+      % install special coordinates
+      \csname pgf@sh@np@#1\endcsname%
+      {%
+        \pgf@process{\pgfpointtransformed{#2}}%
+        \pgfsettransform{\csname pgf@sh@nt@#1\endcsname}%
+        \pgftransforminvert%
+        \pgf@pos@transform@glob%
+        \pgf@xa=\pgf@x%
+        \pgf@ya=\pgf@y%
+        \pgf@process{\csname pgf@anchor@\csname pgf@sh@ns@#1\endcsname @center\endcsname}%
+        \pgf@process{\pgf@shape@interpictureshift{#1}}%%
+        \advance\pgf@xa by-\pgf@x%
+        \advance\pgf@ya by-\pgf@y%
+        % Now (\pgf@xa, \pgf@ya) is a coord in shape's coord system, and
+        % relative to the anchor "center". If (xa, ya) is almost identical to
+        % the node center, which is determined by sqrt(xa^2+ya^2) < 0.02pt,
+        % just return the node center.
+        %
+        % \pgf@xb = 10*\pgf@xa if -1pt<\pgf@xa<1pt else 10pt
+        %  - "10*\pgf@xa": reduce ruonding errors when \pgf@xa is small
+        %  - "-1pt<\pgf@xa<1pt": guard against error "Dimension too large"
+        \pgf@xb=10pt
+        \ifdim\pgf@xa<1pt\ifdim\pgf@xa>-1pt
+          \pgf@xb=10\pgf@xa
+        \fi\fi
+        % \pgf@yb = 10*\pgf@ya if -1pt<\pgf@ya<1pt else 10pt
+        \pgf@yb=10pt
+        \ifdim\pgf@ya<1pt\ifdim\pgf@ya>-1pt
+          \pgf@yb=10\pgf@ya
+        \fi\fi
+        % if xb^2+yb^2 < 0.04pt, which means sqrt(xa^2+ya^2) < 0.02pt,
+        % return node center
+        \ifdim\dimexpr\expandafter\Pgf@geT\the\pgf@xb\pgf@xb
+                     +\expandafter\Pgf@geT\the\pgf@yb\pgf@yb\relax<0.04pt
+          \expandafter\pgfutil@firstoftwo
+        \else
+          \expandafter\pgfutil@secondoftwo
+        \fi
+        {% return coord of "center"
+          \pgfwarning
+            {Returning node center instead of a point on node border. Did you
+            specify a point identical to the center of node
+            ``\pgfreferencednodename''?}%
+          \pgf@sh@reanchor{\csname pgf@sh@ns@#1\endcsname}{center}%
+        }
+        {% this calls the corresponding \anchorborder in shape declaration
+          \csname pgf@anchor@\csname pgf@sh@ns@#1\endcsname @border\endcsname
+            {\pgfqpoint{\pgf@xa}{\pgf@ya}}%
+        }%
+        \pgfsettransform{\csname pgf@sh@nt@#1\endcsname}%
+        \pgf@pos@transform@glob%
+        \global\pgf@x=\pgf@x%
+        \global\pgf@y=\pgf@y%
+      }%
+      % Add inter picture transformation
+      \pgf@shape@interpictureshift{#1}%
+      % Undo current transformation
+      \pgftransforminvert%
+      \pgf@pos@transform@glob%
+    }%
+  }%
+}%
+
+
+% Retrieve the list of node parts of a shape
+%
+% #1 = a macro
+% #2 = a shape name
+%
+% Description:
+%
+% Stores the list of node parts of a shape #2 in the macro #1.
+%
+% Example:
+%
+% \pgfgetnodeparts\mylist{circle split}
+%
+% This will set \mylist\ to "text,lower"
+
+\def\pgfgetnodeparts#1#2{%
+  \expandafter\let\expandafter#1\csname pgf@sh@boxes@#2\endcsname%
+}%
+
+
+% Declares a shape type
+%
+% #1 = shape type
+% #2 = shape specification
+%
+% Description:
+%
+% This command declares a new shape type. The shape specification
+% should contain the following commands:
+%
+% - \savedanchor
+%   This command takes two arguments: a name and some code. The point
+%   specified by the code (the \pgf@x and \pgf@y values resulting from
+%   executing the code, to be precise), will be stored under the given
+%   name. Whenever, later on, an anchor is invoked these stored points
+%   will be available. The \saveddimen works like \savedanchor, only a
+%   single dimension is stored (taken from \pgf@x).
+%   When a savedanchor is calculated, the height/width/depth of the
+%   boxes mentioned in \nodeparts can be used.
+%
+% - \anchor
+%   Specifies an anchor. This command takes two arguments: an anchor
+%   name and some code for computing the anchor. When the anchor
+%   computation starts, all shape points and shape dimension will be
+%   setup.
+%
+% - \anchorborder
+%   This command should compute a point on the border of the
+%   shape. When the code is called, \pgf@x and \pgf@y will have been
+%   preinitialised with a direction.
+%
+% - \behindbackgroundpath
+%   Some things to be draw behind everything.
+%
+% - \backgroundpath
+%   A path that is drawn behind the main box. How this path is used
+%   depends on how \pgfshape is called.
+%
+% - \beforebackgroundpath
+%   Some things to be draw before the background path, but behind the
+%   main box.
+%
+% - \behindforegroundpath
+%   Some things to be draw on top of the main box.
+%
+% - \foregroundpath
+%   A path that is drawn on top of all of the above. How this path is
+%   used depends on how \pgfshape is called.
+%
+% - \beforeforegroundpath
+%   Some things to be draw before everything.
+%
+% - \nodeparts
+%   List of node parts that make up the shape. For each entry XYZ in
+%   the list there must be a box named \pgfnodepartXYZbox (possibly
+%   ``redirected'' to some different box using \let). Each such box
+%   will be placed at the anchor XYZ.
+%   By default, \nodeparts is just {text}. Thus, there will be one
+%   node part box named \pgfnodeparttextbox and this node will be
+%   placed at the anchor text.
+%
+%
+% Example:
+%
+% See the definition of rectangle, below.
+
+\long\def\pgfdeclareshape#1#2{%
+  {%
+    \def\pgf@sm@shape@name{#1}%
+    \let\savedanchor=\pgf@sh@savedanchor
+    \let\saveddimen=\pgf@sh@saveddimen
+    \let\savedmacro=\pgf@sh@savedmacro% MW
+    \let\deferredanchor=\pgf@sh@deferredanchor% CJ
+    \let\anchor=\pgf@sh@anchor
+    \let\anchorborder=\pgf@sh@anchorborder
+    \let\behindbackgroundpath=\pgf@sh@behindbgpath
+    \let\backgroundpath=\pgf@sh@bgpath
+    \let\beforebackgroundpath=\pgf@sh@beforebgpath
+    \let\behindforegroundpath=\pgf@sh@behindfgpath
+    \let\foregroundpath=\pgf@sh@fgpath
+    \let\beforeforegroundpath=\pgf@sh@beforefgpath
+    \let\nodeparts=\pgf@sh@boxes
+    \let\inheritsavedanchors=\pgf@sh@inheritsavedanchors
+    \let\inheritanchor=\pgf@sh@inheritanchor
+    \let\inheritanchorborder=\pgf@sh@inheritanchorborder
+    \let\inheritbehindbackgroundpath=\pgf@sh@inheritbehindbgpath
+    \let\inheritbackgroundpath=\pgf@sh@inheritbgpath
+    \let\inheritbeforebackgroundpath=\pgf@sh@inheritbeforebgpath
+    \let\inheritbehindforegroundpath=\pgf@sh@inheritbehindfgpath
+    \let\inheritforegroundpath=\pgf@sh@inheritfgpath
+    \let\inheritbeforeforegroundpath=\pgf@sh@inheritbeforefgpath
+    \let\inheritnodeparts=\pgf@sh@inheritboxes
+    \anchorborder{\csname pgf@anchor@#1@center\endcsname}%
+    \anchor{text}{\pgfpointorigin}%
+    \nodeparts{text}%
+    \expandafter\global\expandafter\let\csname pgf@sh@s@\pgf@sm@shape@name\endcsname=\pgfutil@empty%
+    #2%
+  }%
+}%
+
+\def\pgf@sh@savedanchor#1#2{%
+  \expandafter\pgfutil@g@addto@macro\csname pgf@sh@s@\pgf@sm@shape@name\endcsname{\pgf@sh@resavedanchor{#1}{#2}}}%
+\def\pgf@sh@saveddimen#1#2{%
+  \expandafter\pgfutil@g@addto@macro\csname pgf@sh@s@\pgf@sm@shape@name\endcsname{\pgf@sh@resaveddimen{#1}{#2}}}%
+ \def\pgf@sh@savedmacro#1#2{% MW
+  \expandafter\pgfutil@g@addto@macro\csname pgf@sh@s@\pgf@sm@shape@name\endcsname{\pgf@sh@resavedmacro{#1}{#2}}}% MW
+\def\pgf@sh@anchor#1#2{\expandafter\gdef\csname pgf@anchor@\pgf@sm@shape@name @#1\endcsname{#2}}%
+\def\pgf@sh@deferredanchor#1#2{% CJ
+  \expandafter\pgfutil@g@addto@macro
+    \csname pgf@sh@s@\pgf@sm@shape@name\endcsname{\pgf@sh@redeferredanchor{#1}{#2}}}% CJ
+\def\pgf@sh@anchorborder#1{\expandafter\gdef\csname pgf@anchor@\pgf@sm@shape@name @border\endcsname##1{\pgf@process{##1}#1}}%
+\long\def\pgf@sh@behindbgpath#1{\expandafter\gdef\csname pgf@sh@bbg@\pgf@sm@shape@name\endcsname{#1}}%
+\long\def\pgf@sh@bgpath#1{\expandafter\gdef\csname pgf@sh@bg@\pgf@sm@shape@name\endcsname{#1}}%
+\long\def\pgf@sh@beforebgpath#1{\expandafter\gdef\csname pgf@sh@fbg@\pgf@sm@shape@name\endcsname{#1}}%
+\long\def\pgf@sh@behindfgpath#1{\expandafter\gdef\csname pgf@sh@bfg@\pgf@sm@shape@name\endcsname{#1}}%
+\long\def\pgf@sh@fgpath#1{\expandafter\gdef\csname pgf@sh@fg@\pgf@sm@shape@name\endcsname{#1}}%
+\long\def\pgf@sh@beforefgpath#1{\expandafter\gdef\csname pgf@sh@ffg@\pgf@sm@shape@name\endcsname{#1}}%
+\def\pgf@sh@boxes#1{\expandafter\gdef\csname pgf@sh@boxes@\pgf@sm@shape@name\endcsname{#1}}%
+
+\def\pgf@sh@inheritsavedanchors[from=#1]{%
+  \expandafter\pgfutil@g@addto@macro\csname pgf@sh@s@\pgf@sm@shape@name\endcsname{\csname pgf@sh@s@#1\endcsname}}%
+
+\def\pgf@sh@inheritanchor[from=#1]#2{%
+  \edef\pgf@marshal{\global\let\expandafter\noexpand\csname
+    pgf@anchor@\pgf@sm@shape@name @#2\endcsname=\expandafter\noexpand\csname
+    pgf@anchor@#1@#2\endcsname}%
+  \pgf@marshal%
+}%
+\def\pgf@sh@inheritanchorborder[from=#1]{%
+  \edef\pgf@marshal{\global\let\expandafter\noexpand\csname
+    pgf@anchor@\pgf@sm@shape@name @border\endcsname=\expandafter\noexpand\csname
+    pgf@anchor@#1@border\endcsname}%
+  \pgf@marshal%
+}%
+\def\pgf@sh@inheritor#1#2{%
+  \edef\pgf@marshal{\global\let\expandafter\noexpand\csname
+    pgf@sh@#1@\pgf@sm@shape@name\endcsname=\expandafter\noexpand\csname
+    pgf@sh@#1@#2\endcsname}%
+  \pgf@marshal%
+}%
+\def\pgf@sh@inheritbehindbgpath[from=#1]{\pgf@sh@inheritor{bbg}{#1}}%
+\def\pgf@sh@inheritbgpath[from=#1]{\pgf@sh@inheritor{bg}{#1}}%
+\def\pgf@sh@inheritbeforebgpath[from=#1]{\pgf@sh@inheritor{fbg}{#1}}%
+\def\pgf@sh@inheritbehindfgpath[from=#1]{\pgf@sh@inheritor{bfg}{#1}}%
+\def\pgf@sh@inheritfgpath[from=#1]{\pgf@sh@inheritor{fg}{#1}}%
+\def\pgf@sh@inheritbeforefgpath[from=#1]{\pgf@sh@inheritor{ffg}{#1}}%
+\def\pgf@sh@inheritboxes[from=#1]{\pgf@sh@inheritor{boxes}{#1}}%
+
+
+
+%
+% Coordinate. This shape is special: It is only used to reference a
+% point for later usage. Nothing is drawn, all anchors are identical
+% to the center.
+%
+
+\pgfdeclareshape{coordinate}
+{%
+  \savedanchor\centerpoint{%
+    % x
+    \pgf@x=.5\wd\pgfnodeparttextbox%
+    % y
+    \pgf@y=.5\ht\pgfnodeparttextbox%
+    \advance\pgf@y by -.5\dp\pgfnodeparttextbox%
+  }%
+
+  \anchor{center}{\centerpoint}%
+  \anchor{north}{\centerpoint}%
+  \anchor{north west}{\centerpoint}%
+  \anchor{north east}{\centerpoint}%
+  \anchor{west}{\centerpoint}%
+  \anchor{east}{\centerpoint}%
+  \anchor{mid}{\centerpoint}%
+  \anchor{mid west}{\centerpoint}%
+  \anchor{mid east}{\centerpoint}%
+  \anchor{base}{\centerpoint}%
+  \anchor{base west}{\centerpoint}%
+  \anchor{base east}{\centerpoint}%
+  \anchor{south}{\centerpoint}%
+  \anchor{south west}{\centerpoint}%
+  \anchor{south east}{\centerpoint}%
+  \anchorborder{\centerpoint}%
+
+  \nodeparts{}% no text
+}%
+
+
+% Value keys for shapes:
+%
+% /pgf/inner xsep     : recommended inner x separation
+% /pgf/inner ysep     : recommended inner y separation
+% /pgf/outer xsep     : recommended outer x separation
+% /pgf/outer ysep     : recommended outer y separation
+% /pgf/minimum width  : recommended minimum width
+% /pgf/minimum height : recommended minimum height
+
+\pgfset{
+  inner xsep/.initial     =.3333em,
+  inner ysep/.initial     =.3333em,
+  inner sep/.style        ={/pgf/inner xsep={#1},/pgf/inner ysep={#1}},
+  outer xsep/.initial     =.5\pgflinewidth,
+  outer ysep/.initial     =.5\pgflinewidth,
+  outer sep/.code         =\pgf@handle@outer@sep{#1},
+  minimum width/.initial  =1pt,
+  minimum height/.initial =1pt,
+  minimum size/.style     ={/pgf/minimum width={#1},/pgf/minimum height={#1}},
+}%
+
+
+
+\def\pgf@handle@outer@sep#1{%
+  \def\pgf@temp{#1}%
+  \ifx\pgf@temp\pgf@auto@text%
+    \def\pgf@outer@adjust@hook{%
+      \pgftransformationadjustments%
+      \pgfkeyssetvalue{/pgf/outer xsep}{.5\pgflinewidth*\pgfhorizontaltransformationadjustment}%
+      \pgfkeyssetvalue{/pgf/outer ysep}{.5\pgflinewidth*\pgfverticaltransformationadjustment}%
+      \pgf@outer@auto@adjust@hook%
+    }%
+  \else%
+    \pgfkeyssetvalue{/pgf/outer xsep}{#1}%
+    \pgfkeyssetvalue{/pgf/outer ysep}{#1}%
+  \fi%
+}%
+\def\pgf@auto@text{auto}%
+
+\let\pgf@outer@auto@adjust@hook\relax
+
+
+% Keys for rotating the shape border.
+% (may not be supported by all shapes)
+%
+% /pgf/shape border uses incircle : Calculate the shape border using the incircle
+%                                   around the node contents (+inner sep).
+%
+% /pgf/shape border rotate        : Angle of independent border rotation.
+
+\newif\ifpgfshapeborderusesincircle
+\pgfkeys{/pgf/shape border uses incircle/.is if=pgfshapeborderusesincircle}%
+\pgfkeys{/pgf/shape border rotate/.initial=0}%
+
+%
+% Rectangle
+%
+
+\pgfdeclareshape{rectangle}
+{%
+  \savedanchor\northeast{%
+    % Calculate x
+    %
+    % First, is width < minimum width?
+    \pgf@x=\the\wd\pgfnodeparttextbox%
+    \pgfmathsetlength\pgf@xc{\pgfkeysvalueof{/pgf/inner xsep}}%
+    \advance\pgf@x by 2\pgf@xc%
+    \pgfmathsetlength\pgf@xb{\pgfkeysvalueof{/pgf/minimum width}}%
+    \ifdim\pgf@x<\pgf@xb%
+      % yes, too small. Enlarge...
+      \pgf@x=\pgf@xb%
+    \fi%
+    % Now, calculate right border: .5\wd\pgfnodeparttextbox + .5 \pgf@x + outer sep
+    \pgf@x=.5\pgf@x%
+    \advance\pgf@x by.5\wd\pgfnodeparttextbox%
+    \pgfmathsetlength\pgf@xa{\pgfkeysvalueof{/pgf/outer xsep}}%
+    \advance\pgf@x by\pgf@xa%
+    % Calculate y
+    %
+    % First, is height+depth < minimum height?
+    \pgf@y=\ht\pgfnodeparttextbox%
+    \advance\pgf@y by\dp\pgfnodeparttextbox%
+    \pgfmathsetlength\pgf@yc{\pgfkeysvalueof{/pgf/inner ysep}}%
+    \advance\pgf@y by 2\pgf@yc%
+    \pgfmathsetlength\pgf@yb{\pgfkeysvalueof{/pgf/minimum height}}%
+    \ifdim\pgf@y<\pgf@yb%
+      % yes, too small. Enlarge...
+      \pgf@y=\pgf@yb%
+    \fi%
+    % Now, calculate upper border: .5\ht-.5\dp + .5 \pgf@y + outer sep
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by-.5\dp\pgfnodeparttextbox%
+    \advance\pgf@y by.5\ht\pgfnodeparttextbox%
+    \pgfmathsetlength\pgf@ya{\pgfkeysvalueof{/pgf/outer ysep}}%
+    \advance\pgf@y by\pgf@ya%
+  }%
+
+  \savedanchor\southwest{%
+      % Calculate x
+      %
+      % First, is width < minimum width?
+      \pgf@x=\wd\pgfnodeparttextbox%
+      \pgfmathsetlength\pgf@xc{\pgfkeysvalueof{/pgf/inner xsep}}%
+      \advance\pgf@x by 2\pgf@xc%
+      \pgfmathsetlength\pgf@xb{\pgfkeysvalueof{/pgf/minimum width}}%
+      \ifdim\pgf@x<\pgf@xb%
+        % yes, too small. Enlarge...
+        \pgf@x=\pgf@xb%
+      \fi%
+      % Now, calculate left border: .5\wd\pgfnodeparttextbox - .5 \pgf@x - outer sep
+      \pgf@x=-.5\pgf@x%
+      \advance\pgf@x by.5\wd\pgfnodeparttextbox%
+      \pgfmathsetlength\pgf@xa{\pgfkeysvalueof{/pgf/outer xsep}}%
+      \advance\pgf@x by-\pgf@xa%
+      % Calculate y
+      %
+      % First, is height+depth < minimum height?
+      \pgf@y=\ht\pgfnodeparttextbox%
+      \advance\pgf@y by\dp\pgfnodeparttextbox%
+      \pgfmathsetlength\pgf@yc{\pgfkeysvalueof{/pgf/inner ysep}}%
+      \advance\pgf@y by 2\pgf@yc%
+      \pgfmathsetlength\pgf@yb{\pgfkeysvalueof{/pgf/minimum height}}%
+      \ifdim\pgf@y<\pgf@yb%
+        % yes, too small. Enlarge...
+        \pgf@y=\pgf@yb%
+      \fi%
+       % Now, calculate upper border: .5\ht-.5\dp - .5 \pgf@y - outer sep
+      \pgf@y=-.5\pgf@y%
+      \advance\pgf@y by-.5\dp\pgfnodeparttextbox%
+      \advance\pgf@y by.5\ht\pgfnodeparttextbox%
+      \pgfmathsetlength\pgf@ya{\pgfkeysvalueof{/pgf/outer ysep}}%
+      \advance\pgf@y by-\pgf@ya%
+  }%
+
+  %
+  % Anchors
+  %
+  \anchor{center}{
+    \pgf@process{\northeast}%
+    \pgf@xa=.5\pgf@x%
+    \pgf@ya=.5\pgf@y%
+    \pgf@process{\southwest}%
+    \pgf@x=.5\pgf@x%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@x by \pgf@xa%
+    \advance\pgf@y by \pgf@ya%
+  }%
+  \anchor{mid}{\pgf@anchor@rectangle@center\pgfmathsetlength\pgf@y{.5ex}}%
+  \anchor{base}{\pgf@anchor@rectangle@center\pgf@y=0pt}%
+  \anchor{north}{
+    \pgf@process{\southwest}%
+    \pgf@xa=.5\pgf@x%
+    \pgf@process{\northeast}%
+    \pgf@x=.5\pgf@x%
+    \advance\pgf@x by \pgf@xa%
+  }%
+  \anchor{south}{
+    \pgf@process{\northeast}%
+    \pgf@xa=.5\pgf@x%
+    \pgf@process{\southwest}%
+    \pgf@x=.5\pgf@x%
+    \advance\pgf@x by \pgf@xa%
+  }%
+  \anchor{west}{
+    \pgf@process{\northeast}%
+    \pgf@ya=.5\pgf@y%
+    \pgf@process{\southwest}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@ya%
+  }%
+  \anchor{mid west}{\southwest\pgfmathsetlength\pgf@y{.5ex}}%
+  \anchor{base west}{\southwest\pgf@y=0pt}%
+  \anchor{north west}{
+    \southwest
+    \pgf@xa=\pgf@x
+    \northeast
+    \pgf@x=\pgf@xa}%
+  \anchor{south west}{\southwest}%
+  \anchor{east}{%
+    \pgf@process{\southwest}%
+    \pgf@ya=.5\pgf@y%
+    \pgf@process{\northeast}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@ya%
+  }%
+  \anchor{mid east}{\northeast\pgfmathsetlength\pgf@y{.5ex}}%
+  \anchor{base east}{\northeast\pgf@y=0pt}%
+  \anchor{north east}{\northeast}%
+  \anchor{south east}{
+    \northeast
+    \pgf@xa=\pgf@x
+    \southwest
+    \pgf@x=\pgf@xa
+  }%
+  \anchorborder{%
+    \pgf@xb=\pgf@x% xb/yb is target
+    \pgf@yb=\pgf@y%
+    \southwest%
+    \pgf@xa=\pgf@x% xa/ya is se
+    \pgf@ya=\pgf@y%
+    \northeast%
+    \advance\pgf@x by-\pgf@xa%
+    \advance\pgf@y by-\pgf@ya%
+    \pgf@xc=.5\pgf@x% x/y is half width/height
+    \pgf@yc=.5\pgf@y%
+    \advance\pgf@xa by\pgf@xc% xa/ya becomes center
+    \advance\pgf@ya by\pgf@yc%
+    \edef\pgf@marshal{%
+      \noexpand\pgfpointborderrectangle
+      {\noexpand\pgfqpoint{\the\pgf@xb}{\the\pgf@yb}}
+      {\noexpand\pgfqpoint{\the\pgf@xc}{\the\pgf@yc}}%
+    }%
+    \pgf@process{\pgf@marshal}%
+    \advance\pgf@x by\pgf@xa%
+    \advance\pgf@y by\pgf@ya%
+  }%
+
+  %
+  % Background path
+  %
+  \backgroundpath{
+    \pgfpathrectanglecorners
+    {\pgfpointadd{\southwest}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}
+    {\pgfpointadd{\northeast}{\pgfpointscale{-1}{\pgfpoint{\pgfkeysvalueof{/pgf/outer xsep}}{\pgfkeysvalueof{/pgf/outer ysep}}}}}
+  }%
+}%
+
+
+% Special current path start coordinate:
+\expandafter\def\csname pgf@sh@ns@current subpath start\endcsname{coordinate}%
+\expandafter\def\csname pgf@sh@np@current subpath start\endcsname{%
+  \def\centerpoint{\expandafter\pgfqpoint\pgfsyssoftpath@lastmoveto}%
+}%
+\expandafter\def\csname pgf@sh@nt@current subpath start\endcsname{{1}{0}{0}{1}{0pt}{0pt}}%
+\expandafter\def\csname pgf@sh@pi@current subpath start\endcsname{\pgfpictureid}%
+
+
+
+% Special  current bounding box  rectangle:
+\expandafter\def\csname pgf@sh@ns@current bounding box\endcsname{rectangle}%
+\expandafter\def\csname pgf@sh@np@current bounding box\endcsname{%
+  \def\southwest{\pgfqpoint{\pgf@picminx}{\pgf@picminy}}%
+  \def\northeast{\pgfqpoint{\pgf@picmaxx}{\pgf@picmaxy}}%
+}%
+\expandafter\def\csname pgf@sh@nt@current bounding box\endcsname{{1}{0}{0}{1}{0pt}{0pt}}%
+\expandafter\def\csname pgf@sh@pi@current bounding box\endcsname{\pgfpictureid}%
+
+
+% Special  current path bounding box  rectangle:
+\expandafter\def\csname pgf@sh@ns@current path bounding box\endcsname{rectangle}%
+\expandafter\def\csname pgf@sh@np@current path bounding box\endcsname{%
+  \def\southwest{\pgfqpoint{\pgf@pathminx}{\pgf@pathminy}}%
+  \def\northeast{\pgfqpoint{\pgf@pathmaxx}{\pgf@pathmaxy}}%
+}%
+\expandafter\def\csname pgf@sh@nt@current path bounding box\endcsname{{1}{0}{0}{1}{0pt}{0pt}}%
+\expandafter\def\csname pgf@sh@pi@current path bounding box\endcsname{\pgfpictureid}%
+
+
+% Special  current page bounding box rectangle:
+\expandafter\def\csname pgf@sh@ns@current page\endcsname{rectangle}%
+\expandafter\def\csname pgf@sh@np@current page\endcsname{%
+  \def\southwest{\pgfpointorigin}%
+  \def\northeast{\pgfpoint{\pgfsys@thepagewidth}{\pgfsys@thepageheight}}%
+}%
+\expandafter\def\csname pgf@sh@nt@current page\endcsname{{1}{0}{0}{1}{0pt}{0pt}}%
+\expandafter\def\csname pgf@sh@pi@current page\endcsname{pgfpageorigin}%
+
+
+% Special scope bounding box rectangle:
+\pgfkeys{/pgf/local bounding box/.code={%
+    \expandafter\gdef\csname pgf@sh@ns@#1\endcsname{rectangle}
+    \expandafter\gdef\csname pgf@sh@np@#1\endcsname{%
+      \def\southwest{\pgfqpoint{\csname pgf@lbb@minx@#1\endcsname}{\csname pgf@lbb@miny@#1\endcsname}}%
+      \def\northeast{\pgfqpoint{\csname pgf@lbb@maxx@#1\endcsname}{\csname pgf@lbb@maxy@#1\endcsname}}%
+    }
+    \expandafter\gdef\csname pgf@sh@nt@#1\endcsname{{1}{0}{0}{1}{0pt}{0pt}}
+    \expandafter\gdef\csname pgf@sh@pi@#1\endcsname{\pgfpictureid}
+    \expandafter\gdef\csname pgf@lbb@maxx@#1\endcsname{-16000pt}%
+    \expandafter\gdef\csname pgf@lbb@minx@#1\endcsname{16000pt}%
+    \expandafter\gdef\csname pgf@lbb@maxy@#1\endcsname{-16000pt}%
+    \expandafter\gdef\csname pgf@lbb@miny@#1\endcsname{16000pt}%
+    \pgf@size@hookedtrue%
+    \expandafter\def\expandafter\pgf@path@size@hook\expandafter{\pgf@path@size@hook\pgf@lbb@do{#1}}
+  },
+  /pgf/freeze local bounding box/.code={%
+    {%
+      \csname pgf@sh@np@#1\endcsname%
+      \southwest%
+      \pgf@xa=\pgf@x%
+      \pgf@ya=\pgf@y%
+      \northeast%
+      \expandafter\xdef\csname pgf@sh@np@#1\endcsname{%
+        \noexpand\def\noexpand\southwest{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+        \noexpand\def\noexpand\northeast{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+      }%
+    }%
+  },
+}%
+\def\pgf@lbb@do#1{%
+  \ifdim\pgf@size@hook@x<\csname pgf@lbb@minx@#1\endcsname\expandafter\xdef\csname pgf@lbb@minx@#1\endcsname{\the\pgf@size@hook@x}\fi%
+  \ifdim\pgf@size@hook@x>\csname pgf@lbb@maxx@#1\endcsname\expandafter\xdef\csname pgf@lbb@maxx@#1\endcsname{\the\pgf@size@hook@x}\fi%
+  \ifdim\pgf@size@hook@y<\csname pgf@lbb@miny@#1\endcsname\expandafter\xdef\csname pgf@lbb@miny@#1\endcsname{\the\pgf@size@hook@y}\fi%
+  \ifdim\pgf@size@hook@y>\csname pgf@lbb@maxy@#1\endcsname\expandafter\xdef\csname pgf@lbb@maxy@#1\endcsname{\the\pgf@size@hook@y}\fi%
+}%
+
+%
+% Circle
+%
+
+\pgfdeclareshape{circle}
+%
+% Draws a circle around the text
+%
+{%
+  \savedanchor\centerpoint{%
+    \pgf@x=.5\wd\pgfnodeparttextbox%
+    \pgf@y=.5\ht\pgfnodeparttextbox%
+    \advance\pgf@y by-.5\dp\pgfnodeparttextbox%
+  }%
+
+  \saveddimen\radius{%
+    %
+    % Calculate ``height radius''
+    %
+    \pgf@ya=.5\ht\pgfnodeparttextbox%
+    \advance\pgf@ya by.5\dp\pgfnodeparttextbox%
+    \pgfmathsetlength\pgf@yb{\pgfkeysvalueof{/pgf/inner ysep}}%
+    \advance\pgf@ya by\pgf@yb%
+    %
+    % Calculate ``width radius''
+    %
+    \pgf@xa=.5\wd\pgfnodeparttextbox%
+    \pgfmathsetlength\pgf@xb{\pgfkeysvalueof{/pgf/inner xsep}}%
+    \advance\pgf@xa by\pgf@xb%
+    %
+    % Calculate length of radius vector:
+    %
+    \pgf@process{\pgfpointnormalised{\pgfqpoint{\pgf@xa}{\pgf@ya}}}%
+    \ifdim\pgf@x>\pgf@y%
+        \c@pgf@counta=\pgf@x%
+        \ifnum\c@pgf@counta=0\relax%
+        \else%
+          \divide\c@pgf@counta by 255\relax%
+          \pgf@xa=16\pgf@xa\relax%
+          \divide\pgf@xa by\c@pgf@counta%
+          \pgf@xa=16\pgf@xa\relax%
+        \fi%
+      \else%
+        \c@pgf@counta=\pgf@y%
+        \ifnum\c@pgf@counta=0\relax%
+        \else%
+          \divide\c@pgf@counta by 255\relax%
+          \pgf@ya=16\pgf@ya\relax%
+          \divide\pgf@ya by\c@pgf@counta%
+          \pgf@xa=16\pgf@ya\relax%
+        \fi%
+    \fi%
+    \pgf@x=\pgf@xa%
+    %
+    % If necessary, adjust radius so that the size requirements are
+    % met:
+    %
+    \pgfmathsetlength{\pgf@xb}{\pgfkeysvalueof{/pgf/minimum width}}%
+    \pgfmathsetlength{\pgf@yb}{\pgfkeysvalueof{/pgf/minimum height}}%
+    \ifdim\pgf@x<.5\pgf@xb%
+        \pgf@x=.5\pgf@xb%
+    \fi%
+    \ifdim\pgf@x<.5\pgf@yb%
+        \pgf@x=.5\pgf@yb%
+    \fi%
+    %
+    % Now, add larger of outer separations.
+    %
+    \pgfmathsetlength{\pgf@xb}{\pgfkeysvalueof{/pgf/outer xsep}}%
+    \pgfmathsetlength{\pgf@yb}{\pgfkeysvalueof{/pgf/outer ysep}}%
+    \ifdim\pgf@xb<\pgf@yb%
+      \advance\pgf@x by\pgf@yb%
+    \else%
+      \advance\pgf@x by\pgf@xb%
+    \fi%
+  }%
+
+  %
+  % Anchors
+  %
+  \anchor{center}{\centerpoint}%
+  \anchor{mid}{\centerpoint\pgfmathsetlength\pgf@y{.5ex}}%
+  \anchor{base}{\centerpoint\pgf@y=0pt}%
+  \anchor{north}{\centerpoint\advance\pgf@y by\radius}%
+  \anchor{south}{\centerpoint\advance\pgf@y by-\radius}%
+  \anchor{west}{\centerpoint\advance\pgf@x by-\radius}%
+  \anchor{east}{\centerpoint\advance\pgf@x by\radius}%
+  \anchor{mid west}{\centerpoint\advance\pgf@x by-\radius\pgfmathsetlength\pgf@y{.5ex}}%
+  \anchor{mid east}{\centerpoint\advance\pgf@x by\radius\pgfmathsetlength\pgf@y{.5ex}}%
+  \anchor{base west}{\centerpoint\advance\pgf@x by-\radius\pgf@y=0pt}%
+  \anchor{base east}{\centerpoint\advance\pgf@x by\radius\pgf@y=0pt}%
+  \anchor{north west}{
+    \centerpoint
+    \pgf@xa=\radius
+    \advance\pgf@x by-0.707107\pgf@xa
+    \advance\pgf@y by0.707107\pgf@xa
+  }%
+  \anchor{south west}{
+    \centerpoint
+    \pgf@xa=\radius
+    \advance\pgf@x by-0.707107\pgf@xa
+    \advance\pgf@y by-0.707107\pgf@xa
+  }%
+  \anchor{north east}{
+    \centerpoint
+    \pgf@xa=\radius
+    \advance\pgf@x by0.707107\pgf@xa
+    \advance\pgf@y by0.707107\pgf@xa
+  }%
+  \anchor{south east}{
+    \centerpoint
+    \pgf@xa=\radius
+    \advance\pgf@x by0.707107\pgf@xa
+    \advance\pgf@y by-0.707107\pgf@xa
+  }%
+  \anchorborder{%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \edef\pgf@marshal{%
+      \noexpand\pgfpointborderellipse
+      {\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}
+      {\noexpand\pgfqpoint{\radius}{\radius}}%
+    }%
+    \pgf@marshal%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \centerpoint%
+    \advance\pgf@x by\pgf@xa%
+    \advance\pgf@y by\pgf@ya%
+  }%
+
+  %
+  % Background path
+  %
+  \backgroundpath{%
+    \pgfutil@tempdima=\radius%
+    \pgfmathsetlength{\pgf@xb}{\pgfkeysvalueof{/pgf/outer xsep}}%
+    \pgfmathsetlength{\pgf@yb}{\pgfkeysvalueof{/pgf/outer ysep}}%
+    \ifdim\pgf@xb<\pgf@yb%
+      \advance\pgfutil@tempdima by-\pgf@yb%
+    \else%
+      \advance\pgfutil@tempdima by-\pgf@xb%
+    \fi%
+    \pgfpathcircle{\centerpoint}{\pgfutil@tempdima}%
+  }%
+}%
+
+
+
+
+
+\endinput

@@ -1,0 +1,1607 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibraryarrows.meta.code.tex}
+
+
+
+%
+%
+% Meta keys
+%
+%
+
+
+\newdimen\pgfarrowinset
+\newdimen\pgfarrowlength
+\newdimen\pgfarrowwidth
+\newdimen\pgfarrowlinewidth
+\newif\ifpgfarrowroundcap
+\newif\ifpgfarrowroundjoin
+
+\pgfarrowsaddtolengthscalelist\pgfarrowlength
+\pgfarrowsaddtolengthscalelist\pgfarrowinset
+\pgfarrowsaddtowidthscalelist\pgfarrowwidth
+
+
+\pgfkeys{
+  /pgf/arrow keys/.cd,
+  length/.code={%
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\pgfarrowslinewidthdependent\pgfarrowstheparameters\pgfarrowlength\pgf@x}%
+  },
+  inset/.code={%
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtolateoptions\expandafter{\expandafter\pgfarrowslinewidthdependent\pgfarrowstheparameters\pgfarrowinset\pgf@x}%
+  },
+  inset'/.code={
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtolateoptions\expandafter{\expandafter\pgfarrowslengthdependent\pgfarrowstheparameters\pgfarrowinset}%
+  },
+  line width/.code={%
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtolateoptions\expandafter{\expandafter\pgfarrowslinewidthdependent\pgfarrowstheparameters\pgfarrowlinewidth\pgf@x}%
+  },
+  line width'/.code={
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtolateoptions\expandafter{\expandafter\pgfarrowslengthdependent\pgfarrowstheparameters\pgfarrowlinewidth}%
+  },
+  width/.code={%
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtolateoptions\expandafter{\expandafter\pgfarrowslinewidthdependent\pgfarrowstheparameters\pgfarrowwidth\pgf@x}%
+  },
+  width'/.code={%
+    \pgfarrowsthreeparameters{#1}%
+    \expandafter\pgfarrowsaddtolateoptions\expandafter{\expandafter\pgfarrowslengthdependent\pgfarrowstheparameters\pgfarrowwidth}%
+  },
+  angle/.code={%
+    \pgfarrowsfourparameters{#1}%
+    \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\pgfarrows@angle@setup\pgfarrowstheparameters}%
+  },
+  angle'/.code={
+    \pgfarrowsaddtolateoptions{\pgfarrows@angle@setup@prime{#1}}%
+  },
+  %
+  line cap/.is choice,
+  line cap/butt/.code=\pgfarrowsaddtooptions{\pgfarrowroundcapfalse},
+  line cap/round/.code=\pgfarrowsaddtooptions{\pgfarrowroundcaptrue},
+  line join/.is choice,
+  line join/miter/.code=\pgfarrowsaddtooptions{\pgfarrowroundjoinfalse},
+  line join/round/.code=\pgfarrowsaddtooptions{\pgfarrowroundjointrue},
+  round/.style={line cap=round,line join=round},
+  sharp/.style={line cap=butt,line join=miter},
+}%
+%
+%
+% Classification of arrow tips:
+%
+%
+% Barbs
+% -----
+%
+% These arrow tips consisting of stroked lines starting at the tip,
+% typically going backward. They cannot be filled, only stroked
+%
+% A special case are the arrows mimicking the tip at the end of a
+% \rightarrow command.
+%
+%
+% Geometric
+% ---------
+%
+% The arrow tips have a geometric form like a triangle or a
+% "stealth" fighter or a kite. They can be filled and/or stroked.
+%
+%
+% Caps
+% ----
+%
+% These arrow tips have their width fixed to the line width and
+% provide different ways of adding a "cap" to the end of a line. This
+% allows one to use more than just the standard "round cap", "butt
+% cap" and "rect cap" and, additionally, one can one kind of cap at
+% one end and another at the other end.
+%
+%
+% Other
+% -----
+%
+% Special purpose arrow tips.
+%
+
+
+
+%
+%
+% Barbs arrow tips
+%
+%
+
+
+% An Straight Barb yields a simple angle
+
+\pgfdeclarearrow{
+  name = Straight Barb,
+  defaults = {
+    length = +1.5pt 2,
+    width'  = +0pt 2,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    % Compute front miter length:
+    \pgfmathdivide@{\pgf@sys@tonumber\pgfarrowlength}{\pgf@sys@tonumber\pgfarrowwidth}%
+    \let\pgf@temp@quot\pgfmathresult%
+    \pgf@x\pgfmathresult pt%
+    \pgf@x\pgfmathresult\pgf@x%
+    \pgf@x4\pgf@x%
+    \advance\pgf@x by1pt%
+    \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+    \pgf@xc\pgfmathresult\pgfarrowlinewidth% xc is front miter
+    \pgf@xc.5\pgf@xc
+    \pgf@xa\pgf@temp@quot\pgfarrowlinewidth% xa is extra harpoon miter
+    % Set ends
+    \ifpgfarrowroundjoin
+      \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by\pgf@xc\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi}
+    \fi
+    \pgfarrowssetvisualbackend{\pgfarrowlength\advance\pgf@x by.5\pgfarrowlinewidth}
+    \pgfarrowssetbackend{-.5\pgfarrowlinewidth}
+    % harpoon miter correction
+    \ifpgfarrowreversed
+      \pgfarrowssetlineend{\pgfarrowlength\ifpgfarrowharpoon\advance\pgf@x by.5\pgfarrowlinewidth\fi}
+    \else
+      \pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}
+    \fi
+    % The hull:
+    \ifpgfarrowroundjoin
+      \pgfarrowshullpoint{\pgfarrowlength\advance\pgf@x by.5\pgfarrowlinewidth}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else0pt\fi}%
+    \else%
+      \ifpgfarrowharpoon
+        \pgfarrowshullpoint{\pgfarrowlength\advance\pgf@x by\pgf@xc\advance\pgf@x by\pgf@xa}{-.5\pgfarrowlinewidth}%
+      \else
+        \pgfarrowshullpoint{\pgfarrowlength\advance\pgf@x by\pgf@xc\advance\pgf@x by\pgf@xa}{0pt}%
+      \fi%
+    \fi
+    \pgfarrowsupperhullpoint{.5\pgfarrowlinewidth}{.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth}%
+    \pgfarrowsupperhullpoint{-.5\pgfarrowlinewidth}{.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth}%
+    \ifpgfarrowharpoon
+      \pgfarrowshullpoint{-.5\pgfarrowlinewidth}{-.5\pgfarrowlinewidth}%
+    \fi
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowwidth
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifpgfarrowroundcap\pgfsetroundcap\else\pgfsetbuttcap\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \pgfpathmoveto{\pgfqpoint{0pt}{.5\pgfarrowwidth}}
+    \pgfpathlineto{\pgfqpoint{\pgfarrowlength}{0pt}}
+    \ifpgfarrowharpoon
+      \pgfpathlineto{\pgfqpoint{\pgfarrowlength\advance\pgf@x by\ifpgfarrowreversed\else-\fi\pgfarrowlinewidth}{0pt}}
+    \else
+      \pgfpathlineto{\pgfqpoint{0pt}{-.5\pgfarrowwidth}}
+    \fi
+    \pgfusepathqstroke
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowroundjoin j\fi%
+    \ifpgfarrowroundcap c\fi%
+  },
+}%
+%
+%
+% Hooks are barbs that consist of an arc going forward from the line
+% end and curving back by a given angle specified using the |arc|
+% key.
+
+\pgfkeys{
+  /pgf/arrow keys/.cd,
+  arc/.code={%
+    \pgfmathparse{#1}%
+    \expandafter\pgfarrowsaddtooptions\expandafter{\expandafter\def\expandafter\pgfarrowarc\expandafter{\pgfmathresult}}
+  }
+}%
+
+\def\pgfarrowarc{180}%
+
+\pgfdeclarearrow{
+  name = Hooks,
+  defaults = {
+    length = +0.75pt 1.25,
+    width'  = +0pt 4 -1,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    \ifpgfarrowharpoon
+      \pgfarrowshullpoint{.5\pgfarrowlength}{-.5\pgfarrowlinewidth}
+      \pgfarrowshullpoint{\pgfarrowlength}{-.5\pgfarrowlinewidth\advance\pgf@y by.125\pgfarrowwidth}
+    \fi
+    \ifdim\pgfarrowarc pt<90.1pt
+      \pgfarrowsupperhullpoint{0pt}{.25\pgfarrowwidth\ifpgfarrowroundcap\else\advance\pgf@y by-.25\pgfarrowlinewidth\fi}
+      \pgfarrowsupperhullpoint{\pgfarrowlength}{.25\pgfarrowwidth\ifpgfarrowroundcap\else\advance\pgf@y by-.25\pgfarrowlinewidth\fi}
+    \else%
+      \pgfarrowsupperhullpoint{\pgfarrowlength}{.375\pgfarrowwidth}
+      \pgfarrowsupperhullpoint{.5\pgfarrowlength}{.5\pgfarrowwidth}
+      \ifdim\pgfarrowarc pt>180pt
+        \pgfarrowsupperhullpoint{-.5\pgfarrowlength}{.5\pgfarrowwidth}
+        \pgfarrowsupperhullpoint{-\pgfarrowlength}{.375\pgfarrowwidth}
+        \pgfarrowsupperhullpoint{-\pgfarrowlength}{.25\pgfarrowwidth}
+      \else
+        \pgfarrowsupperhullpoint{\ifpgfarrowroundcap-.5\pgfarrowlinewidth\else0pt\fi}{.25\pgfarrowwidth}
+        \pgfarrowsupperhullpoint{\ifpgfarrowroundcap-.5\pgfarrowlinewidth\else0pt\fi}{.5\pgfarrowwidth}
+      \fi
+    \fi
+    % Adjust width and length: Take line thickness into account:
+    \advance\pgfarrowlength by-.5\pgfarrowlinewidth
+    \advance\pgfarrowwidth by-\pgfarrowlinewidth
+    \ifpgfarrowreversed
+      \ifpgfarrowroundjoin
+        \pgfarrowssetbackend{-.5\pgfarrowlinewidth}
+      \fi
+    \fi
+    % There are four different intervals for the values of
+    % \pgfarrowsarc that give rise to four different settings of tip
+    % ends and so on:
+    %
+    % Case 1: 0 <= Angle < 90
+    %
+    \ifdim\pgfarrowarc pt<90pt%
+      % Tip end is given by sin(pgfarrowarc)*length
+      \pgfmathsin@{\pgfarrowarc}
+      \pgfarrowssettipend{\pgfmathresult\pgfarrowlength\advance\pgf@x by.5\pgfarrowlinewidth}%
+    \else\ifdim\pgfarrowarc pt<180pt%
+      \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by.5\pgfarrowlinewidth}%
+      \ifpgfarrowroundcap\pgfarrowssetbackend{-.5\pgfarrowlinewidth}\fi%
+    \else\ifdim\pgfarrowarc pt<270pt%
+      \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by.5\pgfarrowlinewidth}%
+      \ifdim\pgfarrowarc pt>180pt
+        % Back end is given by sin(pgfarrowarc)*length
+        \pgfmathsin@{\pgfarrowarc}
+        \pgfarrowssetbackend{\pgfmathresult\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}%
+      \else
+        \ifpgfarrowroundcap\pgfarrowssetbackend{-.5\pgfarrowlinewidth}\fi%
+      \fi%
+    \else%
+      \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by.5\pgfarrowlinewidth}%
+      \pgfarrowssetbackend{-\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}%
+    \fi\fi\fi%
+    \ifpgfarrowreversed
+      \pgfarrowssetlineend{.5\pgfarrowlinewidth}
+    \else%
+      \ifpgfarrowharpoon
+        \pgfarrowssetlineend{0pt}
+      \else
+        \pgfarrowssetlineend{.25\pgfarrowlinewidth}
+      \fi
+    \fi
+    % Adjust arc:
+    \pgf@x\pgfarrowarc pt%
+    \advance\pgf@x by-90pt%
+    \edef\pgfarrowarc{\pgf@sys@tonumber\pgf@x}%
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowwidth
+    \pgfarrowssave\pgfarrowarc
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifpgfarrowroundcap\pgfsetroundcap\else\pgfsetbuttcap\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    {%
+      \pgftransformxscale{+\pgfarrowlength}
+      \pgftransformyscale{+.25\pgfarrowwidth}
+      \pgfpathmoveto{\pgfpointpolar{+\pgfarrowarc}{+1pt}\advance\pgf@y by1pt}
+      \pgfpatharc{\pgfarrowarc}{+-90}{+1pt}
+      \ifpgfarrowharpoon
+      \else
+        \pgfpatharc{+90}{+-\pgfarrowarc}{+1pt}
+      \fi
+    }
+    \ifpgfarrowharpoon\ifpgfarrowreversed
+    \pgfpathlineto{\pgfqpoint{\pgflinewidth}{0pt}}
+    \fi\fi
+    \pgfusepathqstroke
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \pgfarrowarc,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowroundjoin j\fi%
+    \ifpgfarrowroundcap c\fi%
+  },
+}%
+
+
+\pgfdeclarearrow{
+  name = Arc Barb,
+  defaults = {
+    length = +1.5pt 2,
+    width'  = +0pt 2,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    % Adjust arc:
+    \pgf@x\pgfarrowarc pt%
+    \pgf@x.5\pgf@x%
+    \edef\pgfarrowarc{\pgf@sys@tonumber\pgf@x}%
+    % The tips:
+    \pgfarrowssettipend{\pgfarrowlength}
+    \pgfarrowssetvisualbackend{\pgfarrowlength}
+    \pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}
+    % The hull:
+    \pgfarrowsupperhullpoint{\pgfarrowlength}{.25\pgfarrowwidth}
+    \ifpgfarrowharpoon\pgfarrowshullpoint{\pgfarrowlength}{-.5\pgflinewidth}\fi
+    \pgfmathsincos@{\pgfarrowarc}%
+    \pgf@xa.5\pgfarrowwidth%
+    \pgfarrowsupperhullpoint{\pgfmathresultx\pgfarrowlength}{\pgfmathresulty\pgf@xa}
+    \ifdim\pgfarrowarc pt>60pt
+      \pgfarrowsupperhullpoint{.5\pgfarrowlength}{\ifdim\pgfarrowarc pt<90pt\pgfmathresulty\pgf@xa\else.5\pgfarrowwidth\fi}
+    \fi
+    \ifdim\pgfarrowarc pt>90pt
+      \ifdim\pgfarrowarc pt<120pt
+        \pgfarrowsupperhullpoint{\pgfmathresultx\pgfarrowlength}{.5\pgfarrowwidth}
+      \else
+        \pgfarrowsupperhullpoint{-.5\pgfarrowlength}{.5\pgfarrowwidth}
+        \ifdim\pgfarrowarc pt>150pt
+          \pgfarrowsupperhullpoint{-\pgfarrowlength}{.25\pgfarrowwidth}
+        \fi
+      \fi
+    \fi
+    \pgfutil@tempswafalse
+    \ifdim\pgfarrowarc pt<90pt
+      \pgfutil@tempswatrue
+    \fi
+    \ifpgfarrowharpoon
+      \pgfutil@tempswatrue
+    \fi
+    \ifpgfutil@tempswa
+      \pgf@xa.5\pgfarrowwidth\advance\pgf@xa by-\pgfarrowlinewidth%
+      \pgf@ya\pgfarrowlength\advance\pgf@ya by-\pgfarrowlinewidth%
+      \pgfarrowsupperhullpoint{\pgfmathresultx\pgf@ya}{\pgfmathresulty\pgf@xa}
+    \fi
+    % Compute back end
+    \ifpgfarrowroundcap
+      \pgf@y\pgfarrowlength
+      \advance\pgf@y by-.5\pgfarrowlinewidth
+      \pgf@x\pgfmathresultx\pgf@y%
+    \else
+      \ifdim\pgfarrowarc pt<90pt
+        \pgf@y\pgfarrowlength
+        \advance\pgf@y by-\pgfarrowlinewidth
+        \pgf@x\pgfmathresultx\pgf@y%
+      \else
+        \pgf@x\pgfmathresultx\pgfarrowlength%
+      \fi
+    \fi
+    \pgfarrowssetbackend{\pgf@x\ifpgfarrowroundcap\advance\pgf@x by-.5\pgfarrowlinewidth\fi}
+    % Adjust width and length: Take line thickness into account:
+    \advance\pgfarrowlength by-.5\pgfarrowlinewidth
+    \advance\pgfarrowwidth by-\pgfarrowlinewidth
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowwidth
+    \pgfarrowssave\pgfarrowarc
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundcap\pgfsetroundcap\else\pgfsetbuttcap\fi
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    {%
+      \pgftransformxscale{+\pgfarrowlength}
+      \pgftransformyscale{+.5\pgfarrowwidth}
+      \pgfpathmoveto{\pgfpointpolar{+\pgfarrowarc}{+1pt}}
+      \ifpgfarrowharpoon
+        \pgfpatharc{+\pgfarrowarc}{0pt}{+1pt}
+      \else
+        \pgfpatharc{+\pgfarrowarc}{+-\pgfarrowarc}{+1pt}
+      \fi
+    }
+    \ifpgfarrowharpoon
+      \pgfpathlineto{\pgfqpoint{\pgfarrowlength\advance\pgf@x by\ifpgfarrowreversed\else-\fi.5\pgflinewidth}{0pt}}
+    \fi
+    \pgfusepathqstroke
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \pgfarrowarc,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowroundcap c\fi%
+    \ifpgfarrowroundjoin j\fi%
+  },
+}%
+
+
+
+% Tee Barb are barb arrows heads that look like a T
+
+\pgfdeclarearrow{
+  name = Tee Barb,
+  defaults = {
+    length = +1.5pt 2,
+    width = +3pt 4,
+    inset' = +0pt .5,
+    line width = +0pt 1 1,
+  },
+  bending mode=polar,
+  setup code = {
+    % Two useful numbers...
+    \pgfutil@tempswafalse%
+    \pgfutil@tempswbfalse%
+    \pgfutil@tempdima\pgfarrowlength\advance\pgfutil@tempdima by-\pgfarrowinset\ifdim\pgfutil@tempdima<.5\pgfarrowlinewidth\pgfutil@tempdima.5\pgfarrowlinewidth\pgfutil@tempswatrue\fi%
+    \pgfutil@tempdimb-\pgfarrowinset\ifdim\pgfutil@tempdimb>-.5\pgfarrowlinewidth\pgfutil@tempdimb-.5\pgfarrowlinewidth\pgfutil@tempswbtrue\fi
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfarrowwidth
+    \pgfarrowssavethe\pgfutil@tempdima
+    \pgfarrowssavethe\pgfutil@tempdimb
+    % Infos:
+    \pgfarrowssettipend{\pgfutil@tempdima\ifpgfarrowroundcap\ifpgfutil@tempswa\else\advance\pgf@x by.5\pgfarrowlinewidth\fi\fi}
+    \pgfarrowssetvisualbackend{.5\pgfarrowlinewidth}
+    \pgfarrowssetbackend{\pgfutil@tempdimb\ifpgfarrowroundcap\ifpgfutil@tempswb\else\advance\pgf@x by-.5\pgfarrowlinewidth\fi\fi}
+    \pgfarrowssetlineend{\ifpgfarrowreversed\else-\fi.25\pgfarrowlinewidth}%
+    % The hull:
+    \pgfarrowsupperhullpoint{\pgfutil@tempdima\ifpgfarrowroundcap\ifpgfutil@tempswa\else\advance\pgf@x by.5\pgfarrowlinewidth\fi\fi}{.5\pgfarrowwidth}%
+    \pgfarrowsupperhullpoint{\pgfutil@tempdimb\ifpgfarrowroundcap\ifpgfutil@tempswb\else\advance\pgf@x by-.5\pgfarrowlinewidth\fi\fi}{.5\pgfarrowwidth}%
+    \ifpgfarrowharpoon
+      \pgfarrowshullpoint{.5\pgfarrowlinewidth}{-.5\pgfarrowlinewidth}%
+    \fi
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \pgf@yc\pgflinewidth% save...
+    \ifdim\pgflinewidth=\pgfarrowlinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \ifpgfarrowroundcap\pgfsetroundcap\else\pgfsetbuttcap\fi
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \pgf@x\pgfutil@tempdima\advance\pgf@x by-.5\pgfarrowlinewidth%
+    \pgf@y\pgfutil@tempdimb\advance\pgf@y by.5\pgfarrowlinewidth%
+    % Case 1: No bar atop the I:
+    \ifdim\pgf@x=\pgf@y%
+      \pgfpathmoveto{\pgfqpoint{0pt}{.5\pgfarrowwidth}}
+      \pgfpathlineto{\pgfqpoint{0pt}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else-.5\pgfarrowwidth\fi}}
+    \else
+      % Case 2: Bar, but only in one direction:
+      \ifdim\pgfutil@tempdima=.5\pgfarrowlinewidth%
+        \pgfpathmoveto{\pgfqpoint{\pgfutil@tempdimb}{.5\pgfarrowwidth\advance\pgf@y by-.5\pgfarrowlinewidth}}
+        \pgfpathlineto{\pgfqpoint{0pt}{.5\pgfarrowwidth\advance\pgf@y by-.5\pgfarrowlinewidth}}
+        \ifpgfarrowharpoon%
+          \pgfpathlineto{\pgfqpoint{0pt}{-.5\pgf@yc}}%
+        \else%
+          \pgfpathlineto{\pgfqpoint{0pt}{-.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth}}
+          \pgfpathlineto{\pgfqpoint{\pgfutil@tempdimb}{-.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth}}
+        \fi
+      \else% Case 3: Complete I:
+        \pgfpathmoveto{\pgfqpoint{\pgfutil@tempdimb}{.5\pgfarrowwidth\advance\pgf@y by-.5\pgfarrowlinewidth}}
+        \pgfpathlineto{\pgfqpoint{\pgfutil@tempdima}{.5\pgfarrowwidth\advance\pgf@y by-.5\pgfarrowlinewidth}}
+        \pgfpathmoveto{\pgfqpoint{0pt}{.5\pgfarrowwidth\advance\pgf@y by-.5\pgfarrowlinewidth}}
+        \ifpgfarrowharpoon%
+          \pgfpathlineto{\pgfqpoint{0pt}{-.5\pgf@yc}}%
+        \else%
+          \pgfpathlineto{\pgfqpoint{0pt}{-.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth}}
+          \pgfpathmoveto{\pgfqpoint{\pgfutil@tempdimb}{-.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth}}
+          \pgfpathlineto{\pgfqpoint{\pgfutil@tempdima}{-.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth}}
+        \fi
+      \fi
+    \fi
+    \pgfusepathqstroke
+  },
+  parameters = {
+    \the\pgfarrowwidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowinset,%
+    \the\pgfarrowlinewidth,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowroundjoin j\fi%
+    \ifpgfarrowroundcap c\fi%
+  },
+}%
+
+
+% Math barbs that resemble \rightarrow in different fonts:
+
+
+
+% The original default arrow head used in TikZ. It is modeled on an
+% old version of the \rightarrow head of the *old* Computer Modern
+% fonts.
+
+\pgfdeclarearrow{
+  name = Classical TikZ Rightarrow,
+  defaults = {
+    length  = +1.05pt 1.925,
+    width'  = +0pt 1.9237,
+    line width = 0pt 0.8 1,
+    round
+  },
+  setup code =
+  {
+    \ifpgfarrowharpoon\pgfarrowroundjointrue\fi
+    % inner length:
+    \pgfutil@tempdima\pgfarrowlength
+    \advance\pgfutil@tempdima by-\pgfarrowlinewidth
+    \pgfutil@tempdimb\pgfarrowwidth
+    \advance\pgfutil@tempdimb by-\pgfarrowlinewidth
+    \ifpgfarrowroundjoin%
+    \else%
+      \pgfmathdivide@{\pgf@sys@tonumber\pgfutil@tempdima}{\pgf@sys@tonumber\pgfutil@tempdimb}%
+      \let\pgf@temp@quot\pgfmathresult%
+      \pgf@x\pgfmathresult pt%
+      \pgf@x\pgfmathresult\pgf@x%
+      \pgf@x40.96\pgf@x%
+      \advance\pgf@x by1pt%  \pgflinewidth^2 + (6.4 \pgftempdim@a / \pgfutil@tempdimb) \pgflinewidth^2
+      \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+      \pgf@xc\pgfmathresult\pgfarrowlinewidth% xc is front miter
+      \pgf@xc.5\pgf@xc
+    \fi%
+     % The following are needed in the code:
+    \pgfarrowssavethe\pgfutil@tempdima
+    \pgfarrowssavethe\pgfutil@tempdimb
+    % The extend:
+    \pgfarrowssettipend{\pgfutil@tempdima\ifpgfarrowroundjoin\advance\pgf@x by.5\pgfarrowlinewidth\else\advance\pgf@x by\pgf@xc\fi}%
+    \pgfarrowssetvisualbackend{\pgfutil@tempdima\advance\pgf@x by.5\pgfarrowlinewidth}%
+    \ifpgfarrowreversed%
+      \ifpgfarrowharpoon%
+        % A reversed arrow needs a slightly different line end:
+        \pgfarrowssetlineend{\pgfutil@tempdima\advance\pgf@x by.5\pgflinewidth}%
+      \else%
+        % A reversed arrow needs a slightly different line end:
+        \pgfarrowssetlineend{\pgfutil@tempdima\advance\pgf@x by-.25\pgflinewidth}%
+      \fi%
+    \else%
+      \pgfarrowssetlineend{\pgfutil@tempdima\advance\pgf@x by-.6\pgflinewidth}%
+    \fi%
+    \pgfarrowssetbackend{-.5\pgfarrowlinewidth}%
+    % The hull:
+    %  Tip:
+    \pgfarrowshullpoint{\pgfutil@tempdima\ifpgfarrowroundjoin\advance\pgf@x by.5\pgfarrowlinewidth\else\advance\pgf@x by\pgf@xc\fi}{.5\pgfarrowlinewidth}%
+    \pgfarrowshullpoint{\pgfutil@tempdima\ifpgfarrowroundjoin\advance\pgf@x by.5\pgfarrowlinewidth\else\advance\pgf@x by\pgf@xc\fi}{-.5\pgfarrowlinewidth}%
+    %  Upper end:
+    \pgfarrowsupperhullpoint{.5\pgfarrowlinewidth}{.5\pgfutil@tempdimb\advance\pgf@y by.5\pgfarrowlinewidth}%
+    \pgfarrowsupperhullpoint{-.5\pgfarrowlinewidth}{.5\pgfutil@tempdimb\advance\pgf@y by.5\pgfarrowlinewidth}%
+    %  Lower end:
+    \ifpgfarrowharpoon
+      \pgfarrowshullpoint{\pgfutil@tempdima\advance\pgf@x by-\pgflinewidth}{-.5\pgflinewidth}%
+      \pgfarrowshullpoint{-.5\pgfarrowlinewidth}{.5\pgfutil@tempdimb\advance\pgf@y by-.5\pgflinewidth}%
+    \fi
+  },
+  drawing code =
+  {
+    \pgfsetdash{}{+0pt}
+    \edef\pgf@orig@linewidth{\the\pgflinewidth}
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \ifpgfarrowharpoon\pgfarrowroundjointrue\fi
+    \ifpgfarrowroundcap\pgfsetroundcap\else\pgfsetbuttcap\fi
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \pgfpathmoveto
+          {\pgfqpoint{0pt}{.5\pgfutil@tempdimb}}
+    \ifpgfarrowharpoon
+      \pgf@arrows@old@tikz@harpoon
+    \else
+      \pgfpathcurveto
+          {\pgfqpoint{0.066666\pgfutil@tempdima}{0.3125\pgfutil@tempdimb}}
+          {\pgfqpoint{.8\pgfutil@tempdima}{0.03125\pgfutil@tempdimb}}
+          {\pgfqpoint{\pgfutil@tempdima}{0pt}}
+      \pgfpathcurveto
+          {\pgfqpoint{.8\pgfutil@tempdima}{-.03125\pgfutil@tempdimb}}
+          {\pgfqpoint{0.066666\pgfutil@tempdima}{-.3125\pgfutil@tempdimb}}
+          {\pgfqpoint{0pt}{-.5\pgfutil@tempdimb}}
+      \pgfsetlinewidth{+\pgfarrowlinewidth}
+      \pgfusepathqstroke
+    \fi
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowroundjoin j\fi%
+    \ifpgfarrowroundcap c\fi%
+  },
+}%
+
+\def\pgf@arrows@old@tikz@harpoon{
+  \ifpgfarrowreversed
+    \pgf@arrows@old@tikz@harpoon@reversed
+  \else
+    \pgfpathcurveto
+      {\pgfqpoint{0.066666\pgfutil@tempdima}{0.3125\pgfutil@tempdimb}}
+      {\pgfqpoint{.8\pgfutil@tempdima}{0.03125\pgfutil@tempdimb}}
+      {\pgfqpoint{\pgfutil@tempdima}{0pt}}
+    \pgfpathcurveto
+      {\pgfqpoint{0.95\pgfutil@tempdima}{-0.125\pgflinewidth}}
+      {\pgfqpoint{0.933333\pgfutil@tempdima}{-0.125\pgflinewidth}}
+      {\pgfqpoint{0.933333\pgfutil@tempdima}{-0.125\pgflinewidth}}
+    \pgfpathlineto
+      {\pgfqpoint{0.8\pgfutil@tempdima\advance\pgf@x by-.5\pgflinewidth}{-0.125\pgflinewidth}}
+    \pgfusepathqstroke
+  \fi
+}%
+\def\pgf@arrows@old@tikz@harpoon@reversed{
+    \pgfpathcurveto
+      {\pgfqpoint{0.066666\pgfutil@tempdima}{0.3125\pgfutil@tempdimb}}
+      {\pgfqpoint{.8\pgfutil@tempdima}{0.03125\pgfutil@tempdimb}}
+      {\pgfqpoint{\pgfutil@tempdima}{0.125\pgflinewidth}}
+    \pgfpathmoveto
+      {\pgfqpoint{0pt}{.5\pgfutil@tempdimb}}
+    \pgfpathcurveto
+      {\pgfqpoint{0.066666\pgfutil@tempdima}{0.3125\pgfutil@tempdimb}}
+      {\pgfqpoint{.8\pgfutil@tempdima}{0.03125\pgfutil@tempdimb}}
+      {\pgfqpoint{\pgfutil@tempdima}{-0.125\pgflinewidth}}
+    \pgfusepathqstroke
+    \pgfsetlinewidth{+\pgf@orig@linewidth}
+    \pgfsetroundcap
+    \pgfpathmoveto{\pgfqpoint{\pgfutil@tempdima\advance\pgf@x by0.6\pgflinewidth}{0pt}}
+    \pgfpathlineto{\pgfqpoint{\pgfutil@tempdima}{0pt}}
+    \pgfusepathqstroke
+}%
+
+
+% An approximation to the new (past 1992) Computer Modern math arrow
+% heads. This would be a better version of "to", so consider saying
+% to/.tips=Computer Modern Rightarrow
+
+\pgfdeclarearrow{
+  name = Computer Modern Rightarrow,
+  defaults = {
+    length = +1.6pt 2.2, % 0pt 5.2
+    width' = +0pt 2.096774,
+    line width = 0pt 1 1,
+    round
+  },
+  setup code =
+  {
+    % inner length:
+    \pgfutil@tempdima\pgfarrowlength
+    \advance\pgfutil@tempdima by-\pgfarrowlinewidth
+    \pgfutil@tempdimb\pgfarrowwidth
+    \advance\pgfutil@tempdimb by-\pgfarrowlinewidth
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfutil@tempdima
+    \pgfarrowssavethe\pgfutil@tempdimb
+    % Front miter:
+    \ifpgfarrowroundjoin%
+    \else%
+      \pgfmathdivide@{\pgf@sys@tonumber\pgfutil@tempdima}{\pgf@sys@tonumber\pgfutil@tempdimb}%
+      \let\pgf@temp@quot\pgfmathresult%
+      \pgf@x\pgfmathresult pt%
+      \pgf@x\pgfmathresult\pgf@x%
+      \pgf@x49.44662\pgf@x%
+      \advance\pgf@x by1pt%  \pgfarrowlinewidth^2 + (0.41019/0.0583333 \pgftempdim@a / \pgfutil@tempdimb) \pgfarrowlinewidth^2
+      \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+      \pgf@xc\pgfmathresult\pgfarrowlinewidth% xc is front miter
+      \pgf@xc.5\pgf@xc
+      \pgf@xa\pgf@temp@quot\pgfarrowlinewidth% xa is extra harpoon miter
+      \pgf@xa3.51591\pgf@xa% xa is extra harpoon miter
+    \fi%
+    % The extend:
+    \pgfarrowssettipend{\ifpgfarrowroundjoin.5\pgfarrowlinewidth\else\pgf@xc\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi\fi}%
+    \pgfarrowssetvisualbackend{.5\pgfarrowlinewidth}%
+    \ifpgfarrowreversed%
+      \ifpgfarrowharpoon%
+        \pgfarrowssetlineend{.5\pgfarrowlinewidth}%
+      \else%
+        \pgfarrowssetlineend{-.5\pgfarrowlinewidth}%
+      \fi%
+    \else%
+      \pgfarrowssetlineend{-.5\pgfarrowlinewidth}%
+    \fi%
+    \pgfarrowssetbackend{-\pgfutil@tempdima\advance\pgf@x by-.5\pgfarrowlinewidth}%
+    % The hull:
+    %  Tip:
+    \pgfarrowshullpoint{\ifpgfarrowroundjoin.5\pgfarrowlinewidth\else\pgf@xc\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi\fi}{.5\pgfarrowlinewidth}%
+    \pgfarrowshullpoint{\ifpgfarrowroundjoin.5\pgfarrowlinewidth\else\pgf@xc\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi\fi}{-.5\pgfarrowlinewidth}%
+    %  Upper end:
+    \pgfarrowsupperhullpoint{-\pgfutil@tempdima\advance\pgf@x by.5\pgfarrowlinewidth}{.5\pgfutil@tempdimb\advance\pgf@y by.5\pgfarrowlinewidth}%
+    \pgfarrowsupperhullpoint{-\pgfutil@tempdima\advance\pgf@x by-.5\pgfarrowlinewidth}{.5\pgfutil@tempdimb\advance\pgf@y by.5\pgfarrowlinewidth}%
+    %  Lower end:
+    \ifpgfarrowharpoon
+      \pgfarrowshullpoint{-\pgfarrowlinewidth}{-.5\pgfarrowlinewidth}%
+      \pgfarrowshullpoint{-\pgfutil@tempdima\advance\pgf@x by-.5\pgfarrowlinewidth}{.5\pgfutil@tempdimb\advance\pgf@y by-.5\pgfarrowlinewidth}%
+    \fi
+  },
+  drawing code =
+  {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundcap\pgfsetroundcap\else\pgfsetbuttcap\fi
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \pgfpathmoveto
+        {\pgfqpoint{-\pgfutil@tempdima}{.5\pgfutil@tempdimb}}
+    \pgfpathcurveto
+        {\pgfqpoint{-0.81731\pgfutil@tempdima}{.2\pgfutil@tempdimb}}
+        {\pgfqpoint{-0.41019\pgfutil@tempdima}{0.05833333\pgfutil@tempdimb}}
+        {\pgfpointorigin}
+    \ifpgfarrowharpoon
+      \pgfpathlineto
+        {\pgfqpoint{\ifpgfarrowreversed.5\else-\fi\pgfarrowlinewidth}{0pt}}
+    \else
+      \pgfpathcurveto
+        {\pgfqpoint{-0.41019\pgfutil@tempdima}{-0.05833333\pgfutil@tempdimb}}
+        {\pgfqpoint{-0.81731\pgfutil@tempdima}{-.2\pgfutil@tempdimb}}
+        {\pgfqpoint{-\pgfutil@tempdima}{-.5\pgfutil@tempdimb}}
+    \fi
+    \pgfusepathqstroke
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \ifpgfarrowharpoon h\fi
+    \ifpgfarrowharpoon r\fi
+    \ifpgfarrowroundjoin j\fi%
+    \ifpgfarrowroundcap c\fi%
+  },
+}%
+
+
+
+% The arrow tip of an \implies arrow, to be used with an inner
+% line. Cannot be configured otherwise.
+
+\pgfdeclarearrow{
+  name = Implies,
+  setup code = {
+    \pgf@xa\pgfinnerlinewidth
+    \pgfutil@tempdima.25\pgflinewidth
+    \advance\pgfutil@tempdima by.25\pgf@xa%
+    \pgfutil@tempdimb.5\pgflinewidth
+    \advance\pgfutil@tempdimb by-.5\pgf@xa%
+    \pgfarrowssettipend{2.06\pgfutil@tempdima\advance\pgf@x by.5\pgfutil@tempdimb}
+    \pgfarrowssetbackend{-1.36\pgfutil@tempdima\advance\pgf@x by.5\pgfutil@tempdimb}
+    \pgfarrowsupperhullpoint{-1.4\pgfutil@tempdima}{2.8\pgfutil@tempdima}
+    \pgfarrowsupperhullpoint{2\pgfutil@tempdima}{.5\pgfutil@tempdimb}
+    \pgfarrowssavethe\pgfutil@tempdima
+    \pgfarrowssavethe\pgfutil@tempdimb
+  },
+  drawing code = {
+    \pgftransformxshift{.06\pgfutil@tempdima}
+    \pgfsetlinewidth{\pgfutil@tempdimb}
+    \pgfsetdash{}{+0pt}
+    \pgfsetroundcap
+    \pgfsetroundjoin
+    \pgfpathmoveto{\pgfpoint{-1.4\pgfutil@tempdima}{2.65\pgfutil@tempdima}}
+    \pgfpathcurveto
+    {\pgfpoint{-0.75\pgfutil@tempdima}{1.25\pgfutil@tempdima}}
+    {\pgfpoint{1\pgfutil@tempdima}{0.05\pgfutil@tempdima}}
+    {\pgfpoint{2\pgfutil@tempdima}{0pt}}
+    \pgfpathcurveto
+    {\pgfpoint{1\pgfutil@tempdima}{-0.05\pgfutil@tempdima}}
+    {\pgfpoint{-.75\pgfutil@tempdima}{-1.25\pgfutil@tempdima}}
+    {\pgfpoint{-1.4\pgfutil@tempdima}{-2.65\pgfutil@tempdima}}
+    \pgfusepathqstroke
+  },
+  parameters = {\the\pgfarrowlength}
+}%
+
+
+
+
+%
+%
+% Geometric arrow tips
+%
+%
+
+
+% Generic "latex-like" arrow tip. This is the basic arrow tip used in
+% latex's picture environment. You can configure its length and width.
+
+\pgfdeclarearrow{
+  name = Latex,
+  defaults = {
+    length  = +3pt 4.5 .8,% +2.8pt 3 0.8,
+    width' = +0pt .75,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    % Cap the line width at 1/4th distance from inset to tip
+    \pgf@x.2\pgfarrowlength
+    \ifdim\pgf@x<\pgfarrowlinewidth
+      \pgfarrowlinewidth\pgf@x
+    \fi
+    \pgfarrowssavethe\pgfarrowlinewidth%
+    % Compute front miter length:
+    \pgfmathdivide@{\pgf@sys@tonumber\pgfarrowlength}{\pgf@sys@tonumber\pgfarrowwidth}%
+    \let\pgf@temp@quot\pgfmathresult%
+    \pgf@x\pgfmathresult pt%
+    \pgf@x\pgfmathresult\pgf@x%
+    \pgf@x9\pgf@x%
+    \advance\pgf@x by1pt%
+    \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+    \pgf@xc\pgfmathresult\pgfarrowlinewidth%
+    \pgf@xa\pgf@temp@quot\pgfarrowlinewidth
+    % Inner length (pgfutil@tempdima) is now arrowlength - front miter
+    % - 0.5 linewidth (back thickness)
+    \pgfutil@tempdima\pgfarrowlength%
+    \advance\pgfutil@tempdima by-.5\pgf@xc%
+    \advance\pgfutil@tempdima by-.5\pgfarrowlinewidth%
+    % harpoon miter correction
+    \pgfarrowssetbackend{-.5\pgfarrowlinewidth}
+    \ifpgfarrowreversed
+      \ifdim\pgfinnerlinewidth>0pt
+        \pgfarrowssetlineend{0pt}
+      \else
+        \pgfarrowssetlineend{\pgfutil@tempdima\advance\pgf@x by-.5\pgflinewidth}
+      \fi
+    \else
+      \pgfarrowssetlineend{0pt}
+    \fi
+    \ifpgfarrowroundjoin
+      \pgfarrowssettipend{\pgfutil@tempdima\advance\pgf@x by.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth\ifpgfarrowharpoon\advance\pgf@x  by1.5\pgf@xa\fi}
+    \fi
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfutil@tempdima
+    % Now, compute back tip miter limit:
+    \pgf@process{\pgfpointnormalised{\pgfqpoint{.3\pgfarrowlength}{.2333333\pgfarrowwidth}}}%
+    \advance\pgf@y by1pt%
+    \pgf@yc\pgf@y\pgf@xc\pgf@x%
+    \pgfmathdivide@{\pgf@sys@tonumber\pgf@yc}{\pgf@sys@tonumber\pgf@xc}%
+    \pgfutil@tempdimb\pgfmathresult\pgfarrowlinewidth%
+    \pgfutil@tempdimb-.5\pgfutil@tempdimb%
+    \advance\pgfutil@tempdimb by.5\pgfarrowwidth%
+    \pgfarrowssavethe\pgfutil@tempdimb%
+    % The hull:
+    \pgfarrowshullpoint{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth\ifpgfarrowroundjoin\else\ifpgfarrowharpoon\advance\pgf@x  by1.5\pgf@xa\fi\fi}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else0pt\fi}%
+    \pgfarrowshullpoint{-.5\pgfarrowlinewidth}{.5\pgfarrowwidth\ifpgfarrowharpoon\advance\pgf@y by-.5\pgfarrowlinewidth\fi}%
+    \pgfarrowshullpoint{-.5\pgfarrowlinewidth}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else-.5\pgfarrowwidth\fi}%
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \pgfpathmoveto    {\pgfqpoint{\pgfutil@tempdima}{0pt}}
+    \pgfpathcurveto   {\pgfqpoint{.877192\pgfutil@tempdima}{.077922\pgfutil@tempdimb}}
+                      {\pgfqpoint{.337381\pgfutil@tempdima}{.519480\pgfutil@tempdimb}}
+                      {\pgfqpoint{0pt}{\pgfutil@tempdimb}}
+    \ifpgfarrowharpoon
+      \pgfpathlineto  {\pgfpointorigin}
+    \else
+      \pgfpathlineto  {\pgfqpoint{0pt}{-\pgfutil@tempdimb}}
+      \pgfpathcurveto {\pgfqpoint{.337381\pgfutil@tempdima}{-.519480\pgfutil@tempdimb}}
+                      {\pgfqpoint{.877192\pgfutil@tempdima}{-.077922\pgfutil@tempdimb}}
+                      {\pgfqpoint{\pgfutil@tempdima}{0pt}}
+    \fi
+    \pgfpathclose
+    \ifpgfarrowopen\pgfusepathqstroke\else\ifdim\pgfarrowlinewidth>0pt\pgfusepathqfillstroke\else\pgfusepathqfill\fi\fi
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowopen o\fi%
+    \ifpgfarrowroundjoin j\fi%
+  },
+}%
+
+
+
+% A basic stealth-fighter-like pointed arrow
+
+\pgfdeclarearrow{
+  name = Stealth,
+  defaults = {
+    length  = +3pt 4.5 .8,
+    width'  = +0pt .75,
+    inset'  = +0pt 0.325,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    % Cap the line width at 1/4th distance from inset to tip
+    \pgf@x\pgfarrowlength
+    \advance\pgf@x by-\pgfarrowinset
+    \pgf@x.25\pgf@x
+    \ifdim\pgf@x<\pgfarrowlinewidth
+      \pgfarrowlinewidth\pgf@x
+    \fi
+    % Compute front miter length:
+    \pgfmathdivide@{\pgf@sys@tonumber\pgfarrowlength}{\pgf@sys@tonumber\pgfarrowwidth}%
+    \let\pgf@temp@quot\pgfmathresult%
+    \pgf@x\pgfmathresult pt%
+    \pgf@x\pgfmathresult\pgf@x%
+    \pgf@x4\pgf@x%
+    \advance\pgf@x by1pt%
+    \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+    \pgf@xc\pgfmathresult\pgfarrowlinewidth% xc is front miter
+    \pgf@xc.5\pgf@xc
+    \pgf@xa\pgf@temp@quot\pgfarrowlinewidth% xa is extra harpoon miter
+    % Compute back miter length:
+    \pgf@ya.5\pgfarrowwidth%
+    \csname pgfmathatan2@\endcsname{\pgfmath@tonumber\pgfarrowlength}{\pgfmath@tonumber\pgf@ya}%
+    \pgf@yb\pgfmathresult pt%
+    \csname pgfmathatan2@\endcsname{\pgfmath@tonumber\pgfarrowinset}{\pgfmath@tonumber\pgf@ya}%
+    \pgf@ya\pgfmathresult pt%
+    \advance\pgf@yb by-\pgf@ya%
+    \pgf@yb.5\pgf@yb% half angle in yb
+    \pgfmathtan@{\pgf@sys@tonumber\pgf@yb}%
+    \pgfmathreciprocal@{\pgfmathresult}%
+    \pgf@yc\pgfmathresult\pgfarrowlinewidth%
+    \pgf@yc.5\pgf@yc%
+    \advance\pgf@ya by\pgf@yb%
+    \pgfmathsincos@{\pgf@sys@tonumber\pgf@ya}%
+    \pgf@ya\pgfmathresulty\pgf@yc% ya is the back miter
+    \pgf@yb\pgfmathresultx\pgf@yc% yb is the top miter
+    \ifdim\pgfarrowinset=0pt%
+      \pgf@ya.5\pgfarrowlinewidth% easy: back miter is half linewidth
+    \fi
+    % Compute inset miter length:
+    \pgfmathdivide@{\pgf@sys@tonumber\pgfarrowinset}{\pgf@sys@tonumber\pgfarrowwidth}%
+    \let\pgf@temp@quot\pgfmathresult%
+    \pgf@x\pgfmathresult pt%
+    \pgf@x\pgfmathresult\pgf@x%
+    \pgf@x4\pgf@x%
+    \advance\pgf@x by1pt%
+    \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+    \pgf@yc\pgfmathresult\pgfarrowlinewidth% yc is inset miter
+    \pgf@yc.5\pgf@yc%
+    % Inner length (pgfutil@tempdima) is now arrowlength - front miter - back miter
+    \pgfutil@tempdima\pgfarrowlength%
+    \advance\pgfutil@tempdima by-\pgf@xc%
+    \advance\pgfutil@tempdima by-\pgf@ya%
+    \pgfutil@tempdimb.5\pgfarrowwidth%
+    \advance\pgfutil@tempdimb by-\pgf@yb%
+    % harpoon miter correction
+    \ifpgfarrowroundjoin
+      \pgfarrowssetbackend{\pgf@ya\advance\pgf@x by-.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssetbackend{0pt}
+    \fi
+    \ifpgfarrowharpoon
+      \pgfarrowssetlineend{\pgfarrowinset\advance\pgf@x
+        by\pgf@yc\advance\pgf@x by.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssetlineend{\pgfarrowinset\advance\pgf@x by\pgf@yc\advance\pgf@x by-.25\pgfarrowlinewidth}
+      \ifpgfarrowreversed
+        \ifdim\pgfinnerlinewidth>0pt
+          \pgfarrowssetlineend{\pgfarrowinset}
+        \else
+          \pgfarrowssetlineend{\pgfutil@tempdima\advance\pgf@x by\pgf@ya\advance\pgf@x by-.25\pgfarrowlinewidth}
+        \fi
+      \fi
+    \fi
+    \ifpgfarrowroundjoin
+      \pgfarrowssettipend{\pgfutil@tempdima\advance\pgf@x by\pgf@ya\advance\pgf@x by.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssettipend{\pgfarrowlength\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi}
+    \fi
+    % The hull:
+    \pgfarrowshullpoint{\pgfarrowlength\ifpgfarrowroundjoin\else\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi\fi}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else0pt\fi}%
+    \pgfarrowsupperhullpoint{0pt}{.5\pgfarrowwidth}%
+    \pgfarrowshullpoint{\pgfarrowinset}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else 0pt\fi}%
+    % Adjust inset
+    \pgfarrowssetvisualbackend{\pgfarrowinset}
+    \advance\pgfarrowinset by\pgf@yc%
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfutil@tempdima
+    \pgfarrowssavethe\pgfutil@tempdimb
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgf@ya
+    \pgfarrowssavethe\pgfarrowinset
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \pgfpathmoveto{\pgfqpoint{\pgfutil@tempdima\advance\pgf@x by\pgf@ya}{0pt}}
+    \pgfpathlineto{\pgfqpoint{\pgf@ya}{\pgfutil@tempdimb}}
+    \pgfpathlineto{\pgfqpoint{\pgfarrowinset}{0pt}}
+    \ifpgfarrowharpoon \else
+    \pgfpathlineto{\pgfqpoint{\pgf@ya}{-\pgfutil@tempdimb}}
+    \fi
+    \pgfpathclose
+    \ifpgfarrowopen\pgfusepathqstroke\else\ifdim\pgfarrowlinewidth>0pt\pgfusepathqfillstroke\else\pgfusepathqfill\fi\fi
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \the\pgfarrowinset,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowopen o\fi%
+    \ifpgfarrowroundjoin j\fi%
+  },
+}%
+
+
+
+% A Kite is like a Stealth, only the inset counts in the other direction
+
+\pgfdeclarearrow{
+  name = Kite,
+  defaults = {
+    length  = +3.6pt +5.4,
+    width'  = +0pt +0.5,
+    inset'  = +0pt 0.25,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    % Cap the line width at 1/4th of the length
+    \pgf@x.4\pgfarrowlength
+    \ifdim\pgf@x<\pgfarrowlinewidth
+      \pgfarrowlinewidth\pgf@x
+    \fi
+    \pgf@x.4\pgfarrowwidth
+    \ifdim\pgf@x<\pgfarrowlinewidth
+      \pgfarrowlinewidth\pgf@x
+    \fi
+    % Compute front miter length:
+    \pgf@xa\pgfarrowlength%
+    \advance\pgf@xa by-\pgfarrowinset%
+    \pgfmathdivide@{\pgf@sys@tonumber\pgf@xa}{\pgf@sys@tonumber\pgfarrowwidth}%
+    \let\pgf@temp@quot\pgfmathresult%
+    \pgf@x\pgfmathresult pt%
+    \pgf@x\pgfmathresult\pgf@x%
+    \pgf@x4\pgf@x%
+    \advance\pgf@x by1pt%
+    \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+    \pgf@xc\pgfmathresult\pgfarrowlinewidth% xc is front miter
+    \pgf@xc.5\pgf@xc
+    \pgf@xa\pgf@temp@quot\pgfarrowlinewidth% xa is extra harpoon miter
+    % Compute back miter length:
+    \pgfmathdivide@{\pgf@sys@tonumber\pgfarrowinset}{\pgf@sys@tonumber\pgfarrowwidth}%
+    \let\pgf@temp@quot\pgfmathresult%
+    \pgf@x\pgfmathresult pt%
+    \pgf@x\pgfmathresult\pgf@x%
+    \pgf@x4\pgf@x%
+    \advance\pgf@x by1pt%
+    \pgfmathsqrt@{\pgf@sys@tonumber\pgf@x}%
+    \pgf@yc\pgfmathresult\pgfarrowlinewidth% yc is back miter
+    \pgf@yc.5\pgf@yc
+    \pgf@ya\pgf@temp@quot\pgfarrowlinewidth% ya is extra harpoon miter
+    % Compute top miter length:
+    {%
+      \pgfutil@tempdimb.5\pgfarrowwidth%
+      \pgfutil@tempdima\pgfarrowlength\advance\pgfutil@tempdima by-\pgfarrowinset%
+      \csname pgfmathatan2@\endcsname{\pgfmath@tonumber\pgfutil@tempdima}{\pgfmath@tonumber\pgfutil@tempdimb}%
+      \pgf@yb\pgfmathresult pt%
+      \csname pgfmathatan2@\endcsname{\pgfmath@tonumber\pgfarrowinset}{\pgfmath@tonumber\pgfutil@tempdimb}%
+      \pgf@ya\pgfmathresult pt%
+      \advance\pgf@yb by\pgf@ya%
+      \pgf@yb.5\pgf@yb% half angle in yb
+      \ifdim\pgf@yb=45pt%
+        \def\pgfmathresult{1.414213}%
+      \else%
+        \pgfmathsin@{\pgf@sys@tonumber\pgf@yb}%
+        \pgfmathreciprocal@{\pgfmathresult}%
+      \fi%
+      \pgf@yc\pgfmathresult\pgfarrowlinewidth%
+      \pgf@yc.5\pgf@yc%
+      \pgf@ya-\pgf@ya%
+      \advance\pgf@ya by-90pt%
+      \advance\pgf@ya by\pgf@yb%
+      \pgfmathsincos@{\pgf@sys@tonumber\pgf@ya}%
+      \pgf@xb\pgfmathresultx\pgf@yc% ya is the back miter
+      \pgf@yb\pgfmathresulty\pgf@yc% yb is the top miter
+      \expandafter\expandafter\expandafter%
+    }\expandafter\expandafter\expandafter\pgf@xb\expandafter\the\expandafter\pgf@xb\expandafter\pgf@yb\the\pgf@yb%
+    % Inner length (pgfutil@tempdima) is now arrowlength - front miter - back miter
+    \pgfutil@tempdima\pgfarrowlength%
+    \advance\pgfutil@tempdima by-\pgf@xc%
+    \pgfutil@tempdimb.5\pgfarrowwidth%
+    \advance\pgfutil@tempdimb by\pgf@yb%
+    % Set back end
+    \ifpgfarrowroundjoin
+      \pgfarrowssetbackend{\pgf@ya\advance\pgf@x by-.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssetbackend{0pt}
+    \fi
+    % harpoon miter correction
+    \ifpgfarrowreversed
+      \pgfarrowssetlineend{\pgfutil@tempdima\advance\pgf@x by-\pgflinewidth\advance\pgf@x by\pgfarrowlinewidth}
+    \else
+      \pgfarrowssetlineend{\pgf@yc\advance\pgf@x by\pgflinewidth\advance\pgf@x by-\pgfarrowlinewidth}
+    \fi
+    \ifpgfarrowroundjoin
+      \pgfarrowssettipend{\pgfutil@tempdima\advance\pgf@x by.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssettipend{\pgfarrowlength\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi}
+    \fi
+    % The hull:
+    \pgfarrowshullpoint{\pgfarrowlength\ifpgfarrowroundjoin\else\ifpgfarrowharpoon\advance\pgf@x by\pgf@xa\fi\fi}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else0pt\fi}%
+    \pgfarrowsupperhullpoint{\pgfarrowinset}{.5\pgfarrowwidth}%
+    \pgfarrowshullpoint{0pt}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else0pt\fi}%
+    % Adjust the inset:
+    \advance\pgfarrowinset by\pgf@xb%
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfutil@tempdima
+    \pgfarrowssavethe\pgfutil@tempdimb
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgf@yc
+    \pgfarrowssavethe\pgfarrowinset
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{\pgfarrowlinewidth}\fi
+    \pgfpathmoveto{\pgfqpoint{\pgfutil@tempdima}{0pt}}
+    \pgfpathlineto{\pgfqpoint{\pgfarrowinset}{\pgfutil@tempdimb}}
+    \pgfpathlineto{\pgfqpoint{\pgf@yc}{0pt}}
+    \ifpgfarrowharpoon \else
+    \pgfpathlineto{\pgfqpoint{\pgfarrowinset}{-\pgfutil@tempdimb}}
+    \fi
+    \pgfpathclose
+    \ifpgfarrowopen\pgfusepathqstroke\else\ifdim\pgfarrowlinewidth>0pt\pgfusepathqfillstroke\else\pgfusepathqfill\fi\fi
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \the\pgfarrowinset,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowopen o\fi%
+    \ifpgfarrowroundjoin j\fi%
+  },
+}%
+
+
+
+
+% A simple rectangle shape
+
+\pgfdeclarearrow{
+  name = Square,
+  defaults = {
+    length  = +2.12132pt +2.828427,
+    width'  = +0pt +1,
+    line width = +0pt +1 +1,
+  },
+  setup code = {
+    % Cap the line width at 1/2th of the length
+    \pgf@x.5\pgfarrowlength
+    \ifdim\pgf@x<\pgfarrowlinewidth
+      \pgfarrowlinewidth\pgf@x
+    \fi
+    \ifpgfarrowreversed
+      \pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssetlineend{.5\pgfarrowlinewidth}
+    \fi
+    \pgfarrowssettipend{\pgfarrowlength}
+    % The hull:
+    \pgfarrowshullpoint{\pgfarrowlength}{.5\pgfarrowwidth}
+    \pgfarrowshullpoint{0pt}{.5\pgfarrowwidth}
+    \pgfarrowshullpoint{\pgfarrowlength}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else-.5\pgfarrowwidth\fi}
+    \pgfarrowshullpoint{0pt}{\ifpgfarrowharpoon-.5\pgfarrowlinewidth\else-.5\pgfarrowwidth\fi}
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowwidth
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \pgfpathmoveto{\pgfqpoint{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}{.5\pgfarrowwidth\advance\pgf@y by-.5\pgfarrowlinewidth}}
+    \pgfpathlineto{\pgfqpoint{.5\pgfarrowlinewidth}{.5\pgfarrowwidth\advance\pgf@y by-.5\pgfarrowlinewidth}}
+    \pgfpathlineto{\pgfqpoint{.5\pgfarrowlinewidth}{\ifpgfarrowharpoon0pt\else-.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth\fi}}
+    \pgfpathlineto{\pgfqpoint{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}{\ifpgfarrowharpoon0pt\else-.5\pgfarrowwidth\advance\pgf@y by.5\pgfarrowlinewidth\fi}}
+    \pgfpathclose
+    \ifpgfarrowopen\pgfusepathqstroke\else\ifdim\pgfarrowlinewidth>0pt\pgfusepathqfillstroke\else\pgfusepathqfill\fi\fi
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowopen o\fi%
+    \ifpgfarrowroundjoin j\fi%
+  },
+}%
+
+
+% A simple rectangle shape
+
+\pgfdeclarearrow{
+  name = Circle,
+  defaults = {
+    length  = +2.39365pt +3.191538,
+    width'  = +0pt 1,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    % Cap the line width at 1/2th of the length
+    \pgf@x.5\pgfarrowlength
+    \ifdim\pgf@x<\pgfarrowlinewidth
+      \pgfarrowlinewidth\pgf@x
+    \fi
+    \ifpgfarrowreversed
+      \pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by-.5\pgfarrowlinewidth}
+    \else
+      \pgfarrowssetlineend{.5\pgfarrowlinewidth}
+    \fi
+    \pgfarrowssettipend{\pgfarrowlength}
+    % The hull:
+    \pgfarrowsupperhullpoint{\pgfarrowlength}{.25\pgfarrowwidth}
+    \pgfarrowsupperhullpoint{.75\pgfarrowlength}{.5\pgfarrowwidth}
+    \pgfarrowsupperhullpoint{.25\pgfarrowlength}{.5\pgfarrowwidth}
+    \pgfarrowsupperhullpoint{0pt}{.25\pgfarrowwidth}
+    \ifpgfarrowharpoon%
+      \pgfarrowshullpoint{0pt}{-.5\pgfarrowlinewidth}
+      \pgfarrowshullpoint{\pgfarrowlength}{-.5\pgfarrowlinewidth}
+    \fi%
+    % The following are needed in the code:
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowwidth
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundjoin\pgfsetroundjoin\else\pgfsetmiterjoin\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    \ifpgfarrowharpoon
+      \pgfpathmoveto{\pgfqpoint{\pgfarrowlength\advance\pgf@x
+          by-.5\pgfarrowlinewidth}{0pt}}
+      {%
+        \pgf@xa.5\pgfarrowlength
+        \advance\pgf@xa by-.5\pgfarrowlinewidth
+        \pgftransformxscale{+\the\pgf@xa}
+        \pgf@xa.5\pgfarrowwidth
+        \advance\pgf@xa by-.5\pgfarrowlinewidth
+        \pgftransformyscale{+\the\pgf@xa}
+        \pgfpatharc{0}{180}{1pt}
+      }
+      \pgfpathclose
+    \else%
+      \pgfpathellipse{\pgfqpoint{.5\pgfarrowlength}{0pt}}{\pgfqpoint{.5\pgfarrowlength\advance\pgf@x
+          by-.5\pgfarrowlinewidth}{0pt}}{\pgfqpoint{0pt}{.5\pgfarrowwidth\advance\pgf@y
+          by-.5\pgfarrowlinewidth}}
+    \fi
+    \ifpgfarrowopen\pgfusepathqstroke\else\ifdim\pgfarrowlinewidth>0pt\pgfusepathqfillstroke\else\pgfusepathqfill\fi\fi
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowopen o\fi%
+    \ifpgfarrowroundjoin j\fi%
+  },
+}%
+
+% Round cap
+
+\pgfdeclarearrow{
+  name = Round Cap,
+  defaults = {
+    length = +0pt .5
+  },
+  setup code = {
+    \ifpgfarrowreversed
+      \pgfarrowssettipend{\pgfarrowlength}
+      \pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by.5\pgflinewidth}
+    \else
+      \pgfarrowssettipend{\pgfarrowlength}
+      \pgfarrowssetlineend{-.5\pgflinewidth}
+    \fi
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowsupperhullpoint{0pt}{.5\pgflinewidth}
+    \pgfarrowsupperhullpoint{\pgfarrowlength}{.5\pgflinewidth}
+  },
+  drawing code = {
+    \ifpgfarrowreversed
+      \pgftransformxscale{-1}
+      \pgftransformxshift{-\pgfarrowlength}
+    \fi
+    \pgfutil@tempdima.5\pgflinewidth
+    \pgfpathmoveto   {\pgfqpoint{-0.75\pgflinewidth}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{0pt}{\pgfutil@tempdima}}
+    \ifpgfarrowreversed
+      \pgfpathlineto {\pgfqpoint{\pgfarrowlength}{\pgfutil@tempdima}}
+      \begingroup
+      \pgftransformxshift{\pgfarrowlength}
+      \pgftransformxscale{-1}
+    \fi
+    \pgfpathcurveto  {\pgfqpoint{0.55228475\pgfarrowlength}{\pgfutil@tempdima}}
+                     {\pgfqpoint{\pgfarrowlength}{0.55228475\pgfutil@tempdima}}
+                     {\pgfqpoint{\pgfarrowlength}{0pt}}
+    \pgfpathcurveto  {\pgfqpoint{\pgfarrowlength}{-0.55228475\pgfutil@tempdima}}
+                     {\pgfqpoint{0.55228475\pgfarrowlength}{-\pgfutil@tempdima}}
+                     {\pgfqpoint{0pt}{-\pgfutil@tempdima}}
+    \ifpgfarrowreversed
+      \endgroup
+    \fi
+    \pgfpathlineto   {\pgfqpoint{-.75\pgflinewidth}{-\pgfutil@tempdima}}
+    \pgfpathclose
+    \pgfusepathqfill
+  },
+  parameters = {\the\pgfarrowlength}
+}%
+
+
+
+\pgfdeclarearrow{
+  name = Butt Cap,
+  defaults = {
+    length = +0pt .5
+  },
+  setup code = {
+    \pgfarrowssettipend{\pgfarrowlength}
+    \pgfarrowssetlineend{-.5\pgflinewidth}
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowsupperhullpoint{0pt}{.5\pgflinewidth}
+    \pgfarrowsupperhullpoint{\pgfarrowlength}{.5\pgflinewidth}
+  },
+  drawing code = {
+    \pgfutil@tempdima.5\pgflinewidth
+    \pgfpathmoveto   {\pgfqpoint{-0.75\pgflinewidth}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{0pt}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowlength}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowlength}{-\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{-.75\pgflinewidth}{-\pgfutil@tempdima}}
+    \pgfpathclose
+    \pgfusepathqfill
+  },
+  parameters = {\the\pgfarrowlength}
+}%
+
+
+
+\pgfkeys{
+  /pgf/arrow keys/.cd,
+  cap angle/.code={%
+    \pgfmathsetlength\pgf@x{#1}%
+    \pgf@x.5\pgf@x
+    \pgfmathtan@{\pgf@sys@tonumber\pgf@x}%
+    \pgfmathreciprocal@{\pgfmathresult}%
+    \pgf@x\pgfmathresult pt%
+    \pgf@x.5\pgf@x%
+    \edef\pgf@marshal{\noexpand\pgfarrowsaddtooptions{\noexpand\pgfarrowslinewidthdependent{+0pt}{\pgf@sys@tonumber\pgf@x}{0}\pgfarrowlength\pgf@x}}
+    \pgf@marshal
+  }
+}%
+
+
+\pgfdeclarearrow{
+  name = Triangle Cap,
+  defaults = {
+    length = +0pt .5
+  },
+  setup code = {
+    \ifpgfarrowreversed
+      \pgfarrowssettipend{\pgfarrowlength}
+      \pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by.5\pgflinewidth}
+    \else
+      \pgfarrowssettipend{\pgfarrowlength}
+      \pgfarrowssetlineend{-.5\pgflinewidth}
+    \fi
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowsupperhullpoint{0pt}{.5\pgflinewidth}
+    \pgfarrowshullpoint{\pgfarrowlength}{0pt}
+  },
+  drawing code = {
+    \ifpgfarrowreversed
+      \pgftransformxscale{-1}
+      \pgftransformxshift{-\pgfarrowlength}
+    \fi
+    \pgfutil@tempdima.5\pgflinewidth
+    \pgfpathmoveto   {\pgfqpoint{-0.75\pgflinewidth}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{0pt}{\pgfutil@tempdima}}
+    \ifpgfarrowreversed
+      \pgfpathlineto {\pgfqpoint{\pgfarrowlength}{\pgfutil@tempdima}}
+      \begingroup
+      \pgftransformxshift{\pgfarrowlength}
+      \pgftransformxscale{-1}
+    \fi
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowlength}{0pt}}
+    \ifpgfarrowreversed
+      \endgroup
+      \pgfpathlineto {\pgfqpoint{\pgfarrowlength}{-\pgfutil@tempdima}}
+    \fi
+    \pgfpathlineto   {\pgfqpoint{0pt}{-\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{-.75\pgflinewidth}{-\pgfutil@tempdima}}
+    \pgfpathclose
+    \pgfusepathqfill
+  },
+  parameters = {\the\pgfarrowlength}
+}%
+
+
+
+\pgfdeclarearrow{
+  name = Fast Triangle,
+  defaults = {
+    length = +0pt .5,
+    inset = +0pt .5,
+  },
+  setup code = {
+    \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by\pgfarrowinset}
+    \ifpgfarrowreversed\pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by\pgfarrowinset}\fi
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowinset
+    \pgfarrowsupperhullpoint{0pt}{.5\pgflinewidth}
+    \pgfarrowsupperhullpoint{\pgfarrowinset}{.5\pgflinewidth}
+    \pgfarrowshullpoint{\pgfarrowlength\advance\pgf@x by\pgfarrowinset}{0pt}
+  },
+  drawing code = {
+    \pgfutil@tempdima.5\pgflinewidth
+    \pgfpathmoveto   {\pgfqpoint{0pt}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowinset}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowinset\advance\pgf@x by\pgfarrowlength}{0pt}}
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowinset}{-\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{0pt}{-\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowlength}{0pt}}
+    \pgfpathclose
+    \pgfusepathqfill
+  },
+  parameters = {\the\pgfarrowlength,\the\pgfarrowinset}
+}%
+
+
+\pgfdeclarearrow{
+  name = Fast Round,
+  defaults = {
+    length = +0pt .5,
+    inset = +0pt .5,
+  },
+  setup code = {
+    \pgfarrowssettipend{\pgfarrowlength\advance\pgf@x by\pgfarrowinset}
+    \ifpgfarrowreversed\pgfarrowssetlineend{\pgfarrowlength\advance\pgf@x by\pgfarrowinset}\fi
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowinset
+    \pgfarrowsupperhullpoint{0pt}{.5\pgflinewidth}
+    \pgfarrowsupperhullpoint{\pgfarrowlength\advance\pgf@x by\pgfarrowinset}{.5\pgflinewidth}
+  },
+  drawing code = {
+    \pgfutil@tempdima.5\pgflinewidth
+    \pgfpathmoveto   {\pgfqpoint{0pt}{\pgfutil@tempdima}}
+    \pgfpathlineto   {\pgfqpoint{\pgfarrowinset}{\pgfutil@tempdima}}
+    {
+      \pgftransformxshift{\pgfarrowinset}
+      \pgfpathcurveto{\pgfqpoint{0.55228475\pgfarrowlength}{\pgfutil@tempdima}}
+                     {\pgfqpoint{\pgfarrowlength}{0.55228475\pgfutil@tempdima}}
+                     {\pgfqpoint{\pgfarrowlength}{0pt}}
+      \pgfpathcurveto{\pgfqpoint{\pgfarrowlength}{-0.55228475\pgfutil@tempdima}}
+                     {\pgfqpoint{0.55228475\pgfarrowlength}{-\pgfutil@tempdima}}
+                     {\pgfqpoint{0pt}{-\pgfutil@tempdima}}
+    }
+    \pgfpathlineto   {\pgfqpoint{0pt}{-\pgfutil@tempdima}}
+    \pgfpathcurveto  {\pgfqpoint{0.55228475\pgfarrowlength}{-\pgfutil@tempdima}}
+                     {\pgfqpoint{\pgfarrowlength}{-0.55228475\pgfutil@tempdima}}
+                     {\pgfqpoint{\pgfarrowlength}{0pt}}
+    \pgfpathcurveto  {\pgfqpoint{\pgfarrowlength}{0.55228475\pgfutil@tempdima}}
+                     {\pgfqpoint{0.55228475\pgfarrowlength}{\pgfutil@tempdima}}
+                     {\pgfqpoint{0pt}{\pgfutil@tempdima}}
+    \pgfpathclose
+    \pgfusepathqfill
+  },
+  parameters = {\the\pgfarrowlength,\the\pgfarrowinset}
+}%
+
+
+
+
+%
+%
+% Other arrow tips.
+%
+%
+
+
+\pgfkeys{
+  /pgf/arrow keys/.cd,
+  n/.code={%
+    \pgfmathparse{#1}%
+    \expandafter\pgf@lib@meta@strip@dot\pgfmathresult.\relax%
+  }
+}%
+\def\pgf@lib@meta@strip@dot#1.#2\relax{%
+  \pgfarrowsaddtooptions{\def\pgfarrown{#1}}%
+}%
+
+\def\pgfarrown{4}%
+
+\pgfdeclarearrow{
+  name = Rays,
+  defaults = {
+    length = +3pt 4,
+    width'  = +0pt 1,
+    line width = +0pt 1 1,
+  },
+  setup code = {
+    \pgfmathdivide@{360}{\pgfarrown}%
+    \let\pgfarrow@inc\pgfmathresult%
+    % Compute tips:
+    \pgf@xa\pgfarrow@inc pt%
+    \ifodd\pgfarrown\pgf@ya.25\pgf@xa\else\pgf@ya.5\pgf@xa\fi%
+    \pgfmathsincos@{\pgf@sys@tonumber\pgf@ya}%
+    \pgf@x.5\pgfarrowlength%
+    \pgf@xa\pgfmathresultx\pgf@x%
+    \ifpgfarrowroundcap
+      \advance\pgf@xa by.5\pgfarrowlinewidth
+    \else
+      \pgf@process{\pgfpointnormalised{\pgfqpoint{\pgfmathresultx\pgfarrowlength}{\pgfmathresulty\pgfarrowwidth}}}%
+      \pgf@x.5\pgfarrowlinewidth%
+      \advance\pgf@xa by\pgf@sys@tonumber{\pgf@y}\pgf@x%
+    \fi%
+    \pgfarrowssettipend{\pgf@xa}
+    \pgfarrowssetbackend{-\pgf@xa}
+    % Hull is always 8-point hull, except for tip
+    % The following are needed in the code:
+    \pgfarrowsupperhullpoint{\pgf@xa}{.25\pgfarrowwidth}
+    \pgfarrowsupperhullpoint{.25\pgfarrowlength}{.5\pgfarrowwidth\ifpgfarrowroundcap\advance\pgf@y by.5\pgfarrowlinewidth\fi}
+    \pgfarrowsupperhullpoint{-.25\pgfarrowlength}{.5\pgfarrowwidth\ifpgfarrowroundcap\advance\pgf@y by.5\pgfarrowlinewidth\fi}
+    \pgfarrowsupperhullpoint{-\pgf@xa}{.25\pgfarrowwidth}
+    \ifpgfarrowharpoon
+      \pgfarrowshullpoint{-.5\pgfarrowlength\ifpgfarrowroundcap\advance\pgf@x by-.5\pgfarrowlinewidth\fi}{-.5\pgfarrowlinewidth}
+      \pgfarrowshullpoint{.5\pgfarrowlength\ifpgfarrowroundcap\advance\pgf@x by.5\pgfarrowlinewidth\fi}{-.5\pgfarrowlinewidth}
+    \fi
+    \pgfarrowssavethe\pgfarrowlinewidth
+    \pgfarrowssavethe\pgfarrowlength
+    \pgfarrowssavethe\pgfarrowwidth
+    \pgfarrowssave\pgfarrow@inc
+    \pgfarrowssave\pgfarrown
+  },
+  drawing code = {
+    \pgfsetdash{}{+0pt}
+    \ifpgfarrowroundcap\pgfsetroundcap\else\pgfsetbuttcap\fi
+    \ifdim\pgfarrowlinewidth=\pgflinewidth\else\pgfsetlinewidth{+\pgfarrowlinewidth}\fi
+    {%
+      \pgfgettransform\pgf@temp@trans
+      \pgftransformxscale{+.5\pgfarrowlength}
+      \pgftransformyscale{+.5\pgfarrowwidth}
+      \pgf@xa\pgfarrow@inc pt%
+      \ifodd\pgfarrown\pgf@ya.25\pgf@xa\else\pgf@ya.5\pgf@xa\fi%
+      \ifpgfarrowharpoon\pgf@yb180pt\else\pgf@yb360pt\fi
+      \pgfutil@loop%
+      \ifdim\pgf@ya<\pgf@yb%
+        \pgfpathmoveto{\pgfpointpolar{+\pgf@ya}{+1pt}}
+        \pgfpathlineto{\pgfpointorigin}
+        \ifpgfarrowharpoon\ifdim\pgf@ya>\pgf@xa\else{\pgfsettransform\pgf@temp@trans\pgfpathlineto{\pgfqpoint{-.5\pgflinewidth}{0pt}}}\fi\fi
+        \advance\pgf@ya by\pgf@xa\relax%
+      \pgfutil@repeat%
+    }
+    \pgfusepathqstroke
+  },
+  parameters = {
+    \the\pgfarrowlinewidth,%
+    \the\pgfarrowlength,%
+    \the\pgfarrowwidth,%
+    \pgfarrown,%
+    \ifpgfarrowharpoon h\fi%
+    \ifpgfarrowroundcap c\fi%
+  }
+}%
+
+
+
+% Shorthands and Aliases:
+
+\pgfkeys{
+  LaTeX /.tip         = {Latex},
+  Triangle /.tip      = {Stealth[inset=+0pt, angle=+60:+2.7pt +3.6]},
+  Rectangle /.tip     = {Square[length=+3pt +4.5,width'=+0pt +.5]},
+  Ellipse /.tip       = {Circle[length=+3.3pt +4.95, width'=+0pt +0.5]},
+  Diamond /.tip       = {Kite[inset'=+0pt .5]},
+  Turned Square /.tip = {Kite[length=+3pt 4,width'= +0pt 1,inset'= +0pt 0.5]},
+  To /.tip            = {Computer Modern Rightarrow},
+  Bar /.tip           = {Tee Barb[length=+0pt]},
+  Bracket /.tip       = {Tee Barb[inset'=+0pt +1,length=+0.75pt +1]},
+  Parenthesis /.tip   = {Arc Barb[arc=+120,length=+1.725pt +2.3]}
+}%
+
+
+
+
+\endinput

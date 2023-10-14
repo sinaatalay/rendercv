@@ -1,0 +1,197 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibrarytimelines.code.tex}
+
+
+% We need the animation module:
+
+\usepgfmodule{animations}%
+
+
+% Starts a fixed timeline
+%
+% Description:
+%
+% A (fixed) timeline defines for a specific number of seconds how a
+% different objects are animated. In contrast to a dynamic timeline,
+% the animation must be fixed beforehand, that is, in a fixed timeline
+% you can specify things like "be there after 2s and there after 4s
+% and be red after 5s" but not "be there after that other animation
+% has finished and then stay there until another animation has
+% finished or something has been clicked". Note that while a fixed
+% timeline describes a fixed sequence of animations, the starting
+% point of the timeline may depend for instance on when some button is
+% clicked; only when the timeline's animation gets started there is
+% nothing dynamic about it till its end (a timeline may be ended
+% prematurely, however).
+%
+% This command allows you to start a timeline. Once the timeline has
+% been started, you can call the following macro repeatedly:
+%
+% \pgftimelineentry{time}{object}{attribute}{value}
+%
+% The time is some time when the given attribute should have the given
+% value. The important thing is that the entries need not come in any
+% specific order; it is the job of the timeline library to sort them
+% into a sensible order.
+%
+% At the end of the timeline, you will have specified for a whole
+% bunch of objects and attributes their values at certain time
+% points. The macro \pgftimelineend will now call \pgfanimateattribute
+% for all attributes and objects mentioned in the timeline.
+%
+%
+% Internally, pgf keeps track of all objects in a timeline and all
+% attributes and sorts the times using a simple insertion sort (which
+% will be fastest when the times are given in increasing order as
+% happens most of the time).
+
+\def\pgftimelinebegin{%
+  \pgf@timeline@todo@saved=\pgf@timeline@todo%
+  \begingroup%
+    \advance\pgf@timeline@depth by1\relax%
+    \pgf@timeline@todo{}%
+}%
+
+\newcount\pgf@timeline@depth
+\newtoks\pgf@timeline@todo
+\newtoks\pgf@timeline@todo@saved
+
+
+% Ends a timeline
+%
+% Description:
+%
+% This command will scan \pgfanimateattribute for the objects and
+% attributes mentioned in the timeline.
+
+\def\pgftimelineend{%
+    \the\pgf@timeline@todo%
+  \endgroup%
+  \global\pgf@timeline@todo=\pgf@timeline@todo@saved%
+}%
+
+
+% Adds an entry to a timeline
+%
+% #1 = a time (evaluated using \pgfparsetime)
+% #2 = an object (a "whom" in the sense of pgfmoduleanimations, will
+%      be expanded)
+% #3 = an attribute (in the sense of pgfmoduleanimations, will be expanded)
+% #4 = a value
+%
+% Description:
+%
+% Adds a new entry to the timeline. For a fixed #1, several calls to
+% this macro allow you to specify a key frame by specifying the
+% different values of the different attributes of the different
+% objects in the key frame.
+
+\def\pgftimelineentry#1#2#3#4{%
+  \begingroup%
+    \pgfparsetime{#1}%
+    \edef\pgf@timeline@whom{#2}%
+    \edef\pgf@timeline@attr{#3}%
+    \expandafter\let\expandafter\pgf@timeline@entry\csname pgf@tl@\pgf@timeline@whom @\pgf@timeline@attr @\the\pgf@timeline@depth\endcsname%
+    \ifx\pgf@timeline@entry\relax%
+      \edef\pgf@timeline@entry{\noexpand\pgf@timeline@setup{\pgf@timeline@whom}{\pgf@timeline@attr}}%
+    \fi%
+    \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@timeline@entry\expandafter\expandafter\expandafter%
+    {\expandafter\pgf@timeline@entry\expandafter\pgf@timeline@doentry\expandafter{\pgftimeresult}{#4}}%
+    \expandafter\global\expandafter\let\csname pgf@tl@\pgf@timeline@whom @\pgf@timeline@attr @\the\pgf@timeline@depth\endcsname\pgf@timeline@entry%
+    \global\pgf@timeline@todo\expandafter\expandafter\expandafter{\expandafter\the\expandafter\pgf@timeline@todo\expandafter\pgf@timeline@handle\csname pgf@tl@\pgf@timeline@whom @\pgf@timeline@attr @\the\pgf@timeline@depth\endcsname}%
+  \endgroup%
+}%
+
+
+\newtoks\pgf@timeline@sort@toks
+\countdef\pgf@timeline@sort@count=0\relax%
+\countdef\pgf@timeline@count@down=1\relax%
+\countdef\pgf@timeline@count@down@next=2\relax%
+
+% Handles one entry in a timeline
+
+\def\pgf@timeline@handle#1{%
+  \ifx#1\relax%
+  \else%
+  % Do an inserting sort. The time is kept in the dimension registers
+  % 1 to n, the value in the token registers 1 to n.
+  {%
+    \pgf@timeline@sort@count=1\relax%
+    #1% will start a group
+      % Now we collect the toks:
+      \pgf@timeline@count@down=1\relax%
+      \pgf@timeline@sort@toks{}%
+      \pgfutil@loop%
+      \ifnum\pgf@timeline@count@down<\pgf@timeline@sort@count\relax%
+        \edef\pgf@temp{\the\pgf@timeline@sort@toks\noexpand\pgf@timeline@donow{\the\dimen\pgf@timeline@count@down}{\the\toks\pgf@timeline@count@down}}%
+        \pgf@timeline@sort@toks\expandafter{\pgf@temp}%
+        \advance\pgf@timeline@count@down by1\relax%
+      \pgfutil@repeat%
+      % Do computations now
+      \pgf@timeline@compute@duration%
+      %
+      \edef\pgf@temp{\noexpand\pgf@timeline@call@attribute{\pgf@timeline@whom}{\pgf@timeline@attr}{\the\pgf@timeline@sort@toks}}
+      \expandafter%
+    \endgroup%
+    \pgf@temp%
+  }%
+  \global\let#1\relax% cleanup
+  \fi%
+}%
+
+\def\pgf@timeline@compute@duration{%
+  \advance\pgf@timeline@sort@count by-1\relax%
+  \pgfmathparse{\the\dimen\pgf@timeline@sort@count}%
+  \global\let\pgf@timeline@duration\pgfmathresult%
+}%
+
+
+\def\pgf@timeline@setup#1#2{%
+  \def\pgf@timeline@whom{#1}%
+  \def\pgf@timeline@attr{#2}%
+  \begingroup%
+}%
+
+\def\pgf@timeline@doentry#1#2{%
+  \dimen\pgf@timeline@sort@count=#1pt\relax%
+  \toks\pgf@timeline@sort@count{#2}%
+  \pgf@timeline@count@down\pgf@timeline@sort@count\relax%
+  \pgfutil@loop%
+  \ifnum\pgf@timeline@count@down>1\relax%
+    \pgf@timeline@count@down@next\pgf@timeline@count@down%
+    \advance\pgf@timeline@count@down@next by-1\relax%
+    \ifdim\dimen\pgf@timeline@count@down<\dimen\pgf@timeline@count@down@next\relax%
+      % Swap:
+      \toks0=\toks\pgf@timeline@count@down%
+      \dimen0=\dimen\pgf@timeline@count@down%
+      \toks\pgf@timeline@count@down=\toks\pgf@timeline@count@down@next%
+      \dimen\pgf@timeline@count@down=\dimen\pgf@timeline@count@down@next%
+      \toks\pgf@timeline@count@down@next=\toks0\relax%
+      \dimen\pgf@timeline@count@down@next=\dimen0\relax%
+      \pgf@timeline@count@down\pgf@timeline@count@down@next\relax%
+    \else%
+      \pgf@timeline@count@down1\relax%
+    \fi%
+  \pgfutil@repeat%
+  \advance\pgf@timeline@sort@count by1\relax%
+}%
+
+
+\def\pgf@timeline@call@attribute#1#2#3{%
+  \pgfanimateattributecode{#2}{\pgfkeys{/pgf/animation/whom={#1},/pgf/animation/duration=\pgf@timeline@duration}#3}%
+}%
+
+\def\pgf@timeline@donow#1#2{%
+  \pgfkeys{/pgf/animation/key time={#1/\pgf@timeline@duration}}%
+  \pgfkeys{/pgf/animation/value={#2}}%
+}%
+
+\endinput

@@ -1,0 +1,561 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmoduleplot.code.tex}
+
+
+% PGF's plotting interface works as follows:
+%
+% In order to plot something, two things need to be done. First, you
+% need to provide the coordinates (obviously) of the points that
+% should be plotted. The coordinates are given via a long stream of
+% commands. These commands are \pgfplotstreamstart, which is
+% given exactly once at the beginning, the commands
+% \pgfplotstreampoint, \pgfplotstreampointoutlier,
+% \pgfplotstreampointundefined, \pgfplotstreamnewdataset, of which
+% there are numerous in the middle, the special \pgfplotstreamspecial,
+% of which there may be numerous in the middle, and \pgfplotstreamend,
+% which must be given at the end. Between these commands arbitrary
+% other commands may be given. Here is an example:
+%
+% ...
+% \pgfplotstreamstart
+% \pgfplotstreampoint{\pgfpointxy{0}{0}}
+% \pgfplotstreampoint{\pgfpointxy{1}{1}}
+% \pgfplotstreamnewdataset
+% \pgfplotstreampoint{\pgfpointxy{2}{4}}
+% \relax
+% \pgfplotstreampointoutlier{\pgfpointxy{3}{9}}
+% \pgfplotstreamspecial{some handler-dependent special stuff}
+% \pgfplotstreamend
+%
+% By themselves, the \pgfplotstreamxxxx commands do not do anything by
+% default. Rather, to ``use'' such a stream, you must first install a
+% stream handler. For example, the ``lineto'' handler will simply
+% basically every \pgfplotstreampoint into a \pgfpathlineto.
+%
+% One special things is the handling of "jumps" in a stream. For
+% instance, when a lineto handler encounters an "outlier" or a new
+% data set, the current line should end and a new subpath should start
+% (unless configured otherwise). For this, the special jump handler is
+% important.
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointorigin}
+%
+% \pgfplothandlerlineto
+% \pgfplotstreamstart
+% \pgfplotstreampoint{\pgfpointxy{0}{0}}
+% \pgfplotstreampoint{\pgfpointxy{1}{1}}
+% \pgfplotstreampoint{\pgfpointxy{2}{4}}
+% \relax
+% \pgfplotstreampoint{\pgfpointxy{3}{9}}
+% \pgfplotstreamend
+
+
+% The stream commands actually call their ``internal'' versions, which
+% are set by the handlers:
+\def\pgfplotstreamstart{\pgf@plotstreamstart}%
+\def\pgfplotstreampoint#1{\gdef\pgfplotlastpoint{#1}\pgf@plotstreampoint{#1}}%
+\def\pgfplotstreampointoutlier#1{\pgfplot@outliers{}{\pgf@plotstreamjump}{\pgfplotstreampoint{#1}}}%
+\def\pgfplotstreampointundefined{\pgfplot@outliers{}{\pgf@plotstreamjump}{}}%
+\def\pgfplotstreamnewdataset{\pgfplot@outliers{}{\pgf@plotstreamjump}{}}%
+\def\pgfplotstreamspecial{\pgf@plotstreamspecial}%
+\def\pgfplotstreamend{\pgf@plotstreamend}%
+
+\def\pgfplot@ignorer#1#2#3{#1}%
+\def\pgfplot@jumper#1#2#3{#2}%
+\def\pgfplot@plotter#1#2#3{#3}%
+
+\let\pgfplot@outliers\pgfplot@jumper
+\let\pgfplot@undefined\pgfplot@jumper
+\let\pgfplot@newdata\pgfplot@jumper
+
+\pgfset{
+  handle outlier points in plots/.is choice,
+  handle outlier points in plots/ignore/.code=\let\pgfplot@outliers\pgfplot@ignorer,
+  handle outlier points in plots/jump/.code=\let\pgfplot@outliers\pgfplot@jumper,
+  handle outlier points in plots/plot/.code=\let\pgfplot@outliers\pgfplot@plotter,
+  handle undefined points in plots/.is choice,
+  handle undefined points in plots/ignore/.code=\let\pgfplot@undefined\pgfplot@ignorer,
+  handle undefined points in plots/jump/.code=\let\pgfplot@undefined\pgfplot@jumper,
+  handle new data sets in plots/.is choice,
+  handle new data sets in plots/ignore/.code=\let\pgfplot@newdata\pgfplot@ignorer,
+  handle new data sets in plots/jump/.code=\let\pgfplot@newdata\pgfplot@jumper,
+}%
+
+
+% Declares a new plot handler
+%
+% #1 = macro that should install the stream handler subsequently
+% #2 = parameter list of said macro.
+% #3 = keys as described below
+%
+% Description:
+%
+% When you declare a new plot handler, you provide, through keys,
+% different "actions" that should be taken when the different stream
+% commands are used:
+%
+% start       = some code to be executed when \pgfplotstreamstart is called
+%               for this plothandler
+% end         = same for the end of the stream
+% point       = code to be executed for a point of the stream
+% jump        = code to be executed for a "jump" in the stream
+% special     = code to be executed for \pgfplotstreamspecial
+% start macro   = here and for the following keys, the to-be-executed
+%                 code is stored in the given macro
+% end macro     = see above
+% jump macro    = see above
+% point macro   = see above
+% special macro = see above
+%
+% Example:
+%
+% \pgfdeclareplothandler{\ultrasimplehandler}{}{
+%   point=\pgfpathlineto{##1}
+% }
+
+\def\pgfdeclareplothandler#1#2#3{%
+  \def#1#2{%
+    \pgfkeys{%
+      /pgf/plots/@handler options/.cd,
+      start=\relax,
+      end macro=\relax,
+      point macro=\pgfutil@gobble,
+      jump macro=\relax,
+      special macro=\pgfutil@gobble,%
+      #3%
+    }%
+  }%
+}%
+
+\pgfkeys{%
+  /pgf/plots/@handler options/.cd,
+  start/.code=%
+    \gdef\pgf@plotstreamstart{%
+      \global\pgf@plot@startedfalse%
+      \global\let\pgf@plotstreamend\pgf@plotstreamend@init%
+      \global\let\pgf@plotstreampoint\pgf@plotstreampoint@init%
+      \global\let\pgf@plotstreamjump\pgf@plotstreamjump@init%
+      \global\let\pgf@plotstreamspecial\pgf@plotstreamspecial@init%
+      #1%
+    },%
+  start macro/.code=%
+    \gdef\pgf@plotstreamstart{%
+      \global\pgf@plot@startedfalse%
+      \global\let\pgf@plotstreamend\pgf@plotstreamend@init%
+      \global\let\pgf@plotstreampoint\pgf@plotstreampoint@init%
+      \global\let\pgf@plotstreamjump\pgf@plotstreamjump@init%
+      \global\let\pgf@plotstreamspecial\pgf@plotstreamspecial@init%
+      #1%
+    },%
+  end/.code=\gdef\pgf@plotstreamend@init{#1},
+  end macro/.code=\global\let\pgf@plotstreamend@init#1,
+  point/.code=\gdef\pgf@plotstreampoint@init##1{#1},
+  point macro/.code=\global\let\pgf@plotstreampoint@init#1,
+  jump/.code=\gdef\pgf@plotstreamjump@init{#1},
+  jump macro/.code=\global\let\pgf@plotstreamjump@init#1,
+  special/.code=\gdef\pgf@plotstreamspecial@init##1{#1},
+  special macro/.code=\global\let\pgf@plotstreamspecial@init#1,
+}%
+
+\newif\ifpgf@plot@started
+
+
+
+
+% Sets the action taken for the first point of a plot to a lineto.
+%
+% Description:
+%
+% For certain handlers it makes sense either the start a plot by
+% moving to the first point of the plot or to do a lineto to that
+% first point. Using this command this action can be set to a lineto.
+%
+% Example:
+%
+% \pgfsetlinetofirstplotpoint
+
+\def\pgfsetlinetofirstplotpoint{\let\pgf@plot@first@action=\pgfpathlineto}%
+
+
+% Sets the action taken for the first point of a plot to a moveto.
+%
+% Example:
+%
+% \pgfsetmovetofirstplotpoint
+
+\def\pgfsetmovetofirstplotpoint{\let\pgf@plot@first@action=\pgfpathmoveto}%
+
+\let\pgf@plot@first@action=\pgfpathmoveto
+
+
+
+
+%
+% Handlers
+%
+
+
+% This handler converts each plot stream command into a lineto
+% command, except for the first, which is converted to the action that
+% has previously been specified using \pgfsetlinetofirstplotpoint or
+% \pgfsetmovetofirstplotpoint.
+%
+% Example:
+%
+% \pgfplothandlerlineto
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerlineto}{}{
+  point macro=\pgf@plot@line@handler,
+  jump=\global\let\pgf@plotstreampoint\pgf@plot@line@handler@move%
+}%
+
+\def\pgf@plot@line@handler#1{%
+  \pgf@plot@first@action{#1}%
+  \global\let\pgf@plotstreampoint=\pgfpathlineto%
+}%
+
+\def\pgf@plot@line@handler@move#1{%
+  \pgfpathmoveto{#1}%
+  \global\let\pgf@plotstreampoint=\pgfpathlineto%
+}%
+
+
+
+% This handler turns creates a series of lineto commands, with the
+% last command being a closepath, resulting in a closed path. If a
+% jump is encountered, the current subpath is closed and a new subpath
+% is started.
+%
+% Example:
+%
+% \pgfplothandlerpolygon
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerpolygon}{}{%
+  point macro=\pgf@plot@line@handler@close,
+  jump macro=\pgf@plot@next@close@and@moveto,
+  end macro=\pgf@plot@polygon@stop
+}%
+
+\def\pgf@plot@line@handler@close#1{%
+  \pgfpathmoveto{#1}%
+  \global\pgf@plot@startedtrue%
+  \global\let\pgf@plotstreampoint=\pgfpathlineto%
+}%
+
+\def\pgf@plot@polygon@stop{%
+  \ifpgf@plot@started%
+    \pgfpathclose%
+  \fi%
+  \global\pgf@plot@startedfalse%
+}%
+
+\def\pgf@plot@next@close@and@moveto{%
+  \ifpgf@plot@started%
+    \pgfpathclose%
+  \fi%
+  \global\let\pgf@plotstreampoint\pgf@plot@line@handler@close%
+}%
+
+
+% More handlers are defined in pgflibraryplothandlers
+
+
+
+
+
+% This handler discards the plot.
+%
+% Example:
+%
+% \pgfplothandlerdiscard
+% \pgfplotxyfile{mytable}
+
+\pgfdeclareplothandler{\pgfplothandlerdiscard}{}{}%
+
+
+
+% This handler records each plot stream command to a macro. This is
+% useful if plot commands are difficult to generate and need to be
+% ``recycled'' later on.
+%
+% Example:
+%
+% \pgfplothandlerrecord{\myplot}
+% \pgfplotxyfile{mytable}  % stored in \myplot now
+% \pgfplothandlerline
+% \myplot
+% \pgftransformxshift{1cm}
+% \myplot
+
+\pgfdeclareplothandler{\pgfplothandlerrecord}{#1}{%
+  start=\gdef#1{\pgfplotstreamstart},
+  point=\expandafter\gdef\expandafter#1\expandafter{#1\pgfplotstreampoint{##1}},
+  jump=\expandafter\gdef\expandafter#1\expandafter{#1\pgf@plotstreamjump},
+  special=\expandafter\gdef\expandafter#1\expandafter{#1\pgfplotstreamspecial{##1}},
+  end=\expandafter\gdef\expandafter#1\expandafter{#1\pgfplotstreamend},
+}%
+
+
+
+% Read a plot stream from a file and plot it.
+%
+% #1 = file from which to read things
+%
+% File format:
+%
+% Each line of the file should begin with two numbers separated by a
+% space. Such a line with number #1 and #2 is converted to a
+% \pgfplotstreampoint{\pgfpointxy{#1}{#2}}. Extra characters following
+% on the line are ignored.
+%
+% Lines starting with ``%'' and ``#'' are ignored.
+%
+% Example:
+%
+% \pgfplotxyfile{tableformgnuplot.dat}
+
+\def\pgfplotxyfile#1{%
+  \begingroup%
+    \def\b@pgfplotsxyfile@scanning@for@first{1}%
+    \pgfplotstreamstart%
+    \openin\r@pgf@reada=#1
+    \ifeof\r@pgf@reada
+      \pgfwarning{Plot data file `#1' not found.}
+     \else
+      \catcode`\#=14
+      \catcode`\^^M=5
+      \pgf@readxyfile%
+    \fi
+    \pgfplotstreamend%
+  \endgroup%
+}%
+
+\let\pgf@savedpar=\par
+\def\pgf@partext{\par}%
+\def\pgf@readxyfile{%
+  \pgfutil@read\r@pgf@reada to \pgf@temp%
+  \let\par=\pgf@savedpar%
+  \edef\pgf@temp{\pgf@temp}%
+  \ifx\pgf@temp\pgfutil@empty%
+    \if1\b@pgfplotsxyfile@scanning@for@first
+    \else
+        \ifeof\r@pgf@reada\else\pgfplotstreamnewdataset\fi%
+    \fi
+  \else\ifx\pgf@temp\pgf@partext%
+    \if1\b@pgfplotsxyfile@scanning@for@first
+    \else
+        \ifeof\r@pgf@reada\else\pgfplotstreamnewdataset\fi%
+    \fi
+  \else%
+    \expandafter\pgf@parsexyline\pgf@temp\pgf@stop%
+  \fi\fi%
+  \ifeof\r@pgf@reada\else\expandafter\pgf@readxyfile\fi%
+}%
+
+\def\pgf@parsexyline#1 #2 #3\pgf@stop{%
+  \def\b@pgfplotsxyfile@scanning@for@first{0}%
+  \edef\pgf@xyline@flag@val{#3}%
+  \ifx\pgf@xyline@flag@val\pgf@xyline@flag@undef%
+    \pgfplotstreampointundefined%
+  \else\ifx\pgf@xyline@flag@val\pgf@xyline@flag@out%
+    \pgfplotstreampointoutlier{\pgfpointxy{#1}{#2}}%
+  \else%
+    \pgfplotstreampoint{\pgfpointxy{#1}{#2}}%
+  \fi\fi%
+}%
+
+\edef\pgf@xyline@flag@out{o\space}%
+\edef\pgf@xyline@flag@undef{u\space}%
+
+
+
+
+% Read a plot stream from a file and plot it.
+%
+% #1 = file from which to read things
+%
+% File format:
+%
+% Like xy, except that each line contains three numbers, which are
+% converted to xyz coordinates.
+%
+% Example:
+%
+% \pgfplotxyfile{tableformgnuplot.dat}
+
+\def\pgfplotxyzfile#1{%
+  \begingroup%
+    \pgfplotstreamstart%
+    \openin\r@pgf@reada=#1
+    \ifeof\r@pgf@reada
+      \pgfwarning{Plot data file `#1' not found.}
+    \else
+      \catcode`\#=14
+      \catcode`\^^M=5
+      \pgf@readxyzfile%
+    \fi
+    \pgfplotstreamend%
+  \endgroup%
+}%
+
+\def\pgf@readxyzfile{%
+  \pgfutil@read\r@pgf@reada to \pgf@temp%
+  \ifx\pgf@temp\pgfutil@empty%
+    \if1\b@pgfplotsxyfile@scanning@for@first
+    \else
+        \ifeof\r@pgf@reada\else\pgfplotstreamnewdataset\fi%
+    \fi
+  \else\ifx\pgf@temp\pgf@partext%
+    \if1\b@pgfplotsxyfile@scanning@for@first
+    \else
+        \ifeof\r@pgf@reada\else\pgfplotstreamnewdataset\fi%
+    \fi
+  \else%
+    \expandafter\pgf@parsexyzline\pgf@temp\pgf@stop%
+  \fi\fi%
+  \ifeof\r@pgf@reada\else\expandafter\pgf@readxyzfile\fi%
+}%
+
+\def\pgf@parsexyzline#1 #2 #3 #4\pgf@stop{%
+  \def\b@pgfplotsxyfile@scanning@for@first{0}%
+  \edef\pgf@xyline@flag@val{#4}%
+  \ifx\pgf@xyline@flag@val\pgf@xyline@flag@undef%
+    \pgfplotstreampointundefined%
+  \else\ifx\pgf@xyline@flag@val\pgf@xyline@flag@out%
+    \pgfplotstreampointoutlier{\pgfpointxyz{#1}{#2}{#3}}%
+  \else%
+    \pgfplotstreampoint{\pgfpointxyz{#1}{#2}{#3}}%
+  \fi\fi%
+}%
+
+
+
+
+% Render a function using gnuplot.
+%
+% #1 = filename prefix for .gnuplot and .table files (optional,
+%      default is \jobname)
+% #2 = gnuplot function text
+%
+% Description:
+%
+% This command will write a file called #1.gnuplot that sets up
+% some gnuplot commands to write output to a file called
+% #1.table. Then it calls gnuplot (using the \write18 mechanism)
+% to execute the file. Then it reads #2.table using \pgfplotxyfile.
+%
+% Example:
+%
+% \pgfplothandlerlineto
+% \pgfplotgnuplot[\jobname]{plot [x=0:5] x*sin(x)}
+
+{%
+  \catcode`\%=12
+  \catcode`\"=12
+  \xdef\pgf@gnuplot@head{set table \noexpand\pgf@plottablefile@quoted; set format "%.5f"}
+}%
+
+\let\pgf@plotwrite=\w@pgf@writea
+\newif\ifpgf@resample@plot
+
+\pgfkeys{%
+  /pgf/plot/gnuplot call/.initial={gnuplot}}%
+
+\def\pgfplotgnuplot{\pgfutil@ifnextchar[{\pgf@plotgnuplot}{\pgf@plotgnuplot[\jobname]}}%}%
+\def\pgf@plotgnuplot[#1]#2{%
+  \pgf@resample@plottrue%
+  \pgfutilpreparefilename{#1.gnuplot}%
+  \let\pgf@plotgnuplotfile=\pgfretval
+  \pgfutilpreparefilename{#1.table}%
+  \let\pgf@plottablefile=\pgfretval
+  \let\pgf@plottablefile@quoted=\pgfretvalquoted
+  % Check, whether it is up-to-date
+  \openin\pgfutil@inputcheck=\pgf@plotgnuplotfile\relax
+  \ifeof\pgfutil@inputcheck%
+  \else%
+    \pgfutil@read\pgfutil@inputcheck to\pgf@temp% ignored
+    \pgfutil@read\pgfutil@inputcheck to\pgf@plot@line%
+    \closein\pgfutil@inputcheck
+    \edef\pgf@plot@code{#2\space}%
+    \ifx\pgf@plot@code\pgf@plot@line%
+      \openin\pgfutil@inputcheck=\pgfretval\relax
+      \ifeof\pgfutil@inputcheck%
+      \else%
+        \closein\pgfutil@inputcheck
+        \pgf@resample@plotfalse%
+      \fi%
+    \fi%
+  \fi
+  \ifpgf@resample@plot%
+    \immediate\openout\pgf@plotwrite=\pgf@plotgnuplotfile\relax
+    \immediate\pgfutil@write\pgf@plotwrite{\pgf@gnuplot@head}%
+    \immediate\pgfutil@write\pgf@plotwrite{#2}%
+    \immediate\closeout\pgf@plotwrite%
+    \pgfutil@shellescape{%
+      \pgfkeysvalueof{/pgf/plot/gnuplot call} \pgf@plotgnuplotfile}%
+  \fi%
+%  \let\pgf@savedparsexyline=\pgf@parsexyline%
+%  \let\pgf@parsexyline=\pgf@parsegnuplotxyline%
+  \pgfplotxyfile{\pgf@plottablefile}%
+%  \let\pgf@parsexyline=\pgf@savedparsexyline%
+}%
+
+% \def\pgf@parsegnuplotxyline#1 #2 #3\pgf@stop{%
+%   \edef\pgf@xyline@flag@val{#3}%
+%   \edef\pgf@xyline@flag@out{o\space}%
+%   \edef\pgf@xyline@flag@undef{u\space}%
+%   \ifx\pgf@xyline@flag@val\pgf@xyline@flag@undef%
+%     \pgfplotstreampointundefined%
+%   \else\ifx\pgf@xyline@flag@val\pgf@xyline@flag@out%
+%     \pgfplotstreampointoutlier{\pgfpointxy{#1}{#2}}%
+%   \else%
+%     \pgfplotstreampoint{\pgfpointxy{#1}{#2}}%
+%   \fi\fi%
+% }%
+
+% This producer handler plots a function using pgf's mathematical engine.
+%
+% #1 = variable
+% #2 = domain for the variable
+% #3 = point, typically defined in terms of the value of the variable
+%
+% Description:
+%
+% This producer will iterate the variable #1 over all variables in #2
+% (using the \foreach statement). For each value, a plot coordinate
+% #3  is created.
+%
+% Note that this command is pretty slow.
+%
+% Example:
+%
+% \pgfplothandlerlineto
+% \pgfplotfunction{\x}{0,0.1,...,3.141}{\pgfpointxy{\x}{sin(\x)}}
+
+\def\pgfplotfunction#1#2#3{%
+  \pgfplotstreamstart%
+  \foreach#1in{#2}%
+  {%
+    \pgf@process{#3}%
+    \edef\pgf@marshal{\noexpand\pgfplotstreampoint{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}}%
+    \pgf@marshal%
+  }
+  \pgfplotstreamend%
+}%
+
+
+
+
+\endinput

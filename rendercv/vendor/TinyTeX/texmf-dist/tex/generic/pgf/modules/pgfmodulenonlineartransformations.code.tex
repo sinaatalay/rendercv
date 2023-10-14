@@ -1,0 +1,342 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmodulenonlineartransformations.code.tex}
+
+
+%
+% This file defines commands for nonlinear coordinate systems. This is
+% needed, for instance, for bend arrow heads.
+%
+%
+% Non-linear coordinate systems transform coordinates, in addition to
+% the normal linear transformations, in a, well, non-linear way. An
+% example are polar coordinates.
+%
+% Like the linear transformations, non-linear transformations are
+% applied on a low level and they are integrated into the whole path
+% construction mechanism. So, while \pgfpointpolar also "does
+% something nonlinear", it just provides a way of computing a
+% coordinate. In contrast, installing a polar transformation will
+% transform everything being drawn using the \pgfpath... commands an
+% will even turn a straight line into a circle.
+%
+% Since computing non-linear transformations is expensive, they are
+% only applied "if really necessary".
+
+
+
+
+% Return a transformed point
+%
+% #1 = a point
+%
+% Description:
+%
+% Applies the current transformation and the current nonlinear
+% transformation to the given point and returns the result in \pgf@x/y.
+
+\def\pgfpointtransformednonlinear#1{%
+  \pgf@process{%
+    #1%
+    \pgf@pos@transform@glob%
+    \pgf@nlt@list%
+  }
+}%
+
+
+
+
+% Approximate the nonlinear translation locally
+%
+% Description:
+%
+% Does a "local synchronization" of the nonlinear transformation with
+% the linear transformation regarding the translation part of the
+% current nonlinear transformation. The *linear* transformation will be
+% updated so that it translates things to the point to which the
+% nonlinear transformation transforms the origin. The nonlinear
+% transformation will be reset.
+%
+% The net effect is that you can now draw things near the origin as
+% before, but with just a linear transformation in force. Note that
+% the coordinate system will not be rotated, only a shift is done (use
+% the "real" local sync for a full sync).
+
+\def\pgfapproximatenonlineartranslation{%
+  \ifx\pgf@nlt@list\pgfutil@empty%
+  \else%
+    \pgfpointtransformednonlinear{\pgfpointorigin}%
+    \pgf@pt@x=\pgf@x%
+    \pgf@pt@y=\pgf@y%
+    \let\pgf@nlt@list\pgfutil@empty%
+    \let\pgf@nlt@moveto\pgf@lt@moveto%
+    \let\pgf@nlt@lineto\pgf@lt@lineto%
+    \let\pgf@nlt@curveto\pgf@lt@curveto%
+    \let\pgf@nlt@closepath\pgf@lt@closepath%
+  \fi%
+}%
+
+
+
+% Local sync translation
+%
+% Description:
+%
+% Does a "complete local synchronization" of the nonlinear
+% transformation with the linear transformation. The *linear*
+% transformation will be updated so that it transforms things to the
+% point to which the nonlinear transformation transforms the
+% origin. The nonlinear transformation will be reset.
+%
+% The net effect is that you can now draw things near the origin as
+% before, but with just a linear transformation in force.
+
+\def\pgfapproximatenonlineartransformation{%
+  \ifx\pgf@nlt@list\pgfutil@empty%
+  \else%
+    \pgfpointtransformednonlinear{\pgfpoint{1pt}{0pt}}%
+    \pgf@xa\pgf@x
+    \pgf@ya\pgf@y
+    \pgfpointtransformednonlinear{\pgfpoint{0pt}{1pt}}%
+    \pgf@xb\pgf@x
+    \pgf@yb\pgf@y
+    \pgfpointtransformednonlinear{\pgfpointorigin}%
+    \advance\pgf@xa by-\pgf@x
+    \advance\pgf@xb by-\pgf@x
+    \advance\pgf@ya by-\pgf@y
+    \advance\pgf@yb by-\pgf@y
+    \pgfsettransformentries{\pgf@sys@tonumber\pgf@xa}{\pgf@sys@tonumber\pgf@ya}{\pgf@sys@tonumber\pgf@xb}{\pgf@sys@tonumber\pgf@yb}{\pgf@x}{\pgf@y}%
+    \let\pgf@nlt@list\pgfutil@empty%
+    \let\pgf@nlt@moveto\pgf@lt@moveto%
+    \let\pgf@nlt@lineto\pgf@lt@lineto%
+    \let\pgf@nlt@curveto\pgf@lt@curveto%
+    \let\pgf@nlt@closepath\pgf@lt@closepath%
+  \fi%
+}%
+
+
+
+% Adds a non-linear transformation to the current list of
+% transformations.
+%
+% #1 = code
+%
+% Description:
+%
+% When the code #1 is called, \pgf@x and \pgf@y will be set to some
+% values, let us call this the point p. The nonlinear transformation
+% will now map this point to a new point f(p). The coordinates of this
+% point should be returned in \pgf@x and \pgf@y. Furthermore, consider
+% the two "unit tangents" (going in $x$-direction and in
+% $y$-direction) at point p. The nonlinear transformation will map
+% these to new tangents, t_x and t_y. The (not necessarily normalized)
+% vectors t_x and t_y should be returned in pgf@xa and -ya and pgf@xb
+% and pgf@yb. The macro should not do any global assignments except to
+% \pgf@x and \pgf@y, but may do arbitrary local assignments.
+%
+% The effect of installing a new transformation is the following: As
+% long as there is at least one nonlinear transformation installed,
+% whenever the path construction commands add a curve or line to the
+% softpath, the line or curve will be "bend" by applying all of the
+% nonlinear transformation installed. In particular, straight lines
+% will be replaced by curves.
+%
+% Note that the normal linear transformation are always applied before
+% any nonlinear transformations are applied.
+
+\def\pgftransformnonlinear#1{%
+  \expandafter\def\expandafter\pgf@nlt@list\expandafter{\pgf@nlt@list#1}%
+  \let\pgf@nlt@moveto\pgf@nlt@moveto@nlt
+  \let\pgf@nlt@lineto\pgf@nlt@lineto@nlt
+  \let\pgf@nlt@curveto\pgf@nlt@curveto@nlt
+  \let\pgf@nlt@closepath\pgf@nlt@closepath@nlt
+}%
+
+\def\pgf@nlt@moveto@nlt#1#2{%
+  {%
+    \pgfutil@tempdima#1%
+    \pgfutil@tempdimb#2%
+    \pgf@x\pgfutil@tempdima%
+    \pgf@y\pgfutil@tempdimb%
+    \xdef\pgf@nlt@last@moveto@orig{{\the\pgf@x}{\the\pgf@y}}%
+    \pgf@nlt@list%
+    \xdef\pgf@nlt@last@moveto@trans{{\the\pgf@x}{\the\pgf@y}}%
+    \xdef\pgf@nlt@last@moveto@xaxis{{\the\pgf@xa}{\the\pgf@ya}}%
+    \xdef\pgf@nlt@last@moveto@yaxis{{\the\pgf@xb}{\the\pgf@yb}}%
+    \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+    \pgfsyssoftpath@moveto{\the\pgf@x}{\the\pgf@y}%
+    \global\let\pgf@nlt@last@coord@orig\pgf@nlt@last@moveto@orig%
+    \global\let\pgf@nlt@last@coord@trans\pgf@nlt@last@moveto@trans%
+    \global\let\pgf@nlt@last@coord@xaxis\pgf@nlt@last@moveto@xaxis%
+    \global\let\pgf@nlt@last@coord@yaxis\pgf@nlt@last@moveto@yaxis%
+  }%
+}%
+
+
+\def\pgf@nlt@lineto@nlt#1#2{%
+  {%
+    \edef\pgf@temp{\pgf@xc\the#1\pgf@yc\the#2}%
+    \pgf@temp%
+    \expandafter\pgfqpoint\pgf@nlt@last@coord@orig%
+    \expandafter\pgf@nlt@set@temps\pgf@nlt@last@coord@trans%
+    % Test, whether the points are quite near:
+    \pgf@xa\pgf@x\advance\pgf@xa by-\pgf@xc%
+    \pgf@ya\pgf@y\advance\pgf@ya by-\pgf@yc%
+    \pgfutil@tempswafalse%
+    \ifdim\pgf@xa<0.1pt\relax\ifdim\pgf@xa>-0.1pt\relax\ifdim\pgf@ya<0.1pt\relax\ifdim\pgf@ya>-0.1pt\relax\pgfutil@tempswatrue\fi\fi\fi\fi%
+    \ifpgfutil@tempswa%
+      \pgf@x\pgf@xc\pgf@y\pgf@yc%
+      \xdef\pgf@nlt@last@coord@orig{{\the\pgf@x}{\the\pgf@y}}%
+      \pgf@process{\pgf@nlt@list}%
+      \xdef\pgf@nlt@last@coord@trans{{\the\pgf@x}{\the\pgf@y}}%
+      \xdef\pgf@nlt@last@coord@xaxis{{\the\pgf@xa}{\the\pgf@ya}}%
+      \xdef\pgf@nlt@last@coord@yaxis{{\the\pgf@xb}{\the\pgf@yb}}%
+      \pgf@protocolsizes{\pgf@x}{\pgf@y}%
+      \pgfsyssoftpath@lineto{\the\pgf@x}{\the\pgf@y}%
+    \else%
+      % Compute support points
+      \pgf@xb=.333333\pgf@x%
+      \advance\pgf@xb by.666666\pgf@xc%
+      \pgf@yb=.333333\pgf@y%
+      \advance\pgf@yb by.666666\pgf@yc%
+      \pgf@xa=.333333\pgf@xc%
+      \advance\pgf@xa by.666666\pgf@x%
+      \pgf@ya=.333333\pgf@yc%
+      \advance\pgf@ya by.666666\pgf@y%
+      \pgf@nlt@inner@curve%
+    \fi%
+  }%
+}%
+
+\def\pgf@nlt@set@temps#1#2{%
+  \pgfutil@tempdima#1\pgfutil@tempdimb#2%
+}%
+
+\def\pgf@nlt@curveto@nlt#1#2#3#4#5#6{%
+  {%
+    \edef\pgf@temp{\pgf@xa\the#1\pgf@ya\the#2\pgf@xb\the#3\pgf@yb\the#4\pgf@xc\the#5\pgf@yc\the#6}%
+    \pgf@temp%
+    \pgf@nlt@inner@curve%
+  }%
+}%
+
+\newdimen\pgftransformnonlinearflatness
+\pgftransformnonlinearflatness=5pt
+\def\pgfsettransformnonlinearflatness#1{\pgfmathsetlength\pgftransformnonlinearflatness{#1}}%
+
+
+
+% Compute a curve from \pgf@nlt@last@coord@orig to \pgf@xc/\pgf@yc via the
+% controls \pgf@xa/\pgf@ya and \pgf@xb/\pgf@yb.
+\def\pgf@nlt@inner@curve{%
+  \expandafter\pgfqpoint\pgf@nlt@last@coord@orig%
+  % Save delta of supports:
+  \pgfutil@tempdima\pgf@xa\advance\pgfutil@tempdima by-\pgf@xb
+  \pgfutil@tempdimb\pgf@ya\advance\pgfutil@tempdimb by-\pgf@yb
+  \begingroup
+    % Replace supports by relative supports
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    \advance\pgf@xb by-\pgf@xc%
+    \advance\pgf@yb by-\pgf@yc%
+    %
+    % Now, test whether the flatness is satisfied:
+    %
+    \pgfutil@tempswafalse
+    \ifdim\pgfutil@tempdima>\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgfutil@tempdima<-\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgfutil@tempdimb>\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgfutil@tempdimb<-\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@xa>\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@xa<-\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@ya>\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@ya<-\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@xb>\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@xb<-\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@yb>\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+    \ifdim\pgf@yb<-\pgftransformnonlinearflatness\pgfutil@tempswatrue\fi%
+  \ifpgfutil@tempswa%
+    \endgroup% Undo the adjustments...
+    {%
+      \edef\pgf@orig@xya{\pgf@xa\the\pgf@xa\pgf@ya\the\pgf@ya}
+      \edef\pgf@orig@xyb{\pgf@xb\the\pgf@xb\pgf@yb\the\pgf@yb}
+      \edef\pgf@orig@xyc{\pgf@xc\the\pgf@xc\pgf@yc\the\pgf@yc}
+      \pgfpointcurveattime{.5}%
+        {\expandafter\pgfqpoint\pgf@nlt@last@coord@orig}%
+        {\pgf@x\pgf@xa\pgf@y\pgf@ya}%
+        {\pgf@x\pgf@xb\pgf@y\pgf@yb}%
+        {\pgf@x\pgf@xc\pgf@y\pgf@yc}%
+      % First new curve:
+      % Start is at last@coord@orig,
+      % first support is at last@coord@orig*t + s*(original xa/ya)
+      % second support is at xb/yb
+      % target is at x/y
+      {%
+        % Target:
+        \pgf@xc\pgf@x\pgf@yc\pgf@y
+        % First support:
+        \expandafter\pgfqpoint\pgf@nlt@last@coord@orig%
+        \pgf@orig@xya%
+        \pgf@xa\pgf@time@s\pgf@xa\advance\pgf@xa by\pgf@time@t\pgf@x%
+        \pgf@ya\pgf@time@s\pgf@ya\advance\pgf@ya by\pgf@time@t\pgf@y%
+        \pgf@nlt@inner@curve%
+      }%
+      % Second new curve:
+      % Start is at (new) last@coord@orig
+      % first support is at xa/ya
+      % second support is at t*(original xb/yb) + s*(original xc/yc)
+      % target is at original xc/yc
+      {%
+        \pgf@orig@xyb%
+        \pgf@orig@xyc%
+        \pgf@xb\pgf@time@t\pgf@xb\advance\pgf@xb by\pgf@time@s\pgf@xc%
+        \pgf@yb\pgf@time@t\pgf@yb\advance\pgf@yb by\pgf@time@s\pgf@yc%
+        \pgf@nlt@inner@curve%
+      }%
+    }%
+  \else%
+    \endgroup% Snap back...
+    \pgf@nlt@do@inner@curve%
+  \fi%
+}%
+
+\def\pgf@nlt@do@inner@curve{%
+  \pgf@process{\pgf@x\pgf@xa\pgf@y\pgf@ya\pgf@nlt@list}%
+  \pgf@xa\pgf@x\pgf@ya\pgf@y%
+  \pgf@process{\pgf@x\pgf@xb\pgf@y\pgf@yb\pgf@nlt@list}%
+  \pgf@xb\pgf@x\pgf@yb\pgf@y%
+  \xdef\pgf@nlt@last@coord@orig{{\the\pgf@xc}{\the\pgf@yc}}%
+  \pgf@process{\pgf@x\pgf@xc\pgf@y\pgf@yc\pgf@nlt@list}%
+  \pgf@xc\pgf@x\pgf@yc\pgf@y%
+  \xdef\pgf@nlt@last@coord@trans{{\the\pgf@xc}{\the\pgf@yc}}%
+  \pgf@protocolsizes{\pgf@xa}{\pgf@ya}%
+  \pgf@protocolsizes{\pgf@xb}{\pgf@yb}%
+  \pgf@protocolsizes{\pgf@xc}{\pgf@yc}%
+  \pgfsyssoftpath@curveto{\the\pgf@xa}{\the\pgf@ya}{\the\pgf@xb}{\the\pgf@yb}{\the\pgf@xc}{\the\pgf@yc}%
+}%
+
+
+\def\pgf@nlt@closepath@nlt{%
+  {%
+    \expandafter\pgfqpoint\pgf@nlt@last@moveto@orig%
+    \expandafter\pgf@nlt@set@temps\pgf@nlt@last@coord@orig%
+    \advance\pgfutil@tempdima by-\pgf@x%
+    \advance\pgfutil@tempdimb by-\pgf@y%
+    \pgfutil@tempswatrue%
+    \ifdim\pgfutil@tempdima<0.01pt\relax\ifdim\pgfutil@tempdima>-0.01pt\relax\ifdim\pgfutil@tempdimb<0.01pt\relax\ifdim\pgfutil@tempdimb>-0.01pt\relax\pgfutil@tempswafalse\fi\fi\fi\fi%
+    \ifpgfutil@tempswa%
+      \pgf@nlt@lineto@nlt{\pgf@x}{\pgf@y}%
+    \fi%
+    \pgfsyssoftpath@closepath%
+  }%
+}%
+
+
+\endinput

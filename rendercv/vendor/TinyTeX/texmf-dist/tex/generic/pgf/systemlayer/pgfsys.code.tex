@@ -1,0 +1,1775 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesPackageRCS{pgfsys.code.tex}
+
+
+% Load key mechanism
+\ifdefined\pgfkeysloaded\else
+  \input pgfkeys.code.tex
+\fi
+
+% "pgf" is a family
+\pgfkeys{/pgf/.is family}
+\def\pgfset{\pgfqkeys{/pgf}}
+
+% This if is needed *very* early
+\newif\ifpgfpicture
+
+
+%
+% The following conversion functions are used to convert from TeX
+% dimensions to postscript/pdf points.
+%
+{\catcode`\p=12\catcode`\t=12\gdef\Pgf@geT#1pt{#1}}
+
+\def\pgf@sys@tonumber#1{\expandafter\Pgf@geT\the#1}
+
+\def\pgf@sys@bp@correct#1{#1=0.99627#1}
+
+\def\pgf@sys@bp#1{%
+  {%
+    \pgf@x=#1\relax%
+    \pgf@x=0.99627\pgf@x%
+    \edef\temp{\expandafter\Pgf@geT\the\pgf@x\space}%
+    \pgfutil@toks@\expandafter\expandafter\expandafter{\expandafter\pgfsysprotocol@currentprotocol\temp}%
+    \xdef\pgfsysprotocol@currentprotocol{\the\pgfutil@toks@}%
+  }%
+}
+\def\pgf@sys@pt#1{%
+  {%
+    \pgf@x=#1\relax%
+    \edef\temp{\expandafter\Pgf@geT\the\pgf@x\space}%
+    \pgfutil@toks@\expandafter\expandafter\expandafter{\expandafter\pgfsysprotocol@currentprotocol\temp}%
+    \xdef\pgfsysprotocol@currentprotocol{\the\pgfutil@toks@}%
+  }%
+}
+
+
+% internal dimensions that are always present when pgsys is loaded.
+\newdimen\pgf@x
+\newdimen\pgf@y
+\newdimen\pgf@xa
+\newdimen\pgf@ya
+\newdimen\pgf@xb
+\newdimen\pgf@yb
+\newdimen\pgf@xc
+\newdimen\pgf@yc
+\newdimen\pgf@xd
+\newdimen\pgf@yd
+
+\newwrite\w@pgf@writea
+\newread\r@pgf@reada
+\let\pgfutil@inputcheck=\r@pgf@reada
+
+% internal counters that are always present when pgfsys is loaded
+\newcount\c@pgf@counta
+\newcount\c@pgf@countb
+\newcount\c@pgf@countc
+\newcount\c@pgf@countd
+
+\newtoks\t@pgf@toka
+\newtoks\t@pgf@tokb
+\newtoks\t@pgf@tokc
+
+% Ensure that math registers are the same (math is broken in case it
+% is loaded first)
+\let\pgfmath@x\pgf@x
+\let\pgfmath@xa\pgf@xa
+\let\pgfmath@xb\pgf@xb
+\let\pgfmath@xc\pgf@xc
+
+\let\pgfmath@y\pgf@y
+\let\pgfmath@ya\pgf@ya
+\let\pgfmath@yb\pgf@yb
+\let\pgfmath@yc\pgf@yc
+
+\let\c@pgfmath@counta\c@pgf@counta
+\let\c@pgfmath@countb\c@pgf@countb
+\let\c@pgfmath@countc\c@pgf@countc
+\let\c@pgfmath@countd\c@pgf@countd
+
+
+
+
+
+% In the following dummy definitions of the pgf system commands are
+% given. The individual drivers must overwrite these definitions,
+% preferably all of them. If some system command is used that has not
+% been overwritten, the command fails with a warning.
+%
+% In some cases, some pgf system commands are just shorthands for a
+% series of more complicated commands. In this case, a default
+% implementation is given in this file, but a driver may choose to
+% overwrite this default implementation with a more efficient
+% version. For example, a closestroke is the same as a closepath
+% followed by a stroking, but in pdf there is a special shorthand for
+% this. So, the pdf driver overwrites \pgfsys@closestroke, while the
+% postscript driver does not.
+%
+% The commands for which default implementations are available are
+% given at the end.
+
+\def\pgf@sys@fail#1{%
+  \expandafter\ifx\csname pgf@sys@fail@#1\endcsname\pgfutil@empty%
+  \else%
+    \expandafter\global\expandafter\let\csname pgf@sys@fail@#1\endcsname=\pgfutil@empty%
+    \pgfwarning{Your graphic driver \pgfsysdriver\space does not support #1. This warning is given only once}%
+  \fi%
+}
+
+
+
+%
+% Invocation commands
+%
+
+\def\pgfsys@invoke{\pgf@sys@fail{invoking specials}}
+% This command is used whenever some literal text needs to be inserted
+% into the resulting .pdf, .ps, or .dvi file. Note that most
+% \pgfsys@xxxx commands will not directly call this command, but,
+% rather, use the protocolling mechanism to record their literal
+% text. It is then left to the discretion of the protocolling
+% mechanism to insert the literal text at some appropriate, later
+% time.
+%
+% This command should only be called when \pgfsys@beginpicture has
+% been called previously and when the picture has not been suspended
+% using \pgfsys@beginhbox.
+
+\def\pgfsys@outerinvoke{\pgfsys@invoke}
+% This command can be used to insert protocolled graphic commands
+% outside any picture. This is extremely dangerous, but sometimes
+% useful. By default, this command does the same as inside pictures.
+
+
+
+%
+%
+% Path construction commands
+%
+%
+
+\def\pgfsys@moveto#1#2{\pgf@sys@fail{path constructions}}
+% This command is used to start a path at a specific point (#1,#2)
+% or to move the current point of the current path to (#1,#2)
+% without drawing anything upon stroking (the current path is
+% `interrupted').
+%
+% The arguments must be dimensions (like |10pt|).
+%
+% Example:
+%
+% \pgfsys@moveto{10pt}{10pt}
+% \pgfsys@lineto{0pt}{0pt}
+% \pgfsys@stroke
+%
+% This will draw a line from (10pt,10pt) to the origin of the picture.
+
+\def\pgfsys@lineto#1#2{\pgf@sys@fail{path constructions}}
+% Continue the current path to (#1,#2) with a line.
+
+\def\pgfsys@curveto#1#2#3#4#5#6{\pgf@sys@fail{path constructions}}
+% Continue the current path with a bezier curve to (#5,#6). The
+% control points of the curve are at (#1,#2) and (#3,#4).
+
+\def\pgfsys@rect#1#2#3#4{\pgf@sys@fail{path constructions}}
+% Append a rectangle to the current path whose lower left corner is at
+% (#1,#2) and whose width/height is given by (#3,#4).
+%
+% This command can be `mapped back' to moveto and lineto commands, but
+% it is included since pdf has a special, quick version of this command.
+
+\def\pgfsys@closepath{\pgf@sys@fail{path constructions}}
+% Close the current path. This results in joining the current point of
+% the path with the point specified by the last moveto
+% operation. Typically, this is preferable over using lineto to the
+% last point specified by a moveto, since the line starting at this
+% point and the line ending at this point will be smoothly joined by
+% closepath.
+%
+% Example:
+%
+% \pgfsys@moveto{0}{0}
+% \pgfsys@lineto{10}{10}
+% \pgfsys@lineto{0}{10}
+% \pgfsys@closepath
+% \pgfsys@stroke
+%
+% versus
+%
+% \pgfsys@moveto{0}{0}
+% \pgfsys@lineto{10}{10}
+% \pgfsys@lineto{0}{10}
+% \pgfsys@lineto{0}{0}
+% \pgfsys@stroke
+%
+% The difference between the above will be that in the second triangle
+% the corner at the origin will be wrong; it will just be the overlay
+% of two lines going in different directions, not a sharp pointed
+% corner.
+
+
+
+
+
+
+%
+%
+% Stroking and filling commands
+%
+%
+
+\def\pgfsys@stroke{\pgf@sys@fail{path usage}}
+% Stroke the current path (as if it were drawn with a pen). A number
+% of so-called graphic state parameters influence this, which can be
+% set in different ways:
+%
+% - linewidth
+%   The `thickness' of the line. A width of 0 is the thinnest width
+%   renderable on the device. On a high-resolution printer this may
+%   become invisible and should be avoided. A good choice is 0.4pt,
+%   which is the default.
+%
+% - stroke color
+%   This special color is used for stroking. If it is not set, the
+%   current color is used.
+%
+% - cap
+%   The cap describes how the endings of lines a drawn. A round cap
+%   adds a little half circle to these endings. A butt cap ends the
+%   lines exactly at the end (or start) point without anything
+%   added. A rectangular cap ends the lines like the butt cap, but the
+%   lines protrude over the endpoint by the line thickness. (See also
+%   the pdf or postscript manual). If the path has been closed, no cap
+%   is drawn.
+%
+% - join
+%   This describes how a bend (a join) in a path is rendered. A round
+%   join draws bends using small arcs. A bevel join just draws the two
+%   lines and then fills the join minimally so that it becomes
+%   convex. A miter join extends the lines so that they form a single
+%   sharp corner, but only up to a certain miter limit. (See the pdf
+%   or postscript manual once more).
+%
+% - dash
+%   The line may be dashed according to a dashing pattern.
+%
+% - clipping area
+%   If a clipping area is established, only those parts of the path
+%   that are inside the clipping area will be drawn.
+%
+% In addition to stroking a path, the path may also be used for
+% clipping after it has been stroked. This will happen if the
+% \pgfsys@clipnext is used prior to this command, see there for
+% details.
+
+\def\pgfsys@fill{\pgf@sys@fail{path usage}}
+% This command fills the area surrounded by the current path. If the
+% path has not yet been closed, it is closed prior to filling. The
+% path itself is not stroked. For self-intersecting paths or paths
+% consisting of multiple parts, the nonzero winding number rule is
+% used to determine whether a point is inside or outside the
+% path, except if \ifpgfsys@eorule holds -- in which case the even-odd
+% rule should be used. (See the pdf or postscript manual for details.)
+%
+% The following graphic state parameters influence the filling:
+%
+% - fill color
+%   If the fill color is not especially set, the current color is
+%   used.
+%
+% - clipping area
+%   If a clipping area is established, only those parts of the filling
+%   area that are inside the clipping area will be drawn.
+%
+% In addition to filling the path, the path will also be used for
+% clipping if \pgfsys@clipnext is used prior to this command.
+
+\def\pgfsys@fillstroke{\pgf@sys@fail{path usage}}
+% First, the path is filled, then the path is stroked. If the fill and
+% stroke colors are the same (or if they are not specified and the
+% current color is used), this yields almost the same as a
+% \pgfsys@fill. However, due to the line thickness of the stroked
+% path, the fillstroked area will be slightly larger.
+%
+% In addition to stroking and filling the path, the path will also be
+% used for clipping if \pgfsys@clipnext is used prior to this command.
+
+\def\pgfsys@clipnext{\pgf@sys@fail{path usage}}
+% This command should be issued after a path has been constructed, but
+% before it has been stroked and/or filled or discarded. When the
+% command is used, the next stroking/filling/discarding command will
+% first be executed normally. Then, afterwards, the just-used path
+% will be used for subsequent clipping. If there has already been a
+% clipping region, this region is intersected with the new clipping
+% path (the clipping cannot get bigger). The nonzero winding number
+% rule is used to determine whether a point is inside or outside the
+% clipping area or the even-odd rule, depending on whether
+% \ifpgfsys@eorule holds.
+
+\def\pgfsys@discardpath{\pgf@sys@fail{path usage}}
+% Normally, this command should `throw away' the current path.
+% However, after \pgfsys@clipnext has been called, the current path
+% should subsequently be used for clipping. See \pgfsys@clipnext for
+% details.
+
+\def\pgfsys@closestroke{\pgfsys@closepath\pgfsys@stroke}
+% This command should have the same effect as first closing the path
+% and then stroking it.
+
+\newif\ifpgfsys@eorule
+% Decides, whether even-odd filling and clipping is
+% to be used or normal the non-zero winding number rule. See the
+% pdf-documentation for details on what these rules are.
+
+
+
+
+%
+%
+% Stroking options
+%
+%
+\def\pgfsys@setlinewidth#1{\pgf@sys@fail{setting the line width}}
+% Sets the width of lines, when stroked, to #1, which must be a TeX
+% dimension (as text).
+
+\def\pgfsys@buttcap{\pgf@sys@fail{setting the line cap}}
+% Sets the cap to a butt cap. See \pgfsys@stroke.
+
+\def\pgfsys@roundcap{\pgf@sys@fail{setting the line cap}}
+% Sets the cap to a round cap. See \pgfsys@stroke.
+
+\def\pgfsys@rectcap{\pgf@sys@fail{setting the line cap}}
+% Sets the cap to a rectangular cap. See \pgfsys@stroke.
+
+\def\pgfsys@miterjoin{\pgf@sys@fail{setting the line join}}
+% Sets the join to a miter join. See \pgfsys@stroke.
+
+\def\pgfsys@setmiterlimit#1{\pgf@sys@fail{setting the line cap}}
+% Sets the miter limit of lines to #1. See the pdf or postscript
+% documentation.
+
+\def\pgfsys@roundjoin{\pgf@sys@fail{setting the line cap}}
+% Sets the join to a round join. See \pgfsys@stroke.
+
+\def\pgfsys@beveljoin{\pgf@sys@fail{setting the line cap}}
+% Sets the join to a bevel join. See \pgfsys@stroke.
+
+\def\pgfsys@setdash#1#2{\pgf@sys@fail{setting the dashing pattern}}
+% Sets the dashing patter. #1 should be a list of lengths separated by
+% commas. #2 should be a single dimension.
+%
+% The list of values in #1 is used to determine the lengths of the
+% `on' phases of the dashing and of the `off' phases. For example, if
+% #1 is `3pt,4pt', then the dashing pattern is `3pt on followed by 4pt
+% off, followed by 3pt on, followed by 4pt off, and so on'. A pattern
+% of `.5pt,4pt,3pt,1.5pt' means `.5pt on, 4pt off, 3pt on, 1.5pt off, .5pt on,
+% ...'. If the number of entries is odd, the last one is used twice,
+% so `3pt' means `3pt on, 3pt off, 3pt on, 3pt off,...'. An empty list
+% means `always on'.
+%
+% The second argument determines the `phase' of the pattern. For
+% example, for a pattern of `3pt,4pt' and a phase of `1pt', the pattern
+% would start: `2pt on, 4pt off, 3pt on, 4pt off, 3pt on, 4pt off...'.
+
+
+
+
+
+%
+%
+% Color stuff
+%
+%
+
+\def\pgfsys@color@rgb@stroke#1#2#3{\pgf@sys@fail{color}}
+% Sets the color used for stroking operations to the given rgb tuple
+% (numbers between 0 and 1).
+%
+% Example: Make stroked text dark red: \pgfsys@color@rgb@stroke{0.5}{0}{0}
+%
+% The special stroking color is only used if the stroking color has
+% been set since the last \pgfutil@color command. Thus, each \pgfutil@color command
+% should reset both the stroking and filling colors.
+
+\def\pgfsys@color@rgb@fill#1#2#3{\pgf@sys@fail{color}}
+% Sets the color used for filling operations to the given rgb tuple
+% (numbers between 0 and 1). This color may be different from the
+% stroking color.
+
+\def\pgfsys@color@rgb#1#2#3{\pgfsys@color@rgb@stroke{#1}{#2}{#3}\pgfsys@color@rgb@fill{#1}{#2}{#3}}
+% Sets the color used for filling and stroking operations. This is a
+% ``low-level'' version of the \pgfutil@color command. It is currently only
+% used by the plain tex version to support colors.
+
+\def\pgfsys@color@cmyk@stroke#1#2#3#4{\pgf@sys@fail{color}}
+% Sets the color used for stroking operations to the given cymk tuple
+% (numbers between 0 and 1).
+
+\def\pgfsys@color@cmyk@fill#1#2#3#4{\pgf@sys@fail{color}}
+% Sets the color used for filling operations to the given cymk tuple
+% (numbers between 0 and 1).
+
+\def\pgfsys@color@cmyk#1#2#3#4{\pgfsys@color@cmyk@stroke{#1}{#2}{#3}{#4}\pgfsys@color@cmyk@fill{#1}{#2}{#3}{#4}}
+% Sets the color used for filling and stroking operations.
+
+\def\pgfsys@color@cmy@stroke#1#2#3{\pgf@sys@fail{color}}
+% Sets the color used for stroking operations to the given cym tuple
+% (numbers between 0 and 1).
+
+\def\pgfsys@color@cmy@fill#1#2#3{\pgf@sys@fail{color}}
+% Sets the color used for filling operations to the given cym tuple
+% (numbers between 0 and 1).
+
+\def\pgfsys@color@cmy#1#2#3{\pgfsys@color@cmy@stroke{#1}{#2}{#3}\pgfsys@color@cmy@fill{#1}{#2}{#3}}
+% Sets the color used for filling and stroking operations.
+
+\def\pgfsys@color@gray@stroke#1{\pgf@sys@fail{color}}
+% Sets the color used for stroking operations to the given gray level
+% (number between 0 and 1).
+
+\def\pgfsys@color@gray@fill#1{\pgf@sys@fail{color}}
+% Sets the color used for filling operations to the given gray level
+% (number between 0 and 1).
+
+\def\pgfsys@color@gray#1{\pgfsys@color@gray@stroke{#1}\pgfsys@color@gray@fill{#1}}
+% Sets the color used for filling and stroking operations.
+
+\newif\ifpgfsys@color@reset@inorder
+% This if decides whether the color resetting of the
+% \pgfsys@color@reset command may assume that all color commands are
+% given ``in order.'' This means that this command will not be called,
+% say, at the beginning of a box that is later inserted at a point
+% where a fill color was actively set. This may allow the command to
+% produce more compact code when it ``knows'' that no special fill or
+% stroke color has been set.
+\pgfsys@color@reset@inordertrue
+
+
+\def\pgfsys@color@reset{}
+% This command will be called when the \pgfutil@color command is used. It
+% should purge any internal settings of stroking and filling
+% color. After this call, till the next use of a command like
+% \pgfsys@color@rgb@fill, the current color installed by the \pgfutil@color
+% command should be used.
+
+\def\pgfsys@color@unstacked#1{}
+% This slightly obscure command causes the color stack to be
+% tricked. When called, this command should set the current color to
+% #1 without causing any change in the color stack.
+
+\def\pgfsys@text@to@black@hook{}
+% Another slightly obscure command that allows tikz to hack into
+% dvisvgm's color management inside text nodes. The problem is that
+% the color "black" is special for dvisvgm.
+
+
+
+%
+%
+% Coordinate system transformations
+%
+%
+
+\def\pgfsys@transformcm#1#2#3#4#5#6{\pgf@sys@fail{transformations}}
+% Perform a concatenation of the low-level current transformation
+% matrix with the matrix given by the values #1 to #6. The
+% transformation matrix is a transformation on a homogeneous
+% 2D-coordinate system. See the pdf or postscript manual for details.
+
+\def\pgfsys@transformshift#1#2{\pgfsys@transformcm{1}{0}{0}{1}{#1}{#2}}
+% This command will change the origin of the low-level coordinate
+% system to (#1,#2).
+
+\def\pgfsys@transformxyscale#1#2{\pgfsys@transformcm{#1}{0}{0}{#2}{0bp}{0bp}}
+% This command will scale the low-level coordinate system (and
+% everything that is drawn) by a factor of #1 in x-directed and #2 in
+% y-direction. Note that this applies to everything, including
+% lines. So a scaled line will have a different width and may even
+% have a different width when going along the x-axis and when going
+% along the y-axis, if the scaling is different in these directions.
+
+\def\pgfsys@viewboxmeet#1#2#3#4#5#6#7#8{\pgfsys@beginscope\pgf@sys@default@viewbox@impl{#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}{<}}
+% Consider the two rectangles R with lower left corner
+% (#5,#6) and upper right (#7,#8) and S with lower left corner
+% (#1,#2) and upper right (#3,#4). Now, consider the transformation
+% that scales and translates R so that the result T has the same
+% center as S and has maximal size while still being inside S. This
+% transformation gets installed in a new graphics group, which must be
+% ended with a corresponding \pgfsys@endviewbox.
+
+\def\pgfsys@viewboxslice#1#2#3#4#5#6#7#8{\pgfsys@beginscope\pgf@sys@default@viewbox@impl{#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}{>}}
+% Works like \pgfsys@viewboxmeet, but R3 will have minimal size so
+% that in contains all of R2.
+
+\def\pgfsys@endviewbox{\pgfsys@endscope}
+% Ends a viewbox scope started by either of the previous two commands.
+
+
+\def\pgf@sys@default@viewbox@impl#1#2#3#4#5#6#7#8#9{{%
+    \pgf@x#1%
+    \pgf@y#2%
+    \pgf@xa#3%
+    \pgf@ya#4%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    \pgfmathdivide@{\pgf@sys@tonumber\pgf@xa}{\pgf@sys@tonumber\pgf@ya}%
+    \let\aspectr\pgfmathresult%
+    \pgf@xb#5%
+    \pgf@yb#6%
+    \pgf@xc#7%
+    \pgf@yc#8%
+    \advance\pgf@xc by-\pgf@xb%
+    \advance\pgf@yc by-\pgf@yb%
+    \pgfmathdivide@{\pgf@sys@tonumber\pgf@xc}{\pgf@sys@tonumber\pgf@yc}%
+    \let\aspects\pgfmathresult%
+    \ifdim\aspectr pt#9\aspects pt%
+      \pgfmathdivide@{\pgf@sys@tonumber\pgf@xa}{\pgf@sys@tonumber\pgf@xc}%
+    \else%
+      \pgfmathdivide@{\pgf@sys@tonumber\pgf@ya}{\pgf@sys@tonumber\pgf@yc}%
+    \fi%
+    \advance\pgf@x by.5\pgf@xa%
+    \advance\pgf@xb by.5\pgf@xc%
+    \advance\pgf@y by.5\pgf@ya%
+    \advance\pgf@yb by.5\pgf@yc%
+    \pgfsys@transformcm{\pgfmathresult}{0}{0}{\pgfmathresult}{\pgf@x}{\pgf@y}%
+    \pgfsys@transformcm{1}{0}{0}{1}{-\pgf@xb}{-\pgf@yb}%
+  }%
+}
+
+
+
+
+%
+%
+% Graphic state saving and restoring.
+%
+%
+
+\def\pgfsys@beginscope{\pgf@sys@fail{scoping}}
+% Saves the current graphic state on a graphic state stack. All
+% changes to the graphic state parameters mentioned for \pgfsys@stroke
+% and \pgfsys@fill will be local to the current graphic state and will
+% the old values will be restored after endscope is used.
+%
+% WARNING: pdf and postscript differ with respect to the question of
+% whether the current path is part of the graphic state or not. For
+% this reason, you should never use this command unless the path is
+% currently empty. For example, it might be a good idea to use
+% discardpath prior to calling this command.
+
+\def\pgfsys@endscope{\pgf@sys@fail{scoping}}
+% Restores the last saved graphic state.
+
+\def\pgfsys@begin@idscope{%
+  \begingroup%
+    \edef\pgf@sys@cacheref{\pgfsys@id@refcurrent}%
+    \expandafter\let\expandafter\pgfsys@beg@save\csname pgf@sys@att@beg@\pgf@sys@cacheref\endcsname%
+    \expandafter\let\expandafter\pgfsys@end@save\csname pgf@sys@att@end@\pgf@sys@cacheref\endcsname%
+    \ifx\pgfsys@beg@save\relax%
+      \ifx\pgfsys@end@save\relax%
+      \else%
+        \pgfsys@call@save%
+      \fi%
+    \else%
+      \pgfsys@call@save%
+    \fi%
+    \pgfsys@invalidate@currentid%
+      \begingroup%
+}
+% Starts an "id scope" where the current value of \pgfsys@use@id and
+% \pgfsys@use@type is used. If the combination has been used before,
+% nothing happens. Otherwise, depending of the driver, a graphic
+% scope may or may not be created. To ensure that a graphic scope is
+% created, use \pgfsys@beginscope additionally.
+
+\def\pgfsys@call@save{%
+  \pgfsys@beginscope%
+  \pgfsys@beg@save%
+  \expandafter\global\expandafter\let\csname pgf@sys@att@beg@\pgfsys@id@refcurrent\endcsname\relax%
+  \expandafter\global\expandafter\let\csname pgf@sys@att@end@\pgfsys@id@refcurrent\endcsname\relax%
+}
+
+\def\pgfsys@end@idscope{
+      \endgroup%
+    \ifx\pgfsys@beg@save\relax%
+      \ifx\pgfsys@end@save\relax%
+      \else%
+        \pgfsys@call@end%
+      \fi%
+    \else%
+      \pgfsys@call@end%
+    \fi%
+  \endgroup
+}
+% Ends an id scope.
+
+\def\pgfsys@call@end{%
+  \pgfsys@end@save%
+  \pgfsys@endscope%
+}
+
+
+\def\pgfsys@begin@text{}
+% Inside a text box you should not use graphics command. However, TikZ
+% needs to insert some color commands at the beginnings of text
+% boxes. For most drivers, this is not a problem; except for SVG,
+% where every change of the graphics state opens a scope and needs a
+% closing scope. This command should be used at the beginning of text
+% boxes containing such color commands and the matching
+% \pgfsys@end@text at the end. If the box does not contain commands
+% that change the graphics state, this command is not needed.
+
+\def\pgfsys@end@text{}
+% Closes a \pgfsys@begin@text.
+
+
+
+%
+%
+% Id management (all of these commands have a default implementation
+% any typically need not be redefined by a driver)
+%
+%
+
+% The id count
+\newcount\pgf@sys@id@count
+
+\def\pgfsys@new@id#1{%
+  \edef#1{pgf\the\pgf@sys@id@count}%
+  \global\advance\pgf@sys@id@count by1\relax%
+}
+% Creates a new id and stores it in the macro #1.
+
+\def\pgfsys@use@id#1{%
+  \edef\pgf@sys@id@current@id{#1}%
+  \let\pgfsys@current@type\pgfutil@empty%
+}
+\let\pgf@sys@id@current@id\pgfutil@empty
+% Sets the id to be used for the next graphic object (group, box, or
+% path). The type is reset to be empty. #1 must be a macro name that
+% has previously been set using \pgfsys@new@id.
+%
+% Each combination of id and type can be used only once, on a second
+% use nothing happens.
+
+\def\pgfsys@clear@id{%
+  \let\pgf@sys@id@current@id\pgfutil@empty%
+}
+% Clears the current id, so nothing can be referenced.
+
+\def\pgfsys@use@type#1{%
+  \edef\pgfsys@current@type{#1}%
+  \pgfsys@register@type\pgfsys@current@type%
+}
+\let\pgfsys@current@type\pgfutil@empty
+% Sets the type to be used for the next graphic object.
+
+\def\pgfsys@append@type#1{%
+  \ifx\pgfsys@current@type\pgfutil@empty%
+    \pgfsys@use@type{#1}%
+  \else%
+    \pgfsys@use@type{\pgfsys@current@type.#1}%
+  \fi%
+}
+% Appends something to the current type
+
+\def\pgfsys@register@type#1{%
+  \expandafter\let\expandafter\pgf@sys@temp\csname pgf@sys@reg@type@#1\endcsname%
+  \ifx\pgf@sys@temp\relax%
+    {%
+      \c@pgf@counta\pgf@sys@type@count\relax%
+      \global\advance\c@pgf@counta by1\relax%
+      \edef\pgf@sys@type@count{\the\c@pgf@counta}%
+      \expandafter\xdef\csname pgf@sys@reg@type@#1\endcsname{y\the\c@pgf@counta}%
+    }%
+  \fi%
+}
+% Registers a type with the system. Must be called before any use of
+% the type
+\def\pgf@sys@reg@type@{}
+\def\pgf@sys@reg@type@background{b}
+\def\pgf@sys@reg@type@path{p}
+\def\pgf@sys@reg@type@text{t}
+\expandafter\def\csname pgf@sys@reg@type@background.path\endcsname{bp}
+\def\pgf@sys@type@count{0}
+
+\def\pgfsys@push@type{%
+  \expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgf@sys@typestack%
+  \expandafter\expandafter\expandafter{\expandafter\expandafter\expandafter\def\expandafter\expandafter\expandafter\pgfsys@current@type%
+    \expandafter\expandafter\expandafter{\expandafter\pgfsys@current@type\expandafter}%
+    \expandafter\def\expandafter\pgf@sys@typestack\expandafter{\pgf@sys@typestack}}%
+}
+\let\pgf@sys@typestack\pgfutil@empty
+% Pushes the current type onto a global stack. This is useful for
+% temporarily changing the type without creating \TeX scopes.
+
+\def\pgfsys@pop@type{\pgf@sys@typestack}
+% Pops the last id from the stack.
+
+\def\pgfsys@id@ref#1#2{#1\csname pgf@sys@reg@type@#2\endcsname}
+% Expands to a text that can be inserted as a reference. #1 must be a
+% reference created \pgfsys@new@id, #2 must be a type that has been
+% registered using \pgfsys@id@register@type.
+
+\def\pgfsys@id@refcurrent{\pgfsys@id@ref{\pgf@sys@id@current@id}{\pgfsys@current@type}}
+% Expands to a text that can be inserted as a reference to the current
+% id-type pair in use.
+
+\def\pgfsys@invalidate@currentid{%
+  \expandafter\global\expandafter\let\csname pgf@sys@id@keylist@\pgfsys@id@refcurrent\endcsname\pgfutil@empty%
+}
+% Mark the current id-type pair as used.
+
+\def\pgfsys@attach@to@id#1#2#3#4{%
+  \pgfsys@register@type{#2}%
+  \expandafter\def\expandafter\pgf@sys@tempbeg\expandafter{\csname pgf@sys@att@beg@\pgfsys@id@ref{#1}{#2}\endcsname}%
+  \expandafter\def\expandafter\pgf@sys@tempend\expandafter{\csname pgf@sys@att@end@\pgfsys@id@ref{#1}{#2}\endcsname}%
+  \expandafter\ifx\pgf@sys@tempbeg\relax%
+    \expandafter\let\pgf@sys@tempbeg\pgfutil@empty%
+  \fi%
+  \expandafter\ifx\pgf@sys@tempend\relax%
+    \expandafter\let\pgf@sys@tempend\pgfutil@empty%
+  \fi%
+  \expandafter\let\expandafter\pgf@sys@tempbeg@cont\pgf@sys@tempbeg%
+  \expandafter\let\expandafter\pgf@sys@tempend@cont\pgf@sys@tempend%
+  \expandafter\expandafter\expandafter\gdef\expandafter\pgf@sys@tempbeg\expandafter{\pgf@sys@tempbeg@cont#3}%
+  \def\pgf@sys@temp{#4}%
+  \expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\expandafter\gdef\expandafter\expandafter\expandafter\pgf@sys@tempend\expandafter\expandafter\expandafter{\expandafter\pgf@sys@temp\pgf@sys@tempend@cont}%
+}
+% Attaches some code to an id-type pair so that when the id's scope
+% gets created, #3 is added at the beginning and #4 is added at the
+% end.
+
+\def\pgfsys@if@fresh@id#1#2#3#4{%
+  \edef\pgf@sys@temp{#1}%
+  \ifx\pgf@sys@temp\pgfutil@empty% empty id always counts as "has been used"
+    #4%
+  \else%
+    \pgfsys@register@type{#2}%
+    \expandafter\ifx\csname pgf@sys@id@keylist@\pgfsys@id@ref{#1}{#2}\endcsname\pgfutil@empty%
+      % has already been used!
+      #4%
+    \else%
+      #3%
+    \fi%
+  \fi%
+}
+% Checks whether a given id-type pair #1-#2 has not been used, yet. If
+% so, #3 is executed, otherwise #4.
+
+\def\pgfsys@if@fresh@currentid#1#2{%
+  \ifx\pgf@sys@id@current@id\pgfutil@empty% empty id always counts as "has been used"
+    #2%
+  \else%
+    \expandafter\ifx\csname pgf@sys@id@keylist@\pgfsys@id@refcurrent\endcsname\pgfutil@empty%
+      % has already been used!
+      #2%
+    \else%
+      #1%
+    \fi%
+  \fi%
+}
+% Checks whether the current id-type pair in use has not been used,
+% yet. If so, #1 is executed, otherwise #2.
+
+
+
+
+%
+%
+% Special commands
+%
+%
+
+\def\pgfsys@imagesuffixlist{}
+% A list of suffixes, separated by `:', that will be tried when
+% searching for an image.
+
+
+
+%
+%
+% Transparency
+%
+%
+
+\def\pgfsys@opacity#1{\pgfsys@stroke@opacity{#1}\pgfsys@fill@opacity{#1}}
+% Ideally, this should sets the opacity of all operations, treating
+% the group as a transparency group with 1 meaning fully opaque, 0
+% meaning fully transparent. Since most drivers do not support this,
+% the fallback is to set the stroke and fill opacity at the same
+% time. This is not quite the same, however.
+
+\def\pgfsys@stroke@opacity#1{\pgf@sys@fail{opacity}}
+% Sets the opacity of stroking operations. 1 means fully opaque, 0
+% means fully transparent.
+
+\def\pgfsys@fill@opacity#1{\pgf@sys@fail{opacity}}
+% Sets the opacity of filling operations. 1 means fully opaque, 0
+% means fully transparent.
+
+\def\pgfsys@transparencygroupfrombox#1{\pgf@sys@fail{transparency groups}}
+% This takes a TeX box and converts it into a transparency
+% group. This means that any transparency settings apply to the box as
+% a whole. For instance, if a box contains two overlapping black
+% circles and you draw them normally with 50% transparency, then the
+% overlap will be darker than the rest. By comparison, if the circles
+% are part of a transparency group, the overlap will get the same
+% color as the rest.
+%
+% The following settings modify the behaviour of a transparency group:
+
+\newif\ifpgfsys@transparency@group@isolated
+\newif\ifpgfsys@transparency@group@knockout
+
+
+\def\pgfsys@blend@mode#1{\pgf@sys@fail{blend mode}}
+% Sets the current blend mode. See the PDF specification for details
+% on blend modes.
+
+
+\def\pgfsys@definemask{\pgf@sys@fail{image masks}}
+% This command declares a mask for usage with images. It works similar
+% to \pgfsys@defineimage: Certain macros are set when the command is
+% called. The result should be to set the macro \pgf@mask to a pdf
+% object count that can subsequently be used as a soft mask. The
+% following macros will be set when this command is invoked:
+%
+% - \pgf@filename
+%   File name of the mask to be defined.
+%
+% - \pgf@maskmatte
+%   The so-called matte of the mask (see the pdf documentation for
+%   details). The matte is a color specification consisting of 1, 3 or
+%   4 numbers between 0 and 1. The number of numbers depends on the
+%   number of color channels in the image (not in the mask!). It will
+%   be assumed that the image has been preblended with this color.
+
+\def\pgfsys@fadingfrombox#1#2{\pgf@sys@fail{fadings}}
+% Declares an fading named #1. The parameter #2 must be a
+% box. Its contents luminosity determines the opacity of the resulting
+% mask.
+
+\def\pgfsys@usefading#1#2#3#4#5#6#7{\pgf@sys@fail{fadings}}
+% Installs a previously declared fading #1 in the current graphics
+% state. Parameters #2 to #7 specify a transformation cm that should
+% be applied to the mask before it is used.
+
+\def\pgfsys@clipfading{}
+% This default implementation is a no-op for all drivers except `dvips'
+% where we have to set the clipping path _before_ installing the fading (used in
+% \pgfsetfadingforcurrentpath, \pgfsetfadingforcurrentpathstroked commands of
+% the basic layer)
+
+
+%
+%
+% Shading commands
+%
+%
+
+\def\pgfsys@horishading#1#2#3{\pgf@sys@fail{shadings}\pgf@sys@noshading{#1}}
+% Declares a horizontal shading for later use. The effect of this
+% command should be the definition of a macro called `@pgfshading#1!'
+% (or \csname @pdfshading#1!\endcsname, to be precise). When invoked,
+% this new macro should insert a shading at the current position.
+%
+% #1 is the name of the shading, which is also used in the output
+% macro name. #2 is the height of the shading and must be given as a
+% TeX dimension like `2cm' or `10pt'. #3 is a shading color
+% specification as specified in the pgfuserguide. The shading
+% specification implicitly fixes the width of the shading.
+%
+% When `@pgfshading#1!' is invoked, it should insert a box of height
+% #2 and the width implicit in the shading declaration.
+
+\def\pgfsys@vertshading#1#2#3{\pgf@sys@fail{shadings}\pgf@sys@noshading{#1}}
+% Like horishading, only for vertical shadings. This time, the height
+% of the shading is implicit in #3 and the width is given as #2.
+
+\def\pgfsys@radialshading#1#2#3{\pgf@sys@fail{shadings}\pgf@sys@noshading{#1}}
+% Declares a radial shading. Like the previous macros, this command
+% should setup the macro `@pgfshading#1!', which upon invocation
+% should insert a radial shading whose size is implicit in #3.
+%
+% The parameter #2 is a pgf point specification if the starting point
+% of the shading. See the pgfuserguide for details.
+
+\def\pgfsys@functionalshading#1#2#3#4{\pgf@sys@fail{shadings (functional)}\pgf@sys@noshading{#1}}
+% Declares a shading using a PostScript-like function that provides a
+% color for each point. Like the previous macros, this command
+% should setup the macro `@pgfshading#1!' so that it will produce a
+% box containing the desired shading.
+%
+% Parameter #1 is the name of the shading. Parameter #4 is a
+% Postscript-like function (type 4 function of the PDF specification)
+% as described in Section 3.9.4 of the PDF Specification version 1.7.
+% Parameter #2 and #3 are pgf point specifications that specifies the
+% lower left and upper right coordinate.
+%
+% When function #4 is evaluated, the coordinate of the current
+% point will be on the (virtual) PostScript stack in bp units. After
+% the function has been evaluated, the stack should consist of three
+% numbers (not integers! - the Apple PDF renderer is broken in this
+% regard, so add cvr's at the end if needed) that represent the red,
+% green, and blue components of the color.
+%
+% A buggy #4 will result is *totally unpredictable chaos* during
+% rendering.
+
+\def\pgf@sys@noshading#1{\expandafter\global\expandafter\let\csname @pgfshading#1!\endcsname=\pgfutil@empty}
+
+
+
+
+%
+%
+% Pattern stuff
+%
+%
+
+\def\pgfsys@declarepattern#1#2#3#4#5#6#7#8#9{\pgf@sys@fail{patterns}}
+% This command declares a new colored or uncolored pattern. Uncolored
+% patterns have no inherent color, the color is provided when they are
+% set. Colored patters have an inherent color.
+% #1       = name of the pattern (must be a plain suffix for use in
+%            postscript/pdf/etc.)
+% #2 to #5 = four coordinates describing the corners of a bounding box
+%            of pattern cells
+% #6       = x-step
+% #7       = y-step
+% #8       = pattern code
+% #9       = 0 if uncolored patter, 1 if colored pattern.
+
+\def\pgfsys@setpatternuncolored#1#2#3#4{\pgf@sys@fail{patterns}}
+% Sets an uncolored pattern #1 as filling color. The numbers #2, #3,
+% #4 must be an rgb-value to be used as the color of the pattern.
+
+\def\pgfsys@setpatterncolored#1{\pgf@sys@fail{patterns}}
+% Sets an colored pattern #1 as filling color.
+
+
+
+
+
+%
+%
+% Animations
+%
+%
+
+
+\newif\ifpgfsysanimationsupported
+% Will be set to true by a driver when animations are supported. Note
+% that snapshots are always supported.
+
+
+\def\pgfsys@animate#1{\pgf@sys@fail{animations}}
+% Adds an animation of the attribute #1 to the current scope.
+% The configuration of the animation (like start times, etc.) is taken
+% from the current values of the animation keys, which are configured
+% using calls to \pgfsys@animation@..., which setup an animation
+% key for the local scope. This means that you typically setup these
+% keys in a scope and at the end of the scope call \pgfsys@animate.
+%
+% Some keys accumulate (like begin or keytime), most do not. In those
+% cases, the last call overrides the previous one.
+%
+% Not all value types make sense or are allowed, it depends on the
+% specific \pgfsys@animate call.
+%
+% Example:
+%
+% {
+%   \pgfsys@animation@offset{10}{begin}%
+%   \pgfsys@animation@event{}{click}{1}{begin}%
+%   \pgfsys@animation@time{5}{1}{1}{0}{0}
+%   \pgfsys@animation@val@scalar{1}
+%   \pgfsys@animation@time{8}{1}{1}{0}{0}
+%   \pgfsys@animation@val@scalar{0.5}
+%   \pgfsys@animation@sum%
+%   \pgfsys@animate{fillopacity}%
+% }
+%
+% When a driver does not support a specific attribute #1, it should
+% issue a \pgf@sys@fail. Typical attributes are things like "opacity"
+% or "linewidth" or "dash".
+%
+% The following values are permissible for "#1":
+%
+% "opacity" adds an animation of the opacity.
+% Type: scalar
+%
+% "fillopacity" adds an animation of the fill opacity.
+% Type: scalar
+%
+% "strokeopacity" adds an animation of the stroke opacity.
+% Type: scalar
+%
+% "visibility" adds an animation of the visibility.
+% Type: text ("visible" or "hidden")
+%
+% "linewidth" adds an animation of the line width.
+% Type: dimension
+%
+% "dash" adds an animation of the dash.
+% Type: dash
+%
+% "translate" adds an animation of the transformation.
+% Type: translate
+%
+% "scale" adds an animation of the transformation.
+% Type: scale
+%
+% "rotate" adds an animation of the transformation.
+% Type: scalar
+%
+% "skewx" adds an animation of the transformation.
+% Type: scalar
+%
+% "skewy" adds an animation of the transformation.
+% Type: scalar
+%
+% "motion" adds a movement along a path.
+% Type: motion
+%
+% "strokecolor" adds an animation of the stroke color.
+% Type: color
+%
+% "fillcolor" adds an animation of the fill color.
+% Type: color
+%
+% "viewbox" adds an animation of the view box.
+% Type: view box
+%
+% "path" adds an animation of the path to the path specified by
+% \pgfsys@animation@whom
+% Type: path
+%
+% "syncbase" adds a sync base to the animation. A sync base does not animate
+% anything by itself, but other animations can begin and end relative
+% to it.
+%
+% "none" suppresses the animation
+% Type: any
+
+
+
+
+% Animation timing :
+%
+% You specify an animation using a timeline. A timeline consists of a
+% sequence of times together with values for these times. The times
+% must be given in increasing order. You use the command
+% \pgfsys@animation@time to specify a time and
+% \pgfsys@animation@val@... to specify a value. The time must be
+% specified first, the time--value is created when the value command is
+% used.
+%
+% Times are given in seconds (so 0.01 is one hundredth of a second).
+%
+% The animation's timeline will start with the first time mentioned
+% (not necessarily zero and not necessarily a positive value) and ends
+% with the last value. The duration is the difference between these
+% two values.
+
+\def\pgfsys@animation@restart@always{}
+% Specifies that the animation can always restart
+
+\def\pgfsys@animation@restart@never{}
+% Specifies that the animation should never restart
+
+\def\pgfsys@animation@restart@whennotactive{}
+% Specifies that the animation should only restart when it is not active
+
+\def\pgfsys@animation@repeat#1{}
+% #1 must be a number
+
+\def\pgfsys@animation@repeat@indefinite{}
+% Repeats forever
+
+\def\pgfsys@animation@repeat@dur#1{}
+% #1 must be a clock value
+
+\def\pgfsys@animation@freezeatend{}
+% Specifies that the last value of the animation remains in force at
+% the end
+
+\def\pgfsys@animation@removeatend{}
+% Specifies that the effect of the animation is removed at the end
+
+\def\pgfsys@animation@time#1#2#3#4#5{}
+% Specifies a time together with spline control points for the entry
+% and the exit to this time. The value #1 is a time in seconds (so 60
+% means 1 minute, 0.001 means one millisecond). The values #2 and #3
+% specify the control point of the spline *entering* the time point,
+% while the values #4 and #5 specify the control point of the spline
+% *leaving* the time point. They are all dimensionless values between
+% 0 and 1. For a linear animation, set the first two to 1 and the last
+% two to 0.
+%
+% Example:
+% \pgfsys@animation@time{5}{1}{1}{0.25}{0.1}
+% \pgfsys@animation@val@scalar{80}
+% \pgfsys@animation@time{8}{.75}{1}{0}{0}
+% \pgfsys@animation@val@scalar{90}
+%
+% In SVG, this will create the following entries:
+% begin     = +5s
+% duration  = 3s
+% keyTimes  = 0;1
+% values    = 80;90
+% keySpline = 0.25 0.1 0.75 1
+%
+% For the key spline, note that the entry spline controls of the first
+% time and the exit spline controls of the last point are dropped.
+%
+%
+% When the exit spline takes the special values #4="stay" and #5="0",
+% the attribute's value "stays" until the next value for the next time
+% (it "jumps" to the next value then). This corresponds, roughly, to
+% an "infinite" #4.
+%
+% Similarly, when the entry spline takes the special value #2="jump"
+% and #3="1", the value immediately jumps from the previous value to
+% the next value when the previous value was "created".
+
+\def\pgfsys@stay@text{{stay}{0}}
+\def\pgfsys@jump@text{{jump}{1}}
+
+\def\pgfsys@animation@base{}
+% Think of this command as setting the value of the attribute in the
+% timeline before the timeline starts. Normally, an animation only
+% influences the timeline while the animation is running (which may be
+% forever) and before and after the animation is running, the
+% attribute's value is not modified by the animation (so, it is just
+% inherited from the surrounding scope). When a base value is set,
+% while the animation is not running, this value is used. For most
+% attributes you can achieve the same effect by surrounding the
+% to-be-animated object by a scope and setting the value there, but
+% using bases is often more convenient and, for instance for the
+% visibility attribute, it is necessary to use a base.
+%
+% Note that when a backend driver does not support animations, base
+% values will not be depicted unless a snapshot is used explicitly.
+
+\def\pgfsys@animation@offset#1#2{}
+% #1 must be a value in seconds, #2 is the target "begin" or "end" to
+% which this offset is appended.
+
+\def\pgfsys@animation@syncbegin#1#2#3#4{}
+% #1 is the id of a sync base (obtained by
+% \pgfsys@new@id), #2 is the id type (or empty), #3 is an optional
+% offset, #4 is the target.
+
+\def\pgfsys@animation@syncend#1#2#3#4{}
+% Like the previous command.
+
+\def\pgfsys@animation@event#1#2#3#4#5{}
+% #1 is the optional id of another element (obtained by
+% \pgfsys@new@id), #2 is the optional type of the id, #3 is an event
+% name, #4 is an optional offset, #5 is the target.
+
+\def\pgfsys@animation@repeat@event#1#2#3#4#5{}
+% #1 is the optional id of another element, #2 is the type, #3 is a
+% repeat count, and #4 is an optional offset, #5 is the target.
+
+\def\pgfsys@animation@accesskey#1#2#3{}
+% #1 is a character, #2 is an optional offset, #3 is the target.
+
+\def\pgf@sys@begin@text{begin}
+
+
+% Accumulation
+
+\def\pgfsys@animation@accumulate{}
+% Corresponds to accumulate="sum" in SVG
+
+\def\pgfsys@animation@noaccumulate{}
+% Corresponds to accumulate="none" in SVG
+
+
+% Targeting
+
+\def\pgfsys@animation@whom#1#2{}
+% Sets the target of the animation. #1 must be an id previously
+% created using \pgfsys@new@id and #2 must be empty or a type
+% previously created using \pgfsys@new@id@type
+
+
+% Attribute definitions
+
+\def\pgfsys@animation@rotatealong{}
+% Applicable only to motion animations. Indicates that the
+% to-be-animated group should be rotated automatically so that it
+% points along the path as time progresses.
+
+\def\pgfsys@animation@norotatealong{}
+% Corresponds to rotate="0"
+
+\def\pgfsys@animation@movealong#1{}
+% Applicable only to motion animations. #1 is a softpath along which
+% the movement will be done.
+
+\def\pgfsys@animation@tip@markers#1#2{}
+% Applicable only to path animations. #1 and #2 are markers (declared
+% using \pgfsys@marker@declare) that store marker symbols to be added
+% at the start and at the end of the to-be-animated path. If empty, no
+% markers are added.
+
+\def\pgfsys@animation@canvas@transform#1#2{}
+% #1 is some code that may call \pgfsys@transformcm at most once. It
+% will be executed when a canvas transformation animation is
+% installed for a scope id. #2 is some further codes that may also
+% call \pgfsys@transformcm at most once. It will be installed right
+% after the animation.
+%
+% Typically, #1 is some pgf coordinate shift followed by
+% {\pgflowlevelsynccm} and #2 is \pgftransforminvert followed by
+% \pgflowlevelsynccm.
+
+
+
+% Values
+
+\def\pgfsys@animation@val@current{}
+% The current value of the attribute. At least with SVG, this can only
+% be used for the first value and, then, only if there is only one
+% other value.
+
+\def\pgfsys@animation@val@text#1{}
+% #1 should be some text.
+
+\def\pgfsys@animation@val@scalar#1{}
+% #1 should be a single value.
+
+\def\pgfsys@animation@val@dimension#1{}
+% #1 must be a dimension.
+
+\def\pgfsys@animation@val@color@rgb#1#2#3{}
+% #1,#2,#3 must be an rgb tuple
+
+\def\pgfsys@animation@val@color@cmyk#1#2#3#4{}
+% #1,#2,#3,#4 must be an cmyk tuple
+
+\def\pgfsys@animation@val@color@cmy#1#2#3{}
+% #1,#2,#3 must be an cmy tuple
+
+\def\pgfsys@animation@val@color@gray#1{}
+% #1 must be a gray value
+
+\def\pgfsys@animation@val@path#1{}
+% #1 must consist of path-construction tokens (as returned by the
+% softpath layer)
+
+\def\pgfsys@animation@val@translate#1#2{}
+% #1,#2 must be dimensions
+
+\def\pgfsys@animation@val@scale#1#2{}
+% #1,#2 must be dimensionless
+
+\def\pgfsys@animation@val@viewbox#1#2#3#4{}
+% #1,#2 describe the lower left, #3,#4 the upper right corner of the
+% view box.
+
+\def\pgfsys@animation@val@dash#1#2{}
+% #1,#2 have the syntax of \pgfsys@setdash.
+
+
+
+%
+%
+% Markers
+%
+%
+
+\def\pgfsys@marker@declare#1#2{%
+  {%
+    \pgfpicturetrue%
+    \pgfsysprotocol@getcurrentprotocol\pgfsys@marker@temp%
+    \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+    \pgfsysprotocol@bufferedtrue%
+    \pgfsys@beginscope%
+    #2%
+    \pgfsys@endscope%
+    \xdef#1{\the\pgf@sys@id@count}%
+    \expandafter\expandafter\expandafter\global\expandafter\pgfsysprotocol@getcurrentprotocol\csname pgf@sys@marker@prot@#1\endcsname%
+    \pgfsys@marker@declare@% curtesy hook
+    \pgfsysprotocol@setcurrentprotocol\pgfsys@marker@temp%
+    \global\advance\pgf@sys@id@count by1\relax%
+  }%
+}
+\let\pgfsys@marker@declare@\relax
+% Declares a new marker symbol whose code is in #2. #1 should be a
+% macro name, which will be set to a unique
+% value by which the marker can be referenced later on. #2 should be
+% code that, when executed, produces recordable code.
+
+\def\pgfsys@marker@use#1{%
+  \pgfsysprotocol@literal{\csname pgf@sys@marker@prot@#1\endcsname}%
+}
+% Draws the marker symbol not at the end of a path, but simply with
+% the current transformation matrix
+
+
+
+
+
+
+%
+%
+% RDF
+%
+%
+
+\def\pgfsys@rdf@about#1{\pgf@sys@fail{rdf}}
+% Adds the rdf attribute "about" with value #1 to the next
+% idscope. The RDF-spec says: "a SafeCURIEorCURIEorIRI, used for
+% stating what the data is about (a 'subject' in RDF terminology);"
+
+\def\pgfsys@rdf@content#1{\pgf@sys@fail{rdf}}
+% Adds the rdf attribute content with value #1 to the next
+% idscope. The RDF-spec says: "a CDATA string, for supplying
+% machine-readable content for a literal (a 'literal object', in RDF
+% terminology);"
+
+\def\pgfsys@rdf@datatype#1{\pgf@sys@fail{rdf}}
+% Adds the rdf attribute datatype with value #1 to the next
+% idscope. The RDF-spec says: "a TERMorCURIEorAbsIRI representing a
+% datatype, to express the datatype of a literal;"
+
+\def\pgfsys@rdf@href#1{\pgf@sys@fail{rdf}}
+% Adds the rdf attribute href with value #1 to the next idscope
+% The RDF-spec says: "a traditionally navigable IRI for
+% expressing the partner resource of a relationship (a 'resource
+% object', in RDF terminology);"
+
+\def\pgfsys@rdf@inlist{\pgf@sys@fail{rdf}}
+% Adds the rdf attribute inlist to the next idscope. The
+% RDF-spec says: "An attribute used to indicate that the object
+% associated with a rel or property attribute on the same element is
+% to be added to the list for that predicate. The value of this
+% attribute must be ignored. Presence of this attribute causes a list
+% to be created if it does not already exist."
+
+\def\pgfsys@rdf@prefix#1{\pgf@sys@fail{rdf}}
+% Adds #1 to the list of the rdf prefix attribute to the next
+% idscope. Can be called several times, in which case all values of #1
+% are concatenated with whitespaces. The RDF-spec says: "a white space
+% separated list of prefix-name IRI pairs of the form NCName ':' ' '+
+% xsd:anyURI"
+
+\def\pgfsys@rdf@property#1{\pgf@sys@fail{rdf}}
+% Adds #1 to the list of the rdf property attribute to the next
+% idscope. Can be called repeatedly. The RDF-spec says: "a white space
+% separated list of TERMorCURIEorAbsIRIs, used for expressing
+% relationships between a subject and either a resource object if
+% given or some literal text (also a 'predicate');"
+
+\def\pgfsys@rdf@rel#1{\pgf@sys@fail{rdf}}
+% Adds #1 to the list of the rdf rel attribute to the next
+% next idscope. Can be called repeatedly. The
+% RDF-spec says: "a white space separated list of
+% TERMorCURIEorAbsIRIs, used for expressing relationships between two
+% resources ('predicates' in RDF terminology);"
+
+\def\pgfsys@rdf@resource#1{\pgf@sys@fail{rdf}}
+% Adds the rdf attribute resource with value #1 to the next idscope. The
+% RDF-spec says: "a SafeCURIEorCURIEorIRI for expressing the partner
+% resource of a relationship that is not intended to be navigable
+% (e.g., a 'clickable' link) (also an 'object');"
+
+\def\pgfsys@rdf@rev#1{\pgf@sys@fail{rdf}}
+% Adds #1 to the list of the rdf rev attribute to the next
+% idscope. Can be called repeatedly. The
+% RDF-spec says: "a white space separated list of
+% TERMorCURIEorAbsIRIs, used for expressing reverse relationships
+% between two resources (also 'predicates');
+
+\def\pgfsys@rdf@src#1{\pgf@sys@fail{rdf}}
+% Adds an rdf attribute src with value #1 to the next idscope. The
+% RDF-spec says: "an IRI for expressing the partner resource of a
+% relationship when the resource is embedded (also a 'resource
+% object');"
+
+\def\pgfsys@rdf@typeof#1{\pgf@sys@fail{rdf}}
+% Adds #1 to the list of the rdf typeof attribute to the next
+% idscope. Can be called repeatedly. The
+% RDF-spec says: "a white space separated list of TERMorCURIEorAbsIRIs
+% that indicate the RDF type(s) to associate with a subject;"
+
+\def\pgfsys@rdf@vocab#1{\pgf@sys@fail{rdf}}
+% Adds an rdf attribute vocab with value #1 to the next idscope. The
+% RDF-spec says: "an IRI that defines the mapping to use when a TERM
+% is referenced in an attribute value. See General Use of Terms in
+% Attributes and the section on Vocabulary Expansion."
+
+
+
+%
+%
+% Page size stuff
+%
+%
+
+\def\pgfsys@papersize#1#2{\pgf@sys@fail{papersize}}
+% This command sets the paper size in a portable way. It tries to do
+% so "locally" for the current page, but what really happens depends
+% strongly on the driver. For instance, dvips will use whatever is
+% used with the first call to this command that is part of the
+% shipped-out document and will ignore all other uses. In contrast,
+% pdftex will use the current value of the papersize for each page
+% and, additionally, setting the papersize is local to the current TeX
+% group.
+% #1 = width
+% #2 = height
+
+\def\pgfsys@global@papersize#1#2{\pgfsys@papersize{#1}{#2}}
+% This command does the same as the papersize command, only for
+% drivers that support this, \global is used to set the papersize.
+% #1 = width
+% #2 = height
+
+\def\pgfsys@prepare@papersize#1#2{\pgfsys@papersize{#1}{#2}}
+% Like \pgfsys@papersize, this prepares the paper size in a portable
+% way -- but it is supposed to be a preparation step before the
+% document has started. Drivers may decide to postpone the action
+% until the document has started.
+%
+% The root cause why I added this method is that image externalization
+% seems to suffer from the fact that some drivers need a "prepared"
+% routine whereas others must not have a prepared routine and have to
+% apply the action right-away. This method is the solution for image
+% externalization.
+% #1 = width
+% #2 = height
+
+\ifx\paperheight\@undefined
+  \def\pgfsys@thepageheight{\the\vsize} % this is wrong, but I do not
+                                % know how to compute the page height
+                                % in plain tex.
+  \def\pgfsys@thepagewidth{\the\hsize}
+\else
+  \def\pgfsys@thepageheight{\paperheight}
+  \def\pgfsys@thepagewidth{\paperwidth}
+\fi
+
+
+%
+%
+% Position tracking commands
+%
+%
+
+% Marks the current position on the page. This position can later be
+% referenced using \pgfsys@getposition
+\def\pgfsys@markposition#1{\pgf@sys@fail{marking the current position}}
+
+% Sets #2 to a pgfpoint macro that returns the position #1 is
+% returned in a coordinate system where the x-axis goes right and the
+% y-axis goes up. The origin of this coordinate system may or may not
+% lie in the lower left corner; you should shift the coordinate system
+% to the position "pgfpageorigin" to make sure that the origin is at
+% the lower left corner. Typically, getting this position
+% requires two runs of TeX. On the first run, the macro will be set to
+% \relax, indicating that the position is not available.
+%
+% If #1 is set to the special position "pgfpageorigin", the position
+% of the the lower left page corner is returned.
+
+\def\pgfsys@getposition#1#2{\let#2=\relax}
+
+
+
+%
+%
+% Commands having a default implementation. These commands only need
+% not be implemented by drivers if this results in a better
+% performance.
+%
+%
+
+
+\def\pgfsys@shadingoutsidepgfpicture#1{%
+  #1%
+}
+% This command gets the definition of a shading (@pgfshadingxxxx!) as
+% an argument and should insert this shading into the normal text.
+%
+% This command has a default implementation.
+
+
+\def\pgfsys@shadinginsidepgfpicture#1{%
+  \pgf@makehbox{#1}%
+  \setbox\pgf@hbox=\hbox{\hskip-.5\wd\pgf@hbox\lower.5\ht\pgf@hbox\hbox{\box\pgf@hbox}}%
+  \pgfqbox{\pgf@hbox}%
+}
+% This command works like \pgfsys@shadingoutsidepgfpicture, only it is
+% called when a shading should be inserted inside a picture. This
+% command should insert the shading centered on the origin (which will
+% typically have been low-level translated somewhere else.)
+%
+% This command has a default implementation.
+
+
+\def\pgfsys@hbox#1{%
+  \pgfsys@begin@idscope%
+  \pgfsys@beginscope%
+    \setbox#1=\hbox{\box#1}%
+    \wd#1=0pt%
+    \ht#1=0pt%
+    \dp#1=0pt%
+    \box#1%
+  \pgfsys@endscope%
+  \pgfsys@end@idscope%
+}
+% Called to insert a TeX hbox into a pgfpicture.
+
+\def\pgfsys@hboxsynced#1{%
+  \pgfsys@beginscope\pgflowlevelsynccm\pgfsys@hbox#1\pgfsys@endscope%
+}%
+% Called to insert box #1 into a pgfpicture, but with the current
+% coordinate transformation matrix synced with the canvas
+% transformation matrix and surrounded by a scope.
+%
+% In essence, this command does the same as if you first said
+% \pgflowlevelsynccm and then \pgfsys@hbox#1. However, a
+% ``TeX-translation'' is used for the translation part of the
+% transformation cm. This will ensure that hyperlinks ``survive'' at
+% least translations.
+
+\def\pgfsys@pictureboxsynced#1{%
+  {%
+    \setbox0=\hbox{\pgfsys@beginpicture\box#1\pgfsys@endpicture}%
+    \pgfsys@hboxsynced0%
+  }%
+}
+% Basically, this should do the same as doing a (scoped) low level sync
+% followed by inserting the box #1 directly into the output
+% stream. However, the default implementation uses \pgfsys@hboxsynced
+% in conjunction with \pgfsys@beginpicture to ensure that, if
+% possible, hyperlinks survive in pdfs. Drivers that are sensitive to
+% picture-in-picture scopes should replace this implementation by
+% \pgfsys@beginscope\pgflowlevelsynccm\box#1\pgfsys@endscope
+
+\def\pgfsys@beginpicture{}
+% Called at the beginning of a pgfpicture. Used to setup things.
+
+\def\pgfsys@endpicture{}
+% Called at the end of a pgfpicture.
+
+\def\pgfsys@typesetpicturebox#1{%
+  \pgf@ya=\pgf@shift@baseline\relax%
+  \advance\pgf@ya by-\pgf@picminy\relax%
+  %
+  %
+  \advance\pgf@picmaxy by-\pgf@picminy\relax% maxy is now the height
+  \advance\pgf@picmaxx by-\pgf@picminx\relax% maxx is now the width
+  \setbox#1=\hbox{\hskip-\pgf@picminx\lower\pgf@picminy\box#1}%
+  \ht#1=\pgf@picmaxy%
+  \wd#1=\pgf@picmaxx%
+  \dp#1=0pt%
+  \leavevmode%
+  \pgf@xa=\pgf@trimleft@final\relax  \ifdim\pgf@xa=0pt \else\kern\pgf@xa\fi
+  \raise-\pgf@ya\box#1%
+  \pgf@xa=\pgf@trimright@final\relax \ifdim\pgf@xa=0pt \else\kern\pgf@xa\fi
+}
+% Called after a picture has been typeset in box #1. This
+% command should insert the box into the normal TeX code. The box #1
+% will still be a ``raw'' box that contains only the \special's. The
+% job of this command is to resize and shift this box according to the
+% baseline shift and the size of the box.
+%
+% This command has a default implementation.
+
+\def\pgfsys@beginpurepicture{\pgfsys@beginpicture}
+% This version of the beginpicture command can be used for pictures
+% that are guaranteed not to contain any hboxes. In this case, a
+% driver might provide a more compact version of the command.
+
+\def\pgfsys@endpurepicture{\pgfsys@endpicture}
+% Called at the end of a ``pure'' pgfpicture.
+
+\def\pgfsys@defineimage{%
+  \ifx\pgf@imagewidth\pgfutil@empty\else\edef\pgf@imagewidth{width=\pgf@imagewidth,}\fi%
+  \ifx\pgf@imageheight\pgfutil@empty\else\edef\pgf@imageheight{height=\pgf@imageheight,}\fi%
+  \ifx\pgf@imagepage\pgfutil@empty\else\edef\pgf@imagepage{page=\pgf@imagepage,}\fi%
+  \edef\pgf@image{\noexpand\includegraphics[\pgf@imageheight\pgf@imagewidth]{\pgf@filename}}%
+}
+% Called, when an image should be defined.
+%
+% This command does not take any parameters. Instead, certain macros
+% will be preinstalled with appropriate values when this command is
+% invoked. These are:
+%
+% - \pgf@filename
+%   File name of the image to be defined.
+%
+% - \pgf@imagewidth
+%   Will be set to the desired (scaled) width of the image.
+%
+% - \pgf@imageheight
+%   Will be set to the desired (scaled) height of the image.
+%
+%   If this macro and also the height macro are empty, the image
+%   should have its `natural' size.
+%
+%   If exactly only of them is specified, the undefined value the
+%   image is scaled so that the aspect ratio is kept.
+%
+%   If both are set, the image is scaled in both directions
+%   independently, possibly changing the aspect ratio.
+%
+%
+% The following macros presumable mostly make sense for drivers that
+% can handle pdf:
+%
+% - \pgf@imagepage
+%   The desired page number to be extracted from a multi-page
+%   `image'.
+%
+% - \pgf@imagemask
+%   If set, it will be set to `/SMask x 0 R', where x is the pdf
+%   object number of a soft mask to be applied to the image.
+%
+% - \pgf@imageinterpolate
+%   If set, it will be set to `/Interpolate true' or  `/Interpolate
+%   false', indicating whether the image should be interpolated in
+%   pdf.
+%
+%
+% The command should now setup the macro \pgf@image such that calling
+% this macro will result in typesetting the image. Thus, \pgf@image is
+% the `return value' of the command.
+
+
+\def\pgfsys@defobject#1#2#3#4{%
+  \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
+  {%
+    \pgfpicturetrue%
+    \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+    \pgfsysprotocol@bufferedtrue%
+    \pgfsys@beginscope%
+    #4%
+    \pgfsys@endscope%
+    \pgfsysprotocol@getcurrentprotocol\pgfsys@@temp%
+    \expandafter\global\expandafter\let\csname #1\endcsname=\pgfsys@@temp%
+  }%
+  \pgfsysprotocol@setcurrentprotocol\pgfsys@temp%
+}
+% Declares an object for later use. The idea is that the object can be
+% precached in some way and then be rendered more quickly when used
+% several times. For example, an arrow head might be defined and
+% prerendered in this way.
+%
+% The parameter #1 is the name for later use. #2 and #3 are pgf points
+% specifying a bounding box for the object. #4 is the code for the
+% object. The code may only contain protocolable code.
+
+
+\def\pgfsys@useobject#1#2{%
+  \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
+  {%
+    \pgfsysprotocol@setcurrentprotocol\pgfutil@empty%
+    \pgfsysprotocol@bufferedfalse%
+    #2%
+    \expandafter\pgfsysprotocol@setcurrentprotocol\csname #1\endcsname%
+    \pgfsysprotocol@invokecurrentprotocol%
+  }%
+  \pgfsysprotocol@setcurrentprotocol\pgfsys@temp%
+}
+% Renders a previously declared object. The first parameter is the
+% name of the object. The second parameter is extra code that
+% should be executed right *before* the object is rendered. Typically,
+% this will be some transformation code.
+
+
+\def\pgfsys@begininvisible{\pgfsys@transformcm{1}{0}{0}{1}{2000bp}{2000bp}}
+% Between this command and the closing endinvisible, all output should
+% be suppressed. Nothing should be drawn at all, which includes all
+% paths, images and shadings. This command typically should not open a
+% graphic scope.
+
+\def\pgfsys@endinvisible{\pgfsys@transformcm{1}{0}{0}{1}{-2000bp}{-2000bp}}
+% Ends the invisibility section, unless invisibility blocks have been
+% nested. In this case, only the `last' one restores visibility.
+
+\def\pgfsys@begininvisiblescope{\pgfsys@beginscope\pgfsys@begininvisible}
+% Works like pgfsys@begininvisible, but it may open a graphics scope.
+
+\def\pgfsys@endinvisiblescope{\pgfsys@endinvisible\pgfsys@endscope}
+% Closes the invisibility scope.
+
+
+\def\pgfsys@atbegindocument{}
+% This command will be executed at the begin of the document. If for
+% whatever reason this is not done, you may wish to execute this
+% command yourself. It will setup certain specials that need to be
+% inserted into the resulting .pdf/.ps/.xxx file.
+
+
+% String comparison
+\ifdefined\pdfstrcmp
+  \let\pgfsys@strcmp\pdfstrcmp
+\else\ifdefined\strcmp
+  \let\pgfsys@strcmp\strcmp
+\else\ifdefined\directlua
+  \directlua{
+  local lft = lua.get_functions_table()
+  lft[\string#lft+1] = function()
+      local lhs = token.scan_string()
+      local rhs = token.scan_string()
+      if lhs < rhs then
+          tex.sprint(-2, "-1")
+      elseif lhs == rhs then
+          tex.sprint(-2, "0")
+      else
+          tex.sprint(-2, "1")
+      end
+  end
+  token.set_lua("pgfsys@strcmp", \string#lft, "global")
+  }
+\else
+  \def\pgfsys@strcmp#1#2{\pgf@sys@fail{string comparison}}%
+\fi\fi\fi
+
+
+% Discern the driver:
+
+% Default driver:
+\ifx\pgfsysdriver\@undefined
+  \pgfutil@guessdriver
+\fi
+
+\input pgf.cfg
+
+\immediate\write-1{Driver file for pgf: \pgfsysdriver}
+\pgfutil@InputIfFileExists{\pgfsysdriver}{}{%
+  \pgferror{Driver file ``\pgfsysdriver'' not found.}}
+
+
+
+% This will insert always-present-specials at the beginning of the
+% code.
+\AtBeginDocument{
+  \pgfsys@atbegindocument
+  \let\pgfsys@atbegindocument=\pgfutil@empty
+}
+
+
+
+% Read aux file in plain and context mode:
+
+\pgfutil@aux@read@hook
+
+
+\endinput

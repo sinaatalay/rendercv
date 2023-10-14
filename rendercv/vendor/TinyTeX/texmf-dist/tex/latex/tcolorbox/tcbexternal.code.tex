@@ -1,0 +1,287 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbexternal.code.tex: Code for externalization
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+\tcb@set@library@version{6.1.0}
+
+\tcbuselibrary{pro@cessing}
+
+{
+\catcode`\"=12
+\xdef\tcbexternal@normal@dq{"}
+\catcode`\"=13
+\gdef\tcbexternal@activate@normal@dq{\let"=\tcbexternal@normal@dq}
+}
+
+\long\def\tcbifexternal#1#2{%
+  \ifdefined\TCBEXTERNALINPUT%
+    #1%
+  \else%
+    #2%
+  \fi%
+}
+
+\tcbifexternal{%
+  \def\tcbEXTERNALIZE{%
+    \RequirePackage{incgraph}%
+    \TCBEXTERNALPREAMBLE%
+    \begin{document}%
+    \begin{inctext}[border=\TCBEXTERNALSAFETY]%
+    \input{\TCBEXTERNALINPUT}%
+    \end{inctext}%
+    \end{document}%
+  }%
+}{%
+  \def\tcbEXTERNALIZE{%
+    \tcbset{
+      external/.cd,
+      externalize/.is if=tcb@externalize,
+      externalize=true,
+    }%
+  }%
+}
+
+\@onlypreamble\tcbEXTERNALIZE
+
+\def\tcbexternal@setbasename#1{%
+  \edef\tcbexternal@job@name{\expandonce{\tcbexternal@prefix}\expandonce{#1}}%
+  \edef\tcbexternal@job@mdfive{\expandonce{\tcbexternal@job@name.md5}}%
+  \edef\tcbexternal@job@source{\expandonce{\tcbexternal@job@name.tex}}%
+  \edef\tcbexternal@job@pdf{\expandonce{\tcbexternal@job@name.pdf}}%
+}
+
+\def\tcbexternal@corecompile{%
+  \begingroup%
+  \ifnum\the\catcode`\"=13 \tcbexternal@activate@normal@dq\fi%
+  \message{=== Compile external '\tcbexternal@job@name': }%
+  \tcb@allocate@tcb@out%
+  \immediate\openout\tcb@out="\tcbexternal@run@tex"
+  \immediate\write\tcb@out{\string\gdef\string\TCBEXTERNALINPUT{"\tcbexternal@job@source"}}%
+  \immediate\write\tcb@out{\string\gdef\string\TCBEXTERNALSAFETY{\tcbexternal@safety}}%
+  \immediate\write\tcb@out{\string\gdef\string\TCBEXTERNALPREAMBLE{\expandonce{\tcbexternal@preamble}}}%
+  \ifdefempty{\tcbexternal@preclass}{}{\immediate\write\tcb@out{\expandonce{\tcbexternal@preclass}}}%
+  \immediate\write\tcb@out{\string\input{"\jobname.tex"}}%
+  \immediate\closeout\tcb@out%
+  \foreach \n in {1,...,\tcbexternal@runs}
+  {%
+    \ShellEscape{%
+      \tcbexternal@compiler\space
+      -shell-escape
+      -halt-on-error
+      -interaction=batchmode
+      -jobname="\tcbexternal@job@name"
+      "\tcbexternal@run@tex"
+    }%
+  }%
+  \endgroup%
+}
+
+\def\tcbexternal@compile#1{%
+  \tcbiffileprocess{#1}%
+    {\tcbexternal@job@source}{\tcbexternal@job@mdfive}{\tcbexternal@job@pdf}%
+    {\tcbexternal@corecompile}{}%
+}
+
+\def\tcbexternal@inputsource{%
+  \IfFileExists{\tcbexternal@job@source}%
+    {\input{\tcbexternal@job@source}}%
+    {\tcb@error{File '\tcbexternal@job@source' missing.}{}}%
+}
+
+\def\tcbexternal@pdfmissing@warning{%
+  \tcb@warning{File '\tcbexternal@job@pdf' missing.
+    Compilation error or shell-escape wasn't enabled or a subdirectory could'nt be generated}%
+  \message{Load '\tcbexternal@job@source' instead}%
+  \tcbexternal@inputsource%
+}
+
+\def\tcbexternal@pdfmissing@error{%
+  \tcb@error{File '\tcbexternal@job@pdf' missing.
+    Compilation error or shell-escape wasn't enabled or a subdirectory could'nt be generated}{}%
+}
+
+\def\tcbexternal@inputpdf{%
+  \IfFileExists{\tcbexternal@job@pdf}%
+    {%
+      \begingroup\edef\x{\endgroup%
+        \noexpand\includegraphics[trim=\tcbexternal@safety\space\tcbexternal@safety%
+        \space\tcbexternal@safety\space\tcbexternal@safety]{\expandonce{\tcbexternal@job@pdf}}}%
+      \x%
+    }%
+    {\tcbexternal@pdfmissing}%
+}
+
+\newif\iftcb@externalize
+\tcb@externalizefalse
+
+\def\tcb@useexternal{%
+  \iftcb@externalize%
+    \tcbexternal@compile{\tcbexternal@condition}%
+    \tcbexternal@inputpdf%
+  \else%
+    \tcbexternal@compile{2}%
+    \tcbexternal@inputsource%
+  \fi%
+}
+
+\newenvironment{tcbexternal}[2][]{%
+  \tcbset{external/.cd,#1,name=#2}%
+  \@ifundefined{@tcbexternal@JN@\tcbexternal@job@name}{%
+      \global\@namedef{@tcbexternal@JN@\tcbexternal@job@name}{}%
+    }{%
+      \tcb@error{External job name '\tcbexternal@job@name' already used}%
+        {Give a new unique name to the current external job.}%
+    }%
+  \begingroup%
+  \let\tcb@verbatim@begin@hook=\tcbexternal@out@begin%
+  \let\tcb@verbatim@end@hook=\tcbexternal@out@end%
+  \tcbverbatimwrite{\tcbexternal@job@source}}%
+{%
+  \endtcbverbatimwrite\endgroup%
+  \tcb@useexternal%
+}
+
+\long\def\new@tcb@externalizeenvironment#1#2#3#4#5{%
+  \tcb@newenvironment{#1}[2][]{%
+    #4%
+    \begingroup%
+    \tcbexternal[{#3,##1,environment=#2}]{##2}%
+  }{%
+    \endtcbexternal%
+    \endgroup%
+    #5%
+  }%
+}
+
+\def\newtcbexternalizeenvironment{%
+  \let\tcb@newenvironment\newenvironment%
+  \new@tcb@externalizeenvironment%
+}
+
+\def\renewtcbexternalizeenvironment{%
+  \let\tcb@newenvironment\renewenvironment%
+  \new@tcb@externalizeenvironment%
+}
+
+\long\def\new@tcb@externalizetcolorbox#1#2#3#4{%
+  \new@tcb@externalizeenvironment{#1}{#2}%
+    {preamble tcbset={force nobeforeafter},#3}%
+    {\tcb@layer@pushup\tcb@apply@box@options{#4}\tcb@set@normal@unbroken@beforeafter\tcb@before@unbroken}%
+    {\tcb@after@unbroken}%
+}
+
+\def\newtcbexternalizetcolorbox{%
+  \let\tcb@newenvironment\newenvironment%
+  \new@tcb@externalizetcolorbox%
+}
+
+\def\renewtcbexternalizetcolorbox{%
+  \let\tcb@newenvironment\renewenvironment%
+  \new@tcb@externalizetcolorbox%
+}
+
+
+\newtcbexternalizeenvironment{extikzpicture}{tikzpicture}{}{}{}
+
+\newtcbexternalizetcolorbox{extcolorbox}{tcolorbox}{}{}
+
+
+\tcbset{
+  external/.cd,
+  %
+  runner/.code={%
+    \edef\tcbexternal@run@tex{\expandonce{#1}}%
+  },
+  %
+  prefix/.store in=\tcbexternal@prefix,
+  compiler/.store in=\tcbexternal@compiler,
+  runs/.code={\numdef\tcbexternal@runs{#1}},
+  name/.code={\tcbexternal@setbasename{#1}},
+  safety/.store in=\tcbexternal@safety,
+  preamble/.code={\appto\tcbexternal@preamble{#1}},
+  preamble tcbset/.code={\appto\tcbexternal@preamble{\tcbset{#1}}},
+  clear preamble/.code={\def\tcbexternal@preamble{}},
+  preclass/.code={\appto\tcbexternal@preclass{#1}},
+  clear preclass/.code={\def\tcbexternal@preclass{}},
+  PassOptionsToPackage/.code n args={2}{\appto\tcbexternal@preclass{\PassOptionsToPackage{#1}{#2}}},
+  PassOptionsToClass/.code n args={2}{\appto\tcbexternal@preclass{\PassOptionsToClass{#1}{#2}}},
+  externalize/.code={},
+  -/.style={/tcb/external/externalize=false},
+  %
+  force remake/.is choice,
+  force remake/true/.code={\def\tcbexternal@condition{0}},
+  force remake/false/.code={\def\tcbexternal@condition{1}},
+  force remake/.default=true,
+  !/.style={/tcb/external/force remake},
+  %
+  input source on error/.is choice,
+  input source on error/true/.code={\let\tcbexternal@pdfmissing=\tcbexternal@pdfmissing@warning},
+  input source on error/false/.code={\let\tcbexternal@pdfmissing=\tcbexternal@pdfmissing@error},
+  input source on error/.default=true,
+  %
+  plain/.code={%
+    \let\tcbexternal@out@begin=\@empty%
+    \let\tcbexternal@out@end=\@empty%
+  },
+  minipage/.code={%
+    \appto\tcbexternal@out@begin{\immediate\write\tcb@out{\string\begin{minipage}{\the\dimexpr#1\relax}\string\ignorespaces\@percentchar}}%
+    \preto\tcbexternal@out@end{\immediate\write\tcb@out{\string\end{minipage}\@percentchar}}%
+  },
+  minipage/.default=\linewidth,
+  %
+  environment with percent/.is choice,
+  environment with percent/true/.style={%
+    /tcb/external/environment/.code={%
+      \appto\tcbexternal@out@begin{\immediate\write\tcb@out{\string\begin{##1}\@percentchar}}%
+      \preto\tcbexternal@out@end{\immediate\write\tcb@out{\string\end{##1}\@percentchar}}%
+    }
+  },
+  environment with percent/false/.style={%
+    /tcb/external/environment/.code={%
+      \appto\tcbexternal@out@begin{\immediate\write\tcb@out{\string\begin{##1}}}%
+      \preto\tcbexternal@out@end{\immediate\write\tcb@out{\string\end{##1}}}%
+    }
+  },
+  environment with percent/.default=true,
+  %
+  runner=\jobname_run.tex,
+  prefix={external/},
+  compiler=pdflatex,
+  runs=1,
+  name=unnamed,
+  safety=2mm,
+  clear preamble,
+  clear preclass,
+  force remake=false,
+  input source on error,
+  environment with percent,
+  plain
+}
+
+\tcbset{%
+  externalize example/.style={%
+    external/name=#1,tempfile=\tcbexternal@job@source,
+    code={\let\tcbusetemp=\tcb@useexternal}%
+  },
+  externalize example!/.style={externalize example=#1,external/force remake},
+  externalize listing/.style={%
+    external/name=#1,listing file=\tcbexternal@job@source,
+    code={\let\tcbuselistingtext@input=\tcb@useexternal}%
+  },
+  externalize listing!/.style={externalize listing=#1,external/force remake},
+}

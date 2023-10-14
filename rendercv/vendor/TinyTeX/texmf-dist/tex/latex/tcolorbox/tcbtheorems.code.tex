@@ -1,0 +1,353 @@
+%% The LaTeX package tcolorbox - version 6.1.0 (2023/09/26)
+%% tcbtheorems.code.tex: Code for theorems in colorboxes
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2006-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README
+%%
+%\makeatletter
+\tcb@set@library@version{6.1.0}
+
+\RequirePackage{amsmath}
+
+
+\ExplSyntaxOn
+
+\tl_new:N \l__tcobox_theo_description_color_tl
+\tl_new:N \l__tcobox_theo_description_delimiter_left_tl
+\tl_new:N \l__tcobox_theo_description_delimiter_right_tl
+\tl_new:N \l__tcobox_theo_description_font_tl
+\tl_new:N \l__tcobox_theo_hanging_indent_tl
+\tl_new:N \l__tcobox_theo_label_separator_tl
+\tl_new:N \l__tcobox_theo_separatorsign_tl
+\tl_new:N \l__tcobox_theo_terminatorsign_tl
+\bool_new:N \l__tcobox_theo_headempty_bool
+
+
+\cs_new_nopar:Npn \__tcobox_theo_format_name_number:nn #1#2
+  {
+    \tl_if_empty:nTF { #1 }
+      {
+        \tl_if_empty:nF { #2 }
+          {
+            \bool_set_false:N \l__tcobox_theo_headempty_bool
+            #2
+          }
+      }
+      {
+        \bool_set_false:N \l__tcobox_theo_headempty_bool
+        #1
+        \tl_if_empty:nF { #2 }
+          {
+            \nobreakspace
+            #2
+          }
+      }
+  }
+
+
+\cs_new_nopar:Npn \__tcobox_theo_format_number_name:nn #1#2
+  {
+    \__tcobox_theo_format_name_number:nn { #2 } { #1 }
+  }
+
+
+\cs_new_nopar:Npn \__tcobox_theo_format_name:nn #1#2
+  {
+    \tl_if_empty:nF { #1 }
+      {
+        \bool_set_false:N \l__tcobox_theo_headempty_bool
+        #1
+      }
+  }
+
+
+\cs_new_nopar:Npn \__tcobox_theo_format_number:nn #1#2
+  {
+    \tl_if_empty:nF { #2 }
+      {
+        \bool_set_false:N \l__tcobox_theo_headempty_bool
+        #2
+      }
+  }
+
+
+\cs_new:Npn \__tcobox_theo_format_description_standard:n #1
+  {
+    \l__tcobox_theo_description_color_tl
+    \l__tcobox_theo_description_font_tl
+    \l__tcobox_theo_description_delimiter_left_tl
+    #1
+    \l__tcobox_theo_description_delimiter_right_tl
+  }
+
+
+
+\cs_new:Npn \__tcobox_theo_title:nnn #1#2#3
+  {
+    % format and save display name and number
+    \bool_set_true:N \l__tcobox_theo_headempty_bool
+    \tl_if_empty:nTF { #3 }
+      {
+        % no theorem title; insert name and number
+        \__tcobox_theo_format:nn{#1}{#2}
+        \l__tcobox_theo_terminatorsign_tl
+      }
+      {
+        % box display name and number
+        \hbox_set:Nn \l_tmpa_box
+          {
+            \__tcobox_theo_format:nn{#1}{#2}
+            \bool_if:NF \l__tcobox_theo_headempty_bool
+              {
+                \l__tcobox_theo_separatorsign_tl
+                \nobreakspace
+              }
+          }
+        % set (hanging) indent for name and number
+        \str_if_eq:VnTF \l__tcobox_theo_hanging_indent_tl { auto }
+          {
+            \hangindent \box_wd:N \l_tmpa_box
+            \hangafter = 1
+          }
+          {
+            \dim_set:Nn \l_tmpa_dim { \l__tcobox_theo_hanging_indent_tl }
+            \if_dim:w \l_tmpa_dim = \c_zero_dim
+            \else:
+              \if_dim:w \l_tmpa_dim > \c_zero_dim
+                \hangindent \l_tmpa_dim
+                \hangafter = 1
+              \else:
+                \hangindent -\l_tmpa_dim
+                \hangafter = -1
+              \fi:
+            \fi:
+          }
+        % insert box with name and number
+        \mode_leave_vertical:
+        \box_use_drop:N \l_tmpa_box
+        % insert formated title
+        \group_begin:
+          \__tcobox_theo_format_description:n{#3}
+        \group_end:
+        \l__tcobox_theo_terminatorsign_tl
+      }
+  }
+
+
+\NewDocumentCommand \__tcobox_new_tcbtheorem_x:w { m O{} m m +m m }
+  {
+    #1 [{auto~counter,#2}] {#3} { +O{} +o +m m }
+      {
+        #5,
+        title      = {\__tcobox_theo_title:nnn{#4}{\thetcbcounter}{##3}},
+        IfValueTF  = {##2}
+          {
+            list~entry = {\protect\numberline{\thetcbcounter}##2},
+            nameref    = {##2},
+          }
+          {
+            list~entry = {\protect\numberline{\thetcbcounter}##3},
+            nameref    = {##3},
+          },
+        theo@label = {#6}{##4},
+        ##1
+      }
+    #1 [{#2,no~counter,list~inside=}] {#3*} { +O{} +m }
+      {
+        #5,
+        title = {\__tcobox_theo_title:nnn{#4}{}{##2}},
+        ##1
+      }
+  }
+
+
+\NewDocumentCommand \NewTcbTheorem {}
+  {
+    \__tcobox_new_tcbtheorem_x:w \NewTColorBox
+  }
+\NewCommandCopy\newtcbtheorem\NewTcbTheorem
+
+
+\NewDocumentCommand \RenewTcbTheorem {}
+  {
+    \__tcobox_new_tcbtheorem_x:w \RenewTColorBox
+  }
+\NewCommandCopy\renewtcbtheorem\RenewTcbTheorem
+
+
+\NewDocumentCommand \DeclareTcbTheorem {}
+  {
+    \__tcobox_new_tcbtheorem_x:w \DeclareTColorBox
+  }
+
+
+\NewDocumentCommand \ProvideTcbTheorem {}
+  {
+    \__tcobox_new_tcbtheorem_x:w \ProvideTColorBox
+  }
+
+
+\tcbset
+  {
+    theo@label/.code~n~args = {2}
+      {
+        \tl_if_empty:nF { #2 }
+          {
+            \tcbset
+              {
+                label                    = {#1\l__tcobox_theo_label_separator_tl#2},
+                tcb@theo@full@label@supp = {#1\l__tcobox_theo_label_separator_tl#2},
+                tcb@theo@label@supp      = {#2}
+              }
+          }
+      },
+    theorem/.style~n~args = {4}
+      {
+        step~and~label={#2}{#4},
+        title={\__tcobox_theo_title:nnn{#1}{\cs:w the#2\cs_end:}{#3}}
+      },
+    theorem~name~and~number/.code =
+      {
+        \cs_set_eq:NN \__tcobox_theo_format:nn \__tcobox_theo_format_name_number:nn
+      },
+    theorem~number~and~name/.code =
+      {
+        \cs_set_eq:NN \__tcobox_theo_format:nn \__tcobox_theo_format_number_name:nn
+      },
+    theorem~name/.code =
+      {
+        \cs_set_eq:NN \__tcobox_theo_format:nn \__tcobox_theo_format_name:nn
+      },
+    theorem~number/.code =
+      {
+        \cs_set_eq:NN \__tcobox_theo_format:nn \__tcobox_theo_format_number:nn
+      },
+    separator~sign/         .tl_set:N = \l__tcobox_theo_separatorsign_tl,
+    terminator~sign/        .tl_set:N = \l__tcobox_theo_terminatorsign_tl,
+    label~separator/        .tl_set:N = \l__tcobox_theo_label_separator_tl,
+    theorem~hanging~indent/ .tl_set:N = \l__tcobox_theo_hanging_indent_tl,
+    theorem~hanging~indent/.default=auto,
+    description~delimiters/.code~n~args = {2}
+      {
+        \tl_set:Nn \l__tcobox_theo_description_delimiter_left_tl  { #1 }
+        \tl_set:Nn \l__tcobox_theo_description_delimiter_right_tl { #2 }
+      },
+    description~color/.code =
+      {
+        \tl_if_empty:nTF { #1 }
+          {
+            \tl_clear:N \l__tcobox_theo_description_color_tl
+          }
+          {
+            \tl_set:Nn \l__tcobox_theo_description_color_tl { \color{#1} }
+          }
+      },
+    description~color/.default=,
+    description~font/.tl_set:N = \l__tcobox_theo_description_font_tl,
+    description~font/.default  =,
+    description~formatter/.code =
+      {
+        \cs_set_eq:NN \__tcobox_theo_format_description:n #1
+      },
+    description~formatter/.default = \__tcobox_theo_format_description_standard:n,
+  }
+
+\ExplSyntaxOff
+
+
+\newtcbox{\tcboxmath}[1][]{nobeforeafter,math upper,tcbox raise base,#1}
+\newtcbox{\tcbhighmath}[1][]{highlight math,nobeforeafter,math upper,tcbox raise base,#1}
+
+
+\def\tcb@hack@amsmath{\tcb@hack@currenvir\vskip-\abovedisplayskip}
+
+\if@fleqn%
+\tcbset{%
+  ams equation upper/.style={before upper*=\tcb@hack@amsmath\equation,after upper*=\endequation},%
+  ams equation lower/.style={before lower*=\tcb@hack@amsmath\equation,after lower*=\endequation},%
+  ams equation* upper/.style={before upper*=\tcb@hack@amsmath\csname equation*\endcsname,after upper*=\endequation},%
+  ams equation* lower/.style={before lower*=\tcb@hack@amsmath\csname equation*\endcsname,after lower*=\endequation}%
+}%
+\else%
+\tcbset{%
+  ams equation upper/.style={before upper*=\tcb@hack@currenvir\equation,after upper*=\endequation},%
+  ams equation lower/.style={before lower*=\tcb@hack@currenvir\equation,after lower*=\endequation},%
+  ams equation* upper/.style={before upper*=\tcb@hack@currenvir\csname equation*\endcsname,after upper*=\endequation},%
+  ams equation* lower/.style={before lower*=\tcb@hack@currenvir\csname equation*\endcsname,after lower*=\endequation},%
+}%
+\fi
+
+\tcbset{
+  math upper/.style={before upper*=$\displaystyle,after upper*=$},%
+  math lower/.style={before lower*=$\displaystyle,after lower*=$},%
+  math/.style={math upper,math lower},%
+  ams equation/.style={ams equation upper,ams equation lower},%
+  ams equation*/.style={ams equation* upper,ams equation* lower},%
+  ams align upper/.style={before upper*=\tcb@hack@amsmath\align,after upper*=\endalign},%
+  ams align lower/.style={before lower*=\tcb@hack@amsmath\align,after lower*=\endalign},%
+  ams align/.style={ams align upper,ams align lower},%
+  ams align* upper/.style={before upper*=\tcb@hack@amsmath\csname align*\endcsname,after upper*=\endalign},%
+  ams align* lower/.style={before lower*=\tcb@hack@amsmath\csname align*\endcsname,after lower*=\endalign},%
+  ams align*/.style={ams align* upper,ams align* lower},%
+  ams gather upper/.style={before upper*=\tcb@hack@amsmath\gather,after upper*=\endgather},%
+  ams gather lower/.style={before lower*=\tcb@hack@amsmath\gather,after lower*=\endgather},%
+  ams gather/.style={ams gather upper,ams gather lower},%
+  ams gather* upper/.style={before upper*=\tcb@hack@amsmath\csname gather*\endcsname,after upper*=\endgather},%
+  ams gather* lower/.style={before lower*=\tcb@hack@amsmath\csname gather*\endcsname,after lower*=\endgather},%
+  ams gather*/.style={ams gather* upper,ams gather* lower},%
+  ams nodisplayskip upper/.style={before upper=\vskip-\abovedisplayskip},%
+  ams nodisplayskip lower/.style={before lower=\vskip-\abovedisplayskip},%
+  ams nodisplayskip/.style={ams nodisplayskip upper,ams nodisplayskip lower},%
+  highlight math style/.style={highlight math/.style={notitle,nophantom,#1}},%
+  separator sign colon/.style={separator sign={:}},%
+  separator sign dash/.style={separator sign={\nobreakspace --}},%
+  separator sign none/.style={separator sign=},%
+  terminator sign colon/.style={terminator sign={:}},%
+  terminator sign dash/.style={terminator sign={\nobreakspace --}},%
+  terminator sign none/.style={terminator sign=},%
+  description delimiters parenthesis/.style={description delimiters=()},
+  description delimiters none/.style={description delimiters={}{}},
+  theorem style/.is choice,
+  theorem style/standard/.style={separator sign colon,description delimiters none,
+    terminator sign none,theorem name and number,attach title},
+  theorem style/change standard/.style={theorem style=standard,theorem number and name},
+  theorem style/plain/.style={separator sign none,description delimiters parenthesis,
+    terminator sign colon,theorem name and number,attach title to upper={\ }},
+  theorem style/plain apart/.style={separator sign none,description delimiters parenthesis,
+    terminator sign none,theorem name and number,attach title},
+  theorem style/break/.style={theorem style=plain,attach title to upper={\par}},
+  theorem style/change/.style={theorem style=plain,theorem number and name},
+  theorem style/change apart/.style={theorem style=plain apart,theorem number and name},
+  theorem style/change break/.style={theorem style=break,theorem number and name},
+  theorem style/margin/.style={theorem style=plain,theorem name,before title=\makebox[0pt][r]{\thetcbcounter\ }},
+  theorem style/margin apart/.style={theorem style=margin,attach title,terminator sign none},
+  theorem style/margin break/.style={theorem style=margin,attach title to upper={\par}},
+  theorem label supplement/.style={tcb@theo@label@supp/.style={#1}},
+  theorem full label supplement/.style={tcb@theo@full@label@supp/.style={#1}},
+}
+
+
+\tcbset{%
+  reset@theorems/.style={%
+    description formatter,description color,description font,
+    highlight math style={colframe=red,colback=yellow!25!white},%
+    theorem style=standard,label separator=:,%
+    theorem label supplement=,theorem full label supplement=,%
+    theorem hanging indent%
+  },
+  initialize@reset=reset@theorems,
+}
+

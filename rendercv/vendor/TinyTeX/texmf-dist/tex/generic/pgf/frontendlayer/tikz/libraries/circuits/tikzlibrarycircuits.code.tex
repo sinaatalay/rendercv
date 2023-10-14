@@ -1,0 +1,264 @@
+% Copyright 2019 by Till Tantau and others Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usetikzlibrary{calc,decorations.markings}%
+
+
+%
+% Indicate that the picture contains a circuit
+%
+\tikzset{
+  circuit/.style={
+    every circuit/.try,
+    /utils/exec=\tikz@lib@circ@on@tofalse,
+    execute at begin to={
+      \tikz@lib@circ@on@totrue
+      \let\tikz@lib@circ@start@node\pgfutil@empty
+      \def\tikz@lib@circ@end{-- (\tikztotarget) \tikztonodes}
+    }
+  }
+}%
+
+\newif\iftikz@lib@circ@on@to
+
+
+%
+% General management
+%
+
+\tikzset{
+  circuit handle symbol/.code={%
+    \global\advance\tikz@lib@circ@count by1\relax%
+    \iftikz@lib@circ@on@to
+      {%
+        % Compute the tikz@time...
+        \pgfkeys{
+          /pgf/key filters/active families or no family/.install key filter={/pgf/key filters/false}{/pgf/key filters/false},
+          /tikz/circuits/pos grabber/.activate family}
+        \pgfqkeysfiltered{/tikz}{pos=.5,#1}%
+        \expandafter%
+      }%
+      \expandafter\def\expandafter\tikz@lib@circ@pos\expandafter{\tikz@time}%
+      \pgfkeysalso{to path={
+         \pgfextra{\tikz@lib@circ@on@tofalse}
+         decorate [decoration={markings,mark connection node=mark node}]
+          {
+            \tikz@lib@circ@start@node
+            \tikz@lib@circ@end
+          }
+        }}
+      \ifdim\tikz@lib@circ@pos pt=0pt\relax%
+        \def\tikz@lib@circ@start@node{%
+          {\pgfextra{\tikz@lib@circ@compute@direction{\tikz@lib@circ@start}}%
+          node[alias=tikz@lib@circ@node@start,at={(0,0)},#1,pos=]{}}(tikz@lib@circ@node@start)}%
+      \else%
+        \ifdim\tikz@lib@circ@pos pt=1pt\relax%
+          \def\tikz@lib@circ@end{
+            {\pgfextra{\tikz@lib@circ@compute@direction{\tikz@lib@circ@target}}%
+              node[alias=tikz@lib@circ@node\the\tikz@lib@circ@count,at={(0,0)},#1,pos=]{}}
+            --(tikz@lib@circ@node\the\tikz@lib@circ@count)\tikztonodes
+          }%
+        \else%
+          \edef\tikz@marshal{mark=at position \tikz@lib@circ@pos\space with}%
+          \def\tikz@marshala{decoration=}%
+          \expandafter\expandafter\expandafter\tikzset%
+          \expandafter\expandafter\expandafter{\expandafter\tikz@marshala\expandafter{\tikz@marshal{\node[alias=mark node,#1,pos=]{};}}}
+        \fi%
+      \fi%
+    \else
+      \pgfkeysalso{#1}
+    \fi
+  }
+}%
+\newcount\tikz@lib@circ@count
+
+\def\tikz@lib@circ@compute@direction#1{%
+  \tikz@scan@one@point\tikz@lib@circ@save@start(\tikztostart)%
+  \tikz@scan@one@point\tikz@lib@circ@save@target(\tikztotarget)%
+  \pgf@process{\pgfpointnormalised{\pgfpointdiff{\tikz@lib@circ@start}{\tikz@lib@circ@target}}}%
+  \pgf@ya=-\pgf@y%
+  \pgftransformcm{\the\pgf@x}{\the\pgf@y}{\the\pgf@ya}{\the\pgf@x}{#1}%
+}%
+\def\tikz@lib@circ@save@start#1{\def\tikz@lib@circ@start{#1}}%
+\def\tikz@lib@circ@save@target#1{\def\tikz@lib@circ@target{#1}}%
+
+\tikzset{
+  circuits/pos grabber/.is family,
+  pos/.belongs to family=/tikz/circuits/pos grabber,
+  at start/.belongs to family=/tikz/circuits/pos grabber,
+  very near start/.belongs to family=/tikz/circuits/pos grabber,
+  near start/.belongs to family=/tikz/circuits/pos grabber,
+  midway/.belongs to family=/tikz/circuits/pos grabber,
+  near end/.belongs to family=/tikz/circuits/pos grabber,
+  very near end/.belongs to family=/tikz/circuits/pos grabber,
+  at end/.belongs to family=/tikz/circuits/pos grabber
+}%
+
+
+%
+% Declaring a new symbol
+%
+\tikzset{
+  circuit declare symbol/.style args={#1}{
+    % Declares a new circuit symbol.
+    %
+    % #1 = name
+    % #2 = factor for default minimum width
+    % #3 = factor for default minimum height
+    %
+    % The following styles are defined:
+    %
+    % #1
+    % Can be given as an option to a "node" command or to a "to"
+    % command. It takes a set of options as parameter that will be
+    % passed to the option.
+    %
+    % set #1 graphic
+    % This keys can be set to the necessary options to make a normal
+    % node look like the symbol. For instance, for a resistor that is
+    % rendered as a rectangle, this keys can be set, basically, to
+    % "rectangle,draw". Set this key to use a different appearance for
+    % symbols of kind #1.
+    %
+    % every #1
+    % This style will be included with every symbols of this kind and
+    % can be used to configure them further.
+    %
+    % every circuit symbol
+    % This style is also included with every symbol.
+    #1/.style={circuit handle symbol={
+        inner sep=0.5pt,
+        every circuit symbol,
+        #1/graphic,
+        every #1/.try,
+        ##1}
+    },
+    #1/graphic/.style={},
+    set #1 graphic/.style={#1/graphic/.style={##1}}
+  },
+  circuit symbol unit/.code=\pgfmathsetlength\tikzcircuitssizeunit{#1},
+  circuit symbol size/.style args={width #1 height #2}{
+    minimum width={(#1)*\tikzcircuitssizeunit},
+    minimum height={(#2)*\tikzcircuitssizeunit}
+  },
+  huge circuit symbols/.style={circuit symbol unit=10pt},
+  large circuit symbols/.style={circuit symbol unit=8pt},
+  medium circuit symbols/.style={circuit symbol unit=7pt},
+  small circuit symbols/.style={circuit symbol unit=6pt},
+  tiny circuit symbols/.style={circuit symbol unit=5pt},
+}%
+
+\newdimen\tikzcircuitssizeunit
+\tikzcircuitssizeunit=7pt
+
+
+%
+% Annotations
+%
+
+\tikzset{
+  circuit declare annotation/.style args={#1#2#3}{%
+    #1/.style={
+      append after command={%
+        \bgroup
+          [current point is local=true]
+          [every circuit annotation/.try]
+          [every #1/.try]
+          [shift={(\tikzlastnode.north)}]
+          [annotation arrow,->]
+          [label distance=#2,##1]
+          #3
+          \tikz@after@path%
+        \egroup%
+      }
+    },
+    #1'/.style={
+      append after command={%
+        \bgroup
+          [current point is local=true]
+          [every circuit annotation/.try]
+          [every #1/.try]
+          [shift={(\tikzlastnode.south)},yscale=-1]
+          [annotation arrow,->]
+          [label distance=#2,##1]
+          #3
+          \tikz@after@path%
+        \egroup%
+      }
+    }
+  },
+  annotation arrow/.style = {
+    /utils/exec={\pgfsetarrowoptions{direction ee}{.4*\the\tikzcircuitssizeunit+.3*\the\pgflinewidth}},
+    >=direction ee
+  }
+}%
+
+
+
+%
+% Rotating symbols
+%
+\tikzset{
+  point up/.style={rotate=90},
+  point down/.style={rotate=-90},
+  point left/.style={rotate=180},
+  point right/.style={}
+}%
+
+
+
+%
+% Basic theming
+%
+
+\tikzset{
+  every circuit symbol/.style={},
+  circuit symbol open/.style={draw},
+  circuit symbol filled/.style={draw,fill=black},
+  circuit symbol lines/.style={draw},
+  circuit symbol wires/.style={draw},
+}%
+
+
+
+
+
+%
+% Labels
+%
+
+\tikzset{
+  info/.code={\pgfutil@ifnextchar[\tikz@lib@circ@lab@plain{\tikz@lib@circ@lab@plain[]}#1\pgf@stop},%}
+  info'/.code={\pgfutil@ifnextchar[\tikz@lib@circ@labp@plain{\tikz@lib@circ@labp@plain[]}#1\pgf@stop},%}
+  info sloped/.code={\pgfutil@ifnextchar[\tikz@lib@circ@lab@sloped@plain{\tikz@lib@circ@lab@sloped@plain[]}#1\pgf@stop},%}
+  info' sloped/.code={\pgfutil@ifnextchar[\tikz@lib@circ@lab@slopedp@plain{\tikz@lib@circ@lab@slopedp@plain[]}#1\pgf@stop},%}
+  circuit declare unit/.style 2 args={
+    %
+    % Defines four styles that can be used to add labels to a node.
+    %
+    #1/.code={\pgfutil@ifnextchar[\tikz@lib@circ@lab{\tikz@lib@circ@lab[]}##1\pgf@stop{#2}{#1}},%}
+    #1 sloped/.code={\pgfutil@ifnextchar[\tikz@lib@circ@lab@sloped{\tikz@lib@circ@lab@sloped[]}##1\pgf@stop{#2}{#1}},%}
+    #1'/.code={\pgfutil@ifnextchar[\tikz@lib@circ@labp{\tikz@lib@circ@labp[]}##1\pgf@stop{#2}{#1}},%}
+    #1' sloped/.code={\pgfutil@ifnextchar[\tikz@lib@circ@lab@slopedp{\tikz@lib@circ@lab@slopedp[]}##1\pgf@stop{#2}{#1}}%}
+  }
+}%
+
+\def\tikz@lib@circ@lab[#1]#2\pgf@stop#3#4{\tikzset{label={[every info/.try,every #4/.try,#1]$\mathrm{#2#3}$}}}%
+\def\tikz@lib@circ@lab@sloped[#1]#2\pgf@stop#3#4{\tikzset{label={[every info/.try,every #4/.try,transform shape,#1]$\mathrm{#2#3}$}}}%
+\def\tikz@lib@circ@labp[#1]#2\pgf@stop#3#4{\tikzset{label={[label position=below,every info/.try,every #4/.try,#1]$\mathrm{#2#3}$}}}%
+\def\tikz@lib@circ@lab@slopedp[#1]#2\pgf@stop#3#4{\tikzset{label={[label position=below,every info/.try,every #4/.try,transform shape,#1]$\mathrm{#2#3}$}}}%
+
+\def\tikz@lib@circ@lab@plain[#1]#2\pgf@stop{\tikzset{label={[every info/.try,#1]#2}}}%
+\def\tikz@lib@circ@lab@sloped@plain[#1]#2\pgf@stop{\tikzset{label={[every info/.try,transform shape,#1]#2}}}%
+\def\tikz@lib@circ@labp@plain[#1]#2\pgf@stop{\tikzset{label={[label position=below,every info/.try,#1]#2}}}%
+\def\tikz@lib@circ@lab@slopedp@plain[#1]#2\pgf@stop{\tikzset{label={[label position=below,every info/.try,transform shape,#1]#2}}}%
+
+
+
+\endinput

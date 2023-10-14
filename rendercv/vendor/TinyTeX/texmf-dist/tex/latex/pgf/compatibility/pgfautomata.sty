@@ -1,0 +1,315 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\RequirePackage{pgfrcs}
+
+\ProvidesPackageRCS{pgfautomata.sty}
+
+
+\RequirePackage{pgf}
+
+\PackageWarning{pgfautomata}{This package is obsolete.}
+
+\ProcessOptions
+
+%
+% Package for drawing finite automata. 
+%
+
+
+\newdimen\pgf@stateradius
+\newdimen\pgf@mooreradius
+\newdimen\pgf@doublethickness
+\newdimen\pgf@statebackoff
+
+
+
+
+% Automaton environment - setup of certain drawing parameters like arrows.
+%
+% Example:
+%
+% \begin{pgfpicture}{-2cm}{-2cm}{2cm}{2cm}%
+%   \begin{pgfautomaton}
+%     \pgfstaterejecting{q1}{\pgforigin}{$q_1$}
+%     \pgfstateaccepting{q2}{\pgfstaterelative[east]{q1}{1cm}}{$q_2$}
+%     \pgfstateaccepting{q3}{\pgfstaterelative[east]{q2}{1cm}}{$q_3$}
+%
+%     \pgfstateconnect{q1}{q2}[.5]{$0$}
+%     \pgfstateconnect{q2}{q3}[.5]{$1$}
+%     \pgfstateloop{q1}{90}{$1$}
+%     \pgfstateloop{q2}{90}{$1$}
+%   \end{pgfautomaton}
+% \end{pgfpicture}
+
+\def\pgfautomaton{\begin{pgfscope}%
+  \pgfsetendarrow{\pgfarrowto}%
+  \pgfnodesetsepend{4pt}\ignorespaces}
+\def\endpgfautomaton{\end{pgfscope}}
+
+
+
+% Set the outer state radius to #1.
+% 
+% #1 = new state radius.
+% 
+% Example:
+%
+% \pgfsetstateradius{10pt}
+
+\def\pgfsetstateradius#1{\setlength\pgf@stateradius{#1}\ignorespaces}
+
+\pgfsetstateradius{1em}
+
+
+
+% Set the state radius for Moore states to #1.
+% 
+% #1 = new state radius.
+% 
+% Example:
+%
+% \pgfsetstatemooreradius{10pt}
+
+\def\pgfsetstatemooreradius#1{\setlength\pgf@mooreradius{#1}\ignorespaces}
+
+\pgfsetstatemooreradius{2em}
+
+
+
+% Set the distance between the outer and the inner circle in an
+% accepting state.
+% 
+% #1 = new distance radius.
+% 
+% Example:
+%
+% \pgfsetstatecircledistance{1.2pt}
+
+\def\pgfsetstatecircledistance#1{\setlength\pgf@doublethickness{#1}\ignorespaces}
+
+\pgfsetstatecircledistance{1.6pt}
+
+
+
+% Set the distance between a connecting line and a label to #1.
+% 
+% #1 = new distance
+% 
+% Example:
+%
+% \pgfsetstatelabeldistance{4pt}
+
+\def\pgfsetstatelabeldistance#1{\setlength\pgf@statebackoff{#1}\ignorespaces}
+
+\pgfsetstatelabeldistance{4pt}
+
+
+% Draws an accepting state #1 with name #3 at position #2.
+%
+% #1 = a name
+% #2 = a point
+% #3 = a text
+%
+% Example:
+%
+% \pgfstateaccepting{q1}{\pgfxy(1,1)}{$q_1$}
+
+\def\pgfstateaccepting#1#2#3{%
+  \pgfnodecircle{#1}[stroke]{#2}{\pgf@stateradius}%
+  \pgfputat{#2}{\pgfbox[center,center]{#3}}%
+  {%
+  \pgf@xa=\pgf@stateradius%
+  \advance\pgf@xa by-\pgf@doublethickness%
+  \pgfcircle[stroke]{#2}{\pgf@xa}}\ignorespaces}
+
+
+% Draws a rejecting state #1 with name #3 at position #2.
+%
+% #1 = a name
+% #2 = a point
+% #3 = a text
+%
+% Example:
+%
+% \pgfstaterejecting{q2}{\pgfstatedirection[n]{q1}}{$q_2$}
+
+\def\pgfstaterejecting#1#2#3{%
+  \pgfnodecircle{#1}[stroke]{#2}{\pgf@stateradius}%
+  \pgfputat{#2}{\pgfbox[center,center]{#3}}\ignorespaces}
+
+
+% Draws a Moore state #1 with name #3 and output #4 at position #2.
+%
+% #1 = a name
+% #2 = a point
+% #3 = a text
+% #4 = an output text
+%
+% Example:
+%
+% \pgfstatemoore{q}{\pgfxy(1,1)}{$q_1$}{$0,1$}
+
+\def\pgfstatemoore#1#2#3#4{%
+  \pgfnodecircle{#1}[stroke]{#2}{\pgf@mooreradius}%
+  \begin{pgftranslate}{#2}%
+    \begin{pgfscope}%
+      \pgfsetdash{{2pt}{1pt}}{0pt}%
+      \pgfmoveto{\pgfpoint{-\pgf@mooreradius}{0cm}}%
+      \pgflineto{\pgfpoint{\pgf@mooreradius}{0cm}}%
+      \pgfqstroke%
+    \end{pgfscope}%       
+    \pgfputat{\pgfpoint{0cm}{0.4\pgf@mooreradius}}{\pgfbox[center,base]{#3}}%
+    \pgfputat{\pgfpoint{0cm}{-0.2\pgf@mooreradius}}{\pgfbox[center,top]{#4}}%
+  \end{pgftranslate}\ignorespaces}
+
+
+
+
+% Connect states #1 and #2 and draw #4 above label, #3-th part of the
+% way from #1 to #2.
+%
+% #1 = a start state
+% #2 = an end state
+% #3 = a fraction of the distance between the two
+% #4 = a label
+%
+% Example:
+%
+% \pgfstateconnect{q1}{q2}[.5]{$0$}
+
+\def\pgfstateconnect#1#2[#3]#4{%
+  \pgfnodeconnline{#1}{#2}%
+  \pgfnodelabel{#1}{#2}[#3][\pgf@statebackoff]%
+    {\pgfbox[center,bottom]{#4}}\ignorespaces}
+
+
+  
+% Connect states #1 and #2 and draw #4 above label, #3-th part of the
+% way from #1 to #2.
+%
+% #1 = a start state
+% #2 = an end state
+% #3 = a fraction of the distance between the two
+% #4 = a label
+%
+% Example:
+%
+% \pgfstateconnectrotated{q1}{q2}[.5]{$0$}
+
+\def\pgfstateconnectrotated#1#2[#3]#4{%
+  \pgfnodeconnline{#1}{#2}%
+  \pgfnodelabelrotated{#1}{#2}[#3][\pgf@statebackoff]%
+    {\pgfbox[center,bottom]{#4}}\ignorespaces}
+
+
+  
+% Connect state #1 with itself with label #3 and a loop going in
+% direction #2.
+%
+% #1 = a state
+% #2 = an angle
+% #3 = a label
+%
+% Example:
+%
+% \pgfstateloop{q1}{90}{$0$}
+
+\def\pgfstateloop#1#2#3{%
+  \c@pgf@counta=#2\relax%
+  \c@pgf@countb=#2\relax%
+  \advance\c@pgf@counta by15\relax%
+  \advance\c@pgf@countb by-15\relax%
+  \pgfnodeconncurve{#1}{#1}{\the\c@pgf@counta}{\the\c@pgf@countb}{2\pgf@stateradius}{2\pgf@stateradius}%
+  \pgfputat{\pgfnodeborder{#1}{#2}{2.25\pgf@stateradius}}{\pgfbox[center,center]{#3}}\ignorespaces}
+
+
+
+% Connect states #1 and #2 and draw #4 above label, #3-th part of the
+% way from #1 to #2.
+%
+% #1 = a start state
+% #2 = an end state
+% #3 = a start angle
+% #4 = an end angle
+%
+% Example:
+%
+% \pgfstatecurve{q1}{q2}{10}{-10}
+
+\def\pgfstatecurve#1#2#3#4{%
+  \pgfnodeconncurve{#1}{#2}{#3}{#4}{2\pgf@stateradius}{2\pgf@stateradius}\ignorespaces}
+
+  
+
+% Give a position relative to some state.
+%
+% #1 = a direction
+% #2 = a state
+% #3 = a distance
+%
+% Example:
+%
+% \pgfstaterelative[east]{q2}{1cm}
+
+\def\pgfstaterelative{\pgfnoderelative}
+
+
+  
+% Draw an initial state by drawing an inleading line.
+%
+% #1 = a state
+% #2 = a direction leading into the state (n,s,e,w)
+% #3 = a label (for example ``start'')
+%
+% Example:
+%
+% \pgfstateinitial{q1}[w]{start}
+
+\def\pgfstateinitial#1[#2]#3{{%
+    \pgfmoveto{\pgfrelative{\pgfnodeborder{#1}{\pgfdirection{#2}}{-2pt}}%
+      {\pgfpolar{\pgfdirection{#2}}{1.5\pgf@stateradius}}}%
+    \pgflineto{\pgfnodeborder{#1}{\pgfdirection{#2}}{\pgf@nodesepend}}%
+    \pgfstroke%
+    \edef\temp{[\csname pgf@statepos\pgfdirection{#2}\endcsname]}%
+    \pgfputat{\pgfrelative{\pgfnodeborder{#1}{\pgfdirection{#2}}{0pt}}%
+      {\pgfpolar{\pgfdirection{#2}}{1.5\pgf@stateradius}}}%
+    {\expandafter\pgfbox\temp{#3}}}\ignorespaces}
+
+\expandafter\def\csname pgf@statepos0\endcsname{left,center}
+\expandafter\def\csname pgf@statepos90\endcsname{center,bottom}
+\expandafter\def\csname pgf@statepos180\endcsname{right,center}
+\expandafter\def\csname pgf@statepos270\endcsname{center,top}
+
+
+
+% Draw an final state by drawing an outleading line.
+%
+% #1 = a state
+% #2 = a direction leading out of the state (valid directions are
+%      n,s,e,w) 
+% #3 = a label (for example ``exit'')
+%
+% Example:
+%
+% \pgfstatefinal{q1}[right]{accept}
+
+\def\pgfstatefinal#1[#2]#3{{%
+    \pgfmoveto{\pgfnodeborder{#1}{\pgfdirection{#2}}{\pgf@nodesepstart}}%
+    \pgflineto{\pgfrelative{\pgfnodeborder{#1}{\pgfdirection{#2}}{-\pgf@nodesepend}}%
+      {\pgfpolar{\pgfdirection{#2}}{1.5\pgf@stateradius}}}%
+    \pgfstroke%
+    \edef\tempb{[\csname pgf@statepos\pgfdirection{#2}\endcsname]}%
+    \pgfputat{\pgfrelative{\pgfnodeborder{#1}{\pgfdirection{#2}}{0pt}}%
+      {\pgfpolar{\pgfdirection{#2}}{1.5\pgf@stateradius}}}%
+    {\expandafter\pgfbox\tempb{#3}}}\ignorespaces}
+
+
+
+\endinput

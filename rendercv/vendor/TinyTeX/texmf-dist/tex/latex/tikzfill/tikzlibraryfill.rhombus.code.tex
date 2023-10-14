@@ -1,0 +1,162 @@
+%% The LaTeX package tikzfill - version 1.0.1 (2023/08/08)
+%% tikzlibraryfill.rhombus.code.tex: filling with rhombus patterns
+%%
+%% -------------------------------------------------------------------------------------------
+%% Copyright (c) 2022-2023 by Prof. Dr. Dr. Thomas F. Sturm <thomas dot sturm at unibw dot de>
+%% -------------------------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `author-maintained'.
+%%
+%% This work consists of all files listed in README.md
+%%
+\ProvidesFile{tikzlibraryfill.rhombus.code.tex}[2022/07/15 v0.0.1 Rhombus pattern library]
+
+\usetikzlibrary{patterns.meta}
+
+\ifx\ExplSyntaxOn\undefined
+  \input expl3-generic\relax
+\fi
+\ExplSyntaxOn
+
+\fp_new:N \l__tikzfill_rho_angle_fp
+\fp_new:N \l__tikzfill_rho_d_fp
+\fp_new:N \l__tikzfill_rho_s_fp
+
+\tl_new:N \l__tikzfill_rho_dsize_tl
+\tl_new:N \l__tikzfill_rho_linewidth_tl
+\tl_new:N \l__tikzfill_rho_matrix_a_tl
+\tl_new:N \l__tikzfill_rho_matrix_b_tl
+\tl_new:N \l__tikzfill_rho_matrix_c_tl
+\tl_new:N \l__tikzfill_rho_matrix_d_tl
+\tl_new:N \l__tikzfill_rho_poffset_tl
+\tl_new:N \l__tikzfill_rho_psize_tl
+\tl_new:N \l__tikzfill_rho_size_tl
+
+
+\pgfdeclarepattern
+  {
+    name = rhombus,
+    parameters =
+      {
+        \pgfkeysvalueof{/pgf/pattern~keys/size},
+        \pgfkeysvalueof{/pgf/pattern~keys/angle},
+        \pgfkeysvalueof{/pgf/pattern~keys/ratio},
+        \pgfkeysvalueof{/pgf/pattern~keys/xshift},
+        \pgfkeysvalueof{/pgf/pattern~keys/yshift},
+        \pgfkeysvalueof{/pgf/pattern~keys/line~width},
+        \pgfkeysvalueof{/pgf/pattern~keys/pos},
+        \pgfkeysvalueof{/pgf/pattern~keys/band},
+        \pgfkeysvalueof{/pgf/pattern~keys/_fill_},
+      },
+    defaults =
+      {
+        size       /.initial = 10mm,
+        angle      /.initial = -40,
+        ratio      /.initial = 2,
+        xshift     /.initial = 0pt,
+        yshift     /.initial = 0pt,
+        line~width /.initial = 0.4pt,
+        pos        /.initial = 1,
+        band       /.initial = 0,
+        _fill_     /.initial = 1,
+        fill       /.style = { _fill_=1 },
+        draw       /.style = { _fill_=0 },
+      },
+    set~up~code =
+      {
+        \tl_set:Nx \l__tikzfill_rho_linewidth_tl  { \fp_to_dim:n { \pgfkeysvalueof{/pgf/pattern~keys/line~width} } }
+
+        \fp_set:Nn \l_tmpa_fp { \pgfkeysvalueof{/pgf/pattern~keys/size} }
+        \tl_set:Nx \l__tikzfill_rho_size_tl  { \fp_to_dim:N \l_tmpa_fp }
+        \tl_set:Nx \l__tikzfill_rho_dsize_tl { \fp_to_dim:n { 2 * \l_tmpa_fp } }
+
+        \fp_set:Nn \l_tmpb_fp { min ( 1, max( 0, \pgfkeysvalueof{/pgf/pattern~keys/pos} )) }
+        \tl_set:Nx \l__tikzfill_rho_psize_tl    { \fp_to_dim:n { \l_tmpa_fp * \l_tmpb_fp } }
+        \tl_set:Nx \l__tikzfill_rho_poffset_tl  { \fp_to_dim:n { \l_tmpa_fp * (1-\l_tmpb_fp)/2 } }
+
+        \fp_set:Nn \l__tikzfill_rho_angle_fp { \pgfkeysvalueof{/pgf/pattern~keys/angle} }
+
+        \fp_set:Nn \l_tmpa_fp { max( 1 , \pgfkeysvalueof{/pgf/pattern~keys/ratio} ) }
+        \fp_set:Nn \l_tmpa_fp { \l_tmpa_fp*\l_tmpa_fp }
+        \fp_set:Nn \l__tikzfill_rho_s_fp{ (\l_tmpa_fp-1)/(\l_tmpa_fp+1) }
+
+        \fp_set:Nn \l__tikzfill_rho_d_fp { sqrt( 1 -  \l__tikzfill_rho_s_fp * \l__tikzfill_rho_s_fp ) }
+        \fp_set:Nn \l_tmpb_fp
+          {
+            \l__tikzfill_rho_angle_fp - atand( \l__tikzfill_rho_d_fp / (  1 + \l__tikzfill_rho_s_fp  ) )
+          }
+        \fp_set:Nn \l_tmpa_fp { cosd(\l_tmpb_fp) }
+        \fp_set:Nn \l_tmpb_fp { sind(\l_tmpb_fp) }
+
+        \tl_set:Nx \l__tikzfill_rho_matrix_a_tl { \fp_to_decimal:N \l_tmpa_fp }
+        \tl_set:Nx \l__tikzfill_rho_matrix_b_tl { \fp_to_decimal:N \l_tmpb_fp }
+        \tl_set:Nx \l__tikzfill_rho_matrix_c_tl { \fp_to_decimal:n
+          {
+            \l__tikzfill_rho_s_fp * \l_tmpa_fp - \l__tikzfill_rho_d_fp * \l_tmpb_fp
+          }}
+        \tl_set:Nx \l__tikzfill_rho_matrix_d_tl { \fp_to_decimal:n
+          {
+            \l__tikzfill_rho_s_fp * \l_tmpb_fp + \l__tikzfill_rho_d_fp * \l_tmpa_fp
+          }}
+      },
+    bottom~left = { \pgfpoint{-\l__tikzfill_rho_linewidth_tl}{-\l__tikzfill_rho_linewidth_tl} },
+    top~right   = { \pgfpoint{\l__tikzfill_rho_dsize_tl+\l__tikzfill_rho_linewidth_tl}
+                             {\l__tikzfill_rho_dsize_tl+\l__tikzfill_rho_linewidth_tl} },
+    tile~size   = { \pgfqpoint{\l__tikzfill_rho_dsize_tl}{\l__tikzfill_rho_dsize_tl} },
+    tile~transformation =
+      {
+        \pgftransformshift
+          {
+            \pgfpoint{ \pgfkeysvalueof{/pgf/pattern~keys/xshift} }
+                     { \pgfkeysvalueof{/pgf/pattern~keys/yshift} }
+          }
+        \pgftransformcm{\l__tikzfill_rho_matrix_a_tl}{\l__tikzfill_rho_matrix_b_tl}
+                       {\l__tikzfill_rho_matrix_c_tl}{\l__tikzfill_rho_matrix_d_tl}
+                       {\pgfpointorigin}
+      },
+    code  =
+      {
+        \int_set:Nn \l_tmpa_int { \pgfkeysvalueof{/pgf/pattern~keys/band} }
+        \int_compare:nNnF \l_tmpa_int = 1
+        {
+          \pgfpathrectangle{\pgfqpoint{\l__tikzfill_rho_poffset_tl}{\l__tikzfill_rho_poffset_tl}}
+                           {\pgfqpoint{\l__tikzfill_rho_psize_tl}{\l__tikzfill_rho_psize_tl}}
+          \pgfpathrectangle{\pgfpoint{\l__tikzfill_rho_size_tl+\l__tikzfill_rho_poffset_tl}{\l__tikzfill_rho_size_tl+\l__tikzfill_rho_poffset_tl}}
+                           {\pgfqpoint{\l__tikzfill_rho_psize_tl}{\l__tikzfill_rho_psize_tl}}
+        }
+        \int_compare:nNnT \l_tmpa_int > 0
+        {
+          \pgfpathrectangle{\pgfpoint{\l__tikzfill_rho_poffset_tl}{\l__tikzfill_rho_size_tl+\l__tikzfill_rho_poffset_tl}}
+                           {\pgfqpoint{\l__tikzfill_rho_psize_tl}{\l__tikzfill_rho_psize_tl}}
+          \pgfpathrectangle{\pgfpoint{\l__tikzfill_rho_size_tl+\l__tikzfill_rho_poffset_tl}{\l__tikzfill_rho_poffset_tl}}
+                           {\pgfqpoint{\l__tikzfill_rho_psize_tl}{\l__tikzfill_rho_psize_tl}}
+        }
+        \int_compare:nNnTF { \pgfkeysvalueof{/pgf/pattern~keys/_fill_} } = 1
+          {
+            \pgfusepath{fill}
+          }
+          {
+            \pgfsetlinewidth{\l__tikzfill_rho_linewidth_tl}
+            \pgfusepath{draw}
+          }
+      }
+  }
+
+
+\tikzset{
+  pattern~rhombus /.style =
+    {
+      pattern={rhombus[#1]}
+    }
+}
+
+
+\ExplSyntaxOff

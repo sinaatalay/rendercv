@@ -1,0 +1,143 @@
+% Copyright 2020 by Christian Feuersaenger
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+%
+% In addition to the above licenses, this particular file may also be
+% directly inlined into other documents and this copyright notice may
+% be removed. Additionally, when you inline this file, you may modify
+% it as needed and you may remove comments.
+%
+% This file is intended to be distributed or even inlined into a file
+% when a document needs to be typeset on a system that does not have
+% pgf/TikZ installed.
+%
+% It replaces \tikzpicture/ \endtikzpicture and \tikz and invokes the
+% \includegraphics with the correct file name instead.
+
+\RequirePackage{graphicx}
+
+\toksdef\t@tikzexternal@tmpa=0
+\toksdef\t@tikzexternal@tmpb=1
+
+\def\tikzexternalize{\@ifnextchar[{\tikzexternalize@opt}{\tikzexternalize@opt[]}}%
+\def\tikzexternalize@opt[#1]{\@ifnextchar\bgroup{\def\tikzexternal@realjob}{\let\tikzexternal@realjob=\jobname}}%
+
+\def\tikzsetnextfilename#1{\gdef\tikzexternal@nextfile{#1}}
+\def\tikzsetexternalprefix#1{\def\tikzexternal@filenameprefix{#1}}
+\def\tikzsetfigurename#1{\def\tikzexternal@figurename{#1}}%
+\def\tikzappendtofigurename#1{\expandafter\def\expandafter\tikzexternal@figurename\expandafter{\tikzexternal@figurename #1}}%
+\tikzsetnextfilename{}
+\tikzsetexternalprefix{}
+\tikzsetfigurename{\tikzexternal@realjob-figure}%
+
+\long\def\tikzpicture#1\end#2{% collect every thing up to \end{tikzpicture}
+    \def\tikzexternal@laTeX@collectpicture@@{#2}%
+    \ifx\tikzexternal@laTeX@collectpicture@@\tikzexternal@laTeX@tikzpicturestring
+        \tikzexternal@image
+        \end{tikzpicture}%
+    \else
+        \expandafter
+        \tikzpicture
+    \fi
+}%
+\def\endtikzpicture{}
+\def\tikzexternal@laTeX@tikzpicturestring{tikzpicture}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Replacement for \tikz short command:
+\def\tikz{\@ifnextchar[{\tikz@opt}{\tikz@opt[]}}
+\def\tikz@opt[#1]{\@ifnextchar\bgroup{\tikz@opt@{#1}}{\tikz@opt@@{#1}}}
+\def\tikz@opt@#1#2{\tikz@opt@process{#1}{#2}}
+\def\tikz@opt@@#1{%
+  \def\tikz@next{\tikz@collectnormalsemicolon{#1}}%
+  \ifnum\the\catcode`\;=\active\relax%
+    \def\tikz@next{\tikz@collectactivesemicolon{#1}}%
+  \fi%
+  \tikz@next}
+\def\tikz@collectnormalsemicolon#1#2;{\tikz@opt@process{#1}{#2;}}
+{
+  \catcode`\;=\active
+  \gdef\tikz@collectactivesemicolon#1#2;{%
+    \tikz@opt@process{#1}{#2;}%
+  }
+}
+\def\tikz@opt@process#1#2{\tikzexternal@image}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\tikzexternal@image{%
+    \leavevmode
+    \begingroup
+    \t@tikzexternal@tmpa=\expandafter{\tikzexternal@filenameprefix}%
+    \ifx\tikzexternal@nextfile\empty
+        \expandafter\ifx\csname c@tikzext@no@\tikzexternal@figurename\endcsname\relax
+            \expandafter\gdef\csname c@tikzext@no@\tikzexternal@figurename\endcsname{0}%
+        \fi
+        \t@tikzexternal@tmpb=\expandafter{\tikzexternal@figurename}%
+        \count0=\csname c@tikzext@no@\tikzexternal@figurename\endcsname
+        \xdef\tikzexternal@curfilename{\the\t@tikzexternal@tmpa\the\t@tikzexternal@tmpb\the\count0 }%
+        \advance\count0 by1\relax
+        \expandafter\xdef\csname c@tikzext@no@\tikzexternal@figurename\endcsname{\the\count0 }%
+    \else
+        \t@tikzexternal@tmpb=\expandafter{\tikzexternal@nextfile}%
+        \xdef\tikzexternal@curfilename{\the\t@tikzexternal@tmpa\the\t@tikzexternal@tmpb}%
+    \fi
+    \endgroup
+    \global\let\tikzexternal@nextfile=\empty
+    \pgfincludeexternalgraphics\tikzexternal@curfilename
+}%
+\def\tikzset#1{}\def\pgfkeys#1{}\def\pgfqkeys#1#2{}
+\long\def\beginpgfgraphicnamed#1#2\endpgfgraphicnamed{\pgfincludeexternalgraphics{#1}}
+\def\tikzifinpicture#1#2{#2}
+\def\pgfincludeexternalgraphics#1{%
+    \begingroup
+    \pgfexternalreaddpth{#1}%
+    \setbox1=\hbox{\includegraphics{#1}}%
+    \ifdim\pgfretval=0pt
+        \box1
+    \else
+        \dimen0=\pgfretval\relax
+        \hbox{\lower\dimen0 \box1 }%
+    \fi
+    \endgroup
+}
+\newread\r@pgf@reada
+\def\pgfexternalreaddpth#1{%
+    \edef\pgfexternalreaddpth@restore{%
+        \noexpand\endlinechar=\the\endlinechar\space
+        \noexpand\catcode`\noexpand\@=\the\catcode`\@\space
+    }%
+    \def\pgfretval{0pt}%
+    \endlinechar=-1 % suppress white space at end
+    \catcode`\@=11
+    \openin\r@pgf@reada=#1.dpth
+    \pgfincludeexternalgraphics@read@dpth
+    \pgfexternalreaddpth@restore
+}%
+\def\pgfincludeexternalgraphics@read@dpth{%
+    \ifeof\r@pgf@reada
+        \closein\r@pgf@reada
+    \else
+        \read\r@pgf@reada to\pgfincludeexternalgraphics@auxline
+        \ifx\pgfincludeexternalgraphics@auxline\empty
+        \else
+            \expandafter\pgfincludeexternalgraphics@read@dpth@line\pgfincludeexternalgraphics@auxline\pgfincludeexternalgraphics@read@dpth@line@EOI
+        \fi
+        \expandafter\pgfincludeexternalgraphics@read@dpth
+    \fi
+}%
+\long\def\pgfincludeexternalgraphics@read@dpth@line#1#2\pgfincludeexternalgraphics@read@dpth@line@EOI{%
+    \ifcat\noexpand#1\relax
+        \if@filesw
+            {\toks0={#1#2}%
+            \immediate\write\@auxout{\noexpand\def\noexpand\dpthimport{\the\toks0 }\noexpand\dpthimport }%
+            }%
+        \fi
+    \else%
+        \def\pgfretval{#1#2}%
+    \fi
+}%

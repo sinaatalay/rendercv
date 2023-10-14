@@ -1,0 +1,731 @@
+% Copyright 2019 by Mark Wibrow
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\usetikzlibrary{fpu}
+
+\edef\tikz@math@at@catcode{\the\catcode`\@}%
+\catcode`\@=11
+
+\def\tikz@math@gobblespaces#1{\pgfutil@ifnextchar x{#1}{#1}}%
+
+\def\tikz@math@meaning@macro{macro}%
+\def\tikz@math@meaning@dimen{dimen}%
+\def\tikz@math@meaning@count{count}%
+\def\tikz@math@meaning@null{null}%
+
+\def\tikz@math@getmeaning#1{\expandafter\tikz@math@@getmeaning\meaning#1\tikz@math@getmeaning@stop}%
+
+\def\tikz@math@@getmeaning#1#2#3#4#5\tikz@math@getmeaning@stop{%
+    \if#1u% undefined
+        \let\tikz@math@meaning=\tikz@math@meaning@macro%
+    \else%
+        \if#1m%
+            \let\tikz@math@meaning=\tikz@math@meaning@macro%
+        \else%
+            \if#2d%
+                \let\tikz@math@meaning=\tikz@math@meaning@dimen%
+            \else%
+                \if#2c%
+                    \let\tikz@math@meaning=\tikz@math@meaning@count%
+                \else%
+                    \if#3k% A skip. Treat like a dimen.
+                        \let\tikz@math@meaning=\tikz@math@meaning@dimen%
+                    \else%
+                        \let\tikz@math@meaning=\tikz@math@meaning@null%
+                    \fi%
+                \fi%
+            \fi%
+        \fi%
+    \fi%
+}%
+
+\def\tikz@math@firstoftwo#1#2{#1}%
+\def\tikz@math@secondoftwo#1#2{#2}%
+
+
+\def\tikz@math@getvarstring#1{%
+    \begingroup%
+        \escapechar=-1\relax%
+        \expandafter\tikz@math@@getvarstring\string#1\tikz@math}%
+
+\def\tikz@math@@getvarstring#1\tikz@math#2{%
+    \endgroup%
+    \def#2{#1}%
+}%
+
+\long\def\tikz@math@collecttosemicolon@other#1#2;{%
+    \def\tikz@math@collected{#2}#1}%
+\def\tikz@math@semicolon@other{;}%
+
+{\catcode`\;=13
+\long\gdef\tikz@math@collecttosemicolon@active#1#2;{%
+    \def\tikz@math@collected{#2}#1}%
+\gdef\tikz@math@semicolon@active{;}%
+}%
+
+
+\def\tikz@math@setvartype#1#2{%
+    \expandafter\let\csname tikz@math@var@vartype@\string#1\endcsname=#2%
+}%
+
+
+\def\tikz@math@getvartype#1#2{%
+    \def\tikz@math@marshal{\let#1=}%
+    \expandafter\tikz@math@marshal\csname
+    tikz@math@var@vartype@\string#2\endcsname%
+}%
+
+
+
+\def\tikz@math@ifvarcoordinate#1{%
+    \expandafter\ifx\csname
+    tikz@math@var@vartype@\string#1\endcsname\tikz@math@keyword@coordinate%
+        \let\tikz@math@next=\tikz@math@firstoftwo%
+    \else%
+        \let\tikz@math@next=\tikz@math@secondoftwo%
+    \fi%
+    \tikz@math@next%
+}%
+
+\def\tikz@math@ifvarinteger#1{%
+    \expandafter\ifx\csname
+    tikz@math@var@vartype@\string#1\endcsname\tikz@math@keyword@integer%
+        \let\tikz@math@next=\tikz@math@firstoftwo%
+    \else%
+        \let\tikz@math@next=\tikz@math@secondoftwo%
+    \fi%
+    \tikz@math@next%
+}%
+
+
+\def\tikz@math@setvarindexed#1{%
+    \expandafter\let\csname
+    tikz@math@var@subtype@\string#1\endcsname=\tikz@math@subtype@indexed%
+}%
+
+\def\tikz@math@clearvarindexed#1{%
+    \expandafter\let\csname tikz@math@var@subtype@\string#1\endcsname=\relax%
+}%
+
+\def\tikz@math@ifvarindexed#1{%
+    \expandafter\ifx\csname tikz@math@var@subtype@\string#1\endcsname\relax%
+        \let\tikz@math@next=\tikz@math@secondoftwo%
+    \else%
+        \let\tikz@math@next=\tikz@math@firstoftwo%
+    \fi%
+    \tikz@math@next%
+}%
+
+\def\tikz@math@stop{@}%
+
+\let\tikz@math@parse@hook@before=\pgfutil@empty
+\let\tikz@math@parse@hook@after=\pgfutil@empty
+
+\def\tikz@math{%
+    \ifnum\catcode`\;=13\relax%
+        \let\tikz@math@semicolon=\tikz@math@semicolon@active%
+        \let\tikz@math@collecttosemicolon=\tikz@math@collecttosemicolon@active%
+    \else%
+        \let\tikz@math@semicolon=\tikz@math@semicolon@other%
+        \let\tikz@math@collecttosemicolon=\tikz@math@collecttosemicolon@other%
+    \fi%
+    \tikz@math@parse@hook@before%
+    \tikz@@math}%
+
+
+
+
+\long\def\tikz@@math#1{%
+    \def\tikz@math@marshal{\tikz@math@parse#1}%
+    \expandafter\expandafter\expandafter\tikz@math@marshal\expandafter\tikz@math@stop\tikz@math@semicolon}%
+
+\def\tikz@math@parse{\pgfutil@ifnextchar\bgroup\tikz@math@@parse@bgroup\tikz@math@@parse@nobgroup}%
+
+
+\def\tikz@math@@parse@bgroup{%
+    \tikz@math@collecttosemicolon{%
+        % MW: Don't know how reliable this test is.
+        \ifx\pgf@selectfontorig\tikz@math@undefined%
+            \begingroup\tikz@math@collected\endgroup%
+        \else%
+            \begingroup\csname nullfont\endcsname\tikz@math@collected\endgroup%
+        \fi\tikz@math@parse}}%
+
+
+
+\def\tikz@math@@parse@nobgroup{\tikz@math@collecttosemicolon{\tikz@math@@parse@@nobgroup}}%
+
+\def\tikz@math@@parse@@nobgroup{%
+    \let\tikz@math@tmp=\tikz@math@collected%
+    \ifx\tikz@math@tmp\tikz@math@stop%
+        \def\tikz@math@next{\expandafter\tikz@math@parse@finish\tikz@math@semicolon}%
+    \else%
+        \def\tikz@math@next{\expandafter\expandafter\expandafter\tikz@math@parse@keyword@check\expandafter\tikz@math@tmp\tikz@math@semicolon}%
+    \fi%
+    \tikz@math@next%
+}%
+
+\def\tikz@math@parse@finish{%
+    \tikz@math@collecttosemicolon{\tikz@math@parse@hook@after}%
+}%
+
+
+
+\newif\iftikz@math@let
+\def\tikz@math@parse@keyword@check#1{%
+    \tikz@math@letfalse%
+    \tikz@math@getmeaning{#1}%
+    \ifx\tikz@math@meaning\tikz@math@meaning@null%
+        \let\tikz@math@next=\tikz@math@parse@keyword%
+    \else%
+        \let\tikz@math@next=\tikz@math@parse@nokeyword%
+    \fi%
+    \tikz@math@next#1}%
+
+
+\def\tikz@math@parse@keyword{%
+    \let\tikz@math@parsed@keyword=\pgfutil@empty%
+    \futurelet\tikz@math@parse@token\tikz@math@@parse@keyword}%
+
+\def\tikz@math@@parse@keyword{%
+    \ifx\tikz@math@parse@token\pgfutil@sptoken%
+        \let\tikz@math@next=\tikz@math@@@parse@keyword%
+    \else%
+        \ifx\tikz@math@parse@token(%
+            \let\tikz@math@next=\tikz@math@@@parse@keyword%
+        \else%
+            \ifx\tikz@math@parse@token\bgroup%
+                \let\tikz@math@next=\tikz@math@@@parse@keyword%
+            \else%
+                \let\tikz@math@next=\tikz@math@@@@parse@keyword%
+            \fi%
+        \fi%
+    \fi%
+    \tikz@math@next}%
+
+\def\tikz@math@error#1{\pgfutil@packageerror{tikz}{tikz math library: #1}{}}%
+
+\def\tikz@math@@@parse@keyword{%
+        \expandafter\ifx\csname tikz@math@process@keyword@\tikz@math@parsed@keyword\endcsname\relax%
+            \expandafter\ifx\csname pgfmath\tikz@math@parsed@keyword\endcsname\relax%
+                    \tikz@math@error{Unknown function or keyword '\tikz@math@parsed@keyword'}%
+            \else%
+                \def\tikz@math@next{\tikz@math@collecttosemicolon{\tikz@math@function@noassign}}%
+            \fi%
+        \else%
+            \expandafter\def\expandafter\tikz@math@next\expandafter{\csname tikz@math@process@keyword@\tikz@math@parsed@keyword\endcsname}%
+        \fi%
+    \tikz@math@next}%
+
+\def\tikz@math@@@@parse@keyword#1{%
+    \edef\tikz@math@parsed@keyword{\tikz@math@parsed@keyword#1}%
+    \futurelet\tikz@math@parse@token\tikz@math@@parse@keyword%
+}%
+
+\def\tikz@math@function@noassign{%
+    \pgfmathparse{\tikz@math@parsed@keyword\tikz@math@collected}%
+    \tikz@math@parse%
+}%
+
+
+
+
+\def\tikz@math@process@keyword@count{\tikz@math@collecttosemicolon{\tikz@math@process@keyword@@count}}%
+\def\tikz@math@process@keyword@@count{%
+\def\tikz@math@assign@register{\csname newcount\endcsname}%
+\expandafter\tikz@math@gobblespaces\expandafter\tikz@math@process@registers\tikz@math@collected,@,}%
+
+\def\tikz@math@process@keyword@length{\tikz@math@collecttosemicolon{\tikz@math@process@keyword@@length}}%
+\def\tikz@math@process@keyword@@length{%
+\def\tikz@math@assign@register{\csname newdimen\endcsname}%
+\expandafter\tikz@math@gobblespaces\expandafter\tikz@math@process@registers\tikz@math@collected,@,}%
+
+
+\def\tikz@math@process@registers#1#2,{%
+    \def\tikz@math@var{#1}%
+    \ifx\tikz@math@var\tikz@math@stop%
+        \let\tikz@math@next=\tikz@math@parse%
+    \else%
+        \tikz@math@assign@register#1\relax%
+        \let\tikz@math@next=\tikz@math@process@registers%
+    \fi%
+    \tikz@math@gobblespaces\tikz@math@next%
+}%
+
+
+\def\tikz@math@process@keyword@if#1then{%
+    \def\tikz@math@if@condition{#1}%
+    \tikz@math@gobblespaces\tikz@math@parse@if@iftrue%
+}%
+\def\tikz@math@parse@if@iftrue#1{%
+    \def\tikz@math@if@trueaction{#1}%
+    \pgfutil@ifnextchar e{\tikz@math@parse@else}{\tikz@math@if@doif}}%
+
+\def\tikz@math@parse@else else{\tikz@math@gobblespaces\tikz@math@if@doifelse}%
+
+\def\tikz@math@if@doif{\tikz@math@collecttosemicolon{\tikz@math@if@@doif}}%
+
+\def\tikz@math@if@@doif{%
+    \pgfmathparse{\tikz@math@if@condition}%
+    \ifpgfmathfloatparseactive%
+        \pgfmathfloattofixed{\pgfmathresult}%
+    \fi%
+    \ifdim\pgfmathresult pt=0pt\relax%
+    \else%
+        \expandafter\tikz@math\expandafter{\tikz@math@if@trueaction}%
+    \fi%
+    \tikz@math@parse%
+}%
+\def\tikz@math@if@doifelse{\tikz@math@collecttosemicolon{\tikz@math@if@@doifelse}}%
+\def\tikz@math@if@@doifelse{%
+    \pgfmathparse{\tikz@math@if@condition}%
+    \ifpgfmathfloatparseactive%
+        \pgfmathfloattofixed{\pgfmathresult}%
+    \fi%
+    \let\tikz@math@if@falseaction=\tikz@math@collected%
+    \ifdim\pgfmathresult pt=0pt\relax%
+        \expandafter\tikz@math\expandafter{\tikz@math@if@falseaction}%
+    \else%
+        \expandafter\tikz@math\expandafter{\tikz@math@if@trueaction}%
+    \fi%
+    \tikz@math@parse%
+}%
+\def\tikz@math@process@keyword@let{%
+    \tikz@math@lettrue%
+    \tikz@math@gobblespaces\tikz@math@parse@nokeyword%
+}%
+
+
+\def\tikz@math@parse@nokeyword#1{%
+    \def\tikz@math@var{#1}%
+    \tikz@math@getvarstring{#1}\tikz@math@varstring%
+    \let\tikz@math@vartype=\pgfutil@empty%
+    \ifx\tikz@math@var\tikz@math@stop%
+        \let\tikz@math@next=\tikz@math@parse@finish%
+    \else%
+         \ifx\tikz@math@semicolon\tikz@math@var%
+            \let\tikz@math@next=\tikz@math@parse%
+            \else%
+                \let\tikz@math@next=\tikz@math@parse@index@check%
+            \fi%
+    \fi%
+    \tikz@math@next}%
+
+\def\tikz@math@parse@index@check{%
+    \pgfutil@ifnextchar={\tikz@math@parse@noindex}{\tikz@math@parse@index}}%
+
+\def\tikz@math@parse@noindex{%
+    \expandafter\tikz@math@clearvarindexed\tikz@math@var%
+    \let\tikz@math@current@index=\pgfutil@empty%
+    \tikz@math@parse@afterindex%
+}%
+
+\def\tikz@math@parse@index#1{%
+    \def\tikz@math@tmp{#1}%
+    \expandafter\tikz@math@setvarindexed\tikz@math@var% {}
+    \edef\tikz@math@current@index{#1}%
+    \tikz@math@parse@afterindex%
+}%
+\def\tikz@math@parse@afterindex#1={\tikz@math@gobblespaces\tikz@math@parse@assignment}%
+
+\def\tikz@math@parse@assignment{\tikz@math@collecttosemicolon{\tikz@math@parse@@assignment}}%
+\def\tikz@math@parse@@assignment{%
+    \expandafter\expandafter\expandafter\tikz@math@doassignment\expandafter\expandafter\expandafter%
+        {\expandafter\tikz@math@var\expandafter}\expandafter{\tikz@math@collected}%
+    \tikz@math@parse%
+}%
+
+\def\tikz@math@dollar@char{$}%
+\def\tikz@math@dollar@char{$}% For annoying syntax highlighters
+
+\def\tikz@math@doassignment#1#2{%
+    \tikz@math@ifvarcoordinate{#1}{%
+        \def\tikz@math@var{#1}% Unfortunately, we must do this again.
+        \tikz@math@getvarstring{#1}\tikz@math@varstring% And this
+        \expandafter\pgfutil@in@\tikz@math@dollar@char{#2}%
+        \edef\tikz@math@expression{#2}%
+        \ifpgfutil@in@%
+            \expandafter\tikz@scan@one@point\expandafter\tikz@math@assign@coordinate\tikz@math@expression%
+        \else%
+            \expandafter\ifx\csname tikz@library@calc@loaded\endcsname\relax%
+                \expandafter\tikz@scan@one@point\expandafter\tikz@math@assign@coordinate\tikz@math@expression%
+            \else%
+                \expandafter\tikz@scan@one@point\expandafter\tikz@math@assign@coordinate\expandafter%
+                (\expandafter$\tikz@math@expression$)%
+            \fi%
+        \fi%
+    }{%
+        \iftikz@math@let% Not really a let
+            \ifx\tikz@math@current@index\pgfutil@empty%
+                \edef#1{#2}%
+            \else%
+                \edef\tikz@math@tmp{#2}%
+                \expandafter\expandafter\expandafter\tikz@math@assign@index\expandafter\expandafter\expandafter%
+                    {\expandafter\tikz@math@varstring\expandafter}\expandafter{\tikz@math@tmp}%
+            \fi%
+            \tikz@math@letfalse%
+        \else%
+            \ifx\tikz@math@current@index\pgfutil@empty%
+                \tikz@math@getmeaning{#1}%
+                \ifx\tikz@math@meaning\tikz@math@meaning@dimen%
+                    \pgfmathsetlength{#1}{#2}%
+                    \let\tikz@math@last@assigned@value=\pgfmathresult%
+                \else%
+                    \ifx\tikz@math@meaning\tikz@math@meaning@count%
+                        \pgfmathsetcount{#1}{#2}%
+                        \let\tikz@math@last@assigned@value=\pgfmathresult%
+                    \else%
+                        \tikz@math@ifvarinteger{#1}{\pgfmathparse{int(#2)}}{\pgfmathparse{#2}}%
+                        \let\tikz@math@last@assigned@value=\pgfmathresult%
+                        \let#1=\pgfmathresult%
+                    \fi%
+                \fi%
+            \else%
+                \tikz@math@ifvarinteger{#1}{\pgfmathparse{int(#2)}}{\pgfmathparse{#2}}%
+                \expandafter\tikz@math@assign@index\expandafter{\tikz@math@varstring}\pgfmathresult%
+                \let\tikz@math@last@assigned@value=\pgfmathresult%
+            \fi%
+        \fi%
+    }%
+}%
+
+
+
+\def\tikz@math@assign@index#1#2{%
+    \expandafter\def\csname#1\endcsname##1{\csname
+    tikz@math@var@indexed@#1@##1\endcsname}%
+    \expandafter\edef\csname
+    tikz@math@var@indexed@#1@\tikz@math@current@index\endcsname{#2}\relax%
+}%
+
+
+
+\def\tikz@math@assign@coordinate#1{%
+    \pgf@process{#1}%
+    \ifx\tikz@math@current@index\pgfutil@empty%
+        \expandafter\edef\csname\tikz@math@varstring\endcsname{\the\pgf@x,\the\pgf@y}%
+        \expandafter\edef\csname\tikz@math@varstring x\endcsname{\the\pgf@x}%
+        \expandafter\edef\csname\tikz@math@varstring y\endcsname{\the\pgf@y}%
+    \else%
+        \expandafter\tikz@math@assign@index\expandafter{\tikz@math@varstring}{\the\pgf@x,\the\pgf@y}%
+        \expandafter\tikz@math@assign@index\expandafter{\tikz@math@varstring x}{\the\pgf@x}%
+        \expandafter\tikz@math@assign@index\expandafter{\tikz@math@varstring y}{\the\pgf@y}%
+    \fi%
+}%
+
+
+
+\def\tikz@math@keyword@coordinate{coordinate}%
+\def\tikz@math@process@keyword@coordinate{%
+    \let\tikz@math@vartype=\tikz@math@keyword@coordinate%
+    \tikz@math@gobblespaces\tikz@math@process@vartypes%
+}%
+
+\def\tikz@math@keyword@integer{integer}%
+\def\tikz@math@process@keyword@integer{%
+    \let\tikz@math@vartype=\tikz@math@keyword@integer%
+    \tikz@math@gobblespaces\tikz@math@process@vartypes%
+}%
+\def\tikz@math@process@keyword@int{%
+    \tikz@math@process@keyword@integer%
+}%
+
+\def\tikz@math@keyword@real{real}%
+\def\tikz@math@process@keyword@real{%
+    \let\tikz@math@vartype=\tikz@math@keyword@real%
+    \tikz@math@gobblespaces\tikz@math@process@vartypes%
+}%
+
+\def\tikz@math@process@keyword@point{\tikz@math@process@keyword@coordinate}%
+
+
+\def\tikz@math@process@vartypes{\tikz@math@collecttosemicolon{\tikz@math@process@@vartypes}}%
+
+\def\tikz@math@process@@vartypes{%
+    \expandafter\tikz@math@@process@vartypes\tikz@math@collected,@,\tikz@math%
+}%
+
+\def\tikz@math@@process@vartypes#1#2,{%
+    \def\tikz@math@var{#1}%
+    \tikz@math@getvarstring{#1}\tikz@math@varstring%
+    \ifx\tikz@math@var\tikz@math@stop%
+        \let\tikz@math@next=\tikz@math@@@process@vartypes%
+    \else%
+        \expandafter\tikz@math@setvartype\tikz@math@var\tikz@math@vartype%
+        \def\tikz@math@next{\tikz@math@gobblespaces\tikz@math@@process@vartypes}%
+    \fi%
+    \tikz@math@next%
+}%
+
+\def\tikz@math@process@keyword@print{\tikz@math@collecttosemicolon{\tikz@math@process@keyword@@print}}%
+\def\tikz@math@process@keyword@@print{%
+    \begingroup\tikz@math@collected\endgroup\tikz@math@parse%
+}%
+
+\def\tikz@math@@@process@vartypes#1\tikz@math{%
+    \tikz@math@parse%
+}%
+
+\newcount\tikz@math@for@depth
+
+\def\tikz@math@for@namedef#1{\expandafter\def\csname tikz@math@for@def@#1@\the\tikz@math@for@depth\endcsname}%
+\def\tikz@math@for@nameedef#1{\expandafter\edef\csname tikz@math@for@def@#1@\the\tikz@math@for@depth\endcsname}%
+\def\tikz@math@for@namelet#1{\expandafter\let\csname tikz@math@for@def@#1@\the\tikz@math@for@depth\endcsname}%
+
+\def\tikz@math@for@namegetvalue#1#2{%
+    \def\tikz@math@marshal{\let#2=}%
+    \expandafter\tikz@math@marshal\csname tikz@math@for@def@#1@\the\tikz@math@for@depth\endcsname}%
+
+\def\tikz@math@process@keyword@for{%
+    \tikz@math@for%
+}%
+
+\def\tikz@math@for@external{%
+    \ifnum\catcode`\;=13\relax%
+        \let\tikz@math@semicolon=\tikz@math@semicolon@active%
+        \let\tikz@math@collecttosemicolon=\tikz@math@collecttosemicolon@active%
+    \else%
+        \let\tikz@math@semicolon=\tikz@math@semicolon@other%
+        \let\tikz@math@collecttosemicolon=\tikz@math@collecttosemicolon@other%
+    \fi
+    \advance\tikz@math@for@depth by1\relax%
+    \tikz@math@for@namedef{execute}{\tikz@math@for@external@execute}%
+    \tikz@math@for@namedef{finished}{\relax}%
+    \tikz@math@gobblespaces\tikz@math@for@parsevar}%
+
+\def\tikz@math@for@external@execute#1{#1}%
+
+\def\tikz@math@for{%
+    \advance\tikz@math@for@depth by1\relax%
+    \tikz@math@for@namedef{execute}{\tikz@math}%
+    \tikz@math@for@namedef{finished}{\tikz@math@parse}%
+    \tikz@math@gobblespaces\tikz@math@for@parsevar}%
+
+
+\def\tikz@math@for@parsevar#1{%
+    \tikz@math@for@namedef{var}{#1}%
+    \tikz@math@for@parsein}%
+
+\def\tikz@math@getindex#1{%
+    \tikz@math@@getindex#1\tikz@math@getindex\tikz@math@@getindex%
+}%
+
+\def\tikz@math@@getindex#1#2\tikz@math@@getindex{#1}%
+
+\def\tikz@math@for@parsein#1in{%
+    \def\tikz@math@tmp{#1}%
+    \ifx\tikz@math@tmp\pgfutil@empty%
+        \tikz@math@for@namedef{index}{}%
+    \else%
+        \tikz@math@for@nameedef{index}{\tikz@math@getindex{#1}}%
+    \fi%
+    \tikz@math@gobblespaces\tikz@math@for@parselist%
+}%
+
+
+\long\def\tikz@math@for@parselist#1{%
+    \edef\tikz@math@for@list{#1}%
+    \tikz@math@gobblespaces{%
+      \tikz@math@collecttosemicolon{\tikz@math@for@parseaction}}}%
+
+\def\tikz@math@for@parseaction{%
+    \tikz@math@for@namedef{prevvalue}{}%
+    \tikz@math@for@namedef{prevprevvalue}{}%
+    \tikz@math@for@namelet{action}=\tikz@math@collected%
+    \expandafter\tikz@math@for@scan\tikz@math@for@list,\tikz@math,\tikz@@math%
+}%
+
+\def\tikz@math@token{\tikz@math}%
+
+
+\def\tikz@math@for@scan#1,{%
+    \def\tikz@math@for@value{#1}%
+    \ifx\tikz@math@for@value\tikz@math@token%
+        \let\tikz@math@next=\tikz@math@for@scan@end%
+    \else%
+        \ifx\tikz@math@for@value\pgfutil@empty%
+            \let\tikz@math@next=\tikz@math@for@scan@end%
+        \else%
+            \pgfutil@in@{...}{#1}%
+            \ifpgfutil@in@%
+                \let\tikz@math@next=\tikz@math@for@scan@dots%
+            \else%
+                \tikz@math@for@namegetvalue{var}{\tikz@math@var}%
+                \tikz@math@for@namegetvalue{index}{\tikz@math@current@index}%
+                \tikz@math@for@namegetvalue{action}{\tikz@math@action}%
+                \expandafter\tikz@math@getvarstring\expandafter{\tikz@math@var}\tikz@math@varstring%
+                \expandafter\tikz@math@doassignment\expandafter{\tikz@math@var}{#1}%
+                \tikz@math@for@namelet{value}=\tikz@math@last@assigned@value%
+                \tikz@math@for@namegetvalue{execute}{\tikz@math@execute}%
+                \expandafter\tikz@math@execute\expandafter{\tikz@math@action}%
+                \tikz@math@for@namegetvalue{prevvalue}{\tikz@math@prevvalue}%
+                \tikz@math@for@namelet{prevprevvalue}=\tikz@math@prevvalue%
+                \tikz@math@for@namegetvalue{value}{\tikz@math@value}%
+                \tikz@math@for@namelet{prevvalue}=\tikz@math@value%
+                \let\tikz@math@next=\tikz@math@for@scan%
+            \fi%
+        \fi%
+    \fi%
+    \tikz@math@next%
+}%
+
+\newdimen\tikz@math@dimen
+
+\def\tikz@math@for@scan@dots#1,{%
+    \pgfmathparse{#1}\let\tikz@math@value=\pgfmathresult%
+    \tikz@math@for@nameedef{endvalue}{\tikz@math@value}%
+    \tikz@math@for@namegetvalue{prevvalue}{\tikz@math@prevvalue}%
+    \tikz@math@for@namegetvalue{prevprevvalue}{\tikz@math@prevprevvalue}%
+    \tikz@math@dimen=\tikz@math@prevvalue pt\relax%
+    \ifx\tikz@math@prevprevvalue\pgfutil@empty%
+        \ifdim\tikz@math@prevvalue pt<\tikz@math@value pt\relax%%
+            \def\tikz@math@step{1pt}%
+        \else%
+            \def\tikz@math@step{-1pt}%
+        \fi%
+    \else%
+        \tikz@math@dimen=\tikz@math@prevvalue pt\relax%
+        \advance\tikz@math@dimen by-\tikz@math@prevprevvalue pt\relax%
+        \edef\tikz@math@step{\the\tikz@math@dimen}%
+    \fi%
+    \ifdim\tikz@math@step<0pt\relax%
+        \tikz@math@for@namedef{comparitor}{<}%
+    \else%
+        \tikz@math@for@namedef{comparitor}{>}%
+    \fi%
+    \tikz@math@for@nameedef{step}{\tikz@math@step}%
+    \tikz@math@for@doloop%
+}%
+
+\def\tikz@math@for@doloop{%
+    \tikz@math@for@namegetvalue{prevvalue}{\tikz@math@prevvalue}%
+    \tikz@math@for@namegetvalue{step}{\tikz@math@step}%
+    \tikz@math@for@namegetvalue{comparitor}{\tikz@math@comparitor}%
+    \tikz@math@for@namegetvalue{endvalue}{\tikz@math@endvalue}%
+    \tikz@math@dimen=\tikz@math@prevvalue pt\relax%
+    \advance\tikz@math@dimen by\tikz@math@step\relax%
+    \ifdim\tikz@math@dimen\tikz@math@comparitor\tikz@math@endvalue pt\relax%
+        \let\tikz@math@next=\tikz@math@for@endloop%
+    \else%
+        \tikz@math@for@nameedef{value}{\pgfmath@tonumber{\tikz@math@dimen}}%
+        \tikz@math@for@namegetvalue{var}{\tikz@math@var}%
+        \expandafter\tikz@math@getvarstring\expandafter{\tikz@math@var}\tikz@math@varstring%
+        \tikz@math@for@namegetvalue{index}{\tikz@math@current@index}%
+        \tikz@math@for@namegetvalue{action}{\tikz@math@action}%
+        \tikz@math@for@namegetvalue{value}{\tikz@math@value}%
+        \expandafter\expandafter\expandafter\tikz@math@doassignment\expandafter\expandafter\expandafter%
+            {\expandafter\tikz@math@var\expandafter}\expandafter{\tikz@math@value}%
+        \tikz@math@for@namegetvalue{execute}{\tikz@math@execute}%
+        \expandafter\tikz@math@execute\expandafter{\tikz@math@action}%
+        \tikz@math@for@namegetvalue{prevvalue}{\tikz@math@prevvalue}%
+        \tikz@math@for@namelet{prevprevvalue}=\tikz@math@prevvalue%
+        \tikz@math@for@namegetvalue{value}{\tikz@math@value}%
+        \tikz@math@for@namelet{prevvalue}=\tikz@math@value%
+        \let\tikz@math@next=\tikz@math@for@doloop%
+    \fi%
+    \tikz@math@next%
+}%
+
+\def\tikz@math@for@endloop{%
+\tikz@math@for@scan}%
+
+
+
+
+\def\tikz@math@for@scan@end#1\tikz@@math{%
+\tikz@math@for@namegetvalue{finished}{\tikz@math@next}%
+\advance\tikz@math@for@depth by-1\relax%
+\tikz@math@next}%
+
+
+
+
+
+\def\tikz@math@process@keyword@return{%
+    \tikz@math@collecttosemicolon{\pgfmathparse{\tikz@math@collected}\tikz@math@parse}}%
+
+\def\tikz@math@process@keyword@function{\tikz@math@collecttosemicolon{\tikz@math@process@keyword@@function}}%
+\def\tikz@math@process@keyword@@function{%
+    \let\tikz@math@function@name=\pgfutil@empty%
+    \let\tikz@math@function@arguments=\pgfutil@empty%
+    \let\tikz@math@function@body=\pgfutil@empty%
+    \expandafter\expandafter\expandafter\tikz@math@@declarefunction\expandafter\tikz@math@collected\tikz@math@semicolon%
+}%
+
+\def\tikz@math@@declarefunction{%
+    \pgfutil@ifnextchar\bgroup\tikz@math@@@collectbody\tikz@math@@@declarefunction}%
+
+
+\def\tikz@math@@@declarefunction#1{%
+    \if#1(%)
+        \let\tikz@math@next=\tikz@math@@@collectarguments%
+    \else%
+        \expandafter\def\expandafter\tikz@math@function@name\expandafter{\tikz@math@function@name#1}%
+        \let\tikz@math@next=\tikz@math@@declarefunction%
+    \fi%
+    \tikz@math@next%
+}%
+\def\tikz@math@@@collectarguments#1){%
+    \def\tikz@math@function@arguments{#1}%
+    \tikz@math@@declarefunction%
+}%
+
+\newtoks\tikz@math@toks
+\tikz@math@toks={#}%
+\edef\tikz@math@char@hash{\the\tikz@math@toks}%
+\tikz@math@toks={}%
+
+\def\tikz@math@@@collectbody{\tikz@math@collecttosemicolon{\tikz@math@@@@collectbody}}%
+
+\def\tikz@math@@@@collectbody{%
+    \tikz@math@toks={}%
+    \c@pgf@counta=0\relax%
+    \ifx\tikz@math@function@arguments\pgfutil@empty%
+    \else%
+        \expandafter\tikz@math@createargumentlist\tikz@math@function@arguments,,%
+        \expandafter\tikz@math@addto@toks\expandafter{\tikz@math@collected}%
+    \fi%
+    \edef\tikz@math@local@temp{%
+        \noexpand\pgfmathdeclarefunction{\tikz@math@function@name}{\the\c@pgf@counta}%
+        {\noexpand\def\noexpand\return{0}\noexpand\tikz@math{\the\tikz@math@toks}}%
+    }%
+    \tikz@math@local@temp
+    \tikz@math@parse%
+}%
+
+\def\tikz@math@addto@toks#1{%
+    \expandafter\tikz@math@toks\expandafter{\the\tikz@math@toks#1}}%
+
+\def\tikz@math@createargumentlist{%
+    \pgfutil@ifnextchar
+    x\tikz@math@@createargumentlist\tikz@math@@createargumentlist}%
+
+\def\tikz@math@comma{,}%
+\def\tikz@math@@createargumentlist#1,{%
+    \def\tikz@math@tmp{#1}%
+    \ifx\tikz@math@tmp\pgfutil@empty%
+        \let\tikz@math@next=\relax%
+    \else%
+        \advance\c@pgf@counta by1\relax%
+        \tikz@math@addto@toks{#1=}%
+        \expandafter\expandafter\expandafter\tikz@math@addto@toks\expandafter\expandafter\expandafter%
+            {\expandafter\tikz@math@char@hash\the\c@pgf@counta;}%
+        \let\tikz@math@next=\tikz@math@createargumentlist%
+    \fi%
+    \tikz@math@next%
+}%
+
+
+
+\let\tikzmath=\tikz@math
+\tikzset{evaluate/.code={\tikz@math{#1}}}%
+\let\tikzmathfor=\tikz@math@for@external
+
+
+\catcode`\@=\tikz@math@at@catcode\relax

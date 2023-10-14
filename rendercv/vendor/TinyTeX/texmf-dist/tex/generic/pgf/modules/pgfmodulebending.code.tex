@@ -1,0 +1,356 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfmodulebending.code.tex}
+
+
+%
+% This file defines commands for drawing bending arrows and lines.
+%
+
+\usepgfmodule{nonlineartransformations}%
+\usepgflibrary{curvilinear}%
+
+
+% Configuration options for arrow tips:
+
+\pgfkeys{
+  /pgf/arrow keys/flex/.code=\pgfarrowsaddtooptions{\pgf@arrows@the@rigidity#1pt\let\pgf@arrow@flex@mode\pgf@arrow@mode@is@flex},
+  /pgf/arrow keys/flex/.default=1,
+  /pgf/arrow keys/flex'/.code=\pgfarrowsaddtooptions{\pgf@arrows@the@rigidity#1pt\let\pgf@arrow@flex@mode\pgf@arrow@mode@is@flex@prime},
+  /pgf/arrow keys/flex'/.default=1,
+  /pgf/arrow
+  keys/bend/.code=\pgfarrowsaddtooptions{\let\pgf@arrow@flex@mode\pgf@arrow@mode@is@bend},
+}%
+
+
+\def\pgf@arrow@mode@is@flex{1}%
+\def\pgf@arrow@mode@is@flex@prime{2}%
+\def\pgf@arrow@mode@is@bend{3}%
+
+\newdimen\pgf@arrows@the@rigidity
+
+%
+%
+% Handle the end of a curve
+%
+%
+
+% First, the preparation. This is, essentially, setting up the
+% nonlinear transformation
+
+\def\pgf@prep@curveend{
+  \pgftransformreset%
+  \pgfsetcurvilinearbeziercurve{\pgfpointlastonpath}{\pgfpointsecondlastonpath}{\pgfpointthirdlastonpath}{\pgfpointfourthlastonpath}
+}%
+
+% Second, the shortening.
+
+\def\pgf@do@shorten@curvedend{%
+  \expandafter\expandafter\expandafter\pgf@do@shorten@curvedend@unpack\expandafter\pgfpointfourthlastonpath\pgfpointthirdlastonpath%
+}%
+\def\pgf@do@shorten@curvedend@unpack\pgfqpoint#1#2\pgfqpoint#3#4{%
+  \pgf@process{\pgfcurvilineardistancetotime{\pgf@path@shortening@distance}}%
+  % Compute new curve:
+  \pgfpointcurveattime{\pgf@x}{\pgfpointlastonpath}{\pgfpointsecondlastonpath}{\pgfpointthirdlastonpath}{\pgfpointfourthlastonpath}%
+  % \pgfx/y and \pgf xa/xb already correct. Need to setup remaining vector...
+  \pgf@xb#3%
+  \pgf@yb#4%
+  \pgf@xb\pgf@time@t\pgf@xb%
+  \pgf@yb\pgf@time@t\pgf@yb%
+  \advance\pgf@xb by\pgf@time@s\pgf@xc%
+  \advance\pgf@yb by\pgf@time@s\pgf@yc%
+  \edef\pgfprocessresultsubpathsuffix{%
+    \expandafter\noexpand\pgfsubpathfourthlasttoken{#1}{#2}%
+    \noexpand\pgfsyssoftpath@curvetosupportatoken{\the\pgf@xb}{\the\pgf@yb}%
+    \noexpand\pgfsyssoftpath@curvetosupportbtoken{\the\pgf@xa}{\the\pgf@ya}%
+    \noexpand\pgfsyssoftpath@curvetotoken{\the\pgf@x}{\the\pgf@y}}%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgfprocessresultpathsuffix%
+  \expandafter\expandafter\expandafter{\expandafter\pgfprocessresultsubpathprefix\pgfprocessresultsubpathsuffix}%
+}%
+
+% Third, the drawing
+
+\def\pgf@do@draw@curvedend{%
+  \pgf@do@draw@curved\pgf@end@tip@sequence%
+}%
+
+\def\pgf@do@draw@curved#1{%
+  {%
+    \pgftransformreset%
+    \pgf@xb\pgf@arrow@tip@total@length% xb will keep track of the total length
+    \let\pgf@arrow@handle\pgf@draw@curved%
+    \let\pgf@arrow@handle@dot\relax%
+    #1%
+  }%
+}%
+
+\def\pgf@draw@curved#1#2{%
+  % Prepare:
+  {%
+    \pgfarrows@getid{#1}{#2}%
+    % Do shift:
+    \expandafter\expandafter\expandafter\pgf@arrow@drawer@rigid@shift\csname pgf@ar@ends@\pgf@arrow@id\endcsname%
+    \expandafter\let\expandafter\pgf@arrow@bending@mode\csname pgf@ar@bending@mode@#1\endcsname%
+    \ifx\pgf@arrow@bending@mode\pgfutil@empty\let\pgf@arrow@flex@mode\pgf@arrow@mode@is@flex\fi%
+    % do swap:
+    {%
+      \csname pgf@ar@saves@\pgf@arrow@id\endcsname%
+      \ifcase\pgf@arrow@flex@mode\relax%
+        \expandafter\expandafter\expandafter\pgf@arrow@drawer@rigid\csname pgf@ar@visual@\pgf@arrow@id\endcsname% like flex
+      \or%
+        \expandafter\expandafter\expandafter\pgf@arrow@drawer@rigid\csname pgf@ar@visual@\pgf@arrow@id\endcsname%
+      \or%
+        \expandafter\expandafter\expandafter\pgf@arrow@drawer@rigid\csname pgf@ar@ends@\pgf@arrow@id\endcsname%
+      \or%
+        \pgf@arrow@drawer@bend%
+      \fi%
+      % hull points inside the above
+    }%
+  \expandafter}%
+  % Transform to next tip:
+  \expandafter\pgf@xb\the\pgf@xb%
+}%
+\def\pgf@falsetext{false}%
+
+\def\pgf@arrow@drawer@rigid@shift#1#2#3{% tip end, back end, line end, sep
+  % Let xa be the actual back end of the current arrow plus the back end:
+  \advance\pgf@xb by#2%
+  \pgf@xa\pgf@xb%
+  % Update the xb:
+  \pgf@x#1%
+  \advance\pgf@x by\pgfarrowsep%
+  \advance\pgf@xb by-\pgf@x%
+}%
+
+
+\def\pgf@arrow@drawer@bend{%
+  \pgftransformnonlinear{\pgf@arrow@bending@mode{\pgf@x}{\pgf@y}}
+  \pgftransformscale{-1}%
+  \pgftransformxshift{-\pgf@xa}%
+  % Do slant:
+  \ifdim\pgfarrows@slant pt=0pt%
+  \else%
+    \pgftransformxslant{\pgfarrows@slant}%
+  \fi%
+  \ifpgfarrowswap%
+    \pgftransformyscale{-1}%
+  \fi%
+  {%
+    \pgf@relevantforpicturesizefalse%
+    \pgfscope%
+      \pgf@arrows@color@setup%
+      \csname pgf@ar@inst@code@\pgf@arrow@id\endcsname%
+    \endpgfscope%
+  }%
+  \pgf@arrows@bending@hull%
+}%
+
+\def\pgf@arrow@drawer@rigid#1#2#3{% (rigid) start, (rigid) end, dummy
+  % Compute the rigid positions:
+  \pgf@x#1% start
+  \pgf@y#2% flexibility*(end-start) + start
+  \advance\pgf@y by-\pgf@x%
+  \pgf@y\pgf@sys@tonumber\pgf@arrows@the@rigidity\pgf@y%
+  \advance\pgf@y by\pgf@x%
+  % Are they equal?
+  \ifdim\pgf@x=\pgf@y%
+    % Yes, do tangent:
+    \pgf@bending@do@tangent%
+  \else%
+    \pgf@bending@do@flex%
+  \fi%
+  \pgf@xc#1%
+  \pgf@xc-\pgf@xc%
+  \pgftransformxshift{+\pgf@xc}%
+  % Do slant:
+  \ifdim\pgfarrows@slant pt=0pt%
+  \else%
+    \pgftransformxslant{\pgfarrows@slant}%
+  \fi%
+  % do swap:
+  \ifpgfarrowswap%
+    \pgftransformyscale{-1}%
+  \fi%
+  \pgfscope%
+    \pgf@arrows@color@setup%
+    \pgflowlevelsynccm\csname pgf@ar@cache@\pgf@arrow@id\endcsname%
+  \endpgfscope%
+  \pgf@arrows@rigid@hull%
+}%
+
+\def\pgf@bending@do@tangent{%
+  \pgf@xb\pgf@xa%
+  \advance\pgf@xb by-\pgf@x%
+  \pgfcurvilineardistancetotime{\pgf@xb}%
+  \pgf@xb\pgf@x%
+  % Compute points:
+  \ifdim\pgf@xb=0pt%
+    \pgf@bending@possible@degenerate%
+  \else%
+    \pgf@bending@do@tangent@normal%
+  \fi%
+  \pgf@ya-\pgf@y%
+  \pgfsettransformentries%
+    {\pgf@sys@tonumber\pgf@x}{\pgf@sys@tonumber\pgf@y}%
+    {\pgf@sys@tonumber\pgf@ya}{\pgf@sys@tonumber\pgf@x}{\pgf@xc}{\pgf@yc}%
+}%
+
+\def\pgf@bending@do@tangent@normal{%
+  \pgfpointcurveattime{\pgf@xb}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}%
+  \pgf@xc\pgf@x% save
+  \pgf@yc\pgf@y% save
+  % compute normal:
+  \advance\pgf@xb by-\pgf@xa%
+  \advance\pgf@yb by-\pgf@ya%
+  \pgf@process{\pgfpointnormalised{\pgf@x=\pgf@xb\pgf@y=\pgf@yb}}
+}%
+
+\def\pgf@bending@possible@degenerate{%
+  \ifx\pgf@curvilinear@line@a\pgf@curvilinear@line@b% degenerate!
+    \ifx\pgf@curvilinear@line@a\pgf@curvilinear@line@c% double degenerate!
+      \let\pgf@ref\pgf@curvilinear@line@d%
+    \else
+      \let\pgf@ref\pgf@curvilinear@line@c%
+    \fi%
+    \pgf@process{\pgf@curvilinear@line@a}%
+    \pgf@xc\pgf@x% save
+    \pgf@yc\pgf@y% save
+    \pgf@process{\pgf@ref}%
+    \advance\pgf@x by-\pgf@xc
+    \advance\pgf@y by-\pgf@yc
+    \pgf@process{\pgfpointnormalised{}}
+    \pgf@x-\pgf@x
+    \pgf@y-\pgf@y
+  \else%
+    \pgf@bending@do@tangent@normal%
+  \fi%
+}%
+
+\def\pgf@bending@do@flex{
+  \pgf@xb\pgf@xa%
+  \pgf@xc\pgf@xa%
+  \advance\pgf@xc by-\pgf@x%
+  \advance\pgf@xb by-\pgf@y%
+  \pgfcurvilineardistancetotime{\pgf@xc}%
+  \pgf@xc\pgf@x%
+  \pgfcurvilineardistancetotime{\pgf@xb}%
+  \pgf@xb\pgf@x%
+  % Compute points:
+  \pgf@process{\pgfpointcurveattime{\pgf@xc}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}}%
+  \pgf@xc\pgf@x\pgf@yc\pgf@y%
+  \pgf@process{\pgfpointcurveattime{\pgf@xb}{\pgf@curvilinear@line@a}{\pgf@curvilinear@line@b}{\pgf@curvilinear@line@c}{\pgf@curvilinear@line@d}}%
+  \pgf@xb\pgf@x\pgf@yb\pgf@y%
+  \pgftransformarrow{\pgfqpoint{\pgf@xb}{\pgf@yb}}{\pgfqpoint{\pgf@xc}{\pgf@yc}}%
+}%
+
+
+
+
+
+
+% Convex hull stuff:
+
+\def\pgf@arrows@bending@hull{%
+  \ifpgf@relevantforpicturesize%
+    % Do bb update:
+    \expandafter\let\expandafter\pgf@temp\csname pgf@ar@hull@\pgf@arrow@id\endcsname%
+    \ifx\pgf@temp\pgfutil@empty\else%
+      \let\pgf@arrow@hull@point\pgf@arrow@bending@hull@point@first%
+      \pgf@temp%
+      \pgf@arrow@bending@update@bb%
+    \fi%
+  \fi%
+}%
+
+\def\pgf@arrow@bending@hull@point@first#1#2{%
+  \pgfpointtransformednonlinear{\pgfqpoint{#1}{#2}}%
+  \pgf@xa\pgf@x\pgf@xb\pgf@x%
+  \pgf@ya\pgf@y\pgf@yb\pgf@y%
+  \let\pgf@arrow@hull@point\pgf@arrow@bending@hull@point@other%
+}%
+\def\pgf@arrow@bending@hull@point@other#1#2{%
+  \pgfpointtransformednonlinear{\pgfqpoint{#1}{#2}}%
+  \ifdim\pgf@x<\pgf@xa\pgf@xa\pgf@x\else\ifdim\pgf@x>\pgf@xb\pgf@xb\pgf@x\fi\fi%
+  \ifdim\pgf@y<\pgf@ya\pgf@ya\pgf@y\else\ifdim\pgf@y>\pgf@yb\pgf@yb\pgf@y\fi\fi%
+}%
+
+\def\pgf@arrow@bending@update@bb{%
+  \ifdim\pgf@picmaxx=-16000pt\relax%
+    \global\pgf@picminx\pgf@xa%
+    \global\pgf@picmaxx\pgf@xb%
+    \global\pgf@picminy\pgf@ya%
+    \global\pgf@picmaxy\pgf@yb%
+  \else%
+    \ifdim\pgf@xa<\pgf@picminx\global\pgf@picminx\pgf@xa\fi%
+    \ifdim\pgf@ya<\pgf@picminy\global\pgf@picminy\pgf@ya\fi%
+    \ifdim\pgf@xb>\pgf@picmaxx\global\pgf@picmaxx\pgf@xb\fi%
+    \ifdim\pgf@yb>\pgf@picmaxy\global\pgf@picmaxy\pgf@yb\fi%
+  \fi%
+}%
+
+
+
+
+%
+%
+% Handle the start of a curve
+%
+%
+
+
+% First, the preparation.
+
+\def\pgf@prep@curvedstart{
+  \pgftransformreset%
+  \pgfsetcurvilinearbeziercurve{\pgfpointfirstonpath}{\pgfpointsecondonpath}{\pgfpointthirdonpath}{\pgfpointfourthonpath}%
+}%
+
+% Second, the shortening.
+
+\def\pgf@do@shorten@curvedstart{%
+  \expandafter\expandafter\expandafter\pgf@do@shorten@curvedstart@unpack\expandafter\pgfpointthirdonpath\pgfpointfourthonpath%
+}%
+\def\pgf@do@shorten@curvedstart@unpack\pgfqpoint#1#2\pgfqpoint#3#4{%
+  \pgf@process{\pgfcurvilineardistancetotime{\pgf@path@shortening@distance}}%
+  % Compute new curve:
+  \pgfpointcurveattime{\pgf@x}{\pgfpointfirstonpath}{\pgfpointsecondonpath}{\pgfpointthirdonpath}{\pgfpointfourthonpath}%
+  % \pgfx/y and \pgf xa/xb already correct. Need to setup remaining vector...
+  \pgf@xb#1%
+  \pgf@yb#2%
+  \pgf@xb\pgf@time@t\pgf@xb%
+  \pgf@yb\pgf@time@t\pgf@yb%
+  \advance\pgf@xb by\pgf@time@s\pgf@xc%
+  \advance\pgf@yb by\pgf@time@s\pgf@yc%
+  \edef\pgfpointfirstonpath{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+  \edef\pgfpointsecondonpath{\noexpand\pgfqpoint{\the\pgf@xa}{\the\pgf@ya}}%
+  \edef\pgfprocessresultpathsuffix{%
+    \noexpand\pgfsyssoftpath@movetotoken{\the\pgf@x}{\the\pgf@y}%
+    \noexpand\pgfsyssoftpath@curvetosupportatoken{\the\pgf@xa}{\the\pgf@ya}%
+    \noexpand\pgfsyssoftpath@curvetosupportbtoken{\the\pgf@xb}{\the\pgf@yb}%
+    \noexpand\pgfsyssoftpath@curvetotoken{#3}{#4}%
+  }
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\pgfprocessresultpathsuffix%
+  \expandafter\expandafter\expandafter{\expandafter\pgfprocessresultpathsuffix\pgfsubpathend}%
+}%
+
+
+% Third, the drawing
+
+\def\pgf@do@draw@curvedstart{%
+  \pgf@do@draw@curved\pgf@start@tip@sequence%
+}%
+
+
+
+
+
+\endinput

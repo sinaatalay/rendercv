@@ -1,0 +1,135 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgflibrarydatavisualization.barcharts.code.tex}
+
+\usepgfmodule{datavisualization}%
+
+
+%
+% This file defines additional data visualization classes.
+%
+
+
+\pgfooclass{candle stick visualizer}
+{%
+  \attribute attribute;%
+  \attribute offset;%
+  \attribute use path rise=\pgfsetfillcolor{white}\pgfusepath{fill,stroke};%
+  \attribute use path fall=\pgfsetfillcolor{black}\pgfusepath{fill,stroke};%
+  \attribute use path wick=\pgfusepath{stroke};%
+
+  \method candle stick visualizer(#1) {
+    \pgfooeset{attribute}{#1}
+    \pgfoothis.set stick width(4pt)
+  }%
+
+  \method default connects() {
+    \pgfoothis.get handle(\pgf@dv@me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(\pgf@dv@me,visualize,visualize datapoint signal)
+  }%
+
+  \method set stick width(#1) {
+    \pgfmathparse{#1}
+    \pgfmathdivide{\pgfmathresult}{2}
+    \let\pgf@dv@lib@w=\pgfmathresult
+    % Compute the normalized vector:
+    \pgfkeyssetvalue{/data point/\pgfoovalueof{attribute}}{1}
+    \pgfcanvaspositionofdatapoint%
+    \pgfsettocanvasposition\pgf@dv@lib@lower%
+    \pgfkeyssetvalue{/data point/\pgfoovalueof{attribute}}{10}
+    \pgfcanvaspositionofdatapoint%
+    \pgfsettocanvasposition\pgf@dv@lib@upper%
+    \pgf@process{\pgfpointnormalised{\pgfpointdiff{\pgf@dv@lib@upper}{\pgf@dv@lib@lower}}}%
+    % Rotate by 90 degrees
+    \pgf@xa=\pgf@x%
+    \pgf@x=-\pgf@dv@lib@w\pgf@y%
+    \pgf@y=\pgf@dv@lib@w\pgf@xa%
+    \edef\pgf@dv@lib@temp{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}%
+    \pgfoolet{offset}\pgf@dv@lib@temp
+  }%
+
+  \method set use path rise(#1) {
+    \pgfooset{use path rise}{#1}
+  }%
+
+  \method set use path fall(#1) {
+    \pgfooset{use path fall}{#1}
+  }%
+
+  \method visualize() {
+    {
+      \pgfooget{attribute}\pgf@lib@attribute%
+      \pgfkeysgetvalue{/data point/\pgf@lib@attribute/low}\pgf@lib@low
+      \pgfkeysgetvalue{/data point/\pgf@lib@attribute/high}\pgf@lib@high
+      \pgfkeysgetvalue{/data point/\pgf@lib@attribute/entry}\pgf@lib@entry
+      \pgfkeysgetvalue{/data point/\pgf@lib@attribute/exit}\pgf@lib@exit
+      \ifx\pgf@lib@low\pgfutil@empty\pgf@dv@lib@cs@skiptrue\fi
+      \ifx\pgf@lib@low\relax\pgf@dv@lib@cs@skiptrue\fi
+      \ifx\pgf@lib@high\pgfutil@empty\pgf@dv@lib@cs@skiptrue\fi
+      \ifx\pgf@lib@high\relax\pgf@dv@lib@cs@skiptrue\fi
+      \ifx\pgf@lib@entry\pgfutil@empty\pgf@dv@lib@cs@skiptrue\fi
+      \ifx\pgf@lib@entry\relax\pgf@dv@lib@cs@skiptrue\fi
+      \ifx\pgf@lib@exit\pgfutil@empty\pgf@dv@lib@cs@skiptrue\fi
+      \ifx\pgf@lib@exit\relax\pgf@dv@lib@cs@skiptrue\fi
+      \ifpgf@dv@lib@cs@skip%
+      \else%
+        \begin{pgfscope}
+          % Ok, compute low point
+          \pgfkeyssetvalue{/data point/\pgf@lib@attribute}\pgf@lib@low
+          \pgfcanvaspositionofdatapoint%
+          \pgfsettocanvasposition\pgf@dv@lib@lowpoint%
+          % Ok, compute hight point
+          \pgfkeyssetvalue{/data point/\pgf@lib@attribute}\pgf@lib@high
+          \pgfcanvaspositionofdatapoint%
+          \pgfsettocanvasposition\pgf@dv@lib@highpoint%
+          % Compute entry and exit
+          \pgfkeyssetvalue{/data point/\pgf@lib@attribute}\pgf@lib@entry
+          \pgfcanvaspositionofdatapoint%
+          \pgfsettocanvasposition\pgf@dv@lib@entrypoint%
+          \pgfkeyssetvalue{/data point/\pgf@lib@attribute}\pgf@lib@exit
+          \pgfcanvaspositionofdatapoint%
+          \pgfsettocanvasposition\pgf@dv@lib@exitpoint%
+          \ifdim\pgf@lib@entry pt<\pgf@lib@exit pt\relax%
+            \pgf@dv@lib@risetrue%
+          \fi%
+          \ifpgf@dv@lib@rise
+            \let\pgf@dv@lib@a=\pgf@dv@lib@entrypoint
+            \let\pgf@dv@lib@b=\pgf@dv@lib@exitpoint
+          \else
+            \let\pgf@dv@lib@a=\pgf@dv@lib@exitpoint
+            \let\pgf@dv@lib@b=\pgf@dv@lib@entrypoint
+          \fi
+          % Start drawing...
+          \pgfpathmoveto{\pgf@dv@lib@lowpoint}
+          \pgfpathlineto{\pgf@dv@lib@a}
+          \pgfpathmoveto{\pgf@dv@lib@highpoint}
+          \pgfpathlineto{\pgf@dv@lib@b}
+          \pgfoovalueof{use path wick}
+          \pgfpathmoveto{\pgfpointadd{\pgf@dv@lib@a}{\pgfoovalueof{offset}}}
+          \pgfpathlineto{\pgfpointadd{\pgf@dv@lib@b}{\pgfoovalueof{offset}}}
+          \pgfpathlineto{\pgfpointadd{\pgf@dv@lib@b}{\pgfpointscale{-1}{\pgfoovalueof{offset}}}}
+          \pgfpathlineto{\pgfpointadd{\pgf@dv@lib@a}{\pgfpointscale{-1}{\pgfoovalueof{offset}}}}
+          \pgfpathclose
+          \ifpgf@dv@lib@rise
+            \pgfoovalueof{use path rise}
+          \else
+            \pgfoovalueof{use path fall}
+          \fi
+        \end{pgfscope}%
+      \fi
+    }
+  }%
+
+  \newif\ifpgf@dv@lib@cs@skip
+  \newif\ifpgf@dv@lib@rise
+}%
+
+
+\endinput

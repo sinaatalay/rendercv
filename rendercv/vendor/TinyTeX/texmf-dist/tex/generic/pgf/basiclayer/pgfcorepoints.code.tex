@@ -1,0 +1,1212 @@
+% Copyright 2019 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcorepoints.code.tex}
+
+\newdimen\pgf@picminx
+\newdimen\pgf@picmaxx
+\newdimen\pgf@picminy
+\newdimen\pgf@picmaxy
+
+\newdimen\pgf@pathminx
+\newdimen\pgf@pathmaxx
+\newdimen\pgf@pathminy
+\newdimen\pgf@pathmaxy
+
+\newif\ifpgf@relevantforpicturesize
+
+\def\pgf@process#1{{#1\global\pgf@x=\pgf@x\global\pgf@y=\pgf@y}}
+
+% Save a point.
+%
+% #1 = macro for storing point.
+% #2 = code for point (should define x and y)
+%
+% Example:
+%
+% \pgfextract@process\mypoint{\pgf@x=10pt \pgf@y10pt}
+% \pgfextract@process\myarcpoint{\pgfpointpolar{30}{5cm and 2cm}}
+
+\def\pgfextract@process#1#2{%
+    \pgf@process{#2}%
+    \edef#1{\noexpand\global\pgf@x=\the\pgf@x\noexpand\relax\noexpand\global\pgf@y=\the\pgf@y\noexpand\relax}%
+}
+% This needed until old shapes code changed.
+\let\pgfsavepgf@process\pgfextract@process%
+
+
+% Return a point
+%
+% #1 = x-coordinate of the point
+% #2 = y-coordinate of the point
+%
+% x = #1
+% y = #2
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpoint{2pt+3cm}{3cm}}
+
+\def\pgfpoint#1#2{%
+  \pgfmathsetlength\pgf@x{#1}%
+  \pgfmathsetlength\pgf@y{#2}\ignorespaces}
+
+
+% Quickly a point
+%
+% #1 = x-coordinate of the point (no calculations done)
+% #2 = y-coordinate of the point (no calculations done)
+%
+% x = #1
+% y = #2
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfqpoint{2pt}{3cm}}
+
+\def\pgfqpoint#1#2{\global\pgf@x=#1\relax\global\pgf@y=#2\relax}
+
+
+
+% Return the origin.
+%
+% x = 0
+% y = 0
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointorigin}
+
+\def\pgfpointorigin{\global\pgf@x=0pt \global\pgf@y=\pgf@x\ignorespaces}
+
+
+
+% Return a transformed point
+%
+% #1 = a point
+%
+% Description:
+%
+% This command applies pgf's current transformation matrix to the
+% given point. Normally, this is done automatically by commands like
+% lineto or moveto, but sometimes you may wish to access a transformed
+% point yourself. In the below example, this command is used for a low level
+% coordinate system shift.
+%
+% Example:
+%
+% \begin{pgflowleveltransformshiftscope}{\pgfpointtransformed{\pgfpointorigin}}
+%   \pgfbox[center,center]{Hi!}
+% \end{pgflowleveltransformshiftscope}
+
+\def\pgfpointtransformed#1{%
+  \pgf@process{%
+    #1%
+    \pgf@pos@transform@glob%
+  }%
+}
+
+
+% Return the difference vector of two points.
+%
+% #1 = start of vector
+% #2 = end of vector
+%
+% x = x-component of difference
+% y = y-component of difference
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointdiff{\pgfpointxy{1}{1}}{\pgfpointxy{2}{3}}}
+
+\def\pgfpointdiff#1#2{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{#2}%
+  \global\advance\pgf@x by-\pgf@xa\relax%
+  \global\advance\pgf@y by-\pgf@ya\relax\ignorespaces}
+
+% Add two vectors.
+%
+% #1 = first vector
+% #2 = second vector
+%
+% x = x-component of addition
+% y = y-component of addition
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointadd{\pgfpointxy{0}{1}}{\pgfpointxy{2}{3}}}
+
+\def\pgfpointadd#1#2{%
+  \pgf@process{#1}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{#2}%
+  \global\advance\pgf@x by\pgf@xa%
+  \global\advance\pgf@y by\pgf@ya}
+
+
+
+% Multiply a vector by a factor.
+%
+% #1 = factor
+% #2 = vector
+%
+% Example:
+%
+% \pgfpointscale{2}{\pgfpointxy{0}{1}}
+
+\def\pgfpointscale#1#2{%
+  \pgf@process{#2}%
+  \pgfmathparse{#1}%
+  \global\pgf@x=\pgfmathresult\pgf@x%
+  \global\pgf@y=\pgfmathresult\pgf@y%
+}
+% A "quick" variant of \pgfpointscale which doesn't invoke the math parser for '#1'.
+% #1 must be a number without units, no registers are accepted.
+\def\pgfqpointscale#1#2{%
+  \pgf@process{#2}%
+  \global\pgf@x=#1\pgf@x%
+  \global\pgf@y=#1\pgf@y%
+}
+
+
+% The intersection of two lines
+%
+% #1 = point on first line
+% #2 = another point on first line
+% #3 = point on second line
+% #4 = another point on second line
+%
+% Returns the intersection of the two lines. If there is no
+% intersection or if the points #1 and #2 or the points #3 and #4 are
+% identical, the behaviour is not specified.
+%
+% Example:
+%
+% \pgfpointintersectionoflines{\pgfpointxy{0}{1}}{\pgfpointxy{1}{0}}{\pgfpointxy{2}{2}}{\pgfpointxy{3}{4}}
+
+\def\pgfpointintersectionoflines#1#2#3#4{%
+  {%
+    %
+    % Compute orthogonal vector to #1--#2
+    %
+    \pgf@process{#2}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgf@process{#1}%
+    \advance\pgf@xa by-\pgf@x%
+    \advance\pgf@ya by-\pgf@y%
+    \pgf@ya=-\pgf@ya%
+    % Normalise a bit
+    \c@pgf@counta=\pgf@xa%
+    \ifnum\c@pgf@counta<0\relax%
+      \c@pgf@counta=-\c@pgf@counta\relax%
+    \fi%
+    \c@pgf@countb=\pgf@ya%
+    \ifnum\c@pgf@countb<0\relax%
+      \c@pgf@countb=-\c@pgf@countb\relax%
+    \fi%
+    \advance\c@pgf@counta by\c@pgf@countb\relax%
+    \divide\c@pgf@counta by 65536\relax%
+    \ifnum\c@pgf@counta>0\relax%
+      \divide\pgf@xa by\c@pgf@counta\relax%
+      \divide\pgf@ya by\c@pgf@counta\relax%
+    \fi%
+    %
+    % Compute projection
+    %
+    \pgf@xc=\pgf@sys@tonumber{\pgf@ya}\pgf@x%
+    \advance\pgf@xc by\pgf@sys@tonumber{\pgf@xa}\pgf@y%
+    %
+    % The orthogonal vector is (\pgf@ya,\pgf@xa)
+    %
+    %
+    % Compute orthogonal vector to #3--#4
+    %
+    \pgf@process{#4}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgf@process{#3}%
+    \advance\pgf@xb by-\pgf@x%
+    \advance\pgf@yb by-\pgf@y%
+    \pgf@yb=-\pgf@yb%
+    % Normalise a bit
+    \c@pgf@counta=\pgf@xb%
+    \ifnum\c@pgf@counta<0\relax%
+      \c@pgf@counta=-\c@pgf@counta\relax%
+    \fi%
+    \c@pgf@countb=\pgf@yb%
+    \ifnum\c@pgf@countb<0\relax%
+      \c@pgf@countb=-\c@pgf@countb\relax%
+    \fi%
+    \advance\c@pgf@counta by\c@pgf@countb\relax%
+    \divide\c@pgf@counta by 65536\relax%
+    \ifnum\c@pgf@counta>0\relax%
+      \divide\pgf@xb by\c@pgf@counta\relax%
+      \divide\pgf@yb by\c@pgf@counta\relax%
+    \fi%
+    %
+    % Compute projection
+    %
+    \pgf@yc=\pgf@sys@tonumber{\pgf@yb}\pgf@x%
+    \advance\pgf@yc by\pgf@sys@tonumber{\pgf@xb}\pgf@y%
+    %
+    % The orthogonal vector is (\pgf@yb,\pgf@xb)
+    %
+    % Setup transformation matrix (this is just to use the matrix
+    % inversion)
+    %
+    \pgfsettransform{{\pgf@sys@tonumber\pgf@ya}{\pgf@sys@tonumber\pgf@yb}{\pgf@sys@tonumber\pgf@xa}{\pgf@sys@tonumber\pgf@xb}{0pt}{0pt}}%
+    \pgftransforminvert%
+    \pgf@process{\pgfpointtransformed{\pgfpoint{\pgf@xc}{\pgf@yc}}}%
+  }%
+}
+
+
+% The intersection of two circles
+%
+% #1 = center of first circle
+% #2 = center of second circle
+% #3 = radius of first circle
+% #4 = radius of second circle
+% #5 = solution number
+%
+% Returns the intersection of the two circles. If #5 is to "1", the
+% first intersection is returned, otherwise the second. If the circles
+% do not intersect, an error may occur.
+%
+% Example:
+%
+% \pgfpointintersectionofcircles{\pgfpointxy{0}{1}}{\pgfpointxy{1}{0}}{1cm}{1cm}{1}
+
+\def\pgfpointintersectionofcircles#1#2#3#4#5{%
+  {%
+    % Store first point in (xa,ya) and radius in xc.
+    \pgf@process{#1}%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+    \pgfmathsetlength{\pgf@xc}{#3}%
+    % Store second point in (xb,yb) and radius in yc.
+    \pgf@process{#2}%
+    \pgf@xb=\pgf@x%
+    \pgf@yb=\pgf@y%
+    \pgfmathsetlength{\pgf@yc}{#4}%
+    %
+    % Ok, now make numbers smaller, in case they are too large
+    %
+    \c@pgf@counta=1\relax%
+    \loop%
+      \pgf@scale@downfalse%
+      \ifdim\pgf@xc>50pt\relax%
+        \pgf@scale@downtrue%
+      \fi%
+      \ifdim\pgf@yc>50pt\relax%
+        \pgf@scale@downtrue%
+      \fi%
+    \ifpgf@scale@down%
+      \multiply\c@pgf@counta by2\relax%
+      \divide\pgf@xa by2\relax%
+      \divide\pgf@ya by2\relax%
+      \divide\pgf@xb by2\relax%
+      \divide\pgf@yb by2\relax%
+      \divide\pgf@xc by2\relax%
+      \divide\pgf@yc by2\relax%
+    \repeat%
+    % The following code is taken from the Dr. Math internet forum:
+    %
+    % Let the centers be: (a,b), (c,d)
+    % Let the radii be: r, s
+    %
+    % e = c - a                          [difference in x coordinates]
+    % f = d - b                          [difference in y coordinates]
+    % p = sqrt(e^2 + f^2)                [distance between centers]
+    % k = (p^2 + r^2 - s^2)/(2p)         [distance from center 1 to line
+    %                                     joining points of intersection]
+    % x = a + ek/p + (f/p)sqrt(r^2 - k^2)
+    % y = b + fk/p - (e/p)sqrt(r^2 - k^2)
+    % OR
+    % x = a + ek/p - (f/p)sqrt(r^2 - k^2)
+    % y = b + fk/p + (e/p)sqrt(r^2 - k^2)
+    %
+    % Since we are running low on registers, use
+    % \dimen0 for e
+    % \dimen1 for f
+    % \dimen2 for p
+    % \dimen3 for p^2
+    % \dimen4 for k
+    % \dimen5 for 1/p
+    % \dimen6 for sqrt(r^2 - k^2)
+    % \dimen7 for k^2
+    % \dimen8 for k/p
+    % \dimen9 for sqrt(r^2 - k^2)/p
+    % Also note that:
+    % \pgf@xa for a
+    % \pgf@ya for b
+    % \pgf@xb for c
+    % \pgf@yb for d
+    % \pgf@xc for r
+    % \pgf@yc for s
+    %
+    % Now:
+    % e = c - a
+    \dimen0=\pgf@xb%
+    \advance\dimen0 by-\pgf@xa%
+    % f = d - b
+    \dimen1=\pgf@yb%
+    \advance\dimen1 by-\pgf@ya%
+    % p^2 = e^2 + f^2
+    \pgf@x=\dimen0\relax%
+    \pgf@x=\pgf@sys@tonumber{\pgf@x}\pgf@x%
+    \dimen3=\pgf@x%
+    \pgf@x=\dimen1\relax%
+    \advance\dimen3 by\pgf@sys@tonumber{\pgf@x}\pgf@x%
+    % p = sqrt(p^2)
+    \pgfmathparse{sqrt(\the\dimen3)}%
+    \dimen2=\pgfmathresult pt%
+    % 1/p = 1/p
+    \pgfmathreciprocal@{\pgfmathresult}%
+    \dimen5=\pgfmathresult pt%
+    % k = (p^2 + r^2 - s^2)/(2p)
+    \dimen4=\dimen3\relax%
+    \pgf@x=\pgf@xc%
+    \advance\dimen4 by\pgf@sys@tonumber{\pgf@x}\pgf@x\relax%
+    \pgf@x=\pgf@yc%
+    \advance\dimen4 by-\pgf@sys@tonumber{\pgf@x}\pgf@x\relax%
+    \dimen4=.5\dimen4%
+    \dimen4=\pgf@sys@tonumber{\dimen5}\dimen4%
+    % dimen7 is k^2
+    \dimen7=\pgf@sys@tonumber{\dimen4}\dimen4\relax%
+    % dimen6 is sqrt(r^2 - k^2)
+    \pgfmathparse{sqrt(\pgf@sys@tonumber{\pgf@xc}\pgf@xc-\the\dimen7)}%
+    \dimen6=\pgfmathresult pt%
+    % dimen8 is k/p
+    \dimen8=\pgf@sys@tonumber{\dimen4}\dimen5\relax%
+    % dimen9 is sqrt(r^2 - k^2)/p
+    \dimen9=\pgf@sys@tonumber{\dimen6}\dimen5\relax%
+    \ifnum#5=1\relax%
+      % x = a + ek/p + (f/p)sqrt(r^2 - k^2)
+      \pgf@x=\pgf@xa%
+      \advance\pgf@x by\pgf@sys@tonumber{\dimen0}\dimen8\relax%
+      \advance\pgf@x by\pgf@sys@tonumber{\dimen1}\dimen9\relax%
+      % y = b + fk/p - (e/p)sqrt(r^2 - k^2)
+      \pgf@y=\pgf@ya%
+      \advance\pgf@y by\pgf@sys@tonumber{\dimen1}\dimen8\relax%
+        %temp
+        \pgf@xb=\pgf@sys@tonumber{\dimen0}\dimen9%
+        \pgf@xb=-\pgf@xb%
+      \advance\pgf@y by\pgf@xb\relax%
+    \else%
+      % x = a + ek/p - (f/p)sqrt(r^2 - k^2)
+      \pgf@x=\pgf@xa%
+      \advance\pgf@x by\pgf@sys@tonumber{\dimen0}\dimen8\relax%
+        %temp
+        \pgf@xb=\pgf@sys@tonumber{\dimen1}\dimen9%
+        \pgf@xb=-\pgf@xb%
+      \advance\pgf@x by\pgf@xb\relax%
+      % y = b + fk/p + (e/p)sqrt(r^2 - k^2)
+      \pgf@y=\pgf@ya%
+      \advance\pgf@y by\pgf@sys@tonumber{\dimen1}\dimen8\relax%
+      \advance\pgf@y by\pgf@sys@tonumber{\dimen0}\dimen9\relax%
+    \fi%
+    \pgf@x=\c@pgf@counta\pgf@x%
+    \pgf@y=\c@pgf@counta\pgf@y%
+    \pgf@process{}% get results outside
+  }%
+}
+\newif\ifpgf@scale@down
+
+
+% Returns point on a line from #2 to #3 at time #1.
+%
+% #1 = a time, where 0 is the start and 1 is the end
+% #2 = start point
+% #3 = end point
+%
+% x = x-component of #1*start + (1-#1)*end
+% y = y-component of #1*start + (1-#1)*end
+% xa/ya = #1*start + (1-#1)*end
+% xb/yb = start point
+% xc/yc = end point
+%
+% Example:
+%
+% % Middle of (1,1) and (2,3)
+% \pgfpathmoveto{\pgfpointlineattime{0.5}{\pgfpointxy{0}{1}}{\pgfpointxy{2}{3}}}
+
+\def\pgfpointlineattime#1#2#3{%
+  \pgf@process{#3}%
+  \pgf@xa\pgf@x%
+  \pgf@ya\pgf@y%
+  \pgf@xc\pgf@x%
+  \pgf@yc\pgf@y%
+  \pgf@process{#2}%
+  \pgf@xb\pgf@x%
+  \pgf@yb\pgf@y%
+  \pgfmathsetmacro\pgf@temp{#1}%
+  \advance\pgf@xa by-\pgf@x%
+  \advance\pgf@ya by-\pgf@y%
+  \global\advance\pgf@x by\pgf@temp\pgf@xa%
+  \global\advance\pgf@y by\pgf@temp\pgf@ya%
+}
+
+
+% Move point #2 #1 many units in the direction of #3.
+%
+% #1 = a distance
+% #2 = start point
+% #3 = end point
+%
+% Description:
+%
+% Computes
+%
+% x/y = start + #1*(normalise(end-start))
+%
+% and additionally
+%
+% xa/ya = #1*(normalise(end-start))
+% xb/yb = start
+% xc/yc = end
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointlineatdistance{2pt}{\pgfpointxy{0}{1}}{\pgfpointxy{2}{3}}}
+% \pgfpathlineto{\pgfpointlineatdistance{3pt}{\pgfpointxy{2}{3}}{\pgfpointxy{0}{1}}}
+
+\def\pgfpointlineatdistance#1#2#3{%
+  \pgfmathsetlength\pgf@xa{#1}%
+  \pgf@process{#2}%
+  \pgf@xb\pgf@x% xb/yb = start point
+  \pgf@yb\pgf@y%
+  \pgf@process{#3}%
+  \pgf@xc\pgf@x%
+  \pgf@yc\pgf@y%
+  \global\advance\pgf@x by-\pgf@xb\relax%
+  \global\advance\pgf@y by-\pgf@yb\relax%
+  \pgf@process{\pgfpointnormalised{}}% x/y = normalised vector
+  \pgf@ya=\pgf@xa\relax%
+  \pgf@xa=\pgf@sys@tonumber{\pgf@x}\pgf@xa%
+  \pgf@ya=\pgf@sys@tonumber{\pgf@y}\pgf@ya%
+  \global\pgf@x=\pgf@xb\relax%
+  \global\pgf@y=\pgf@yb\relax%
+  \global\advance\pgf@x by\pgf@xa\relax%
+  \global\advance\pgf@y by\pgf@ya\relax%
+}
+
+
+% Returns point on a curve from #2 to #5 with controls #3 and #4 at time #1.
+%
+% #1 = a time
+% #2 = start point
+% #3 = first control point
+% #4 = second control point
+% #5 = end point
+%
+% x = x-component of place on the curve at time t
+% y = y-component of place on the curve at time t
+%
+% Additionally, (\pgf@xa,\pgf@ya) and (\pgf@xb,\pgf@yb) will be on a
+% tangent to the point on the curve (this can be useful for computing
+% a label rotation). (\pgf@xc,\pgf@yc) will be equal to the end
+% point. \pgf@time@s will equal the value of #1 and \pgf@time@t will
+% equal 1-#1.
+%
+% Example:
+%
+% % Middle of (1,1) and (2,3)
+% \pgfpathmoveto{\pgfpointcurveattime{0.5}{\pgfpointxy{0}{1}}{\pgfpointxy{1}{1}}{\pgfpointxy{1}{1}}{\pgfpointxy{2}{3}}}
+
+\def\pgfpointcurveattime#1#2#3#4#5{%
+  \pgfmathparse{#1}%
+  \let\pgf@time@s=\pgfmathresult%
+  \global\pgf@x=\pgfmathresult pt%
+  \global\pgf@x=-\pgf@x%
+  \advance\pgf@x by 1pt%
+  \edef\pgf@time@t{\pgf@sys@tonumber{\pgf@x}}%
+  \pgf@process{#5}%
+  \pgf@xc=\pgf@x%
+  \pgf@yc=\pgf@y%
+  \pgf@process{#4}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@process{#3}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \pgf@process{#2}%
+  % First iteration:
+  \global\pgf@x=\pgf@time@t\pgf@x\global\advance\pgf@x by\pgf@time@s\pgf@xa%
+  \global\pgf@y=\pgf@time@t\pgf@y\global\advance\pgf@y by\pgf@time@s\pgf@ya%
+  \pgf@xa=\pgf@time@t\pgf@xa\advance\pgf@xa by\pgf@time@s\pgf@xb%
+  \pgf@ya=\pgf@time@t\pgf@ya\advance\pgf@ya by\pgf@time@s\pgf@yb%
+  \pgf@xb=\pgf@time@t\pgf@xb\advance\pgf@xb by\pgf@time@s\pgf@xc%
+  \pgf@yb=\pgf@time@t\pgf@yb\advance\pgf@yb by\pgf@time@s\pgf@yc%
+  % Second iteration:
+  \global\pgf@x=\pgf@time@t\pgf@x\global\advance\pgf@x by\pgf@time@s\pgf@xa%
+  \global\pgf@y=\pgf@time@t\pgf@y\global\advance\pgf@y by\pgf@time@s\pgf@ya%
+  \pgf@xa=\pgf@time@t\pgf@xa\advance\pgf@xa by\pgf@time@s\pgf@xb%
+  \pgf@ya=\pgf@time@t\pgf@ya\advance\pgf@ya by\pgf@time@s\pgf@yb%
+  % Save x/y
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  % Third iteration:
+  \global\pgf@x=\pgf@time@t\pgf@x\global\advance\pgf@x by\pgf@time@s\pgf@xa%
+  \global\pgf@y=\pgf@time@t\pgf@y\global\advance\pgf@y by\pgf@time@s\pgf@ya%
+}
+
+
+
+% Returns point on an arc at a certain "time"
+%
+% #1 = a time
+% #2 = center of a ellipse
+% #3 = 0-degree axis of the ellipse
+% #4 = 90-degree axis of the ellipse
+% #5 = start angle of an arc on the ellipse
+% #6 = end angle of an arc on the ellipse
+%
+% Result:
+%
+% \pgf@x = x-component of place on the arc at time t
+% \pgf@y = y-component of place on the arc at time t
+%
+% Additionally, (\pgf@xa,\pgf@ya) will be a tangent to the
+% point on the arc (this can be useful for computing a label rotation).
+%
+% Example:
+%
+% \pgfpointarcaxesattime{0.25}{\pgfpoint{1cm}{1cm}}{\pgfpoint{1cm}{0cm}}{\pgfpoint{0cm}{1cm}}{1cm}{30}{40}
+
+\def\pgfpointarcaxesattime#1#2#3#4#5#6{%
+  \pgfmathsetmacro\pgf@angle@start{#5}%
+  \pgfmathsetmacro\pgf@angle@end{#6}%
+  \pgfmathparse{#1}%
+  \global\pgf@x=\pgfmathresult pt%
+  \global\pgf@x=-\pgf@x%
+  \advance\pgf@x by 1pt%
+  \pgfmathsetmacro\pgf@angle@mid{\pgf@angle@end*\pgfmathresult+\pgf@angle@start*\pgf@sys@tonumber{\pgf@x}}%
+  \pgfmathcos@{\pgf@angle@mid}%
+  \let\pgf@angle@cos\pgfmathresult%
+  \pgfmathsin@{\pgf@angle@mid}%
+  \let\pgf@angle@sin\pgfmathresult%
+  \pgf@process{#3}%
+  \edef\pgf@angle@zero@axis{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+  \pgf@process{#4}%
+  \edef\pgf@angle@ninety@axis{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+  % Compute tangent
+  \pgf@process{\pgfpointadd{\pgfpointscale{\pgf@angle@sin}{\pgf@angle@zero@axis}}%
+    {\pgfpointscale{-\pgf@angle@cos}{\pgf@angle@ninety@axis}}}%
+  \ifdim\pgf@angle@start pt>\pgf@angle@end pt%
+    \pgf@xa=\pgf@x%
+    \pgf@ya=\pgf@y%
+  \else%
+    \pgf@xa=-\pgf@x%
+    \pgf@ya=-\pgf@y%
+  \fi%
+  % Compute position
+  \pgf@process{\pgfpointadd{#2}{%
+      \pgfpointadd{\pgfpointscale{\pgf@angle@cos}{\pgf@angle@zero@axis}}%
+    {\pgfpointscale{\pgf@angle@sin}{\pgf@angle@ninety@axis}}}}%
+}
+
+
+
+% Internal registers
+\newdimen\pgf@xx
+\newdimen\pgf@xy
+\newdimen\pgf@yx
+\newdimen\pgf@yy
+\newdimen\pgf@zx
+\newdimen\pgf@zy
+
+
+
+% A polar coordinate
+%
+% #1 = a degree
+% #2 = a radius -- either a dimension or two dimensions separated by
+%      " and ".
+%
+% x = (first dimension in #2) * cos(#1)
+% y = (second dimension in #2) * sin(#2)
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointpolar{30}{1cm}}
+% \pgfpathlineto{\pgfpointpolar{30}{1cm and 2cm}}
+
+\def\pgfpointpolar#1#2{%
+  \pgfutil@in@{and }{#2}%
+  \ifpgfutil@in@%
+    \pgf@polar@#2\@@%
+  \else%
+    \pgf@polar@#2 and #2\@@%
+  \fi%
+  \pgfmathparse{#1}%
+  \let\pgfpoint@angle=\pgfmathresult%
+  \pgfmathcos@{\pgfpoint@angle}%
+  \global\pgf@x=\pgfmathresult\pgf@x%
+  \pgfmathsin@{\pgfpoint@angle}%
+  \global\pgf@y=\pgfmathresult\pgf@y%
+}
+
+\def\pgf@polar@#1and #2\@@{%
+  \pgfmathsetlength{\pgf@y}{#2}%
+  \pgfmathsetlength{\pgf@x}{#1}%
+}
+
+% Quick version of the polar coordinate method
+
+\def\pgfqpointpolar#1#2{%
+  \global\pgf@x=#2%
+  \global\pgf@y=\pgf@x%
+  \pgfmathcos@{#1}%
+  \global\pgf@x=\pgfmathresult\pgf@x%
+  \pgfmathsin@{#1}%
+  \global\pgf@y=\pgfmathresult\pgf@y\relax%
+}
+
+
+
+
+% A polar coordinate in the xy plane.
+%
+% #1 = a degree
+% #2 = a radius given as a number or two radii
+%
+% result = (first dim in #2) * x-vector * cos(#1) +
+%          (second dim in #2) * y-vector * sin(#1)
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointpolarxy{30}{2}}
+
+\def\pgfpointpolarxy#1#2{%
+  \pgfutil@in@{and }{#2}%
+  \ifpgfutil@in@%
+    \pgf@polarxy@#2\@@%
+  \else%
+    \pgf@polarxy@#2and #2\@@%
+  \fi%
+  \pgfmathparse{#1}%
+  \let\pgfpoint@angle=\pgfmathresult%
+  \pgfmathcos@{\pgfpoint@angle}%
+  \pgf@xa=\pgfmathresult\pgf@xa%
+  \pgfmathsin@{\pgfpoint@angle}%
+  \pgf@ya=\pgfmathresult\pgf@ya%
+  \global\pgf@x=\pgf@sys@tonumber{\pgf@xa}\pgf@xx%
+  \global\advance\pgf@x by \pgf@sys@tonumber{\pgf@ya}\pgf@yx%
+  \global\pgf@y=\pgf@sys@tonumber{\pgf@xa}\pgf@xy%
+  \global\advance\pgf@y by \pgf@sys@tonumber{\pgf@ya}\pgf@yy}
+
+\def\pgf@polarxy@#1and #2\@@{%
+  \pgfmathsetlength{\pgf@xa}{#1}%
+  \pgfmathsetlength{\pgf@ya}{#2}%
+}
+
+
+
+% A cylindrical coordinate.
+%
+% #1 = a degree
+% #2 = a radius given as a number
+% #3 = a height given as a number
+%
+% result = #2*(x-vector * cos(#1) + y-vector * sin(#1)) + #3*z-vector
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointcylindrical{30}{2}{1}}
+
+\def\pgfpointcylindrical#1#2#3{%
+  \pgfpointpolarxy{#1}{#2}%
+  \pgfmathparse{#3}%
+  \global\advance\pgf@x by \pgfmathresult\pgf@zx%
+  \global\advance\pgf@y by \pgfmathresult\pgf@zy}
+
+
+% A spherical coordinate.
+%
+% #1 = a longitude
+% #2 = a latitude
+% #3 = a radius
+%
+% result = #3*(cos(#2)*(x-vector * cos(#1) + y-vector * sin(#1)) + sin(#2)*z-vector)
+%
+% Example:
+%
+% \pgfpathmoveto{\pgfpointspherical{30}{30}{2}}
+
+\def\pgfpointspherical#1#2#3{%
+  \pgfmathparse{#1}%
+  \let\pgfpoint@angle=\pgfmathresult%
+  \pgfmathsin@{\pgfpoint@angle}%
+  \pgf@xb=\pgfmathresult\pgf@xx%
+  \pgf@yb=\pgfmathresult\pgf@xy%
+  \pgfmathcos@{\pgfpoint@angle}%
+  \advance\pgf@xb by \pgfmathresult\pgf@yx%
+  \advance\pgf@yb by \pgfmathresult\pgf@yy%
+  %
+  \pgfmathparse{#2}%
+  \let\pgfpoint@angle=\pgfmathresult%
+  \pgfmathcos@{\pgfpoint@angle}%
+  \pgf@xc=\pgfmathresult\pgf@xb%
+  \pgf@yc=\pgfmathresult\pgf@yb%
+  \pgfmathsin@{\pgfpoint@angle}%
+  \advance\pgf@xc by \pgfmathresult\pgf@zx%
+  \advance\pgf@yc by \pgfmathresult\pgf@zy%
+  \pgfmathparse{#3}%
+  \global\pgf@x=\pgfmathresult\pgf@xc%
+  \global\pgf@y=\pgfmathresult\pgf@yc\relax%
+}
+
+
+% Store the vector #1 * x-vec + #2 * y-vec
+%
+% #1 = a factor for the x-vector
+% #2 = a factor for the y-vector
+%
+% x = x-component of result vector
+% y = y-component of result vector
+%
+% Description:
+%
+% This command can be used to create a new coordinate system
+% without using the rotate/translate/scale commands. This
+% may be useful, if you do not want arrows and line width to
+% be scaled/transformed together with the coordinate system.
+%
+% Example:
+%
+% % Create a slanted rectangle
+%
+% \pgfsetxvec{\pgfpoint{1cm}{1cm}}
+% \pgfsetyvec{\pgfpoint{0cm}{1cm}}
+%
+% \pgfpathmoveto{\pgfpointxy{0}{0}}
+% \pgfpathlineto{\pgfpointxy{1}{0}}
+% \pgfpathlineto{\pgfpointxy{1}{1}}
+% \pgfpathlineto{\pgfpointxy{0}{1}}
+% \pgfclosestroke
+
+\def\pgfpointxy#1#2{%
+  \pgfmathparse{#1}%
+  \let\pgftemp@x=\pgfmathresult%
+  \pgfmathparse{#2}%
+  \let\pgftemp@y=\pgfmathresult%
+  \global\pgf@x=\pgftemp@x\pgf@xx%
+  \global\advance\pgf@x by \pgftemp@y\pgf@yx%
+  \global\pgf@y=\pgftemp@x\pgf@xy%
+  \global\advance\pgf@y by \pgftemp@y\pgf@yy}
+
+
+% "Quick" variant for \pgfpointxy.
+%
+% Only numbers without unit are allowed here.
+\def\pgfqpointxy#1#2{%
+  \global\pgf@x=#1\pgf@xx%
+  \global\advance\pgf@x by #2\pgf@yx%
+  \global\pgf@y=#1\pgf@xy%
+  \global\advance\pgf@y by #2\pgf@yy}
+
+% Store the vector #1 * x-vec + #2 * y-vec + #3 * z-vec
+%
+% #1 = a factor for the x-vector
+% #2 = a factor for the y-vector
+% #3 = a factor for the z-vector
+%
+% x = x-component of result vector
+% y = y-component of result vector
+%
+%
+% Description:
+%
+% This command allows you to use a 3d coordinate system.
+%
+%
+% Example:
+%
+% % Draw a cubus
+%
+% \pgfline{\pgfpointxyz{0}{0}{0}}{\pgfpointxyz{0}{0}{1}}
+% \pgfline{\pgfpointxyz{0}{1}{0}}{\pgfpointxyz{0}{1}{1}}
+% \pgfline{\pgfpointxyz{1}{0}{0}}{\pgfpointxyz{1}{0}{1}}
+% \pgfline{\pgfpointxyz{1}{1}{0}}{\pgfpointxyz{1}{1}{1}}
+% \pgfline{\pgfpointxyz{0}{0}{0}}{\pgfpointxyz{0}{1}{0}}
+% \pgfline{\pgfpointxyz{0}{0}{1}}{\pgfpointxyz{0}{1}{1}}
+% \pgfline{\pgfpointxyz{1}{0}{0}}{\pgfpointxyz{1}{1}{0}}
+% \pgfline{\pgfpointxyz{1}{0}{1}}{\pgfpointxyz{1}{1}{1}}
+% \pgfline{\pgfpointxyz{0}{0}{0}}{\pgfpointxyz{1}{0}{0}}
+% \pgfline{\pgfpointxyz{0}{0}{1}}{\pgfpointxyz{1}{0}{1}}
+% \pgfline{\pgfpointxyz{0}{1}{0}}{\pgfpointxyz{1}{1}{0}}
+% \pgfline{\pgfpointxyz{0}{1}{1}}{\pgfpointxyz{1}{1}{1}}
+
+\def\pgfpointxyz#1#2#3{%
+  \pgfmathparse{#1}%
+  \let\pgftemp@x=\pgfmathresult%
+  \pgfmathparse{#2}%
+  \let\pgftemp@y=\pgfmathresult%
+  \pgfmathparse{#3}%
+  \let\pgftemp@z=\pgfmathresult%
+  \global\pgf@x=\pgftemp@x\pgf@xx%
+  \global\advance\pgf@x by \pgftemp@y\pgf@yx%
+  \global\advance\pgf@x by \pgftemp@z\pgf@zx%
+  \global\pgf@y=\pgftemp@x\pgf@xy%
+  \global\advance\pgf@y by \pgftemp@y\pgf@yy%
+  \global\advance\pgf@y by \pgftemp@z\pgf@zy}
+
+% "Quick" variant for \pgfpointxyz.
+%
+% Only numbers without unit are allowed.
+\def\pgfqpointxyz#1#2#3{%
+  \global\pgf@x=#1\pgf@xx%
+  \global\advance\pgf@x by #2\pgf@yx%
+  \global\advance\pgf@x by #3\pgf@zx%
+  \global\pgf@y=#1\pgf@xy%
+  \global\advance\pgf@y by #2\pgf@yy%
+  \global\advance\pgf@y by #3\pgf@zy}
+
+
+
+% Set the x-vector
+%
+% #1 = a point the is the new x-vector
+%
+% Example:
+%
+% \pgfsetxvec{\pgfpoint{1cm}{0cm}}
+
+\def\pgfsetxvec#1{%
+  \pgf@process{#1}%
+  \pgf@xx=\pgf@x%
+  \pgf@xy=\pgf@y%
+  \ignorespaces}
+
+
+% Set the y-vector
+%
+% #1 = a point the is the new y-vector
+%
+% Example:
+%
+% \pgfsetyvec{\pgfpoint{0cm}{1cm}}
+
+\def\pgfsetyvec#1{%
+  \pgf@process{#1}%
+  \pgf@yx=\pgf@x%
+  \pgf@yy=\pgf@y%
+  \ignorespaces}
+
+
+% Set the z-vector
+%
+% #1 = a point the is the new z-vector
+%
+% Example:
+%
+% \pgfsetzvec{\pgfpoint{-0.385cm}{-0.385cm}}
+
+\def\pgfsetzvec#1{%
+  \pgf@process{#1}%
+  \pgf@zx=\pgf@x%
+  \pgf@zy=\pgf@y%
+  \ignorespaces}
+
+
+
+% Default values
+\pgfsetxvec{\pgfpoint{1cm}{0cm}}
+\pgfsetyvec{\pgfpoint{0cm}{1cm}}
+\pgfsetzvec{\pgfpoint{-0.385cm}{-0.385cm}}
+
+
+
+
+% Normalise a point.
+%
+% #1 = point with coordinates (a,b)
+%
+% x  = a/\sqrt(a*a+b*b)
+% y  = b/\sqrt(a*a+b*b)
+%
+% Example:
+%
+% \pgfpointnormalised{\pgfpointxy{2}{1}}
+
+\def\pgfpointnormalised#1{%
+  \pgf@process{#1}%
+  \pgfmathatantwo{\the\pgf@y}{\the\pgf@x}%
+  \let\pgf@tmp=\pgfmathresult%
+  \pgfmathcos@{\pgf@tmp}%
+  \pgf@x=\pgfmathresult pt\relax%
+  \pgfmathsin@{\pgf@tmp}%
+  \pgf@y=\pgfmathresult pt\relax%
+}
+
+
+
+
+
+% A point on a rectangle in a certain direction.
+%
+% #1 = a point pointing in some direction (length should be about 1pt,
+%      but need not be exact)
+% #2 = upper right corner of a rectangle centered at the origin
+%
+% Returns the intersection of a line starting at the origin going in
+% the given direction and the rectangle's border.
+%
+% Example:
+%
+% \pgfpointborderrectangle{\pgfpointnormalised{\pgfpointxy{2}{1}}
+%   {\pgfpoint{1cm}{2cm}}
+
+\def\pgfpointborderrectangle#1#2{%
+  \pgf@process{#2}%
+  \pgf@xb=\pgf@x%
+  \pgf@yb=\pgf@y%
+  \pgf@process{#1}%
+  % Ok, let's find out about the direction:
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \ifnum\pgf@xa<0\relax% move into first quadrant
+    \global\pgf@x=-\pgf@x%
+  \fi%
+  \ifnum\pgf@ya<0\relax%
+    \global\pgf@y=-\pgf@y%
+  \fi%
+  \pgf@xc=.125\pgf@x%
+  \pgf@yc=.125\pgf@y%
+  \c@pgf@counta=\pgf@xc%
+  \c@pgf@countb=\pgf@yc%
+  \ifnum\c@pgf@countb<\c@pgf@counta%
+    \ifnum\c@pgf@counta<255\relax%
+      \global\pgf@y=\pgf@yb\relax%
+      \global\pgf@x=0pt\relax%
+    \else%
+      \pgf@xc=8192pt%
+      \divide\pgf@xc by\c@pgf@counta% \pgf@xc = 1/\pgf@x
+      \global\pgf@y=\pgf@sys@tonumber{\pgf@xc}\pgf@y%
+      \global\pgf@y=\pgf@sys@tonumber{\pgf@xb}\pgf@y%
+      \ifnum\pgf@y<\pgf@yb%
+        \global\pgf@x=\pgf@xb%
+      \else% rats, calculate intersection on upper side
+        \ifnum\c@pgf@countb<255\relax%
+          \global\pgf@x=\pgf@xb\relax%
+          \global\pgf@y=0pt\relax%
+        \else%
+          \pgf@yc=8192pt%
+          \divide\pgf@yc by\c@pgf@countb% \pgf@xc = 1/\pgf@x
+          \global\pgf@x=\pgf@sys@tonumber{\pgf@yc}\pgf@x%
+          \global\pgf@x=\pgf@sys@tonumber{\pgf@yb}\pgf@x%
+          \global\pgf@y=\pgf@yb%
+        \fi%
+      \fi%
+    \fi%
+  \else%
+    \ifnum\c@pgf@countb<255\relax%
+      \global\pgf@x=\pgf@xb\relax%
+      \global\pgf@y=0pt\relax%
+    \else%
+      \pgf@yc=8192pt%
+      \divide\pgf@yc by\c@pgf@countb% \pgf@xc = 1/\pgf@x
+      \global\pgf@x=\pgf@sys@tonumber{\pgf@yc}\pgf@x%
+      \global\pgf@x=\pgf@sys@tonumber{\pgf@yb}\pgf@x%
+      \ifnum\pgf@x<\pgf@xb%
+        \global\pgf@y=\pgf@yb%
+      \else%
+        \ifnum\c@pgf@counta<255\relax%
+          \global\pgf@y=\pgf@yb\relax%
+          \global\pgf@x=0pt\relax%
+        \else%
+          \pgf@xc=8192pt%
+          \divide\pgf@xc by\c@pgf@counta% \pgf@xc = 1/\pgf@x
+          \global\pgf@y=\pgf@sys@tonumber{\pgf@xc}\pgf@y%
+          \global\pgf@y=\pgf@sys@tonumber{\pgf@xb}\pgf@y%
+          \global\pgf@x=\pgf@xb%
+        \fi%
+      \fi%
+    \fi%
+  \fi%
+  \ifnum\pgf@xa<0\relax\global\pgf@x=-\pgf@x\fi%
+  \ifnum\pgf@ya<0\relax\global\pgf@y=-\pgf@y\fi%
+}
+
+
+
+
+% An approximation to a point on an ellipse in a certain
+% direction. Will be exact only if the ellipse is a circle.
+%
+% #1 = a point pointing in some direction
+% #2 = upper right corner of a bounding box for the ellipse
+%
+% Returns the intersection of a line starting at the origin going in
+% the given direction and the ellipses border.
+%
+% Example:
+%
+% \pgfpointborderellipse{\pgfpointnormalised{\pgfpointxy{2}{1}}
+%   {\pgfpoint{1cm}{2cm}}
+
+\def\pgfpointborderellipse#1#2{%
+  \pgf@process{#2}%
+  \pgf@xa=\pgf@x%
+  \pgf@ya=\pgf@y%
+  \ifdim\pgf@xa=\pgf@ya% circle. that's easy!
+    \pgf@process{\pgfpointnormalised{#1}}%
+    \global\pgf@x=\pgf@sys@tonumber{\pgf@xa}\pgf@x%
+    \global\pgf@y=\pgf@sys@tonumber{\pgf@xa}\pgf@y%
+  \else%
+    \ifdim\pgf@xa<\pgf@ya%
+      % Ok, first, let's compute x/y:
+      \c@pgf@countb=\pgf@ya%
+      \divide\c@pgf@countb by65536\relax%
+      \global\divide\pgf@x by\c@pgf@countb%
+      \global\divide\pgf@y by\c@pgf@countb%
+      \pgf@xc=\pgf@x%
+      \pgf@yc=8192pt%
+      \global\pgf@y=.125\pgf@y%
+      \c@pgf@countb=\pgf@y%
+      \divide\pgf@yc by\c@pgf@countb%
+      \pgf@process{#1}%
+      \global\pgf@y=\pgf@sys@tonumber{\pgf@yc}\pgf@y%
+      \global\pgf@y=\pgf@sys@tonumber{\pgf@xc}\pgf@y%
+      \pgf@process{\pgfpointnormalised{}}%
+      \global\pgf@x=\pgf@sys@tonumber{\pgf@xa}\pgf@x%
+      \global\pgf@y=\pgf@sys@tonumber{\pgf@ya}\pgf@y%
+    \else%
+      % Ok, now let's compute y/x:
+      \c@pgf@countb=\pgf@xa%
+      \divide\c@pgf@countb by65536\relax%
+      \global\divide\pgf@x by\c@pgf@countb%
+      \global\divide\pgf@y by\c@pgf@countb%
+      \pgf@yc=\pgf@y%
+      \pgf@xc=8192pt%
+      \global\pgf@x=.125\pgf@x%
+      \c@pgf@countb=\pgf@x%
+      \divide\pgf@xc by\c@pgf@countb%
+      \pgf@process{#1}%
+      \global\pgf@x=\pgf@sys@tonumber{\pgf@yc}\pgf@x%
+      \global\pgf@x=\pgf@sys@tonumber{\pgf@xc}\pgf@x%
+      \pgf@process{\pgfpointnormalised{}}%
+      \global\pgf@x=\pgf@sys@tonumber{\pgf@xa}\pgf@x%
+      \global\pgf@y=\pgf@sys@tonumber{\pgf@ya}\pgf@y%
+    \fi%
+  \fi%
+}
+
+
+
+
+
+% Extract the x-coordinate of a point to a dimensions
+%
+% #1 = a TeX dimension
+% #2 = a point
+%
+% Example:
+%
+% \newdimen\mydim
+% \pgfextractx{\mydim}{\pgfpoint{2cm}{4pt}}
+% % \mydim is now 2cm
+
+\def\pgfextractx#1#2{%
+  \pgf@process{#2}%
+  #1=\pgf@x\relax}
+
+
+% Extract the y-coordinate of a point to a dimensions
+%
+% #1 = a TeX dimension
+% #2 = a point
+%
+% Example:
+%
+% \newdimen\mydim
+% \pgfextracty{\mydim}{\pgfpoint{2cm}{4pt}}
+% % \mydim is now 4pt
+
+\def\pgfextracty#1#2{%
+  \pgf@process{#2}%
+  #1=\pgf@y\relax}
+
+
+% Stores the most recently used (x,y) coordinates into two macros, #1 and #2.
+\def\pgfgetlastxy#1#2{%
+    \edef#1{\the\pgf@x}%
+    \edef#2{\the\pgf@y}%
+}%
+
+
+\def\pgf@def#1#2#3{\expandafter\def\csname pgf@#1#2\endcsname{#3}}
+\pgf@def{cosfrac}{0}{1}
+\pgf@def{cosfrac}{1}{0.99995}    \pgf@def{cosfrac}{2}{0.9998}
+\pgf@def{cosfrac}{3}{0.99955}    \pgf@def{cosfrac}{4}{0.999201}
+\pgf@def{cosfrac}{5}{0.998752}   \pgf@def{cosfrac}{6}{0.998205}
+\pgf@def{cosfrac}{7}{0.997559}   \pgf@def{cosfrac}{8}{0.996815}
+\pgf@def{cosfrac}{9}{0.995974}   \pgf@def{cosfrac}{10}{0.995037}
+\pgf@def{cosfrac}{11}{0.994004}  \pgf@def{cosfrac}{12}{0.992877}
+\pgf@def{cosfrac}{13}{0.991656}  \pgf@def{cosfrac}{14}{0.990342}
+\pgf@def{cosfrac}{15}{0.988936}  \pgf@def{cosfrac}{16}{0.987441}
+\pgf@def{cosfrac}{17}{0.985856}  \pgf@def{cosfrac}{18}{0.984183}
+\pgf@def{cosfrac}{19}{0.982424}  \pgf@def{cosfrac}{20}{0.980581}
+\pgf@def{cosfrac}{21}{0.978653}  \pgf@def{cosfrac}{22}{0.976644}
+\pgf@def{cosfrac}{23}{0.974555}  \pgf@def{cosfrac}{24}{0.972387}
+\pgf@def{cosfrac}{25}{0.970143}  \pgf@def{cosfrac}{26}{0.967823}
+\pgf@def{cosfrac}{27}{0.965429}  \pgf@def{cosfrac}{28}{0.962964}
+\pgf@def{cosfrac}{29}{0.960429}  \pgf@def{cosfrac}{30}{0.957826}
+\pgf@def{cosfrac}{31}{0.955157}  \pgf@def{cosfrac}{32}{0.952424}
+\pgf@def{cosfrac}{33}{0.949629}  \pgf@def{cosfrac}{34}{0.946773}
+\pgf@def{cosfrac}{35}{0.943858}  \pgf@def{cosfrac}{36}{0.940887}
+\pgf@def{cosfrac}{37}{0.937862}  \pgf@def{cosfrac}{38}{0.934784}
+\pgf@def{cosfrac}{39}{0.931655}  \pgf@def{cosfrac}{40}{0.928477}
+\pgf@def{cosfrac}{41}{0.925252}  \pgf@def{cosfrac}{42}{0.921982}
+\pgf@def{cosfrac}{43}{0.918669}  \pgf@def{cosfrac}{44}{0.915315}
+\pgf@def{cosfrac}{45}{0.911922}  \pgf@def{cosfrac}{46}{0.90849}
+\pgf@def{cosfrac}{47}{0.905024}  \pgf@def{cosfrac}{48}{0.901523}
+\pgf@def{cosfrac}{49}{0.89799}   \pgf@def{cosfrac}{50}{0.894427}
+\pgf@def{cosfrac}{51}{0.890835}  \pgf@def{cosfrac}{52}{0.887217}
+\pgf@def{cosfrac}{53}{0.883573}  \pgf@def{cosfrac}{54}{0.879905}
+\pgf@def{cosfrac}{55}{0.876216}  \pgf@def{cosfrac}{56}{0.872506}
+\pgf@def{cosfrac}{57}{0.868777}  \pgf@def{cosfrac}{58}{0.865031}
+\pgf@def{cosfrac}{59}{0.861269}  \pgf@def{cosfrac}{60}{0.857493}
+\pgf@def{cosfrac}{61}{0.853704}  \pgf@def{cosfrac}{62}{0.849903}
+\pgf@def{cosfrac}{63}{0.846092}  \pgf@def{cosfrac}{64}{0.842271}
+\pgf@def{cosfrac}{65}{0.838444}  \pgf@def{cosfrac}{66}{0.834609}
+\pgf@def{cosfrac}{67}{0.83077}   \pgf@def{cosfrac}{68}{0.826927}
+\pgf@def{cosfrac}{69}{0.82308}   \pgf@def{cosfrac}{70}{0.819232}
+\pgf@def{cosfrac}{71}{0.815383}  \pgf@def{cosfrac}{72}{0.811534}
+\pgf@def{cosfrac}{73}{0.807687}  \pgf@def{cosfrac}{74}{0.803842}
+\pgf@def{cosfrac}{75}{0.8}       \pgf@def{cosfrac}{76}{0.796162}
+\pgf@def{cosfrac}{77}{0.792329}  \pgf@def{cosfrac}{78}{0.788502}
+\pgf@def{cosfrac}{79}{0.784682}  \pgf@def{cosfrac}{80}{0.780869}
+\pgf@def{cosfrac}{81}{0.777064}  \pgf@def{cosfrac}{82}{0.773268}
+\pgf@def{cosfrac}{83}{0.769481}  \pgf@def{cosfrac}{84}{0.765705}
+\pgf@def{cosfrac}{85}{0.761939}  \pgf@def{cosfrac}{86}{0.758185}
+\pgf@def{cosfrac}{87}{0.754443}  \pgf@def{cosfrac}{88}{0.750714}
+\pgf@def{cosfrac}{89}{0.746997}  \pgf@def{cosfrac}{90}{0.743294}
+\pgf@def{cosfrac}{91}{0.739605}  \pgf@def{cosfrac}{92}{0.735931}
+\pgf@def{cosfrac}{93}{0.732272}  \pgf@def{cosfrac}{94}{0.728628}
+\pgf@def{cosfrac}{95}{0.724999}  \pgf@def{cosfrac}{96}{0.721387}
+\pgf@def{cosfrac}{97}{0.717792}  \pgf@def{cosfrac}{98}{0.714213}
+\pgf@def{cosfrac}{99}{0.710651}  \pgf@def{cosfrac}{100}{0.707107}
+
+
+
+
+% Forward declarations for nonlinear stuff (have no effect till module
+% nonlineartransformations is loaded)
+
+\let\pgfpointtransformednonlinear\pgfpointtransformed
+
+
+\endinput

@@ -1,0 +1,86 @@
+% Copyright 2021 by Michal Hoftich
+% Copyright 2006 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfsys-dvisvgm4ht.def}
+
+% Driver commands for tex4ht
+
+%
+% Load common pdf commands:
+%
+
+% we load the dvips driver by default. it doesn't support patterns and some other stuff,
+% but it handles better nested images and some formatting. if you use patterns or if you
+% have other issues with the default method, pass the "tikz-dvisvgm" option to make4ht. 
+\ifdefined\ifOption
+\ifOption{tikz+}{\input pgfsys-dvisvgm.def}{\input pgfsys-dvips.def}
+\else
+% load the dvips driver by default
+\input pgfsys-dvips.def
+\fi
+
+
+\def\texfourht@tikz@begin{%
+  \bgroup%
+  \def\run@pict@cmd{}% insert the \Picture hooks only in the top nesting level
+  \def\end@pict@cmd{}%
+  \ifdefined\EndPicture\else% We are already inside command that uses \Picture
+  \ifdefined\inside@pict@cmd\else% handle nested uses
+  \ifdefined\tikzexternalize\else% Support externalize library
+  \def\run@pict@cmd{\Picture*}%
+  \def\end@pict@cmd{\EndPicture}%
+  \fi\fi\fi%
+  % command used to detect nesting
+  \def\inside@pict@cmd{}%
+  \csname a:tikzpicture\endcsname%
+}
+
+\def\texfourht@tikz@end{%
+  \csname b:tikzpicture\endcsname%
+  \egroup%
+}
+
+\AtBeginDocument{%
+  \NewConfigure{tikzpicture}{2}%
+  \catcode`\:=11%
+  \Configure{tikzpicture}{%
+    \protect\csname nested:math\endcsname% support display math
+    \run@pict@cmd{}%
+  }{\end@pict@cmd}
+  % configure the output picture format to svg, as it will require dvisvgm
+  % post processing. 
+  \Configure{Picture}{.svg}%
+  % insert tex4ht hooks around TikZ picture box
+  \def\pgfsys@typesetpicturebox#1{%
+    \texfourht@tikz@begin%
+    \orig@pgfsys@typesetpicturebox{#1}%
+    \texfourht@tikz@end%
+  }
+  %
+  \ConfigureEnv{tikzpicture}{\texfourht@tikz@begin}{\texfourht@tikz@end}{}{}%
+  \ConfigureEnv{pgfpicture}{\texfourht@tikz@begin}{\texfourht@tikz@end}{}{}%
+  \catcode`\:=12%
+}
+
+
+% Make the code inserted by tex4ht configurable
+% 
+
+
+\let\orig@pgfsys@typesetpicturebox\pgfsys@typesetpicturebox
+%\def\pgf@sys@postscript@header#1{{\special{! #1}}}
+
+
+\endinput
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% End:

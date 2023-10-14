@@ -1,0 +1,444 @@
+% Copyright 2018 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{tikzlibrarycalendar.code.tex}
+
+
+\pgfutil@usemodule{pgfcalendar}
+
+
+%
+% General options (these options affect all calendars typeset unsind \calendar):
+%
+% Start, end, and code executed for each current date
+%
+
+\tikzoption{dates}{\tikz@lib@cal@parse#1\relax}
+\def\tikz@lib@cal@parse#1to#2\relax{%
+  \def\tikz@lib@cal@start{#1}
+  \def\tikz@lib@cal@end{#2}%
+}
+\tikzoption{execute at begin day scope}{\expandafter\def\expandafter\tikz@atbegin@day\expandafter{\tikz@atbegin@day#1}}
+\tikzoption{execute at end day scope}{%
+  \def\pgf@temp{#1}%
+  \expandafter\expandafter\expandafter\def%
+  \expandafter\expandafter\expandafter\tikz@atend@day%
+  \expandafter\expandafter\expandafter{\expandafter\pgf@temp\tikz@atend@day}}
+\tikzoption{execute before day scope}{\expandafter\def\expandafter\tikz@before@day\expandafter{\tikz@before@day#1}}
+\tikzoption{execute after day scope}{\expandafter\def\expandafter\tikz@after@day\expandafter{\tikz@after@day#1}}
+
+\let\tikz@atbegin@day=\pgfutil@empty
+\let\tikz@atend@day=\pgfutil@empty
+\let\tikz@before@day=\pgfutil@empty
+\let\tikz@after@day=\pgfutil@empty
+
+
+
+%
+% Options affecting some calendars:
+%
+
+%
+% Shifts and skips
+%
+
+% Shift between days
+
+\tikzoption{day xshift}{\def\tikz@lib@cal@xshift{#1}}
+\tikzoption{day yshift}{\def\tikz@lib@cal@yshift{#1}}
+
+\def\tikz@lib@cal@yshift{3ex}
+\def\tikz@lib@cal@xshift{3.5ex}
+
+
+% Shift between months
+
+\tikzoption{month xshift}{\def\tikz@lib@cal@month@xshift{#1}}
+\tikzoption{month yshift}{\def\tikz@lib@cal@month@yshift{#1}}
+
+\def\tikz@lib@cal@month@yshift{9ex}
+\def\tikz@lib@cal@month@xshift{9ex}
+
+
+
+
+% Templates for typesetting days, month, years
+
+\tikzoption{day code}{\def\tikzdaycode{#1}}
+\tikzoption{day text}{\def\tikzdaytext{#1}}
+\tikzoption{days}{\tikzset{every day/.append style={#1}}}
+\tikzset{every day/.style={anchor=base east}}
+
+\tikzoption{month code}{\def\tikzmonthcode{#1}}
+\tikzoption{month text}{\def\tikzmonthtext{#1}}
+\tikzset{every month/.style={}}
+
+\tikzoption{year code}{\def\tikzyearcode{#1}}
+\tikzoption{year text}{\def\tikzyeartext{#1}}
+\tikzset{every year/.style={}}
+
+\def\tikzdaycode{\node[name=\pgfcalendarsuggestedname,every day]{\tikzdaytext};}
+\def\tikzmonthcode{\node[every month]{\tikzmonthtext};}
+\def\tikzyearcode{\node[every year]{\tikzyeartext};}
+
+\def\tikzdaytext{\%d-}
+\def\tikzmonthtext{\%mt}
+\def\tikzyeartext{\%y0}
+
+
+% Internal option for storing the "width" of a calendar as a number of
+% days
+
+\tikzoption{tikz@lib@cal@width}{\def\tikz@lib@cal@width{#1}}
+
+\def\tikz@lib@cal@width{1}
+
+%
+% Days on a line
+%
+
+\tikzset{day list downward/.style={%
+  execute before day scope={
+    \ifdate{day of month=1}{\ifdate{equals=\pgfcalendarbeginiso}{}
+      {%
+        % On first of month, except when first date in calendar.
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@month@yshift}%
+        \pgftransformyshift{-\pgf@y}
+      }%
+    }{}%
+  },
+  execute after day scope={\pgfmathsetlength{\pgf@y}{\tikz@lib@cal@yshift}\pgftransformyshift{-\pgf@y}},
+  tikz@lib@cal@width=1
+}}
+\tikzset{day list upward/.style={%
+  execute before day scope={
+    \ifdate{day of month=1}{\ifdate{equals=\pgfcalendarbeginiso}{}
+      {%
+        % On first of month, except when first date in calendar.
+        \pgftransformyshift{\tikz@lib@cal@month@yshift}%
+      }%
+    }{}%
+  },
+  execute after day scope={\pgftransformyshift\tikz@lib@cal@yshift},
+  tikz@lib@cal@width=1
+}}
+\tikzset{day list right/.style={%
+  execute before day scope={
+    \ifdate{day of month=1}{\ifdate{equals=\pgfcalendarbeginiso}{}
+      {%
+        % On first of month, except when first date in calendar.
+        \pgftransformxshift{\tikz@lib@cal@month@xshift}%
+      }%
+    }{}%
+  },
+  execute after day scope={\pgftransformxshift\tikz@lib@cal@xshift},
+  tikz@lib@cal@width=30% not quite right, but close enough in most cases...
+}}
+
+\tikzset{day list left/.style={%
+  execute before day scope={
+    \ifdate{day of month=1}{\ifdate{equals=\pgfcalendarbeginiso}{}
+      {%
+        % On first of month, except when first date in calendar.
+        \pgfmathsetlength{\pgf@x}{\tikz@lib@cal@month@xshift}
+        \pgftransformxshift{-\pgf@x}%
+      }%
+    }{}%
+  },
+  execute after day scope={
+    \pgfmathsetlength{\pgf@x}{\tikz@lib@cal@xshift}
+    \pgftransformxshift{-\pgf@x}%
+  },
+  tikz@lib@cal@width=30% not quite right, but close enough in most cases...
+}}
+
+
+
+%
+% Week list
+%
+
+\tikzset{week list/.style={%
+  execute before day scope={%
+    \ifdate{day of month=1}{\ifdate{equals=\pgfcalendarbeginiso}{}
+      {%
+        % On first of month, except when first date in calendar.
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@month@yshift}%
+        \pgftransformyshift{-\pgf@y}
+      }%
+    }{}%
+  },
+  execute at begin day scope={%
+    \pgfmathsetlength\pgf@x{\tikz@lib@cal@xshift}%
+    \pgf@x=\pgfcalendarcurrentweekday\pgf@x%
+    \pgftransformxshift{\pgf@x}%
+  },
+  execute after day scope={%
+    \ifdate{Sunday}{%
+      \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@yshift}%
+      \pgftransformyshift{-\pgf@y}
+    }{}%
+  },
+  tikz@lib@cal@width=7
+}}
+
+
+
+%
+% Month list
+%
+
+\tikzset{month list/.style={%
+  execute before day scope={%
+    \ifdate{day of month=1}{\ifdate{equals=\pgfcalendarbeginiso}{}
+      {%
+        % On first of month, except when first date in calendar.
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@month@yshift}%
+        \pgftransformyshift{-\pgf@y}
+      }%
+    }{}%
+    \ifdate{day of month=1}
+    {%
+      \edef\tikz@lib@cal@month@list@start{\pgfcalendarcurrentweekday}%
+    }{}%
+    \ifdate{equals=\pgfcalendarbeginiso}%
+    {%
+      % Computer day of week for start of month
+      {%
+        \c@pgf@counta=\pgfcalendarcurrentjulian%
+        \advance\c@pgf@counta by-\pgfcalendarcurrentday%
+        \advance\c@pgf@counta by1\relax%
+        \pgfcalendarjuliantoweekday{\c@pgf@counta}{\c@pgf@countb}%
+        \xdef\pgf@temp{\the\c@pgf@countb}%
+      }%
+      \let\tikz@lib@cal@month@list@start=\pgf@temp%
+    }{}%
+  },
+  execute at begin day scope={%
+    \pgfmathsetlength\pgf@xa{\tikz@lib@cal@xshift}%
+    \pgf@xb=\pgfcalendarcurrentday\pgf@xa%
+    \advance\pgf@xb by\tikz@lib@cal@month@list@start\pgf@xa%
+    \advance\pgf@xb by-\pgf@xa\relax%
+    \pgftransformxshift{\pgf@xb}%
+  },
+  tikz@lib@cal@width=37
+}}
+
+
+
+
+%
+% Month labels
+%
+
+\tikzset{month label left/.style={%
+  execute before day scope={\ifdate{day of month=1}{\tikzmonthcode}{}},
+  every month/.append style={anchor=base east,xshift=-3.5ex}
+}}
+
+\tikzset{month label left vertical/.style={%
+  execute before day scope={\ifdate{day of month=1}{\tikzmonthcode}{}},
+  every month/.append style={anchor=base east,xshift=-4.5ex,yshift=2.25ex,rotate=90}
+}}
+
+\tikzset{month label right/.style={%
+execute before day scope={\ifdate{day of month=1}{%
+    {%
+      \pgfmathsetlength{\pgf@xa}{\tikz@lib@cal@xshift}%
+      \pgftransformxshift{\tikz@lib@cal@width\pgf@xa}%
+      \pgftransformxshift{-\pgf@xa}%
+      \tikzmonthcode%
+    }}{}},
+  every month/.append style={anchor=base west,xshift=1ex}
+}}
+
+\tikzset{month label right vertical/.style={%
+  execute before day scope={\ifdate{day of month=1}{%
+    {%
+      \pgfmathsetlength{\pgf@xa}{\tikz@lib@cal@xshift}%
+      \pgftransformxshift{\tikz@lib@cal@width\pgf@xa}%
+      \pgftransformxshift{-\pgf@xa}%
+      \tikzmonthcode%
+    }}{}},
+  every month/.append style={anchor=base west,xshift=2ex,yshift=2.25ex,rotate=-90}
+}}
+
+\tikzset{month label above centered/.style={%
+  execute before day scope={%
+    \ifdate{day of month=1}{%
+      {
+        \pgfmathsetlength{\pgf@xa}{\tikz@lib@cal@xshift}%
+        \pgf@xb=\tikz@lib@cal@width\pgf@xa%
+        \advance\pgf@xb by-\pgf@xa%
+        \pgf@xb=.5\pgf@xb%
+        \pgftransformxshift{\pgf@xb}%
+        \pgftransformxshift{-1.5ex}%
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@yshift}%
+        \pgftransformyshift{1.25\pgf@y}
+        \tikzmonthcode%
+      }
+    }{}},
+  every month/.append style={anchor=base}
+}}
+
+\tikzset{month label above left/.style={%
+  execute before day scope={%
+    \ifdate{day of month=1}{%
+      {
+        \pgftransformxshift{-3.25ex}%
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@yshift}%
+        \pgftransformyshift{1.25\pgf@y}
+        \tikzmonthcode%
+      }
+    }{}},
+  every month/.append style={anchor=base west}
+}}
+
+
+
+\tikzset{month label above right/.style={%
+  execute before day scope={%
+    \ifdate{day of month=1}{%
+      {
+        \pgfmathsetlength{\pgf@xa}{\tikz@lib@cal@xshift}%
+        \pgf@xb=\tikz@lib@cal@width\pgf@xa%
+        \advance\pgf@xb by-\pgf@xa%
+        \pgftransformxshift{\pgf@xb}%
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@yshift}%
+        \pgftransformyshift{1.25\pgf@y}
+        \tikzmonthcode%
+      }
+    }{}},
+  every month/.append style={anchor=base east}
+}}
+
+\tikzset{month label below centered/.style={%
+  execute before day scope={%
+    \ifdate{day of month=1}{%
+      {
+        \pgfmathsetlength{\pgf@xa}{\tikz@lib@cal@xshift}%
+        \pgf@xb=\tikz@lib@cal@width\pgf@xa%
+        \advance\pgf@xb by-\pgf@xa%
+        \pgf@xb=.5\pgf@xb%
+        \pgftransformxshift{\pgf@xb}%
+        \pgftransformxshift{-1.5ex}%
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@yshift}%
+        \pgftransformyshift{-1.25\pgf@y}
+        \tikzmonthcode%
+      }
+    }{}},
+  every month/.append style={anchor=base}
+}}
+
+\tikzset{month label below left/.style={%
+  execute before day scope={%
+    \ifdate{day of month=1}{%
+      {
+        \pgftransformxshift{-3.25ex}%
+        \pgfmathsetlength{\pgf@y}{\tikz@lib@cal@yshift}%
+        \pgftransformyshift{-1.25\pgf@y}
+        \tikzmonthcode%
+      }
+    }{}},
+  every month/.append style={anchor=base west}
+}}
+
+
+
+%
+% Code of the actual \calendar command (tikz.code.tex contains \let\calendar=\tikz@lib@cal@calendar):
+%
+
+\def\tikz@lib@cal@calendar{%
+  \begingroup%
+    \let\tikz@lib@cal@ifs=\pgfutil@empty%
+    \tikz@resetexpandcount
+    \tikzset{name=,at={(0,0)}}%
+    \let\%=\pgfcalendarshorthand%
+    \tikzset{every calendar/.try}%
+    \tikz@lib@cal@scanner%
+}
+
+\def\tikz@lib@cal@scanner{%
+  \afterassignment\tikz@lib@cal@handle\let\pgf@let@token=%
+}
+
+\def\tikz@lib@cal@handle{%
+  \pgfutil@switch\pgfutil@ifx\pgf@let@token{%
+    {;}{\let\pgfutil@next\tikz@lib@cal@stop}%
+    {(}{\let\pgfutil@next\tikz@lib@cal@name}%)
+    {a}{\let\pgfutil@next\tikz@lib@cal@at}%
+    {[}{\let\pgfutil@next\tikz@lib@cal@option}%]
+    {i}{\let\pgfutil@next\tikz@lib@cal@if}%
+  }{\tikz@resetexpandcount\pgfutil@next}{\tikz@lib@cal@expand}%
+}
+\def\tikz@lib@cal@expand{%
+  \advance\tikz@expandcount by -1
+  \ifnum\tikz@expandcount<0\relax%
+    \tikzerror{Giving up on this calendar}%
+    \let\pgfutil@next=\tikz@lib@cal@end%
+  \else%
+    \let\pgfutil@next=\tikz@lib@cal@@expand
+  \fi%
+  \pgfutil@next}
+
+\def\tikz@lib@cal@@expand{\expandafter\tikz@lib@cal@scanner\pgf@let@token}
+
+
+\def\tikz@lib@cal@name#1){%
+  \tikzset{name=#1}%
+  \tikz@lib@cal@scanner%
+}
+\def\tikz@lib@cal@at t#1(#2){%
+  \tikzset{at={(#2)}}%
+  \tikz@lib@cal@scanner%
+}
+\def\tikz@lib@cal@option#1]{%
+  \tikzset{#1}%
+  \tikz@lib@cal@scanner%
+}
+\def\tikz@lib@cal@if f#1(#2){%
+  \pgfutil@ifnextchar[{\tikz@lib@cal@if@opt{#2}}{\tikz@lib@cal@if@code{#2}}}%}
+
+\def\tikz@lib@cal@if@opt#1[#2]{\tikz@lib@cal@if@code{#1}{\tikzset{#2}}}
+\def\tikz@lib@cal@if@code#1#2{%
+  \pgfutil@ifnextchar e{\tikz@lib@cal@if@else{#1}{#2}}{\tikz@lib@cal@if@else{#1}{#2}else{}}}
+
+\def\tikz@lib@cal@if@else#1#2else{%
+  \pgfutil@ifnextchar[{\tikz@lib@cal@if@else@opt{#1}{#2}}{\tikz@lib@cal@if@else@code{#1}{#2}}}%}
+\def\tikz@lib@cal@if@else@opt#1#2[#3]{\tikz@lib@cal@if@else@code{#1}{#2}{\tikzset{#3}}}
+\def\tikz@lib@cal@if@else@code#1#2#3{%
+  \expandafter\def\expandafter\tikz@lib@cal@ifs\expandafter{\tikz@lib@cal@ifs\ifdate{#1}{#2}{#3}}%
+  \tikz@lib@cal@scanner%
+}
+\def\tikz@lib@cal@stop{%
+    \pgftransformshift{\tikz@node@at}%
+    \expandafter\pgfcalendar\expandafter{\tikz@fig@name}{\tikz@lib@cal@start}{\tikz@lib@cal@end}%
+    {%
+      \tikz@before@day%
+      \scope%
+        \tikz@atbegin@day%
+        \tikz@lib@cal@ifs%
+        \tikzdaycode%
+        \tikz@atend@day%
+      \endscope%
+      \tikz@after@day%
+    }%
+  \endgroup%
+}
+
+\tikzoption{if}{%
+  \let\tikz@lib@cal@scanner@orig=\tikz@lib@cal@scanner%
+  \let\tikz@lib@cal@scanner=\relax%
+  \tikz@lib@cal@if f#1\relax%
+  \let\tikz@lib@cal@scanner=\tikz@lib@cal@scanner@orig}
+
+
+
+\endinput

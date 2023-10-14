@@ -1,0 +1,974 @@
+% Copyright 2019 by Till Tantau
+% CMYK and grayscale shadings adaptation copyright 2019 by David Purton
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/generic/pgf/licenses/LICENSE for more details.
+
+\ProvidesFileRCS{pgfcoreshade.code.tex}
+
+%
+% Parsing functions
+%
+\newdimen\pgf@max
+\newcount\pgf@sys@shading@range@num
+\def\pgf@parsefunc#1{%
+  \edef\temp{{#1}}%
+  \expandafter\pgf@convertstring\temp%
+  \edef\temp{{\pgf@conv}}%
+  \expandafter\pgf@@parsefunc\temp}
+\def\pgf@@parsefunc#1{%
+  \let\pgf@bounds=\pgfutil@empty%
+  \let\pgf@funcs=\pgfutil@empty%
+  \let\pgf@psfuncs=\pgfutil@empty%
+  \let\pgf@encode=\pgfutil@empty%
+  \let\pgf@sys@shading@ranges=\pgfutil@empty%
+  \pgf@sys@shading@range@num=0\relax%
+  \csname pgf@parsefirst\pgf@shading@model\endcsname[#1; ]%
+  \csname pgf@parselastdom\pgf@shading@model\endcsname[#1; ]%
+  \csname pgf@parsemid\pgf@shading@model\endcsname[#1; ]%
+  \ifx\pgf@bounds\pgfutil@empty%
+    \edef\pgf@pdfparseddomain{0 1}%
+    \edef\pgf@pdfparsedfunction{\pgf@singlefunc\space}%
+  \else%
+    \edef\pgf@pdfparseddomain{\pgf@doma\space\pgf@domb}%
+    \edef\pgf@pdfparsedfunction{%
+      << /FunctionType 3 /Domain [\pgf@doma\space\pgf@domb] /Functions
+      [\pgf@funcs\space] /Bounds [\pgf@bounds] /Encode [0 1 \pgf@encode]
+      >> }% <<
+  \fi%
+  \xdef\pgf@psfuncs{\pgf@psfuncs}%
+  }
+\def\pgf@parsefirstrgb[rgb(#1)=(#2,#3,#4)#5]{%
+  \pgfmathsetlength\pgf@x{#1}%
+  \edef\pgf@sys@shading@start@pos{\the\pgf@x}%
+  \pgf@sys@bp@correct\pgf@x%
+  \edef\pgf@doma{\pgf@sys@tonumber{\pgf@x}}%
+  \edef\pgf@prevx{\pgf@sys@tonumber{\pgf@x}}%
+  \pgf@getrgbtuplewithmixin{#2}{#3}{#4}%
+  \edef\pgf@sys@shading@start@rgb{\pgf@sys@rgb}%
+  \let\pgf@sys@prevcolor=\pgf@sys@shading@start@rgb%
+  \let\pgf@sys@prevpos=\pgf@sys@shading@start@pos%
+  \edef\pgf@prevcolor{\pgf@rgb}%
+  \edef\pgf@firstcolor{\pgf@rgb}}
+\def\pgf@parselastdomrgb[rgb(#1)=(#2,#3,#4); {%
+  \pgfutil@ifnextchar]{%
+    \pgfmathsetlength\pgf@x{#1}%
+    \edef\pgf@sys@shading@end@pos{\the\pgf@x}%
+    \pgf@max=\pgf@x\relax%
+    \pgf@sys@bp@correct\pgf@x%
+    \edef\pgf@domb{\pgf@sys@tonumber{\pgf@x}}%
+    \pgf@getrgbtuplewithmixin{#2}{#3}{#4}%
+    \edef\pgf@sys@shading@end@rgb{\pgf@sys@rgb}%
+    \pgfutil@gobble}{\pgf@parselastdomrgb[}}
+\def\pgf@parsemidrgb[rgb(#1)=(#2,#3,#4); {\pgf@parserestrgb[}
+\def\pgf@parserestrgb[rgb(#1)=(#2,#3,#4); {%
+  \advance\pgf@sys@shading@range@num by1\relax%
+  \pgfutil@ifnextchar]{%
+    \pgf@getrgbtuplewithmixin{#2}{#3}{#4}%
+    \edef\pgf@singlefunc{\space%
+      << /FunctionType 2 /Domain [0 1] /C0
+      [\pgf@prevcolor] /C1 [\pgf@rgb] /N 1 >> }% <<
+    \edef\pgf@funcs{\pgf@funcs\space%
+      << /FunctionType 2 /Domain [\pgf@doma\space\pgf@domb] /C0
+      [\pgf@prevcolor] /C1 [\pgf@rgb] /N 1 >> }% <<
+    \edef\pgf@psfuncs{\pgf@prevx\space \pgf@rgb\space \pgf@prevcolor\space pgfshade \pgf@psfuncs}%
+    \pgfmathsetlength\pgf@x{#1}%
+    \edef\pgf@sys@shading@ranges{\pgf@sys@shading@ranges{{\pgf@sys@prevpos}{\the\pgf@x}{\pgf@sys@prevcolor}{\pgf@sys@rgb}}}%
+    \edef\pgf@sys@prevpos{\the\pgf@x}%
+    \let\pgf@sys@prevcolor=\pgf@sys@rgb%
+    \pgfutil@gobble}{%
+    \pgfmathsetlength\pgf@x{#1}%
+    \pgf@getrgbtuplewithmixin{#2}{#3}{#4}%
+    \edef\pgf@sys@shading@ranges{\pgf@sys@shading@ranges{{\pgf@sys@prevpos}{\the\pgf@x}{\pgf@sys@prevcolor}{\pgf@sys@rgb}}}%
+    \edef\pgf@sys@prevpos{\the\pgf@x}%
+    \let\pgf@sys@prevcolor=\pgf@sys@rgb%
+    \edef\pgf@psfuncs{\pgf@prevx\space \pgf@rgb\space \pgf@prevcolor\space pgfshade \pgf@psfuncs}%
+    \pgf@sys@bp@correct\pgf@x%
+    \edef\pgf@prevx{\pgf@sys@tonumber{\pgf@x}}%
+    \edef\pgf@bounds{\pgf@bounds\space\pgf@sys@tonumber{\pgf@x}}%
+    \edef\pgf@encode{\pgf@encode\space0 1}%
+    \edef\pgf@singlefunc{\space%
+      << /FunctionType 2 /Domain [0 1] /C0
+      [\pgf@prevcolor] /C1 [\pgf@rgb] /N 1 >> }% <<
+    \edef\pgf@funcs{\pgf@funcs\space%
+      << /FunctionType 2 /Domain [\pgf@doma\space\pgf@domb] /C0
+      [\pgf@prevcolor] /C1 [\pgf@rgb] /N 1 >> }% <<
+    \edef\pgf@prevcolor{\pgf@rgb}%
+    \pgf@parserestrgb[}}
+
+\def\pgf@getrgbtuplewithmixin#1#2#3{%
+  \pgfutil@definecolor{pgfshadetemp}{rgb}{#1,#2,#3}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgfshadetemp}}%
+  \pgfutil@extractcolorspec{pgfshadetemp}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{rgb}{\pgf@rgbcolor}%
+  \expandafter\pgf@getrgb@@\pgf@rgbcolor!}
+\def\pgf@getrgb@@#1,#2,#3!{%
+  \def\pgf@rgb{#1 #2 #3}%
+  \def\pgf@sys@rgb{{#1}{#2}{#3}}%
+}
+
+\def\pgf@parsefirstcmyk[cmyk(#1)=(#2,#3,#4,#5)#6]{%
+  \pgfmathsetlength\pgf@x{#1}%
+  \edef\pgf@sys@shading@start@pos{\the\pgf@x}%
+  \pgf@sys@bp@correct\pgf@x%
+  \edef\pgf@doma{\pgf@sys@tonumber{\pgf@x}}%
+  \edef\pgf@prevx{\pgf@sys@tonumber{\pgf@x}}%
+  \pgf@getcmyktuplewithmixin{#2}{#3}{#4}{#5}%
+  \edef\pgf@sys@shading@start@cmyk{\pgf@sys@cmyk}%
+  \let\pgf@sys@prevcolor=\pgf@sys@shading@start@cmyk%
+  \let\pgf@sys@prevpos=\pgf@sys@shading@start@pos%
+  \edef\pgf@prevcolor{\pgf@cmyk}%
+  \edef\pgf@firstcolor{\pgf@cmyk}}
+\def\pgf@parselastdomcmyk[cmyk(#1)=(#2,#3,#4,#5); {%
+  \pgfutil@ifnextchar]{%
+    \pgfmathsetlength\pgf@x{#1}%
+    \edef\pgf@sys@shading@end@pos{\the\pgf@x}%
+    \pgf@max=\pgf@x\relax%
+    \pgf@sys@bp@correct\pgf@x%
+    \edef\pgf@domb{\pgf@sys@tonumber{\pgf@x}}%
+    \pgf@getcmyktuplewithmixin{#2}{#3}{#4}{#5}%
+    \edef\pgf@sys@shading@end@cmyk{\pgf@sys@cmyk}%
+    \pgfutil@gobble}{\pgf@parselastdomcmyk[}}
+\def\pgf@parsemidcmyk[cmyk(#1)=(#2,#3,#4,#5); {\pgf@parserestcmyk[}
+\def\pgf@parserestcmyk[cmyk(#1)=(#2,#3,#4,#5); {%
+  \advance\pgf@sys@shading@range@num by1\relax%
+  \pgfutil@ifnextchar]{%
+    \pgf@getcmyktuplewithmixin{#2}{#3}{#4}{#5}%
+    \edef\pgf@singlefunc{\space%
+      << /FunctionType 2 /Domain [0 1] /C0
+      [\pgf@prevcolor] /C1 [\pgf@cmyk] /N 1 >> }% <<
+    \edef\pgf@funcs{\pgf@funcs\space%
+      << /FunctionType 2 /Domain [\pgf@doma\space\pgf@domb] /C0
+      [\pgf@prevcolor] /C1 [\pgf@cmyk] /N 1 >> }% <<
+    \edef\pgf@psfuncs{\pgf@prevx\space
+      \pgf@cmyk\space \pgf@prevcolor\space pgfshade \pgf@psfuncs}%
+    \pgfmathsetlength\pgf@x{#1}%
+    \edef\pgf@sys@shading@ranges{\pgf@sys@shading@ranges{%
+      {\pgf@sys@prevpos}{\the\pgf@x}{\pgf@sys@prevcolor}{\pgf@sys@cmyk}}}%
+    \edef\pgf@sys@prevpos{\the\pgf@x}%
+    \let\pgf@sys@prevcolor=\pgf@sys@cmyk%
+    \pgfutil@gobble}{%
+    \pgfmathsetlength\pgf@x{#1}%
+    \pgf@getcmyktuplewithmixin{#2}{#3}{#4}{#5}%
+    \edef\pgf@sys@shading@ranges{\pgf@sys@shading@ranges{%
+      {\pgf@sys@prevpos}{\the\pgf@x}{\pgf@sys@prevcolor}{\pgf@sys@cmyk}}}%
+    \edef\pgf@sys@prevpos{\the\pgf@x}%
+    \let\pgf@sys@prevcolor=\pgf@sys@cmyk%
+    \edef\pgf@psfuncs{\pgf@prevx\space \pgf@cmyk\space
+      \pgf@prevcolor\space pgfshade \pgf@psfuncs}%
+    \pgf@sys@bp@correct\pgf@x%
+    \edef\pgf@prevx{\pgf@sys@tonumber{\pgf@x}}%
+    \edef\pgf@bounds{\pgf@bounds\space\pgf@sys@tonumber{\pgf@x}}%
+    \edef\pgf@encode{\pgf@encode\space0 1}%
+    \edef\pgf@singlefunc{\space%
+      << /FunctionType 2 /Domain [0 1] /C0
+      [\pgf@prevcolor] /C1 [\pgf@cmyk] /N 1 >> }% <<
+    \edef\pgf@funcs{\pgf@funcs\space%
+      << /FunctionType 2 /Domain [\pgf@doma\space\pgf@domb] /C0
+      [\pgf@prevcolor] /C1 [\pgf@cmyk] /N 1 >> }% <<
+    \edef\pgf@prevcolor{\pgf@cmyk}%
+    \pgf@parserestcmyk[}}
+
+\def\pgf@getcmyktuplewithmixin#1#2#3#4{%
+  \pgfutil@definecolor{pgfshadetemp}{cmyk}{#1,#2,#3,#4}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgfshadetemp}}%
+  \pgfutil@extractcolorspec{pgfshadetemp}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{cmyk}{\pgf@cmykcolor}%
+  \expandafter\pgf@getcmyk@@\pgf@cmykcolor!}
+\def\pgf@getcmyk@@#1,#2,#3,#4!{%
+  \def\pgf@cmyk{#1 #2 #3 #4}%
+  \def\pgf@sys@cmyk{{#1}{#2}{#3}{#4}}%
+}
+
+\def\pgf@parsefirstgray[gray(#1)=(#2)#3]{%
+  \pgfmathsetlength\pgf@x{#1}%
+  \edef\pgf@sys@shading@start@pos{\the\pgf@x}%
+  \pgf@sys@bp@correct\pgf@x%
+  \edef\pgf@doma{\pgf@sys@tonumber{\pgf@x}}%
+  \edef\pgf@prevx{\pgf@sys@tonumber{\pgf@x}}%
+  \pgf@getgraytuplewithmixin{#2}%
+  \edef\pgf@sys@shading@start@gray{\pgf@sys@gray}%
+  \let\pgf@sys@prevcolor=\pgf@sys@shading@start@gray%
+  \let\pgf@sys@prevpos=\pgf@sys@shading@start@pos%
+  \edef\pgf@prevcolor{\pgf@gray}%
+  \edef\pgf@firstcolor{\pgf@gray}}
+\def\pgf@parselastdomgray[gray(#1)=(#2); {%
+  \pgfutil@ifnextchar]{%
+    \pgfmathsetlength\pgf@x{#1}%
+    \edef\pgf@sys@shading@end@pos{\the\pgf@x}%
+    \pgf@max=\pgf@x\relax%
+    \pgf@sys@bp@correct\pgf@x%
+    \edef\pgf@domb{\pgf@sys@tonumber{\pgf@x}}%
+    \pgf@getgraytuplewithmixin{#2}%
+    \edef\pgf@sys@shading@end@gray{\pgf@sys@gray}%
+    \pgfutil@gobble}{\pgf@parselastdomgray[}}
+\def\pgf@parsemidgray[gray(#1)=(#2); {\pgf@parserestgray[}
+\def\pgf@parserestgray[gray(#1)=(#2); {%
+  \advance\pgf@sys@shading@range@num by1\relax%
+  \pgfutil@ifnextchar]{%
+    \pgf@getgraytuplewithmixin{#2}%
+    \edef\pgf@singlefunc{\space%
+      << /FunctionType 2 /Domain [0 1] /C0
+      [\pgf@prevcolor] /C1 [\pgf@gray] /N 1 >> }% <<
+    \edef\pgf@funcs{\pgf@funcs\space%
+      << /FunctionType 2 /Domain [\pgf@doma\space\pgf@domb] /C0
+      [\pgf@prevcolor] /C1 [\pgf@gray] /N 1 >> }% <<
+    \edef\pgf@psfuncs{\pgf@prevx\space \pgf@gray\space
+      \pgf@prevcolor\space pgfshade \pgf@psfuncs}%
+    \pgfmathsetlength\pgf@x{#1}%
+    \edef\pgf@sys@shading@ranges{\pgf@sys@shading@ranges{%
+      {\pgf@sys@prevpos}{\the\pgf@x}{\pgf@sys@prevcolor}{\pgf@sys@gray}}}%
+    \edef\pgf@sys@prevpos{\the\pgf@x}%
+    \let\pgf@sys@prevcolor=\pgf@sys@gray%
+    \pgfutil@gobble}{%
+    \pgfmathsetlength\pgf@x{#1}%
+    \pgf@getgraytuplewithmixin{#2}%
+    \edef\pgf@sys@shading@ranges{\pgf@sys@shading@ranges{%
+      {\pgf@sys@prevpos}{\the\pgf@x}{\pgf@sys@prevcolor}{\pgf@sys@gray}}}%
+    \edef\pgf@sys@prevpos{\the\pgf@x}%
+    \let\pgf@sys@prevcolor=\pgf@sys@gray%
+    \edef\pgf@psfuncs{\pgf@prevx\space \pgf@gray\space
+      \pgf@prevcolor\space pgfshade \pgf@psfuncs}%
+    \pgf@sys@bp@correct\pgf@x%
+    \edef\pgf@prevx{\pgf@sys@tonumber{\pgf@x}}%
+    \edef\pgf@bounds{\pgf@bounds\space\pgf@sys@tonumber{\pgf@x}}%
+    \edef\pgf@encode{\pgf@encode\space0 1}%
+    \edef\pgf@singlefunc{\space%
+      << /FunctionType 2 /Domain [0 1] /C0
+      [\pgf@prevcolor] /C1 [\pgf@gray] /N 1 >> }% <<
+    \edef\pgf@funcs{\pgf@funcs\space%
+      << /FunctionType 2 /Domain [\pgf@doma\space\pgf@domb] /C0
+      [\pgf@prevcolor] /C1 [\pgf@gray] /N 1 >> }% <<
+    \edef\pgf@prevcolor{\pgf@gray}%
+    \pgf@parserestgray[}}
+
+\def\pgf@getgraytuplewithmixin#1{%
+  \pgfutil@definecolor{pgfshadetemp}{gray}{#1}%
+  \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{pgfshadetemp}}%
+  \pgfutil@extractcolorspec{pgfshadetemp}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{gray}{\pgf@graycolor}%
+  \expandafter\pgf@getgray@@\pgf@graycolor!}
+\def\pgf@getgray@@#1!{%
+  \def\pgf@gray{#1}%
+  \def\pgf@sys@gray{{#1}}%
+}
+
+% Normalized a <color specification> argument for shadings into a
+% series of color specifications in the current xcolor color model and write
+% the result into \pgf@conv.
+%
+% Example:
+% \pgf@convertstring{rgb(0cm)=(1,0,0); rgb(2cm)=(0,1,0); cmyk(4cm)=(1,0,0,0); gray(1cm)=(3);  color(2cm)=(green); }
+% ->
+% \pgf@conv = macro:->'rgb(0cm)=(1,0,0); rgb(2cm)=(0,1,0); rgb(4cm)=(0,1,1); rgb(1cm)=(3,3,3); rgb(2cm)=(0,1,0); '
+\def\pgf@convertstring#1{%
+  \def\pgf@conv{}%
+  \pgf@convert#1]%
+  }
+\def\pgf@convert{%
+  \pgfutil@ifnextchar]{\pgfutil@gobble}%done!
+  {%
+    \pgfutil@ifnextchar;{\pgf@grabsemicolor}%
+    {%
+      \pgfutil@ifnextchar c{\pgf@gobblec}%
+      {%
+        \pgfutil@ifnextchar g{\pgf@grabgray}%
+        {%
+          \pgfutil@ifnextchar o{\pgf@grabcolor}%
+          {%
+            \pgfutil@ifnextchar m{\pgf@grabcmyk}%
+            {%
+              \pgfutil@ifnextchar r{\pgf@grabrgb}%
+                {\pgferror{Illformed shading
+                 specification}\pgf@convert}%
+            }%
+          }%
+        }%
+      }%
+    }%
+  }%
+}
+\def\pgf@savecolor#1{%
+  \pgfutil@extractcolorspec{pgf@tempcol}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor
+    {\pgf@shading@model}{\pgf@color}%
+  \expandafter\pgf@convget@\expandafter{\pgf@color}{#1}%
+}
+\def\pgf@grabsemicolor;{%
+  \edef\pgf@conv{\pgf@conv; }\pgf@convert}
+\def\pgf@gobblec c{\pgf@convert}
+\def\pgf@grabrgb rgb(#1)=(#2,#3,#4){%
+  \pgfutil@definecolor{pgf@tempcol}{rgb}{#2,#3,#4}%
+  \pgf@savecolor{#1}%
+}
+\def\pgf@grabcmyk myk(#1)=(#2,#3,#4,#5){%
+  \pgfutil@definecolor{pgf@tempcol}{cmyk}{#2,#3,#4,#5}%
+  \pgf@savecolor{#1}%
+}
+\def\pgf@grabgray gray(#1)=(#2){%
+  \pgfutil@definecolor{pgf@tempcol}{gray}{#2}%
+  \pgf@savecolor{#1}%
+}
+\def\pgf@grabcolor olor(#1)=(#2){%
+  \pgfutil@colorlet{pgf@tempcol}{#2}%
+  \pgf@savecolor{#1}%
+}
+\def\pgf@convget@#1#2{%
+  \edef\pgf@conv{\pgf@conv \pgf@shading@model(#2)=(#1)}\pgf@convert}
+
+
+\newcount\pgf@shadingcount
+\pgf@shadingcount=0
+{
+  \catcode`\/=0
+  \catcode`\\=12
+  /gdef/pgf@shadingnum{\/the/pgf@shadingcount\}
+}
+
+% Set up shading properties based on the current xcolor color model. This is
+% called when shadings are declared and used. \ifpgfshadingmodelrgb,
+% \ifpgfshadingmodelcmyk, and \ifpgfshadingmodelgray are set so that the type
+% 4 function in functional shadings can be converted to the current color
+% model. See \pgffuncshading*to* macros.
+
+\newif\ifpgfshadingmodelrgb
+\newif\ifpgfshadingmodelcmyk
+\newif\ifpgfshadingmodelgray
+\def\pgf@setup@shading@model{%
+  \pgfshadingmodelrgbtrue
+  \pgfshadingmodelcmykfalse
+  \pgfshadingmodelgrayfalse
+  \XC@sdef\pgf@mod@test{\XC@tgt@mod{natural}}%
+  \def\pgf@shading@device{/DeviceRGB}%
+  \def\pgf@shading@ps@device{setrgbcolor}%
+  \def\pgf@shading@functional@range{0 1 0 1 0 1}%
+  \def\pgf@shading@model{rgb}%
+  \ifx\pgf@mod@test\XC@mod@cmyk
+    \def\pgf@shading@device{/DeviceCMYK}%
+    \def\pgf@shading@ps@device{setcmykcolor}%
+    \def\pgf@shading@functional@range{0 1 0 1 0 1 0 1}%
+    \def\pgf@shading@model{cmyk}%
+    \pgfshadingmodelrgbfalse
+    \pgfshadingmodelcmyktrue
+  \fi
+  \ifx\pgf@mod@test\XC@mod@gray
+    \def\pgf@shading@device{/DeviceGray}%
+    \def\pgf@shading@ps@device{setgray}%
+    \def\pgf@shading@functional@range{0 1}%
+    \def\pgf@shading@model{gray}%
+    \pgfshadingmodelrgbfalse
+    \pgfshadingmodelgraytrue
+  \fi
+  \edef\pgf@sys@driver@dvisvgm{pgfsys-dvisvgm.def}%
+  \ifx\pgfsysdriver\pgf@sys@driver@dvisvgm
+    \def\pgf@shading@model{rgb}%
+  \fi
+  \edef\pgf@sys@driver@texforht{pgfsys-tex4ht.def}%
+  \ifx\pgfsysdriver\pgf@sys@driver@texforht
+    \def\pgf@shading@model{rgb}%
+  \fi
+}
+
+
+% Declares a horizontal shading for later use. The shading is a
+% horizontal bar that changes its color.
+%
+% #1 = optional dependencies
+% #2 = name of the shading for later use
+% #3 = height of the shading
+% #4 = color specification in the following format: A list of colors
+%      that the bar should have at certain points. If the bar should
+%      be red at 1cm, this is specified as
+%      "rgb(1cm)=(1,0,0)". Multiple specifications are separated by a
+%      semicolon and a space. At least two specifications must be
+%      given. The specified positions must be given in increasing
+%      order.
+%
+% Description:
+%
+% The optional dependencies have the following effect: If present, it
+% should consist of a list of colors, separated by commas. Each time
+% the shading is used, these colors will be reevaluated. It will be
+% checked whether the colors still have their "original meaning". If
+% the colors have changed, a new shading will be created internally to
+% reflect the changed color's values.
+%
+% Example:
+%
+% \pgfdeclarehorizontalshading{redtogreentoblue}{1cm}{%
+%   rgb(0cm)=(1,0,0); % red
+%   rgb(1cm)=(0,1,0); % green
+%   rgb(2cm)=(0,0,1)}
+%
+% \begin{document}
+%   The following bar is 2cm long: \pgfuseshading{redtogreentoblue}.
+% \end{document}
+
+\def\pgfdeclarehorizontalshading{%
+  \pgf@setup@shading@model
+  \pgfutil@ifnextchar[%
+    \pgf@declarehorizontalshading{\pgf@declarehorizontalshading[]}}
+\def\pgf@declarehorizontalshading[#1]#2#3#4{%
+  \expandafter\def\csname pgf@deps@pgfshading#2!\endcsname{#1}%
+  \expandafter\ifx\csname pgf@deps@pgfshading#2!\endcsname\pgfutil@empty%
+    \global\expandafter\let\csname pgf@num@pgfshading#2!\endcsname\pgfutil@empty
+    \pgfsys@horishading{#2}{#3}{#4}%
+  \else%
+    \global\advance\pgf@shadingcount 1\relax
+    \global\expandafter\edef\csname pgf@num@pgfshading#2!\endcsname{\pgf@shadingnum}%
+    \expandafter\def\csname pgf@func@pgfshading#2!\endcsname{\pgfsys@horishading}%
+    \expandafter\def\csname pgf@args@pgfshading#2!\endcsname{{#3}{#4}}%
+    \expandafter\let\csname @pgfshading#2!\endcsname=\pgfutil@empty%
+  \fi}
+
+
+% Declares a vertical shading for later use.
+%
+% #1 = optional dependencies
+% #2 = name of the shading for later use
+% #3 = height of the shading
+% #4 = color specification
+%
+% Example:
+%
+% \pgfdeclareverticalshading{redtogreentoblue}{1cm}{%
+%   rgb(0cm)=(1,0,0); % red
+%   rgb(1cm)=(0,1,0); % green
+%   rgb(2cm)=(0,0,1)}
+%
+% \begin{document}
+%   The following bar is 2cm high: \pgfuseshading{redtogreentoblue}.
+% \end{document}
+
+\def\pgfdeclareverticalshading{%
+  \pgf@setup@shading@model
+  \pgfutil@ifnextchar[%
+    \pgf@declareverticalshading{\pgf@declareverticalshading[]}}
+\def\pgf@declareverticalshading[#1]#2#3#4{%
+  \expandafter\def\csname pgf@deps@pgfshading#2!\endcsname{#1}%
+  \expandafter\ifx\csname pgf@deps@pgfshading#2!\endcsname\pgfutil@empty%
+    \global\expandafter\let\csname pgf@num@pgfshading#2!\endcsname=\pgfutil@empty
+    \pgfsys@vertshading{#2}{#3}{#4}%
+  \else%
+    \global\advance\pgf@shadingcount 1\relax
+    \global\expandafter\edef\csname pgf@num@pgfshading#2!\endcsname{\pgf@shadingnum}%
+    \expandafter\def\csname pgf@func@pgfshading#2!\endcsname{\pgfsys@vertshading}%
+    \expandafter\def\csname pgf@args@pgfshading#2!\endcsname{{#3}{#4}}%
+    \expandafter\let\csname @pgfshading#2!\endcsname=\pgfutil@empty%
+  \fi}
+
+
+% Declares a radial shading for later use.
+%
+% #1 = optional dependencies
+% #2 = name of the shading for later use
+% #3 = center of inner circle
+% #4 = color specification
+%
+% Description:
+%
+% A radial shading creates a smooth color transition between two
+% circles. The center of the inner circle is at the give position. Its
+% radius is the start of the color specification. The
+% center of the outer circle is at the center of the whole shading,
+% whose radius is the end of the color specification. For example,
+% suppose the color specification is "rgb(1cm)=(1,1,1); rgb(2cm)=(0,0,0)".
+% Then the shading would be 4cm times 4cm large. The inner circle would
+% have diameter 1cm and the outer circle would have diameter 2cm. The
+% outer circle would be centered in the middle of the shading, whereas
+% the outer circle would be centered at the given position.
+%
+% Example:
+%
+% \pgfdeclareradialshading{redtogreentoblue}{\pgfpoint{2cm}{2cm}}{%
+%   rgb(10pt)=(1,0,0); % red
+%   rgb(2cm)=(0,1,0); % green
+%   rgb(3cm)=(0,0,1)}
+%
+% \begin{document}
+%   The following ball has diameter 3cm: \pgfuseshading{redtogreentoblue}.
+% \end{document}
+
+\def\pgfdeclareradialshading{%
+  \pgf@setup@shading@model
+  \pgfutil@ifnextchar[%
+    \pgf@declareradialshading{\pgf@declareradialshading[]}}
+\def\pgf@declareradialshading[#1]#2#3#4{%
+  \expandafter\def\csname pgf@deps@pgfshading#2!\endcsname{#1}%
+  \expandafter\ifx\csname pgf@deps@pgfshading#2!\endcsname\pgfutil@empty%
+    \global\expandafter\let\csname pgf@num@pgfshading#2!\endcsname=\pgfutil@empty
+    \pgfsys@radialshading{#2}{#3}{#4}%
+  \else%
+    \global\advance\pgf@shadingcount 1\relax
+    \global\expandafter\edef\csname pgf@num@pgfshading#2!\endcsname{\pgf@shadingnum}%
+    \expandafter\def\csname pgf@func@pgfshading#2!\endcsname{\pgfsys@radialshading}%
+    \expandafter\def\csname pgf@args@pgfshading#2!\endcsname{{#3}{#4}}%
+    \expandafter\let\csname @pgfshading#2!\endcsname=\pgfutil@empty%
+  \fi}
+
+
+
+
+% Declares a functional shading for later use.
+%
+% #1 = optional dependencies
+% #2 = name of the shading for later use
+% #3 = lower left corner of the shading as a pgfpoint.
+% #4 = upper right corner of the shading as a pgfpoint.
+% #5 = Preparation code
+% #6 = a PDF type 4 function (restricted Postscript function), see the
+%      PDF-specification 1.7, section 3.9.4
+%
+% Description:
+%
+% This command creates a so-called functional shading. For such a
+% shading the color of each point is calculated by calling a function
+% for each point that gets the coordinates as input and yields the
+% color as an output. Note that the function is evaluated by the
+% *renderer*, not by PGF or TeX or someone else at compile-time. This
+% means that the evaluation of this function has to be done *extremely
+% quickly* and the function should be *very simple*. For this reason,
+% only a very restricted set of operations are possible in the
+% function (see 3.9.4 of the PDF-spec 1.7). Also functions should be
+% kept small. Any errors in the function will only be noticed by the
+% renderer.
+%
+% The function gets the coordinates of a point as input (as bp). This
+% input consists of the top two elements of an otherwise empty
+% (virtual, PostScript) stack. The function should then replace these
+% two values by one value representing the gray color of the point for a
+% grayscale shading, three values, representing the red, green, and blue color
+% of the point for an RGB shading, or four values, representing the cyan,
+% magenta, yellow, and black color of the point for a CMYK shading. The
+% numbers should be real values, not integers since Apple's PDF renderer is
+% broken in this regard (use cvr at the end if necessary).
+%
+% Conceptually, the function will be evaluated once for each point of
+% the rectangle (#3) to (#4). A renderer may choose to evaluate the
+% function at less points, but, in principle, the function will be
+% evaluated for each pixel independently.
+%
+% Because of the rather difficult PostScript syntax, use this macro
+% only *if you know what you are doing* (or if you are adventurous, of
+% course).
+%
+% As for other shadings, the optional dependencies argument is used to
+% determine whether a shading needs to be recalculated when a color
+% has changed.
+%
+% The code #5 is executed each time a shading is
+% (re)calculated. Typically, it will contain code to extract
+% coordinates from colors (see below).
+%
+% Inside the PostScript function #6 you cannot use colors
+% directly. Rather, you must push the color components on the
+% stack. For this, it is useful to call \pgfshadecolortorgb,
+% \pgfshadecolortocmyk, or \pgfshadecolortogray in the startup
+% code #4. The macro takes a color name as input and stores the color's
+% component real numbers between 0.0 and 1.0 separated
+% by spaces (which is exactly what you need if you want to push it on
+% a stack) in a macro.
+%
+% Example:
+%
+%\pgfdeclarefunctionalshading{twospots}{\pgfpointorigin}{\pgfpoint{200bp}{200bp}}{}{
+%  2 copy
+%  90 sub dup mul exch
+%  80 sub dup mul add sqrt
+%  dup mul neg 1.0005 exch exp 1.0 exch sub
+%  3 1 roll
+%  120 sub dup mul exch
+%  100 sub dup mul add sqrt
+%  dup mul neg 1.002 exch exp 1.0 exch sub
+%  1.0
+%}
+%
+% \pgfdeclarefunctionalshading[mycol]{sweep}{\pgfpointorigin}{\pgfpoint{100bp}{100bp}}
+% {\pgfshadecolortorgb{mycol}{\myrgb}}{
+%   add 150 div   % not very useful...
+%   dup
+%   \myrgb        % push mycol
+%   5 4 roll      % multiply all components by calculated value
+%   mul
+%   3 1 roll
+%   3 index
+%   mul
+%   3 1 roll
+%   4 3 roll
+%   mul
+%   3 1 roll
+% }
+%
+% \begin{document}
+%   Have a look at this: \pgfuseshading{twospots}.
+%   Here is \colorlet{mycol}{green!50}\pgfuseshading{sweep} in green
+%   and in \colorlet{mycol}{red!50!blue}\pgfuseshading{sweep} in red/blue.
+% \end{document}
+
+\def\pgfdeclarefunctionalshading{%
+  \pgf@setup@shading@model
+  \pgfutil@ifnextchar[%
+    \pgf@declarefunctionalshading{\pgf@declarefunctionalshading[]}}
+\def\pgf@declarefunctionalshading[#1]#2#3#4#5#6{%
+  \expandafter\def\csname pgf@deps@pgfshading#2!\endcsname{#1}%
+  \expandafter\ifx\csname pgf@deps@pgfshading#2!\endcsname\pgfutil@empty%
+    \global\expandafter\let\csname pgf@num@pgfshading#2!\endcsname=\pgfutil@empty
+    \pgfshade@functionaldo{#2}{#3}{#4}{#5}{#6}%
+  \else%
+    \global\advance\pgf@shadingcount 1\relax
+    \global\expandafter\edef\csname pgf@num@pgfshading#2!\endcsname{\pgf@shadingnum}%
+    \expandafter\def\csname pgf@func@pgfshading#2!\endcsname{\pgfshade@functionaldo}%
+    \expandafter\def\csname pgf@args@pgfshading#2!\endcsname{{#3}{#4}{#5}{#6}}%
+    \expandafter\let\csname @pgfshading#2!\endcsname=\pgfutil@empty%
+  \fi}
+\def\pgfshade@functionaldo#1#2#3#4#5{%
+  \begingroup
+    #4%
+    \pgfsys@functionalshading{#1}{#2}{#3}{#5}%
+    \expandafter\pgfmath@smuggleone\csname @pgfshading#1!\endcsname
+  \endgroup
+}
+
+\def\pgfshadecolortorgb#1#2{%
+  \pgfutil@colorlet{pgf@tempcol}{#1}%
+  \pgfutil@extractcolorspec{pgf@tempcol}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{rgb}{\pgf@rgbcolor}%
+  \expandafter\pgfshading@rgb\pgf@rgbcolor\relax%
+  \edef#2{\pgf@sys@tonumber{\pgf@xa}\space\pgf@sys@tonumber{\pgf@xb}\space\pgf@sys@tonumber{\pgf@xc}\space}%
+  \c@pgf@counta\escapechar%
+  \escapechar-1\relax%
+  \expandafter\edef\csname\string#2red\endcsname{\pgf@sys@tonumber{\pgf@xa}\space}%
+  \expandafter\edef\csname\string#2green\endcsname{\pgf@sys@tonumber{\pgf@xb}\space}%
+  \expandafter\edef\csname\string#2blue\endcsname{\pgf@sys@tonumber{\pgf@xc}\space}%
+  \escapechar\c@pgf@counta%
+}
+\def\pgfshading@rgb#1,#2,#3\relax{%
+  \pgf@xa=#1pt%
+  \pgf@xb=#2pt%
+  \pgf@xc=#3pt%
+}
+
+\def\pgfshadecolortocmyk#1#2{%
+  \pgfutil@colorlet{pgf@tempcol}{#1}%
+  \pgfutil@extractcolorspec{pgf@tempcol}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{cmyk}{\pgf@cmykcolor}%
+  \expandafter\pgfshading@cmyk\pgf@cmykcolor\relax%
+  \edef#2{\pgf@sys@tonumber{\pgf@xa}\space\pgf@sys@tonumber{\pgf@xb}\space
+    \pgf@sys@tonumber{\pgf@xc}\space\pgf@sys@tonumber{\pgf@xd}\space}%
+  \c@pgf@counta\escapechar%
+  \escapechar-1\relax%
+  \expandafter\edef\csname\string#2cyan\endcsname{%
+    \pgf@sys@tonumber{\pgf@xa}\space}%
+  \expandafter\edef\csname\string#2magenta\endcsname{%
+    \pgf@sys@tonumber{\pgf@xb}\space}%
+  \expandafter\edef\csname\string#2yellow\endcsname{%
+    \pgf@sys@tonumber{\pgf@xc}\space}%
+  \expandafter\edef\csname\string#2black\endcsname{%
+    \pgf@sys@tonumber{\pgf@xd}\space}%
+  \escapechar\c@pgf@counta
+}
+\def\pgfshading@cmyk#1,#2,#3,#4\relax{%
+  \pgf@xa=#1pt%
+  \pgf@xb=#2pt%
+  \pgf@xc=#3pt%
+  \pgf@xd=#4pt%
+}
+
+\def\pgfshadecolortogray#1#2{%
+  \pgfutil@colorlet{pgf@tempcol}{#1}%
+  \pgfutil@extractcolorspec{pgf@tempcol}{\pgf@tempcolor}%
+  \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{gray}{\pgf@graycolor}%
+  \expandafter\pgfshading@gray\pgf@graycolor\relax
+  \edef#2{\pgf@sys@tonumber{\pgf@xa}\space}%
+  \c@pgf@counta\escapechar
+  \escapechar-1\relax
+  \expandafter\edef\csname\string#2gray\endcsname{%
+    \pgf@sys@tonumber{\pgf@xa}\space}%
+  \escapechar\c@pgf@counta
+}
+\def\pgfshading@gray#1\relax{%
+  \pgf@xa=#1pt%
+}
+
+% Functions to convert between color models in the type 4 PostScript data of
+% functional shadings.
+
+\def\pgffuncshadingrgbtocmyk{%
+  1.0 exch sub 3 1 roll
+  1.0 exch sub 3 1 roll
+  1.0 exch sub 3 1 roll
+  3 copy
+  2 copy gt { exch } if pop
+  2 copy gt { exch } if pop
+  dup 3 1 roll sub
+  0.0 2 copy lt { exch } if pop
+  1.0 2 copy gt { exch } if pop
+  4 1 roll
+  dup 3 1 roll sub
+  0.0 2 copy lt { exch } if pop
+  1.0 2 copy gt { exch } if pop
+  4 1 roll
+  dup 3 1 roll sub
+  0.0 2 copy lt { exch } if pop
+  1.0 2 copy gt { exch } if pop
+  4 1 roll
+}
+
+\def\pgffuncshadingrgbtogray{%
+  0.11 mul exch 0.59 mul add exch 0.3 mul add
+}
+
+\def\pgffuncshadingcmyktorgb{%
+  % covert to CMY
+  dup 3 1 roll add
+  1.0 2 copy gt { exch } if pop
+  4 1 roll
+  dup 3 1 roll add
+  1.0 2 copy gt { exch } if pop
+  4 1 roll
+  add
+  1.0 2 copy gt { exch } if pop
+  3 1 roll
+  % covert to RGB
+  1.0 exch sub
+  3 1 roll
+  1.0 exch sub
+  3 1 roll
+  1.0 exch sub
+  3 1 roll
+}
+
+\def\pgffuncshadingcmyktogray{%
+  exch 0.11 mul add exch 0.59 mul add exch 0.3 mul add
+  1.0 2 copy gt { exch } if pop
+  1.0 exch sub
+}
+
+\def\pgffuncshadinggraytorgb{%
+  dup dup
+}
+
+\def\pgffuncshadinggraytocmyk{%
+  0.0 0.0 0.0
+  4 3 roll
+}
+
+% Inserts a box into the text that contains a previously defined
+% shading.
+%
+% #1 = Name of a shading
+%
+% Example:
+%
+% \pgfuseshading{redtogreentoblue}
+
+\def\pgfuseshading#1{%
+  \edef\pgf@shadingname{@pgfshading#1}%
+  \pgf@tryextensions{\pgf@shadingname}{\pgfalternateextension}%
+  \expandafter\pgfutil@ifundefined\expandafter{\pgf@shadingname}%
+  {\pgferror{Undefined shading "#1"}}%
+  {%
+    \edef\pgf@shade@adds{\csname pgf@num\pgf@shadingname\endcsname}%
+    \pgfutil@ifundefined{pgf@deps\pgf@shadingname}%
+    {}%
+    {%
+      \pgf@setup@shading@model
+      \begingroup
+        \pgfutil@globalcolorsfalse
+        \edef\@list{\csname pgf@deps\pgf@shadingname\endcsname}%
+        \pgfutil@for\@temp:=\@list\do{%
+          \pgfutil@ifundefined{applycolormixins}{}{\applycolormixins{\@temp}}%
+          \pgfutil@extractcolorspec{\@temp}{\pgf@tempcolor}%
+          \expandafter\pgfutil@convertcolorspec\pgf@tempcolor{\pgf@shading@model}{\pgf@color}%
+          \edef\pgf@shade@adds{\pgf@shade@adds,\pgf@color}%
+        }%
+        \pgfmath@smuggleone\pgf@shade@adds
+      \endgroup
+    }%
+    \expandafter\pgf@strip@shadename\pgf@shadingname!!%
+    \edef\pgf@shadingxname{@pgfshading\pgf@basename\pgf@shade@adds!}%
+    \pgfutil@ifundefined{\pgf@shadingxname}%
+    {%
+      \begingroup
+        \edef\@temp{\expandafter\noexpand\csname pgf@func\pgf@shadingname\endcsname}%
+        \edef\@args{{\pgf@basename\pgf@shade@adds}}%
+        \expandafter\expandafter\expandafter\def
+        \expandafter\expandafter\expandafter\@@args
+        \expandafter\expandafter\expandafter{\csname pgf@args\pgf@shadingname\endcsname}%
+        \expandafter\expandafter\expandafter\@temp\expandafter\@args\@@args
+        \expandafter\pgfmath@smuggleone\csname\pgf@shadingxname\endcsname
+      \endgroup
+    }%
+    {}%
+    \pgf@invokeshading{\csname\pgf@shadingxname\endcsname}%
+  }%
+}
+
+\def\pgf@strip@shadename @pgfshading#1!!!{\def\pgf@basename{#1}}
+
+\def\pgf@invokeshading#1{%
+  \ifpgfpicture%
+    \pgfsys@shadinginsidepgfpicture{#1}%
+  \else%
+    \pgfsys@shadingoutsidepgfpicture{#1}%
+  \fi%
+}
+
+
+% Create an alias name for a shading
+%
+% #1 = name of the alias
+% #2 = name of the original
+%
+% Example:
+%
+% \pgfaliasshading{shading!25}{shadingshaded}
+
+\def\pgfaliasshading#1#2{%
+  \expandafter\let\expandafter\pgf@temp\expandafter=\csname @pgfshading#2!\endcsname%
+  \expandafter\let\csname @pgfshading#1!\endcsname=\pgf@temp%
+  \expandafter\let\expandafter\pgf@temp\expandafter=\csname pgf@num@pgfshading#2!\endcsname%
+  \expandafter\let\csname pgf@num@pgfshading#1!\endcsname=\pgf@temp%
+  \expandafter\let\expandafter\pgf@temp\expandafter=\csname pgf@deps@pgfshading#2!\endcsname%
+  \expandafter\let\csname pgf@deps@pgfshading#1!\endcsname=\pgf@temp%
+  \expandafter\let\expandafter\pgf@temp\expandafter=\csname pgf@func@pgfshading#2!\endcsname%
+  \expandafter\let\csname pgf@func@pgfshading#1!\endcsname=\pgf@temp%
+  \expandafter\let\expandafter\pgf@temp\expandafter=\csname pgf@args@pgfshading#2!\endcsname%
+  \expandafter\let\csname pgf@args@pgfshading#1!\endcsname=\pgf@temp%
+}
+
+
+
+
+% Shades the current path, but does not discard it.
+%
+% #1 - a shading (see below)
+% #2 - an angle
+%
+% Description:
+%
+% \pgfshadepath  ``tries'' to fill the
+% current path with a shading. The shading's original size should
+% completely cover the area between (0,0) and (100bp,100bp). The
+% shading will be rotated by #2 and then rescaled so that it
+% completely covers the path. Then the path will be used (locally) for
+% clipping and the shading is drawn.
+%
+% In addition to the rotation, any transformation set by the
+%\pgfsetadditionalshadetransform will also be applied.
+%
+% After all this, the path can still be used for the normal
+% stroking/clipping operations.
+%
+% The shading is rotated around its middle. If no rotation occurs, the
+% lower left corner of the path will lie on (25bp, 25bp), the upper
+% right corner on (75bp, 75bp).
+%
+% Example:
+%
+% \pgfdeclareverticalshading{myshading}{100bp}{color(0pt)=(red); color(100bp)=(green)}
+%
+% \pgfpathmoveto{\pgforigin}
+% \pgfpathlineto{\pgfxy(1,0)}
+% \pgfpathlineto{\pgfxy(1,1)}
+% \pgfshadepath{myshading}{0}
+% \pgfusepath{stroke}
+
+\def\pgfshadepath#1#2{%
+  \ifdim\pgf@pathminx=16000pt%
+    \pgfwarning{No path specified that can be filled}%
+  \else%
+    \begingroup%
+      % Calculate center:
+      \pgf@xb=.5\pgf@pathmaxx%
+      \advance\pgf@xb by.5\pgf@pathminx%
+      \pgf@yb=.5\pgf@pathmaxy%
+      \advance\pgf@yb by.5\pgf@pathminy%
+      % Calculate rotation:
+      \pgfmathparse{#2}%
+      \let\pgfshade@angle=\pgfmathresult
+      \pgfmathsin@\pgfshade@angle
+      \let\pgfshade@sin=\pgfmathresult
+      \pgfmathcos@\pgfshade@angle
+      \let\pgfshade@cos=\pgfmathresult
+      % width and height of the bounding box
+      \pgf@xa=\pgf@pathmaxx
+      \advance\pgf@xa by-\pgf@pathminx
+      \pgf@ya=\pgf@pathmaxy
+      \advance\pgf@ya by-\pgf@pathminy
+      % Calculate scaling:
+      % xscale = 1pt/50bp * (w*|cos(a)|+h*|sin(a)|)/(|cos(a)|+|sin(a)|)
+      % yscale = 1pt/50bp * (w*|sin(a)|+h*|cos(a)|)/(|cos(a)|+|sin(a)|)
+      % 1pt/50bp = .01992528
+      \pgfmathabs@\pgfshade@sin
+      \let\pgfshade@abssin=\pgfmathresult
+      \pgfmathabs@\pgfshade@cos
+      \let\pgfshade@abscos=\pgfmathresult
+      \pgf@xc=\pgfshade@abscos\pgf@xa
+      \advance\pgf@xc by\pgfshade@abssin\pgf@ya
+      \pgf@yc=\pgfshade@abssin\pgf@xa
+      \advance\pgf@yc by\pgfshade@abscos\pgf@ya
+      \pgfmathadd@\pgfshade@abscos\pgfshade@abssin
+      \pgfmathdivide@{.01992528}{\pgfmathresult}%
+      \pgf@xc=\pgfmathresult\pgf@xc
+      \pgf@yc=\pgfmathresult\pgf@yc
+      \ifdim\pgf@xc<0.0001pt
+        \ifdim\pgf@xc>-0.0001pt
+          \pgf@no@shadetrue
+        \fi
+      \fi
+      \ifdim\pgf@yc<0.0001pt
+        \ifdim\pgf@yc>-0.0001pt
+          \pgf@no@shadetrue
+        \fi
+      \fi
+      \ifpgf@no@shade\else
+        \pgfsys@beginscope
+          \pgfsyssoftpath@invokecurrentpath
+          \pgfsys@clipnext
+          \pgfsys@discardpath
+          % Compute new transformation matrix:
+          % shift
+          \pgfsys@transformcm{1}{0}{0}{1}{\the\pgf@xb}{\the\pgf@yb}%
+          % rotation
+          \pgf@x=\pgfshade@sin pt%
+          \pgf@xa=-\pgf@x%
+          \pgfsys@transformcm{\pgfshade@cos}{\pgfshade@sin}{\pgf@sys@tonumber{\pgf@xa}}{\pgfshade@cos}{0pt}{0pt}%
+          % scaling
+          \pgfsys@transformcm{\pgf@sys@tonumber{\pgf@xc}}{0}{0}{\pgf@sys@tonumber{\pgf@yc}}{0pt}{0pt}%
+          % This will actually be the first transformation of the shading.
+          % Should it be applied first so that it becomes the last one?
+          \ifx\pgf@shade@extra@transform\pgfutil@empty%
+          \else%
+            \pgflowlevel{\pgf@shade@extra@transform}%
+          \fi%
+          \pgfuseshading{#1}%
+        \pgfsys@endscope%
+      \fi%
+    \endgroup%
+  \fi%
+}
+
+\newif\ifpgf@no@shade
+
+% Additionally transform shade paths
+%
+% #1 = Transformation code that is used in addition to the normal
+%      shading transformation.
+%
+% Example:
+%
+% \pgfsetadditionalshadetransform{\pgftransformrotate{30}}
+
+\def\pgfsetadditionalshadetransform#1{\def\pgf@shade@extra@transform{#1}}
+\let\pgf@shade@extra@transform=\pgfutil@empty
+
+
+
+
+
+\endinput
