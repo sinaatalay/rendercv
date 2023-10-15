@@ -369,7 +369,7 @@ class ClassicThemeOptions(BaseModel):
     )
 
     date_and_location_width: LaTeXDimension = Field(
-        default="3.7 cm",
+        default="3.6 cm",
         title="Date and Location Column Width",
         description="The width of the date and location column.",
         examples=["1.35 cm", "1 in", "12 pt", "14 mm", "2 ex", "3 em"],
@@ -1187,6 +1187,8 @@ class CurriculumVitae(BaseModel):
                     link_text = "Score Report"
                 elif section_name == "Certificates":
                     link_text = "Certificate"
+                else:
+                    link_text = None
             else:
                 # If the section is not pre-defined, then it is a custom section.
                 # Find the corresponding custom section and get its entries:
