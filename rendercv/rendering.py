@@ -9,6 +9,7 @@ import logging
 import time
 from typing import Optional
 import sys
+from importlib.resources import files
 
 from rendercv.data_model import RenderCVDataModel
 
@@ -241,7 +242,7 @@ def get_path_to_font_directory(font_name: str) -> str:
     Returns:
         str: The path to the fonts directory.
     """
-    return os.path.join(os.path.dirname(__file__), "templates", "fonts", font_name)
+    return str(files("rendercv").joinpath("templates", "fonts", font_name))
 
 
 def read_input_file(file_path: str) -> RenderCVDataModel:
@@ -332,8 +333,8 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     file_name = data.cv.name.replace(" ", "_") + "_CV.tex"
     output_file_path = os.path.join(output_folder, file_name)
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-    with open(output_file_path, "wb") as file:
-        file.write(output_latex_file.encode("utf-8"))
+    with open(output_file_path, "w") as file:
+        file.write(output_latex_file)
 
     # Copy the fonts directory to the output directory:
     # Remove the old fonts directory if it exists:
@@ -350,7 +351,7 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
 
     # Copy auxiliary files to the output directory (if there is any):
     output_directory = os.path.dirname(output_file_path)
-    theme_directory = os.path.join(os.path.dirname(__file__), "templates", theme)
+    theme_directory = str(files("rendercv").joinpath("templates", theme))
     for file_name in os.listdir(theme_directory):
         if file_name.endswith(".cls"):
             shutil.copy(
@@ -388,24 +389,29 @@ def run_latex(latex_file_path: str) -> str:
     output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file_name)
 
     if os.name == "nt":
-        tinytex_path = os.path.join(
-            os.path.dirname(__file__),
-            "vendor",
-            "TinyTeX",
-            "bin",
-            "windows",
+        # Windows
+        executable = str(
+            files("rendercv").joinpath(
+                "vendor", "TinyTeX", "bin", "windows", "lualatex.exe"
+            )
         )
-        executable = os.path.join(tinytex_path, "lualatex.exe")
 
-    else:
-        tinytex_path = os.path.join(
-            os.path.dirname(__file__),
-            "vendor",
-            "TinyTeX",
-            "bin",
-            "x86_64-linux",
+    elif os.name == "posix":
+        # Linux
+        executable = str(
+            files("rendercv").joinpath(
+                "vendor", "TinyTeX", "bin", "x86_64-linux", "lualatex"
+            )
         )
-        executable = os.path.join(tinytex_path, "lualatex")
+    elif os.name == "darwin":
+        # MacOS
+        executable = str(
+            files("rendercv").joinpath(
+                "vendor", "TinyTeX", "bin", "universal-darwin", "lualatex"
+            )
+        )
+    else:
+        raise OSError(f"Unknown OS {os.name}!")
 
     # Check if the executable exists:
     if not os.path.exists(executable):
@@ -428,7 +434,7 @@ def run_latex(latex_file_path: str) -> str:
     except subprocess.CalledProcessError or subprocess.TimeoutExpired as e:
         raise RuntimeError(
             "Running TinyTeX has failed with the following error:\n\ncommand"
-            f" \"{e.cmd}\" return with error (code {e.returncode}): {e.output}\n\nIf"
+            f' "{e.cmd}" return with error (code {e.returncode}): {e.output}\n\nIf'
             " you can't find the problem, please try to re-install RenderCV, or open"
             " an issue on GitHub."
         )
@@ -473,7 +479,7 @@ def main():
             "More than one input is provided. Please provide only one input, which is"
             " the input file path."
         )
-    
+
     file_path = os.path.join(os.getcwd(), input_file_path)
     data = read_input_file(file_path)
     output_latex_file = render_template(data)
