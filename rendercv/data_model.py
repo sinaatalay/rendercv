@@ -14,6 +14,7 @@ import logging
 from functools import cached_property
 import urllib.request
 import os
+from importlib.resources import files
 
 from pydantic import (
     BaseModel,
@@ -455,7 +456,7 @@ class Design(BaseModel):
     @classmethod
     def check_font(cls, font: str) -> str:
         # Go to fonts directory and check if the font exists:
-        fonts_directory = os.path.join(os.path.dirname(__file__), "templates", "fonts")
+        fonts_directory = str(files("rendercv").joinpath("templates", "fonts"))
         if font not in os.listdir(fonts_directory):
             raise ValueError(
                 f'The font "{font}" is not found in the "fonts" directory! To add a new'
@@ -479,7 +480,7 @@ class Design(BaseModel):
     @classmethod
     def check_if_theme_exists(cls, theme: str) -> str:
         # Go to templates directory and check if the theme exists:
-        template_directory = os.path.join(os.path.dirname(__file__), "templates", theme)
+        template_directory = str(files("rendercv").joinpath("templates", theme))
         if f"{theme}.tex.j2" not in os.listdir(template_directory):
             raise ValueError(
                 f'The theme "{theme}" is not found in the "templates" directory! To add'
@@ -1235,7 +1236,7 @@ class RenderCVDataModel(BaseModel):
             design: Design = model.design
             cv: CurriculumVitae = model.cv
             section_titles = [section.title for section in cv.sections]
-            for title in design.options.show_timespan_in:
+            for title in design.options.show_timespan_in: # type: ignore
                 if title not in section_titles:
                     raise ValueError(
                         f'The section "{title}" that is specified in the'
