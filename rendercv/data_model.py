@@ -1236,7 +1236,7 @@ class RenderCVDataModel(BaseModel):
             design: Design = model.design
             cv: CurriculumVitae = model.cv
             section_titles = [section.title for section in cv.sections]
-            for title in design.options.show_timespan_in: # type: ignore
+            for title in design.options.show_timespan_in:  # type: ignore
                 if title not in section_titles:
                     raise ValueError(
                         f'The section "{title}" that is specified in the'
