@@ -388,7 +388,7 @@ def run_latex(latex_file_path: str) -> str:
     output_file_name = latex_file_name.replace(".tex", ".pdf")
     output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file_name)
 
-    if os.name == "nt":
+    if sys.platform == "win32":
         # Windows
         executable = str(
             files("rendercv").joinpath(
@@ -396,14 +396,14 @@ def run_latex(latex_file_path: str) -> str:
             )
         )
 
-    elif os.name == "posix":
+    elif sys.platform == "linux" or sys.platform == "linux2":
         # Linux
         executable = str(
             files("rendercv").joinpath(
                 "vendor", "TinyTeX", "bin", "x86_64-linux", "lualatex"
             )
         )
-    elif os.name == "darwin":
+    elif sys.platform == "darwin":
         # MacOS
         executable = str(
             files("rendercv").joinpath(
