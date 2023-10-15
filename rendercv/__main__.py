@@ -31,5 +31,6 @@ def main(args=sys.argv[1:]):
     output_latex_file = render_template(data)
     run_latex(output_latex_file)
 
+
 if __name__ == "__main__":
     main(args=["tests/inputs/personal.yaml"])
