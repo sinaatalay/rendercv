@@ -11,7 +11,7 @@ from typing import Optional
 import sys
 from importlib.resources import files
 
-from rendercv.data_model import RenderCVDataModel
+from .data_model import RenderCVDataModel
 
 from jinja2 import Environment, PackageLoader
 from ruamel.yaml import YAML
@@ -464,23 +464,3 @@ def run_latex(latex_file_path: str) -> str:
     )
 
     return output_file_path
-
-
-def main():
-    """
-    This is the main function to run RenderCV.
-    """
-    if len(sys.argv) < 2:
-        raise ValueError("Please provide the input file path.")
-    elif len(sys.argv) == 2:
-        input_file_path = sys.argv[1]
-    else:
-        raise ValueError(
-            "More than one input is provided. Please provide only one input, which is"
-            " the input file path."
-        )
-
-    file_path = os.path.join(os.getcwd(), input_file_path)
-    data = read_input_file(file_path)
-    output_latex_file = render_template(data)
-    run_latex(output_latex_file)
