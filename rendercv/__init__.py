@@ -5,6 +5,8 @@ mistakes, checks if the dates are consistent, etc.). Then, with the data, it cre
 $\LaTeX$ file and renders it with [TinyTeX](https://yihui.org/tinytex/).
 """
 import logging
+import os
+import sys
 
 
 class LoggingFormatter(logging.Formatter):
@@ -34,9 +36,10 @@ class LoggingFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
-
+os.system('COLOR 0') # enable colors in Windows terminal
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 stdout_handler = logging.StreamHandler()
 stdout_handler.setFormatter(LoggingFormatter())
 logger.addHandler(stdout_handler)
+sys.tracebacklimit = -1
