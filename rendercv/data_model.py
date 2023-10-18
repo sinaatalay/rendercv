@@ -55,6 +55,9 @@ dictionary = [
     "siemens",
     "dynamometer",
     "dc",
+    "grammarly",
+    "css",
+    "html"
 ]
 
 
@@ -1212,6 +1215,24 @@ class CurriculumVitae(BaseModel):
                 link_text=link_text,
             )
             sections.append(section)
+
+        # Check if any of the pre-defined sections are missing from the section order:
+        for section_name in pre_defined_sections:
+            if pre_defined_sections[section_name] is not None:
+                if section_name not in self.section_order:
+                    logger.warning(
+                        f'The section "{section_name}" is not found in the section'
+                        " order! It will not be rendered."
+                    )
+
+        # Check if any of the custom sections are missing from the section order:
+        if self.custom_sections is not None:
+            for custom_section in self.custom_sections:
+                if custom_section.title not in self.section_order:
+                    logger.warning(
+                        f'The custom section "{custom_section.title}" is not found in'
+                        " the section order! It will not be rendered."
+                    )
 
         return sections
 
