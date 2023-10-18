@@ -107,7 +107,7 @@ class TestDataModel(unittest.TestCase):
             "theme": "classic",
         }
         with self.subTest(msg="valid theme"):
-            design = data_model.Design(**input) # type: ignore
+            design = data_model.Design(**input)  # type: ignore
             self.assertEqual(design.theme, input["theme"])
 
         # Nonexistent theme:
@@ -116,7 +116,36 @@ class TestDataModel(unittest.TestCase):
         }
         with self.subTest(msg="nonexistent theme"):
             with self.assertRaises(ValidationError):
-                data_model.Design(**input) # type: ignore
+                data_model.Design(**input)  # type: ignore
+
+    def test_data_design_show_timespan_in(self):
+        # Valid show_timespan_in:
+        input = {
+            "design": {
+                "options": {
+                    "show_timespan_in": ["Work Experience"],
+                }
+            },
+            "cv": {
+                "name": "John Doe",
+                "work_experience": [
+                    {
+                        "company": "My Company",
+                        "position": "My Position",
+                        "start_date": "2020-01-01",
+                        "end_date": "2021-01-01",
+                    }
+                ],
+            },
+        }
+        with self.subTest(msg="valid show_timespan_in"):
+            data_model.RenderCVDataModel(**input)
+
+        # Nonexistent show_timespan_in:
+        del input["cv"]["work_experience"]
+        with self.subTest(msg="nonexistent show_timespan_in"):
+            with self.assertRaises(ValidationError):
+                data_model.RenderCVDataModel(**input)
 
     def test_data_event_check_dates(self):
         # Inputs with valid dates:
