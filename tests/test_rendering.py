@@ -518,7 +518,7 @@ class TestRendering(unittest.TestCase):
 
         # Wrong input:
         with self.subTest(msg="Wrong input"):
-            with self.assertRaises(ValueError, msg="Value error didn't raise."):
+            with self.assertRaises(subprocess.CalledProcessError):
                 subprocess.run(
                     [
                         sys.executable,
@@ -526,4 +526,5 @@ class TestRendering(unittest.TestCase):
                         "rendercv",
                         "wrong_input.yaml",
                     ],
+                    check=True,
                 )
