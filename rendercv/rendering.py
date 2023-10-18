@@ -428,7 +428,7 @@ def run_latex(latex_file_path: str) -> str:
             ],
             cwd=os.path.dirname(latex_file_path),
             check=True,
-            # stdout=subprocess.DEVNULL,  # suppress latexmk output
+            stdout=subprocess.DEVNULL,  # suppress latexmk output
             timeout=45,
         )
     except subprocess.CalledProcessError or subprocess.TimeoutExpired as e:

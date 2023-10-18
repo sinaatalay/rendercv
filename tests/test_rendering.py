@@ -485,7 +485,7 @@ class TestRendering(unittest.TestCase):
             ):
                 rendering.run_latex(nonexistent_latex_file_path)
 
-    def test_main(self):
+    def test_entry_point(self):
         # Change the working directory to the root of the project:
         workspace_path = os.path.dirname(os.path.dirname(__file__))
 
@@ -515,3 +515,15 @@ class TestRendering(unittest.TestCase):
             reference_pdf_file_size, pdf_file_size
         )
         self.assertTrue(ratio > 0.99, msg="PDF file didn't match the reference.")
+
+        # Wrong input:
+        with self.subTest(msg="Wrong input"):
+            with self.assertRaises(ValueError, msg="Value error didn't raise."):
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "rendercv",
+                        "wrong_input.yaml",
+                    ],
+                )
