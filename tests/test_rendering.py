@@ -3,6 +3,8 @@ import os
 import json
 from datetime import date
 import shutil
+import subprocess
+import sys
 
 from rendercv import rendering, data_model
 
@@ -94,6 +96,14 @@ class TestRendering(unittest.TestCase):
         with self.subTest(msg="empty link"):
             with self.assertRaises(ValueError):
                 rendering.markdown_link_to_url(input)
+
+    def test_make_it_something(self):
+        # invalid input:
+        input = "test"
+        keyword = "invalid keyword"
+        with self.subTest(msg="invalid keyword"):
+            with self.assertRaises(ValueError):
+                rendering.make_it_something(input, keyword)
 
     def test_make_it_bold(self):
         input = "some text"
@@ -395,18 +405,18 @@ class TestRendering(unittest.TestCase):
             },
         }
         data = data_model.RenderCVDataModel(**test_input)  # type: ignore
-        rendering.render_template(data=data, output_path=os.path.dirname(__file__))
+        output_file_path = rendering.render_template(
+            data=data, output_path=os.path.dirname(__file__)
+        )
 
         # Check if the output file exists:
-        output_folder_path = os.path.join(os.path.dirname(__file__), "output")
-        output_file_path = os.path.join(output_folder_path, "John_Doe_CV.tex")
         self.assertTrue(
             os.path.exists(output_file_path), msg="LaTeX file couldn't be generated."
         )
 
         # Compare the output file with the reference file:
         reference_file_path = os.path.join(
-            os.path.dirname(__file__), "reference_files", "John_Doe_CV.tex"
+            os.path.dirname(__file__), "reference_files", "John_Doe_CV_test.tex"
         )
         with open(output_file_path, "r") as file:
             output = file.read()
@@ -419,6 +429,7 @@ class TestRendering(unittest.TestCase):
         )
 
         # Check if the font directory exists:
+        output_folder_path = os.path.dirname(output_file_path)
         font_directory_path = os.path.join(output_folder_path, "fonts")
         self.assertTrue(
             os.path.exists(font_directory_path), msg="Font directory doesn't exist."
@@ -444,7 +455,7 @@ class TestRendering(unittest.TestCase):
 
     def test_run_latex(self):
         latex_file_path = os.path.join(
-            os.path.dirname(__file__), "reference_files", "John_Doe_CV.tex"
+            os.path.dirname(__file__), "reference_files", "John_Doe_CV_test.tex"
         )
 
         with self.subTest(msg="Existent file name"):
@@ -456,7 +467,7 @@ class TestRendering(unittest.TestCase):
             )
 
             # Compare the pdf file with the reference pdf file:
-            reference_pdf_file = pdf_file.replace(".pdf", "_reference.pdf")
+            reference_pdf_file = pdf_file.replace("_test.pdf", "_reference.pdf")
             reference_pdf_file_size = os.path.getsize(reference_pdf_file)
             pdf_file_size = os.path.getsize(pdf_file)
             ratio = min(reference_pdf_file_size, pdf_file_size) / max(
@@ -474,6 +485,33 @@ class TestRendering(unittest.TestCase):
             ):
                 rendering.run_latex(nonexistent_latex_file_path)
 
+    def test_main(self):
+        # Change the working directory to the root of the project:
+        workspace_path = os.path.dirname(os.path.dirname(__file__))
 
-if __name__ == "__main__":
-    unittest.main()
+        test_input_file_path = os.path.join(
+            workspace_path, "tests", "reference_files", "John_Doe_CV_test.yaml"
+        )
+        subprocess.run(
+            [sys.executable, "-m", "rendercv", test_input_file_path],
+            check=True,
+        )
+
+        # Read the necessary information and remove the output directory:
+        output_file_path = os.path.join(workspace_path, "output", "John_Doe_CV.pdf")
+        pdf_file_size = os.path.getsize(output_file_path)
+        file_exists = os.path.exists(output_file_path)
+        shutil.rmtree(os.path.join(workspace_path, "output"))
+
+        # Check if the output file exists:
+        self.assertTrue(file_exists, msg="PDF file couldn't be generated.")
+
+        # Compare the pdf file with the reference pdf file:
+        reference_pdf_file = os.path.join(
+            workspace_path, "tests", "reference_files", "John_Doe_CV_reference.pdf"
+        )
+        reference_pdf_file_size = os.path.getsize(reference_pdf_file)
+        ratio = min(reference_pdf_file_size, pdf_file_size) / max(
+            reference_pdf_file_size, pdf_file_size
+        )
+        self.assertTrue(ratio > 0.99, msg="PDF file didn't match the reference.")
