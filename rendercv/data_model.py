@@ -98,6 +98,9 @@ def check_spelling(sentence: str) -> str:
 
     if len(misspelled) > 0:
         for word in misspelled:
+            if len(word) == 1:
+                continue
+
             # for each misspelled word, check if it is in the dictionary and otherwise
             # give a warning
             if word in dictionary:
@@ -267,11 +270,11 @@ def generate_json_schema(output_directory: str) -> str:
 
     # Change all anyOf to oneOf
     schema = schema.replace('"anyOf"', '"oneOf"')
-    
+
     path_to_schema = os.path.join(output_directory, "schema.json")
     with open(path_to_schema, "w") as f:
         f.write(schema)
-    
+
     return path_to_schema
 
 
@@ -796,7 +799,7 @@ class OneLineEntry(Event):
         title="Name",
         description="The name of the entry. It will be shown as bold text.",
     )
-    details: str = Field(
+    details: SpellCheckedString = Field(
         title="Details",
         description="The details of the entry. It will be shown as normal text.",
     )
@@ -1014,7 +1017,7 @@ class Section(BaseModel):
         examples=["view on GitHub", "view on LinkedIn"],
     )
     entries: list[
-        NormalEntry | OneLineEntry | ExperienceEntry | EducationEntry | PublicationEntry
+        OneLineEntry | NormalEntry | ExperienceEntry | EducationEntry | PublicationEntry
     ] = Field(
         title="Entries",
         description="The entries of the section. The format depends on the entry type.",
