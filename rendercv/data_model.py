@@ -15,6 +15,7 @@ from functools import cached_property
 import urllib.request
 import os
 from importlib.resources import files
+import json
 
 from pydantic import (
     BaseModel,
@@ -26,6 +27,7 @@ from pydantic import (
     EmailStr,
     PastDate,
 )
+from pydantic.json_schema import GenerateJsonSchema
 from pydantic.functional_validators import AfterValidator
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from pydantic_extra_types.color import Color
@@ -57,7 +59,7 @@ dictionary = [
     "dc",
     "grammarly",
     "css",
-    "html"
+    "html",
 ]
 
 
@@ -216,6 +218,63 @@ def format_date(date: Date) -> str:
     return date_string
 
 
+def generate_json_schema(output_directory: str) -> str:
+    """Generate the JSON schema of the data model and save it to a file.
+
+    Args:
+        output_directory (str): The output directory to save the schema.
+    """
+
+    class RenderCVSchemaGenerator(GenerateJsonSchema):
+        def generate(self, schema, mode="validation"):
+            json_schema = super().generate(schema, mode=mode)
+            json_schema["title"] = "RenderCV Input"
+
+            # remove the description of the class (RenderCVDataModel)
+            del json_schema["description"]
+
+            # add $id
+            json_schema[
+                "$id"
+            ] = "https://raw.githubusercontent.com/sinaatalay/rendercv/main/schema.json"
+
+            # add $schema
+            json_schema["$schema"] = "http://json-schema.org/draft-07/schema#"
+
+            # Loop through $defs and remove docstring descriptions and fix optional
+            # fields
+            for key, value in json_schema["$defs"].items():
+                if "This class" in value["description"]:
+                    del value["description"]
+
+                null_type_dict = {}
+                null_type_dict["type"] = "null"
+                for field in value["properties"].values():
+                    if "anyOf" in field:
+                        if (
+                            len(field["anyOf"]) == 2
+                            and null_type_dict in field["anyOf"]
+                        ):
+                            field["allOf"] = [field["anyOf"][0]]
+                            del field["anyOf"]
+
+            return json_schema
+
+    schema = RenderCVDataModel.model_json_schema(
+        schema_generator=RenderCVSchemaGenerator
+    )
+    schema = json.dumps(schema, indent=2)
+
+    # Change all anyOf to oneOf
+    schema = schema.replace('"anyOf"', '"oneOf"')
+    
+    path_to_schema = os.path.join(output_directory, "schema.json")
+    with open(path_to_schema, "w") as f:
+        f.write(schema)
+    
+    return path_to_schema
+
+
 # ======================================================================================
 # ======================================================================================
 # ======================================================================================
@@ -230,7 +289,6 @@ LaTeXDimension = Annotated[
     str,
     Field(
         pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
-        examples=["1.35 cm", "1 in", "12 pt", "14 mm", "2 ex", "3 em"],
     ),
 ]
 SpellCheckedString = Annotated[str, AfterValidator(check_spelling)]
@@ -250,22 +308,22 @@ class ClassicThemePageMargins(BaseModel):
     top: LaTeXDimension = Field(
         default="1.35 cm",
         title="Top Margin",
-        description="The top margin of the page.",
+        description="The top margin of the page with units.",
     )
     bottom: LaTeXDimension = Field(
         default="1.35 cm",
         title="Bottom Margin",
-        description="The bottom margin of the page.",
+        description="The bottom margin of the page with units.",
     )
     left: LaTeXDimension = Field(
         default="1.35 cm",
         title="Left Margin",
-        description="The left margin of the page.",
+        description="The left margin of the page with units.",
     )
     right: LaTeXDimension = Field(
         default="1.35 cm",
         title="Right Margin",
-        description="The right margin of the page.",
+        description="The right margin of the page with units.",
     )
 
 
@@ -336,18 +394,22 @@ class ClassicThemeMargins(BaseModel):
     page: ClassicThemePageMargins = Field(
         default=ClassicThemePageMargins(),
         title="Page Margins",
+        description="Page margins for the classic theme.",
     )
     section_title: ClassicThemeSectionTitleMargins = Field(
         default=ClassicThemeSectionTitleMargins(),
         title="Section Title Margins",
+        description="Section title margins for the classic theme.",
     )
     entry_area: ClassicThemeEntryAreaMargins = Field(
         default=ClassicThemeEntryAreaMargins(),
         title="Entry Area Margins",
+        description="Entry area margins for the classic theme.",
     )
     highlights_area: ClassicThemeHighlightsAreaMargins = Field(
         default=ClassicThemeHighlightsAreaMargins(),
         title="Highlights Area Margins",
+        description="Highlights area margins for the classic theme.",
     )
 
 
@@ -375,7 +437,6 @@ class ClassicThemeOptions(BaseModel):
         default="3.6 cm",
         title="Date and Location Column Width",
         description="The width of the date and location column.",
-        examples=["1.35 cm", "1 in", "12 pt", "14 mm", "2 ex", "3 em"],
     )
 
     show_timespan_in: list[str] = Field(
@@ -385,7 +446,6 @@ class ClassicThemeOptions(BaseModel):
             "The time span will be shown in the date and location column in these"
             " sections. The input should be a list of strings."
         ),
-        examples=[["Education", "Experience"]],
     )
 
     show_last_updated_date: bool = Field(
@@ -416,19 +476,16 @@ class Design(BaseModel):
         default="SourceSans3",
         title="Font",
         description="The font of the CV.",
-        examples=["SourceSans3", "Roboto", "EBGaramond"],
     )
     font_size: Literal["10pt", "11pt", "12pt"] = Field(
         default="10pt",
         title="Font Size",
         description="The font size of the CV. It can be 10pt, 11pt, or 12pt.",
-        examples=["10pt", "11pt", "12pt"],
     )
     page_size: Literal["a4paper", "letterpaper"] = Field(
         default="a4paper",
         title="Page Size",
         description="The page size of the CV. It can be a4paper or letterpaper.",
-        examples=["a4paper", "letterpaper"],
     )
     options: Optional[ClassicThemeOptions] = Field(
         default=None,
@@ -534,7 +591,7 @@ class Event(BaseModel):
             " and end date should be provided instead. All of them can't be provided at"
             " the same time."
         ),
-        examples=["2020-09-24"],
+        examples=["2020-09-24", "My Custom Date"],
     )
     highlights: Optional[list[SpellCheckedString]] = Field(
         default=[],
@@ -760,12 +817,10 @@ class ExperienceEntry(Event):
     company: str = Field(
         title="Company",
         description="The company name. It will be shown as bold text.",
-        examples=["CERN", "Apple"],
     )
     position: str = Field(
         title="Position",
         description="The position. It will be shown as normal text.",
-        examples=["Software Engineer", "Mechanical Engineer"],
     )
 
 
@@ -775,12 +830,11 @@ class EducationEntry(Event):
     institution: str = Field(
         title="Institution",
         description="The institution name. It will be shown as bold text.",
-        examples=["Massachusetts Institute of Technology", "Bogazici University"],
+        examples=["Bogazici University"],
     )
     area: str = Field(
         title="Area",
         description="The area of study. It will be shown as normal text.",
-        examples=["Mechanical Engineering", "Computer Science"],
     )
     study_type: Optional[str] = Field(
         default=None,
@@ -792,7 +846,6 @@ class EducationEntry(Event):
         default=None,
         title="GPA",
         description="The GPA of the degree.",
-        examples=["4.00/4.00", "3.80/4.00"],
     )
     transcript_url: Optional[HttpUrl] = Field(
         default=None,
@@ -826,37 +879,30 @@ class PublicationEntry(Event):
     title: str = Field(
         title="Title of the Publication",
         description="The title of the publication. It will be shown as bold text.",
-        examples=["My Awesome Paper", "My Awesome Book"],
     )
     authors: list[str] = Field(
         title="Authors",
         description="The authors of the publication in order as a list of strings.",
-        examples=["John Doe", "Jane Doe"],
     )
     doi: str = Field(
         title="DOI",
         description="The DOI of the publication.",
-        examples=["10.1103/PhysRevB.76.054309"],
+        examples=["10.48550/arXiv.2310.03138"],
     )
     date: str = Field(
         title="Publication Date",
         description="The date of the publication.",
-        examples=[2021, 2022],
+        examples=["2021-10-31"],
     )
     cited_by: Optional[int] = Field(
         default=None,
         title="Cited By",
         description="The number of citations of the publication.",
-        examples=[10, 100],
     )
     journal: Optional[str] = Field(
         default=None,
         title="Journal",
         description="The journal or the conference name.",
-        examples=[
-            "Physical Review B",
-            "ASME International Mechanical Engineering Congress and Exposition",
-        ],
     )
 
     @field_validator("doi")
@@ -886,12 +932,10 @@ class SocialNetwork(BaseModel):
     network: Literal["LinkedIn", "GitHub", "Instagram"] = Field(
         title="Social Network",
         description="The social network name.",
-        examples=["LinkedIn", "GitHub", "Instagram"],
     )
     username: str = Field(
         title="Username",
         description="The username of the social network. The link will be generated.",
-        examples=["johndoe", "johndoe123"],
     )
 
 
@@ -947,7 +991,7 @@ class Section(BaseModel):
     title: str = Field(
         title="Section Title",
         description="The title of the section.",
-        examples=["Awards", "My Custom Section", "Languages"],
+        examples=["My Custom Section"],
     )
     entry_type: Literal[
         "OneLineEntry",
@@ -988,19 +1032,16 @@ class CurriculumVitae(BaseModel):
     name: str = Field(
         title="Name",
         description="The name of the person.",
-        examples=["John Doe", "Jane Doe"],
     )
     label: Optional[str] = Field(
         default=None,
         title="Label",
         description="The label of the person.",
-        examples=["Software Engineer", "Mechanical Engineer"],
     )
     location: Optional[str] = Field(
         default=None,
         title="Location",
         description="The location of the person. This is not rendered currently.",
-        examples=["Istanbul, Turkey", "Boston, MA, USA"],
     )
     email: Optional[EmailStr] = Field(
         default=None,
@@ -1027,7 +1068,6 @@ class CurriculumVitae(BaseModel):
         description=(
             "The order of sections in the CV. The section title should be used."
         ),
-        examples=[["Education", "Work Experience", "Skills"]],
     )
     education: Optional[list[EducationEntry]] = Field(
         default=None,
@@ -1250,7 +1290,11 @@ class RenderCVDataModel(BaseModel):
         title="Design",
         description="The design of the CV.",
     )
-    cv: CurriculumVitae
+    cv: CurriculumVitae = Field(
+        default=CurriculumVitae(name="John Doe"),
+        title="Curriculum Vitae",
+        description="The data of the CV.",
+    )
 
     @model_validator(mode="after")
     @classmethod

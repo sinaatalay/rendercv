@@ -1,4 +1,6 @@
 import unittest
+import os
+import json
 
 from rendercv import data_model
 
@@ -781,3 +783,25 @@ class TestDataModel(unittest.TestCase):
         with self.subTest(msg="custom sections with duplicate titles"):
             with self.assertRaises(ValidationError):
                 data_model.CurriculumVitae(**input)
+
+    def test_if_json_schema_is_the_latest(self):
+        tests_directory = os.path.dirname(__file__)
+        path_to_generated_schema = data_model.generate_json_schema(tests_directory)
+
+        # Read the generated JSON schema:
+        with open(path_to_generated_schema, "r") as f:
+            generated_json_schema = json.load(f)
+        
+        # Remove the generated JSON schema:
+        os.remove(path_to_generated_schema)
+        
+        # Read the repository's current JSON schema:
+        path_to_schema = os.path.join(
+            os.path.dirname(tests_directory),
+            "schema.json"
+        )
+        with open(path_to_schema, "r") as f:
+            current_json_schema = json.load(f)
+        
+        # Compare the two JSON schemas:
+        self.assertEqual(generated_json_schema, current_json_schema)
