@@ -42,4 +42,3 @@ logger.setLevel(logging.DEBUG)
 stdout_handler = logging.StreamHandler()
 stdout_handler.setFormatter(LoggingFormatter())
 logger.addHandler(stdout_handler)
-sys.tracebacklimit = -1
