@@ -349,9 +349,9 @@ class ClassicThemeSectionTitleMargins(BaseModel):
 class ClassicThemeEntryAreaMargins(BaseModel):
     """This class stores the margins of entry areas for the classic theme.
 
-    For the classic theme, entry areas are [OneLineEntry](../index.md#onelineentry),
-    [NormalEntry](../index.md#normalentry), and
-    [ExperienceEntry](../index.md#experienceentry).
+    For the classic theme, entry areas are [OneLineEntry](../user_guide.md#onelineentry),
+    [NormalEntry](../user_guide.md#normalentry), and
+    [ExperienceEntry](../user_guide.md#experienceentry).
     """
 
     left: LaTeXDimension = Field(
@@ -794,7 +794,7 @@ class Event(BaseModel):
 
 
 class OneLineEntry(Event):
-    """This class stores [OneLineEntry](../index.md#onelineentry) information."""
+    """This class stores [OneLineEntry](../user_guide.md#onelineentry) information."""
 
     name: str = Field(
         title="Name",
@@ -807,7 +807,7 @@ class OneLineEntry(Event):
 
 
 class NormalEntry(Event):
-    """This class stores [NormalEntry](../index.md#normalentry) information."""
+    """This class stores [NormalEntry](../user_guide.md#normalentry) information."""
 
     name: str = Field(
         title="Name",
@@ -816,7 +816,7 @@ class NormalEntry(Event):
 
 
 class ExperienceEntry(Event):
-    """This class stores [ExperienceEntry](../index.md#experienceentry) information."""
+    """This class stores [ExperienceEntry](../user_guide.md#experienceentry) information."""
 
     company: str = Field(
         title="Company",
@@ -829,7 +829,7 @@ class ExperienceEntry(Event):
 
 
 class EducationEntry(Event):
-    """This class stores [EducationEntry](../index.md#educationentry) information."""
+    """This class stores [EducationEntry](../user_guide.md#educationentry) information."""
 
     institution: str = Field(
         title="Institution",
@@ -878,7 +878,7 @@ class EducationEntry(Event):
 
 
 class PublicationEntry(Event):
-    """This class stores [PublicationEntry](../index.md#publicationentry) information."""
+    """This class stores [PublicationEntry](../user_guide.md#publicationentry) information."""
 
     title: str = Field(
         title="Title of the Publication",
