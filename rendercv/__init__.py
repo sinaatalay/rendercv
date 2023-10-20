@@ -6,6 +6,7 @@ $\LaTeX$ file and renders it with [TinyTeX](https://yihui.org/tinytex/).
 """
 import logging
 import os
+import sys
 
 
 class LoggingFormatter(logging.Formatter):
@@ -33,7 +34,8 @@ class LoggingFormatter(logging.Formatter):
 
 
 # Initialize logger with colors
-os.system("COLOR 0")  # enable colors in Windows terminal
+if sys.platform == "win32":
+    os.system("COLOR 0")  # enable colors in Windows terminal
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 stdout_handler = logging.StreamHandler()
