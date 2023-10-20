@@ -68,7 +68,4 @@ class TestCLI(unittest.TestCase):
             output_file_path
         )
 
-        # Remove the output file:
-        os.remove(output_file_path)
-
         self.assertTrue(model.cv.name == "John Doe")
