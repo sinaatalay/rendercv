@@ -54,7 +54,7 @@ def new(name: Annotated[str, typer.Argument(help="Full name")]):
         environment.variable_start_string = "<<"
         environment.variable_end_string = ">>"
 
-        template = environment.get_template(f"new_input.yaml.j2")
+        template = environment.get_template("new_input.yaml.j2")
         new_input_file = template.render(name=name)
 
         name = name.replace(" ", "_")

@@ -3,8 +3,6 @@ import os
 import json
 from datetime import date
 import shutil
-import subprocess
-import sys
 
 from rendercv import rendering, data_model
 
