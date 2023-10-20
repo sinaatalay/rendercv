@@ -74,3 +74,6 @@ def cli():
     This function is the entry point for RenderCV.
     """
     app()
+
+if __name__ == "__main__":
+    cli()
