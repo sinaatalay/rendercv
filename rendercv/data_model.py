@@ -2,7 +2,7 @@
 This module contains classes and functions to parse and validate YAML or JSON input
 files. It uses [Pydantic](https://github.com/pydantic/pydantic) to achieve this goal.
 All the data classes have `BaseModel` from Pydantic as a base class, and some data
-fields have advanced types like `HttpUrl`, `EmailStr`, or `PastDate` from the Pydnatic
+fields have advanced types like `HttpUrl`, `EmailStr`, or `PastDate` from the Pydantic
 library for validation.
 """
 
@@ -349,9 +349,9 @@ class ClassicThemeSectionTitleMargins(BaseModel):
 class ClassicThemeEntryAreaMargins(BaseModel):
     """This class stores the margins of entry areas for the classic theme.
 
-    For the classic theme, entry areas are (OneLineEntry)[../index.md#onelineentry],
-    (NormalEntry)[../index.md#normalentry], and
-    (ExperienceEntry)[../index.md#experienceentry].
+    For the classic theme, entry areas are [OneLineEntry](../index.md#onelineentry),
+    [NormalEntry](../index.md#normalentry), and
+    [ExperienceEntry](../index.md#experienceentry).
     """
 
     left: LaTeXDimension = Field(
@@ -944,7 +944,7 @@ class SocialNetwork(BaseModel):
 
 
 class Connection(BaseModel):
-    r"""This class stores a connection/communication information.
+    """This class stores a connection/communication information.
 
     Warning:
         This class isn't designed for users to use, but it is used by RenderCV to make

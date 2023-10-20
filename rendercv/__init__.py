@@ -1,7 +1,7 @@
 r"""RenderCV package.
 
-It parses the user input YAML/JSON file and validates the data (checks spelling
-mistakes, checks if the dates are consistent, etc.). Then, with the data, it creates a
+It parses the user input YAML/JSON file and validates the data (checking spelling
+mistakes, whether the dates are consistent, etc.). Then, with the data, it creates a
 $\LaTeX$ file and renders it with [TinyTeX](https://yihui.org/tinytex/).
 """
 import logging
@@ -9,10 +9,6 @@ import os
 
 
 class LoggingFormatter(logging.Formatter):
-    """
-    Logging formatter class
-    """
-
     grey = "\x1b[38;20m"  # debug level
     white = "\x1b[37;20m"  # info level
     yellow = "\x1b[33;20m"  # warning level
@@ -36,6 +32,7 @@ class LoggingFormatter(logging.Formatter):
         return formatter.format(record)
 
 
+# Initialize logger with colors
 os.system("COLOR 0")  # enable colors in Windows terminal
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
