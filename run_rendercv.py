@@ -1,6 +1,4 @@
-import os
 from rendercv.__main__ import render
-from rendercv.data_model import generate_json_schema
 
 input_file_path = "John_Doe_CV.yaml"
 render(input_file_path)
@@ -12,4 +10,3 @@ render(input_file_path)
 
 # Generate schema.json
 # generate_json_schema(os.path.join(os.path.dirname(__file__)))
-
