@@ -333,7 +333,7 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     file_name = data.cv.name.replace(" ", "_") + "_CV.tex"
     output_file_path = os.path.join(output_folder, file_name)
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
-    with open(output_file_path, "w", encoding="utf-8") as file:
+    with open(output_file_path, "w") as file:
         file.write(output_latex_file)
 
     # Copy the fonts directory to the output directory:

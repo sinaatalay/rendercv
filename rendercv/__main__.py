@@ -50,8 +50,6 @@ def new(name: Annotated[str, typer.Argument(help="Full name")]):
     try:
         environment = Environment(
             loader=PackageLoader("rendercv", os.path.join("templates")),
-            trim_blocks=True,
-            lstrip_blocks=True,
         )
         environment.variable_start_string = "<<"
         environment.variable_end_string = ">>"
