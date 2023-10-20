@@ -57,5 +57,6 @@ def new(name: Annotated[str, typer.Argument(help="Full name")]):
         logger.critical(e)
         typer.Abort()
 
+
 if __name__ == "__main__":
     app()

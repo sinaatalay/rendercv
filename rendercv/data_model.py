@@ -60,7 +60,7 @@ dictionary = [
     "grammarly",
     "css",
     "html",
-    "markdown"
+    "markdown",
 ]
 
 
