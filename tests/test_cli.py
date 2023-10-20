@@ -1,7 +1,5 @@
 import unittest
 import os
-import json
-from datetime import date
 import shutil
 import subprocess
 import sys
