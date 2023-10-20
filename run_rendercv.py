@@ -1,9 +1,9 @@
 import os
-from rendercv.__main__ import main as rendercv_main
+from rendercv.__main__ import render
 from rendercv.data_model import generate_json_schema
 
 input_file_path = "John_Doe_CV.yaml"
-rendercv_main(input_file_path)
+render(input_file_path)
 
 # This script is equivalent to running the following command in the terminal:
 # python -m rendercv personal.yaml
