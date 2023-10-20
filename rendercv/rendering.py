@@ -118,9 +118,9 @@ def make_it_something(
 
     Warning:
         This function shouldn't be used directly. Use
-        (make_it_bold)[#rendercv.rendering.make_it_bold],
-        (make_it_underlined)[#rendercv.rendering.make_it_underlined], or
-        (make_it_italic)[#rendercv.rendering.make_it_italic] instead.
+        [make_it_bold](rendering.md#rendercv.rendering.make_it_bold),
+        [make_it_underlined](rendering.md#rendercv.rendering.make_it_underlined), or
+        [make_it_italic](rendering.md#rendercv.rendering.make_it_italic) instead.
     """
     if not isinstance(value, str):
         raise ValueError(f"{something} should only be used on strings!")
