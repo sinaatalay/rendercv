@@ -34,7 +34,7 @@ def markdown_to_latex(markdown_string: str) -> str:
         `#!pytjon "This is a \\textbf{bold} text with a \\hrefExternal{https://google.com}{\\textit{link}}."`
 
     Args:
-        value (str): The markdown string to convert.
+        markdown_string (str): The markdown string to convert.
 
     Returns:
         str: The LaTeX string.
@@ -374,7 +374,7 @@ def run_latex(latex_file_path: str) -> str:
     Run TinyTeX with the given LaTeX file and generate a PDF.
 
     Args:
-        latexFilePath (str): The path to the LaTeX file to compile.
+        latex_file_path (str): The path to the LaTeX file to compile.
     """
     start_time = time.time()
     logger.info("Running TinyTeX to generate the PDF has started.")
