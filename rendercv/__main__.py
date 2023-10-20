@@ -25,6 +25,11 @@ def render(
         typer.Argument(help="Name of the YAML input file"),
     ]
 ):
+    """Generate a LaTeX CV from a YAML input file.
+
+    Args:
+        input_file (str): Name of the YAML input file
+    """
     try:
         file_path = os.path.abspath(input_file)
         data = read_input_file(file_path)
@@ -37,6 +42,11 @@ def render(
 
 @app.command(help="Generate a YAML input file to get started")
 def new(name: Annotated[str, typer.Argument(help="Full name")]):
+    """Generate a YAML input file to get started.
+
+    Args:
+        name (str): Full name
+    """
     try:
         environment = Environment(
             loader=PackageLoader("rendercv", os.path.join("templates")),
@@ -58,5 +68,9 @@ def new(name: Annotated[str, typer.Argument(help="Full name")]):
         typer.Abort()
 
 
-if __name__ == "__main__":
+def cli():
+    """Start the CLI application.
+
+    This function is the entry point for RenderCV.
+    """
     app()
