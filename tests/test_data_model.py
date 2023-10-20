@@ -791,17 +791,14 @@ class TestDataModel(unittest.TestCase):
         # Read the generated JSON schema:
         with open(path_to_generated_schema, "r") as f:
             generated_json_schema = json.load(f)
-        
+
         # Remove the generated JSON schema:
         os.remove(path_to_generated_schema)
-        
+
         # Read the repository's current JSON schema:
-        path_to_schema = os.path.join(
-            os.path.dirname(tests_directory),
-            "schema.json"
-        )
+        path_to_schema = os.path.join(os.path.dirname(tests_directory), "schema.json")
         with open(path_to_schema, "r") as f:
             current_json_schema = json.load(f)
-        
+
         # Compare the two JSON schemas:
         self.assertEqual(generated_json_schema, current_json_schema)

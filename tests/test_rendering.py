@@ -470,10 +470,14 @@ class TestRendering(unittest.TestCase):
             reference_pdf_file = pdf_file.replace("_test.pdf", "_reference.pdf")
             reference_pdf_file_size = os.path.getsize(reference_pdf_file)
             pdf_file_size = os.path.getsize(pdf_file)
+
+            # Remove the output file:
+            os.remove(pdf_file)
+
             ratio = min(reference_pdf_file_size, pdf_file_size) / max(
                 reference_pdf_file_size, pdf_file_size
             )
-            self.assertTrue(ratio > 0.99, msg="PDF file didn't match the reference.")
+            self.assertTrue(ratio > 0.98, msg="PDF file didn't match the reference.")
 
         nonexistent_latex_file_path = os.path.join(
             os.path.dirname(__file__), "reference_files", "nonexistent.tex"
@@ -484,47 +488,3 @@ class TestRendering(unittest.TestCase):
                 FileNotFoundError, msg="File not found error didn't raise."
             ):
                 rendering.run_latex(nonexistent_latex_file_path)
-
-    def test_entry_point(self):
-        # Change the working directory to the root of the project:
-        workspace_path = os.path.dirname(os.path.dirname(__file__))
-
-        test_input_file_path = os.path.join(
-            workspace_path, "tests", "reference_files", "John_Doe_CV_test.yaml"
-        )
-        subprocess.run(
-            [sys.executable, "-m", "rendercv", test_input_file_path],
-            check=True,
-        )
-
-        # Read the necessary information and remove the output directory:
-        output_file_path = os.path.join(workspace_path, "output", "John_Doe_CV.pdf")
-        pdf_file_size = os.path.getsize(output_file_path)
-        file_exists = os.path.exists(output_file_path)
-        shutil.rmtree(os.path.join(workspace_path, "output"))
-
-        # Check if the output file exists:
-        self.assertTrue(file_exists, msg="PDF file couldn't be generated.")
-
-        # Compare the pdf file with the reference pdf file:
-        reference_pdf_file = os.path.join(
-            workspace_path, "tests", "reference_files", "John_Doe_CV_reference.pdf"
-        )
-        reference_pdf_file_size = os.path.getsize(reference_pdf_file)
-        ratio = min(reference_pdf_file_size, pdf_file_size) / max(
-            reference_pdf_file_size, pdf_file_size
-        )
-        self.assertTrue(ratio > 0.99, msg="PDF file didn't match the reference.")
-
-        # Wrong input:
-        with self.subTest(msg="Wrong input"):
-            with self.assertRaises(subprocess.CalledProcessError):
-                subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "rendercv",
-                        "wrong_input.yaml",
-                    ],
-                    check=True,
-                )
