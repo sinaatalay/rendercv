@@ -61,6 +61,11 @@ dictionary = [
     "css",
     "html",
     "markdown",
+    "ubuntu",
+    "matlab",
+    "lua",
+    "premake",
+    "javascript",
 ]
 
 
