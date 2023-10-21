@@ -2,6 +2,7 @@ import os
 import logging
 import re
 from typing import Annotated
+from functools import wraps
 
 from .rendering import read_input_file, render_template, run_latex
 
@@ -27,7 +28,7 @@ def user_friendly_errors(func):
     Returns:
         function: Decorated function
     """
-
+    @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
