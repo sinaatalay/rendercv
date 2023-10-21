@@ -55,7 +55,7 @@ cv:
 ```
 - Then, it validates the input, such as checking if the dates are consistent, checking if the URLs are correct, giving a warning if there are any spelling mistakes, etc.
 - Then, it creates a $\LaTeX$ file.
-- Finally, it renders the $\LaTeX$ file to generate the PDF, and you don't need $\LaTeX$ installed on your PC because the packages come with [TinyTeX](https://yihui.org/tinytex/).
+- Finally, it renders the $\LaTeX$ file to generate the PDF, and you don't need $\LaTeX$ installed on your PC because RenderCV comes with [TinyTeX](https://yihui.org/tinytex/).
 
 ## Quick Start Guide
 
