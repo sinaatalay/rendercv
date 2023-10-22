@@ -2,6 +2,7 @@
 [![CI](https://github.com/sinaatalay/rendercv/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/ci.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
 [![pypi](https://img.shields.io/pypi/v/rendercv.svg)](https://pypi.python.org/pypi/rendercv)
+[![pypi-downloads](https://img.shields.io/pypi/dm/rendercv)](https://pypi.python.org/pypi/rendercv)
 
 RenderCV is a Python application that creates a $\LaTeX$ CV as a PDF from a JSON/YAML input file. Currently, it only supports one theme (*classic*). An example can be seen [here](https://github.com/sinaatalay/rendercv/blob/main/John_Doe_CV.pdf?raw=true). More themes are planned to be supported in the future.
 
@@ -20,11 +21,11 @@ cv:
     - network: GitHub
       username: johndoe
   education:
-    - institution: Boğaziçi University
-      url: https://boun.edu.tr
+    - institution: My University
+      url: https://example.com
       area: Mechanical Engineering
       study_type: BS
-      location: Istanbul, Turkey
+      location: Geneva, Switzerland
       start_date: "2017-09-01"
       end_date: "2023-01-01"
       transcript_url: https://example.com
@@ -55,7 +56,7 @@ cv:
 ```
 - Then, it validates the input, such as checking if the dates are consistent, checking if the URLs are correct, giving a warning if there are any spelling mistakes, etc.
 - Then, it creates a $\LaTeX$ file.
-- Finally, it renders the $\LaTeX$ file to generate the PDF, and you don't need $\LaTeX$ installed on your PC because the packages come with [TinyTeX](https://yihui.org/tinytex/).
+- Finally, it renders the $\LaTeX$ file to generate the PDF, and you don't need $\LaTeX$ installed on your PC because RenderCV comes with [TinyTeX](https://yihui.org/tinytex/).
 
 ## Quick Start Guide
 
