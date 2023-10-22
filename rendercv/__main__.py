@@ -39,8 +39,14 @@ def user_friendly_errors(func: Callable) -> Callable:
             for error_line in error_messages.copy():
                 new_error_line = None
 
-                if "RenderCVDataModel" in error_line:
-                    new_error_line = error_line.replace(" for RenderCVDataModel", "!")
+                if "function-after" in error_line:
+                    # Remove this line and the next one
+                    next_error_line = error_messages[error_messages.index(error_line) + 1]
+                    error_messages.remove(error_line)
+                    error_messages.remove(next_error_line)
+
+                if "validation" in error_line:
+                    new_error_line = "There are validation errors!"
 
                 if "For further information" in error_line:
                     # Remove further information line
@@ -66,7 +72,11 @@ def user_friendly_errors(func: Callable) -> Callable:
                         )
                 # If the error line was modified, replace it
                 if new_error_line is not None:
-                    error_messages[error_messages.index(error_line)] = new_error_line
+                    try:
+                        error_messages[error_messages.index(error_line)] = new_error_line
+                    except ValueError:
+                        # This error line was already removed
+                        pass
 
             error_message = "\n           ".join(error_messages)
 
