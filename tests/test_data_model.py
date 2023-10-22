@@ -706,6 +706,7 @@ class TestDataModel(unittest.TestCase):
                 {
                     "title": "My Custom Section 2",
                     "entry_type": "NormalEntry",
+                    "link_text": "My Custom Link Text",
                     "entries": [
                         {"name": "My Custom Entry Name"},
                         {"name": "My Custom Entry Name"},
@@ -769,6 +770,10 @@ class TestDataModel(unittest.TestCase):
         with self.subTest(msg="valid custom sections"):
             cv = data_model.CurriculumVitae(**input)
             self.assertEqual(len(cv.sections), 5)
+
+        with self.subTest(msg="check link_text"):
+            cv = data_model.CurriculumVitae(**input)
+            self.assertEqual(cv.sections[1].link_text, "My Custom Link Text")
 
         # Invalid section_order:
         input["section_order"] = ["invalid section"]
