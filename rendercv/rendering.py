@@ -261,6 +261,14 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file {file_path} doesn't exist!")
 
+    # check the file extension:
+    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
+    if not any(file_path.endswith(extension) for extension in accepted_extensions):
+        raise ValueError(
+            f"The file {file_path} doesn't have an accepted extension!"
+            f" Accepted extensions are: {accepted_extensions}"
+        )
+
     with open(file_path) as file:
         yaml = YAML()
         raw_json = yaml.load(file)
