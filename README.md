@@ -22,11 +22,11 @@ cv:
     - network: GitHub
       username: johndoe
   education:
-    - institution: Boğaziçi University
-      url: https://boun.edu.tr
+    - institution: My University
+      url: https://example.com
       area: Mechanical Engineering
       study_type: BS
-      location: Istanbul, Turkey
+      location: Geneva, Switzerland
       start_date: "2017-09-01"
       end_date: "2023-01-01"
       transcript_url: https://example.com
