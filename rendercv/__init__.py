@@ -1,8 +1,8 @@
-r"""RenderCV package.
+"""RenderCV package.
 
 It parses the user input YAML/JSON file and validates the data (checking spelling
 mistakes, whether the dates are consistent, etc.). Then, with the data, it creates a
-$\LaTeX$ file and renders it with [TinyTeX](https://yihui.org/tinytex/).
+$\\LaTeX$ file and renders it with [TinyTeX](https://yihui.org/tinytex/).
 """
 import logging
 import os
