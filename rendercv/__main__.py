@@ -1,7 +1,7 @@
 import os
 import logging
 import re
-from typing import Annotated
+from typing import Annotated, Callable
 from functools import wraps
 
 from .rendering import read_input_file, render_template, run_latex
@@ -20,13 +20,13 @@ app = typer.Typer(
 )
 
 
-def user_friendly_errors(func):
+def user_friendly_errors(func: Callable) -> Callable:
     """Function decorator to make Pydantic's error messages more user-friendly.
 
     Args:
-        func (function): Function to decorate
+        func (Callable): Function to decorate
     Returns:
-        function: Decorated function
+        Callable: Decorated function
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -121,6 +121,7 @@ def new(name: Annotated[str, typer.Argument(help="Full name")]):
     with open(file_name, "w", encoding="utf-8") as file:
         file.write(new_input_file)
 
+    logger.info(f"New input file created: {file_name}")
 
 def cli():
     """Start the CLI application.
