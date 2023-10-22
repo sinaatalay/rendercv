@@ -953,7 +953,7 @@ class Connection(BaseModel):
 
     Warning:
         This class isn't designed for users to use, but it is used by RenderCV to make
-        the $\LaTeX$ templating easier.
+        the $\\LaTeX$ templating easier.
     """
 
     name: Literal[
@@ -1247,6 +1247,7 @@ class CurriculumVitae(BaseModel):
                 for custom_section in self.custom_sections:  # type: ignore
                     if custom_section.title == section_name:
                         entry_type = custom_section.entries[0].__class__.__name__
+                        link_text = custom_section.link_text
                         entries = custom_section.entries
                         break
 
