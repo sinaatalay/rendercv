@@ -527,10 +527,7 @@ class Design(BaseModel):
         # Go to fonts directory and check if the font exists:
         fonts_directory = str(files("rendercv").joinpath("templates", "fonts"))
         if font not in os.listdir(fonts_directory):
-            raise ValueError(
-                f'The font "{font}" is not found in the "fonts" directory! To add a new'
-                " font, please see TO BE ADDED."
-            )
+            raise ValueError(f'The font "{font}" is not found in the "fonts" directory')
         else:
             font_directory = os.path.join(fonts_directory, font)
             required_files = [
@@ -552,8 +549,7 @@ class Design(BaseModel):
         template_directory = str(files("rendercv").joinpath("templates", theme))
         if f"{theme}.tex.j2" not in os.listdir(template_directory):
             raise ValueError(
-                f'The theme "{theme}" is not found in the "templates" directory! To add'
-                " a new theme, please see TO BE ADDED."
+                f'The theme "{theme}" is not found in the "templates" directory!'
             )
 
         return theme
