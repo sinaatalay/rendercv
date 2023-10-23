@@ -934,7 +934,7 @@ class SocialNetwork(BaseModel):
     Currently, only LinkedIn, Github, and Instagram are supported.
     """
 
-    network: Literal["LinkedIn", "GitHub", "Instagram"] = Field(
+    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid"] = Field(
         title="Social Network",
         description="The social network name.",
     )
@@ -953,19 +953,16 @@ class Connection(BaseModel):
     """
 
     name: Literal[
-        "LinkedIn", "GitHub", "Instagram", "phone", "email", "website", "location"
+        "LinkedIn",
+        "GitHub",
+        "Instagram",
+        "Orcid",
+        "phone",
+        "email",
+        "website",
+        "location",
     ]
     value: str
-
-    @field_validator("value")
-    @classmethod
-    def check_type_of_value(cls, value: str) -> str:
-        if not re.search(r"[^\d\-+]", str(value)):
-            # If there is nothing other than digits, hyphens, and plus signs, then it is
-            # a phone number
-            value = "tel:" + value
-
-        return value
 
     @computed_field
     @cached_property
@@ -976,6 +973,8 @@ class Connection(BaseModel):
             url = f"https://www.github.com/{self.value}"
         elif self.name == "Instagram":
             url = f"https://www.instagram.com/{self.value}"
+        elif self.name == "Orcid":
+            url = f"https://orcid.org/{self.value}"
         elif self.name == "email":
             url = f"mailto:{self.value}"
         elif self.name == "website":
