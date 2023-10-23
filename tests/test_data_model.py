@@ -641,7 +641,7 @@ class TestDataModel(unittest.TestCase):
             "https://www.linkedin.com/in/username",
             "https://www.github.com/sinaatalay",
             "https://www.instagram.com/username",
-            "tel:+909999999999",
+            "+909999999999",
             "mailto:example@example.com",
             "https://www.example.com/",
             None,
