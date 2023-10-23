@@ -65,7 +65,7 @@ The whole CV consists of these entries. The table below shows what sections of t
 | `custom_sections`            | **They can be any of the five!** |
 
 !!! info
-    Note that *EducationEntry* is not necessarily for education entries only. It's one of the five entry designs that RenderCV offers, and it could be used for anything (see [custom sections](http://user_guide.md#custom_sections)). *EducationEntry* just happens to be its name. The same goes for other entries, too.
+    Note that *EducationEntry* is not necessarily for education entries only. It's one of the five entry designs that RenderCV offers, and it could be used for anything (see [custom sections](http://user_guide.md#custom-sections)). *EducationEntry* just happens to be its name. The same goes for other entries, too.
 
 ### *EducationEntry*
 
