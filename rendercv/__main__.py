@@ -8,6 +8,8 @@ from .rendering import read_input_file, render_template, run_latex
 
 import typer
 from jinja2 import Environment, PackageLoader
+from pydantic import ValidationError
+from pydantic_core import ErrorDetails
 
 logger = logging.getLogger(__name__)
 
@@ -21,71 +23,74 @@ app = typer.Typer(
 
 
 def user_friendly_errors(func: Callable) -> Callable:
-    """Function decorator to make Pydantic's error messages more user-friendly.
+    """Function decorator to make RenderCV's error messages more user-friendly.
 
     Args:
         func (Callable): Function to decorate
     Returns:
         Callable: Decorated function
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except Exception as e:
-            # Modify Pydantic's error message to make it more user-friendly
-            error_message = e.__repr__()
-            error_messages = error_message.split("\n")
-            for error_line in error_messages.copy():
-                new_error_line = None
+        except ValidationError as e:
+            # It is a Pydantic error
+            error_messages = []
+            error_messages.append("There are validation errors!")
 
-                if "function-after" in error_line:
-                    # Remove this line and the next one
-                    next_error_line = error_messages[error_messages.index(error_line) + 1]
-                    error_messages.remove(error_line)
-                    error_messages.remove(next_error_line)
-
-                if "validation" in error_line:
-                    new_error_line = "There are validation errors!"
-
-                if "For further information" in error_line:
-                    # Remove further information line
-                    error_messages.remove(error_line)
-
-                # Modify Pydantic's error message:
-                match = re.match(
-                    r"(.*) \[type=\w+, input_value=(.*), input_type=\w+\]",
-                    error_line,
+            # Translate Pydantic's error messages to make them more user-friendly
+            custom_error_messages_by_type = {
+                "url_scheme": "This is not a valid URL 😿",
+            }
+            custom_error_messages_by_msg = {
+                "value is not a valid phone number": (
+                    "This is not a valid phone number 👺"
                 )
-                if match:
-                    new_error_line = f"{match.group(1)}"
+            }
+            new_errors: list[ErrorDetails] = []
+            for error in e.errors():
+                # Modify Pydantic's error message to make it more user-friendly
 
-                    # Add a period at the end of the sentence if there is none
-                    if not (new_error_line[-1] == "." or new_error_line[-1] == "!"):
-                        new_error_line = new_error_line + "."
+                # Remove url:
+                error["url"] = None
 
-                    # If the input value is not a dictionary, add it to the error
-                    # message
-                    if "{" not in match.group(2):
-                        new_error_line = (
-                            new_error_line + f" The input was {match.group(2)}!"
-                        )
-                # If the error line was modified, replace it
-                if new_error_line is not None:
-                    try:
-                        error_messages[error_messages.index(error_line)] = new_error_line
-                    except ValueError:
-                        # This error line was already removed
-                        pass
+                # Make sure the entries of loc are strings
+                error["loc"] = [str(loc) for loc in error["loc"]]
 
-            error_message = "\n           ".join(error_messages)
+                # Assign a custom error message if there is one
+                custom_message = None
+                if error["type"] in custom_error_messages_by_type:
+                    custom_message = custom_error_messages_by_type[error["type"]]
+                elif error["msg"] in custom_error_messages_by_msg:
+                    custom_message = custom_error_messages_by_msg[error["msg"]]
 
-            # Print the error message
-            logger.critical(error_message)
+                if custom_message:
+                    ctx = error.get("ctx")
+                    error["msg"] = (
+                        custom_message.format(**ctx) if ctx else custom_message
+                    )
 
-            # Abort the program
-            logger.info("Aborting RenderCV.")
-            typer.Abort()
+                # If the input value is a dictionary or if the input value is in the
+                # error message, remove it
+                if isinstance(error["input"], dict) or error["input"] in error["msg"]:
+                    error["input"] = None
+
+                new_errors.append(error)
+
+            # Create a custom error message for RenderCV users
+            for error in new_errors:
+                location = ".".join(error["loc"])
+                error_messages.append(f"{location}:\n    {error['msg']}")
+                if error["input"]:
+                    error_messages[-1] += f"\n    Your input was \"{error['input']}\""
+            error_message = "\n\n  ".join(error_messages)
+            logger.error(error_message)
+
+        except Exception as e:
+            # It is not a Pydantic error
+            logging.error(e)
 
     return wrapper
 
@@ -132,6 +137,7 @@ def new(name: Annotated[str, typer.Argument(help="Full name")]):
         file.write(new_input_file)
 
     logger.info(f"New input file created: {file_name}")
+
 
 def cli():
     """Start the CLI application.
