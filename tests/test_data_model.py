@@ -27,10 +27,10 @@ class TestDataModel(unittest.TestCase):
             result = data_model.escape_latex_characters(str_without_latex_characters)
             self.assertEqual(result, expected)
 
-        str_with_latex_characers = r"asdf#asdf$asdf%asdf& ~ fd_ \ ^aa aa{ bb} "
+        str_with_latex_characers = r"asdf#asdf$asdf%asdf& ~ fd_ \ ^aa aa{ bb}"
         expected = (
-            r"asdf\#asdf\$asdf\%asdf\& \textasciitilde{}\ fd\_ \textbackslash{}"
-            r" \textasciicircum{}aa aa\{ bb\} "
+            r"asdf\#asdf\$asdf\%asdf\& \textasciitilde{} fd\_ \textbackslash{}"
+            r" \textasciicircum{}aa aa\{ bb\}"
         )
         with self.subTest(msg="string with LaTeX characters"):
             result = data_model.escape_latex_characters(str_with_latex_characers)
