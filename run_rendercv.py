@@ -11,4 +11,4 @@ render(input_file_path) # type: ignore
 # rendercv personal.yaml
 
 # Generate schema.json
-generate_json_schema(os.path.join(os.path.dirname(__file__)))
+generate_json_schema(os.path.dirname(__file__))
