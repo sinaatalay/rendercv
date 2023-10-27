@@ -1117,10 +1117,20 @@ class CurriculumVitae(BaseModel):
         title="Education",
         description="The education entries of the person.",
     )
+    experience: Optional[list[ExperienceEntry]] = Field(
+        default=None,
+        title="Experience",
+        description="The experience entries of the person.",
+    )
     work_experience: Optional[list[ExperienceEntry]] = Field(
         default=None,
         title="Work Experience",
         description="The work experience entries of the person.",
+    )
+    projects: Optional[list[NormalEntry]] = Field(
+        default=None,
+        title="Projects",
+        description="The project entries of the person.",
     )
     academic_projects: Optional[list[NormalEntry]] = Field(
         default=None,
@@ -1152,10 +1162,25 @@ class CurriculumVitae(BaseModel):
         title="Test Scores",
         description="The test score entries of the person.",
     )
+    programming_skills: Optional[list[OneLineEntry]] = Field(
+        default=None,
+        title="Programming Skills",
+        description="The programming skill entries of the person.",
+    )
     skills: Optional[list[OneLineEntry]] = Field(
         default=None,
         title="Skills",
         description="The skill entries of the person.",
+    )
+    awards: Optional[list[OneLineEntry]] = Field(
+        default=None,
+        title="Awards",
+        description="The award entries of the person.",
+    )
+    interests: Optional[list[OneLineEntry]] = Field(
+        default=None,
+        title="Interests",
+        description="The interest entries of the person.",
     )
     custom_sections: Optional[list[Section]] = Field(
         default=None,
@@ -1228,13 +1253,18 @@ class CurriculumVitae(BaseModel):
         # Pre-defined sections (i.e. sections that are not custom)):
         pre_defined_sections = {
             "Education": self.education,
+            "Experience": self.experience,
             "Work Experience": self.work_experience,
+            "Projects": self.projects,
             "Academic Projects": self.academic_projects,
             "Personal Projects": self.personal_projects,
             "Certificates": self.certificates,
             "Extracurricular Activities": self.extracurricular_activities,
             "Test Scores": self.test_scores,
             "Skills": self.skills,
+            "Awards": self.awards,
+            "Interests": self.interests,
+            "Programming Skills": self.programming_skills,
             "Publications": self.publications,
         }
 
@@ -1242,10 +1272,15 @@ class CurriculumVitae(BaseModel):
             # If the user didn't specify the section order, then use the default order:
             self.section_order = [
                 "Education",
+                "Experience",
                 "Work Experience",
+                "Projects",
                 "Academic Projects",
                 "Personal Projects",
                 "Skills",
+                "Awards",
+                "Interests",
+                "Programming Skills",
                 "Test Scores",
                 "Certificates",
                 "Extracurricular Activities",
