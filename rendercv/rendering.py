@@ -14,7 +14,6 @@ from importlib.resources import files
 from .data_model import RenderCVDataModel
 
 from jinja2 import Environment, PackageLoader
-from ruamel.yaml import YAML
 
 logger = logging.getLogger(__name__)
 
@@ -243,45 +242,6 @@ def get_path_to_font_directory(font_name: str) -> str:
         str: The path to the fonts directory.
     """
     return str(files("rendercv").joinpath("templates", "fonts", font_name))
-
-
-def read_input_file(file_path: str) -> RenderCVDataModel:
-    """Read the input file.
-
-    Args:
-        file_path (str): The path to the input file.
-
-    Returns:
-        str: The input file as a string.
-    """
-    start_time = time.time()
-    logger.info(f"Reading and validating the input file {file_path} has started.")
-
-    # check if the file exists:
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"The file {file_path} doesn't exist!")
-
-    # check the file extension:
-    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
-    if not any(file_path.endswith(extension) for extension in accepted_extensions):
-        raise ValueError(
-            f"The file {file_path} doesn't have an accepted extension!"
-            f" Accepted extensions are: {accepted_extensions}"
-        )
-
-    with open(file_path) as file:
-        yaml = YAML()
-        raw_json = yaml.load(file)
-
-    data = RenderCVDataModel(**raw_json)
-
-    end_time = time.time()
-    time_taken = end_time - start_time
-    logger.info(
-        f"Reading and validating the input file {file_path} has finished in"
-        f" {time_taken:.2f} s."
-    )
-    return data
 
 
 def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) -> str:

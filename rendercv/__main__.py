@@ -4,7 +4,8 @@ import re
 from typing import Annotated, Callable
 from functools import wraps
 
-from .rendering import read_input_file, render_template, run_latex
+from .data_model import read_input_file
+from .rendering import render_template, run_latex
 
 import typer
 from jinja2 import Environment, PackageLoader
