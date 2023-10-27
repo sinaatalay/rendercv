@@ -542,6 +542,9 @@ class Design(BaseModel):
     @model_validator(mode="after")
     @classmethod
     def check_theme_options(cls, model):
+        """Check if the correct options are provided for the theme. If the theme
+        options are not provided, then set the default options for the theme.
+        """
         if model.options is None:
             if model.theme == "classic":
                 model.options = ClassicThemeOptions()
@@ -561,7 +564,9 @@ class Design(BaseModel):
     @field_validator("font")
     @classmethod
     def check_font(cls, font: str) -> str:
-        # Go to fonts directory and check if the font exists:
+        """Go to the fonts directory and check if the font exists. If it exists, then
+        check if all the required files are there.
+        """
         fonts_directory = str(files("rendercv").joinpath("templates", "fonts"))
         if font not in os.listdir(fonts_directory):
             raise ValueError(
@@ -584,7 +589,7 @@ class Design(BaseModel):
     @field_validator("theme")
     @classmethod
     def check_if_theme_exists(cls, theme: str) -> str:
-        # Go to templates directory and check if the theme exists:
+        """Check if the theme exists in the templates directory."""
         template_directory = str(files("rendercv").joinpath("templates", theme))
         if f"{theme}.tex.j2" not in os.listdir(template_directory):
             raise ValueError(
@@ -659,6 +664,7 @@ class Event(BaseModel):
     @field_validator("date")
     @classmethod
     def check_date(cls, date: LaTeXString | PastDate) -> LaTeXString | PastDate:
+        """Check if the date is a string or a Date object and return accordingly."""
         if isinstance(date, str):
             try:
                 # If this runs, it means the date is an ISO format string, and it can be
@@ -674,7 +680,7 @@ class Event(BaseModel):
     @classmethod
     def check_dates(cls, model):
         """Make sure that either `#!python start_date` and `#!python end_date` or only
-        `#!python date`is provided.
+        `#!python date` is provided.
         """
         date_is_provided = False
         start_date_is_provided = False
@@ -952,6 +958,7 @@ class PublicationEntry(Event):
     @field_validator("doi")
     @classmethod
     def check_doi(cls, doi: str) -> str:
+        """Check if the DOI exists in the DOI System."""
         doi_url = f"https://doi.org/{doi}"
 
         try:
@@ -1066,6 +1073,7 @@ class Section(BaseModel):
     @field_validator("title")
     @classmethod
     def make_first_letters_uppercase(cls, title: LaTeXString) -> LaTeXString:
+        """Capitalize the first letters of the words in the title."""
         return title.title()
 
 
@@ -1193,6 +1201,7 @@ class CurriculumVitae(BaseModel):
     @model_validator(mode="after")
     @classmethod
     def check_if_the_section_names_are_unique(cls, model):
+        """Check if the section names are unique."""
         pre_defined_section_names = [
             "Education",
             "Work Experience",
@@ -1378,6 +1387,9 @@ class RenderCVDataModel(BaseModel):
     @model_validator(mode="after")
     @classmethod
     def check_classical_theme_show_timespan_in(cls, model):
+        """Check if the sections that are specified in the "show_timespan_in" option
+        exist in the CV.
+        """
         if model.design.theme == "classic":
             design: Design = model.design
             cv: CurriculumVitae = model.cv
