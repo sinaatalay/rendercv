@@ -10,36 +10,36 @@ from rendercv import rendering, data_model
 class TestRendering(unittest.TestCase):
     def test_markdown_to_latex(self):
         input = "[link](www.example.com)"
-        expected = r"\hrefExternal{www.example.com}{link}"
+        expected = r"\href{www.example.com}{link}"
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="only one link"):
             self.assertEqual(output, expected)
 
         input = "[link](www.example.com) and [link2](www.example2.com)"
         expected = (
-            r"\hrefExternal{www.example.com}{link} and"
-            r" \hrefExternal{www.example2.com}{link2}"
+            r"\href{www.example.com}{link} and"
+            r" \href{www.example2.com}{link2}"
         )
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="two links"):
             self.assertEqual(output, expected)
 
         input = "[**link**](www.example.com)"
-        expected = r"\hrefExternal{www.example.com}{\textbf{link}}"
+        expected = r"\href{www.example.com}{\textbf{link}}"
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="bold link"):
             self.assertEqual(output, expected)
 
         input = "[*link*](www.example.com)"
-        expected = r"\hrefExternal{www.example.com}{\textit{link}}"
+        expected = r"\href{www.example.com}{\textit{link}}"
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="italic link"):
             self.assertEqual(output, expected)
 
         input = "[*link*](www.example.com) and [**link2**](www.example2.com)"
         expected = (
-            r"\hrefExternal{www.example.com}{\textit{link}} and"
-            r" \hrefExternal{www.example2.com}{\textbf{link2}}"
+            r"\href{www.example.com}{\textit{link}} and"
+            r" \href{www.example2.com}{\textbf{link2}}"
         )
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="italic and bold links"):
@@ -48,7 +48,7 @@ class TestRendering(unittest.TestCase):
         input = "**bold**, *italic*, and [link](www.example.com)"
         expected = (
             r"\textbf{bold}, \textit{italic}, and"
-            r" \hrefExternal{www.example.com}{link}"
+            r" \href{www.example.com}{link}"
         )
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="bold, italic, and link"):

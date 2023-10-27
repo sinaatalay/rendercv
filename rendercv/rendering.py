@@ -30,7 +30,7 @@ def markdown_to_latex(markdown_string: str) -> str:
 
         will return:
 
-        `#!pytjon "This is a \\textbf{bold} text with a \\hrefExternal{https://google.com}{\\textit{link}}."`
+        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
 
     Args:
         markdown_string (str): The markdown string to convert.
@@ -49,7 +49,7 @@ def markdown_to_latex(markdown_string: str) -> str:
             link_url = link[1]
 
             old_link_string = f"[{link_text}]({link_url})"
-            new_link_string = "\\hrefExternal{" + link_url + "}{" + link_text + "}"
+            new_link_string = "\\href{" + link_url + "}{" + link_text + "}"
 
             markdown_string = markdown_string.replace(old_link_string, new_link_string)
 
@@ -400,7 +400,6 @@ def run_latex(latex_file_path: str) -> str:
         text=True,
     ) as latex_process:
         output, error = latex_process.communicate()
-        output.split("\n")
 
         if latex_process.returncode != 0:
             # Find the error line:
