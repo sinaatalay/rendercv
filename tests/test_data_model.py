@@ -20,6 +20,22 @@ class TestDataModel(unittest.TestCase):
             with self.subTest(sentence=sentence):
                 data_model.check_spelling(sentence)
 
+    def test_escape_latex_characters(self):
+        str_without_latex_characters = "This is a string without LaTeX characters."
+        expected = str_without_latex_characters
+        with self.subTest(msg="string without LaTeX characters"):
+            result = data_model.escape_latex_characters(str_without_latex_characters)
+            self.assertEqual(result, expected)
+
+        str_with_latex_characers = r"asdf#asdf$asdf%asdf& ~ fd_ \ ^aa aa{ bb} "
+        expected = (
+            r"asdf\#asdf\$asdf\%asdf\& \textasciitilde{}\ fd\_ \textbackslash{}"
+            r" \textasciicircum{}aa aa\{ bb\} "
+        )
+        with self.subTest(msg="string with LaTeX characters"):
+            result = data_model.escape_latex_characters(str_with_latex_characers)
+            self.assertEqual(result, expected)
+
     def test_compute_time_span_string(self):
         start_date = Date(year=2020, month=1, day=1)
         end_date = Date(year=2021, month=1, day=1)
@@ -807,3 +823,32 @@ class TestDataModel(unittest.TestCase):
 
         # Compare the two JSON schemas:
         self.assertEqual(generated_json_schema, current_json_schema)
+
+    def test_read_input_file(self):
+        test_input = {
+            "cv": {
+                "name": "John Doe",
+            }
+        }
+
+        # write dictionary to a file as json:
+        input_file_path = os.path.join(os.path.dirname(__file__), "test_input.json")
+        json_string = json.dumps(test_input)
+        with open(input_file_path, "w") as file:
+            file.write(json_string)
+
+        # read the file:
+        result = data_model.read_input_file(input_file_path)
+
+        # remove the file:
+        os.remove(input_file_path)
+
+        with self.subTest(msg="read input file"):
+            self.assertEqual(
+                result.cv.name,
+                test_input["cv"]["name"],
+            )
+
+        with self.subTest(msg="nonexistent file"):
+            with self.assertRaises(FileNotFoundError):
+                data_model.read_input_file("nonexistent.json")

@@ -62,7 +62,7 @@ class TestCLI(unittest.TestCase):
         )
         output_file_path = os.path.join(workspace_path, "John_Doe_CV.yaml")
 
-        model: data_model.RenderCVDataModel = rendering.read_input_file(
+        model: data_model.RenderCVDataModel = data_model.read_input_file(
             output_file_path
         )
 

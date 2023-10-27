@@ -203,35 +203,6 @@ class TestRendering(unittest.TestCase):
         result = rendering.get_path_to_font_directory(font_name)
         self.assertEqual(expected, result, msg="Font directory path is not correct.")
 
-    def test_read_input_file(self):
-        test_input = {
-            "cv": {
-                "name": "John Doe",
-            }
-        }
-
-        # write dictionary to a file as json:
-        input_file_path = os.path.join(os.path.dirname(__file__), "test_input.json")
-        json_string = json.dumps(test_input)
-        with open(input_file_path, "w") as file:
-            file.write(json_string)
-
-        # read the file:
-        result = rendering.read_input_file(input_file_path)
-
-        # remove the file:
-        os.remove(input_file_path)
-
-        with self.subTest(msg="read input file"):
-            self.assertEqual(
-                result.cv.name,
-                test_input["cv"]["name"],
-            )
-
-        with self.subTest(msg="nonexistent file"):
-            with self.assertRaises(FileNotFoundError):
-                rendering.read_input_file("nonexistent.json")
-
     def test_render_template(self):
         test_input = {
             "cv": {
