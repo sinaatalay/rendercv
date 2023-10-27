@@ -92,14 +92,14 @@ def check_spelling(sentence: str) -> str:
     Returns:
         str: The same sentence.
     """
-    modifiedSentence = sentence.lower()  # convert to lower case
-    modifiedSentence = re.sub(
-        r"\-+", " ", modifiedSentence
+    modified_sentence = sentence.lower()  # convert to lower case
+    modified_sentence = re.sub(
+        r"\-+", " ", modified_sentence
     )  # replace hyphens with spaces
-    modifiedSentence = re.sub(
-        r"[^a-z\s\-']", "", modifiedSentence
+    modified_sentence = re.sub(
+        r"[^a-z\s\-']", "", modified_sentence
     )  # remove all the special characters
-    words = modifiedSentence.split()  # split sentence into a list of words
+    words = modified_sentence.split()  # split sentence into a list of words
     misspelled = spell.unknown(words)  # find misspelled words
 
     if len(misspelled) > 0:
@@ -116,6 +116,40 @@ def check_spelling(sentence: str) -> str:
                 f'The word "{word}" might be misspelled according to the'
                 " pyspellchecker."
             )
+
+    return sentence
+
+
+def escape_latex_characters(sentence: str) -> str:
+    """Escape LaTeX characters in a sentence.
+
+    Example:
+        ```python
+        escape_latex_characters("This is a # sentence.")
+        ```
+        will return:
+        `#!python "This is a \\# sentence."`
+    """
+
+    # Dictionary of escape characters:
+    escape_characters = {
+        "#": r"\#",
+        "$": r"\$",
+        "%": r"\%",
+        "&": r"\&",
+        "~": r"\textasciitilde",
+        "_": r"\_",
+        "^": r"\textasciicircum",
+        "{": r"\{",
+        "}": r"\}",
+        "\\": r"\textbackslash",
+    }
+
+    # Loop through the letters of the sentence and if you find an escape character,
+    # replace it with its LaTeX equivalent:
+    for character in sentence:
+        if character in escape_characters:
+            sentence = sentence.replace(character, escape_characters[character])
 
     return sentence
 
@@ -303,7 +337,8 @@ LaTeXDimension = Annotated[
         pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
     ),
 ]
-SpellCheckedString = Annotated[str, AfterValidator(check_spelling)]
+LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
+SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
 
 # ======================================================================================
 # ======================================================================================
@@ -530,7 +565,9 @@ class Design(BaseModel):
         # Go to fonts directory and check if the font exists:
         fonts_directory = str(files("rendercv").joinpath("templates", "fonts"))
         if font not in os.listdir(fonts_directory):
-            raise ValueError(f'The font "{font}" is not found in the "fonts" directory 🥴')
+            raise ValueError(
+                f'The font "{font}" is not found in the "fonts" directory 🥴'
+            )
         else:
             font_directory = os.path.join(fonts_directory, font)
             required_files = [
@@ -590,7 +627,7 @@ class Event(BaseModel):
         ),
         examples=["2020-09-24", "present"],
     )
-    date: Optional[str | PastDate] = Field(
+    date: Optional[LaTeXString | PastDate] = Field(
         default=None,
         title="Date",
         description=(
@@ -609,7 +646,7 @@ class Event(BaseModel):
         ),
         examples=["Did this.", "Did that."],
     )
-    location: Optional[str] = Field(
+    location: Optional[LaTeXString] = Field(
         default=None,
         title="Location",
         description=(
@@ -622,7 +659,7 @@ class Event(BaseModel):
 
     @field_validator("date")
     @classmethod
-    def check_date(cls, date: str | PastDate) -> str | PastDate:
+    def check_date(cls, date: LaTeXString | PastDate) -> LaTeXString | PastDate:
         if isinstance(date, str):
             try:
                 # If this runs, it means the date is an ISO format string, and it can be
@@ -695,7 +732,7 @@ class Event(BaseModel):
 
     @computed_field
     @cached_property
-    def date_and_location_strings_with_timespan(self) -> list[str]:
+    def date_and_location_strings_with_timespan(self) -> list[LaTeXString]:
         date_and_location_strings = []
 
         if self.location is not None:
@@ -732,7 +769,7 @@ class Event(BaseModel):
 
     @computed_field
     @cached_property
-    def date_and_location_strings_without_timespan(self) -> list[str]:
+    def date_and_location_strings_without_timespan(self) -> list[LaTeXString]:
         # use copy() to avoid modifying the original list
         date_and_location_strings = self.date_and_location_strings_with_timespan.copy()
         for string in date_and_location_strings:
@@ -780,7 +817,7 @@ class Event(BaseModel):
 
     @computed_field
     @cached_property
-    def month_and_year(self) -> Optional[str]:
+    def month_and_year(self) -> Optional[LaTeXString]:
         if self.date is not None:
             # Then it means start_date and end_date are not provided.
             try:
@@ -800,7 +837,7 @@ class Event(BaseModel):
 class OneLineEntry(Event):
     """This class stores [OneLineEntry](../user_guide.md#onelineentry) information."""
 
-    name: str = Field(
+    name: LaTeXString = Field(
         title="Name",
         description="The name of the entry. It will be shown as bold text.",
     )
@@ -813,7 +850,7 @@ class OneLineEntry(Event):
 class NormalEntry(Event):
     """This class stores [NormalEntry](../user_guide.md#normalentry) information."""
 
-    name: str = Field(
+    name: LaTeXString = Field(
         title="Name",
         description="The name of the entry. It will be shown as bold text.",
     )
@@ -822,11 +859,11 @@ class NormalEntry(Event):
 class ExperienceEntry(Event):
     """This class stores [ExperienceEntry](../user_guide.md#experienceentry) information."""
 
-    company: str = Field(
+    company: LaTeXString = Field(
         title="Company",
         description="The company name. It will be shown as bold text.",
     )
-    position: str = Field(
+    position: LaTeXString = Field(
         title="Position",
         description="The position. It will be shown as normal text.",
     )
@@ -835,22 +872,22 @@ class ExperienceEntry(Event):
 class EducationEntry(Event):
     """This class stores [EducationEntry](../user_guide.md#educationentry) information."""
 
-    institution: str = Field(
+    institution: LaTeXString = Field(
         title="Institution",
         description="The institution name. It will be shown as bold text.",
         examples=["Bogazici University"],
     )
-    area: str = Field(
+    area: LaTeXString = Field(
         title="Area",
         description="The area of study. It will be shown as normal text.",
     )
-    study_type: Optional[str] = Field(
+    study_type: Optional[LaTeXString] = Field(
         default=None,
         title="Study Type",
         description="The type of the degree.",
         examples=["BS", "BA", "PhD", "MS"],
     )
-    gpa: Optional[str | float] = Field(
+    gpa: Optional[LaTeXString | float] = Field(
         default=None,
         title="GPA",
         description="The GPA of the degree.",
@@ -884,11 +921,11 @@ class EducationEntry(Event):
 class PublicationEntry(Event):
     """This class stores [PublicationEntry](../user_guide.md#publicationentry) information."""
 
-    title: str = Field(
+    title: LaTeXString = Field(
         title="Title of the Publication",
         description="The title of the publication. It will be shown as bold text.",
     )
-    authors: list[str] = Field(
+    authors: list[LaTeXString] = Field(
         title="Authors",
         description="The authors of the publication in order as a list of strings.",
     )
@@ -897,7 +934,7 @@ class PublicationEntry(Event):
         description="The DOI of the publication.",
         examples=["10.48550/arXiv.2310.03138"],
     )
-    date: str = Field(
+    date: LaTeXString = Field(
         title="Publication Date",
         description="The date of the publication.",
         examples=["2021-10-31"],
@@ -907,7 +944,7 @@ class PublicationEntry(Event):
         title="Cited By",
         description="The number of citations of the publication.",
     )
-    journal: Optional[str] = Field(
+    journal: Optional[LaTeXString] = Field(
         default=None,
         title="Journal",
         description="The journal or the conference name.",
@@ -995,7 +1032,7 @@ class Connection(BaseModel):
 class Section(BaseModel):
     """This class stores a section information."""
 
-    title: str = Field(
+    title: LaTeXString = Field(
         title="Section Title",
         description="The title of the section.",
         examples=["My Custom Section"],
@@ -1010,7 +1047,7 @@ class Section(BaseModel):
         title="Entry Type",
         description="The type of the entries in the section.",
     )
-    link_text: Optional[str] = Field(
+    link_text: Optional[LaTeXString] = Field(
         default=None,
         title="Link Text",
         description=(
@@ -1029,23 +1066,23 @@ class Section(BaseModel):
 
     @field_validator("title")
     @classmethod
-    def make_first_letters_uppercase(cls, title: str) -> str:
+    def make_first_letters_uppercase(cls, title: LaTeXString) -> LaTeXString:
         return title.title()
 
 
 class CurriculumVitae(BaseModel):
     """This class bindes all the information of a CV together."""
 
-    name: str = Field(
+    name: LaTeXString = Field(
         title="Name",
         description="The name of the person.",
     )
-    label: Optional[str] = Field(
+    label: Optional[LaTeXString] = Field(
         default=None,
         title="Label",
         description="The label of the person.",
     )
-    location: Optional[str] = Field(
+    location: Optional[LaTeXString] = Field(
         default=None,
         title="Location",
         description="The location of the person. This is not rendered currently.",
@@ -1064,7 +1101,7 @@ class CurriculumVitae(BaseModel):
             "The social networks of the person. They will be rendered in the heading."
         ),
     )
-    summary: Optional[str] = Field(
+    summary: Optional[LaTeXString] = Field(
         default=None,
         title="Summary",
         description="The summary of the person.",
@@ -1164,7 +1201,7 @@ class CurriculumVitae(BaseModel):
 
     @computed_field
     @cached_property
-    def connections(self) -> list[str]:
+    def connections(self) -> list[Connection]:
         connections = []
         if self.location is not None:
             connections.append(Connection(name="location", value=self.location))
