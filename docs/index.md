@@ -1,10 +1,11 @@
-# RenderCV: Overview
+# RenderCV
 [![CI](https://github.com/sinaatalay/rendercv/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/ci.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
-[![pypi](https://img.shields.io/pypi/v/rendercv.svg)](https://pypi.python.org/pypi/rendercv)
-[![pypi-downloads](https://img.shields.io/pypi/dm/rendercv)](https://pypi.python.org/pypi/rendercv)
+[![pypi-version](https://img.shields.io/pypi/v/rendercv?label=PyPI%20version&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
+[![pypi-downloads](https://img.shields.io/pypi/dm/rendercv?label=PyPI%20downloads&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
 
-RenderCV is a Python application that creates a $\LaTeX$ CV as a PDF from a JSON/YAML input file. Currently, it only supports one theme (*classic*). An example can be seen [here](https://github.com/sinaatalay/rendercv/blob/main/John_Doe_CV.pdf?raw=true). More themes are planned to be supported in the future.
+
+RenderCV is a Python application that creates a $\LaTeX$ CV as a PDF from a JSON/YAML input file. Currently, it only supports one theme (*classic*). An example PDF can be seen [here](https://github.com/sinaatalay/rendercv/blob/main/John_Doe_CV.pdf?raw=true). More themes are planned to be supported in the future.
 
 **What does it do?**
 
@@ -19,6 +20,8 @@ cv:
   website: https://example.com
   social_networks:
     - network: GitHub
+      username: johndoe
+    - network: LinkedIn
       username: johndoe
   education:
     - institution: My University
@@ -46,8 +49,9 @@ cv:
       start_date: "2022-06-15"
       end_date: "2022-08-01"
       highlights:
-        - AmIACompany is a technology company that provides
-          web-based engineering applications that enable the
+        - AmIACompany is a **technology** (markdown is
+          supported) company that provides web-based
+          engineering applications that enable the
           simulation and optimization of products and
           manufacturing tools.
         - Modeled and simulated a metal-forming process deep
@@ -57,6 +61,8 @@ cv:
 - Then, it validates the input, such as checking if the dates are consistent, checking if the URLs are correct, giving a warning if there are any spelling mistakes, etc.
 - Then, it creates a $\LaTeX$ file.
 - Finally, it renders the $\LaTeX$ file to generate the PDF, and you don't need $\LaTeX$ installed on your PC because RenderCV comes with [TinyTeX](https://yihui.org/tinytex/).
+
+![RenderCV example](images/example.png)
 
 ## Quick Start Guide
 
