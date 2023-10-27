@@ -5,7 +5,7 @@
 [![pypi-downloads](https://img.shields.io/pypi/dm/rendercv?label=PyPI%20downloads&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
 
 
-RenderCV is a Python application that creates a $\LaTeX$ CV as a PDF from a JSON/YAML input file. Currently, it only supports one theme (*classic*). An example can be seen [here](https://github.com/sinaatalay/rendercv/blob/main/John_Doe_CV.pdf?raw=true). More themes are planned to be supported in the future.
+RenderCV is a Python application that creates a $\LaTeX$ CV as a PDF from a JSON/YAML input file. Currently, it only supports one theme (*classic*). An example PDF can be seen [here](https://github.com/sinaatalay/rendercv/blob/main/John_Doe_CV.pdf?raw=true). More themes are planned to be supported in the future.
 
 **What does it do?**
 
@@ -61,6 +61,8 @@ cv:
 - Then, it validates the input, such as checking if the dates are consistent, checking if the URLs are correct, giving a warning if there are any spelling mistakes, etc.
 - Then, it creates a $\LaTeX$ file.
 - Finally, it renders the $\LaTeX$ file to generate the PDF, and you don't need $\LaTeX$ installed on your PC because RenderCV comes with [TinyTeX](https://yihui.org/tinytex/).
+
+![RenderCV example](docs/images/example.png)
 
 ## Quick Start Guide
 
