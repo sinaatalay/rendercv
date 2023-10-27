@@ -253,6 +253,9 @@ def generate_json_schema(output_directory: str) -> str:
             # Loop through $defs and remove docstring descriptions and fix optional
             # fields
             for key, value in json_schema["$defs"].items():
+                # Don't allow additional properties
+                value["additionalProperties"] = False
+
                 if "This class" in value["description"]:
                     del value["description"]
 
@@ -509,15 +512,15 @@ class Design(BaseModel):
             if model.theme == "classic":
                 model.options = ClassicThemeOptions()
             else:
-                raise RuntimeError("Unknown theme!")
+                raise RuntimeError("Unknown theme 👿")
         else:
             if model.theme == "classic":
                 if not isinstance(model.options, ClassicThemeOptions):
                     raise ValueError(
-                        "Theme is classic but options is not classic theme options!"
+                        "Theme is classic but options is not classic theme options 🥱"
                     )
             else:
-                raise RuntimeError("Theme is neither classic nor awesome-cv!")
+                raise RuntimeError("Unknown theme 👿")
 
         return model
 
@@ -527,7 +530,7 @@ class Design(BaseModel):
         # Go to fonts directory and check if the font exists:
         fonts_directory = str(files("rendercv").joinpath("templates", "fonts"))
         if font not in os.listdir(fonts_directory):
-            raise ValueError(f'The font "{font}" is not found in the "fonts" directory')
+            raise ValueError(f'The font "{font}" is not found in the "fonts" directory 🥴')
         else:
             font_directory = os.path.join(fonts_directory, font)
             required_files = [
@@ -538,7 +541,7 @@ class Design(BaseModel):
             ]
             for file in required_files:
                 if file not in os.listdir(font_directory):
-                    raise ValueError(f"{file} is not found in the {font} directory!")
+                    raise ValueError(f"{file} is not found in the {font} directory 😡")
 
         return font
 
@@ -549,7 +552,7 @@ class Design(BaseModel):
         template_directory = str(files("rendercv").joinpath("templates", theme))
         if f"{theme}.tex.j2" not in os.listdir(template_directory):
             raise ValueError(
-                f'The theme "{theme}" is not found in the "templates" directory!'
+                f'The theme "{theme}" is not found in the "templates" directory 🤥'
             )
 
         return theme
@@ -685,7 +688,7 @@ class Event(BaseModel):
 
             if model.start_date > end_date:
                 raise ValueError(
-                    '"start_date" is after "end_date". Please check the dates!'
+                    '"start_date" can not be after "end_date". Please check the dates 👻'
                 )
 
         return model
@@ -704,7 +707,7 @@ class Event(BaseModel):
             elif isinstance(self.date, Date):
                 date_and_location_strings.append(format_date(self.date))
             else:
-                raise RuntimeError("Date is neither a string nor a Date object!")
+                raise RuntimeError("Date is neither a string nor a Date object 😵")
         elif self.start_date is not None and self.end_date is not None:
             start_date = format_date(self.start_date)
 
@@ -918,7 +921,7 @@ class PublicationEntry(Event):
         try:
             urllib.request.urlopen(doi_url)
         except urllib.request.HTTPError:
-            raise ValueError(f"{doi} cannot be found in the DOI System.")
+            raise ValueError(f"{doi} cannot be found in the DOI System 🤖")
 
         return doi
 
@@ -984,7 +987,7 @@ class Connection(BaseModel):
         elif self.name == "location":
             url = None
         else:
-            raise RuntimeError(f'"{self.name}" is not a valid connection!"')
+            raise RuntimeError(f'"{self.name}" is not a valid connection 🤡')
 
         return url
 
@@ -1153,7 +1156,7 @@ class CurriculumVitae(BaseModel):
         duplicates = {val for val in section_names if (val in seen or seen.add(val))}
         if len(duplicates) > 0:
             raise ValueError(
-                "The section names should be unique. The following section names are"
+                "The section names should be unique 🧐. The following section names are"
                 f" duplicated: {duplicates}"
             )
 
@@ -1250,7 +1253,7 @@ class CurriculumVitae(BaseModel):
                     raise ValueError(
                         f'"{section_name}" is not a valid section name. Please create a'
                         " custom section with this name or delete it from the section"
-                        " order."
+                        " order 😷"
                     )
 
             section = Section(
@@ -1312,7 +1315,7 @@ class RenderCVDataModel(BaseModel):
                 if title not in section_titles:
                     raise ValueError(
                         f'The section "{title}" that is specified in the'
-                        ' "show_timespan_in" option is not found in the CV! The'
+                        ' "show_timespan_in" option is not found in the CV 😱! The'
                         f" available section titles are: {section_titles}"
                     )
 
