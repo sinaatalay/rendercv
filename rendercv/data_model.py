@@ -16,6 +16,7 @@ import urllib.request
 import os
 from importlib.resources import files
 import json
+import time
 
 from pydantic import (
     BaseModel,
@@ -31,15 +32,11 @@ from pydantic.json_schema import GenerateJsonSchema
 from pydantic.functional_validators import AfterValidator
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from pydantic_extra_types.color import Color
-
+from ruamel.yaml import YAML
 from spellchecker import SpellChecker
 
 logger = logging.getLogger(__name__)
-# ======================================================================================
-# HELPERS ==============================================================================
-# ======================================================================================
 
-spell = SpellChecker()
 
 # don't give spelling warnings for these words:
 dictionary = [
@@ -67,6 +64,7 @@ dictionary = [
     "premake",
     "javascript",
 ]
+spell = SpellChecker()
 
 
 def check_spelling(sentence: str) -> str:
@@ -137,12 +135,12 @@ def escape_latex_characters(sentence: str) -> str:
         "$": r"\$",
         "%": r"\%",
         "&": r"\&",
-        "~": r"\textasciitilde",
+        "~": r"\textasciitilde{}",
         "_": r"\_",
-        "^": r"\textasciicircum",
+        "^": r"\textasciicircum{}",
         "{": r"\{",
         "}": r"\}",
-        "\\": r"\textbackslash",
+        "\\": r"\textbackslash{}",
     }
 
     # Loop through the letters of the sentence and if you find an escape character,
@@ -320,10 +318,6 @@ def generate_json_schema(output_directory: str) -> str:
 
     return path_to_schema
 
-
-# ======================================================================================
-# ======================================================================================
-# ======================================================================================
 
 # ======================================================================================
 # CUSTOM DATA TYPES ====================================================================
@@ -1357,3 +1351,42 @@ class RenderCVDataModel(BaseModel):
                     )
 
         return model
+
+
+def read_input_file(file_path: str) -> RenderCVDataModel:
+    """Read the input file.
+
+    Args:
+        file_path (str): The path to the input file.
+
+    Returns:
+        str: The input file as a string.
+    """
+    start_time = time.time()
+    logger.info(f"Reading and validating the input file {file_path} has started.")
+
+    # check if the file exists:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The file {file_path} doesn't exist!")
+
+    # check the file extension:
+    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
+    if not any(file_path.endswith(extension) for extension in accepted_extensions):
+        raise ValueError(
+            f"The file {file_path} doesn't have an accepted extension!"
+            f" Accepted extensions are: {accepted_extensions}"
+        )
+
+    with open(file_path) as file:
+        yaml = YAML()
+        raw_json = yaml.load(file)
+
+    data = RenderCVDataModel(**raw_json)
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+    logger.info(
+        f"Reading and validating the input file {file_path} has finished in"
+        f" {time_taken:.2f} s."
+    )
+    return data
