@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import sys
 
-from rendercv import rendering, data_model
+from rendercv import data_model
 
 
 class TestCLI(unittest.TestCase):
