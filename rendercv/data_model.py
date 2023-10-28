@@ -1455,7 +1455,7 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
 
     # check if the file exists:
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"The file {file_path} doesn't exist!")
+        raise FileNotFoundError(f"The file {file_path} doesn't exist 🙄")
 
     # check the file extension:
     accepted_extensions = [".yaml", ".yml", ".json", ".json5"]

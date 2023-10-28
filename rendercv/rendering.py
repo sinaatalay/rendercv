@@ -409,9 +409,12 @@ def run_latex(latex_file_path: str) -> str:
                     break
 
             raise RuntimeError(
-                "Running TinyTeX has failed with the following error:\n\n"
-                f"{error_line}\n\nIf you can't solve the problem, please try to"
-                " re-install RenderCV, or open an issue on GitHub."
+                "Running TinyTeX has failed with the following error:",
+                f"{error_line}",
+                (
+                    "If you can't solve the problem, please try to re-install RenderCV,"
+                    " or open an issue on GitHub."
+                ),
             )
 
     # check if the PDF file is generated:

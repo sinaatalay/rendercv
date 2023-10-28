@@ -10,6 +10,7 @@ import typer
 from jinja2 import Environment, PackageLoader
 from pydantic import ValidationError
 from pydantic_core import ErrorDetails
+from ruamel.yaml.parser import ParserError
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ def user_friendly_errors(func: Callable) -> Callable:
                 # Remove url:
                 error["url"] = None
 
-                # Make sure the entries of loc are strings
+                # Make sure the entries of loc (location) are strings
                 error["loc"] = [str(loc) for loc in error["loc"]]
 
                 # Assign a custom error message if there is one
@@ -75,12 +76,17 @@ def user_friendly_errors(func: Callable) -> Callable:
 
                 if custom_message:
                     ctx = error.get("ctx")
-                    if ctx:
-                        if ctx.get("error"):
-                            error["msg"] = ctx["error"].args[0]
-                        else:
-                            error["msg"] = custom_message.format(**ctx)
+                    ctx_error = ctx.get("error") if ctx else None
+                    if ctx_error:
+                        # This means that there is a custom validation error that
+                        # comes from data_model.py
+                        error["msg"] = ctx["error"].args[0]
+                    elif ctx:
+                        # Some Pydantic errors have a context, see the custom message
+                        # for "literal_error" above
+                        error["msg"] = custom_message.format(**ctx)
                     else:
+                        # If there is no context, just use the custom message
                         error["msg"] = custom_message
 
                 if error["input"] is not None:
@@ -108,9 +114,19 @@ def user_friendly_errors(func: Callable) -> Callable:
             error_message = "\n\n  ".join(error_messages)
             logger.error(error_message)
 
+        except ParserError as e:
+            # It is a YAML parser error
+            new_args = list(e.args)
+            new_args = [str(arg).strip() for arg in new_args]
+            new_args[0] = "There is a problem with your input file 🤦‍"
+            error_message = "\n\n  ".join(new_args)
+            logger.error(error_message)
+
         except Exception as e:
             # It is not a Pydantic error
-            logging.error(e)
+            new_args = list(e.args)
+            error_message = "\n\n  ".join(new_args)
+            logger.error(error_message)
 
     return wrapper
 
