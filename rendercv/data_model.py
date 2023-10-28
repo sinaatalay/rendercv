@@ -961,8 +961,9 @@ class PublicationEntry(Event):
 
         try:
             urllib.request.urlopen(doi_url)
-        except urllib.request.HTTPError:
-            raise ValueError(f"{doi} cannot be found in the DOI System 🤖")
+        except urllib.request.HTTPError as err:
+            if err.code == 404:
+                raise ValueError(f"{doi} cannot be found in the DOI System 🤖")
 
         return doi
 
