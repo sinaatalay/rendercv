@@ -65,6 +65,7 @@ dictionary = [
     "javascript",
 ]
 spell = SpellChecker()
+all_misspelled_words = set()
 
 
 def check_spelling(sentence: str) -> str:
@@ -110,10 +111,7 @@ def check_spelling(sentence: str) -> str:
             if word in dictionary:
                 continue
 
-            logger.warning(
-                f'The word "{word}" might be misspelled according to the'
-                " pyspellchecker."
-            )
+            all_misspelled_words.add(word)
 
     return sentence
 
@@ -1232,6 +1230,35 @@ class CurriculumVitae(BaseModel):
 
         return model
 
+    @model_validator(mode="after")
+    @classmethod
+    def print_all_the_misspeled_words(cls, model):
+        """Print all the words that are misspelled according to pyspellchecker."""
+        if len(all_misspelled_words) > 0:
+            messages = []
+            messages.append(
+                "The following words might be misspelled (according to pyspellchecker):"
+            )
+
+            misspelled_words = list(all_misspelled_words)
+
+            # Make misspeled_words a list of lists where each list contains 5:
+            misspelled_words = [
+                misspelled_words[i : i + 5] for i in range(0, len(misspelled_words), 5)
+            ]
+
+            # Join the words in each list with a comma, and join the lists with a new
+            # line:
+            misspelled_words = "\n  ".join(
+                [", ".join(words) for words in misspelled_words]
+            )
+            messages.append(f"  {misspelled_words}")
+
+            # Print the messages:
+            logger.warning("\n".join(messages))
+
+        return model
+
     @computed_field
     @cached_property
     def connections(self) -> list[Connection]:
@@ -1328,6 +1355,10 @@ class CurriculumVitae(BaseModel):
                         link_text = custom_section.link_text
                         entries = custom_section.entries
                         break
+                    else:
+                        entry_type = None
+                        link_text = None
+                        entries = None
 
                 if entry_type is None or entries is None:
                     raise ValueError(
@@ -1396,10 +1427,15 @@ class RenderCVDataModel(BaseModel):
             section_titles = [section.title for section in cv.sections]
             for title in design.options.show_timespan_in:  # type: ignore
                 if title not in section_titles:
+                    not_used_section_titles = list(
+                        set(section_titles) - set(design.options.show_timespan_in)
+                    )
+                    not_used_section_titles = ", ".join(not_used_section_titles)
                     raise ValueError(
                         f'The section "{title}" that is specified in the'
-                        ' "show_timespan_in" option is not found in the CV 😱! The'
-                        f" available section titles are: {section_titles}"
+                        ' "show_timespan_in" option is not found in the CV 😱 You'
+                        " might have wanted to use one of these:"
+                        f" {not_used_section_titles}"
                     )
 
         return model

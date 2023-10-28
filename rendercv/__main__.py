@@ -38,16 +38,23 @@ def user_friendly_errors(func: Callable) -> Callable:
         except ValidationError as e:
             # It is a Pydantic error
             error_messages = []
-            error_messages.append("There are validation errors!")
+            error_messages.append("There are some problems with your input 🧐")
 
             # Translate Pydantic's error messages to make them more user-friendly
             custom_error_messages_by_type = {
                 "url_scheme": "This is not a valid URL 😿",
+                "string_type": "This is not a valid string 🤭",
+                "missing": "This field is required, but it is missing 😆",
+                "literal_error": "Only the following values are allowed: {expected} 😒",
             }
             custom_error_messages_by_msg = {
                 "value is not a valid phone number": (
                     "This is not a valid phone number 👺"
-                )
+                ),
+                "String should match pattern '\\d+\\.?\\d* *(cm|in|pt|mm|ex|em)'": (
+                    "This is not a valid length! Use a number followed by a unit "
+                    "of length (cm, in, pt, mm, ex, em) 👺"
+                ),
             }
             new_errors: list[ErrorDetails] = []
             for error in e.errors():
@@ -68,21 +75,34 @@ def user_friendly_errors(func: Callable) -> Callable:
 
                 if custom_message:
                     ctx = error.get("ctx")
-                    error["msg"] = (
-                        custom_message.format(**ctx) if ctx else custom_message
-                    )
+                    if ctx:
+                        if ctx.get("error"):
+                            error["msg"] = ctx["error"].args[0]
+                        else:
+                            error["msg"] = custom_message.format(**ctx)
+                    else:
+                        error["msg"] = custom_message
 
-                # If the input value is a dictionary or if the input value is in the
-                # error message, remove it
-                if isinstance(error["input"], dict) or error["input"] in error["msg"]:
-                    error["input"] = None
+                if error["input"] is not None:
+                    # If the input value is a dictionary, remove it
+                    if isinstance(error["input"], dict):
+                        error["input"] = None
+                    elif isinstance(error["input"], (float, int, bool, str)):
+                        # Or if the input value is in the error message, remove it
+                        input_value = str(error["input"])
+                        if input_value in error["msg"]:
+                            error["input"] = None
 
                 new_errors.append(error)
 
             # Create a custom error message for RenderCV users
             for error in new_errors:
-                location = ".".join(error["loc"])
-                error_messages.append(f"{location}:\n    {error['msg']}")
+                if len(error["loc"]) > 0:
+                    location = ".".join(error["loc"])
+                    error_messages.append(f"{location}:\n    {error['msg']}")
+                else:
+                    error_messages.append(f"{error['msg']}")
+
                 if error["input"]:
                     error_messages[-1] += f"\n    Your input was \"{error['input']}\""
             error_message = "\n\n  ".join(error_messages)
