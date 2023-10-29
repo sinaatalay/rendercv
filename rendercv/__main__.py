@@ -125,6 +125,7 @@ def user_friendly_errors(func: Callable) -> Callable:
         except Exception as e:
             # It is not a Pydantic error
             new_args = list(e.args)
+            new_args = [str(arg).strip() for arg in new_args]
             error_message = "\n\n  ".join(new_args)
             logger.error(error_message)
 
