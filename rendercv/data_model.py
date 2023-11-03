@@ -230,7 +230,7 @@ def compute_time_span_string(start_date: Date | int, end_date: Date | int) -> st
 
     if timespan_in_days < 0:
         raise ValueError(
-            f'"start_date" can not be after "end_date". Please check the dates 👻'
+            '"start_date" can not be after "end_date". Please check the dates 👻'
         )
 
     # calculate the number of years between start_date and end_date:
