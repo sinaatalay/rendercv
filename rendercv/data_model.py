@@ -323,7 +323,7 @@ def generate_json_schema(output_directory: str) -> str:
 
 
 # ======================================================================================
-# CUSTOM DATA TYPES ====================================================================
+# DESIGN MODELS ========================================================================
 # ======================================================================================
 
 # To understand how to create custom data types, see:
@@ -336,14 +336,6 @@ LaTeXDimension = Annotated[
 ]
 LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
 SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
-
-# ======================================================================================
-# ======================================================================================
-# ======================================================================================
-
-# ======================================================================================
-# DESIGN MODELS ========================================================================
-# ======================================================================================
 
 
 class ClassicThemePageMargins(BaseModel):
@@ -1034,23 +1026,19 @@ class Connection(BaseModel):
         return url
 
 
-class Section(BaseModel):
-    """This class stores a section information."""
+class SectionBase(BaseModel):
+    """This class stores a section information.
+
+    It is the parent class of all the section classes like
+    `#!python SectionWithEducationEntries`, `#!python SectionWithExperienceEntries`,
+    `#!python SectionWithNormalEntries`, `#!python SectionWithOneLineEntries`, and
+    `#!python SectionWithPublicationEntries`.
+    """
 
     title: LaTeXString = Field(
         title="Section Title",
         description="The title of the section.",
         examples=["My Custom Section"],
-    )
-    entry_type: Literal[
-        "OneLineEntry",
-        "NormalEntry",
-        "ExperienceEntry",
-        "EducationEntry",
-        "PublicationEntry",
-    ] = Field(
-        title="Entry Type",
-        description="The type of the entries in the section.",
     )
     link_text: Optional[LaTeXString] = Field(
         default=None,
@@ -1062,18 +1050,79 @@ class Section(BaseModel):
         ),
         examples=["view on GitHub", "view on LinkedIn"],
     )
-    entries: list[
-        OneLineEntry | NormalEntry | ExperienceEntry | EducationEntry | PublicationEntry
-    ] = Field(
-        title="Entries",
-        description="The entries of the section. The format depends on the entry type.",
-    )
 
     @field_validator("title")
     @classmethod
     def make_first_letters_uppercase(cls, title: LaTeXString) -> LaTeXString:
         """Capitalize the first letters of the words in the title."""
         return title.title()
+
+
+entry_type_field = Field(
+    title="Entry Type",
+    description="The type of the entries in the section.",
+)
+entries_field = Field(
+    title="Entries",
+    description="The entries of the section. The format depends on the entry type.",
+)
+
+
+class SectionWithEducationEntries(SectionBase):
+    """This class stores a section with
+    [EducationEntry](../user_guide.md#educationentry)s.
+    """
+
+    entry_type: Literal["EducationEntry"] = entry_type_field
+    entries: list[EducationEntry] = entries_field
+
+
+class SectionWithExperienceEntries(SectionBase):
+    """This class stores a section with
+    [ExperienceEntry](../user_guide.md#experienceentry)s.
+    """
+
+    entry_type: Literal["ExperienceEntry"] = entry_type_field
+    entries: list[ExperienceEntry] = entries_field
+
+
+class SectionWithNormalEntries(SectionBase):
+    """This class stores a section with
+    [NormalEntry](../user_guide.md#normalentry)s.
+    """
+
+    entry_type: Literal["NormalEntry"] = entry_type_field
+    entries: list[NormalEntry] = entries_field
+
+
+class SectionWithOneLineEntries(SectionBase):
+    """This class stores a section with
+    [OneLineEntry](../user_guide.md#onelineentry)s.
+    """
+
+    entry_type: Literal["OneLineEntry"] = entry_type_field
+    entries: list[OneLineEntry] = entries_field
+
+
+class SectionWithPublicationEntries(SectionBase):
+    """This class stores a section with
+    [PublicationEntry](../user_guide.md#publicationentry)s.
+    """
+
+    entry_type: Literal["PublicationEntry"] = entry_type_field
+    entries: list[PublicationEntry] = entries_field
+
+
+Section = Annotated[
+    SectionWithEducationEntries
+    | SectionWithExperienceEntries
+    | SectionWithNormalEntries
+    | SectionWithOneLineEntries
+    | SectionWithPublicationEntries,
+    Field(
+        discriminator="entry_type",
+    ),
+]
 
 
 class CurriculumVitae(BaseModel):
@@ -1284,7 +1333,7 @@ class CurriculumVitae(BaseModel):
 
     @computed_field
     @cached_property
-    def sections(self) -> list[Section]:
+    def sections(self) -> list[SectionBase]:
         sections = []
 
         # Pre-defined sections (i.e. sections that are not custom)):
@@ -1368,7 +1417,15 @@ class CurriculumVitae(BaseModel):
                         " order 😷"
                     )
 
-            section = Section(
+            object_map = {
+                "EducationEntry": SectionWithEducationEntries,
+                "ExperienceEntry": SectionWithExperienceEntries,
+                "NormalEntry": SectionWithNormalEntries,
+                "OneLineEntry": SectionWithOneLineEntries,
+                "PublicationEntry": SectionWithPublicationEntries,
+            }
+
+            section = object_map[entry_type](
                 title=section_name,
                 entry_type=entry_type,  # type: ignore
                 entries=entries,
