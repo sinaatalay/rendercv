@@ -26,7 +26,6 @@ from pydantic import (
     model_validator,
     computed_field,
     EmailStr,
-    PastDate,
 )
 from pydantic.json_schema import GenerateJsonSchema
 from pydantic.functional_validators import AfterValidator
@@ -155,7 +154,43 @@ def escape_latex_characters(sentence: str) -> str:
     return sentence
 
 
-def compute_time_span_string(start_date: Date, end_date: Date) -> str:
+def parse_date_string(date_string: str) -> Date | int:
+    """Parse a date string in YYYY-MM-DD, YYYY-MM, or YYYY format and return a
+    datetime.date object.
+
+    Args:
+        date_string (str): The date string to parse.
+    Returns:
+        datetime.date: The parsed date.
+    """
+    if re.match(r"\d{4}-\d{2}-\d{2}", date_string):
+        # Then it is in YYYY-MM-DD format
+        date = Date.fromisoformat(date_string)
+    elif re.match(r"\d{4}-\d{2}", date_string):
+        # Then it is in YYYY-MM format
+        # Assign a random day since days are not rendered in the CV
+        date = Date.fromisoformat(f"{date_string}-01")
+    elif re.match(r"\d{4}", date_string):
+        # Then it is in YYYY format
+        # Then keep it as an integer
+        date = int(date_string)
+    else:
+        raise ValueError(
+            f'The date string "{date_string}" is not in YYYY-MM-DD, YYYY-MM, or YYYY'
+            " format 🥶"
+        )
+
+    if isinstance(date, Date):
+        # Then it means the date is a Date object, so check if it is a past date:
+        if date > Date.today():
+            raise ValueError(
+                f'The date "{date_string}" is in the future. Please check the dates 🤯'
+            )
+
+    return date
+
+
+def compute_time_span_string(start_date: Date | int, end_date: Date | int) -> str:
     """Compute the time span between two dates and return a string that represents it.
 
     Example:
@@ -168,26 +203,35 @@ def compute_time_span_string(start_date: Date, end_date: Date) -> str:
         `#!python "2 years 5 months"`
 
     Args:
-        start_date (Date): The start date.
-        end_date (Date): The end date.
+        start_date (Date | int): The start date.
+        end_date (Date | int): The end date.
 
     Returns:
         str: The time span string.
     """
     # check if the types of start_date and end_date are correct:
-    if not isinstance(start_date, Date):
-        raise TypeError("start_date is not a Date object!")
-    if not isinstance(end_date, Date):
-        raise TypeError("end_date is not a Date object!")
-
-    # # check if start_date is before end_date:
-    if start_date > end_date:
-        raise ValueError(
-            "The start date is after the end date. Please check the dates!"
-        )
+    if not isinstance(start_date, (Date, int)):
+        raise TypeError("start_date is not a Date object or an integer!")
+    if not isinstance(end_date, (Date, int)):
+        raise TypeError("end_date is not a Date object or an integer!")
 
     # calculate the number of days between start_date and end_date:
-    timespan_in_days = (end_date - start_date).days
+    if isinstance(start_date, Date) and isinstance(end_date, Date):
+        timespan_in_days = (end_date - start_date).days
+    elif isinstance(start_date, int) and isinstance(end_date, int):
+        timespan_in_days = (end_date - start_date) * 365
+    elif isinstance(start_date, int) and isinstance(end_date, Date):
+        timespan_in_days = (end_date - Date(start_date, 1, 1)).days
+    else:
+        raise TypeError(
+            f"start_date's type is {type(start_date)} and end_date's type is"
+            f" {type(end_date)}. This is not supported."
+        )
+
+    if timespan_in_days < 0:
+        raise ValueError(
+            f'"start_date" can not be after "end_date". Please check the dates 👻'
+        )
 
     # calculate the number of years between start_date and end_date:
     how_many_years = timespan_in_days // 365
@@ -234,8 +278,12 @@ def format_date(date: Date) -> str:
     Returns:
         str: The formatted date.
     """
-    if not isinstance(date, Date):
-        raise TypeError("date is not a Date object!")
+    if not isinstance(date, (Date, int)):
+        raise TypeError("date is not a Date object or an integer!")
+
+    if isinstance(date, int):
+        # Then it means the user only provided the year, so just return the year
+        return str(date)
 
     # Month abbreviations,
     # taken from: https://web.library.yale.edu/cataloging/months
@@ -336,6 +384,11 @@ LaTeXDimension = Annotated[
 ]
 LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
 SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
+PastDate = Annotated[
+    str,
+    Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
+    AfterValidator(parse_date_string),
+]
 
 
 class ClassicThemePageMargins(BaseModel):
@@ -612,7 +665,7 @@ class Event(BaseModel):
         description="The start date of the event in YYYY-MM-DD format.",
         examples=["2020-09-24"],
     )
-    end_date: Optional[PastDate | Literal["present"]] = Field(
+    end_date: Optional[Literal["present"] | PastDate] = Field(
         default=None,
         title="End Date",
         description=(
@@ -621,7 +674,7 @@ class Event(BaseModel):
         ),
         examples=["2020-09-24", "present"],
     )
-    date: Optional[LaTeXString | PastDate] = Field(
+    date: Optional[PastDate | LaTeXString] = Field(
         default=None,
         title="Date",
         description=(
@@ -653,13 +706,13 @@ class Event(BaseModel):
 
     @field_validator("date")
     @classmethod
-    def check_date(cls, date: LaTeXString | PastDate) -> LaTeXString | PastDate:
+    def check_date(cls, date: PastDate | LaTeXString) -> PastDate | LaTeXString:
         """Check if the date is a string or a Date object and return accordingly."""
         if isinstance(date, str):
             try:
                 # If this runs, it means the date is an ISO format string, and it can be
                 # parsed
-                date = Date.fromisoformat(date)
+                date = parse_date_string(date)
             except ValueError:
                 # Then it means it is a custom string like "Fall 2023"
                 date = date
@@ -718,7 +771,19 @@ class Event(BaseModel):
             else:
                 end_date = model.end_date
 
-            if model.start_date > end_date:
+            if isinstance(model.start_date, int):
+                # Then it means user only provided the year, so convert it to a Date
+                # object with the first day of the year
+                start_date = Date(model.start_date, 1, 1)
+            elif isinstance(model.start_date, Date):
+                # Then it means user provided either YYYY-MM-DD or YYYY-MM
+                start_date = model.start_date
+            else:
+                raise RuntimeError(
+                    "start_date is neither an integer nor a Date object 🤯"
+                )
+
+            if start_date > end_date:
                 raise ValueError(
                     '"start_date" can not be after "end_date". Please check the dates 👻'
                 )
