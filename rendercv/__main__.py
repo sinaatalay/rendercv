@@ -44,7 +44,7 @@ def user_friendly_errors(func: Callable) -> Callable:
             # Translate Pydantic's error messages to make them more user-friendly
             custom_error_messages_by_type = {
                 "url_scheme": "This is not a valid URL 😿",
-                # "string_type": "This is not a valid string 🤭",
+                "string_type": "This is not a valid string 🤭",
                 "missing": "This field is required, but it is missing 😆",
                 "literal_error": "Only the following values are allowed: {expected} 😒",
             }
