@@ -115,6 +115,7 @@ def parse_date_string(date_string: str) -> Date | int:
         raise ValueError(
             f'The date string "{date_string}" is not in YYYY-MM-DD, YYYY-MM, or YYYY'
             " format."
+            " format."
         )
 
     if isinstance(date, Date):
@@ -628,8 +629,11 @@ class Design(BaseModel):
 # ======================================================================================
 
 LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
+SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
 PastDate = Annotated[
-    str, Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"), AfterValidator(parse_date_string)
+    str,
+    Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
+    AfterValidator(parse_date_string),
 ]
 
 
