@@ -64,6 +64,28 @@ class TestDataModel(unittest.TestCase):
             with self.assertRaises(ValueError):
                 data_model.compute_time_span_string(start_date, end_date)
 
+        # If users provide only year and month, or only year, the function should still
+        # work:
+        dates = {
+            (
+                Date(year=2020, month=1, day=1),
+                2021,
+                "start_date and YYYY end_date",
+                "1 year 1 month",
+            ),
+            (
+                2020,
+                Date(year=2021, month=1, day=1),
+                "YYYY start_date and end_date",
+                "1 year 1 month",
+            ),
+            (2020, 2021, "YYYY start_date and YYYY end_date", "1 year 1 month"),
+        }
+        for start_date, end_date, msg, expected_result in dates:
+            with self.subTest(msg=msg):
+                result = data_model.compute_time_span_string(start_date, end_date)
+                self.assertEqual(result, expected_result)
+
         # invalid inputs:
         start_date = None
         end_date = Date(year=2023, month=3, day=2)
@@ -167,47 +189,44 @@ class TestDataModel(unittest.TestCase):
 
     def test_data_event_check_dates(self):
         # Inputs with valid dates:
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "2021-01-01",
-            "date": None,
+        # All the combinations are tried. In valid dates:
+        # Start dates can be 4 different things: YYYY-MM-DD, YYYY-MM, YYYY.
+        # End dates can be 5 different things: YYYY-MM-DD, YYYY-MM, YYYY, or "present" or None.
+        start_dates = {
+            "2020-01-01": Date.fromisoformat("2020-01-01"),
+            "2020-01": Date.fromisoformat("2020-01-01"),
+            "2020": 2020,
         }
-        with self.subTest(msg="valid date with start_date and end_date"):
-            event = data_model.Event(**input)
-            self.assertEqual(event.start_date, Date.fromisoformat(input["start_date"]))
-            self.assertEqual(event.end_date, Date.fromisoformat(input["end_date"]))
-            self.assertEqual(event.date, None)
-
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": None,
-            "date": None,
+        end_dates = {
+            "2021-01-01": Date.fromisoformat("2021-01-01"),
+            "2021-01": Date.fromisoformat("2021-01-01"),
+            "2021": 2021,
+            "present": "present",
+            None: "present",
         }
-        with self.subTest(msg="valid date with start_date"):
-            event = data_model.Event(**input)
-            self.assertEqual(
-                event.start_date,
-                Date.fromisoformat(input["start_date"]),
-                msg="Start date is not correct.",
-            )
-            self.assertEqual(event.end_date, "present", msg="End date is not correct.")
-            self.assertEqual(event.date, None, msg="Date is not correct.")
+        combinations = [
+            (start_date, end_date)
+            for start_date in start_dates
+            for end_date in end_dates
+        ]
+        for start_date, end_date in combinations:
+            input = {
+                "start_date": start_date,
+                "end_date": end_date,
+                "date": None,
+            }
+            with self.subTest(msg=f"valid date with {start_date} and {end_date}"):
+                event = data_model.Event(**input)
+                self.assertEqual(
+                    event.start_date,
+                    start_dates[start_date],
+                )
+                self.assertEqual(
+                    event.end_date,
+                    end_dates[end_date],
+                )
 
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "present",
-            "date": None,
-        }
-        with self.subTest(msg="valid date with start_date and end_date=present"):
-            event = data_model.Event(**input)
-            self.assertEqual(
-                event.start_date,
-                Date.fromisoformat(input["start_date"]),
-                msg="Start date is not correct.",
-            )
-            self.assertEqual(event.end_date, "present", msg="End date is not correct.")
-            self.assertEqual(event.date, None, msg="Date is not correct.")
-
+        # Valid dates but edge cases:
         input = {
             "start_date": None,
             "end_date": None,
@@ -295,7 +314,7 @@ class TestDataModel(unittest.TestCase):
             self.assertEqual(event.end_date, None, msg="End date is not correct.")
             self.assertEqual(event.date, None, msg="Date is not correct.")
 
-        # Inputs with invalid dates:
+        # Invalid dates:
         input = {
             "start_date": "2020-01-01",
             "end_date": "2019-01-01",
