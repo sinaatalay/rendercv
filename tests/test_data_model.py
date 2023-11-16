@@ -9,17 +9,6 @@ from pydantic import ValidationError
 
 
 class TestDataModel(unittest.TestCase):
-    def test_check_spelling(self):
-        sentences = [
-            "This is a sentence.",
-            "This is a sentance with special characters &@#&^@*#&)((!@#_)()).",
-            r"12312309 Thisdf sdfsd is a sentence *safds\{\}[[[]]]",
-        ]
-
-        for sentence in sentences:
-            with self.subTest(sentence=sentence):
-                data_model.check_spelling(sentence)
-
     def test_escape_latex_characters(self):
         str_without_latex_characters = "This is a string without LaTeX characters."
         expected = str_without_latex_characters
