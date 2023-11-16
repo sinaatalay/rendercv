@@ -69,13 +69,12 @@ def escape_latex_characters(sentence: str) -> str:
 
     # Handle backslash and curly braces separately because the other characters are
     # escaped with backslash and curly braces:
-    # --don't escape curly braces as they are used heavily in LaTeX--:
-    # sentence = sentence.replace("{", ">>{")
-    # sentence = sentence.replace("}", ">>}")
-    # --don't escape backslash as it is used heavily in LaTeX--:
+    sentence = sentence.replace("{", ">>{")
+    sentence = sentence.replace("}", ">>}")
+    # don't escape backslash as it is used heavily in LaTeX:
     # sentence = sentence.replace("\\", "\\textbackslash{}")
-    # sentence = sentence.replace(">>{", "\\{")
-    # sentence = sentence.replace(">>}", "\\}")
+    sentence = sentence.replace(">>{", "\\{")
+    sentence = sentence.replace(">>}", "\\}")
 
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
@@ -629,7 +628,6 @@ class Design(BaseModel):
 # ======================================================================================
 
 LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
-SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
 PastDate = Annotated[
     str,
     Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
