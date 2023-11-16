@@ -39,22 +39,22 @@ def user_friendly_errors(func: Callable) -> Callable:
         except ValidationError as e:
             # It is a Pydantic error
             error_messages = []
-            error_messages.append("There are some problems with your input 🧐")
+            error_messages.append("There are some problems with your input.")
 
             # Translate Pydantic's error messages to make them more user-friendly
             custom_error_messages_by_type = {
-                "url_scheme": "This is not a valid URL 😿",
-                "string_type": "This is not a valid string 🤭",
-                "missing": "This field is required, but it is missing 😆",
-                "literal_error": "Only the following values are allowed: {expected} 😒",
+                "url_scheme": "This is not a valid URL.",
+                "string_type": "This is not a valid string.",
+                "missing": "This field is required, but it is missing.",
+                "literal_error": "Only the following values are allowed: {expected}.",
             }
             custom_error_messages_by_msg = {
                 "value is not a valid phone number": (
-                    "This is not a valid phone number 👺"
+                    "This is not a valid phone number."
                 ),
                 "String should match pattern '\\d+\\.?\\d* *(cm|in|pt|mm|ex|em)'": (
                     "This is not a valid length! Use a number followed by a unit "
-                    "of length (cm, in, pt, mm, ex, em) 👺"
+                    "of length (cm, in, pt, mm, ex, em)."
                 ),
             }
             new_errors: list[ErrorDetails] = []
@@ -118,7 +118,7 @@ def user_friendly_errors(func: Callable) -> Callable:
             # It is a YAML parser error
             new_args = list(e.args)
             new_args = [str(arg).strip() for arg in new_args]
-            new_args[0] = "There is a problem with your input file 🤦‍"
+            new_args[0] = "There is a problem with your input file.‍"
             error_message = "\n\n  ".join(new_args)
             logger.error(error_message)
 

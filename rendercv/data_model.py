@@ -177,14 +177,14 @@ def parse_date_string(date_string: str) -> Date | int:
     else:
         raise ValueError(
             f'The date string "{date_string}" is not in YYYY-MM-DD, YYYY-MM, or YYYY'
-            " format 🥶"
+            " format."
         )
 
     if isinstance(date, Date):
         # Then it means the date is a Date object, so check if it is a past date:
         if date > Date.today():
             raise ValueError(
-                f'The date "{date_string}" is in the future. Please check the dates 🤯'
+                f'The date "{date_string}" is in the future. Please check the dates.'
             )
 
     return date
@@ -218,19 +218,16 @@ def compute_time_span_string(start_date: Date | int, end_date: Date | int) -> st
     # calculate the number of days between start_date and end_date:
     if isinstance(start_date, Date) and isinstance(end_date, Date):
         timespan_in_days = (end_date - start_date).days
-    elif isinstance(start_date, int) and isinstance(end_date, int):
-        timespan_in_days = (end_date - start_date) * 365
+    elif isinstance(start_date, Date) and isinstance(end_date, int):
+        timespan_in_days = (Date(end_date, 1, 1) - start_date).days
     elif isinstance(start_date, int) and isinstance(end_date, Date):
         timespan_in_days = (end_date - Date(start_date, 1, 1)).days
-    else:
-        raise TypeError(
-            f"start_date's type is {type(start_date)} and end_date's type is"
-            f" {type(end_date)}. This is not supported."
-        )
+    elif isinstance(start_date, int) and isinstance(end_date, int):
+        timespan_in_days = (end_date - start_date) * 365
 
     if timespan_in_days < 0:
         raise ValueError(
-            '"start_date" can not be after "end_date". Please check the dates 👻'
+            '"start_date" can not be after "end_date". Please check the dates.'
         )
 
     # calculate the number of years between start_date and end_date:
@@ -381,13 +378,6 @@ LaTeXDimension = Annotated[
     Field(
         pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
     ),
-]
-LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
-SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
-PastDate = Annotated[
-    str,
-    Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
-    AfterValidator(parse_date_string),
 ]
 
 
@@ -592,15 +582,15 @@ class Design(BaseModel):
             if model.theme == "classic":
                 model.options = ClassicThemeOptions()
             else:
-                raise RuntimeError("Unknown theme 👿")
+                raise RuntimeError(f'The theme "{model.theme}" does not exist.')
         else:
             if model.theme == "classic":
                 if not isinstance(model.options, ClassicThemeOptions):
                     raise ValueError(
-                        "Theme is classic but options is not classic theme options 🥱"
+                        "Theme is classic but options is not classic theme options."
                     )
             else:
-                raise RuntimeError("Unknown theme 👿")
+                raise RuntimeError(f'The theme "{model.theme}"" does not exist.')
 
         return model
 
@@ -613,7 +603,7 @@ class Design(BaseModel):
         fonts_directory = str(files("rendercv").joinpath("templates", "fonts"))
         if font not in os.listdir(fonts_directory):
             raise ValueError(
-                f'The font "{font}" is not found in the "fonts" directory 🥴'
+                f'The font "{font}" is not found in the "fonts" directory.'
             )
         else:
             font_directory = os.path.join(fonts_directory, font)
@@ -625,7 +615,7 @@ class Design(BaseModel):
             ]
             for file in required_files:
                 if file not in os.listdir(font_directory):
-                    raise ValueError(f"{file} is not found in the {font} directory 😡")
+                    raise ValueError(f"{file} is not found in the {font} directory.")
 
         return font
 
@@ -636,7 +626,7 @@ class Design(BaseModel):
         template_directory = str(files("rendercv").joinpath("templates", theme))
         if f"{theme}.tex.j2" not in os.listdir(template_directory):
             raise ValueError(
-                f'The theme "{theme}" is not found in the "templates" directory 🤥'
+                f'The theme "{theme}" is not found in the "templates" directory.'
             )
 
         return theme
@@ -649,6 +639,14 @@ class Design(BaseModel):
 # ======================================================================================
 # CONTENT MODELS =======================================================================
 # ======================================================================================
+
+LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
+SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
+PastDate = Annotated[
+    str,
+    Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
+    AfterValidator(parse_date_string),
+]
 
 
 class Event(BaseModel):
@@ -768,24 +766,31 @@ class Event(BaseModel):
         if model.start_date is not None and model.end_date is not None:
             if model.end_date == "present":
                 end_date = Date.today()
-            else:
+            elif isinstance(model.end_date, int):
+                # Then it means user only provided the year, so convert it to a Date
+                # object with the first day of the year (just for the date comparison)
+                end_date = Date(model.end_date, 1, 1)
+            elif isinstance(model.end_date, Date):
+                # Then it means user provided either YYYY-MM-DD or YYYY-MM
                 end_date = model.end_date
+            else:
+                raise RuntimeError("end_date is neither an integer nor a Date object.")
 
             if isinstance(model.start_date, int):
                 # Then it means user only provided the year, so convert it to a Date
-                # object with the first day of the year
+                # object with the first day of the year (just for the date comparison)
                 start_date = Date(model.start_date, 1, 1)
             elif isinstance(model.start_date, Date):
                 # Then it means user provided either YYYY-MM-DD or YYYY-MM
                 start_date = model.start_date
             else:
                 raise RuntimeError(
-                    "start_date is neither an integer nor a Date object 🤯"
+                    "start_date is neither an integer nor a Date object."
                 )
 
             if start_date > end_date:
                 raise ValueError(
-                    '"start_date" can not be after "end_date". Please check the dates 👻'
+                    '"start_date" can not be after "end_date". Please check the dates.'
                 )
 
         return model
@@ -804,7 +809,7 @@ class Event(BaseModel):
             elif isinstance(self.date, Date):
                 date_and_location_strings.append(format_date(self.date))
             else:
-                raise RuntimeError("Date is neither a string nor a Date object 😵")
+                raise RuntimeError("Date is neither a string nor a Date object.")
         elif self.start_date is not None and self.end_date is not None:
             start_date = format_date(self.start_date)
 
@@ -1020,7 +1025,7 @@ class PublicationEntry(Event):
             urllib.request.urlopen(doi_url)
         except urllib.request.HTTPError as err:
             if err.code == 404:
-                raise ValueError(f"{doi} cannot be found in the DOI System 🤖")
+                raise ValueError(f"{doi} cannot be found in the DOI System.")
 
         return doi
 
@@ -1086,7 +1091,7 @@ class Connection(BaseModel):
         elif self.name == "location":
             url = None
         else:
-            raise RuntimeError(f'"{self.name}" is not a valid connection 🤡')
+            raise RuntimeError(f'"{self.name}" is not a valid connection.')
 
         return url
 
@@ -1339,7 +1344,7 @@ class CurriculumVitae(BaseModel):
         duplicates = {val for val in section_names if (val in seen or seen.add(val))}
         if len(duplicates) > 0:
             raise ValueError(
-                "The section names should be unique 🧐. The following section names are"
+                "The section names should be unique. The following section names are"
                 f" duplicated: {duplicates}"
             )
 
@@ -1479,7 +1484,7 @@ class CurriculumVitae(BaseModel):
                     raise ValueError(
                         f'"{section_name}" is not a valid section name. Please create a'
                         " custom section with this name or delete it from the section"
-                        " order 😷"
+                        " order."
                     )
 
             object_map = {
@@ -1556,9 +1561,9 @@ class RenderCVDataModel(BaseModel):
                     not_used_section_titles = ", ".join(not_used_section_titles)
                     raise ValueError(
                         f'The section "{title}" that is specified in the'
-                        ' "show_timespan_in" option is not found in the CV 😱 You'
+                        ' "show_timespan_in" option is not found in the CV. You'
                         " might have wanted to use one of these:"
-                        f" {not_used_section_titles}"
+                        f" {not_used_section_titles}."
                     )
 
         return model
@@ -1578,7 +1583,7 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
 
     # check if the file exists:
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"The file {file_path} doesn't exist 🙄")
+        raise FileNotFoundError(f"The file {file_path} doesn't exist.")
 
     # check the file extension:
     accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
