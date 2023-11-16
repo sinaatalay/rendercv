@@ -32,87 +32,8 @@ from pydantic.functional_validators import AfterValidator
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from pydantic_extra_types.color import Color
 from ruamel.yaml import YAML
-from spellchecker import SpellChecker
 
 logger = logging.getLogger(__name__)
-
-
-# don't give spelling warnings for these words:
-dictionary = [
-    "aerostructures",
-    "sportsperson",
-    "cern",
-    "mechatronics",
-    "calculix",
-    "microcontroller",
-    "ansys",
-    "nx",
-    "aselsan",
-    "hrjet",
-    "simularge",
-    "siemens",
-    "dynamometer",
-    "dc",
-    "grammarly",
-    "css",
-    "html",
-    "markdown",
-    "ubuntu",
-    "matlab",
-    "lua",
-    "premake",
-    "javascript",
-]
-spell = SpellChecker()
-all_misspelled_words = set()
-
-
-def check_spelling(sentence: str) -> str:
-    """Check the spelling of a sentence and give warnings if there are any misspelled
-    words.
-
-    It uses [pyspellchecker](https://github.com/barrust/pyspellchecker). It can also
-    guess the correct version of the misspelled word, but it is not used because it is
-    very slow.
-
-    Example:
-        ```python
-        check_spelling("An interesting sentence is akways good.")
-        ```
-
-        will print the following warning:
-
-        `WARNING - The word "akways" might be misspelled according to the pyspellchecker.`
-
-    Args:
-        sentence (str): The sentence to check.
-
-    Returns:
-        str: The same sentence.
-    """
-    modified_sentence = sentence.lower()  # convert to lower case
-    modified_sentence = re.sub(
-        r"\-+", " ", modified_sentence
-    )  # replace hyphens with spaces
-    modified_sentence = re.sub(
-        r"[^a-z\s\-']", "", modified_sentence
-    )  # remove all the special characters
-    words = modified_sentence.split()  # split sentence into a list of words
-    misspelled = spell.unknown(words)  # find misspelled words
-
-    if len(misspelled) > 0:
-        for word in misspelled:
-            if len(word) == 1:
-                continue
-
-            # for each misspelled word, check if it is in the dictionary and otherwise
-            # give a warning
-            if word in dictionary:
-                continue
-
-            all_misspelled_words.add(word)
-
-    return sentence
 
 
 def escape_latex_characters(sentence: str) -> str:
@@ -129,18 +50,29 @@ def escape_latex_characters(sentence: str) -> str:
     # Dictionary of escape characters:
     escape_characters = {
         "#": r"\#",
-        "$": r"\$",
+        # "$": r"\$", # Don't escape $ as it is used for math mode
         "%": r"\%",
         "&": r"\&",
         "~": r"\textasciitilde{}",
-        "_": r"\_",
-        "^": r"\textasciicircum{}",
+        # "_": r"\_", # Don't escape _ as it is used for math mode
+        # "^": r"\textasciicircum{}", # Don't escape ^ as it is used for math mode
     }
+
+    # Don't escape links as hyperref will do it automatically:
+
+    # Find all the links in the sentence:
+    links = re.findall(r"\[.*?\]\(.*?\)", sentence)
+
+    # Replace the links with a placeholder:
+    for link in links:
+        sentence = sentence.replace(link, "!!-link-!!")
+
     # Handle backslash and curly braces separately because the other characters are
     # escaped with backslash and curly braces:
     sentence = sentence.replace("{", ">>{")
     sentence = sentence.replace("}", ">>}")
-    sentence = sentence.replace("\\", "\\textbackslash{}")
+    # don't escape backslash as it is used heavily in LaTeX:
+    # sentence = sentence.replace("\\", "\\textbackslash{}")
     sentence = sentence.replace(">>{", "\\{")
     sentence = sentence.replace(">>}", "\\}")
 
@@ -150,6 +82,10 @@ def escape_latex_characters(sentence: str) -> str:
     for character in copy_of_the_sentence:
         if character in escape_characters:
             sentence = sentence.replace(character, escape_characters[character])
+
+    # Replace the links with the original links:
+    for link in links:
+        sentence = sentence.replace("!!-link-!!", link)
 
     return sentence
 
@@ -641,7 +577,6 @@ class Design(BaseModel):
 # ======================================================================================
 
 LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
-SpellCheckedString = Annotated[LaTeXString, AfterValidator(check_spelling)]
 PastDate = Annotated[
     str,
     Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
@@ -683,7 +618,7 @@ class Event(BaseModel):
         ),
         examples=["2020-09-24", "My Custom Date"],
     )
-    highlights: Optional[list[SpellCheckedString]] = Field(
+    highlights: Optional[list[LaTeXString]] = Field(
         default=[],
         title="Highlights",
         description=(
@@ -850,7 +785,7 @@ class Event(BaseModel):
 
     @computed_field
     @cached_property
-    def highlight_strings(self) -> list[SpellCheckedString]:
+    def highlight_strings(self) -> list[LaTeXString]:
         highlight_strings = []
         if self.highlights is not None:
             highlight_strings.extend(self.highlights)
@@ -906,7 +841,7 @@ class OneLineEntry(Event):
         title="Name",
         description="The name of the entry. It will be shown as bold text.",
     )
-    details: SpellCheckedString = Field(
+    details: LaTeXString = Field(
         title="Details",
         description="The details of the entry. It will be shown as normal text.",
     )
@@ -968,7 +903,7 @@ class EducationEntry(Event):
 
     @computed_field
     @cached_property
-    def highlight_strings(self) -> list[SpellCheckedString]:
+    def highlight_strings(self) -> list[LaTeXString]:
         highlight_strings = []
 
         if self.gpa is not None:
@@ -1383,35 +1318,6 @@ class CurriculumVitae(BaseModel):
                 "The section names should be unique. The following section names are"
                 f" duplicated: {duplicates}"
             )
-
-        return model
-
-    @model_validator(mode="after")
-    @classmethod
-    def print_all_the_misspeled_words(cls, model):
-        """Print all the words that are misspelled according to pyspellchecker."""
-        if len(all_misspelled_words) > 0:
-            messages = []
-            messages.append(
-                "The following words might be misspelled (according to pyspellchecker):"
-            )
-
-            misspelled_words = list(all_misspelled_words)
-
-            # Make misspeled_words a list of lists where each list contains 5:
-            misspelled_words = [
-                misspelled_words[i : i + 5] for i in range(0, len(misspelled_words), 5)
-            ]
-
-            # Join the words in each list with a comma, and join the lists with a new
-            # line:
-            misspelled_words = "\n  ".join(
-                [", ".join(words) for words in misspelled_words]
-            )
-            messages.append(f"  {misspelled_words}")
-
-            # Print the messages:
-            logger.warning("\n".join(messages))
 
         return model
 
