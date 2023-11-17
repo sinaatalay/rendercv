@@ -448,11 +448,15 @@ def run_latex(latex_file_path: str) -> str:
         [
             executable,
             f"{latex_file_name}",
+            "&&",
+            executable,
+            f"{latex_file_name}",
         ],
         cwd=os.path.dirname(latex_file_path),
-        stdout=subprocess.PIPE,
+        # stdout=subprocess.PIPE,
         stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
         text=True,
+        shell=True,
     ) as latex_process:
         output, error = latex_process.communicate()
 
