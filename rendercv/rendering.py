@@ -212,6 +212,59 @@ def make_it_italic(value: str, match_str: Optional[str] = None) -> str:
     return make_it_something(value, "make_it_italic", match_str)
 
 
+def abbreviate_name(name: list[str]) -> str:
+    """Abbreviate a name by keeping the first letters of the first names.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        abbreviate_name("John Doe")
+        ```
+
+        will return:
+
+        `#!python "J. Doe"`
+
+    Args:
+        name (str): The name to abbreviate.
+    Returns:
+        str: The abbreviated name.
+    """
+    first_names = name.split(" ")[:-1]
+    first_names_initials = [first_name[0] + "." for first_name in first_names]
+    last_name = name.split(" ")[-1]
+    abbreviated_name = " ".join(first_names_initials) + " " + last_name
+
+    return abbreviated_name
+
+
+def abbreviate_names(names: list[str]) -> str:
+    """Abbreviate a list of names by keeping the first letters of the first names.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        abbreviate_names(["John Doe", "Jane Atalay"])
+        ```
+
+        will return:
+
+        `#!python ["J. Doe", "J. Atalay"]`
+
+    Args:
+        names (list[str]): The names to abbreviate.
+    Returns:
+        str: The list of abbreviated names.
+    """
+    abbreviated_names = []
+    for name in names:
+        abbreviated_names.append(abbreviate_name(name))
+
+    return abbreviated_names
+
+
 def divide_length_by(length: str, divider: float) -> str:
     r"""Divide a length by a number.
 
@@ -282,6 +335,8 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     environment.filters["make_it_underlined"] = make_it_underlined
     environment.filters["make_it_italic"] = make_it_italic
     environment.filters["divide_length_by"] = divide_length_by
+    environment.filters["abbreviate_name"] = abbreviate_name
+    environment.filters["abbreviate_names"] = abbreviate_names
 
     # load the template:
     template = environment.get_template(f"{theme}.tex.j2")
@@ -411,10 +466,8 @@ def run_latex(latex_file_path: str) -> str:
             raise RuntimeError(
                 "Running TinyTeX has failed with the following error:",
                 f"{error_line}",
-                (
-                    "If you can't solve the problem, please try to re-install RenderCV,"
-                    " or open an issue on GitHub."
-                ),
+                "If you can't solve the problem, please try to re-install RenderCV,"
+                " or open an issue on GitHub.",
             )
 
     # check if the PDF file is generated:
