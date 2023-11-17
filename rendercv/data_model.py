@@ -272,9 +272,15 @@ def generate_json_schema(output_directory: str) -> str:
                 # Don't allow additional properties
                 value["additionalProperties"] = False
 
+                # I don't want the docstrings in the schema, so remove them:
                 if "This class" in value["description"]:
                     del value["description"]
 
+                # If a type is optional, then Pydantic sets the type to a list of two
+                # types, one of which is null. The null type can be removed since we
+                # already have the required field. Moreover, we would like to warn
+                # users if they provide null values. They can remove the fields if they
+                # don't want to provide them.
                 null_type_dict = {}
                 null_type_dict["type"] = "null"
                 for field in value["properties"].values():
@@ -285,6 +291,18 @@ def generate_json_schema(output_directory: str) -> str:
                         ):
                             field["allOf"] = [field["anyOf"][0]]
                             del field["anyOf"]
+
+                # In date field, we both accept normal strings and Date objects. They
+                # are both strings, therefore, if user provides a Date object, then
+                # JSON schema will complain that it matches two different types.
+                # Remember that all of the anyOfs are changed to oneOfs. Only one of
+                # the types can be matched. Therefore, we remove the first type, which
+                # is the string with the YYYY-MM-DD format.
+                if (
+                    "date" in value["properties"]
+                    and "anyOf" in value["properties"]["date"]
+                ):
+                    del value["properties"]["date"]["anyOf"][0]
 
             return json_schema
 
@@ -365,15 +383,10 @@ class ClassicThemeEntryAreaMargins(BaseModel):
     [ExperienceEntry](../user_guide.md#experienceentry).
     """
 
-    left: LaTeXDimension = Field(
+    left_and_right: LaTeXDimension = Field(
         default="0.2 cm",
         title="Left Margin",
         description="The left margin of entry areas.",
-    )
-    right: LaTeXDimension = Field(
-        default="0.2 cm",
-        title="Right Margin",
-        description="The right margin of entry areas.",
     )
 
     vertical_between: LaTeXDimension = Field(
@@ -578,9 +591,7 @@ class Design(BaseModel):
 
 LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
 PastDate = Annotated[
-    str,
-    Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
-    AfterValidator(parse_date_string),
+    str, Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"), AfterValidator(parse_date_string)
 ]
 
 
@@ -1202,6 +1213,7 @@ class CurriculumVitae(BaseModel):
         title="Summary",
         description="The summary of the person.",
     )
+    # Sections:
     section_order: Optional[list[str]] = Field(
         default=None,
         title="Section Order",
@@ -1259,12 +1271,17 @@ class CurriculumVitae(BaseModel):
         title="Test Scores",
         description="The test score entries of the person.",
     )
-    programming_skills: Optional[list[OneLineEntry]] = Field(
+    programming_skills: Optional[list[NormalEntry]] = Field(
         default=None,
         title="Programming Skills",
         description="The programming skill entries of the person.",
     )
     skills: Optional[list[OneLineEntry]] = Field(
+        default=None,
+        title="Skills",
+        description="The skill entries of the person.",
+    )
+    other_skills: Optional[list[OneLineEntry]] = Field(
         default=None,
         title="Skills",
         description="The skill entries of the person.",
@@ -1353,6 +1370,7 @@ class CurriculumVitae(BaseModel):
             "Education": self.education,
             "Experience": self.experience,
             "Work Experience": self.work_experience,
+            "Publications": self.publications,
             "Projects": self.projects,
             "Academic Projects": self.academic_projects,
             "Personal Projects": self.personal_projects,
@@ -1360,30 +1378,16 @@ class CurriculumVitae(BaseModel):
             "Extracurricular Activities": self.extracurricular_activities,
             "Test Scores": self.test_scores,
             "Skills": self.skills,
+            "Programming Skills": self.programming_skills,
+            "Other Skills": self.other_skills,
             "Awards": self.awards,
             "Interests": self.interests,
             "Programming Skills": self.programming_skills,
-            "Publications": self.publications,
         }
 
         if self.section_order is None:
             # If the user didn't specify the section order, then use the default order:
-            self.section_order = [
-                "Education",
-                "Experience",
-                "Work Experience",
-                "Projects",
-                "Academic Projects",
-                "Personal Projects",
-                "Skills",
-                "Awards",
-                "Interests",
-                "Programming Skills",
-                "Test Scores",
-                "Certificates",
-                "Extracurricular Activities",
-                "Publications",
-            ]
+            self.section_order = list(pre_defined_sections.keys())
             if self.custom_sections is not None:
                 # If the user specified custom sections, then add them to the end of the
                 # section order with the same order as they are in the input file:
