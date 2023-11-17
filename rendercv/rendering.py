@@ -500,19 +500,21 @@ def run_latex(latex_file_path: str) -> str:
         )
 
     # Run TinyTeX:
-    def run():
-        with subprocess.Popen(
-            [
-                executable,
-                f"{latex_file_name}",
-            ],
-            cwd=os.path.dirname(latex_file_path),
-            stdout=subprocess.PIPE,
-            stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
-            text=True,
-            encoding="utf-8",
-        ) as latex_process:
-            output, error = latex_process.communicate()
+    with subprocess.Popen(
+        [
+            executable,
+            f"{latex_file_name}",
+            "&&",
+            executable,
+            f"{latex_file_name}",
+        ],
+        cwd=os.path.dirname(latex_file_path),
+        # stdout=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+        text=True,
+        shell=True,
+    ) as latex_process:
+        output, error = latex_process.communicate()
 
             if latex_process.returncode != 0:
                 # Find the error line:
