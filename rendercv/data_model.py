@@ -629,9 +629,7 @@ class Design(BaseModel):
 
 LaTeXString = Annotated[str, AfterValidator(escape_latex_characters)]
 PastDate = Annotated[
-    str,
-    Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
-    AfterValidator(parse_date_string),
+    str, Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"), AfterValidator(parse_date_string)
 ]
 
 
