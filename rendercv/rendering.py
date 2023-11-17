@@ -265,6 +265,59 @@ def abbreviate_names(names: list[str]) -> str:
     return abbreviated_names
 
 
+def abbreviate_name(name: list[str]) -> str:
+    """Abbreviate a name by keeping the first letters of the first names.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        abbreviate_name("John Doe")
+        ```
+
+        will return:
+
+        `#!python "J. Doe"`
+
+    Args:
+        name (str): The name to abbreviate.
+    Returns:
+        str: The abbreviated name.
+    """
+    first_names = name.split(" ")[:-1]
+    first_names_initials = [first_name[0] + "." for first_name in first_names]
+    last_name = name.split(" ")[-1]
+    abbreviated_name = " ".join(first_names_initials) + " " + last_name
+
+    return abbreviated_name
+
+
+def abbreviate_names(names: list[str]) -> str:
+    """Abbreviate a list of names by keeping the first letters of the first names.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        abbreviate_names(["John Doe", "Jane Atalay"])
+        ```
+
+        will return:
+
+        `#!python ["J. Doe", "J. Atalay"]`
+
+    Args:
+        names (list[str]): The names to abbreviate.
+    Returns:
+        str: The list of abbreviated names.
+    """
+    abbreviated_names = []
+    for name in names:
+        abbreviated_names.append(abbreviate_name(name))
+
+    return abbreviated_names
+
+
 def divide_length_by(length: str, divider: float) -> str:
     r"""Divide a length by a number.
 
@@ -468,12 +521,12 @@ def run_latex(latex_file_path: str) -> str:
                         error_line = line.replace("! ", "")
                         break
 
-                raise RuntimeError(
-                    "Running TinyTeX has failed with the following error:",
-                    f"{error_line}",
-                    "If you can't solve the problem, please try to re-install RenderCV,"
-                    " or open an issue on GitHub.",
-                )
+            raise RuntimeError(
+                "Running TinyTeX has failed with the following error:",
+                f"{error_line}",
+                "If you can't solve the problem, please try to re-install RenderCV,"
+                " or open an issue on GitHub.",
+            )
 
     run()
     run()  # run twice for cross-references
