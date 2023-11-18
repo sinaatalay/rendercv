@@ -13,7 +13,10 @@ class TestCLI(unittest.TestCase):
         workspace_path = os.path.dirname(os.path.dirname(__file__))
 
         test_input_file_path = os.path.join(
-            workspace_path, "tests", "reference_files", "John_Doe_CV_test.yaml"
+            workspace_path,
+            "tests",
+            "reference_files",
+            "John_Doe_CV_yaml_reference.yaml",
         )
         subprocess.run(
             [sys.executable, "-m", "rendercv", "render", test_input_file_path],
@@ -31,7 +34,7 @@ class TestCLI(unittest.TestCase):
 
         # Compare the pdf file with the reference pdf file:
         reference_pdf_file = os.path.join(
-            workspace_path, "tests", "reference_files", "John_Doe_CV_reference.pdf"
+            workspace_path, "tests", "reference_files", "John_Doe_CV_pdf_reference.pdf"
         )
         reference_pdf_file_size = os.path.getsize(reference_pdf_file)
         ratio = min(reference_pdf_file_size, pdf_file_size) / max(
