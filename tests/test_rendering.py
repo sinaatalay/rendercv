@@ -16,8 +16,7 @@ class TestRendering(unittest.TestCase):
 
         input = "[link](www.example.com) and [link2](www.example2.com)"
         expected = (
-            r"\href{www.example.com}{link} and"
-            r" \href{www.example2.com}{link2}"
+            r"\href{www.example.com}{link} and" r" \href{www.example2.com}{link2}"
         )
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="two links"):
@@ -46,8 +45,7 @@ class TestRendering(unittest.TestCase):
 
         input = "**bold**, *italic*, and [link](www.example.com)"
         expected = (
-            r"\textbf{bold}, \textit{italic}, and"
-            r" \href{www.example.com}{link}"
+            r"\textbf{bold}, \textit{italic}, and" r" \href{www.example.com}{link}"
         )
         output = rendering.markdown_to_latex(input)
         with self.subTest(msg="bold, italic, and link"):
@@ -203,176 +201,13 @@ class TestRendering(unittest.TestCase):
         self.assertEqual(expected, result, msg="Font directory path is not correct.")
 
     def test_render_template(self):
-        test_input = {
-            "cv": {
-                "academic_projects": [
-                    {
-                        "date": "Spring 2022",
-                        "highlights": ["Test 1", "Test 2"],
-                        "location": "Istanbul, Turkey",
-                        "name": "Academic Project 1",
-                        "url": "https://example.com",
-                    },
-                    {
-                        "highlights": ["Test 1", "Test 2"],
-                        "name": "Academic Project 2",
-                        "url": "https://example.com",
-                    },
-                    {
-                        "end_date": "2022-05-01",
-                        "highlights": ["Test 1", "Test 2"],
-                        "location": "Istanbul, Turkey",
-                        "name": "Academic Project 3",
-                        "start_date": "2022-02-01",
-                        "url": "https://example.com",
-                    },
-                ],
-                "certificates": [{"name": "Certificate 1"}],
-                "education": [
-                    {
-                        "area": "Mechanical Engineering",
-                        "end_date": "1985-01-01",
-                        "gpa": "3.80/4.00",
-                        "highlights": ["Test 1", "Test 2"],
-                        "institution": "Bogazici University",
-                        "location": "Istanbul, Turkey",
-                        "start_date": "1980-09-01",
-                        "study_type": "BS",
-                        "transcript_url": "https://example.com/",
-                        "url": "https://boun.edu.tr",
-                    },
-                    {
-                        "area": "Mechanical Engineering, Student Exchange Program",
-                        "end_date": "2022-01-15",
-                        "institution": "The University of Texas at Austin",
-                        "location": "Austin, TX, USA",
-                        "start_date": "2021-08-01",
-                        "url": "https://utexas.edu",
-                    },
-                ],
-                "email": "john@doe.com",
-                "extracurricular_activities": [
-                    {
-                        "company": "Test Company 1",
-                        "highlights": [
-                            "Lead and train members for intercollegiate alpine ski"
-                            " races in Turkey and organize skiing events."
-                        ],
-                        "position": "Test Position 1",
-                    },
-                    {
-                        "company": "Test Company 1",
-                        "date": "Summer 2019 and 2020",
-                        "highlights": ["Test 1", "Test 2", "Test 3"],
-                        "location": "Izmir, Turkey",
-                        "position": "Test Position 1",
-                    },
-                ],
-                "label": "Engineer at CERN",
-                "location": "Geneva, Switzerland",
-                "name": "John Doe",
-                "personal_projects": [{"name": "Personal Project 1"}],
-                "phone": "+905413769286",
-                "publications": [
-                    {
-                        "authors": [
-                            "Cetin Yilmaz",
-                            "Gregory M Hulbert",
-                            "Noboru Kikuchi",
-                        ],
-                        "cited_by": 243,
-                        "date": "2007-08-01",
-                        "doi": "10.1103/PhysRevB.76.054309",
-                        "journal": "Physical Review B",
-                        "title": (
-                            "Phononic band gaps induced by inertial amplification in"
-                            " periodic media"
-                        ),
-                    }
-                ],
-                "section_order": [
-                    "Education",
-                    "Work Experience",
-                    "Academic Projects",
-                    "Certificates",
-                    "Personal Projects",
-                    "Skills",
-                    "Test Scores",
-                    "Extracurricular Activities",
-                    "Publications",
-                ],
-                "skills": [
-                    {
-                        "details": "C++, C, Python, JavaScript, MATLAB, Lua, LaTeX",
-                        "name": "Programming",
-                    },
-                    {"details": "GMSH, GetDP, CalculiX", "name": "CAE"},
-                ],
-                "social_networks": [
-                    {"network": "LinkedIn", "username": "dummy"},
-                    {"network": "GitHub", "username": "sinaatalay"},
-                ],
-                "test_scores": [
-                    {"date": "2022-10-01", "details": "120/120", "name": "TOEFL"},
-                    {
-                        "details": "9.0/9.0",
-                        "name": "IELTS",
-                        "url": "https://example.com",
-                    },
-                ],
-                "website": "https://example.com",
-                "work_experience": [
-                    {
-                        "company": "Company 1",
-                        "end_date": "present",
-                        "highlights": ["Test 1", "Test 2", "Test 3"],
-                        "location": "Geneva, Switzerland",
-                        "position": "Position 1",
-                        "start_date": "2023-02-01",
-                        "url": "https://example.com",
-                    },
-                    {
-                        "company": "Company 2",
-                        "end_date": "2023-02-01",
-                        "highlights": ["Test 1", "Test 2", "Test 3"],
-                        "location": "Geneva, Switzerland",
-                        "position": "Position 2",
-                        "start_date": "1986-02-01",
-                        "url": "https://example.com",
-                    },
-                ],
-            },
-            "design": {
-                "font": "EBGaramond",
-                "options": {
-                    "date_and_location_width": "3.6 cm",
-                    "margins": {
-                        "entry_area": {
-                            "left": "0.2 cm",
-                            "right": "0.2 cm",
-                            "vertical_between": "0.12 cm",
-                        },
-                        "highlights_area": {
-                            "left": "0.6 cm",
-                            "top": "0.12 cm",
-                            "vertical_between_bullet_points": "0.07 cm",
-                        },
-                        "page": {
-                            "bottom": "1.35 cm",
-                            "left": "1.35 cm",
-                            "right": "1.35 cm",
-                            "top": "1.35 cm",
-                        },
-                        "section_title": {"bottom": "0.13 cm", "top": "0.13 cm"},
-                    },
-                    "primary_color": "rgb(0,79,144)",
-                    "show_last_updated_date": True,
-                    "show_timespan_in_experience_entries": True,
-                },
-                "theme": "classic",
-            },
-        }
-        data = data_model.RenderCVDataModel(**test_input)  # type: ignore
+        # Read the reference YAML file:
+        input_file_path = os.path.join(
+            os.path.dirname(__file__),
+            "reference_files",
+            "John_Doe_CV_yaml_reference.yaml",
+        )
+        data = data_model.read_input_file(input_file_path)
         output_file_path = rendering.render_template(
             data=data, output_path=os.path.dirname(__file__)
         )
@@ -384,7 +219,9 @@ class TestRendering(unittest.TestCase):
 
         # Compare the output file with the reference file:
         reference_file_path = os.path.join(
-            os.path.dirname(__file__), "reference_files", "John_Doe_CV_test.tex"
+            os.path.dirname(__file__),
+            "reference_files",
+            "John_Doe_CV_tex_reference.tex",
         )
         with open(output_file_path, "r") as file:
             output = file.read()
@@ -404,10 +241,10 @@ class TestRendering(unittest.TestCase):
         )
 
         required_files = [
-            "EBGaramond-Italic.ttf",
-            "EBGaramond-Regular.ttf",
-            "EBGaramond-Bold.ttf",
-            "EBGaramond-BoldItalic.ttf",
+            f"{data.design.font}-Italic.ttf",
+            f"{data.design.font}-Regular.ttf",
+            f"{data.design.font}-Bold.ttf",
+            f"{data.design.font}-BoldItalic.ttf",
         ]
         font_files = os.listdir(font_directory_path)
         for required_file in required_files:
@@ -423,7 +260,9 @@ class TestRendering(unittest.TestCase):
 
     def test_run_latex(self):
         latex_file_path = os.path.join(
-            os.path.dirname(__file__), "reference_files", "John_Doe_CV_test.tex"
+            os.path.dirname(__file__),
+            "reference_files",
+            "John_Doe_CV_tex_reference.tex",
         )
 
         with self.subTest(msg="Existent file name"):
@@ -435,7 +274,9 @@ class TestRendering(unittest.TestCase):
             )
 
             # Compare the pdf file with the reference pdf file:
-            reference_pdf_file = pdf_file.replace("_test.pdf", "_reference.pdf")
+            reference_pdf_file = pdf_file.replace(
+                "_tex_reference.pdf", "_pdf_reference.pdf"
+            )
             reference_pdf_file_size = os.path.getsize(reference_pdf_file)
             pdf_file_size = os.path.getsize(pdf_file)
 
