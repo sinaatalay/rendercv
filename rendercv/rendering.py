@@ -444,36 +444,36 @@ def run_latex(latex_file_path: str) -> str:
         )
 
     # Run TinyTeX:
-    with subprocess.Popen(
-        [
-            executable,
-            f"{latex_file_name}",
-            "&&",
-            executable,
-            f"{latex_file_name}",
-        ],
-        cwd=os.path.dirname(latex_file_path),
-        stdout=subprocess.PIPE,
-        stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
-        text=True,
-        shell=True,
-    ) as latex_process:
-        output, error = latex_process.communicate()
+    def run():
+        with subprocess.Popen(
+            [
+                executable,
+                f"{latex_file_name}",
+            ],
+            cwd=os.path.dirname(latex_file_path),
+            stdout=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+            text=True,
+        ) as latex_process:
+            output, error = latex_process.communicate()
 
-        if latex_process.returncode != 0:
-            # Find the error line:
-            for line in output.split("\n"):
-                if line.startswith("! "):
-                    error_line = line.replace("! ", "")
-                    break
+            if latex_process.returncode != 0:
+                # Find the error line:
+                for line in output.split("\n"):
+                    if line.startswith("! "):
+                        error_line = line.replace("! ", "")
+                        break
 
-            raise RuntimeError(
-                "Running TinyTeX has failed with the following error:",
-                f"{error_line}",
-                "If you can't solve the problem, please try to re-install RenderCV,"
-                " or open an issue on GitHub.",
-            )
+                raise RuntimeError(
+                    "Running TinyTeX has failed with the following error:",
+                    f"{error_line}",
+                    "If you can't solve the problem, please try to re-install RenderCV,"
+                    " or open an issue on GitHub.",
+                )
 
+    run()
+    run() # run twice for cross-references
+    
     # check if the PDF file is generated:
     if not os.path.exists(output_file_path):
         raise FileNotFoundError(
