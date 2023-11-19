@@ -510,6 +510,7 @@ def run_latex(latex_file_path: str) -> str:
             stdout=subprocess.PIPE,
             stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
             text=True,
+            encoding="utf-8",
         ) as latex_process:
             output, error = latex_process.communicate()
 
