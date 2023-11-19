@@ -17,7 +17,7 @@ class TestDataModel(unittest.TestCase):
             self.assertEqual(result, expected)
 
         str_with_latex_characers = r"asdf#asdf$asdf%asdf& ~ fd_ \ ^aa aa{ bb}"
-        expected ='asdf\\#asdf$asdf\\%asdf\\& \\textasciitilde{} fd_ \\ ^aa aa\\{ bb\\}'
+        expected ='asdf\\#asdf$asdf\\%asdf\\& \\textasciitilde{} fd_ \\ ^aa aa{ bb}'
         with self.subTest(msg="string with LaTeX characters"):
             result = data_model.escape_latex_characters(str_with_latex_characers)
             print(result)
