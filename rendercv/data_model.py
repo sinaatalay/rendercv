@@ -69,12 +69,13 @@ def escape_latex_characters(sentence: str) -> str:
 
     # Handle backslash and curly braces separately because the other characters are
     # escaped with backslash and curly braces:
-    sentence = sentence.replace("{", ">>{")
-    sentence = sentence.replace("}", ">>}")
-    # don't escape backslash as it is used heavily in LaTeX:
+    # --don't escape curly braces as they are used heavily in LaTeX--:
+    # sentence = sentence.replace("{", ">>{")
+    # sentence = sentence.replace("}", ">>}")
+    # --don't escape backslash as it is used heavily in LaTeX--:
     # sentence = sentence.replace("\\", "\\textbackslash{}")
-    sentence = sentence.replace(">>{", "\\{")
-    sentence = sentence.replace(">>}", "\\}")
+    # sentence = sentence.replace(">>{", "\\{")
+    # sentence = sentence.replace(">>}", "\\}")
 
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
