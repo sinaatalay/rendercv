@@ -468,6 +468,12 @@ class ClassicThemeOptions(BaseModel):
         description="The width of the date and location column.",
     )
 
+    text_alignment: Literal["left-aligned", "justified"] = Field(
+        default="left-aligned",
+        title="Text Alignment",
+        description="The alignment of the text.",
+    )
+
     show_timespan_in: list[str] = Field(
         default=[],
         title="Show Time Span in These Sections",
