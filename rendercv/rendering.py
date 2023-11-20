@@ -535,8 +535,8 @@ def run_latex(latex_file_path: str) -> str:
                 )
 
     run()
-    run() # run twice for cross-references
-    
+    run()  # run twice for cross-references
+
     # check if the PDF file is generated:
     if not os.path.exists(output_file_path):
         raise FileNotFoundError(
