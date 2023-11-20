@@ -11,7 +11,7 @@ from typing import Optional
 import sys
 from importlib.resources import files
 
-from .data_model import RenderCVDataModel
+from .data_model import RenderCVDataModel, CurriculumVitae, Design, ClassicThemeOptions
 
 from jinja2 import Environment, PackageLoader
 
@@ -341,10 +341,13 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     # load the template:
     template = environment.get_template(f"{theme}.tex.j2")
 
+    cv: CurriculumVitae = data.cv
+    design: Design = data.design
+    theme_options: ClassicThemeOptions = data.design.options
     output_latex_file = template.render(
-        cv=data.cv,
-        design=data.design,
-        theme_options=data.design.options,
+        cv=cv,
+        design=design,
+        theme_options=theme_options,
         today=get_today(),
     )
 
@@ -473,8 +476,8 @@ def run_latex(latex_file_path: str) -> str:
                 )
 
     run()
-    run() # run twice for cross-references
-    
+    run()  # run twice for cross-references
+
     # check if the PDF file is generated:
     if not os.path.exists(output_file_path):
         raise FileNotFoundError(
