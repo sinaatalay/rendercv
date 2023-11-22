@@ -417,6 +417,26 @@ class ClassicThemeHighlightsAreaMargins(BaseModel):
     )
 
 
+class ClassicThemeHeaderMargins(BaseModel):
+    """This class stores the margins of the header for the classic theme."""
+
+    vertical_between_name_and_connections: LaTeXDimension = Field(
+        default="0.2 cm",
+        title="Vertical Margin Between the Name and Connections",
+        description=(
+            "The vertical margin between the name of the person and the connections."
+        ),
+    )
+    bottom: LaTeXDimension = Field(
+        default="0.2 cm",
+        title="Bottom Margin",
+        description=(
+            "The bottom margin of the header, i.e., the vertical margin between the"
+            " connections and the first section title."
+        ),
+    )
+
+
 class ClassicThemeMargins(BaseModel):
     """This class stores the margins for the classic theme."""
 
@@ -439,6 +459,11 @@ class ClassicThemeMargins(BaseModel):
         default=ClassicThemeHighlightsAreaMargins(),
         title="Highlights Area Margins",
         description="Highlights area margins for the classic theme.",
+    )
+    header: ClassicThemeHeaderMargins = Field(
+        default=ClassicThemeHeaderMargins(),
+        title="Header Margins",
+        description="Header margins for the classic theme.",
     )
 
 
@@ -463,7 +488,7 @@ class ClassicThemeOptions(BaseModel):
     )
 
     date_and_location_width: LaTeXDimension = Field(
-        default="3.6 cm",
+        default="4.1 cm",
         title="Date and Location Column Width",
         description="The width of the date and location column.",
     )
