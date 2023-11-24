@@ -517,6 +517,12 @@ class ClassicThemeOptions(BaseModel):
         ),
     )
 
+    header_font_size: LaTeXDimension = Field(
+        default="30 pt",
+        title="Header Font Size",
+        description="The font size of the header (the name of the person).",
+    )
+
     margins: ClassicThemeMargins = Field(
         default=ClassicThemeMargins(),
         title="Margins",
