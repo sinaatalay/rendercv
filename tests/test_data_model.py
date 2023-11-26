@@ -852,3 +852,16 @@ class TestDataModel(unittest.TestCase):
         with self.subTest(msg="nonexistent file"):
             with self.assertRaises(FileNotFoundError):
                 data_model.read_input_file("nonexistent.json")
+
+    def test_mastodon_parsing(self):
+        mastodon_name = 'jpgoldberg@ioc.exchange'
+        expected = "https://ioc.exchange/@jpgoldberg"
+        result = data_model.Connection.MastodonUname2Url(mastodon_name)
+        with self.subTest("Without '@' prefix"):
+            self.assertEqual(result, expected)
+
+        mastodon_name = '@jpgoldberg@ioc.exchange'
+        expected = "https://ioc.exchange/@jpgoldberg"
+        result = data_model.Connection.MastodonUname2Url(mastodon_name)
+        with self.subTest("With '@' prefix"):
+            self.assertEqual(result, expected)
