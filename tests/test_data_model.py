@@ -5,7 +5,7 @@ import json
 from rendercv import data_model
 
 from datetime import date as Date
-from pydantic import ValidationError
+from pydantic import ValidationError, HttpUrl
 
 
 class TestDataModel(unittest.TestCase):
@@ -855,13 +855,21 @@ class TestDataModel(unittest.TestCase):
 
     def test_mastodon_parsing(self):
         mastodon_name = 'jpgoldberg@ioc.exchange'
-        expected = "https://ioc.exchange/@jpgoldberg"
+        expected = HttpUrl("https://ioc.exchange/@jpgoldberg")
         result = data_model.Connection.MastodonUname2Url(mastodon_name)
         with self.subTest("Without '@' prefix"):
             self.assertEqual(result, expected)
 
         mastodon_name = '@jpgoldberg@ioc.exchange'
-        expected = "https://ioc.exchange/@jpgoldberg"
+        expected = HttpUrl("https://ioc.exchange/@jpgoldberg")
         result = data_model.Connection.MastodonUname2Url(mastodon_name)
         with self.subTest("With '@' prefix"):
             self.assertEqual(result, expected)
+
+        mastodon_name = '@too@many@symbols'
+        with self.subTest("Too many '@' symbols"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+if __name__ == '__main__':
+    unittest.main()
