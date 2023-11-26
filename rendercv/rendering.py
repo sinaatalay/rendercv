@@ -9,6 +9,7 @@ import logging
 import time
 from typing import Optional
 import sys
+import shutil
 from importlib.resources import files
 
 from .data_model import RenderCVDataModel, CurriculumVitae, Design, ClassicThemeOptions
@@ -416,26 +417,11 @@ def run_latex(latex_file_path: str) -> str:
 
     if sys.platform == "win32":
         # Windows
-        executable = str(
-            files("rendercv").joinpath(
-                "vendor", "TinyTeX", "bin", "windows", "lualatex.exe"
-            )
-        )
+        executable = shutil.which("lualatex.exe")
 
-    elif sys.platform == "linux" or sys.platform == "linux2":
-        # Linux
-        executable = str(
-            files("rendercv").joinpath(
-                "vendor", "TinyTeX", "bin", "x86_64-linux", "lualatex"
-            )
-        )
-    elif sys.platform == "darwin":
-        # MacOS
-        executable = str(
-            files("rendercv").joinpath(
-                "vendor", "TinyTeX", "bin", "universal-darwin", "lualatex"
-            )
-        )
+    elif sys.platform in ["darwin", "linux", "linux2"]:
+        # macOS/Linux
+        executable = shutil.which("lualatex")
     else:
         raise OSError(f"Unknown OS {os.name}!")
 
