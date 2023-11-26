@@ -1036,7 +1036,7 @@ class SocialNetwork(BaseModel):
     Currently, only LinkedIn, Github, and Instagram are supported.
     """
 
-    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid"] = Field(
+    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid", "Mastodon"] = Field(
         title="Social Network",
         description="The social network name.",
     )
@@ -1059,12 +1059,28 @@ class Connection(BaseModel):
         "GitHub",
         "Instagram",
         "Orcid",
+        "Mastodon",
         "phone",
         "email",
         "website",
         "location",
     ]
     value: str
+
+    @staticmethod
+    def MastodonUname2Url(uname: str) ->Optional[HttpUrl]:
+        """From a Mastodon-style "user@domain.example" returns profile url."""
+
+        # The closest thing to a formal spec of Mastodon usernames
+        # where these regular expressions from a (reference?) 
+        # implementation
+        # 
+        # https://github.com/mastodon/mastodon/blob/852123867768e23410af5bd07ac0327bead0d9b2/app/models/account.rb#L68
+        #
+        # SERNAME_RE   = /[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?/i
+        # MENTION_RE    = %r{(?<![=/[:word:]])@((#{USERNAME_RE})(?:@[[:word:].-]+[[:word:]]+)?)}i
+        # URL_PREFIX_RE = %r{\Ahttp(s?)://[^/]+}
+
 
     @computed_field
     @cached_property
@@ -1077,6 +1093,8 @@ class Connection(BaseModel):
             url = f"https://www.instagram.com/{self.value}"
         elif self.name == "Orcid":
             url = f"https://orcid.org/{self.value}"
+        elif self.name == "Mastodon":
+            url = MastodonUname2Url(self.value)
         elif self.name == "email":
             url = f"mailto:{self.value}"
         elif self.name == "website":
