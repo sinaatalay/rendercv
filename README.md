@@ -85,7 +85,7 @@ cv:
 
 A more detailed user guide can be found [here](https://sinaatalay.github.io/rendercv/user_guide).
 
-I documented the whole code with docstrings and used comments throughout the code. The code documentation can be found [here](https://sinaatalay.github.io/rendercv/documentation/).
+I documented the whole code with docstrings and used comments throughout the code. The API reference can be found [here](https://sinaatalay.github.io/rendercv/api_reference/).
 
 ## Contributing
 
