@@ -1083,13 +1083,17 @@ class Connection(BaseModel):
         # URL_PREFIX_RE = %r{\Ahttp(s?)://[^/]+}
 
         pattern = re.compile(r"""
-            @?                                              # Optional @ prefix
+            ^\w*                    # ignore leading spaces
+            @?                      # Optional @ prefix
             (?P<uname>[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?)  # username part
-            @                                               # separator
+            @                       # separator
             (?P<domain>[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?) # domain part
+            \w*$                    # ignore trailing whitespace
         """, re.VERBOSE | re.IGNORECASE)
 
         m = pattern.match(id)
+        if m is None:
+            raise ValueError("Invalid mastodon address")
         uname = m.group("uname")
         domain = m.group("domain")
 
