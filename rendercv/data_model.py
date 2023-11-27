@@ -1057,6 +1057,31 @@ class Connection(BaseModel):
     value: str
 
     @staticmethod
+    def is_valid_fqdn(hostname: str) -> bool:
+        """Is hostname a valid fully qualified domain name."""
+
+        # cribbed from
+        # https://stackoverflow.com/a/33214423/1304076
+        # because I couldn't find a useful method in dnspython.
+        if hostname[-1] == ".":
+            # strip exactly one dot from the right, if present
+            hostname = hostname[:-1]
+        if len(hostname) > 253:
+            return False
+
+        labels = hostname.split(".")
+
+        # the TLD must be not all-numeric
+        if re.match(r"[0-9]+$", labels[-1]):
+            return False
+
+        # labels cannot begin with a hyphen
+        # labels must have at least character
+        # labels may not have more than 63 characters
+        allowed = re.compile(r"(?!-)[a-z0-9-]{1,63}(?<!-)$", re.IGNORECASE)
+        return all(allowed.match(label) for label in labels)
+
+    @staticmethod
     def MastodonUname2Url(address: str) -> Optional[HttpUrl]:
         """returns profile url from a mastodon user address.
 
@@ -1074,29 +1099,28 @@ class Connection(BaseModel):
 
         Exceptions:
             ValueError if the address is malformed.
+            Note that well-formed addresses should never yield
+            syntactically invalid URLs.
         """
 
         # The closest thing to a formal spec of Mastodon usernames
         # where these regular expressions from a (reference?)
         # implementation
-        # 
-        # https://github.com/mastodon/mastodon/blob/852123867768e23410af5bd07ac0327bead0d9b2/app/models/account.rb#L68
+        #
+        # https://github.com/mastodon/mastodon/blob/f1657e6d6275384c199956e8872115fdcec600b0/app/models/account.rb#L68
         #
         # USERNAME_RE   = /[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?/i
-        # SERNAME_RE   = /[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?/i
+        # MENTION_RE    = %r{(?<![=/[:word:]])@((#{USERNAME_RE})(?:@[[:word:].-]+[[:word:]]+)?)}i
         #
-        # Note that the SERNAME expersion would allow underscores in DNS
-        # hostname labels. That would lead to invalid hostnames.
-        #
-        # I consider that a bug and will not be carrying that over here.
-        # (It is possible that pydantic would catch the error)
+        # `[[:word:]]` in Ruby includes lots of things that could never be in a # domain name. As my intent here is to construct an HTTPS URL,
+        # I will use a more restrictive set of characters.
 
         pattern = re.compile(r"""
             ^\s*                    # ignore leading spaces
             @?                      # Optional @ prefix
             (?P<uname>[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?)  # username part
             @                       # separator
-            (?P<domain>[a-z0-9]+([a-z0-9.-]+[a-z0-9]+)?) # domain part
+            (?P<domain>[a-z0-9]+([a-z0-9.-]+)?) # domain part
             \s*$                    # ignore trailing whitespace
         """, re.VERBOSE | re.IGNORECASE)
 
@@ -1105,6 +1129,11 @@ class Connection(BaseModel):
             raise ValueError("Invalid mastodon address")
         uname = m.group("uname")
         domain = m.group("domain")
+
+        # the domain part of pattern allows some things that are not
+        # valid names. So we run a stricter check
+        if not Connection.is_valid_fqdn(domain):
+            raise ValueError("Invalid hostname in mastodon address")
 
         url = HttpUrl(f'https://{domain}/@{uname}')
         return url
