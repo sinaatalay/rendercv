@@ -1083,12 +1083,12 @@ class Connection(BaseModel):
         # URL_PREFIX_RE = %r{\Ahttp(s?)://[^/]+}
 
         pattern = re.compile(r"""
-            ^\w*                    # ignore leading spaces
+            ^\s*                    # ignore leading spaces
             @?                      # Optional @ prefix
             (?P<uname>[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?)  # username part
             @                       # separator
             (?P<domain>[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?) # domain part
-            \w*$                    # ignore trailing whitespace
+            \s*$                    # ignore trailing whitespace
         """, re.VERBOSE | re.IGNORECASE)
 
         m = pattern.match(id)
