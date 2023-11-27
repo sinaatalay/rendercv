@@ -1248,6 +1248,11 @@ class CurriculumVitae(BaseModel):
         title="Academic Projects",
         description="The academic project entries of the person.",
     )
+    university_projects: Optional[list[NormalEntry]] = Field(
+        default=None,
+        title="University Projects",
+        description="The university project entries of the person.",
+    )
     personal_projects: Optional[list[NormalEntry]] = Field(
         default=None,
         title="Personal Projects",
@@ -1375,6 +1380,7 @@ class CurriculumVitae(BaseModel):
             "Publications": self.publications,
             "Projects": self.projects,
             "Academic Projects": self.academic_projects,
+            "University Projects": self.university_projects,
             "Personal Projects": self.personal_projects,
             "Certificates": self.certificates,
             "Extracurricular Activities": self.extracurricular_activities,
@@ -1387,7 +1393,9 @@ class CurriculumVitae(BaseModel):
             "Programming Skills": self.programming_skills,
         }
 
+        section_order_is_given = True
         if self.section_order is None:
+            section_order_is_given = False
             # If the user didn't specify the section order, then use the default order:
             self.section_order = list(pre_defined_sections.keys())
             if self.custom_sections is not None:
@@ -1404,7 +1412,14 @@ class CurriculumVitae(BaseModel):
             # Create a section for each section name in the section order:
             if section_name in pre_defined_sections:
                 if pre_defined_sections[section_name] is None:
-                    continue
+                    if section_order_is_given:
+                        raise ValueError(
+                            f'The section "{section_name}" is not found in the CV.'
+                            " Please create the section or delete it from the section"
+                            " order."
+                        )
+                    else:
+                        continue
 
                 entry_type = pre_defined_sections[section_name][0].__class__.__name__
                 entries = pre_defined_sections[section_name]
