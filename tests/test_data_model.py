@@ -862,14 +862,14 @@ class TestDataModel(unittest.TestCase):
                 data_model.read_input_file("nonexistent.json")
 
     def test_mastodon_parsing(self):
-        mastodon_name = 'jpgoldberg@ioc.exchange'
-        expected = HttpUrl("https://ioc.exchange/@jpgoldberg")
+        mastodon_name = 'a_tooter@example.exchange'
+        expected = HttpUrl("https://example.exchange/@a_tooter")
         result = data_model.Connection.MastodonUname2Url(mastodon_name)
         with self.subTest("Without '@' prefix"):
             self.assertEqual(result, expected)
 
-        mastodon_name = '@jpgoldberg@ioc.exchange'
-        expected = HttpUrl("https://ioc.exchange/@jpgoldberg")
+        mastodon_name = '@a_tooter@example.exchange'
+        expected = HttpUrl("https://example.exchange/@a_tooter")
         result = data_model.Connection.MastodonUname2Url(mastodon_name)
         with self.subTest("With '@' prefix"):
             self.assertEqual(result, expected)
@@ -878,6 +878,18 @@ class TestDataModel(unittest.TestCase):
         with self.subTest("Too many '@' symbols"):
             with self.assertRaises(ValueError):
                 data_model.Connection.MastodonUname2Url(mastodon_name)
+
+        mastodon_name = '@not_enough_at_symbols'
+        with self.subTest("Missing '@' separator"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+        mastodon_name = 'user@bad_domain.example'
+        with self.subTest("Underscore in domain portion"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+
 
 if __name__ == '__main__':
     unittest.main()
