@@ -115,7 +115,6 @@ def parse_date_string(date_string: str) -> Date | int:
         raise ValueError(
             f'The date string "{date_string}" is not in YYYY-MM-DD, YYYY-MM, or YYYY'
             " format."
-            " format."
         )
 
     if isinstance(date, Date):

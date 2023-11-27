@@ -265,59 +265,6 @@ def abbreviate_names(names: list[str]) -> str:
     return abbreviated_names
 
 
-def abbreviate_name(name: list[str]) -> str:
-    """Abbreviate a name by keeping the first letters of the first names.
-
-    This function is used as a Jinja2 filter.
-
-    Example:
-        ```python
-        abbreviate_name("John Doe")
-        ```
-
-        will return:
-
-        `#!python "J. Doe"`
-
-    Args:
-        name (str): The name to abbreviate.
-    Returns:
-        str: The abbreviated name.
-    """
-    first_names = name.split(" ")[:-1]
-    first_names_initials = [first_name[0] + "." for first_name in first_names]
-    last_name = name.split(" ")[-1]
-    abbreviated_name = " ".join(first_names_initials) + " " + last_name
-
-    return abbreviated_name
-
-
-def abbreviate_names(names: list[str]) -> str:
-    """Abbreviate a list of names by keeping the first letters of the first names.
-
-    This function is used as a Jinja2 filter.
-
-    Example:
-        ```python
-        abbreviate_names(["John Doe", "Jane Atalay"])
-        ```
-
-        will return:
-
-        `#!python ["J. Doe", "J. Atalay"]`
-
-    Args:
-        names (list[str]): The names to abbreviate.
-    Returns:
-        str: The list of abbreviated names.
-    """
-    abbreviated_names = []
-    for name in names:
-        abbreviated_names.append(abbreviate_name(name))
-
-    return abbreviated_names
-
-
 def divide_length_by(length: str, divider: float) -> str:
     r"""Divide a length by a number.
 
@@ -514,12 +461,6 @@ def run_latex(latex_file_path: str) -> str:
         ) as latex_process:
             output, error = latex_process.communicate()
 
-            if latex_process.returncode != 0:
-                # Find the error line:
-                for line in output.split("\n"):
-                    if line.startswith("! "):
-                        error_line = line.replace("! ", "")
-                        break
             if latex_process.returncode != 0:
                 # Find the error line:
                 for line in output.split("\n"):
