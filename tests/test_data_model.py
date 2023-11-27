@@ -889,6 +889,18 @@ class TestDataModel(unittest.TestCase):
             with self.assertRaises(ValueError):
                 data_model.Connection.MastodonUname2Url(mastodon_name)
 
+        mastodon_name = 'user@bad.numeric.tld.123'
+        with self.subTest("All digit TLD"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+        mastodon_name = 'a_tooter@example.exchange.'
+        expected = HttpUrl("https://example.exchange./@a_tooter")
+        result = data_model.Connection.MastodonUname2Url(mastodon_name)
+        with self.subTest("With FQDN root '.'"):
+            self.assertEqual(result, expected)
+
+
 
 
 if __name__ == '__main__':
