@@ -17,7 +17,7 @@ class TestDataModel(unittest.TestCase):
             self.assertEqual(result, expected)
 
         str_with_latex_characers = r"asdf#asdf$asdf%asdf& ~ fd_ \ ^aa aa{ bb}"
-        expected ='asdf\\#asdf$asdf\\%asdf\\& \\textasciitilde{} fd_ \\ ^aa aa{ bb}'
+        expected = "asdf\\#asdf$asdf\\%asdf\\& \\textasciitilde{} fd_ \\ ^aa aa{ bb}"
         with self.subTest(msg="string with LaTeX characters"):
             result = data_model.escape_latex_characters(str_with_latex_characers)
             print(result)
@@ -862,46 +862,44 @@ class TestDataModel(unittest.TestCase):
                 data_model.read_input_file("nonexistent.json")
 
     def test_mastodon_parsing(self):
-        mastodon_name = 'a_tooter@example.exchange'
+        mastodon_name = "a_tooter@example.exchange"
         expected = HttpUrl("https://example.exchange/@a_tooter")
         result = data_model.Connection.MastodonUname2Url(mastodon_name)
         with self.subTest("Without '@' prefix"):
             self.assertEqual(result, expected)
 
-        mastodon_name = '@a_tooter@example.exchange'
+        mastodon_name = "@a_tooter@example.exchange"
         expected = HttpUrl("https://example.exchange/@a_tooter")
         result = data_model.Connection.MastodonUname2Url(mastodon_name)
         with self.subTest("With '@' prefix"):
             self.assertEqual(result, expected)
 
-        mastodon_name = '@too@many@symbols'
+        mastodon_name = "@too@many@symbols"
         with self.subTest("Too many '@' symbols"):
             with self.assertRaises(ValueError):
                 data_model.Connection.MastodonUname2Url(mastodon_name)
 
-        mastodon_name = '@not_enough_at_symbols'
+        mastodon_name = "@not_enough_at_symbols"
         with self.subTest("Missing '@' separator"):
             with self.assertRaises(ValueError):
                 data_model.Connection.MastodonUname2Url(mastodon_name)
 
-        mastodon_name = 'user@bad_domain.example'
+        mastodon_name = "user@bad_domain.example"
         with self.subTest("Underscore in domain portion"):
             with self.assertRaises(ValueError):
                 data_model.Connection.MastodonUname2Url(mastodon_name)
 
-        mastodon_name = 'user@bad.numeric.tld.123'
+        mastodon_name = "user@bad.numeric.tld.123"
         with self.subTest("All digit TLD"):
             with self.assertRaises(ValueError):
                 data_model.Connection.MastodonUname2Url(mastodon_name)
 
-        mastodon_name = 'a_tooter@example.exchange.'
+        mastodon_name = "a_tooter@example.exchange."
         expected = HttpUrl("https://example.exchange./@a_tooter")
         result = data_model.Connection.MastodonUname2Url(mastodon_name)
         with self.subTest("With FQDN root '.'"):
             self.assertEqual(result, expected)
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

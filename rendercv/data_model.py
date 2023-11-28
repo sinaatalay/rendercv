@@ -1115,14 +1115,17 @@ class Connection(BaseModel):
         # `[[:word:]]` in Ruby includes lots of things that could never be in a # domain name. As my intent here is to construct an HTTPS URL,
         # I will use a more restrictive set of characters.
 
-        pattern = re.compile(r"""
+        pattern = re.compile(
+            r"""
             ^\s*                    # ignore leading spaces
             @?                      # Optional @ prefix
             (?P<uname>[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?)  # username part
             @                       # separator
             (?P<domain>[a-z0-9]+([a-z0-9.-]+)?) # domain part
             \s*$                    # ignore trailing whitespace
-        """, re.VERBOSE | re.IGNORECASE)
+        """,
+            re.VERBOSE | re.IGNORECASE,
+        )
 
         m = pattern.match(address)
         if m is None:
@@ -1135,7 +1138,7 @@ class Connection(BaseModel):
         if not Connection.is_valid_fqdn(domain):
             raise ValueError("Invalid hostname in mastodon address")
 
-        url = HttpUrl(f'https://{domain}/@{uname}')
+        url = HttpUrl(f"https://{domain}/@{uname}")
         return url
 
     @computed_field
