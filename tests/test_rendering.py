@@ -95,10 +95,14 @@ class TestRendering(unittest.TestCase):
     def test_make_it_something(self):
         # invalid input:
         input = "test"
-        keyword = "invalid keyword"
-        with self.subTest(msg="invalid keyword"):
-            with self.assertRaises(ValueError):
-                rendering.make_it_something(input, keyword)
+        something = "haha"
+        result = rendering.make_it_something(input, something)
+        with self.subTest(msg="match_str is none"):
+            self.assertEqual(result, "\\haha{test}")
+        
+        result = rendering.make_it_something(input, something, match_str="te")
+        with self.subTest(msg="match_str is not none"):
+            self.assertEqual(result, "\\haha{te}st")
 
     def test_make_it_bold(self):
         input = "some text"
