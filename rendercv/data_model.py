@@ -340,22 +340,22 @@ class ClassicThemePageMargins(BaseModel):
     """This class stores the margins of pages for the classic theme."""
 
     top: LaTeXDimension = Field(
-        default="1.35 cm",
+        default="2 cm",
         title="Top Margin",
         description="The top margin of the page with units.",
     )
     bottom: LaTeXDimension = Field(
-        default="1.35 cm",
+        default="2 cm",
         title="Bottom Margin",
         description="The bottom margin of the page with units.",
     )
     left: LaTeXDimension = Field(
-        default="1.35 cm",
+        default="1.24 cm",
         title="Left Margin",
         description="The left margin of the page with units.",
     )
     right: LaTeXDimension = Field(
-        default="1.35 cm",
+        default="1.24 cm",
         title="Right Margin",
         description="The right margin of the page with units.",
     )
@@ -365,12 +365,12 @@ class ClassicThemeSectionTitleMargins(BaseModel):
     """This class stores the margins of section titles for the classic theme."""
 
     top: LaTeXDimension = Field(
-        default="0.13 cm",
+        default="0.2 cm",
         title="Top Margin",
         description="The top margin of section titles.",
     )
     bottom: LaTeXDimension = Field(
-        default="0.13 cm",
+        default="0.2 cm",
         title="Bottom Margin",
         description="The bottom margin of section titles.",
     )
@@ -401,17 +401,17 @@ class ClassicThemeHighlightsAreaMargins(BaseModel):
     """This class stores the margins of highlights areas for the classic theme."""
 
     top: LaTeXDimension = Field(
-        default="0.12 cm",
+        default="0.10 cm",
         title="Top Margin",
         description="The top margin of highlights areas.",
     )
     left: LaTeXDimension = Field(
-        default="0.6 cm",
+        default="0.4 cm",
         title="Left Margin",
         description="The left margin of highlights areas.",
     )
     vertical_between_bullet_points: LaTeXDimension = Field(
-        default="0.07 cm",
+        default="0.10 cm",
         title="Vertical Margin Between Bullet Points",
         description="The vertical margin between bullet points.",
     )

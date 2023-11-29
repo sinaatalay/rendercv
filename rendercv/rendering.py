@@ -127,20 +127,11 @@ def make_it_something(
     if match_str is not None and not isinstance(match_str, str):
         raise ValueError("The string to match should be a string!")
 
-    if something == "make_it_bold":
-        keyword = "textbf"
-    elif something == "make_it_underlined":
-        keyword = "underline"
-    elif something == "make_it_italic":
-        keyword = "textit"
-    else:
-        raise ValueError(f"Unknown keyword {something}!")
-
     if match_str is None:
-        return f"\\{keyword}{{{value}}}"
+        return f"\\{something}{{{value}}}"
 
     if match_str in value:
-        value = value.replace(match_str, f"\\{keyword}{{{match_str}}}")
+        value = value.replace(match_str, f"\\{something}{{{match_str}}}")
         return value
     else:
         return value
@@ -154,7 +145,7 @@ def make_it_bold(value: str, match_str: Optional[str] = None) -> str:
 
     Example:
         ```python
-        make_it_bold_if("Hello World!", "Hello")
+        make_it_bold("Hello World!", "Hello")
         ```
 
         will return:
@@ -165,7 +156,7 @@ def make_it_bold(value: str, match_str: Optional[str] = None) -> str:
         value (str): The string to make bold.
         match_str (str): The string to match.
     """
-    return make_it_something(value, "make_it_bold", match_str)
+    return make_it_something(value, "textbf", match_str)
 
 
 def make_it_underlined(value: str, match_str: Optional[str] = None) -> str:
@@ -176,7 +167,7 @@ def make_it_underlined(value: str, match_str: Optional[str] = None) -> str:
 
     Example:
         ```python
-        make_it_underlined_if("Hello World!", "Hello")
+        make_it_underlined("Hello World!", "Hello")
         ```
 
         will return:
@@ -187,7 +178,7 @@ def make_it_underlined(value: str, match_str: Optional[str] = None) -> str:
         value (str): The string to make underlined.
         match_str (str): The string to match.
     """
-    return make_it_something(value, "make_it_underlined", match_str)
+    return make_it_something(value, "underline", match_str)
 
 
 def make_it_italic(value: str, match_str: Optional[str] = None) -> str:
@@ -198,7 +189,7 @@ def make_it_italic(value: str, match_str: Optional[str] = None) -> str:
 
     Example:
         ```python
-        make_it_italic_if("Hello World!", "Hello")
+        make_it_italic("Hello World!", "Hello")
         ```
 
         will return:
@@ -209,7 +200,29 @@ def make_it_italic(value: str, match_str: Optional[str] = None) -> str:
         value (str): The string to make italic.
         match_str (str): The string to match.
     """
-    return make_it_something(value, "make_it_italic", match_str)
+    return make_it_something(value, "textit", match_str)
+
+
+def make_it_nolinebreak(value: str, match_str: Optional[str] = None) -> str:
+    """Make the matched parts of the string non line breakable. If the match_str is
+    None, the whole string will be made nonbreakable.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        make_it_nolinebreak("Hello World!", "Hello")
+        ```
+
+        will return:
+
+        `#!python "\\mbox{Hello} World!"`
+
+    Args:
+        value (str): The string to disable line breaks.
+        match_str (str): The string to match.
+    """
+    return make_it_something(value, "mbox", match_str)
 
 
 def abbreviate_name(name: list[str]) -> str:
@@ -239,32 +252,6 @@ def abbreviate_name(name: list[str]) -> str:
     return abbreviated_name
 
 
-def abbreviate_names(names: list[str]) -> str:
-    """Abbreviate a list of names by keeping the first letters of the first names.
-
-    This function is used as a Jinja2 filter.
-
-    Example:
-        ```python
-        abbreviate_names(["John Doe", "Jane Atalay"])
-        ```
-
-        will return:
-
-        `#!python ["J. Doe", "J. Atalay"]`
-
-    Args:
-        names (list[str]): The names to abbreviate.
-    Returns:
-        str: The list of abbreviated names.
-    """
-    abbreviated_names = []
-    for name in names:
-        abbreviated_names.append(abbreviate_name(name))
-
-    return abbreviated_names
-
-
 def divide_length_by(length: str, divider: float) -> str:
     r"""Divide a length by a number.
 
@@ -278,14 +265,14 @@ def divide_length_by(length: str, divider: float) -> str:
 
 
 def get_today() -> str:
-    """Return today's date.
+    """Return today's date in the format of "Month, Year".
 
     Returns:
         str: Today's date.
     """
 
     today = date.today()
-    return today.strftime("%B %d, %Y")
+    return today.strftime("%B, %Y")
 
 
 def get_path_to_font_directory(font_name: str) -> str:
@@ -334,9 +321,10 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     environment.filters["make_it_bold"] = make_it_bold
     environment.filters["make_it_underlined"] = make_it_underlined
     environment.filters["make_it_italic"] = make_it_italic
+    environment.filters["make_it_nolinebreak"] = make_it_nolinebreak
+    environment.filters["make_it_something"] = make_it_something
     environment.filters["divide_length_by"] = divide_length_by
     environment.filters["abbreviate_name"] = abbreviate_name
-    environment.filters["abbreviate_names"] = abbreviate_names
 
     # load the template:
     template = environment.get_template(f"{theme}.tex.j2")
