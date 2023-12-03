@@ -265,14 +265,14 @@ def divide_length_by(length: str, divider: float) -> str:
 
 
 def get_today() -> str:
-    """Return today's date in the format of "Month, Year".
+    """Return today's date in the format of "Month Year".
 
     Returns:
         str: Today's date.
     """
 
     today = date.today()
-    return today.strftime("%B, %Y")
+    return today.strftime("%B %Y")
 
 
 def get_path_to_font_directory(font_name: str) -> str:
