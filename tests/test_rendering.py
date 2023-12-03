@@ -188,7 +188,7 @@ class TestRendering(unittest.TestCase):
                 self.assertEqual(rendering.divide_length_by(length, divider), exp)
 
     def test_get_today(self):
-        expected = date.today().strftime("%B, %Y")
+        expected = date.today().strftime("%B %Y")
         result = rendering.get_today()
         self.assertEqual(expected, result, msg="Today's date is not correct.")
 
