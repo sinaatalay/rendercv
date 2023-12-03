@@ -1057,12 +1057,11 @@ class Connection(BaseModel):
     value: str
 
     @staticmethod
-    def is_valid_fqdn(hostname: str) -> bool:
-        """Is hostname a valid fully qualified domain name."""
+    def is_valid_hostname(hostname: str) -> bool:
+        """Is hostname a valid hostname by RFCs 952 and 1123"""
 
-        # cribbed from
+        # slightly modified from
         # https://stackoverflow.com/a/33214423/1304076
-        # because I couldn't find a useful method in dnspython.
         if hostname[-1] == ".":
             # strip exactly one dot from the right, if present
             hostname = hostname[:-1]
@@ -1071,7 +1070,7 @@ class Connection(BaseModel):
 
         labels = hostname.split(".")
 
-        # the TLD must be not all-numeric
+        # the last label must be not all-numeric
         if re.match(r"[0-9]+$", labels[-1]):
             return False
 
@@ -1113,7 +1112,8 @@ class Connection(BaseModel):
         # MENTION_RE    = %r{(?<![=/[:word:]])@((#{USERNAME_RE})(?:@[[:word:].-]+[[:word:]]+)?)}i
         #
         # `[[:word:]]` in Ruby includes lots of things that could never be in a # domain name. As my intent here is to construct an HTTPS URL,
-        # I will use a more restrictive set of characters.
+        # What we need are valid hostnames,
+        # and so need to satisfy the constraints of RFC 952 and and 1123.
 
         pattern = re.compile(
             r"""
@@ -1135,7 +1135,7 @@ class Connection(BaseModel):
 
         # the domain part of pattern allows some things that are not
         # valid names. So we run a stricter check
-        if not Connection.is_valid_fqdn(domain):
+        if not Connection.is_valid_hostname(domain):
             raise ValueError("Invalid hostname in mastodon address")
 
         url = HttpUrl(f"https://{domain}/@{uname}")
