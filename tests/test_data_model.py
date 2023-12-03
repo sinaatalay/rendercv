@@ -10,140 +10,162 @@ from pydantic import ValidationError
 
 class TestDataModel(unittest.TestCase):
     def test_escape_latex_characters(self):
-        str_without_latex_characters = "This is a string without LaTeX characters."
-        expected = str_without_latex_characters
-        with self.subTest(msg="string without LaTeX characters"):
-            result = data_model.escape_latex_characters(str_without_latex_characters)
-            self.assertEqual(result, expected)
+        tests = [
+            {
+                "input": "This is a string without LaTeX characters.",
+                "expected": "This is a string without LaTeX characters.",
+                "msg": "string without LaTeX characters",
+            },
+            {
+                "input": r"asdf#asdf$asdf%asdf& ~ fd_ \ ^aa aa{ bb}",
+                "expected": (
+                    r"asdf\#asdf$asdf\%asdf\& \textasciitilde{} fd_ \ ^aa aa{ bb}"
+                ),
+                "msg": "string with LaTeX characters",
+            },
+        ]
 
-        str_with_latex_characers = r"asdf#asdf$asdf%asdf& ~ fd_ \ ^aa aa{ bb}"
-        expected ='asdf\\#asdf$asdf\\%asdf\\& \\textasciitilde{} fd_ \\ ^aa aa{ bb}'
-        with self.subTest(msg="string with LaTeX characters"):
-            result = data_model.escape_latex_characters(str_with_latex_characers)
-            print(result)
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                result = data_model.escape_latex_characters(test["input"])
+                self.assertEqual(result, test["expected"])
 
     def test_compute_time_span_string(self):
-        start_date = Date(year=2020, month=1, day=1)
-        end_date = Date(year=2021, month=1, day=1)
-        expected = "1 year 1 month"
-        result = data_model.compute_time_span_string(start_date, end_date)
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
+        # Valid inputs:
+        tests = [
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": Date(year=2021, month=1, day=1),
+                "expected": "1 year 1 month",
+                "msg": "1 year 1 month",
+            },
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": Date(year=2020, month=2, day=1),
+                "expected": "1 month",
+                "msg": "1 month",
+            },
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": Date(year=2023, month=3, day=2),
+                "expected": "3 years 2 months",
+                "msg": "3 years 2 months",
+            },
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": 2021,
+                "expected": "1 year 1 month",
+                "msg": "start_date and YYYY end_date",
+            },
+            {
+                "start_date": 2020,
+                "end_date": Date(year=2021, month=1, day=1),
+                "expected": "1 year 1 month",
+                "msg": "YYYY start_date and end_date",
+            },
+            {
+                "start_date": 2020,
+                "end_date": 2021,
+                "expected": "1 year 1 month",
+                "msg": "YYYY start_date and YYYY end_date",
+            },
+            {
+                "start_date": None,
+                "end_date": Date(year=2023, month=3, day=2),
+                "expected": TypeError,
+                "msg": "start_date is None",
+            },
+            {
+                "start_date": Date(year=2020, month=1, day=1),
+                "end_date": None,
+                "expected": TypeError,
+                "msg": "end_date is None",
+            },
+            {
+                "start_date": 324,
+                "end_date": "test",
+                "expected": TypeError,
+                "msg": "start_date and end_date are not dates",
+            },
+        ]
 
-        start_date = Date(year=2020, month=1, day=1)
-        end_date = Date(year=2020, month=2, day=1)
-        expected = "1 month"
-        result = data_model.compute_time_span_string(start_date, end_date)
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
-
-        start_date = Date(year=2020, month=1, day=1)
-        end_date = Date(year=2023, month=3, day=2)
-        expected = "3 years 2 months"
-        result = data_model.compute_time_span_string(start_date, end_date)
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
-
-        start_date = Date(year=2020, month=1, day=1)
-        end_date = Date(year=1982, month=1, day=1)
-        with self.subTest(msg="start_date > end_date"):
-            with self.assertRaises(ValueError):
-                data_model.compute_time_span_string(start_date, end_date)
-
-        # If users provide only year and month, or only year, the function should still
-        # work:
-        dates = {
-            (
-                Date(year=2020, month=1, day=1),
-                2021,
-                "start_date and YYYY end_date",
-                "1 year 1 month",
-            ),
-            (
-                2020,
-                Date(year=2021, month=1, day=1),
-                "YYYY start_date and end_date",
-                "1 year 1 month",
-            ),
-            (2020, 2021, "YYYY start_date and YYYY end_date", "1 year 1 month"),
-        }
-        for start_date, end_date, msg, expected_result in dates:
-            with self.subTest(msg=msg):
-                result = data_model.compute_time_span_string(start_date, end_date)
-                self.assertEqual(result, expected_result)
-
-        # invalid inputs:
-        start_date = None
-        end_date = Date(year=2023, month=3, day=2)
-        with self.subTest(msg="start_date is None"):
-            with self.assertRaises(TypeError):
-                data_model.compute_time_span_string(start_date, end_date)  # type: ignore
-
-        start_date = Date(year=2020, month=1, day=1)
-        end_date = None
-        with self.subTest(msg="end_date is None"):
-            with self.assertRaises(TypeError):
-                data_model.compute_time_span_string(start_date, end_date)  # type: ignore
-
-        start_date = 324
-        end_date = "test"
-        with self.subTest(msg="start_date and end_date are not dates"):
-            with self.assertRaises(TypeError):
-                data_model.compute_time_span_string(start_date, end_date)  # type: ignore
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                if isinstance(test["expected"], type):
+                    if issubclass(test["expected"], Exception):
+                        with self.assertRaises(test["expected"]):
+                            data_model.compute_time_span_string(
+                                test["start_date"], test["end_date"]
+                            )
+                else:
+                    result = data_model.compute_time_span_string(
+                        test["start_date"], test["end_date"]
+                    )
+                    self.assertEqual(result, test["expected"])
 
     def test_format_date(self):
-        date = Date(year=2020, month=1, day=1)
-        expected = "Jan. 2020"
-        result = data_model.format_date(date)
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
+        tests = [
+            {
+                "date": Date(year=2020, month=1, day=1),
+                "expected": "Jan. 2020",
+                "msg": "Jan. 2020",
+            },
+            {
+                "date": Date(year=1983, month=12, day=1),
+                "expected": "Dec. 1983",
+                "msg": "Dec. 1983",
+            },
+            {
+                "date": Date(year=2045, month=6, day=1),
+                "expected": "June 2045",
+                "msg": "June 2045",
+            },
+        ]
 
-        date = Date(year=1983, month=12, day=1)
-        expected = "Dec. 1983"
-        result = data_model.format_date(date)
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
-
-        date = Date(year=2045, month=6, day=1)
-        expected = "June 2045"
-        result = data_model.format_date(date)
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                result = data_model.format_date(test["date"])
+                self.assertEqual(result, test["expected"])
 
     def test_data_design_font(self):
-        # Valid font:
-        input = {
-            "font": "SourceSans3",
-        }
-        with self.subTest(msg="valid font"):
-            design = data_model.Design(**input)  # type: ignore
-            self.assertEqual(design.font, input["font"])
+        tests = [
+            {"input": "SourceSans3", "expected": "SourceSans3", "msg": "valid font"},
+            {
+                "input": "InvalidFont",
+                "expected": ValidationError,
+                "msg": "invalid font",
+            },
+        ]
 
-        # Invalid font:
-        input = {
-            "font": "InvalidFont",
-        }
-        with self.subTest(msg="invalid font"):
-            with self.assertRaises(ValidationError):
-                data_model.Design(**input)  # type: ignore
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                if isinstance(test["expected"], type):
+                    if issubclass(test["expected"], Exception):
+                        with self.assertRaises(test["expected"]):
+                            data_model.Design(font=test["input"])
+                else:
+                    design = data_model.Design(font=test["input"])
+                    self.assertEqual(design.font, test["expected"])
 
     def test_data_design_theme(self):
-        # Valid theme:
-        input = {
-            "theme": "classic",
-        }
-        with self.subTest(msg="valid theme"):
-            design = data_model.Design(**input)  # type: ignore
-            self.assertEqual(design.theme, input["theme"])
+        tests = [
+            {"input": "classic", "expected": "classic", "msg": "valid theme"},
+            {
+                "input": "InvalidTheme",
+                "expected": ValidationError,
+                "msg": "invalid theme",
+            },
+        ]
 
-        # Nonexistent theme:
-        input = {
-            "theme": "nonexistent",
-        }
-        with self.subTest(msg="nonexistent theme"):
-            with self.assertRaises(ValidationError):
-                data_model.Design(**input)  # type: ignore
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                if isinstance(test["expected"], type):
+                    if issubclass(test["expected"], Exception):
+                        with self.assertRaises(test["expected"]):
+                            data_model.Design(theme=test["input"])
+                else:
+                    design = data_model.Design(theme=test["input"])
+                    self.assertEqual(design.theme, test["expected"])
 
     def test_data_design_show_timespan_in(self):
         # Valid show_timespan_in:
@@ -179,120 +201,134 @@ class TestDataModel(unittest.TestCase):
         # All the combinations are tried. In valid dates:
         # Start dates can be 4 different things: YYYY-MM-DD, YYYY-MM, YYYY.
         # End dates can be 5 different things: YYYY-MM-DD, YYYY-MM, YYYY, or "present" or None.
-        start_dates = {
-            "2020-01-01": Date.fromisoformat("2020-01-01"),
-            "2020-01": Date.fromisoformat("2020-01-01"),
-            "2020": 2020,
-        }
-        end_dates = {
-            "2021-01-01": Date.fromisoformat("2021-01-01"),
-            "2021-01": Date.fromisoformat("2021-01-01"),
-            "2021": 2021,
-            "present": "present",
-            None: "present",
-        }
+        start_dates = [
+            {
+                "input": "2020-01-01",
+                "expected": Date.fromisoformat("2020-01-01"),
+            },
+            {
+                "input": "2020-01",
+                "expected": Date.fromisoformat("2020-01-01"),
+            },
+            {
+                "input": "2020",
+                "expected": 2020,
+            },
+        ]
+
+        end_dates = [
+            {
+                "input": "2021-01-01",
+                "expected": Date.fromisoformat("2021-01-01"),
+            },
+            {
+                "input": "2021-01",
+                "expected": Date.fromisoformat("2021-01-01"),
+            },
+            {
+                "input": "2021",
+                "expected": 2021,
+            },
+            {
+                "input": "present",
+                "expected": "present",
+            },
+            {
+                "input": None,
+                "expected": "present",
+            },
+        ]
+
         combinations = [
             (start_date, end_date)
             for start_date in start_dates
             for end_date in end_dates
         ]
         for start_date, end_date in combinations:
-            input = {
-                "start_date": start_date,
-                "end_date": end_date,
-                "date": None,
-            }
-            with self.subTest(msg=f"valid date with {start_date} and {end_date}"):
-                event = data_model.Event(**input)
-                self.assertEqual(
-                    event.start_date,
-                    start_dates[start_date],
+            with self.subTest(
+                msg=f"valid: {start_date['expected']} to {end_date['expected']}"
+            ):
+                event = data_model.Event(
+                    start_date=start_date["input"], end_date=end_date["input"]
                 )
-                self.assertEqual(
-                    event.end_date,
-                    end_dates[end_date],
-                )
+                self.assertEqual(event.start_date, start_date["expected"])
+                self.assertEqual(event.end_date, end_date["expected"])
 
         # Valid dates but edge cases:
-        input = {
-            "start_date": None,
-            "end_date": None,
-            "date": "My Birthday",
-        }
-        with self.subTest(msg="valid date with custom date"):
-            event = data_model.Event(**input)
-            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
-            self.assertEqual(event.end_date, None, msg="End date is not correct.")
-            self.assertEqual(event.date, input["date"], msg="Date is not correct.")
+        tests = [
+            {
+                "input": {
+                    "start_date": None,
+                    "end_date": None,
+                    "date": "My Birthday",
+                },
+                "expected": {
+                    "start_date": None,
+                    "end_date": None,
+                    "date": "My Birthday",
+                },
+                "msg": "valid: custom date only",
+            },
+            {
+                "input": {
+                    "start_date": None,
+                    "end_date": None,
+                    "date": "2020-01-01",
+                },
+                "expected": {
+                    "start_date": None,
+                    "end_date": None,
+                    "date": Date.fromisoformat("2020-01-01"),
+                },
+                "msg": "valid: YYYY-MM-DD date only",
+            },
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": "present",
+                    "date": "My Birthday",
+                },
+                "expected": {
+                    "start_date": Date.fromisoformat("2020-01-01"),
+                    "end_date": "present",
+                    "date": None,
+                },
+                "msg": "valid: start_date, end_date, and date",
+            },
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": None,
+                    "date": "My Birthday",
+                },
+                "expected": {
+                    "start_date": None,
+                    "end_date": None,
+                    "date": "My Birthday",
+                },
+                "msg": "valid: start_date and date",
+            },
+            {
+                "input": {
+                    "start_date": None,
+                    "end_date": "2020-01-01",
+                    "date": "My Birthday",
+                },
+                "expected": {
+                    "start_date": None,
+                    "end_date": None,
+                    "date": "My Birthday",
+                },
+                "msg": "valid: end_date and date",
+            },
+        ]
 
-        input = {
-            "start_date": None,
-            "end_date": None,
-            "date": "2020-01-01",
-        }
-        with self.subTest(msg="valid date with ISO date"):
-            event = data_model.Event(**input)
-            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
-            self.assertEqual(event.end_date, None, msg="End date is not correct.")
-            self.assertEqual(
-                event.date,
-                Date.fromisoformat(input["date"]),
-                msg="Date is not correct.",
-            )
-
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "present",
-            "date": "My Birthday",
-        }
-        event = data_model.Event(**input)  # type: ignore
-        with self.subTest(msg="start_date, end_date, and date are all provided"):
-            self.assertEqual(event.date, None, msg="Date is not correct.")
-            self.assertEqual(
-                event.start_date,
-                Date.fromisoformat(input["start_date"]),
-                msg="Start date is not correct.",
-            )
-            self.assertEqual(
-                event.end_date, input["end_date"], msg="End date is not correct."
-            )
-
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": None,
-            "date": "My Birthday",
-        }
-        event = data_model.Event(**input)
-        with self.subTest(msg="start_date and date are provided"):
-            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
-            self.assertEqual(event.end_date, None, msg="End date is not correct.")
-            self.assertEqual(event.date, input["date"], msg="Date is not correct.")
-
-        input = {
-            "start_date": None,
-            "end_date": "2020-01-01",
-            "date": "My Birthday",
-        }
-        event = data_model.Event(**input)
-        with self.subTest(msg="end_date and date are provided"):
-            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
-            self.assertEqual(event.end_date, None, msg="End date is not correct.")
-            self.assertEqual(event.date, input["date"], msg="Date is not correct.")
-
-        input = {
-            "start_date": None,
-            "end_date": None,
-            "date": "2020-01-01",
-        }
-        event = data_model.Event(**input)
-        with self.subTest(msg="only date is provided"):
-            self.assertEqual(event.start_date, None, msg="Start date is not correct.")
-            self.assertEqual(event.end_date, None, msg="End date is not correct.")
-            self.assertEqual(
-                event.date,
-                Date.fromisoformat(input["date"]),
-                msg="Date is not correct.",
-            )
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                event = data_model.Event(**test["input"])
+                self.assertEqual(event.start_date, test["expected"]["start_date"])
+                self.assertEqual(event.end_date, test["expected"]["end_date"])
+                self.assertEqual(event.date, test["expected"]["date"])
 
         # Inputs without dates:
         with self.subTest(msg="no dates"):
@@ -302,307 +338,325 @@ class TestDataModel(unittest.TestCase):
             self.assertEqual(event.date, None, msg="Date is not correct.")
 
         # Invalid dates:
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "2019-01-01",
-        }
-        with self.subTest(msg="start_date > end_date"):
-            with self.assertRaises(ValidationError):
-                data_model.Event(**input)  # type: ignore
-
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "2900-01-01",
-        }
-        with self.subTest(msg="end_date > present"):
-            with self.assertRaises(ValidationError):
-                data_model.Event(**input)  # type: ignore
-
-    def test_data_event_date_and_location_strings_with_timespan(self):
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "2021-01-16",
-            "location": "My Location",
-        }
-        expected = [
-            "My Location",
-            "Jan. 2020 to Jan. 2021",
-            "1 year 1 month",
+        tests = [
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": "2019-01-01",
+                },
+                "expected": ValidationError,
+                "msg": "start_date > end_date",
+            },
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": "2900-01-01",
+                },
+                "expected": ValidationError,
+                "msg": "end_date > present",
+            },
+            {
+                "input": {
+                    "start_date": "invalid date",
+                    "end_date": "invalid date",
+                },
+                "expected": ValidationError,
+                "msg": "invalid start_date and end_date",
+            },
+            {
+                "input": {
+                    "start_date": "invalid date",
+                    "end_date": "2020-01-01",
+                },
+                "expected": ValidationError,
+                "msg": "invalid start_date",
+            },
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": "invalid date",
+                },
+                "expected": ValidationError,
+                "msg": "invalid end_date",
+            },
         ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.date_and_location_strings_with_timespan
-        with self.subTest(msg="start_date, end_date, and location are provided"):
-            self.assertEqual(result, expected)
 
-        input = {
-            "date": "My Birthday",
-            "location": "My Location",
-        }
-        expected = [
-            "My Location",
-            "My Birthday",
-        ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.date_and_location_strings_with_timespan
-        with self.subTest(msg="date and location are provided"):
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                with self.assertRaises(test["expected"]):
+                    data_model.Event(**test["input"])
 
-        input = {
-            "date": "2020-01-01",
-        }
-        expected = [
-            "Jan. 2020",
+    def test_data_event_date_and_location_strings(self):
+        tests = [
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": "2021-01-16",
+                    "location": "My Location",
+                },
+                "expected_with_time_span": [
+                    "My Location",
+                    "Jan. 2020 to Jan. 2021",
+                    "1 year 1 month",
+                ],
+                "expected_without_time_span": [
+                    "My Location",
+                    "Jan. 2020 to Jan. 2021",
+                ],
+                "msg": "start_date, end_date, and location are provided",
+            },
+            {
+                "input": {
+                    "date": "My Birthday",
+                    "location": "My Location",
+                },
+                "expected_with_time_span": [
+                    "My Location",
+                    "My Birthday",
+                ],
+                "expected_without_time_span": [
+                    "My Location",
+                    "My Birthday",
+                ],
+                "msg": "date and location are provided",
+            },
+            {
+                "input": {
+                    "date": "2020-01-01",
+                },
+                "expected_with_time_span": [
+                    "Jan. 2020",
+                ],
+                "expected_without_time_span": [
+                    "Jan. 2020",
+                ],
+                "msg": "date is provided",
+            },
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": "2021-01-16",
+                },
+                "expected_with_time_span": [
+                    "Jan. 2020 to Jan. 2021",
+                    "1 year 1 month",
+                ],
+                "expected_without_time_span": [
+                    "Jan. 2020 to Jan. 2021",
+                ],
+                "msg": "start_date and end_date are provided",
+            },
+            {
+                "input": {
+                    "location": "My Location",
+                },
+                "expected_with_time_span": [
+                    "My Location",
+                ],
+                "expected_without_time_span": [
+                    "My Location",
+                ],
+                "msg": "location is provided",
+            },
         ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.date_and_location_strings_with_timespan
-        with self.subTest(msg="date is provided"):
-            self.assertEqual(result, expected)
 
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "2021-01-16",
-        }
-        expected = [
-            "Jan. 2020 to Jan. 2021",
-            "1 year 1 month",
-        ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.date_and_location_strings_with_timespan
-        with self.subTest(msg="start_date and end_date are provided"):
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                event = data_model.Event(**test["input"])
+                result = event.date_and_location_strings_with_timespan
+                self.assertEqual(result, test["expected_with_time_span"])
 
-        input = {
-            "location": "My Location",
-        }
-        expected = [
-            "My Location",
-        ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.date_and_location_strings_with_timespan
-        with self.subTest(msg="location is provided"):
-            self.assertEqual(result, expected)
-
-    def test_data_event_date_and_location_strings_without_timespan(self):
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "2021-01-16",
-            "location": "My Location",
-        }
-        expected = [
-            "My Location",
-            "Jan. 2020 to Jan. 2021",
-        ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.date_and_location_strings_without_timespan
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
-
-        input = {
-            "date": "My Birthday",
-            "location": "My Location",
-        }
-        expected = [
-            "My Location",
-            "My Birthday",
-        ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.date_and_location_strings_without_timespan
-        with self.subTest(expected=expected):
-            self.assertEqual(result, expected)
+                result = event.date_and_location_strings_without_timespan
+                self.assertEqual(result, test["expected_without_time_span"])
 
     def test_data_event_highlight_strings(self):
-        input = {
-            "highlights": [
-                "My Highlight 1",
-                "My Highlight 2",
-            ],
-        }
-        expected = [
-            "My Highlight 1",
-            "My Highlight 2",
+        tests = [
+            {
+                "highlights": [
+                    "My Highlight 1",
+                    "My Highlight 2",
+                ],
+                "expected": [
+                    "My Highlight 1",
+                    "My Highlight 2",
+                ],
+                "msg": "highlights are provided",
+            },
+            {
+                "highlights": [],
+                "expected": [],
+                "msg": "highlights are not provided",
+            },
         ]
-        event = data_model.Event(**input)  # type: ignore
-        result = event.highlight_strings
-        with self.subTest(msg="highlights are provided"):
-            self.assertEqual(result, expected)
 
-        input = {}
-        expected = []
-        event = data_model.Event(**input)
-        result = event.highlight_strings
-        with self.subTest(msg="no highlights"):
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                event = data_model.Event(highlights=test["highlights"])
+                result = event.highlight_strings
+                self.assertEqual(result, test["expected"])
 
     def test_data_event_markdown_url(self):
-        # Github link:
-        input = {"url": "https://github.com/sinaatalay"}
-        expected = "[view on GitHub](https://github.com/sinaatalay)"
-        event = data_model.Event(**input)  # type: ignore
-        result = event.markdown_url
-        with self.subTest(msg="Github link"):
-            self.assertEqual(result, expected)
+        tests = [
+            {
+                "url": "https://www.linkedin.com/in/username",
+                "expected": "[view on LinkedIn](https://www.linkedin.com/in/username)",
+                "msg": "LinkedIn link",
+            },
+            {
+                "url": "https://www.github.com/sinaatalay",
+                "expected": "[view on GitHub](https://www.github.com/sinaatalay)",
+                "msg": "Github link",
+            },
+            {
+                "url": "https://www.instagram.com/username",
+                "expected": "[view on Instagram](https://www.instagram.com/username)",
+                "msg": "Instagram link",
+            },
+            {
+                "url": "https://www.youtube.com/",
+                "expected": "[view on YouTube](https://www.youtube.com/)",
+                "msg": "Youtube link",
+            },
+            {
+                "url": "https://www.google.com/",
+                "expected": "[view on my website](https://www.google.com/)",
+                "msg": "Other links",
+            },
+        ]
 
-        # LinkedIn link:
-        input = {"url": "https://www.linkedin.com/"}
-        expected = "[view on LinkedIn](https://www.linkedin.com/)"
-        event = data_model.Event(**input)  # type: ignore
-        result = event.markdown_url
-        with self.subTest(msg="LinkedIn link"):
-            self.assertEqual(result, expected)
-
-        # Instagram link:
-        input = {"url": "https://www.instagram.com/"}
-        expected = "[view on Instagram](https://www.instagram.com/)"
-        event = data_model.Event(**input)  # type: ignore
-        result = event.markdown_url
-        with self.subTest(msg="Instagram link"):
-            self.assertEqual(result, expected)
-
-        # Youtube link:
-        input = {"url": "https://www.youtube.com/"}
-        expected = "[view on YouTube](https://www.youtube.com/)"
-        event = data_model.Event(**input)  # type: ignore
-        result = event.markdown_url
-        with self.subTest(msg="Youtube link"):
-            self.assertEqual(result, expected)
-
-        # Other links:
-        input = {"url": "https://www.google.com/"}
-        expected = "[view on my website](https://www.google.com/)"
-        event = data_model.Event(**input)  # type: ignore
-        result = event.markdown_url
-        with self.subTest(msg="Other links"):
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                event = data_model.Event(url=test["url"])
+                result = event.markdown_url
+                self.assertEqual(result, test["expected"])
 
     def test_data_event_month_and_year(self):
-        input = {
-            "start_date": "2020-01-01",
-            "end_date": "2021-01-16",
-        }
-        expected = None
-        event = data_model.Event(**input)  # type: ignore
-        result = event.month_and_year
-        with self.subTest(msg="start_date and end_date are provided"):
-            self.assertEqual(result, expected)
+        tests = [
+            {
+                "input": {
+                    "start_date": "2020-01-01",
+                    "end_date": "2021-01-16",
+                },
+                "expected": None,
+                "msg": "start_date and end_date are provided",
+            },
+            {
+                "input": {
+                    "date": "My Birthday",
+                },
+                "expected": "My Birthday",
+                "msg": "custom date is provided",
+            },
+            {
+                "input": {
+                    "date": "2020-01-01",
+                },
+                "expected": "Jan. 2020",
+                "msg": "date is provided",
+            },
+        ]
 
-        input = {
-            "date": "My Birthday",
-        }
-        expected = "My Birthday"
-        event = data_model.Event(**input)  # type: ignore
-        result = event.month_and_year
-        with self.subTest(msg="custom date is provided"):
-            self.assertEqual(result, expected)
-
-        input = {
-            "date": "2020-01-01",
-        }
-        expected = "Jan. 2020"
-        event = data_model.Event(**input)  # type: ignore
-        result = event.month_and_year
-        with self.subTest(msg="date is provided"):
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                event = data_model.Event(**test["input"])
+                result = event.month_and_year
+                self.assertEqual(result, test["expected"])
 
     def test_data_education_entry_highlight_strings(self):
-        input = {
-            "institution": "My Institution",
-            "area": "My Area",
-            "gpa": 3.5,
-            "highlights": [
-                "My Highlight 1",
-                "My Highlight 2",
-            ],
-        }
-        expected = [
-            "GPA: 3.5",
-            "My Highlight 1",
-            "My Highlight 2",
+        tests = [
+            {
+                "input": {
+                    "institution": "My Institution",
+                    "area": "My Area",
+                    "gpa": 3.5,
+                    "highlights": [
+                        "My Highlight 1",
+                        "My Highlight 2",
+                    ],
+                },
+                "expected": [
+                    "GPA: 3.5",
+                    "My Highlight 1",
+                    "My Highlight 2",
+                ],
+                "msg": "gpa and highlights are provided",
+            },
+            {
+                "input": {
+                    "institution": "My Institution",
+                    "area": "My Area",
+                    "gpa": None,
+                    "highlights": [
+                        "My Highlight 1",
+                        "My Highlight 2",
+                    ],
+                },
+                "expected": [
+                    "My Highlight 1",
+                    "My Highlight 2",
+                ],
+                "msg": "gpa is not provided, but highlights are",
+            },
+            {
+                "input": {
+                    "institution": "My Institution",
+                    "area": "My Area",
+                    "gpa": 3.5,
+                    "highlights": [],
+                },
+                "expected": [
+                    "GPA: 3.5",
+                ],
+                "msg": "gpa is provided, but highlights are not",
+            },
+            {
+                "input": {
+                    "institution": "My Institution",
+                    "area": "My Area",
+                    "gpa": None,
+                    "highlights": [],
+                },
+                "expected": [],
+                "msg": "neither gpa nor highlights are provided",
+            },
+            {
+                "input": {
+                    "institution": "My Institution",
+                    "area": "My Area",
+                    "gpa": 3.5,
+                    "transcript_url": "https://www.example.com/",
+                    "highlights": None,
+                },
+                "expected": [
+                    "GPA: 3.5 ([Transcript](https://www.example.com/))",
+                ],
+                "msg": "gpa and transcript_url are provided, but highlights are not",
+            },
+            {
+                "input": {
+                    "institution": "My Institution",
+                    "area": "My Area",
+                    "gpa": "3.5",
+                    "transcript_url": "https://www.example.com/",
+                    "highlights": [
+                        "My Highlight 1",
+                        "My Highlight 2",
+                    ],
+                },
+                "expected": [
+                    "GPA: 3.5 ([Transcript](https://www.example.com/))",
+                    "My Highlight 1",
+                    "My Highlight 2",
+                ],
+                "msg": "gpa, transcript_url, and highlights are provided",
+            },
         ]
-        education = data_model.EducationEntry(**input)
-        result = education.highlight_strings
-        with self.subTest(msg="gpa and highlights are provided"):
-            self.assertEqual(result, expected)
 
-        input = {
-            "institution": "My Institution",
-            "area": "My Area",
-            "gpa": None,
-            "highlights": [
-                "My Highlight 1",
-                "My Highlight 2",
-            ],
-        }
-        expected = [
-            "My Highlight 1",
-            "My Highlight 2",
-        ]
-        education = data_model.EducationEntry(**input)
-        result = education.highlight_strings
-        with self.subTest(msg="gpa is not provided, but highlights are"):
-            self.assertEqual(result, expected)
-
-        input = {
-            "institution": "My Institution",
-            "area": "My Area",
-            "gpa": 3.5,
-            "highlights": [],
-        }
-        expected = [
-            "GPA: 3.5",
-        ]
-        education = data_model.EducationEntry(**input)
-        result = education.highlight_strings
-        with self.subTest(msg="gpa is provided, but highlights are not"):
-            self.assertEqual(result, expected)
-
-        input = {
-            "institution": "My Institution",
-            "area": "My Area",
-            "gpa": None,
-            "highlights": [],
-        }
-        expected = []
-        education = data_model.EducationEntry(**input)
-        result = education.highlight_strings
-        with self.subTest(msg="neither gpa nor highlights are provided"):
-            self.assertEqual(result, expected)
-
-        input = {
-            "institution": "My Institution",
-            "area": "My Area",
-            "gpa": 3.5,
-            "transcript_url": "https://www.example.com/",
-            "highlights": None,
-        }
-        expected = [
-            "GPA: 3.5 ([Transcript](https://www.example.com/))",
-        ]
-        education = data_model.EducationEntry(**input)
-        result = education.highlight_strings
-        with self.subTest(
-            msg="gpa and transcript_url are provided, but highlights are not"
-        ):
-            self.assertEqual(result, expected)
-
-        input = {
-            "institution": "My Institution",
-            "area": "My Area",
-            "gpa": "3.5",
-            "transcript_url": "https://www.example.com/",
-            "highlights": [
-                "My Highlight 1",
-                "My Highlight 2",
-            ],
-        }
-        expected = [
-            "GPA: 3.5 ([Transcript](https://www.example.com/))",
-            "My Highlight 1",
-            "My Highlight 2",
-        ]
-        education = data_model.EducationEntry(**input)
-        result = education.highlight_strings
-        with self.subTest(msg="gpa, transcript_url, and highlights are provided"):
-            self.assertEqual(result, expected)
+        for test in tests:
+            with self.subTest(msg=test["msg"]):
+                education = data_model.EducationEntry(**test["input"])
+                result = education.highlight_strings
+                self.assertEqual(result, test["expected"])
 
     def test_data_publication_entry_check_doi(self):
         # Invalid DOI:
@@ -646,33 +700,66 @@ class TestDataModel(unittest.TestCase):
         expected = "https://doi.org/10.1103/PhysRevB.76.054309"
         publication = data_model.PublicationEntry(**input)
         result = publication.doi_url
-        self.assertEqual(result, expected, msg="DOI URL is not correct.")
+        self.assertEqual(result, expected)
 
     def test_data_connection_url(self):
-        # Github link:
-        inputs = [
-            {"name": "LinkedIn", "value": "username"},
-            {"name": "GitHub", "value": "sinaatalay"},
-            {"name": "Instagram", "value": "username"},
-            {"name": "phone", "value": "+909999999999"},
-            {"name": "email", "value": "example@example.com"},
-            {"name": "website", "value": "https://www.example.com/"},
-            {"name": "location", "value": "My Location"},
+        tests = [
+            {
+                "input": {
+                    "name": "LinkedIn",
+                    "value": "username",
+                },
+                "expected": "https://www.linkedin.com/in/username",
+            },
+            {
+                "input": {
+                    "name": "GitHub",
+                    "value": "sinaatalay",
+                },
+                "expected": "https://www.github.com/sinaatalay",
+            },
+            {
+                "input": {
+                    "name": "Instagram",
+                    "value": "username",
+                },
+                "expected": "https://www.instagram.com/username",
+            },
+            {
+                "input": {
+                    "name": "phone",
+                    "value": "+909999999999",
+                },
+                "expected": "+909999999999",
+            },
+            {
+                "input": {
+                    "name": "email",
+                    "value": "example@example.com",
+                },
+                "expected": "mailto:example@example.com",
+            },
+            {
+                "input": {
+                    "name": "website",
+                    "value": "https://www.example.com/",
+                },
+                "expected": "https://www.example.com/",
+            },
+            {
+                "input": {
+                    "name": "location",
+                    "value": "My Location",
+                },
+                "expected": None,
+            },
         ]
-        expected_results = [
-            "https://www.linkedin.com/in/username",
-            "https://www.github.com/sinaatalay",
-            "https://www.instagram.com/username",
-            "+909999999999",
-            "mailto:example@example.com",
-            "https://www.example.com/",
-            None,
-        ]
-        for input, expected in zip(inputs, expected_results):
-            with self.subTest(type=input["name"]):
-                connection = data_model.Connection(**input)  # type: ignore
+
+        for test in tests:
+            with self.subTest(msg=test["input"]["name"]):
+                connection = data_model.Connection(**test["input"])
                 result = connection.url
-                self.assertEqual(result, expected)
+                self.assertEqual(result, test["expected"])
 
     def test_data_curriculum_vitae_connections(self):
         input = {
