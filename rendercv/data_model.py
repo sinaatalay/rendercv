@@ -1022,7 +1022,7 @@ class PublicationEntry(Event):
 class SocialNetwork(BaseModel):
     """This class stores a social network information.
 
-    Currently, only LinkedIn, Github, and Instagram are supported.
+    Currently, only LinkedIn, Github, Mastodon, and Instagram are supported.
     """
 
     network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid", "Mastodon"] = Field(
