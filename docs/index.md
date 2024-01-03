@@ -62,24 +62,49 @@ cv:
 - Then, it creates a $\LaTeX$ file.
 - Finally, it renders the $\LaTeX$ file to generate the PDF, and you don't need $\LaTeX$ installed on your PC because RenderCV comes with [TinyTeX](https://yihui.org/tinytex/).
 
-![RenderCV example](images/example.png)
+![RenderCV example](docs/images/example.png)
 
 ## Quick Start Guide
 
-1.  Install [Python](https://www.python.org/downloads/) (3.10 or newer).
-2.  Run the command below to install RenderCV.
-    ```bash
-    pip install rendercv
+1. Install [`Python3`](https://www.python.org/downloads/) (`3.10` or newer).
+1. Install [`TinyTex`](https://yihui.org/tinytex/)
+    `TinyTex` offers [four different bundles](https://github.com/rstudio/tinytex-releases#releases). The `TinyTex` (without a trailing number) is the bundle that has all the required dependencies, however, it is the second largest by size.
+    1. macOS/Linux:
+        ```shell
+        curl -sL "https://yihui.org/tinytex/install-bin-unix.sh" | TINYTEX_INSTALLER=TinyTex sh
+        ```
+    1. Windows
+        Download <https://yihui.org/tinytex/install-bin-windows.bat>. Open `Powershell`, navigate (`cwd`) to the file then run:
+        ```shell
+        TINYTEX_INSTALLER=TinyTex install-bin-windows.bat
+        ```
+
+    Alternatively, the smaller bundle `TinyTex-1` can be used if the following additional dependencies are installed:
+
+        ```shell
+        TINYTEX_INSTALLER=TinyTex-1 ...
+        tlmgr install titlesec enumitem fontawesome5 eso-pic bookmark lastpage
+        ```
+
+1. Run the command below to install RenderCV.
+    ```shell
+    python3 -m pip install rendercv
     ```
-3.  Run the command below to generate a sample input file (`Full_Name_CV.yaml`). The file will be generated in the current working directory.
-    ```bash
+1. Run the command below to generate a sample input file (`Full_Name_CV.yaml`). The file will be generated in the current working directory.
+    ```shell
     rendercv new "Full Name"
     ```
-4.  Edit the contents of the `Full_Name_CV.yaml` file.
-5.  Run the command below to generate your $\LaTeX$ CV.
+1. Edit the contents of the `Full_Name_CV.yaml` file.
+1. Run the command below to generate your $\LaTeX$ CV.
     ```bash
     rendercv render Full_Name_CV.yaml
     ```
+
+## Detailed User Guide and Documentation
+
+The code is documented and includes docstrings. For more information, see the following:
+- [User guide](https://sinaatalay.github.io/rendercv/user_guide)
+- [API reference](https://sinaatalay.github.io/rendercv/api_reference/)
 
 ## Contributing
 
