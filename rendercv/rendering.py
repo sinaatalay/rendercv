@@ -11,7 +11,7 @@ from typing import Optional
 import sys
 from importlib.resources import files
 
-from .data_model import RenderCVDataModel, CurriculumVitae, Design, ClassicThemeOptions
+from .data_model import RenderCVDataModel, Design, ClassicThemeOptions, RenderCoverLetterDataModel
 
 from jinja2 import Environment, PackageLoader
 
@@ -284,7 +284,7 @@ def get_path_to_font_directory(font_name: str) -> str:
     return str(files("rendercv").joinpath("templates", "fonts", font_name))
 
 
-def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) -> str:
+def render_template(data: RenderCVDataModel | RenderCoverLetterDataModel, output_path: Optional[str] = None) -> str:
     """Render the template using the given data.
 
     Args:
@@ -299,7 +299,7 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     # create a Jinja2 environment:
     theme = data.design.theme
     environment = Environment(
-        loader=PackageLoader("rendercv", os.path.join("templates", theme)),
+        loader=PackageLoader("rendercv", os.path.join("templates", theme, data.template_path())),
         trim_blocks=True,
         lstrip_blocks=True,
     )
@@ -329,11 +329,10 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
     # load the template:
     template = environment.get_template(f"{theme}.tex.j2")
 
-    cv: CurriculumVitae = data.cv
     design: Design = data.design
     theme_options: ClassicThemeOptions = data.design.options
     output_latex_file = template.render(
-        cv=cv,
+        data=data.payload(),
         design=design,
         theme_options=theme_options,
         today=get_today(),
@@ -344,7 +343,7 @@ def render_template(data: RenderCVDataModel, output_path: Optional[str] = None) 
         output_path = os.getcwd()
 
     output_folder = os.path.join(output_path, "output")
-    file_name = data.cv.name.replace(" ", "_") + "_CV.tex"
+    file_name = data.payload().name.replace(" ", "_") + f"_{data.file_suffix()}.tex"
     output_file_path = os.path.join(output_folder, file_name)
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
     with open(output_file_path, "w") as file:
