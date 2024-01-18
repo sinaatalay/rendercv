@@ -138,7 +138,7 @@ def render(
     input_file: Annotated[
         str,
         typer.Argument(help="Name of the YAML input file"),
-    ]
+    ],
 ):
     """Generate a LaTeX CV from a YAML input file.
 
