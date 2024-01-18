@@ -2,6 +2,8 @@
 
 To be continued...
 """
+__version__ = "1.0"
+
 import logging
 import os
 import sys
