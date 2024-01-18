@@ -1,10 +1,10 @@
 """
-finally document the whole code!
+in the end: document the whole code!
 """
 
 from datetime import date as Date
 from typing import Literal
-from typing_extensions import Annotated, Optional, Union
+from typing_extensions import Annotated, Optional
 import logging
 from functools import cached_property
 import urllib.request
@@ -13,7 +13,6 @@ import json
 
 from pydantic import (
     BaseModel,
-    RootModel,
     HttpUrl,
     Field,
     field_validator,
@@ -32,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 # To understand how to create custom data types, see:
-# https://docs.pydantic.dev/latest/usage/types/custom/
+# https://docs.pydantic.dev/latest/usage/types/custom/ # use links with pydantic version tags!
 
 
 LaTeXDimension = Annotated[
@@ -41,7 +40,6 @@ LaTeXDimension = Annotated[
         pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
     ),
 ]
-
 LaTeXString = Annotated[str, AfterValidator(parser.escape_latex_characters)]
 PastDate = Annotated[
     str,
@@ -49,8 +47,10 @@ PastDate = Annotated[
     AfterValidator(parser.parse_date_string),
 ]
 
+PastDateAdapter = TypeAdapter(PastDate)
 
-class Event(BaseModel):
+
+class EntryBase(BaseModel):
     """This class is the parent class for classes like `#!python EducationEntry`,
     `#!python ExperienceEntry`, `#!python NormalEntry`, and `#!python OneLineEntry`.
 
@@ -114,6 +114,7 @@ class Event(BaseModel):
                 # If this runs, it means the date is an ISO format string, and it can be
                 # parsed
                 new_date = parser.parse_date_string(date)
+                new_date = PastDateAdapter.validate_python(new_date)
             except ValueError:
                 # Then it means it is a custom string like "Fall 2023"
                 new_date = date
@@ -289,7 +290,7 @@ class Event(BaseModel):
         return month_and_year
 
 
-class OneLineEntry(Event):
+class OneLineEntry(BaseModel):
     """This class stores [OneLineEntry](../user_guide.md#onelineentry) information."""
 
     name: LaTeXString = Field(
@@ -302,7 +303,7 @@ class OneLineEntry(Event):
     )
 
 
-class NormalEntry(Event):
+class NormalEntry(EntryBase):
     """This class stores [NormalEntry](../user_guide.md#normalentry) information."""
 
     name: LaTeXString = Field(
@@ -311,7 +312,7 @@ class NormalEntry(Event):
     )
 
 
-class ExperienceEntry(Event):
+class ExperienceEntry(EntryBase):
     """This class stores [ExperienceEntry](../user_guide.md#experienceentry)
     information.
     """
@@ -326,7 +327,7 @@ class ExperienceEntry(Event):
     )
 
 
-class EducationEntry(Event):
+class EducationEntry(EntryBase):
     """This class stores [EducationEntry](../user_guide.md#educationentry) information."""
 
     institution: LaTeXString = Field(
@@ -346,7 +347,7 @@ class EducationEntry(Event):
     )
 
 
-class PublicationEntry(Event):
+class PublicationEntry(BaseModel):
     """This class stores [PublicationEntry](../user_guide.md#publicationentry)
     information.
     """
@@ -395,26 +396,90 @@ class PublicationEntry(Event):
         return f"https://doi.org/{self.doi}"
 
 
-default_entry_types = {
-    "Education": EducationEntry,
-    "Experience": ExperienceEntry,
-    "Work Experience": ExperienceEntry,
-    "Research Experience": ExperienceEntry,
-    "Publications": PublicationEntry,
-    "Papers": PublicationEntry,
-    "Projects": NormalEntry,
-    "Academic Projects": NormalEntry,
-    "University Projects": NormalEntry,
-    "Personal Projects": NormalEntry,
-    "Certificates": NormalEntry,
-    "Extracurricular Activities": ExperienceEntry,
-    "Test Scores": OneLineEntry,
-    "Skills": OneLineEntry,
-    "Programming Skills": OneLineEntry,
-    "Other Skills": OneLineEntry,
-    "Awards": OneLineEntry,
-    "Interests": OneLineEntry,
-}
+class SectionBase(BaseModel):
+    """This class stores a section information.
+
+    It is the parent class of all the section classes like
+    `#!python SectionWithEducationEntries`, `#!python SectionWithExperienceEntries`,
+    `#!python SectionWithNormalEntries`, `#!python SectionWithOneLineEntries`, and
+    `#!python SectionWithPublicationEntries`.
+    """
+
+    title: Optional[LaTeXString] = Field(default=None)
+    link_text: Optional[LaTeXString] = Field(
+        default=None,
+        title="Link Text",
+        description=(
+            "If the section has a link, then what should be the text of the link? If"
+            " this field is not provided, then the link text will be generated"
+            " automatically based on the URL."
+        ),
+        examples=["view on GitHub", "view on LinkedIn"],
+    )
+
+
+entry_type_field_of_section_model = Field(
+    title="Entry Type",
+    description="The type of the entries in the section.",
+)
+entries_field_of_section_model = Field(
+    title="Entries",
+    description="The entries of the section. The format depends on the entry type.",
+)
+
+
+class SectionWithEducationEntries(SectionBase):
+    """This class stores a section with
+    [EducationEntry](../user_guide.md#educationentry)s.
+    """
+
+    entry_type: Literal["EducationEntry"] = entry_type_field_of_section_model
+    entries: list[EducationEntry] = entries_field_of_section_model
+
+
+class SectionWithExperienceEntries(SectionBase):
+    """This class stores a section with
+    [ExperienceEntry](../user_guide.md#experienceentry)s.
+    """
+
+    entry_type: Literal["ExperienceEntry"] = entry_type_field_of_section_model
+    entries: list[ExperienceEntry] = entries_field_of_section_model
+
+
+class SectionWithNormalEntries(SectionBase):
+    """This class stores a section with
+    [NormalEntry](../user_guide.md#normalentry)s.
+    """
+
+    entry_type: Literal["NormalEntry"] = entry_type_field_of_section_model
+    entries: list[NormalEntry] = entries_field_of_section_model
+
+
+class SectionWithOneLineEntries(SectionBase):
+    """This class stores a section with
+    [OneLineEntry](../user_guide.md#onelineentry)s.
+    """
+
+    entry_type: Literal["OneLineEntry"] = entry_type_field_of_section_model
+    entries: list[OneLineEntry] = entries_field_of_section_model
+
+
+class SectionWithPublicationEntries(SectionBase):
+    """This class stores a section with
+    [PublicationEntry](../user_guide.md#publicationentry)s.
+    """
+
+    entry_type: Literal["PublicationEntry"] = entry_type_field_of_section_model
+    entries: list[PublicationEntry] = entries_field_of_section_model
+
+
+class SectionWithTextEntries(SectionBase):
+    """This class stores a section with
+    [TextEntry](../user_guide.md#textentry)s.
+    """
+
+    entry_type: Literal["TextEntry"] = entry_type_field_of_section_model
+    entries: list[LaTeXString] = entries_field_of_section_model
 
 
 class SocialNetwork(BaseModel):
@@ -478,107 +543,50 @@ class Connection(BaseModel):
         return url
 
 
-class SectionBase(BaseModel):
-    """This class stores a section information.
-
-    It is the parent class of all the section classes like
-    `#!python SectionWithEducationEntries`, `#!python SectionWithExperienceEntries`,
-    `#!python SectionWithNormalEntries`, `#!python SectionWithOneLineEntries`, and
-    `#!python SectionWithPublicationEntries`.
-    """
-
-    title: Optional[LaTeXString]
-    link_text: Optional[LaTeXString] = Field(
-        default=None,
-        title="Link Text",
-        description=(
-            "If the section has a link, then what should be the text of the link? If"
-            " this field is not provided, then the link text will be generated"
-            " automatically based on the URL."
-        ),
-        examples=["view on GitHub", "view on LinkedIn"],
-    )
-
-
-entry_type_field = Field(
-    title="Entry Type",
-    description="The type of the entries in the section.",
-)
-entries_field = Field(
-    title="Entries",
-    description="The entries of the section. The format depends on the entry type.",
-)
-
-
-class SectionWithEducationEntries(SectionBase):
-    """This class stores a section with
-    [EducationEntry](../user_guide.md#educationentry)s.
-    """
-
-    entry_type: Literal["EducationEntry"] = entry_type_field
-    entries: list[EducationEntry] = entries_field
-
-
-class SectionWithExperienceEntries(SectionBase):
-    """This class stores a section with
-    [ExperienceEntry](../user_guide.md#experienceentry)s.
-    """
-
-    entry_type: Literal["ExperienceEntry"] = entry_type_field
-    entries: list[ExperienceEntry] = entries_field
-
-
-class SectionWithNormalEntries(SectionBase):
-    """This class stores a section with
-    [NormalEntry](../user_guide.md#normalentry)s.
-    """
-
-    entry_type: Literal["NormalEntry"] = entry_type_field
-    entries: list[NormalEntry] = entries_field
-
-
-class SectionWithOneLineEntries(SectionBase):
-    """This class stores a section with
-    [OneLineEntry](../user_guide.md#onelineentry)s.
-    """
-
-    entry_type: Literal["OneLineEntry"] = entry_type_field
-    entries: list[OneLineEntry] = entries_field
-
-
-class SectionWithPublicationEntries(SectionBase):
-    """This class stores a section with
-    [PublicationEntry](../user_guide.md#publicationentry)s.
-    """
-
-    entry_type: Literal["PublicationEntry"] = entry_type_field
-    entries: list[PublicationEntry] = entries_field
-
-
-class SectionWithTextEntries(SectionBase):
-    """This class stores a section with
-    [TextEntry](../user_guide.md#textentry)s.
-    """
-
-    entry_type: Literal["TextEntry"] = entry_type_field
-    entries: list[LaTeXString] = entries_field
-
-
-section_types = (
-    SectionWithEducationEntries,
-    SectionWithExperienceEntries,
-    SectionWithNormalEntries,
-    SectionWithOneLineEntries,
-    SectionWithPublicationEntries,
-    SectionWithTextEntries,
-)
-
+# Section type
 Section = Annotated[
-    Union[section_types],
+    SectionWithEducationEntries
+    | SectionWithExperienceEntries
+    | SectionWithNormalEntries
+    | SectionWithOneLineEntries
+    | SectionWithPublicationEntries
+    | SectionWithTextEntries,
     Field(
         discriminator="entry_type",
     ),
 ]
+
+
+# Default entry types for a given section title
+default_entry_types_for_a_given_title: dict[
+    str,
+    tuple[type[EducationEntry], type[SectionWithEducationEntries]]
+    | tuple[type[ExperienceEntry], type[SectionWithExperienceEntries]]
+    | tuple[type[PublicationEntry], type[SectionWithPublicationEntries]]
+    | tuple[type[NormalEntry], type[SectionWithNormalEntries]]
+    | tuple[type[OneLineEntry], type[SectionWithOneLineEntries]]
+    | tuple[type[LaTeXString], type[SectionWithTextEntries]],
+] = {
+    "Education": (EducationEntry, SectionWithEducationEntries),
+    "Experience": (ExperienceEntry, SectionWithExperienceEntries),
+    "Work Experience": (ExperienceEntry, SectionWithExperienceEntries),
+    "Research Experience": (ExperienceEntry, SectionWithExperienceEntries),
+    "Publications": (PublicationEntry, SectionWithPublicationEntries),
+    "Papers": (PublicationEntry, SectionWithPublicationEntries),
+    "Projects": (NormalEntry, SectionWithNormalEntries),
+    "Academic Projects": (NormalEntry, SectionWithNormalEntries),
+    "University Projects": (NormalEntry, SectionWithNormalEntries),
+    "Personal Projects": (NormalEntry, SectionWithNormalEntries),
+    "Certificates": (NormalEntry, SectionWithNormalEntries),
+    "Extracurricular Activities": (ExperienceEntry, SectionWithExperienceEntries),
+    "Test Scores": (OneLineEntry, SectionWithOneLineEntries),
+    "Skills": (OneLineEntry, SectionWithOneLineEntries),
+    "Programming Skills": (OneLineEntry, SectionWithOneLineEntries),
+    "Other Skills": (OneLineEntry, SectionWithOneLineEntries),
+    "Awards": (OneLineEntry, SectionWithOneLineEntries),
+    "Interests": (OneLineEntry, SectionWithOneLineEntries),
+    "Summary": (LaTeXString, SectionWithTextEntries),
+}
 
 
 class CurriculumVitae(BaseModel):
@@ -619,43 +627,84 @@ class CurriculumVitae(BaseModel):
             "The order of sections in the CV. The section title should be used."
         ),
     )
-    sections_input: dict[str, Section] = Field(
+    sections_input: dict[
+        str,
+        Section
+        | list[EducationEntry]
+        | list[NormalEntry]
+        | list[OneLineEntry]
+        | list[PublicationEntry]
+        | list[ExperienceEntry]
+        | list[LaTeXString],
+    ] = Field(
         default=None,
         title="Sections",
         description="The sections of the CV.",
         alias="sections",
     )
 
-    @field_validator("sections_input")
+    @field_validator("sections_input", mode="before")
     @classmethod
-    def parse_and_check_sections(
-        cls, sections_input: dict[str, Section]
-    ) -> dict[str, Section]:
-        """Check if the sections are provided."""
+    def parse_and_validate_sections(
+        cls,
+        sections_input: dict[
+            str,
+            Section
+            | list[EducationEntry]
+            | list[NormalEntry]
+            | list[OneLineEntry]
+            | list[PublicationEntry]
+            | list[ExperienceEntry]
+            | list[LaTeXString],
+        ],
+    ) -> dict[
+        str,
+        Section
+        | list[EducationEntry]
+        | list[NormalEntry]
+        | list[OneLineEntry]
+        | list[PublicationEntry]
+        | list[ExperienceEntry]
+        | list[LaTeXString],
+    ]:
+        """"""
 
         if sections_input is not None:
             # check if the section names are unique, get the keys of the sections:
             keys = list(sections_input.keys())
             unique_keys = list(set(keys))
-            duplicate_keys = list(set([key for key in keys if keys.count(key) > 1]))
             if len(keys) != len(unique_keys):
+                duplicate_keys = list(set([key for key in keys if keys.count(key) > 1]))
                 raise ValueError(
                     "The section names should be unique. The following section names"
                     f" are duplicated: {duplicate_keys}"
                 )
 
-            for title, section in sections_input.items():
-                parsed_title = title.replace("_", " ").title()
-                if isinstance(section, section_types):
-                    section.title = parsed_title
-                elif isinstance(section, list):
-                    if parsed_title not in default_entry_types:
+            for title, section_or_entries in sections_input.items():
+                if isinstance(section_or_entries, list):
+                    # Then it means the user provided entries directly. Then it means
+                    # the section title should have a default entry type.
+                    if title in default_entry_types_for_a_given_title:
+                        (
+                            entry_type,
+                            section_type,
+                        ) = default_entry_types_for_a_given_title[title]
+
+                        # try if the entries are of the correct type by casting them
+                        # to the entry type one by one
+                        for entry in section_or_entries:
+                            if not isinstance(entry, entry_type):
+                                raise TypeError(
+                                    f'"{entry}" is not an instance of'
+                                    f' "{entry_type.__name__}". Please check'
+                                    " the entries."
+                                )
+
+                    else:
                         raise ValueError(
-                            f'"{parsed_title}" is a custom section and it doesn\'t have'
+                            f'"{title}" is a custom section and it doesn\'t have'
                             " a default entry type. Please provide the entry type."
                         )
-                else:
-                    raise TypeError(f'"{section}" is not a valid section.')
 
         return sections_input
 
@@ -669,14 +718,31 @@ class CurriculumVitae(BaseModel):
         """
         sections = []
         if self.sections_input is not None:
-            for title, section in self.sections_input.items():
-                if isinstance(section, section_types):
-                    sections.append(section)
-                elif isinstance(section, list):
-                    if title in default_entry_types:
-                        entry_type = default_entry_types[title]
-                        section = entry_type(
-                            title=title, entry_type=entry_type.__name__, entries=section
+            for title, section_or_entries in self.sections_input.items():
+                if isinstance(
+                    section_or_entries,
+                    (
+                        SectionWithEducationEntries,
+                        SectionWithExperienceEntries,
+                        SectionWithNormalEntries,
+                        SectionWithOneLineEntries,
+                        SectionWithPublicationEntries,
+                        SectionWithTextEntries,
+                    ),
+                ):
+                    if section_or_entries.title is None:
+                        section_or_entries.title = title
+                    sections.append(section_or_entries)
+                elif isinstance(section_or_entries, list):
+                    if title in default_entry_types_for_a_given_title:
+                        (
+                            entry_type,
+                            section_type,
+                        ) = default_entry_types_for_a_given_title[title]
+                        section = section_type(
+                            title=title,
+                            entry_type=entry_type.__name__,  # type: ignore
+                            entries=section_or_entries,  # type: ignore
                         )
                         sections.append(section)
                     else:
