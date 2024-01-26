@@ -1022,10 +1022,10 @@ class PublicationEntry(Event):
 class SocialNetwork(BaseModel):
     """This class stores a social network information.
 
-    Currently, only LinkedIn, Github, and Instagram are supported.
+    Currently, only LinkedIn, Github, Mastodon, and Instagram are supported.
     """
 
-    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid"] = Field(
+    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid", "Mastodon"] = Field(
         title="Social Network",
         description="The social network name.",
     )
@@ -1048,12 +1048,98 @@ class Connection(BaseModel):
         "GitHub",
         "Instagram",
         "Orcid",
+        "Mastodon",
         "phone",
         "email",
         "website",
         "location",
     ]
     value: str
+
+    @staticmethod
+    def is_valid_hostname(hostname: str) -> bool:
+        """Is hostname a valid hostname by RFCs 952 and 1123"""
+
+        # slightly modified from
+        # https://stackoverflow.com/a/33214423/1304076
+        if hostname[-1] == ".":
+            # strip exactly one dot from the right, if present
+            hostname = hostname[:-1]
+        if len(hostname) > 253:
+            return False
+
+        labels = hostname.split(".")
+
+        # the last label must be not all-numeric
+        if re.match(r"[0-9]+$", labels[-1]):
+            return False
+
+        # labels cannot begin with a hyphen
+        # labels must have at least character
+        # labels may not have more than 63 characters
+        allowed = re.compile(r"(?!-)[a-z0-9-]{1,63}(?<!-)$", re.IGNORECASE)
+        return all(allowed.match(label) for label in labels)
+
+    @staticmethod
+    def MastodonUname2Url(address: str) -> Optional[HttpUrl]:
+        """returns profile url from a mastodon user address.
+
+        Args:
+            address (str): A Mastodon user address. E.g., "user@social.example"
+
+        Returns:
+            A pydantic HttpUrl object with the https URL for the user profile
+
+        Example:
+            ```
+            url = MastodonUname2Url("user@social.example")
+            assert(url == HttpUrl(http://social.example/@user))
+            ```
+
+        Exceptions:
+            ValueError if the address is malformed.
+            Note that well-formed addresses should never yield
+            syntactically invalid URLs.
+        """
+
+        # The closest thing to a formal spec of Mastodon usernames
+        # where these regular expressions from a (reference?)
+        # implementation
+        #
+        # https://github.com/mastodon/mastodon/blob/f1657e6d6275384c199956e8872115fdcec600b0/app/models/account.rb#L68
+        #
+        # USERNAME_RE   = /[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?/i
+        # MENTION_RE    = %r{(?<![=/[:word:]])@((#{USERNAME_RE})(?:@[[:word:].-]+[[:word:]]+)?)}i
+        #
+        # `[[:word:]]` in Ruby includes lots of things that could never be in a # domain name. As my intent here is to construct an HTTPS URL,
+        # What we need are valid hostnames,
+        # and so need to satisfy the constraints of RFC 952 and and 1123.
+
+        pattern = re.compile(
+            r"""
+            ^\s*                    # ignore leading spaces
+            @?                      # Optional @ prefix
+            (?P<uname>[a-z0-9_]+([a-z0-9_.-]+[a-z0-9_]+)?)  # username part
+            @                       # separator
+            (?P<domain>[a-z0-9]+([a-z0-9.-]+)?) # domain part
+            \s*$                    # ignore trailing whitespace
+        """,
+            re.VERBOSE | re.IGNORECASE,
+        )
+
+        m = pattern.match(address)
+        if m is None:
+            raise ValueError("Invalid mastodon address")
+        uname = m.group("uname")
+        domain = m.group("domain")
+
+        # the domain part of pattern allows some things that are not
+        # valid names. So we run a stricter check
+        if not Connection.is_valid_hostname(domain):
+            raise ValueError("Invalid hostname in mastodon address")
+
+        url = HttpUrl(f"https://{domain}/@{uname}")
+        return url
 
     @computed_field
     @cached_property
@@ -1066,6 +1152,8 @@ class Connection(BaseModel):
             url = f"https://www.instagram.com/{self.value}"
         elif self.name == "Orcid":
             url = f"https://orcid.org/{self.value}"
+        elif self.name == "Mastodon":
+            url = self.MastodonUname2Url(self.value)
         elif self.name == "email":
             url = f"mailto:{self.value}"
         elif self.name == "website":
