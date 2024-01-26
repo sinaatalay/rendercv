@@ -5,39 +5,43 @@ in the end: document the whole code!
 from datetime import date as Date
 from typing import Literal
 from typing_extensions import Annotated, Optional
-import logging
 from functools import cached_property
-import urllib.request
+from urllib.request import urlopen, HTTPError
 import os
 import json
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
+import pydantic.functional_validators as pydantic_functional_validators
 
-from . import parser
-
-logger = logging.getLogger(__name__)
+from . import utilities
+from .terminal_reporter import warning
 
 # To understand how to create custom data types, see:
 # https://docs.pydantic.dev/latest/usage/types/custom/ # use links with pydantic version tags!
 
 
-LaTeXDimension = Annotated[
-    str,
-    pydantic.Field(
-        pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
-    ),
-]
+# LaTeXDimension = Annotated[
+#     str,
+#     pydantic.Field(
+#         pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
+#     ),
+# ]
 LaTeXString = Annotated[
-    str, pydantic.functional_validators.AfterValidator(parser.escape_latex_characters)
+    str,
+    pydantic_functional_validators.AfterValidator(utilities.escape_latex_characters),
 ]
 PastDate = Annotated[
     str,
     pydantic.Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
-    pydantic.functional_validators.AfterValidator(parser.parse_date_string),
+    pydantic_functional_validators.AfterValidator(utilities.parse_date_string),
 ]
 
 PastDateAdapter = pydantic.TypeAdapter(PastDate)
+
+# ======================================================================================
+# Entry models: ========================================================================
+# ======================================================================================
 
 
 class EntryBase(pydantic.BaseModel):
@@ -99,19 +103,12 @@ class EntryBase(pydantic.BaseModel):
         cls, date: PastDate | LaTeXString
     ) -> Optional[PastDate | int | LaTeXString]:
         """Check if the date is a string or a Date object and return accordingly."""
-        if isinstance(date, str):
-            try:
-                # If this runs, it means the date is an ISO format string, and it can be
-                # parsed
-                new_date = parser.parse_date_string(date)
-                new_date = PastDateAdapter.validate_python(new_date)
-            except ValueError:
-                # Then it means it is a custom string like "Fall 2023"
-                new_date = date
-        elif date is None:
+        if date is None:
             new_date = None
+        elif isinstance(date, Date):
+            new_date = date
         else:
-            raise TypeError(f"Date ({date}) is neither a string nor a Date object.")
+            raise TypeError(f"{date} is an invalid date.")
 
         return new_date
 
@@ -132,14 +129,14 @@ class EntryBase(pydantic.BaseModel):
             end_date_is_provided = True
 
         if date_is_provided and start_date_is_provided and end_date_is_provided:
-            logger.warning(
+            warning(
                 '"start_date", "end_date" and "date" are all provided in of the'
                 " entries. Therefore, date will be ignored."
             )
             model.date = None
 
         elif date_is_provided and start_date_is_provided and not end_date_is_provided:
-            logger.warning(
+            warning(
                 'Both "date" and "start_date" is provided in of the entries.'
                 ' "start_date" will be ignored.'
             )
@@ -147,7 +144,7 @@ class EntryBase(pydantic.BaseModel):
             model.end_date = None
 
         elif date_is_provided and end_date_is_provided and not start_date_is_provided:
-            logger.warning(
+            warning(
                 'Both "date" and "end_date" is provided in of the entries. "end_date"'
                 " will be ignored."
             )
@@ -155,7 +152,7 @@ class EntryBase(pydantic.BaseModel):
             model.end_date = None
 
         elif start_date_is_provided and not end_date_is_provided:
-            logger.warning(
+            warning(
                 '"start_date" is provided in of the entries, but "end_date" is not.'
                 ' "end_date" will be set to "present".'
             )
@@ -200,17 +197,27 @@ class EntryBase(pydantic.BaseModel):
             if isinstance(self.date, str):
                 date_string = self.date
             elif isinstance(self.date, Date):
-                date_string = parser.format_date(self.date)
+                date_string = utilities.format_date(self.date)
             else:
                 raise RuntimeError("Date is neither a string nor a Date object.")
 
         elif self.start_date is not None and self.end_date is not None:
-            start_date = parser.format_date(self.start_date)
-
+            if isinstance(self.start_date, (int, Date)):
+                start_date = utilities.format_date(self.start_date)
+            else:
+                raise RuntimeError(
+                    "This error shouldn't have been raised. Please open an issue on"
+                    " GitHub."
+                )
             if self.end_date == "present":
                 end_date = "present"
+            elif isinstance(self.end_date, (int, Date)):
+                end_date = utilities.format_date(self.end_date)
             else:
-                end_date = parser.format_date(self.end_date)
+                raise RuntimeError(
+                    "This error shouldn't have been raised. Please open an issue on"
+                    " GitHub."
+                )
 
             date_string = f"{start_date} to {end_date}"
 
@@ -225,13 +232,20 @@ class EntryBase(pydantic.BaseModel):
         if self.date is not None:
             time_span = ""
         elif self.start_date is not None and self.end_date is not None:
-            if self.end_date == "present":
-                time_span = parser.compute_time_span_string(
-                    self.start_date, PastDate(Date.today())
+            if self.end_date == "present" and isinstance(self.start_date, Date):
+                time_span = utilities.compute_time_span_string(
+                    self.start_date, Date.today()
+                )
+            elif isinstance(self.start_date, (int, Date)) and isinstance(
+                self.end_date, (int, Date)
+            ):
+                time_span = utilities.compute_time_span_string(
+                    self.start_date, self.end_date
                 )
             else:
-                time_span = parser.compute_time_span_string(
-                    self.start_date, self.end_date
+                raise RuntimeError(
+                    "This error shouldn't have been raised. Please open an issue on"
+                    " GitHub."
                 )
         else:
             time_span = None
@@ -269,7 +283,7 @@ class EntryBase(pydantic.BaseModel):
             try:
                 # If this runs, it means the date is an ISO format string, and it can be
                 # parsed
-                month_and_year = parser.format_date(self.date)
+                month_and_year = utilities.format_date(self.date)  # type: ignore
             except TypeError:
                 month_and_year = str(self.date)
         else:
@@ -373,8 +387,8 @@ class PublicationEntry(pydantic.BaseModel):
         doi_url = f"https://doi.org/{doi}"
 
         try:
-            urllib.request.urlopen(doi_url)
-        except urllib.request.HTTPError as err:
+            urlopen(doi_url)
+        except HTTPError as err:
             if err.code == 404:
                 raise ValueError(f"{doi} cannot be found in the DOI System.")
 
@@ -384,6 +398,20 @@ class PublicationEntry(pydantic.BaseModel):
     @cached_property
     def doi_url(self) -> str:
         return f"https://doi.org/{self.doi}"
+
+
+# ======================================================================================
+# Section models: ======================================================================
+# ======================================================================================
+
+entry_type_field_of_section_model = pydantic.Field(
+    title="Entry Type",
+    description="The type of the entries in the section.",
+)
+entries_field_of_section_model = pydantic.Field(
+    title="Entries",
+    description="The entries of the section. The format depends on the entry type.",
+)
 
 
 class SectionBase(pydantic.BaseModel):
@@ -406,16 +434,6 @@ class SectionBase(pydantic.BaseModel):
         ),
         examples=["view on GitHub", "view on LinkedIn"],
     )
-
-
-entry_type_field_of_section_model = pydantic.Field(
-    title="Entry Type",
-    description="The type of the entries in the section.",
-)
-entries_field_of_section_model = pydantic.Field(
-    title="Entries",
-    description="The entries of the section. The format depends on the entry type.",
-)
 
 
 class SectionWithEducationEntries(SectionBase):
@@ -488,6 +506,55 @@ class SocialNetwork(pydantic.BaseModel):
     )
 
 
+# Section type
+Section = Annotated[
+    SectionWithEducationEntries
+    | SectionWithExperienceEntries
+    | SectionWithNormalEntries
+    | SectionWithOneLineEntries
+    | SectionWithPublicationEntries
+    | SectionWithTextEntries,
+    pydantic.Field(
+        discriminator="entry_type",
+    ),
+]
+
+# ======================================================================================
+# Full RenderCV data models: ===========================================================
+# ======================================================================================
+
+# Default entry types for a given section title
+default_entry_types_for_a_given_title: dict[
+    str,
+    tuple[type[EducationEntry], type[SectionWithEducationEntries]]
+    | tuple[type[ExperienceEntry], type[SectionWithExperienceEntries]]
+    | tuple[type[PublicationEntry], type[SectionWithPublicationEntries]]
+    | tuple[type[NormalEntry], type[SectionWithNormalEntries]]
+    | tuple[type[OneLineEntry], type[SectionWithOneLineEntries]]
+    | tuple[type[LaTeXString], type[SectionWithTextEntries]],
+] = {
+    "Education": (EducationEntry, SectionWithEducationEntries),
+    "Experience": (ExperienceEntry, SectionWithExperienceEntries),
+    "Work Experience": (ExperienceEntry, SectionWithExperienceEntries),
+    "Research Experience": (ExperienceEntry, SectionWithExperienceEntries),
+    "Publications": (PublicationEntry, SectionWithPublicationEntries),
+    "Papers": (PublicationEntry, SectionWithPublicationEntries),
+    "Projects": (NormalEntry, SectionWithNormalEntries),
+    "Academic Projects": (NormalEntry, SectionWithNormalEntries),
+    "University Projects": (NormalEntry, SectionWithNormalEntries),
+    "Personal Projects": (NormalEntry, SectionWithNormalEntries),
+    "Certificates": (NormalEntry, SectionWithNormalEntries),
+    "Extracurricular Activities": (ExperienceEntry, SectionWithExperienceEntries),
+    "Test Scores": (OneLineEntry, SectionWithOneLineEntries),
+    "Skills": (OneLineEntry, SectionWithOneLineEntries),
+    "Programming Skills": (NormalEntry, SectionWithNormalEntries),
+    "Other Skills": (OneLineEntry, SectionWithOneLineEntries),
+    "Awards": (OneLineEntry, SectionWithOneLineEntries),
+    "Interests": (OneLineEntry, SectionWithOneLineEntries),
+    "Summary": (LaTeXString, SectionWithTextEntries),
+}
+
+
 class Connection(pydantic.BaseModel):
     """This class stores a connection/communication information.
 
@@ -531,52 +598,6 @@ class Connection(pydantic.BaseModel):
             raise RuntimeError(f'"{self.name}" is not a valid connection.')
 
         return url
-
-
-# Section type
-Section = Annotated[
-    SectionWithEducationEntries
-    | SectionWithExperienceEntries
-    | SectionWithNormalEntries
-    | SectionWithOneLineEntries
-    | SectionWithPublicationEntries
-    | SectionWithTextEntries,
-    pydantic.Field(
-        discriminator="entry_type",
-    ),
-]
-
-
-# Default entry types for a given section title
-default_entry_types_for_a_given_title: dict[
-    str,
-    tuple[type[EducationEntry], type[SectionWithEducationEntries]]
-    | tuple[type[ExperienceEntry], type[SectionWithExperienceEntries]]
-    | tuple[type[PublicationEntry], type[SectionWithPublicationEntries]]
-    | tuple[type[NormalEntry], type[SectionWithNormalEntries]]
-    | tuple[type[OneLineEntry], type[SectionWithOneLineEntries]]
-    | tuple[type[LaTeXString], type[SectionWithTextEntries]],
-] = {
-    "Education": (EducationEntry, SectionWithEducationEntries),
-    "Experience": (ExperienceEntry, SectionWithExperienceEntries),
-    "Work Experience": (ExperienceEntry, SectionWithExperienceEntries),
-    "Research Experience": (ExperienceEntry, SectionWithExperienceEntries),
-    "Publications": (PublicationEntry, SectionWithPublicationEntries),
-    "Papers": (PublicationEntry, SectionWithPublicationEntries),
-    "Projects": (NormalEntry, SectionWithNormalEntries),
-    "Academic Projects": (NormalEntry, SectionWithNormalEntries),
-    "University Projects": (NormalEntry, SectionWithNormalEntries),
-    "Personal Projects": (NormalEntry, SectionWithNormalEntries),
-    "Certificates": (NormalEntry, SectionWithNormalEntries),
-    "Extracurricular Activities": (ExperienceEntry, SectionWithExperienceEntries),
-    "Test Scores": (OneLineEntry, SectionWithOneLineEntries),
-    "Skills": (OneLineEntry, SectionWithOneLineEntries),
-    "Programming Skills": (OneLineEntry, SectionWithOneLineEntries),
-    "Other Skills": (OneLineEntry, SectionWithOneLineEntries),
-    "Awards": (OneLineEntry, SectionWithOneLineEntries),
-    "Interests": (OneLineEntry, SectionWithOneLineEntries),
-    "Summary": (LaTeXString, SectionWithTextEntries),
-}
 
 
 class CurriculumVitae(pydantic.BaseModel):
@@ -683,12 +704,19 @@ class CurriculumVitae(pydantic.BaseModel):
                         # try if the entries are of the correct type by casting them
                         # to the entry type one by one
                         for entry in section_or_entries:
-                            if not isinstance(entry, entry_type):
-                                raise TypeError(
-                                    f'"{entry}" is not an instance of'
-                                    f' "{entry_type.__name__}". Please check'
-                                    " the entries."
-                                )
+                            if entry_type is LaTeXString:
+                                if not isinstance(entry, str):
+                                    raise pydantic.ValidationError(
+                                        f'"{entry}" is not a valid string.'
+                                    )
+                            else:
+                                try:
+                                    entry = entry_type(**entry)  # type: ignore
+                                except pydantic.ValidationError as err:
+                                    raise pydantic.ValidationError(
+                                        f'"{entry}" is not a valid'
+                                        f" {entry_type.__name__}."
+                                    ) from err
 
                     else:
                         raise ValueError(
