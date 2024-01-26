@@ -5,7 +5,7 @@ import json
 from rendercv import data_model
 
 from datetime import date as Date
-from pydantic import ValidationError
+from pydantic import ValidationError, HttpUrl
 
 
 class TestDataModel(unittest.TestCase):
@@ -945,3 +945,46 @@ class TestDataModel(unittest.TestCase):
         with self.subTest(msg="nonexistent file"):
             with self.assertRaises(FileNotFoundError):
                 data_model.read_input_file("nonexistent.json")
+
+    def test_mastodon_parsing(self):
+        mastodon_name = "a_tooter@example.exchange"
+        expected = HttpUrl("https://example.exchange/@a_tooter")
+        result = data_model.Connection.MastodonUname2Url(mastodon_name)
+        with self.subTest("Without '@' prefix"):
+            self.assertEqual(result, expected)
+
+        mastodon_name = "@a_tooter@example.exchange"
+        expected = HttpUrl("https://example.exchange/@a_tooter")
+        result = data_model.Connection.MastodonUname2Url(mastodon_name)
+        with self.subTest("With '@' prefix"):
+            self.assertEqual(result, expected)
+
+        mastodon_name = "@too@many@symbols"
+        with self.subTest("Too many '@' symbols"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+        mastodon_name = "@not_enough_at_symbols"
+        with self.subTest("Missing '@' separator"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+        mastodon_name = "user@bad_domain.example"
+        with self.subTest("Underscore in domain portion"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+        mastodon_name = "user@bad.numeric.tld.123"
+        with self.subTest("All digit TLD"):
+            with self.assertRaises(ValueError):
+                data_model.Connection.MastodonUname2Url(mastodon_name)
+
+        mastodon_name = "a_tooter@example.exchange."
+        expected = HttpUrl("https://example.exchange./@a_tooter")
+        result = data_model.Connection.MastodonUname2Url(mastodon_name)
+        with self.subTest("With FQDN root '.'"):
+            self.assertEqual(result, expected)
+
+
+if __name__ == "__main__":
+    unittest.main()
