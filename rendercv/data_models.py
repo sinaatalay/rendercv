@@ -11,24 +11,12 @@ import urllib.request
 import os
 import json
 
-from pydantic import (
-    BaseModel,
-    HttpUrl,
-    Field,
-    field_validator,
-    model_validator,
-    computed_field,
-    EmailStr,
-    TypeAdapter,
-)
-from pydantic.json_schema import GenerateJsonSchema
-from pydantic.functional_validators import AfterValidator
-from pydantic_extra_types.phone_numbers import PhoneNumber
+import pydantic
+import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 
 from . import parser
 
 logger = logging.getLogger(__name__)
-
 
 # To understand how to create custom data types, see:
 # https://docs.pydantic.dev/latest/usage/types/custom/ # use links with pydantic version tags!
@@ -36,21 +24,23 @@ logger = logging.getLogger(__name__)
 
 LaTeXDimension = Annotated[
     str,
-    Field(
+    pydantic.Field(
         pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
     ),
 ]
-LaTeXString = Annotated[str, AfterValidator(parser.escape_latex_characters)]
+LaTeXString = Annotated[
+    str, pydantic.functional_validators.AfterValidator(parser.escape_latex_characters)
+]
 PastDate = Annotated[
     str,
-    Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
-    AfterValidator(parser.parse_date_string),
+    pydantic.Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
+    pydantic.functional_validators.AfterValidator(parser.parse_date_string),
 ]
 
-PastDateAdapter = TypeAdapter(PastDate)
+PastDateAdapter = pydantic.TypeAdapter(PastDate)
 
 
-class EntryBase(BaseModel):
+class EntryBase(pydantic.BaseModel):
     """This class is the parent class for classes like `#!python EducationEntry`,
     `#!python ExperienceEntry`, `#!python NormalEntry`, and `#!python OneLineEntry`.
 
@@ -58,13 +48,13 @@ class EntryBase(BaseModel):
     and URL.
     """
 
-    start_date: Optional[PastDate] = Field(
+    start_date: Optional[PastDate] = pydantic.Field(
         default=None,
         title="Start Date",
         description="The start date of the event in YYYY-MM-DD format.",
         examples=["2020-09-24"],
     )
-    end_date: Optional[Literal["present"] | PastDate] = Field(
+    end_date: Optional[Literal["present"] | PastDate] = pydantic.Field(
         default=None,
         title="End Date",
         description=(
@@ -73,7 +63,7 @@ class EntryBase(BaseModel):
         ),
         examples=["2020-09-24", "present"],
     )
-    date: Optional[PastDate | int | LaTeXString] = Field(
+    date: Optional[PastDate | int | LaTeXString] = pydantic.Field(
         default=None,
         title="Date",
         description=(
@@ -84,7 +74,7 @@ class EntryBase(BaseModel):
         ),
         examples=["2020-09-24", "My Custom Date"],
     )
-    highlights: Optional[list[LaTeXString]] = Field(
+    highlights: Optional[list[LaTeXString]] = pydantic.Field(
         default=[],
         title="Highlights",
         description=(
@@ -92,7 +82,7 @@ class EntryBase(BaseModel):
         ),
         examples=["Did this.", "Did that."],
     )
-    location: Optional[LaTeXString] = Field(
+    location: Optional[LaTeXString] = pydantic.Field(
         default=None,
         title="Location",
         description=(
@@ -101,9 +91,9 @@ class EntryBase(BaseModel):
         ),
         examples=["Istanbul, Turkey"],
     )
-    url: Optional[HttpUrl] = None
+    url: Optional[pydantic.HttpUrl] = None
 
-    @field_validator("date")
+    @pydantic.field_validator("date")
     @classmethod
     def check_date(
         cls, date: PastDate | LaTeXString
@@ -125,7 +115,7 @@ class EntryBase(BaseModel):
 
         return new_date
 
-    @model_validator(mode="after")
+    @pydantic.model_validator(mode="after")
     @classmethod
     def check_dates(cls, model):
         """Make sure that either `#!python start_date` and `#!python end_date` or only
@@ -203,7 +193,7 @@ class EntryBase(BaseModel):
 
         return model
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
     def date_string(self) -> Optional[LaTeXString]:
         if self.date is not None:
@@ -229,7 +219,7 @@ class EntryBase(BaseModel):
 
         return date_string
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
     def time_span(self) -> Optional[LaTeXString]:
         if self.date is not None:
@@ -248,7 +238,7 @@ class EntryBase(BaseModel):
 
         return time_span
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
     def markdown_url(self) -> Optional[str]:
         if self.url is None:
@@ -271,7 +261,7 @@ class EntryBase(BaseModel):
 
             return markdown_url
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
     def month_and_year(self) -> Optional[LaTeXString]:
         if self.date is not None:
@@ -290,14 +280,14 @@ class EntryBase(BaseModel):
         return month_and_year
 
 
-class OneLineEntry(BaseModel):
+class OneLineEntry(pydantic.BaseModel):
     """This class stores [OneLineEntry](../user_guide.md#onelineentry) information."""
 
-    name: LaTeXString = Field(
+    name: LaTeXString = pydantic.Field(
         title="Name",
         description="The name of the entry. It will be shown as bold text.",
     )
-    details: LaTeXString = Field(
+    details: LaTeXString = pydantic.Field(
         title="Details",
         description="The details of the entry. It will be shown as normal text.",
     )
@@ -306,7 +296,7 @@ class OneLineEntry(BaseModel):
 class NormalEntry(EntryBase):
     """This class stores [NormalEntry](../user_guide.md#normalentry) information."""
 
-    name: LaTeXString = Field(
+    name: LaTeXString = pydantic.Field(
         title="Name",
         description="The name of the entry. It will be shown as bold text.",
     )
@@ -317,11 +307,11 @@ class ExperienceEntry(EntryBase):
     information.
     """
 
-    company: LaTeXString = Field(
+    company: LaTeXString = pydantic.Field(
         title="Company",
         description="The company name. It will be shown as bold text.",
     )
-    position: LaTeXString = Field(
+    position: LaTeXString = pydantic.Field(
         title="Position",
         description="The position. It will be shown as normal text.",
     )
@@ -330,16 +320,16 @@ class ExperienceEntry(EntryBase):
 class EducationEntry(EntryBase):
     """This class stores [EducationEntry](../user_guide.md#educationentry) information."""
 
-    institution: LaTeXString = Field(
+    institution: LaTeXString = pydantic.Field(
         title="Institution",
         description="The institution name. It will be shown as bold text.",
         examples=["Bogazici University"],
     )
-    area: LaTeXString = Field(
+    area: LaTeXString = pydantic.Field(
         title="Area",
         description="The area of study. It will be shown as normal text.",
     )
-    study_type: Optional[LaTeXString] = Field(
+    study_type: Optional[LaTeXString] = pydantic.Field(
         default=None,
         title="Study Type",
         description="The type of the degree.",
@@ -347,36 +337,36 @@ class EducationEntry(EntryBase):
     )
 
 
-class PublicationEntry(BaseModel):
+class PublicationEntry(pydantic.BaseModel):
     """This class stores [PublicationEntry](../user_guide.md#publicationentry)
     information.
     """
 
-    title: LaTeXString = Field(
+    title: LaTeXString = pydantic.Field(
         title="Title of the Publication",
         description="The title of the publication. It will be shown as bold text.",
     )
-    authors: list[LaTeXString] = Field(
+    authors: list[LaTeXString] = pydantic.Field(
         title="Authors",
         description="The authors of the publication in order as a list of strings.",
     )
-    doi: str = Field(
+    doi: str = pydantic.Field(
         title="DOI",
         description="The DOI of the publication.",
         examples=["10.48550/arXiv.2310.03138"],
     )
-    date: LaTeXString = Field(
+    date: LaTeXString = pydantic.Field(
         title="Publication Date",
         description="The date of the publication.",
         examples=["2021-10-31"],
     )
-    journal: Optional[LaTeXString] = Field(
+    journal: Optional[LaTeXString] = pydantic.Field(
         default=None,
         title="Journal",
         description="The journal or the conference name.",
     )
 
-    @field_validator("doi")
+    @pydantic.field_validator("doi")
     @classmethod
     def check_doi(cls, doi: str) -> str:
         """Check if the DOI exists in the DOI System."""
@@ -390,13 +380,13 @@ class PublicationEntry(BaseModel):
 
         return doi
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
     def doi_url(self) -> str:
         return f"https://doi.org/{self.doi}"
 
 
-class SectionBase(BaseModel):
+class SectionBase(pydantic.BaseModel):
     """This class stores a section information.
 
     It is the parent class of all the section classes like
@@ -405,8 +395,8 @@ class SectionBase(BaseModel):
     `#!python SectionWithPublicationEntries`.
     """
 
-    title: Optional[LaTeXString] = Field(default=None)
-    link_text: Optional[LaTeXString] = Field(
+    title: Optional[LaTeXString] = pydantic.Field(default=None)
+    link_text: Optional[LaTeXString] = pydantic.Field(
         default=None,
         title="Link Text",
         description=(
@@ -418,11 +408,11 @@ class SectionBase(BaseModel):
     )
 
 
-entry_type_field_of_section_model = Field(
+entry_type_field_of_section_model = pydantic.Field(
     title="Entry Type",
     description="The type of the entries in the section.",
 )
-entries_field_of_section_model = Field(
+entries_field_of_section_model = pydantic.Field(
     title="Entries",
     description="The entries of the section. The format depends on the entry type.",
 )
@@ -482,23 +472,23 @@ class SectionWithTextEntries(SectionBase):
     entries: list[LaTeXString] = entries_field_of_section_model
 
 
-class SocialNetwork(BaseModel):
+class SocialNetwork(pydantic.BaseModel):
     """This class stores a social network information.
 
     Currently, only LinkedIn, Github, and Instagram are supported.
     """
 
-    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid"] = Field(
+    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid"] = pydantic.Field(
         title="Social Network",
         description="The social network name.",
     )
-    username: str = Field(
+    username: str = pydantic.Field(
         title="Username",
         description="The username of the social network. The link will be generated.",
     )
 
 
-class Connection(BaseModel):
+class Connection(pydantic.BaseModel):
     """This class stores a connection/communication information.
 
     Warning:
@@ -518,9 +508,9 @@ class Connection(BaseModel):
     ]
     value: str
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
-    def url(self) -> Optional[HttpUrl | str]:
+    def url(self) -> Optional[pydantic.HttpUrl | str]:
         if self.name == "LinkedIn":
             url = f"https://www.linkedin.com/in/{self.value}"
         elif self.name == "GitHub":
@@ -551,7 +541,7 @@ Section = Annotated[
     | SectionWithOneLineEntries
     | SectionWithPublicationEntries
     | SectionWithTextEntries,
-    Field(
+    pydantic.Field(
         discriminator="entry_type",
     ),
 ]
@@ -589,38 +579,38 @@ default_entry_types_for_a_given_title: dict[
 }
 
 
-class CurriculumVitae(BaseModel):
+class CurriculumVitae(pydantic.BaseModel):
     """This class binds all the information of a CV together."""
 
-    name: LaTeXString = Field(
+    name: LaTeXString = pydantic.Field(
         title="Name",
         description="The name of the person.",
     )
-    label: Optional[LaTeXString] = Field(
+    label: Optional[LaTeXString] = pydantic.Field(
         default=None,
         title="Label",
         description="The label of the person.",
     )
-    location: Optional[LaTeXString] = Field(
+    location: Optional[LaTeXString] = pydantic.Field(
         default=None,
         title="Location",
         description="The location of the person. This is not rendered currently.",
     )
-    email: Optional[EmailStr] = Field(
+    email: Optional[pydantic.EmailStr] = pydantic.Field(
         default=None,
         title="Email",
         description="The email of the person. It will be rendered in the heading.",
     )
-    phone: Optional[PhoneNumber] = None
-    website: Optional[HttpUrl] = None
-    social_networks: Optional[list[SocialNetwork]] = Field(
+    phone: Optional[pydantic_phone_numbers.PhoneNumber] = None
+    website: Optional[pydantic.HttpUrl] = None
+    social_networks: Optional[list[SocialNetwork]] = pydantic.Field(
         default=None,
         title="Social Networks",
         description=(
             "The social networks of the person. They will be rendered in the heading."
         ),
     )
-    section_order: Optional[list[str]] = Field(
+    section_order: Optional[list[str]] = pydantic.Field(
         default=None,
         title="Section Order",
         description=(
@@ -636,14 +626,14 @@ class CurriculumVitae(BaseModel):
         | list[PublicationEntry]
         | list[ExperienceEntry]
         | list[LaTeXString],
-    ] = Field(
+    ] = pydantic.Field(
         default=None,
         title="Sections",
         description="The sections of the CV.",
         alias="sections",
     )
 
-    @field_validator("sections_input", mode="before")
+    @pydantic.field_validator("sections_input", mode="before")
     @classmethod
     def parse_and_validate_sections(
         cls,
@@ -708,7 +698,7 @@ class CurriculumVitae(BaseModel):
 
         return sections_input
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
     def sections(self) -> list[Section]:
         """Compute the sections of the CV.
@@ -758,7 +748,7 @@ class CurriculumVitae(BaseModel):
 
         return sections
 
-    @computed_field
+    @pydantic.computed_field
     @cached_property
     def connections(self) -> list[Connection]:
         connections = []
@@ -786,10 +776,10 @@ class CurriculumVitae(BaseModel):
 # ======================================================================================
 
 
-class RenderCVDataModel(BaseModel):
+class RenderCVDataModel(pydantic.BaseModel):
     """This class binds both the CV and the design information together."""
 
-    cv: CurriculumVitae = Field(
+    cv: CurriculumVitae = pydantic.Field(
         default=CurriculumVitae(name="John Doe"),
         title="Curriculum Vitae",
         description="The data of the CV.",
@@ -803,7 +793,7 @@ def generate_json_schema(output_directory: str) -> str:
         output_directory (str): The output directory to save the schema.
     """
 
-    class RenderCVSchemaGenerator(GenerateJsonSchema):
+    class RenderCVSchemaGenerator(pydantic.json_schema.GenerateJsonSchema):
         def generate(self, schema, mode="validation"):
             json_schema = super().generate(schema, mode=mode)
             json_schema["title"] = "RenderCV Input"
