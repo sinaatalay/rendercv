@@ -274,7 +274,7 @@ def generate_json_schema(output_directory: str) -> str:
                 value["additionalProperties"] = False
 
                 # I don't want the docstrings in the schema, so remove them:
-                if "This class" in value["description"]:
+                if "description" in value and "This class" in value["description"]:
                     del value["description"]
 
                 # If a type is optional, then Pydantic sets the type to a list of two
@@ -287,8 +287,8 @@ def generate_json_schema(output_directory: str) -> str:
                 for field in value["properties"].values():
                     if "anyOf" in field:
                         if (
-                            len(field["anyOf"]) == 2
-                            and null_type_dict in field["anyOf"]
+                                len(field["anyOf"]) == 2
+                                and null_type_dict in field["anyOf"]
                         ):
                             field["allOf"] = [field["anyOf"][0]]
                             del field["anyOf"]
@@ -300,8 +300,8 @@ def generate_json_schema(output_directory: str) -> str:
                 # the types can be matched. Therefore, we remove the first type, which
                 # is the string with the YYYY-MM-DD format.
                 if (
-                    "date" in value["properties"]
-                    and "anyOf" in value["properties"]["date"]
+                        "date" in value["properties"]
+                        and "anyOf" in value["properties"]["date"]
                 ):
                     del value["properties"]["date"]["anyOf"][0]
 
@@ -610,8 +610,8 @@ class Design(BaseModel):
     @classmethod
     def check_if_theme_exists(cls, theme: str) -> str:
         """Check if the theme exists in the templates directory."""
-        cv_template_directory = str(files("rendercv").joinpath( "templates", theme, "cv"))
-        cover_letter_template_directory = str(files("rendercv").joinpath( "templates", theme, "cover_letter"))
+        cv_template_directory = str(files("rendercv").joinpath("templates", theme, "cv"))
+        cover_letter_template_directory = str(files("rendercv").joinpath("templates", theme, "cover_letter"))
         if f"{theme}.tex.j2" not in os.listdir(cv_template_directory) \
                 and f"{theme}.tex.j2" not in os.listdir(cover_letter_template_directory):
             raise ValueError(
@@ -825,10 +825,10 @@ class Event(BaseModel):
         date_and_location_strings = self.date_and_location_strings_with_timespan.copy()
         for string in date_and_location_strings:
             if (
-                "years" in string
-                or "months" in string
-                or "year" in string
-                or "month" in string
+                    "years" in string
+                    or "months" in string
+                    or "year" in string
+                    or "month" in string
             ):
                 date_and_location_strings.remove(string)
 
@@ -1270,62 +1270,16 @@ Section = Annotated[
 
 
 class CoverLetter(BaseModel):
-    name: LaTeXString = Field(
-        title="Name",
-        description="The name of the person.",
-    )
-    label: Optional[LaTeXString] = Field(
+    company: Optional[LaTeXString] = Field(
         default=None,
-        title="Label",
-        description="The label of the person.",
-    )
-    location: Optional[LaTeXString] = Field(
-        default=None,
-        title="Location",
-        description="The location of the person. This is not rendered currently.",
-    )
-    email: Optional[EmailStr] = Field(
-        default=None,
-        title="Email",
-        description="The email of the person. It will be rendered in the heading.",
-    )
-    phone: Optional[PhoneNumber] = None
-    website: Optional[HttpUrl] = None
-    social_networks: Optional[list[SocialNetwork]] = Field(
-        default=None,
-        title="Social Networks",
-        description=(
-            "The social networks of the person. They will be rendered in the heading."
-        ),
-    )
-    application_company_name: Optional[LaTeXString] = Field(
-        default=None,
-        title="Application company name",
+        title="Company",
         description="The name of the company where you send your application."
     )
-    letter: Optional[LaTeXString] = None
-
-    @computed_field
-    @cached_property
-    def connections(self) -> list[Connection]:
-        connections = []
-        if self.location is not None:
-            connections.append(Connection(name="location", value=self.location))
-        if self.phone is not None:
-            connections.append(Connection(name="phone", value=self.phone))
-        if self.email is not None:
-            connections.append(Connection(name="email", value=self.email))
-        if self.website is not None:
-            connections.append(Connection(name="website", value=str(self.website)))
-        if self.social_networks is not None:
-            for social_network in self.social_networks:
-                connections.append(
-                    Connection(
-                        name=social_network.network, value=social_network.username
-                    )
-                )
-
-        return connections
+    body: Optional[LaTeXString] = Field(
+        default=None,
+        title="Letter body",
+        description="The body of the cover."
+    )
 
 
 class CurriculumVitae(BaseModel):
@@ -1363,6 +1317,11 @@ class CurriculumVitae(BaseModel):
         default=None,
         title="Summary",
         description="The summary of the person.",
+    )
+    cover_letter: Optional[CoverLetter] = Field(
+        default=None,
+        title="Cover Letter",
+        description="The cover letter.",
     )
     # Sections:
     section_order: Optional[list[str]] = Field(
@@ -1655,17 +1614,6 @@ class RenderCVDataModel(BaseModel):
         description="The data of the CV.",
     )
 
-    def payload(self) -> CurriculumVitae:
-        return self.cv
-
-    @staticmethod
-    def file_suffix():
-        return "CV"
-
-    @staticmethod
-    def template_path():
-        return "cv"
-
     @model_validator(mode="after")
     @classmethod
     def check_classical_theme_show_timespan_in(cls, model):
@@ -1692,33 +1640,7 @@ class RenderCVDataModel(BaseModel):
         return model
 
 
-class RenderCoverLetterDataModel(BaseModel):
-    """This class binds both the CV and the design information together."""
-
-    design: Design = Field(
-        default=Design(),
-        title="Design",
-        description="The design of the cover letter.",
-    )
-    cover_letter: CoverLetter = Field(
-        default=CoverLetter(name="John Doe"),
-        title="Cover letter",
-        description="The data of the Cover letter.",
-    )
-
-    def payload(self) -> CoverLetter:
-        return self.cover_letter
-
-    @staticmethod
-    def file_suffix():
-        return "cover_letter"
-
-    @staticmethod
-    def template_path():
-        return "cover_letter"
-
-
-def read_input_file(file_path: str) -> RenderCVDataModel | RenderCoverLetterDataModel:
+def read_input_file(file_path: str) -> RenderCVDataModel:
     """Read the input file.
 
     Args:
@@ -1746,12 +1668,7 @@ def read_input_file(file_path: str) -> RenderCVDataModel | RenderCoverLetterData
         yaml = YAML()
         raw_json = yaml.load(file)
 
-    if "cv" in raw_json:
-        data = RenderCVDataModel(**raw_json)
-    elif "cover_letter" in raw_json:
-        data = RenderCoverLetterDataModel(**raw_json)
-    else:
-        raise ValueError("Unknown data model type")
+    data = RenderCVDataModel(**raw_json)
 
     end_time = time.time()
     time_taken = end_time - start_time

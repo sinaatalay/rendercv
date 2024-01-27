@@ -132,23 +132,55 @@ def user_friendly_errors(func: Callable) -> Callable:
     return wrapper
 
 
-@app.command(help="Render a YAML input file")
+def render(input_file: str, template: str, suffix: str) -> None:
+    file_path = os.path.abspath(input_file)
+    data = read_input_file(file_path)
+    output_latex_file = render_template(data, template=template, suffix=suffix)
+    run_latex(output_latex_file)
+
+
+@app.command(help="Render CV")
 @user_friendly_errors
-def render(
-    input_file: Annotated[
-        str,
-        typer.Argument(help="Name of the YAML input file"),
-    ]
+def render_cv(
+        input_file: Annotated[
+            str,
+            typer.Argument(help="Name of the YAML input file"),
+        ]
 ):
     """Generate a LaTeX CV from a YAML input file.
 
     Args:
         input_file (str): Name of the YAML input file
     """
-    file_path = os.path.abspath(input_file)
-    data = read_input_file(file_path)
-    output_latex_file = render_template(data)
-    run_latex(output_latex_file)
+    render(input_file, template="cv", suffix="CV")
+
+
+@app.command(help="Render cover letter")
+@user_friendly_errors
+def render_cover_letter(
+        input_file: Annotated[
+            str,
+            typer.Argument(help="Name of the YAML input file"),
+        ]
+):
+    """Generate a LaTeX cover letter from a YAML input file.
+
+    Args:
+        input_file (str): Name of the YAML input file
+    """
+    render(input_file, template="cover_letter", suffix="cover_letter")
+
+
+@app.command(help="Render both CV and cover letter")
+@user_friendly_errors
+def render_all(
+        input_file: Annotated[
+            str,
+            typer.Argument(help="Name of the YAML input file"),
+        ]
+):
+    render_cv(input_file)
+    render_cover_letter(input_file)
 
 
 @app.command(help="Generate a YAML input file to get started")

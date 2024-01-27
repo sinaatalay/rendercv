@@ -211,9 +211,9 @@ class TestRendering(unittest.TestCase):
             "reference_files",
             "John_Doe_CV_yaml_reference.yaml",
         )
-        data = data_model.read_input_file(input_file_path)
+        cv = data_model.read_input_file(input_file_path)
         output_file_path = rendering.render_template(
-            data=data, output_path=os.path.dirname(__file__)
+            cv=cv, output_path=os.path.dirname(__file__)
         )
 
         # Check if the output file exists:
@@ -245,10 +245,10 @@ class TestRendering(unittest.TestCase):
         )
 
         required_files = [
-            f"{data.design.font}-Italic.ttf",
-            f"{data.design.font}-Regular.ttf",
-            f"{data.design.font}-Bold.ttf",
-            f"{data.design.font}-BoldItalic.ttf",
+            f"{cv.design.font}-Italic.ttf",
+            f"{cv.design.font}-Regular.ttf",
+            f"{cv.design.font}-Bold.ttf",
+            f"{cv.design.font}-BoldItalic.ttf",
         ]
         font_files = os.listdir(font_directory_path)
         for required_file in required_files:

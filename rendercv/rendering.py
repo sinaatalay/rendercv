@@ -11,7 +11,7 @@ from typing import Optional
 import sys
 from importlib.resources import files
 
-from .data_model import RenderCVDataModel, Design, ClassicThemeOptions, RenderCoverLetterDataModel
+from .data_model import RenderCVDataModel, Design, ClassicThemeOptions
 
 from jinja2 import Environment, PackageLoader
 
@@ -110,7 +110,7 @@ def markdown_link_to_url(value: str) -> str:
 
 
 def make_it_something(
-    value: str, something: str, match_str: Optional[str] = None
+        value: str, something: str, match_str: Optional[str] = None
 ) -> str:
     """Make the matched parts of the string something. If the match_str is None, the
     whole string will be made something.
@@ -284,11 +284,15 @@ def get_path_to_font_directory(font_name: str) -> str:
     return str(files("rendercv").joinpath("templates", "fonts", font_name))
 
 
-def render_template(data: RenderCVDataModel | RenderCoverLetterDataModel, output_path: Optional[str] = None) -> str:
+def render_template(cv: RenderCVDataModel, template: str = "cv", suffix: str = "CV",
+                    output_path: Optional[str] = None) -> str:
     """Render the template using the given data.
 
     Args:
-        data (RenderCVDataModel): The data to use to render the template.
+        cv (RenderCVDataModel): The data to use to render the template.
+        template: template to render
+        suffix: result file suffix
+        output_path:
 
     Returns:
         str: The path to the rendered LaTeX file.
@@ -297,9 +301,9 @@ def render_template(data: RenderCVDataModel | RenderCoverLetterDataModel, output
     logger.info("Rendering the LaTeX file has started.")
 
     # create a Jinja2 environment:
-    theme = data.design.theme
+    theme = cv.design.theme
     environment = Environment(
-        loader=PackageLoader("rendercv", os.path.join("templates", theme, data.template_path())),
+        loader=PackageLoader("rendercv", os.path.join("templates", theme, template)),
         trim_blocks=True,
         lstrip_blocks=True,
     )
@@ -329,10 +333,10 @@ def render_template(data: RenderCVDataModel | RenderCoverLetterDataModel, output
     # load the template:
     template = environment.get_template(f"{theme}.tex.j2")
 
-    design: Design = data.design
-    theme_options: ClassicThemeOptions = data.design.options
+    design: Design = cv.design
+    theme_options: ClassicThemeOptions = cv.design.options
     output_latex_file = template.render(
-        data=data.payload(),
+        cv=cv.cv,
         design=design,
         theme_options=theme_options,
         today=get_today(),
@@ -343,7 +347,7 @@ def render_template(data: RenderCVDataModel | RenderCoverLetterDataModel, output
         output_path = os.getcwd()
 
     output_folder = os.path.join(output_path, "output")
-    file_name = data.payload().name.replace(" ", "_") + f"_{data.file_suffix()}.tex"
+    file_name = cv.cv.name.replace(" ", "_") + f"_{suffix}.tex"
     output_file_path = os.path.join(output_folder, file_name)
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
     with open(output_file_path, "w") as file:
@@ -354,7 +358,7 @@ def render_template(data: RenderCVDataModel | RenderCoverLetterDataModel, output
     if os.path.exists(os.path.join(os.path.dirname(output_file_path), "fonts")):
         shutil.rmtree(os.path.join(os.path.dirname(output_file_path), "fonts"))
 
-    font_directory = get_path_to_font_directory(data.design.font)
+    font_directory = get_path_to_font_directory(cv.design.font)
     output_fonts_directory = os.path.join(os.path.dirname(output_file_path), "fonts")
     shutil.copytree(
         font_directory,
@@ -436,15 +440,15 @@ def run_latex(latex_file_path: str) -> str:
     # Run TinyTeX:
     def run():
         with subprocess.Popen(
-            [
-                executable,
-                f"{latex_file_name}",
-            ],
-            cwd=os.path.dirname(latex_file_path),
-            stdout=subprocess.PIPE,
-            stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
-            text=True,
-            encoding="utf-8",
+                [
+                    executable,
+                    f"{latex_file_name}",
+                ],
+                cwd=os.path.dirname(latex_file_path),
+                stdout=subprocess.PIPE,
+                stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+                text=True,
+                encoding="utf-8",
         ) as latex_process:
             output, error = latex_process.communicate()
 
@@ -476,9 +480,9 @@ def run_latex(latex_file_path: str) -> str:
     # remove the unnecessary files:
     for file_name in os.listdir(os.path.dirname(latex_file_path)):
         if (
-            file_name.endswith(".aux")
-            or file_name.endswith(".log")
-            or file_name.endswith(".out")
+                file_name.endswith(".aux")
+                or file_name.endswith(".log")
+                or file_name.endswith(".out")
         ):
             os.remove(os.path.join(os.path.dirname(latex_file_path), file_name))
 
