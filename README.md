@@ -7,6 +7,11 @@
 
 RenderCV is a Python application that creates a $\LaTeX$ CV as a PDF from a JSON/YAML input file. Currently, it only supports one theme (*classic*). An example PDF can be seen [here](https://github.com/sinaatalay/rendercv/blob/main/John_Doe_CV.pdf?raw=true). More themes are planned to be supported in the future.
 
+**Difference from the main project**
+
+The key difference is that this fork allows to build a cover letter in addition to a CV. 
+The contribution does not fit original project strategy to stay focused on just one thing, which is totally appreciated.
+
 **What does it do?**
 
 - It parses a YAML (or JSON) file that looks like this:
