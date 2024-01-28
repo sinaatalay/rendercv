@@ -141,6 +141,8 @@ def test_invalid_doi(publication_entry, doi):
         ("GitHub", "myusername", "https://github.com/myusername"),
         ("Instagram", "myusername", "https://instagram.com/myusername"),
         ("Orcid", "myusername", "https://orcid.org/myusername"),
+        ("Twitter", "myusername", "https://twitter.com/myusername"),
+        ("Mastodon", "@myusername", "https://mastodon.social/@myusername"),
     ],
 )
 def test_social_network_url(network, username, expected_url):
