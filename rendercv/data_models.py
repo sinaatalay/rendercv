@@ -569,7 +569,9 @@ default_entry_types_for_a_given_title: dict[
 class SocialNetwork(RenderCVBaseModel):
     """This class is the data model of a social network."""
 
-    network: Literal["LinkedIn", "GitHub", "Instagram", "Orcid"] = pydantic.Field(
+    network: Literal[
+        "LinkedIn", "GitHub", "Instagram", "Orcid", "Mastodon", "Twitter"
+    ] = pydantic.Field(
         title="Social Network",
         description="The social network name.",
     )
@@ -577,6 +579,23 @@ class SocialNetwork(RenderCVBaseModel):
         title="Username",
         description="The username of the social network. The link will be generated.",
     )
+
+    @pydantic.model_validator(mode="after")
+    @classmethod
+    def check_networks(cls, model):
+        if model.network == "Mastodon":
+            if not model.username.startswith("@"):
+                raise ValueError(
+                    "Mastodon username should start with '@'. The username is"
+                    f" {model.username}."
+                )
+            if model.username.count("@") > 2:
+                raise ValueError(
+                    "Mastodon username should contain only two '@'. The username is"
+                    f" {model.username}."
+                )
+
+        return model
 
     @pydantic.computed_field
     @cached_property
@@ -587,6 +606,8 @@ class SocialNetwork(RenderCVBaseModel):
             "GitHub": "https://github.com/",
             "Instagram": "https://instagram.com/",
             "Orcid": "https://orcid.org/",
+            "Mastodon": "https://mastodon.social/",
+            "Twitter": "https://twitter.com/",
         }
         url = url_dictionary[self.network] + self.username
 
