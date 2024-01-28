@@ -1,5 +1,7 @@
+from typing import Literal
+
 import pydantic
 
 
 class ClassicThemeOptions(pydantic.BaseModel):
-    pass
+    theme: Literal["classic"]
