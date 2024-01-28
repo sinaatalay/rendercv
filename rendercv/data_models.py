@@ -121,9 +121,10 @@ class EntryBase(RenderCVBaseModel):
         if date_is_provided and start_date_is_provided and end_date_is_provided:
             warning(
                 '"start_date", "end_date" and "date" are all provided in of the'
-                " entries. Therefore, date will be ignored."
+                " entries. start_date and end_date will be ignored."
             )
-            model.date = None
+            model.start_date = None
+            model.end_date = None
 
         elif date_is_provided and start_date_is_provided and not end_date_is_provided:
             warning(
@@ -147,6 +148,12 @@ class EntryBase(RenderCVBaseModel):
                 ' "end_date" will be set to "present".'
             )
             model.end_date = "present"
+
+        elif not start_date_is_provided and end_date_is_provided:
+            raise ValueError(
+                '"end_date" is provided in of the entries, but "start_date" is not.'
+                ' "start_date" is required.'
+            )
 
         if model.start_date is not None and model.end_date is not None:
             if model.end_date == "present":
@@ -242,28 +249,73 @@ class EntryBase(RenderCVBaseModel):
             will return:
             `#!python "4 months"`
         """
-        if self.date is not None:
-            time_span = ""
-        elif self.start_date is not None and self.end_date is not None:
-            if self.end_date == "present" and isinstance(self.start_date, Date):
-                time_span = utilities.compute_time_span_string(
-                    self.start_date, Date.today()
-                )
-            elif isinstance(self.start_date, (int, Date)) and isinstance(
-                self.end_date, (int, Date)
-            ):
-                time_span = utilities.compute_time_span_string(
-                    self.start_date, self.end_date
-                )
+        start_date = self.start_date
+        end_date = self.end_date
+        date = self.date
+
+        if date is not None or (start_date is None and end_date is None):
+            return None
+
+        elif isinstance(start_date, int) or isinstance(end_date, int):
+            # Then it means one of the dates is year, so time span cannot be more
+            # specific than years.
+            if isinstance(start_date, int):
+                start_year = start_date
             else:
+                start_year = start_date.year  # type: ignore
+
+            if isinstance(end_date, int):
+                end_year = end_date
+            elif end_date == "present":
+                end_year = Date.today().year
+            else:
+                end_year = end_date.year  # type: ignore
+
+            time_span_in_years = end_year - start_year
+
+            if time_span_in_years < 2:
+                time_span_string = "1 year"
+            else:
+                time_span_string = f"{time_span_in_years} years"
+
+            return time_span_string
+
+        else:
+            if end_date == "present":
+                end_date = Date.today()
+
+            # calculate the number of days between start_date and end_date:
+            timespan_in_days = (end_date - start_date).days  # type: ignore
+
+            if timespan_in_days < 0:
                 raise RuntimeError(
                     "This error shouldn't have been raised. Please open an issue on"
                     " GitHub."
                 )
-        else:
-            time_span = None
 
-        return time_span
+            # calculate the number of years between start_date and end_date:
+            how_many_years = timespan_in_days // 365
+            if how_many_years == 0:
+                how_many_years_string = None
+            elif how_many_years == 1:
+                how_many_years_string = "1 year"
+            else:
+                how_many_years_string = f"{how_many_years} years"
+
+            # calculate the number of months between start_date and end_date:
+            how_many_months = round((timespan_in_days % 365) / 30)
+            if how_many_months <= 1:
+                how_many_months_string = "1 month"
+            else:
+                how_many_months_string = f"{how_many_months} months"
+
+            # combine howManyYearsString and howManyMonthsString:
+            if how_many_years_string is None:
+                time_span_string = how_many_months_string
+            else:
+                time_span_string = f"{how_many_years_string} {how_many_months_string}"
+
+            return time_span_string
 
     @pydantic.computed_field
     @cached_property
@@ -276,7 +328,7 @@ class EntryBase(RenderCVBaseModel):
             url_text = self.url_text_input
         elif self.url is not None:
             url_text_dictionary = {
-                "gitub": "view on GitHub",
+                "github": "view on GitHub",
                 "linkedin": "view on LinkedIn",
                 "instagram": "view on Instagram",
                 "youtube": "view on YouTube",
