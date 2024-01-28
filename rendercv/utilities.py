@@ -89,78 +89,18 @@ def parse_date_string(date_string: str) -> Date | int:
             raise ValueError(
                 f'The date "{date_string}" is in the future. Please check the dates.'
             )
+    elif isinstance(date, int):
+        # Then it means the date is an integer, so check if it is a past date:
+        if date > Date.today().year:
+            raise ValueError(
+                f'The date "{date_string}" is in the future. Please check the dates.'
+            )
+    elif not isinstance(date, str):
+        raise RuntimeError(
+            "This error shouldn't have been raised. Please open an issue on GitHub."
+        )
 
     return date
-
-
-def compute_time_span_string(start_date: Date | int, end_date: Date | int) -> str:
-    """Compute the time span between two dates and return a string that represents it.
-
-    Example:
-        ```python
-        compute_time_span_string(Date(2022, 9, 24), Date(2025, 2, 12))
-        ```
-
-        will return:
-
-        `#!python "2 years 5 months"`
-
-    Args:
-        start_date (Date | int): The start date.
-        end_date (Date | int): The end date.
-
-    Returns:
-        str: The time span string.
-    """
-    # check if the types of start_date and end_date are correct:
-    if not isinstance(start_date, (Date, int)):
-        raise TypeError("start_date is not a Date object or an integer!")
-    if not isinstance(end_date, (Date, int)):
-        raise TypeError("end_date is not a Date object or an integer!")
-
-    # calculate the number of days between start_date and end_date:
-    if isinstance(start_date, Date) and isinstance(end_date, Date):
-        timespan_in_days = (end_date - start_date).days  # type: ignore
-    elif isinstance(start_date, Date) and isinstance(end_date, int):
-        timespan_in_days = (Date(end_date, 1, 1) - start_date).days
-    elif isinstance(start_date, int) and isinstance(end_date, Date):
-        timespan_in_days = (end_date - Date(start_date, 1, 1)).days  # type: ignore
-    elif isinstance(start_date, int) and isinstance(end_date, int):
-        timespan_in_days = (end_date - start_date) * 365
-    else:
-        raise TypeError(
-            f"start_date ({start_date}) and end_date ({end_date}) are not valid to"
-            " compute the time span."
-        )
-
-    if timespan_in_days < 0:
-        raise ValueError(
-            '"start_date" can not be after "end_date". Please check the dates.'
-        )
-
-    # calculate the number of years between start_date and end_date:
-    how_many_years = timespan_in_days // 365
-    if how_many_years == 0:
-        how_many_years_string = None
-    elif how_many_years == 1:
-        how_many_years_string = "1 year"
-    else:
-        how_many_years_string = f"{how_many_years} years"
-
-    # calculate the number of months between start_date and end_date:
-    how_many_months = round((timespan_in_days % 365) / 30)
-    if how_many_months <= 1:
-        how_many_months_string = "1 month"
-    else:
-        how_many_months_string = f"{how_many_months} months"
-
-    # combine howManyYearsString and howManyMonthsString:
-    if how_many_years_string is None:
-        timespan_string = how_many_months_string
-    else:
-        timespan_string = f"{how_many_years_string} {how_many_months_string}"
-
-    return timespan_string
 
 
 def format_date(date: Date | int) -> str:
