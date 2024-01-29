@@ -1,9 +1,8 @@
 """
 This module contains all the necessary classes to store CV data. The YAML input file is
-transformed into instances of these classes (i.e., the input file is read) in the
-[input_reader](https://sinaatalay.github.io/rendercv/code_documentation/input_reader/)
-module. RenderCV utilizes these instances to generate a CV. These classes are called
-data models.
+transformed into instances of these classes (i.e., the input file is read) with the
+[`read_input_file`](utilities.md#read_input_file) function. RenderCV utilizes these
+instances to generate a CV. These classes are called data models.
 
 The data models are initialized with data validation to prevent unexpected bugs. During
 the initialization, we ensure that everything is in the correct place and that the user
@@ -810,6 +809,8 @@ class CurriculumVitae(RenderCVBaseModel):
 # ======================================================================================
 # ======================================================================================
 
+Design = ClassicThemeOptions
+
 
 class RenderCVDataModel(RenderCVBaseModel):
     """This class binds both the CV and the design information together."""
@@ -818,7 +819,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         title="Curriculum Vitae",
         description="The data of the CV.",
     )
-    design: ClassicThemeOptions = pydantic.Field(
+    design: Design = pydantic.Field(
         title="Design",
         description="The design information.",
         discriminator="theme",
