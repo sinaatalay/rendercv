@@ -25,7 +25,7 @@ import pydantic.functional_validators as pydantic_functional_validators
 
 from . import utilities
 from .terminal_reporter import warning
-from .templates.classic import ClassicThemeOptions
+from .themes.classic import ClassicThemeOptions
 
 
 # Create a custom type called PastDate that accepts a string in YYYY-MM-DD format and
@@ -207,7 +207,10 @@ class EntryBase(RenderCVBaseModel):
             elif isinstance(self.date, Date):
                 date_string = utilities.format_date(self.date)
             else:
-                raise RuntimeError("Date is neither a string nor a Date object.")
+                raise RuntimeError(
+                    "This error shouldn't have been raised. Please open"
+                    " an issue on GitHub."
+                )
 
         elif self.start_date is not None and self.end_date is not None:
             if isinstance(self.start_date, (int, Date)):
