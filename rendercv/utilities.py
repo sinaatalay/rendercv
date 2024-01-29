@@ -1,9 +1,16 @@
 import re
 from datetime import date as Date
+import time
+import os
+
+from ruamel.yaml import YAML
+
+from . import data_models as dm
+from .terminal_reporter import warning, error, information
 
 
 def escape_latex_characters(sentence: str) -> str:
-    """Escape LaTeX characters in a sentence.
+    """Escape some of the speacial LaTeX characters (e.g. #, %, &, ~) in a string.
 
     Example:
         ```python
@@ -153,3 +160,42 @@ def format_date(date: Date | int) -> str:
     date_string = f"{monthAbbreviation} {year}"
 
     return date_string
+
+
+def read_input_file(file_path: str) -> dm.RenderCVDataModel:
+    """Read the input file and return an instance of RenderCVDataModel.
+
+    Args:
+        file_path (str): The path to the input file.
+
+    Returns:
+        str: The input file as a string.
+    """
+    start_time = time.time()
+    information(f"Reading and validating the input file {file_path} has started.")
+
+    # check if the file exists:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The input file {file_path} doesn't exist.")
+
+    # check the file extension:
+    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
+    if not any(file_path.endswith(extension) for extension in accepted_extensions):
+        raise ValueError(
+            f"The file {file_path} doesn't have an accepted extension!"
+            f" Accepted extensions are: {accepted_extensions}"
+        )
+
+    with open(file_path) as file:
+        yaml = YAML()
+        raw_json = yaml.load(file)
+
+    data = RenderCVDataModel(**raw_json)
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+    information(
+        f"Reading and validating the input file {file_path} has finished in"
+        f" {time_taken:.2f} s."
+    )
+    return data
