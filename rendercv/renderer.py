@@ -346,11 +346,8 @@ def template(
 def generate_the_latex_file(
     rendercv_data_model: dm.RenderCVDataModel, output_file_path: str
 ) -> str:
-    """
-    """
+    """ """
     environment = setup_theme_environment(rendercv_data_model.design.theme)
-
-    latex_file = "\\begin{document}\n"
 
     # render the preamble:
     preamble = template(
@@ -361,9 +358,7 @@ def generate_the_latex_file(
         environment=environment,
     )
 
-    latex_file = latex_file + preamble + "\n"
-
-    latex_file = latex_file + "\\begin{document}\n"
+    latex_file = preamble + "\n\\begin{document}\n"
 
     # render the header:
     header = template(
@@ -397,7 +392,7 @@ def generate_the_latex_file(
             )
             latex_file = latex_file + entry + "\n"
 
-    latex_file = latex_file + "\\end{document}"
+    latex_file = latex_file + "\\end{document}\n"
 
     # write the LaTeX file:
     with open(output_file_path, "w") as file:
