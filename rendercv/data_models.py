@@ -17,14 +17,19 @@ from functools import cached_property
 from urllib.request import urlopen, HTTPError
 import os
 import json
+import re
+import ssl
+import time
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import pydantic.functional_validators as pydantic_functional_validators
+from ruamel.yaml import YAML
 
 from . import utilities
 from .terminal_reporter import warning
 from .themes.classic import ClassicThemeOptions
+from .terminal_reporter import warning, error, information
 
 
 # Create a custom type called PastDate that accepts a string in YYYY-MM-DD format and
@@ -33,9 +38,37 @@ from .themes.classic import ClassicThemeOptions
 # about custom types.
 PastDate = Annotated[
     str,
-    pydantic.Field(pattern=r"\d{4}-?(\d{2})?-?(\d{2})?"),
-    pydantic_functional_validators.AfterValidator(utilities.parse_date_string),
+    pydantic.Field(pattern=r"\d{4}-\d{2}(-\d{2})?"),
 ]
+PastDateAdapter = pydantic.TypeAdapter(PastDate)
+
+
+def get_date_object(date: str | int) -> Date:
+    """Parse a date string in YYYY-MM-DD, YYYY-MM, or YYYY format and return a
+    datetime.date object.
+
+    Args:
+        date_string (str): The date string to parse.
+    Returns:
+        datetime.date: The parsed date.
+    """
+    if isinstance(date, int):
+        date_object = Date.fromisoformat(f"{date}-01-01")
+    elif re.match(r"\d{4}-\d{2}-\d{2}", date):
+        # Then it is in YYYY-MM-DD format
+        date_object = Date.fromisoformat(date)
+    elif re.match(r"\d{4}-\d{2}", date):
+        # Then it is in YYYY-MM format
+        # Assign a random day since days are not rendered in the CV
+        date_object = Date.fromisoformat(f"{date}-01")
+    elif date == "present":
+        date_object = Date.today()
+    else:
+        raise ValueError(
+            f'The date string "{date}" is not in YYYY-MM-DD, YYYY-MM, or YYYY format.'
+        )
+
+    return date_object
 
 
 class RenderCVBaseModel(pydantic.BaseModel):
@@ -59,13 +92,13 @@ class EntryBase(RenderCVBaseModel):
     etc.
     """
 
-    start_date: Optional[PastDate] = pydantic.Field(
+    start_date: Optional[int | PastDate] = pydantic.Field(
         default=None,
         title="Start Date",
         description="The start date of the event in YYYY-MM-DD format.",
         examples=["2020-09-24"],
     )
-    end_date: Optional[Literal["present"] | PastDate] = pydantic.Field(
+    end_date: Optional[Literal["present"] | int | PastDate] = pydantic.Field(
         default=None,
         title="End Date",
         description=(
@@ -155,33 +188,22 @@ class EntryBase(RenderCVBaseModel):
             )
 
         if model.start_date is not None and model.end_date is not None:
-            if model.end_date == "present":
-                end_date = Date.today()
-            elif isinstance(model.end_date, int):
-                # Then it means user only provided the year, so convert it to a Date
-                # object with the first day of the year (just for the date comparison)
-                end_date = Date(model.end_date, 1, 1)
-            elif isinstance(model.end_date, Date):
-                # Then it means user provided either YYYY-MM-DD or YYYY-MM
-                end_date = model.end_date
-            else:
-                raise RuntimeError("end_date is neither an integer nor a Date object.")
-
-            if isinstance(model.start_date, int):
-                # Then it means user only provided the year, so convert it to a Date
-                # object with the first day of the year (just for the date comparison)
-                start_date = Date(model.start_date, 1, 1)
-            elif isinstance(model.start_date, Date):
-                # Then it means user provided either YYYY-MM-DD or YYYY-MM
-                start_date = model.start_date
-            else:
-                raise RuntimeError(
-                    "start_date is neither an integer nor a Date object."
-                )
+            end_date = get_date_object(model.end_date)
+            start_date = get_date_object(model.start_date)
 
             if start_date > end_date:
                 raise ValueError(
-                    '"start_date" can not be after "end_date". Please check the dates.'
+                    '"start_date" can not be after "end_date". The start date is'
+                    f" {start_date} and the end date is {end_date}."
+                )
+            elif end_date > Date.today():
+                raise ValueError(
+                    f'"end_date" cannot be in the future. The end date is {end_date}.'
+                )
+            elif start_date > Date.today():
+                raise ValueError(
+                    '"start_date" cannot be in the future. The start date is'
+                    f" {start_date}."
                 )
 
         return model
@@ -201,33 +223,26 @@ class EntryBase(RenderCVBaseModel):
             `#!python "2020-10-11 to 2021-04-04"`
         """
         if self.date is not None:
-            if isinstance(self.date, str):
-                date_string = self.date
-            elif isinstance(self.date, Date):
-                date_string = utilities.format_date(self.date)
-            else:
-                raise RuntimeError(
-                    "This error shouldn't have been raised. Please open"
-                    " an issue on GitHub."
-                )
+            try:
+                date_object = get_date_object(self.date)
+                date_string = utilities.format_date(date_object)
+            except ValueError:
+                date_string = str(self.date)
 
         elif self.start_date is not None and self.end_date is not None:
-            if isinstance(self.start_date, (int, Date)):
-                start_date = utilities.format_date(self.start_date)
+            if isinstance(self.start_date, int):
+                start_date = str(self.start_date)
             else:
-                raise RuntimeError(
-                    "This error shouldn't have been raised. Please open an issue on"
-                    " GitHub."
-                )
+                date_object = get_date_object(self.start_date)
+                start_date = utilities.format_date(date_object)
+
             if self.end_date == "present":
                 end_date = "present"
-            elif isinstance(self.end_date, (int, Date)):
-                end_date = utilities.format_date(self.end_date)
+            elif isinstance(self.end_date, int):
+                end_date = str(self.end_date)
             else:
-                raise RuntimeError(
-                    "This error shouldn't have been raised. Please open an issue on"
-                    " GitHub."
-                )
+                date_object = get_date_object(self.end_date)
+                end_date = utilities.format_date(date_object)
 
             date_string = f"{start_date} to {end_date}"
 
@@ -238,7 +253,7 @@ class EntryBase(RenderCVBaseModel):
 
     @pydantic.computed_field
     @cached_property
-    def time_span(self) -> Optional[str]:
+    def time_span_string(self) -> Optional[str]:
         """
         Return a time span string based on the `date`, `start_date`, and `end_date`
         fields.
@@ -261,17 +276,8 @@ class EntryBase(RenderCVBaseModel):
         elif isinstance(start_date, int) or isinstance(end_date, int):
             # Then it means one of the dates is year, so time span cannot be more
             # specific than years.
-            if isinstance(start_date, int):
-                start_year = start_date
-            else:
-                start_year = start_date.year  # type: ignore
-
-            if isinstance(end_date, int):
-                end_year = end_date
-            elif end_date == "present":
-                end_year = Date.today().year
-            else:
-                end_year = end_date.year  # type: ignore
+            start_year = get_date_object(start_date).year  # type: ignore
+            end_year = get_date_object(end_date).year  # type: ignore
 
             time_span_in_years = end_year - start_year
 
@@ -283,17 +289,11 @@ class EntryBase(RenderCVBaseModel):
             return time_span_string
 
         else:
-            if end_date == "present":
-                end_date = Date.today()
+            end_date = get_date_object(end_date)  # type: ignore
+            start_date = get_date_object(start_date)  # type: ignore
 
             # calculate the number of days between start_date and end_date:
             timespan_in_days = (end_date - start_date).days  # type: ignore
-
-            if timespan_in_days < 0:
-                raise RuntimeError(
-                    "This error shouldn't have been raised. Please open an issue on"
-                    " GitHub."
-                )
 
             # calculate the number of years between start_date and end_date:
             how_many_years = timespan_in_days // 365
@@ -430,7 +430,10 @@ class PublicationEntry(RenderCVBaseModel):
     @classmethod
     def check_doi(cls, doi: str) -> str:
         """Check if the DOI exists in the DOI System."""
-        doi_url = f"https://doi.org/{doi}"
+        # see https://stackoverflow.com/a/60671292/18840665
+        ssl._create_default_https_context = ssl._create_unverified_context
+
+        doi_url = f"http://doi.org/{doi}"
 
         try:
             urlopen(doi_url)
@@ -902,3 +905,42 @@ def generate_json_schema(output_directory: str) -> str:
         f.write(schema)
 
     return path_to_schema
+
+
+def read_input_file(file_path: str) -> RenderCVDataModel:
+    """Read the input file and return an instance of RenderCVDataModel.
+
+    Args:
+        file_path (str): The path to the input file.
+
+    Returns:
+        str: The input file as a string.
+    """
+    start_time = time.time()
+    information(f"Reading and validating the input file {file_path} has started.")
+
+    # check if the file exists:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The input file {file_path} doesn't exist.")
+
+    # check the file extension:
+    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
+    if not any(file_path.endswith(extension) for extension in accepted_extensions):
+        raise ValueError(
+            f"The file {file_path} doesn't have an accepted extension!"
+            f" Accepted extensions are: {accepted_extensions}"
+        )
+
+    with open(file_path) as file:
+        yaml = YAML()
+        raw_json = yaml.load(file)
+
+    data = RenderCVDataModel(**raw_json)
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+    information(
+        f"Reading and validating the input file {file_path} has finished in"
+        f" {time_taken:.2f} s."
+    )
+    return data
