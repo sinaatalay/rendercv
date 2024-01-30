@@ -56,6 +56,9 @@ def text_entry():
     "start_date, end_date, date, expected_date_string, expected_time_span",
     [
         ("2020-01-01", "2021-01-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
+        ("2020-01", "2021-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
+        ("2020-01", "2021-01-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
+        ("2020-01-01", "2021-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
         ("2020-01-01", None, None, "Jan. 2020 to present", "4 years 1 month"),
         ("2020-02-01", "present", None, "Feb. 2020 to present", "3 years 11 months"),
         ("2020-01-01", "2021-01-01", "2023-02-01", "Feb. 2023", None),
@@ -75,7 +78,7 @@ def test_dates(start_date, end_date, date, expected_date_string, expected_time_s
     entry_base = dm.EntryBase(start_date=start_date, end_date=end_date, date=date)
 
     assert entry_base.date_string == expected_date_string
-    assert entry_base.time_span == expected_time_span
+    assert entry_base.time_span_string == expected_time_span
 
 
 @pytest.mark.parametrize(
