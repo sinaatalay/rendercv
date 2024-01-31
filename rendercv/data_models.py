@@ -210,7 +210,7 @@ class EntryBase(RenderCVBaseModel):
 
     @pydantic.computed_field
     @cached_property
-    def date_string(self) -> Optional[str]:
+    def date_string(self) -> str:
         """
         Return a date string based on the `date`, `start_date`, and `end_date` fields.
 
@@ -247,13 +247,13 @@ class EntryBase(RenderCVBaseModel):
             date_string = f"{start_date} to {end_date}"
 
         else:
-            date_string = None
+            date_string = ""
 
         return date_string
 
     @pydantic.computed_field
     @cached_property
-    def time_span_string(self) -> Optional[str]:
+    def time_span_string(self) -> str:
         """
         Return a time span string based on the `date`, `start_date`, and `end_date`
         fields.
@@ -271,7 +271,7 @@ class EntryBase(RenderCVBaseModel):
         date = self.date
 
         if date is not None or (start_date is None and end_date is None):
-            return None
+            return ""
 
         elif isinstance(start_date, int) or isinstance(end_date, int):
             # Then it means one of the dates is year, so time span cannot be more
@@ -846,6 +846,115 @@ def generate_json_schema(output_directory: str) -> str:
     return path_to_schema
 
 
+def escape_latex_characters(sentence: str) -> str:
+    """Escape LaTeX characters in a string.
+
+    Example:
+        ```python
+        escape_latex_characters("This is a # string.")
+        ```
+        will return:
+        `#!python "This is a \\# string."`
+    """
+
+    # Dictionary of escape characters:
+    escape_characters = {
+        "#": r"\#",
+        # "$": r"\$", # Don't escape $ as it is used for math mode
+        "%": r"\%",
+        "&": r"\&",
+        "~": r"\textasciitilde{}",
+        # "_": r"\_", # Don't escape _ as it is used for math mode
+        # "^": r"\textasciicircum{}", # Don't escape ^ as it is used for math mode
+    }
+
+    # Don't escape links as hyperref package will do it automatically:
+
+    # Find all the links in the sentence:
+    links = re.findall(r"\[.*?\]\(.*?\)", sentence)
+
+    # Replace the links with a placeholder:
+    for link in links:
+        sentence = sentence.replace(link, "!!-link-!!")
+
+    # Loop through the letters of the sentence and if you find an escape character,
+    # replace it with its LaTeX equivalent:
+    copy_of_the_sentence = sentence
+    for character in copy_of_the_sentence:
+        if character in escape_characters:
+            sentence = sentence.replace(character, escape_characters[character])
+
+    # Replace the links with the original links:
+    for link in links:
+        sentence = sentence.replace("!!-link-!!", link)
+
+    return sentence
+
+
+def markdown_to_latex(markdown_string: str) -> str:
+    """Convert a markdown string to LaTeX.
+
+    This function is used as a Jinja2 filter.
+
+    Example:
+        ```python
+        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
+        ```
+
+        will return:
+
+        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
+
+    Args:
+        markdown_string (str): The markdown string to convert.
+
+    Returns:
+        str: The LaTeX string.
+    """
+    # convert links
+    links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
+    if links is not None:
+        for link in links:
+            link_text = link[0]
+            link_url = link[1]
+
+            old_link_string = f"[{link_text}]({link_url})"
+            new_link_string = "\\href{" + link_url + "}{" + link_text + "}"
+
+            markdown_string = markdown_string.replace(old_link_string, new_link_string)
+
+    # convert bold
+    bolds = re.findall(r"\*\*([^\*]*)\*\*", markdown_string)
+    if bolds is not None:
+        for bold_text in bolds:
+            old_bold_text = f"**{bold_text}**"
+            new_bold_text = "\\textbf{" + bold_text + "}"
+
+            markdown_string = markdown_string.replace(old_bold_text, new_bold_text)
+
+    # convert italic
+    italics = re.findall(r"\*([^\*]*)\*", markdown_string)
+    if italics is not None:
+        for italic_text in italics:
+            old_italic_text = f"*{italic_text}*"
+            new_italic_text = "\\textit{" + italic_text + "}"
+
+            markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
+
+    # convert code
+    codes = re.findall(r"`([^`]*)`", markdown_string)
+    if codes is not None:
+        for code_text in codes:
+            old_code_text = f"`{code_text}`"
+            new_code_text = "\\texttt{" + code_text + "}"
+
+            markdown_string = markdown_string.replace(old_code_text, new_code_text)
+
+    latex_string = markdown_string
+
+    return latex_string
+
+
 def read_input_file(file_path: str) -> RenderCVDataModel:
     """Read the input file and return an instance of RenderCVDataModel.
 
@@ -873,20 +982,38 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
 
     with open(file_path) as file:
         file_content = file.read()
-        parsed_dictionary = strictyaml.load(file_content).data
+        parsed_dictionary: dict[str, Any] = strictyaml.load(file_content).data  # type: ignore
 
-    # recursive loop through each item in parsed_dictionary
-    # iki fonksiyon yaz:
-    # escape latex characters. (once bunu yap ki mesela linklerin icini escape etme)
-    # markdown to latex
+    def loop_through_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
+        """Recursively loop through a dictionary and apply markdown_to_latex and
+        escape_latex_characters to all the fields.
 
-    # sonra her bir fieldi bu iki fonksiyondan gecir, sonra validation i baslat. oldu bitti
-    # latex string falan kasmaya gerek yokmus.
+        Args:
+            dictionary (dict[str, Any]): The dictionary to loop through.
 
-    # burda tek tek recursive bir sekilde pased dictionaryde gez. burdaki latex karakterleri escape et.
-    # tum markdownlari latex e cevir.
+        Returns:
+            dict[str, Any]: The dictionary with markdown_to_latex and
+                escape_latex_characters applied to all the fields.
+        """
+        for key, value in dictionary.items():
+            if isinstance(value, str):
+                result = escape_latex_characters(value)
+                dictionary[key] = markdown_to_latex(result)
+            elif isinstance(value, list):
+                for index, item in enumerate(value):
+                    if isinstance(item, str):
+                        result = escape_latex_characters(item)
+                        dictionary[key][index] = markdown_to_latex(result)
+                    elif isinstance(item, dict):
+                        dictionary[key][index] = loop_through_dictionary(item)
+            elif isinstance(value, dict):
+                dictionary[key] = loop_through_dictionary(value)
 
-    data = RenderCVDataModel(**raw_dictionary)
+        return dictionary
+
+    parsed_dictionary = loop_through_dictionary(parsed_dictionary)
+
+    data = RenderCVDataModel(**parsed_dictionary)  ## type: ignore
 
     end_time = time.time()
     time_taken = end_time - start_time
