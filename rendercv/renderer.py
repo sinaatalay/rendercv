@@ -18,6 +18,98 @@ import jinja2
 logger = logging.getLogger(__name__)
 
 
+class LaTeXFile:
+    def __init__(
+        self,
+        cv: dm.CurriculumVitae,
+        design: dm.Design,
+        environment: jinja2.Environment,
+        file_path,
+    ):
+        self.file_path = file_path
+        self.cv = cv
+        self.design = design
+        self.environment = environment
+
+        self.preamble = self.template("Preamble")
+        self.header = self.template("Header")
+        self.sections = []
+        for section in cv.sections:
+            title = self.template("SectionTitle", section_title=section.title)
+            entries = []
+            for entry in section.entries:
+                entries.append(self.template(section.entry_type, entry=entry))
+            self.sections.append((title, entries))
+
+    def template(
+        self,
+        template_name: Literal[
+            "EducationEntry",
+            "ExperienceEntry",
+            "NormalEntry",
+            "PublicationEntry",
+            "OneLineEntry",
+            "TextEntry",
+            "Header",
+            "Preamble",
+            "SectionTitle",
+        ],
+        entry: Optional[
+            dm.EducationEntry
+            | dm.ExperienceEntry
+            | dm.NormalEntry
+            | dm.PublicationEntry
+            | dm.OneLineEntry
+            | str  # TextEntry
+        ] = None,
+        section_title: Optional[str] = None,
+    ) -> str:
+        """Template one of the files in the `templates` directory.
+
+        Args:
+            cv (dm.CurriculumVitae): The CV.
+            design (dm.Design): The design.
+            entry (dm.EducationEntry): The education entry.
+            enty_type (Literal["EducationEntry", "ExperienceEntry", "NormalEntry", "PublicationEntry", "OneLineEntry", "TextEntry"]): The type of the entry.
+            environment (jinja2.Environment): The Jinja2 environment.
+
+        Returns:
+            str: The rendered education entry.
+        """
+        education_entry_template = self.environment.get_template(
+            f"{self.design.theme}/{template_name}.j2.tex"
+        )
+
+        # loop through the entry attributes and make them "" if they are None:
+        if entry is not None and not isinstance(entry, str):
+            for key, value in entry.model_dump().items():
+                if value is None:
+                    try:
+                        entry.__setattr__(key, "")
+                    except ValueError:
+                        # then it means it's a computed property, can be ignored
+                        pass
+
+        latex_code = education_entry_template.render(
+            cv=self.cv,
+            design=self.design,
+            entry=entry,
+            section_title=section_title,
+            today=Date.today().strftime("%B %Y"),
+        )
+
+        return latex_code
+
+    def get_latex_code(self):
+        main_template = self.environment.get_template("main.j2.tex")
+        latex_code = main_template.render(
+            header=self.header,
+            preamble=self.preamble,
+            sections=self.sections,
+        )
+        return latex_code
+
+
 def markdown_to_latex(markdown_string: str) -> str:
     """Convert a markdown string to LaTeX.
 
@@ -264,7 +356,7 @@ def setup_theme_environment(theme_name: str) -> jinja2.Environment:
     """
     # create a Jinja2 environment:
     environment = jinja2.Environment(
-        loader=jinja2.PackageLoader("rendercv", os.path.join("themes", theme_name)),
+        loader=jinja2.PackageLoader("rendercv", os.path.join("themes")),
         trim_blocks=True,
         lstrip_blocks=True,
     )
@@ -293,112 +385,22 @@ def setup_theme_environment(theme_name: str) -> jinja2.Environment:
     return environment
 
 
-def template(
-    cv: dm.CurriculumVitae,
-    design: dm.Design,
-    template_name: Literal[
-        "EducationEntry",
-        "ExperienceEntry",
-        "NormalEntry",
-        "PublicationEntry",
-        "OneLineEntry",
-        "TextEntry",
-        "Header",
-        "Preamble",
-        "SectionTitle",
-    ],
-    environment: jinja2.Environment,
-    entry: Optional[
-        dm.EducationEntry
-        | dm.ExperienceEntry
-        | dm.NormalEntry
-        | dm.PublicationEntry
-        | dm.OneLineEntry
-        | str  # TextEntry
-    ] = None,
-    section_title: Optional[str] = None,
-) -> str:
-    """Template one of the files in the `templates` directory.
-
-    Args:
-        cv (dm.CurriculumVitae): The CV.
-        design (dm.Design): The design.
-        entry (dm.EducationEntry): The education entry.
-        enty_type (Literal["EducationEntry", "ExperienceEntry", "NormalEntry", "PublicationEntry", "OneLineEntry", "TextEntry"]): The type of the entry.
-        environment (jinja2.Environment): The Jinja2 environment.
-
-    Returns:
-        str: The rendered education entry.
-    """
-    education_entry_template = environment.get_template(f"{template_name}.j2.tex")
-
-    latex_code = education_entry_template.render(
-        cv=cv,
-        design=design,
-        entry=entry,
-        section_title=section_title,
-        today=Date.today().strftime("%B %Y"),
-    )
-
-    return latex_code
-
-
 def generate_the_latex_file(
     rendercv_data_model: dm.RenderCVDataModel, output_file_path: str
 ) -> str:
     """ """
     environment = setup_theme_environment(rendercv_data_model.design.theme)
-
-    # render the preamble:
-    preamble = template(
-        cv=rendercv_data_model.cv,
-        design=rendercv_data_model.design,
-        entry=None,
-        template_name="Preamble",
-        environment=environment,
+    latex_file_object = LaTeXFile(
+        rendercv_data_model.cv,
+        rendercv_data_model.design,
+        environment,
+        output_file_path,
     )
 
-    latex_file = preamble + "\n\\begin{document}\n"
+    with open(output_file_path, "w") as latex_file:
+        latex_file.write(latex_file_object.get_latex_code())
 
-    # render the header:
-    header = template(
-        cv=rendercv_data_model.cv,
-        design=rendercv_data_model.design,
-        template_name="Header",
-        environment=environment,
-    )
-
-    latex_file = latex_file + header + "\n"
-
-    # render the sections:
-    for section in rendercv_data_model.cv.sections:
-        title = template(
-            cv=rendercv_data_model.cv,
-            design=rendercv_data_model.design,
-            template_name="SectionTitle",
-            environment=environment,
-            section_title=section.title,
-        )
-
-        latex_file = latex_file + title + "\n"
-
-        for entry in section.entries:
-            entry = template(
-                cv=rendercv_data_model.cv,
-                design=rendercv_data_model.design,
-                template_name=section.entry_type,
-                environment=environment,
-                entry=entry,
-            )
-            latex_file = latex_file + entry + "\n"
-
-    latex_file = latex_file + "\\end{document}\n"
-
-    # write the LaTeX file:
-    with open(output_file_path, "w") as file:
-        file.write(latex_file)
-
-    return latex_file
+    return latex_file_object.get_latex_code()
 
 
 def render_the_latex_file(latex_file_path: str) -> str:
@@ -420,28 +422,17 @@ def render_the_latex_file(latex_file_path: str) -> str:
     output_file_name = latex_file_name.replace(".tex", ".pdf")
     output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file_name)
 
+    tinytex_binaries = files("rendercv").joinpath("tinytex-release", "TinyTeX", "bin")
     if sys.platform == "win32":
         # Windows
-        executable = str(
-            files("rendercv").joinpath(
-                "vendor", "TinyTeX", "bin", "windows", "lualatex.exe"
-            )
-        )
+        executable = str(tinytex_binaries.joinpath("windows", "lualatex.exe"))
 
     elif sys.platform == "linux" or sys.platform == "linux2":
         # Linux
-        executable = str(
-            files("rendercv").joinpath(
-                "vendor", "TinyTeX", "bin", "x86_64-linux", "lualatex"
-            )
-        )
+        executable = str(tinytex_binaries.joinpath("x86_64-linux", "lualatex"))
     elif sys.platform == "darwin":
         # MacOS
-        executable = str(
-            files("rendercv").joinpath(
-                "vendor", "TinyTeX", "bin", "universal-darwin", "lualatex"
-            )
-        )
+        executable = str(tinytex_binaries.joinpath("universal-darwin", "lualatex"))
     else:
         raise OSError(f"Unknown OS {os.name}!")
 
