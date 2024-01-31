@@ -247,3 +247,51 @@ def test_sections_without_default_types(
     assert len(cv.sections) == len(entries)
     for i, entry in enumerate(entries):
         assert len(cv.sections[i].entries) == 2
+
+
+def test_section_with_invalid_entry_type():
+    input = {"name": "John Doe", "sections": dict()}
+    input["sections"]["My Section"] = {
+        "entry_type": "InvalidEntryType",
+        "entries": [],
+    }
+    with pytest.raises(pydantic.ValidationError):
+        dm.CurriculumVitae(**input)
+
+
+@pytest.mark.parametrize(
+    "section_title",
+    [
+        "Education",
+        "Experience",
+        "Work Experience",
+        "Research Experience",
+        "Publications",
+        "Papers",
+        "Projects",
+        "Academic Projects",
+        "University Projects",
+        "Personal Projects",
+        "Certificates",
+        "Extracurricular Activities",
+        "Test Scores",
+        "Skills",
+        "Programming Skills",
+        "Other Skills",
+        "Awards",
+        "Interests",
+        "Summary",
+        "My Custom Section",
+    ],
+)
+def test_sections_with_invalid_entries(section_title):
+    input = {"name": "John Doe", "sections": dict()}
+    input["sections"][section_title] = [
+        {
+            "this": "is",
+            "an": "invalid",
+            "entry": 10,
+        }
+    ]
+    with pytest.raises(pydantic.ValidationError):
+        dm.CurriculumVitae(**input)

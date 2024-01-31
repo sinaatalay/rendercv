@@ -11,7 +11,7 @@ has provided a valid RenderCV input. This is achieved through the use of
 """
 
 from datetime import date as Date
-from typing import Literal
+from typing import Literal, Any
 from typing_extensions import Annotated, Optional
 from functools import cached_property
 from urllib.request import urlopen, HTTPError
@@ -24,7 +24,7 @@ import time
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import pydantic.functional_validators as pydantic_functional_validators
-from ruamel.yaml import YAML
+import strictyaml
 
 from . import utilities
 from .terminal_reporter import warning
@@ -660,94 +660,44 @@ class CurriculumVitae(RenderCVBaseModel):
             "The order of sections in the CV. The section title should be used."
         ),
     )
-    sections_input: dict[
-        str,
-        Section
-        | list[EducationEntry]
-        | list[NormalEntry]
-        | list[OneLineEntry]
-        | list[PublicationEntry]
-        | list[ExperienceEntry]
-        | list[str],
-    ] = pydantic.Field(
+    sections_input: dict[str, Section | list[Any]] = pydantic.Field(
         default=None,
         title="Sections",
         description="The sections of the CV.",
         alias="sections",
     )
 
-    @pydantic.field_validator("sections_input", mode="before")
+    @pydantic.field_validator("sections_input")
     @classmethod
-    def parse_and_validate_sections(
+    def validate_sections(
         cls,
-        sections_input: dict[
-            str,
-            Section
-            | list[EducationEntry]
-            | list[NormalEntry]
-            | list[OneLineEntry]
-            | list[PublicationEntry]
-            | list[ExperienceEntry]
-            | list[str],
-        ],
-    ) -> dict[
-        str,
-        Section
-        | list[EducationEntry]
-        | list[NormalEntry]
-        | list[OneLineEntry]
-        | list[PublicationEntry]
-        | list[ExperienceEntry]
-        | list[str],
-    ]:
+        sections_input: dict[str, Section | list[Any]],
+    ) -> dict[str, Section | list[Any]]:
         """
         Parse and validate the sections of the CV.
         """
-
         if sections_input is not None:
-            # check if the section names are unique, get the keys of the sections:
-            keys = list(sections_input.keys())
-            unique_keys = list(set(keys))
-            if len(keys) != len(unique_keys):
-                duplicate_keys = list(set([key for key in keys if keys.count(key) > 1]))
-                raise ValueError(
-                    "The section names should be unique. The following section names"
-                    f" are duplicated: {duplicate_keys}"
-                )
-
             for title, section_or_entries in sections_input.items():
-                title = title.replace("_", " ").title()
                 if isinstance(section_or_entries, list):
-                    # Then it means the user provided entries directly. Then it means
-                    # the section title should have a default entry type.
+                    title = title.replace("_", " ").title()
                     if title in default_entry_types_for_a_given_title:
                         (
                             entry_type,
                             section_type,
                         ) = default_entry_types_for_a_given_title[title]
 
-                        # try if the entries are of the correct type by casting them
-                        # to the entry type one by one
-                        for entry in section_or_entries:
-                            if entry_type is str:
-                                if not isinstance(entry, str):
-                                    raise pydantic.ValidationError(
-                                        f'"{entry}" is not a valid string.'
-                                    )
-                            else:
-                                try:
-                                    entry = entry_type(**entry)  # type: ignore
-                                except pydantic.ValidationError as err:
-                                    raise pydantic.ValidationError(
-                                        f'"{entry}" is not a valid'
-                                        f" {entry_type.__name__}."
-                                    ) from err
+                        if entry_type is str:
+                            entry_type = "TextEntry"
+                        else:
+                            entry_type = entry_type.__name__
 
-                    else:
-                        raise ValueError(
-                            f'"{title}" doesn\'t have a default entry type. Please'
-                            " provide the entry type."
-                        )
+                        test_section = {
+                            "title": title,
+                            "entry_type": entry_type,
+                            "entries": section_or_entries,
+                        }
+
+                        section_type.model_validate(test_section)
 
         return sections_input
 
@@ -759,23 +709,7 @@ class CurriculumVitae(RenderCVBaseModel):
         if self.sections_input is not None:
             for title, section_or_entries in self.sections_input.items():
                 title = title.replace("_", " ").title()
-                if isinstance(
-                    section_or_entries,
-                    (
-                        SectionWithEducationEntries,
-                        SectionWithExperienceEntries,
-                        SectionWithNormalEntries,
-                        SectionWithOneLineEntries,
-                        SectionWithPublicationEntries,
-                        SectionWithTextEntries,
-                    ),
-                ):
-                    if section_or_entries.title is None:
-                        section_or_entries.title = title
-
-                    sections.append(section_or_entries)
-
-                elif isinstance(section_or_entries, list):
+                if isinstance(section_or_entries, list):
                     if title in default_entry_types_for_a_given_title:
                         (
                             entry_type,
@@ -798,6 +732,11 @@ class CurriculumVitae(RenderCVBaseModel):
                             "This error shouldn't have been raised. Please open an"
                             " issue on GitHub."
                         )
+                elif hasattr(section_or_entries, "entry_type"):
+                    if section_or_entries.title is None:
+                        section_or_entries.title = title
+
+                    sections.append(section_or_entries)
 
                 else:
                     raise RuntimeError(
@@ -917,6 +856,7 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
         str: The input file as a string.
     """
     start_time = time.time()
+
     information(f"Reading and validating the input file {file_path} has started.")
 
     # check if the file exists:
@@ -932,10 +872,21 @@ def read_input_file(file_path: str) -> RenderCVDataModel:
         )
 
     with open(file_path) as file:
-        yaml = YAML()
-        raw_json = yaml.load(file)
+        file_content = file.read()
+        parsed_dictionary = strictyaml.load(file_content).data
 
-    data = RenderCVDataModel(**raw_json)
+    # recursive loop through each item in parsed_dictionary
+    # iki fonksiyon yaz:
+    # escape latex characters. (once bunu yap ki mesela linklerin icini escape etme)
+    # markdown to latex
+
+    # sonra her bir fieldi bu iki fonksiyondan gecir, sonra validation i baslat. oldu bitti
+    # latex string falan kasmaya gerek yokmus.
+
+    # burda tek tek recursive bir sekilde pased dictionaryde gez. burdaki latex karakterleri escape et.
+    # tum markdownlari latex e cevir.
+
+    data = RenderCVDataModel(**raw_dictionary)
 
     end_time = time.time()
     time_taken = end_time - start_time
