@@ -36,11 +36,10 @@ from .terminal_reporter import warning, error, information
 # returns a Date object. It also checks if the date is in the past.
 # See https://docs.pydantic.dev/2.5/concepts/types/#custom-types for more information
 # about custom types.
-PastDate = Annotated[
+RenderCVDate = Annotated[
     str,
     pydantic.Field(pattern=r"\d{4}-\d{2}(-\d{2})?"),
 ]
-PastDateAdapter = pydantic.TypeAdapter(PastDate)
 
 
 def get_date_object(date: str | int) -> Date:
@@ -92,13 +91,13 @@ class EntryBase(RenderCVBaseModel):
     etc.
     """
 
-    start_date: Optional[int | PastDate] = pydantic.Field(
+    start_date: Optional[int | RenderCVDate] = pydantic.Field(
         default=None,
         title="Start Date",
         description="The start date of the event in YYYY-MM-DD format.",
         examples=["2020-09-24"],
     )
-    end_date: Optional[Literal["present"] | int | PastDate] = pydantic.Field(
+    end_date: Optional[Literal["present"] | int | RenderCVDate] = pydantic.Field(
         default=None,
         title="End Date",
         description=(
@@ -107,7 +106,7 @@ class EntryBase(RenderCVBaseModel):
         ),
         examples=["2020-09-24", "present"],
     )
-    date: Optional[PastDate | int | str] = pydantic.Field(
+    date: Optional[RenderCVDate | int | str] = pydantic.Field(
         default=None,
         title="Date",
         description=(
@@ -415,16 +414,29 @@ class PublicationEntry(RenderCVBaseModel):
         description="The DOI of the publication.",
         examples=["10.48550/arXiv.2310.03138"],
     )
-    date: str = pydantic.Field(
+    date: int | RenderCVDate = pydantic.Field(
         title="Publication Date",
         description="The date of the publication.",
-        examples=["2021-10-31"],
+        examples=["2021-10-31", "2010"],
     )
     journal: Optional[str] = pydantic.Field(
         default=None,
         title="Journal",
         description="The journal or the conference name.",
     )
+
+    @pydantic.field_validator("date")
+    @classmethod
+    def check_date(cls, date: int | RenderCVDate) -> int | RenderCVDate:
+        """Check if the date is in the past."""
+        date_object = get_date_object(date)
+        if date_object > Date.today():
+            raise ValueError(
+                f"The publication date {date} cannot be in the future. The publication"
+                " date should be in the past."
+            )
+
+        return date
 
     @pydantic.field_validator("doi")
     @classmethod
@@ -447,6 +459,19 @@ class PublicationEntry(RenderCVBaseModel):
     @cached_property
     def doi_url(self) -> str:
         return f"https://doi.org/{self.doi}"
+
+    @pydantic.computed_field
+    @cached_property
+    def date_string(self) -> str:
+        if isinstance(self.date, int):
+            date_string = str(self.date)
+        elif isinstance(self.date, str):
+            date_object = get_date_object(self.date)
+            date_string = utilities.format_date(date_object)
+        else:
+            date_string = ""
+
+        return date_string
 
 
 # ======================================================================================
@@ -699,6 +724,12 @@ class CurriculumVitae(RenderCVBaseModel):
 
                         section_type.model_validate(test_section)
 
+                    else:
+                        raise ValueError(
+                            f'The entry type for the section "{title}" is not provided!'
+                            " Please provide an entry type."
+                        )
+
         return sections_input
 
     @pydantic.computed_field
@@ -784,9 +815,9 @@ def generate_json_schema(output_directory: str) -> str:
             del json_schema["description"]
 
             # add $id
-            json_schema[
-                "$id"
-            ] = "https://raw.githubusercontent.com/sinaatalay/rendercv/main/schema.json"
+            json_schema["$id"] = (
+                "https://raw.githubusercontent.com/sinaatalay/rendercv/main/schema.json"
+            )
 
             # add $schema
             json_schema["$schema"] = "http://json-schema.org/draft-07/schema#"
