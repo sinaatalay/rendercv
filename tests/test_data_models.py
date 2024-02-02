@@ -61,16 +61,17 @@ def text_entry():
         ("2020-01-01", "2021-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
         ("2020-01-01", None, None, "Jan. 2020 to present", "4 years 1 month"),
         ("2020-02-01", "present", None, "Feb. 2020 to present", "3 years 11 months"),
-        ("2020-01-01", "2021-01-01", "2023-02-01", "Feb. 2023", None),
+        ("2020-01-01", "2021-01-01", "2023-02-01", "Feb. 2023", ""),
         ("2020", "2021", None, "2020 to 2021", "1 year"),
         ("2020", None, None, "2020 to present", "4 years"),
         ("2020-10-10", "2022", None, "Oct. 2020 to 2022", "2 years"),
         ("2022", "2023-10-10", None, "2022 to Oct. 2023", "1 year"),
-        ("2020-01-01", "present", "My Custom Date", "My Custom Date", None),
-        ("2020-01-01", None, "My Custom Date", "My Custom Date", None),
-        (None, None, "My Custom Date", "My Custom Date", None),
-        (None, "2020-01-01", "My Custom Date", "My Custom Date", None),
-        (None, None, None, None, None),
+        ("2020-01-01", "present", "My Custom Date", "My Custom Date", ""),
+        ("2020-01-01", None, "My Custom Date", "My Custom Date", ""),
+        (None, None, "My Custom Date", "My Custom Date", ""),
+        (None, "2020-01-01", "My Custom Date", "My Custom Date", ""),
+        (None, None, "2020-01-01", "Jan. 2020", ""),
+        (None, None, None, "", ""),
     ],
 )
 @time_machine.travel("2024-01-01")
@@ -79,6 +80,32 @@ def test_dates(start_date, end_date, date, expected_date_string, expected_time_s
 
     assert entry_base.date_string == expected_date_string
     assert entry_base.time_span_string == expected_time_span
+
+@pytest.mark.parametrize(
+    "date, expected_date_string",
+    [
+        ("2020-01-01", "Jan. 2020"),
+        ("2020-01", "Jan. 2020"),
+        ("2020", "2020"),
+    ]
+)
+def test_publication_dates(publication_entry, date, expected_date_string):
+    publication_entry["date"] = date
+    publication_entry = dm.PublicationEntry(**publication_entry)
+    assert publication_entry.date_string == expected_date_string
+
+@pytest.mark.parametrize(
+    "date",
+    [
+        "aaa",
+        None,
+        "2025"
+    ]
+)
+def test_invalid_publication_dates(publication_entry, date):
+    with pytest.raises(pydantic.ValidationError):
+        publication_entry["date"] = date
+        dm.PublicationEntry(**publication_entry)
 
 
 @pytest.mark.parametrize(
