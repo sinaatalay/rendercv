@@ -1,8 +1,9 @@
 """
-This module contains all the necessary classes to store CV data. The YAML input file is
-transformed into instances of these classes (i.e., the input file is read) with the
-[`read_input_file`](utilities.md#read_input_file) function. RenderCV utilizes these
-instances to generate a CV. These classes are called data models.
+This module contains all the necessary classes to store CV data. These classes are called
+data models. The YAML input file is transformed into instances of these classes (i.e.,
+the input file is read) with the [`read_input_file`](#read_input_file) function.
+RenderCV utilizes these instances to generate a LaTeX file which is then rendered into a
+PDF file.
 
 The data models are initialized with data validation to prevent unexpected bugs. During
 the initialization, we ensure that everything is in the correct place and that the user
@@ -20,20 +21,21 @@ import json
 import re
 import ssl
 import time
+import pathlib
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
-import pydantic.functional_validators as pydantic_functional_validators
 import strictyaml
 
 from . import utilities
 from .terminal_reporter import warning
 from .themes.classic import ClassicThemeOptions
-from .terminal_reporter import warning, error, information
+from .terminal_reporter import information, time_the_event_below
 
 
-# Create a custom type called PastDate that accepts a string in YYYY-MM-DD format and
-# returns a Date object. It also checks if the date is in the past.
+# Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
+# YYYY-MM format:
+# This type is used to validate the date fields in the data.
 # See https://docs.pydantic.dev/2.5/concepts/types/#custom-types for more information
 # about custom types.
 RenderCVDate = Annotated[
@@ -44,7 +46,8 @@ RenderCVDate = Annotated[
 
 def get_date_object(date: str | int) -> Date:
     """Parse a date string in YYYY-MM-DD, YYYY-MM, or YYYY format and return a
-    datetime.date object.
+    datetime.date object. This function is used throughout the validation process of the
+    data models.
 
     Args:
         date_string (str): The date string to parse.
@@ -71,10 +74,9 @@ def get_date_object(date: str | int) -> Date:
 
 
 class RenderCVBaseModel(pydantic.BaseModel):
-    """
-    This class is the parent class of all the data models in RenderCV. It has only one
-    difference from the default `pydantic.BaseModel`: It raises an error if an unknown
-    key is provided in the input file.
+    """This class is the parent class of all the data models in RenderCV. It has only
+    one difference from the default `pydantic.BaseModel`: It raises an error if an
+    unknown key is provided in the input file.
     """
 
     model_config = pydantic.ConfigDict(extra="forbid")
@@ -136,8 +138,7 @@ class EntryBase(RenderCVBaseModel):
     @classmethod
     def check_dates(cls, model):
         """
-        Check if the dates are provided correctly and convert them to `Date` objects if
-        they are provided in YYYY-MM-DD format.
+        Check if the dates are provided correctly and do the necessary adjustments.
         """
         date_is_provided = False
         start_date_is_provided = False
@@ -215,8 +216,7 @@ class EntryBase(RenderCVBaseModel):
 
         Example:
             ```python
-            entry = dm.EntryBase(start_date=2020-10-11, end_date=2021-04-04)
-            entry.date_string
+            entry = dm.EntryBase(start_date=2020-10-11, end_date=2021-04-04).date_string
             ```
             will return:
             `#!python "2020-10-11 to 2021-04-04"`
@@ -226,26 +226,33 @@ class EntryBase(RenderCVBaseModel):
                 date_object = get_date_object(self.date)
                 date_string = utilities.format_date(date_object)
             except ValueError:
+                # Then it is a custom date string (e.g., "My Custom Date")
                 date_string = str(self.date)
 
         elif self.start_date is not None and self.end_date is not None:
             if isinstance(self.start_date, int):
+                # Then it means only the year is provided
                 start_date = str(self.start_date)
             else:
+                # Then it means start_date is either in YYYY-MM-DD or YYYY-MM format
                 date_object = get_date_object(self.start_date)
                 start_date = utilities.format_date(date_object)
 
             if self.end_date == "present":
                 end_date = "present"
             elif isinstance(self.end_date, int):
+                # Then it means only the year is provided
                 end_date = str(self.end_date)
             else:
+                # Then it means end_date is either in YYYY-MM-DD or YYYY-MM format
                 date_object = get_date_object(self.end_date)
                 end_date = utilities.format_date(date_object)
 
             date_string = f"{start_date} to {end_date}"
 
         else:
+            # Neither date, start_date, nor end_date is provided, so return an empty
+            # string:
             date_string = ""
 
         return date_string
@@ -259,8 +266,7 @@ class EntryBase(RenderCVBaseModel):
 
         Example:
             ```python
-            entry = dm.EntryBase(start_date=2020-01-01, end_date=2020-04-20)
-            entry.time_span
+            entry = dm.EntryBase(start_date=2020-01-01, end_date=2020-04-20).time_span
             ```
             will return:
             `#!python "4 months"`
@@ -270,6 +276,8 @@ class EntryBase(RenderCVBaseModel):
         date = self.date
 
         if date is not None or (start_date is None and end_date is None):
+            # If only the date is provided, the time span is irrelevant. So, return an
+            # empty string.
             return ""
 
         elif isinstance(start_date, int) or isinstance(end_date, int):
@@ -288,6 +296,8 @@ class EntryBase(RenderCVBaseModel):
             return time_span_string
 
         else:
+            # Then it means both start_date and end_date are in YYYY-MM-DD or YYYY-MM
+            # format.
             end_date = get_date_object(end_date)  # type: ignore
             start_date = get_date_object(start_date)  # type: ignore
 
@@ -326,6 +336,7 @@ class EntryBase(RenderCVBaseModel):
         """
         url_text = None
         if self.url_text_input is not None:
+            # If the user provides a custom URL text, then use it.
             url_text = self.url_text_input
         elif self.url is not None:
             url_text_dictionary = {
@@ -399,7 +410,7 @@ class EducationEntry(EntryBase):
 
 
 class PublicationEntry(RenderCVBaseModel):
-    """THis class is the data model of `PublicationEntry`."""
+    """This class is the data model of `PublicationEntry`."""
 
     title: str = pydantic.Field(
         title="Title of the Publication",
@@ -442,7 +453,8 @@ class PublicationEntry(RenderCVBaseModel):
     @classmethod
     def check_doi(cls, doi: str) -> str:
         """Check if the DOI exists in the DOI System."""
-        # see https://stackoverflow.com/a/60671292/18840665
+        # see https://stackoverflow.com/a/60671292/18840665 for the explanation of the
+        # next line:
         ssl._create_default_https_context = ssl._create_unverified_context
 
         doi_url = f"http://doi.org/{doi}"
@@ -458,11 +470,13 @@ class PublicationEntry(RenderCVBaseModel):
     @pydantic.computed_field
     @cached_property
     def doi_url(self) -> str:
+        """Return the URL of the DOI."""
         return f"https://doi.org/{self.doi}"
 
     @pydantic.computed_field
     @cached_property
     def date_string(self) -> str:
+        """Return the date string of the publication."""
         if isinstance(self.date, int):
             date_string = str(self.date)
         elif isinstance(self.date, str):
@@ -477,7 +491,9 @@ class PublicationEntry(RenderCVBaseModel):
 # ======================================================================================
 # Section models: ======================================================================
 # ======================================================================================
-
+# Each section data model has a field called `entry_type` and a field called `entries`.
+# Since the same pydantic.Field object is used in all of the section models, it is
+# defined as a separate variable and used in all of the section models:
 entry_type_field_of_section_model = pydantic.Field(
     title="Entry Type",
     description="The type of the entries in the section.",
@@ -493,7 +509,7 @@ class SectionBase(RenderCVBaseModel):
     because all of the section types have a common field called `title`.
     """
 
-    # title is excluded from the JSON schema because this will be written by RenderCV
+    # Title is excluded from the JSON schema because this will be written by RenderCV
     # depending on the key in the input file.
     title: Optional[str] = pydantic.Field(default=None, exclude=True)
 
@@ -540,8 +556,9 @@ class SectionWithTextEntries(SectionBase):
     entries: list[str] = entries_field_of_section_model
 
 
-# A custom type Section. It is a union of all the section types and the correct section
-# type is determined by the entry_type field.
+# Create a custom type called Section:
+# It is a union of all the section types and the correct section type is determined by
+# the entry_type field, thanks Pydantic's discriminator feature.
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
 # about discriminators.
 Section = Annotated[
@@ -562,9 +579,13 @@ Section = Annotated[
 
 # RenderCV requires users to specify the entry type for each section in their CV in
 # order to render the correct thing in the CV. However, for certain sections, specifying
-# the entry type can be redundant. To simplify this process for users, default entry
+# the entry type can be redundant (for example, for the "Education" section, the entry
+# type is probably "EducationEntry"). To simplify this process for users, default entry
 # types are stored in a dictionary for certain section titles so that users do not have
 # to specify them.
+
+# If you have new section titles that you would like to add to this dictionary, please
+# open an issue or pull request on GitHub.
 default_entry_types_for_a_given_title: dict[
     str,
     tuple[type[EducationEntry], type[SectionWithEducationEntries]]
@@ -613,6 +634,7 @@ class SocialNetwork(RenderCVBaseModel):
     @pydantic.model_validator(mode="after")
     @classmethod
     def check_networks(cls, model):
+        """Check if the `SocialNetwork` is provided correctly."""
         if model.network == "Mastodon":
             if not model.username.startswith("@"):
                 raise ValueError(
@@ -782,6 +804,11 @@ class CurriculumVitae(RenderCVBaseModel):
 # ======================================================================================
 # ======================================================================================
 
+# Create a custom type called Design:
+# It is a union of all the design options and the correct design option is determined by
+# the theme field, thanks Pydantic's discriminator feature.
+# See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
+# about discriminators.
 Design = ClassicThemeOptions
 
 
@@ -799,11 +826,200 @@ class RenderCVDataModel(RenderCVBaseModel):
     )
 
 
-def generate_json_schema(output_directory: str) -> str:
-    """Generate the JSON schema of the data model and save it to a file.
+def escape_latex_characters(sentence: str) -> str:
+    """Escape $\LaTeX$ characters in a string.
+
+    This function is called during the reading of the input file. Before the validation
+    process, each input field's special $\\LaTeX$ characters are escaped.
+
+    Example:
+        ```python
+        escape_latex_characters("This is a # string.")
+        ```
+        will return:
+        `#!python "This is a \\# string."`
+    """
+
+    # Dictionary of escape characters:
+    escape_characters = {
+        "#": r"\#",
+        # "$": r"\$", # Don't escape $ as it is used for math mode
+        "%": r"\%",
+        "&": r"\&",
+        "~": r"\textasciitilde{}",
+        # "_": r"\_", # Don't escape _ as it is used for math mode
+        # "^": r"\textasciicircum{}", # Don't escape ^ as it is used for math mode
+    }
+
+    # Don't escape links as hyperref package will do it automatically:
+
+    # Find all the links in the sentence:
+    links = re.findall(r"\[.*?\]\(.*?\)", sentence)
+
+    # Replace the links with a placeholder:
+    for link in links:
+        sentence = sentence.replace(link, "!!-link-!!")
+
+    # Loop through the letters of the sentence and if you find an escape character,
+    # replace it with its LaTeX equivalent:
+    copy_of_the_sentence = sentence
+    for character in copy_of_the_sentence:
+        if character in escape_characters:
+            sentence = sentence.replace(character, escape_characters[character])
+
+    # Replace the links with the original links:
+    for link in links:
+        sentence = sentence.replace("!!-link-!!", link)
+
+    return sentence
+
+
+def markdown_to_latex(markdown_string: str) -> str:
+    """Convert a markdown string to LaTeX.
+
+    This function is called during the reading of the input file. Before the validation
+    process, each input field is converted from markdown to LaTeX.
+
+    Example:
+        ```python
+        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
+        ```
+
+        will return:
+
+        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
 
     Args:
-        output_directory (str): The output directory to save the schema.
+        markdown_string (str): The markdown string to convert.
+
+    Returns:
+        str: The LaTeX string.
+    """
+    # convert links
+    links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
+    if links is not None:
+        for link in links:
+            link_text = link[0]
+            link_url = link[1]
+
+            old_link_string = f"[{link_text}]({link_url})"
+            new_link_string = "\\href{" + link_url + "}{" + link_text + "}"
+
+            markdown_string = markdown_string.replace(old_link_string, new_link_string)
+
+    # convert bold
+    bolds = re.findall(r"\*\*([^\*]*)\*\*", markdown_string)
+    if bolds is not None:
+        for bold_text in bolds:
+            old_bold_text = f"**{bold_text}**"
+            new_bold_text = "\\textbf{" + bold_text + "}"
+
+            markdown_string = markdown_string.replace(old_bold_text, new_bold_text)
+
+    # convert italic
+    italics = re.findall(r"\*([^\*]*)\*", markdown_string)
+    if italics is not None:
+        for italic_text in italics:
+            old_italic_text = f"*{italic_text}*"
+            new_italic_text = "\\textit{" + italic_text + "}"
+
+            markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
+
+    # convert code
+    codes = re.findall(r"`([^`]*)`", markdown_string)
+    if codes is not None:
+        for code_text in codes:
+            old_code_text = f"`{code_text}`"
+            new_code_text = "\\texttt{" + code_text + "}"
+
+            markdown_string = markdown_string.replace(old_code_text, new_code_text)
+
+    latex_string = markdown_string
+
+    return latex_string
+
+
+@time_the_event_below("Reading and validating the input file")
+def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
+    """Read the input file and return an instance of RenderCVDataModel.
+
+    This function reads the input file, converts the markdown strings to $\\LaTeX$, and
+    validates the input file with the data models.
+
+    Args:
+        file_path (str): The path to the input file.
+
+    Returns:
+        str: The input file as a string.
+    """
+    # check if the file exists:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The input file {file_path} doesn't exist.")
+
+    # check the file extension:
+    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
+    if file_path.suffix not in accepted_extensions:
+        raise ValueError(
+            "The input file should have one of the following extensions:"
+            f" {accepted_extensions}. The input file is {file_path}."
+        )
+
+    with open(file_path) as file:
+        file_content = file.read()
+        parsed_dictionary: dict[str, Any] = strictyaml.load(file_content).data  # type: ignore
+
+    def loop_through_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
+        """Recursively loop through a dictionary and apply `markdown_to_latex` and
+        `escape_latex_characters` to all the fields.
+
+        Args:
+            dictionary (dict[str, Any]): The dictionary to loop through.
+
+        Returns:
+            dict[str, Any]: The dictionary with markdown_to_latex and
+                escape_latex_characters applied to all the fields.
+        """
+        for key, value in dictionary.items():
+            if isinstance(value, str):
+                # if the value is a string, then apply markdown_to_latex and
+                # escape_latex_characters to it:
+                result = escape_latex_characters(value)
+                dictionary[key] = markdown_to_latex(result)
+            elif isinstance(value, list):
+                # if the value is a list, then loop through the list and apply
+                # markdown_to_latex and escape_latex_characters to each item:
+                for index, item in enumerate(value):
+                    if isinstance(item, str):
+                        result = escape_latex_characters(item)
+                        dictionary[key][index] = markdown_to_latex(result)
+                    elif isinstance(item, dict):
+                        # if the item is a dictionary, then call loop_through_dictionary
+                        # again:
+                        dictionary[key][index] = loop_through_dictionary(item)
+            elif isinstance(value, dict):
+                # if the value is a dictionary, then call loop_through_dictionary again:
+                dictionary[key] = loop_through_dictionary(value)
+
+        return dictionary
+
+    parsed_dictionary = loop_through_dictionary(parsed_dictionary)
+
+    # validate the parsed dictionary by creating an instance of RenderCVDataModel:
+    data = RenderCVDataModel(**parsed_dictionary)  ## type: ignore
+
+    return data
+
+
+def generate_json_schema(json_schema_path: pathlib.Path):
+    """Generate the JSON schema of the data model and save it to a file.
+
+    JSON schema is generated for the users to make it easier for them to write the input
+    file. The JSON Schema of RenderCV is saved in the `docs` directory of the repository
+    and distributed to the users with the
+    [JSON Schema Store](https://www.schemastore.org/).
+
+    Args:
+        json_schema_path (str): The path to save the JSON schema.
     """
 
     class RenderCVSchemaGenerator(pydantic.json_schema.GenerateJsonSchema):
@@ -870,186 +1086,5 @@ def generate_json_schema(output_directory: str) -> str:
     # Change all anyOf to oneOf
     schema = schema.replace('"anyOf"', '"oneOf"')
 
-    path_to_schema = os.path.join(output_directory, "schema.json")
-    with open(path_to_schema, "w") as f:
+    with open(json_schema_path, "w") as f:
         f.write(schema)
-
-    return path_to_schema
-
-
-def escape_latex_characters(sentence: str) -> str:
-    """Escape LaTeX characters in a string.
-
-    Example:
-        ```python
-        escape_latex_characters("This is a # string.")
-        ```
-        will return:
-        `#!python "This is a \\# string."`
-    """
-
-    # Dictionary of escape characters:
-    escape_characters = {
-        "#": r"\#",
-        # "$": r"\$", # Don't escape $ as it is used for math mode
-        "%": r"\%",
-        "&": r"\&",
-        "~": r"\textasciitilde{}",
-        # "_": r"\_", # Don't escape _ as it is used for math mode
-        # "^": r"\textasciicircum{}", # Don't escape ^ as it is used for math mode
-    }
-
-    # Don't escape links as hyperref package will do it automatically:
-
-    # Find all the links in the sentence:
-    links = re.findall(r"\[.*?\]\(.*?\)", sentence)
-
-    # Replace the links with a placeholder:
-    for link in links:
-        sentence = sentence.replace(link, "!!-link-!!")
-
-    # Loop through the letters of the sentence and if you find an escape character,
-    # replace it with its LaTeX equivalent:
-    copy_of_the_sentence = sentence
-    for character in copy_of_the_sentence:
-        if character in escape_characters:
-            sentence = sentence.replace(character, escape_characters[character])
-
-    # Replace the links with the original links:
-    for link in links:
-        sentence = sentence.replace("!!-link-!!", link)
-
-    return sentence
-
-
-def markdown_to_latex(markdown_string: str) -> str:
-    """Convert a markdown string to LaTeX.
-
-    This function is used as a Jinja2 filter.
-
-    Example:
-        ```python
-        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
-        ```
-
-        will return:
-
-        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
-
-    Args:
-        markdown_string (str): The markdown string to convert.
-
-    Returns:
-        str: The LaTeX string.
-    """
-    # convert links
-    links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
-    if links is not None:
-        for link in links:
-            link_text = link[0]
-            link_url = link[1]
-
-            old_link_string = f"[{link_text}]({link_url})"
-            new_link_string = "\\href{" + link_url + "}{" + link_text + "}"
-
-            markdown_string = markdown_string.replace(old_link_string, new_link_string)
-
-    # convert bold
-    bolds = re.findall(r"\*\*([^\*]*)\*\*", markdown_string)
-    if bolds is not None:
-        for bold_text in bolds:
-            old_bold_text = f"**{bold_text}**"
-            new_bold_text = "\\textbf{" + bold_text + "}"
-
-            markdown_string = markdown_string.replace(old_bold_text, new_bold_text)
-
-    # convert italic
-    italics = re.findall(r"\*([^\*]*)\*", markdown_string)
-    if italics is not None:
-        for italic_text in italics:
-            old_italic_text = f"*{italic_text}*"
-            new_italic_text = "\\textit{" + italic_text + "}"
-
-            markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
-
-    # convert code
-    codes = re.findall(r"`([^`]*)`", markdown_string)
-    if codes is not None:
-        for code_text in codes:
-            old_code_text = f"`{code_text}`"
-            new_code_text = "\\texttt{" + code_text + "}"
-
-            markdown_string = markdown_string.replace(old_code_text, new_code_text)
-
-    latex_string = markdown_string
-
-    return latex_string
-
-
-def read_input_file(file_path: str) -> RenderCVDataModel:
-    """Read the input file and return an instance of RenderCVDataModel.
-
-    Args:
-        file_path (str): The path to the input file.
-
-    Returns:
-        str: The input file as a string.
-    """
-    start_time = time.time()
-
-    information(f"Reading and validating the input file {file_path} has started.")
-
-    # check if the file exists:
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"The input file {file_path} doesn't exist.")
-
-    # check the file extension:
-    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
-    if not any(file_path.endswith(extension) for extension in accepted_extensions):
-        raise ValueError(
-            f"The file {file_path} doesn't have an accepted extension!"
-            f" Accepted extensions are: {accepted_extensions}"
-        )
-
-    with open(file_path) as file:
-        file_content = file.read()
-        parsed_dictionary: dict[str, Any] = strictyaml.load(file_content).data  # type: ignore
-
-    def loop_through_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
-        """Recursively loop through a dictionary and apply markdown_to_latex and
-        escape_latex_characters to all the fields.
-
-        Args:
-            dictionary (dict[str, Any]): The dictionary to loop through.
-
-        Returns:
-            dict[str, Any]: The dictionary with markdown_to_latex and
-                escape_latex_characters applied to all the fields.
-        """
-        for key, value in dictionary.items():
-            if isinstance(value, str):
-                result = escape_latex_characters(value)
-                dictionary[key] = markdown_to_latex(result)
-            elif isinstance(value, list):
-                for index, item in enumerate(value):
-                    if isinstance(item, str):
-                        result = escape_latex_characters(item)
-                        dictionary[key][index] = markdown_to_latex(result)
-                    elif isinstance(item, dict):
-                        dictionary[key][index] = loop_through_dictionary(item)
-            elif isinstance(value, dict):
-                dictionary[key] = loop_through_dictionary(value)
-
-        return dictionary
-
-    parsed_dictionary = loop_through_dictionary(parsed_dictionary)
-
-    data = RenderCVDataModel(**parsed_dictionary)  ## type: ignore
-
-    end_time = time.time()
-    time_taken = end_time - start_time
-    information(
-        f"Reading and validating the input file {file_path} has finished in"
-        f" {time_taken:.2f} s."
-    )
-    return data
