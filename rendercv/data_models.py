@@ -20,7 +20,6 @@ import os
 import json
 import re
 import ssl
-import time
 import pathlib
 
 import pydantic
@@ -30,7 +29,7 @@ import strictyaml
 from . import utilities
 from .terminal_reporter import warning
 from .themes.classic import ClassicThemeOptions
-from .terminal_reporter import information, time_the_event_below
+from .terminal_reporter import time_the_event_below
 
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
