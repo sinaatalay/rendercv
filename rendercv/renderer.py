@@ -1,5 +1,5 @@
-"""This module implements LaTeX file generation and LaTeX runner utilities for RenderCV.
-"""
+"""This module implements LaTeX file generation and LaTeX runner utilities for RenderCV."""
+
 import subprocess
 import os
 import re
@@ -37,8 +37,19 @@ class LaTeXFile:
         for section in cv.sections:
             title = self.template("SectionTitle", section_title=section.title)
             entries = []
-            for entry in section.entries:
-                entries.append(self.template(section.entry_type, entry=entry))
+            for i, entry in enumerate(section.entries):
+                if i == 0:
+                    is_first_entry = True
+                else:
+                    is_first_entry = False
+                entries.append(
+                    self.template(
+                        section.entry_type,
+                        entry=entry,
+                        section_title=section.title,
+                        is_first_entry=is_first_entry,
+                    )
+                )
             self.sections.append((title, entries))
 
     def template(
@@ -63,6 +74,7 @@ class LaTeXFile:
             | str  # TextEntry
         ] = None,
         section_title: Optional[str] = None,
+        is_first_entry: Optional[bool] = None,
     ) -> str:
         """Template one of the files in the `templates` directory.
 
@@ -96,6 +108,7 @@ class LaTeXFile:
             entry=entry,
             section_title=section_title,
             today=Date.today().strftime("%B %Y"),
+            is_first_entry=is_first_entry,
         )
 
         return latex_code
@@ -108,70 +121,6 @@ class LaTeXFile:
             sections=self.sections,
         )
         return latex_code
-
-
-def markdown_to_latex(markdown_string: str) -> str:
-    """Convert a markdown string to LaTeX.
-
-    This function is used as a Jinja2 filter.
-
-    Example:
-        ```python
-        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
-        ```
-
-        will return:
-
-        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
-
-    Args:
-        markdown_string (str): The markdown string to convert.
-
-    Returns:
-        str: The LaTeX string.
-    """
-    # convert links
-    links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
-    if links is not None:
-        for link in links:
-            link_text = link[0]
-            link_url = link[1]
-
-            old_link_string = f"[{link_text}]({link_url})"
-            new_link_string = "\\href{" + link_url + "}{" + link_text + "}"
-
-            markdown_string = markdown_string.replace(old_link_string, new_link_string)
-
-    # convert bold
-    bolds = re.findall(r"\*\*([^\*]*)\*\*", markdown_string)
-    if bolds is not None:
-        for bold_text in bolds:
-            old_bold_text = f"**{bold_text}**"
-            new_bold_text = "\\textbf{" + bold_text + "}"
-
-            markdown_string = markdown_string.replace(old_bold_text, new_bold_text)
-
-    # convert italic
-    italics = re.findall(r"\*([^\*]*)\*", markdown_string)
-    if italics is not None:
-        for italic_text in italics:
-            old_italic_text = f"*{italic_text}*"
-            new_italic_text = "\\textit{" + italic_text + "}"
-
-            markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
-
-    # convert code
-    codes = re.findall(r"`([^`]*)`", markdown_string)
-    if codes is not None:
-        for code_text in codes:
-            old_code_text = f"`{code_text}`"
-            new_code_text = "\\texttt{" + code_text + "}"
-
-            markdown_string = markdown_string.replace(old_code_text, new_code_text)
-
-    latex_string = markdown_string
-
-    return latex_string
 
 
 def make_matched_part_something(
