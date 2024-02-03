@@ -10,6 +10,7 @@ def welcome():
     The ASCII art is from https://ascii-generator.site/ and the font is "big".
     """
     rendercv_art = (
+        ""
         "[bright_white] _____                    _            "
         " [/bright_white][bright_blue]  _____ __      __[/bright_blue]\n[bright_white]|"
         "  __ \\                  | |            [/bright_white][bright_blue] / ____|\\"
@@ -21,10 +22,10 @@ def welcome():
         " [/bright_white][bright_blue]| |____    \\  /  "
         " [/bright_blue]\n[bright_white]|_|  \\_\\ \\___||_| |_| \\__,_| \\___||_|  "
         " [/bright_white][bright_blue] \\_____|    \\/ [/bright_blue]"
+        ""
     )
-    print("")
+
     print(rendercv_art)
-    print("")
 
 
 def warning(text):
