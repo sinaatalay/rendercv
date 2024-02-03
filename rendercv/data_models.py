@@ -26,7 +26,6 @@ import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import strictyaml
 
-from . import utilities
 from .terminal_reporter import warning
 from .themes.classic import ClassicThemeOptions
 from .terminal_reporter import time_the_event_below
@@ -70,6 +69,51 @@ def get_date_object(date: str | int) -> Date:
         )
 
     return date_object
+
+
+def format_date(date: Date) -> str:
+    """Formats a `Date` object to a string in the following format: "Jan. 2021".
+
+    It uses month abbreviations, taken from
+    [Yale University Library](https://web.library.yale.edu/cataloging/months).
+
+    Example:
+        ```python
+        format_date(Date(2024, 5, 1))
+        ```
+        will return
+
+        `#!python "May 2024"`
+
+    Args:
+        date (Date): The date to format.
+
+    Returns:
+        str: The formatted date.
+    """
+    # Month abbreviations,
+    # taken from: https://web.library.yale.edu/cataloging/months
+    abbreviations_of_months = [
+        "Jan.",
+        "Feb.",
+        "Mar.",
+        "Apr.",
+        "May",
+        "June",
+        "July",
+        "Aug.",
+        "Sept.",
+        "Oct.",
+        "Nov.",
+        "Dec.",
+    ]
+
+    month = int(date.strftime("%m"))
+    month_abbreviation = abbreviations_of_months[month - 1]
+    year = date.strftime(format="%Y")
+    date_string = f"{month_abbreviation} {year}"
+
+    return date_string
 
 
 class RenderCVBaseModel(pydantic.BaseModel):
@@ -223,7 +267,7 @@ class EntryBase(RenderCVBaseModel):
         if self.date is not None:
             try:
                 date_object = get_date_object(self.date)
-                date_string = utilities.format_date(date_object)
+                date_string = format_date(date_object)
             except ValueError:
                 # Then it is a custom date string (e.g., "My Custom Date")
                 date_string = str(self.date)
@@ -235,7 +279,7 @@ class EntryBase(RenderCVBaseModel):
             else:
                 # Then it means start_date is either in YYYY-MM-DD or YYYY-MM format
                 date_object = get_date_object(self.start_date)
-                start_date = utilities.format_date(date_object)
+                start_date = format_date(date_object)
 
             if self.end_date == "present":
                 end_date = "present"
@@ -245,7 +289,7 @@ class EntryBase(RenderCVBaseModel):
             else:
                 # Then it means end_date is either in YYYY-MM-DD or YYYY-MM format
                 date_object = get_date_object(self.end_date)
-                end_date = utilities.format_date(date_object)
+                end_date = format_date(date_object)
 
             date_string = f"{start_date} to {end_date}"
 
@@ -480,7 +524,7 @@ class PublicationEntry(RenderCVBaseModel):
             date_string = str(self.date)
         elif isinstance(self.date, str):
             date_object = get_date_object(self.date)
-            date_string = utilities.format_date(date_object)
+            date_string = format_date(date_object)
         else:
             date_string = ""
 
