@@ -379,7 +379,7 @@ class EntryBase(RenderCVBaseModel):
         """
         Return a URL text based on the `url_text_input` and `url` fields.
         """
-        url_text = None
+        url_text = ""
         if self.url_text_input is not None:
             # If the user provides a custom URL text, then use it.
             url_text = self.url_text_input
