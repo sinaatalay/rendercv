@@ -1,13 +1,15 @@
+from datetime import date as Date
+import pathlib
+
+import pydantic
 import pytest
 import time_machine
 
 from rendercv import data_models as dm
 
-import pydantic
-
 
 @pytest.fixture
-def publication_entry():
+def publication_entry() -> dict[str, str | list[str]]:
     return {
         "title": "My Title",
         "authors": ["John Doe", "Jane Doe"],
@@ -17,7 +19,7 @@ def publication_entry():
 
 
 @pytest.fixture
-def experience_entry():
+def experience_entry() -> dict[str, str]:
     return {
         "company": "CERN",
         "position": "Researcher",
@@ -25,7 +27,7 @@ def experience_entry():
 
 
 @pytest.fixture
-def education_entry():
+def education_entry() -> dict[str, str]:
     return {
         "institution": "Boğaziçi University",
         "area": "Mechanical Engineering",
@@ -33,14 +35,14 @@ def education_entry():
 
 
 @pytest.fixture
-def normal_entry():
+def normal_entry() -> dict[str, str]:
     return {
         "name": "My Entry",
     }
 
 
 @pytest.fixture
-def one_line_entry():
+def one_line_entry() -> dict[str, str]:
     return {
         "name": "My One Line Entry",
         "details": "My Details",
@@ -48,8 +50,96 @@ def one_line_entry():
 
 
 @pytest.fixture
-def text_entry():
+def text_entry() -> str:
     return "My Text Entry"
+
+
+@pytest.fixture
+def tests_directory_path() -> pathlib.Path:
+    return pathlib.Path(__file__).parent
+
+
+@pytest.fixture
+def input_file_path(tests_directory_path) -> pathlib.Path:
+    return tests_directory_path / "John_Doe_CV.yaml"
+
+
+@pytest.mark.parametrize(
+    "date, expected_date_object, expected_error",
+    [
+        ("2020-01-01", Date(2020, 1, 1), None),
+        ("2020-01", Date(2020, 1, 1), None),
+        ("2020", Date(2020, 1, 1), None),
+        (2020, Date(2020, 1, 1), None),
+        ("present", Date(2024, 1, 1), None),
+        ("invalid", None, ValueError),
+    ],
+)
+@time_machine.travel("2024-01-01")
+def test_get_date_object(date, expected_date_object, expected_error):
+    if expected_error:
+        with pytest.raises(expected_error):
+            dm.get_date_object(date)
+    else:
+        assert dm.get_date_object(date) == expected_date_object
+
+
+@pytest.mark.parametrize(
+    "date, expected_date_string",
+    [
+        (Date(2020, 1, 1), "Jan. 2020"),
+        (Date(2020, 2, 1), "Feb. 2020"),
+        (Date(2020, 3, 1), "Mar. 2020"),
+        (Date(2020, 4, 1), "Apr. 2020"),
+        (Date(2020, 5, 1), "May 2020"),
+        (Date(2020, 6, 1), "June 2020"),
+        (Date(2020, 7, 1), "July 2020"),
+        (Date(2020, 8, 1), "Aug. 2020"),
+        (Date(2020, 9, 1), "Sept. 2020"),
+        (Date(2020, 10, 1), "Oct. 2020"),
+        (Date(2020, 11, 1), "Nov. 2020"),
+        (Date(2020, 12, 1), "Dec. 2020"),
+    ],
+)
+def test_format_date(date, expected_date_string):
+    assert dm.format_date(date) == expected_date_string
+
+
+@pytest.mark.parametrize(
+    "string, expected_string",
+    [
+        ("My Text", "My Text"),
+        ("My # Text", "My \\# Text"),
+        ("My % Text", "My \\% Text"),
+        ("My & Text", "My \\& Text"),
+        ("My ~ Text", "My \\textasciitilde{} Text"),
+        ("##%%&&~~", "\\#\\#\\%\\%\\&\\&\\textasciitilde{}\\textasciitilde{}"),
+    ],
+)
+def test_escape_latex_characters(string, expected_string):
+    assert dm.escape_latex_characters(string) == expected_string
+
+
+@pytest.mark.parametrize(
+    "markdown_string, expected_latex_string",
+    [
+        ("My Text", "My Text"),
+        ("**My** Text", "\\textbf{My} Text"),
+        ("*My* Text", "\\textit{My} Text"),
+        ("***My*** Text", "\\textit{\\textbf{My}} Text"),
+        ("[My](https://myurl.com) Text", "\\href{https://myurl.com}{My} Text"),
+        ("`My` Text", "\\texttt{My} Text"),
+        (
+            "[**My** *Text* ***Is*** `Here`](https://myurl.com)",
+            (
+                "\\href{https://myurl.com}{\\textbf{My} \\textit{Text}"
+                " \\textit{\\textbf{Is}} \\texttt{Here}}"
+            ),
+        ),
+    ],
+)
+def test_markdown_to_latex(markdown_string, expected_latex_string):
+    assert dm.markdown_to_latex(markdown_string) == expected_latex_string
 
 
 @pytest.mark.parametrize(
@@ -81,27 +171,22 @@ def test_dates(start_date, end_date, date, expected_date_string, expected_time_s
     assert entry_base.date_string == expected_date_string
     assert entry_base.time_span_string == expected_time_span
 
+
 @pytest.mark.parametrize(
     "date, expected_date_string",
     [
         ("2020-01-01", "Jan. 2020"),
         ("2020-01", "Jan. 2020"),
         ("2020", "2020"),
-    ]
+    ],
 )
 def test_publication_dates(publication_entry, date, expected_date_string):
     publication_entry["date"] = date
     publication_entry = dm.PublicationEntry(**publication_entry)
     assert publication_entry.date_string == expected_date_string
 
-@pytest.mark.parametrize(
-    "date",
-    [
-        "aaa",
-        None,
-        "2025"
-    ]
-)
+
+@pytest.mark.parametrize("date", ["aaa", None, "2025"])
 def test_invalid_publication_dates(publication_entry, date):
     with pytest.raises(pydantic.ValidationError):
         publication_entry["date"] = date
@@ -313,12 +398,10 @@ def test_section_with_invalid_entry_type():
 )
 def test_sections_with_invalid_entries(section_title):
     input = {"name": "John Doe", "sections": dict()}
-    input["sections"][section_title] = [
-        {
-            "this": "is",
-            "an": "invalid",
-            "entry": 10,
-        }
-    ]
+    input["sections"][section_title] = [{
+        "this": "is",
+        "an": "invalid",
+        "entry": 10,
+    }]
     with pytest.raises(pydantic.ValidationError):
         dm.CurriculumVitae(**input)
