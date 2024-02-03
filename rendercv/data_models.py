@@ -59,8 +59,10 @@ def get_date_object(date: str | int) -> Date:
         date_object = Date.fromisoformat(date)
     elif re.match(r"\d{4}-\d{2}", date):
         # Then it is in YYYY-MM format
-        # Assign a random day since days are not rendered in the CV
         date_object = Date.fromisoformat(f"{date}-01")
+    elif re.match(r"\d{4}", date):
+        # Then it is in YYYY format
+        date_object = Date.fromisoformat(f"{date}-01-01")
     elif date == "present":
         date_object = Date.today()
     else:
@@ -869,8 +871,8 @@ class RenderCVDataModel(RenderCVBaseModel):
     )
 
 
-def escape_latex_characters(sentence: str) -> str:
-    """Escape $\LaTeX$ characters in a string.
+def escape_latex_characters(string: str) -> str:
+    """Escape $\\LaTeX$ characters in a string.
 
     This function is called during the reading of the input file. Before the validation
     process, each input field's special $\\LaTeX$ characters are escaped.
@@ -885,36 +887,38 @@ def escape_latex_characters(sentence: str) -> str:
 
     # Dictionary of escape characters:
     escape_characters = {
-        "#": r"\#",
-        # "$": r"\$", # Don't escape $ as it is used for math mode
-        "%": r"\%",
-        "&": r"\&",
-        "~": r"\textasciitilde{}",
-        # "_": r"\_", # Don't escape _ as it is used for math mode
-        # "^": r"\textasciicircum{}", # Don't escape ^ as it is used for math mode
+        "#": "\\#",
+        # "$": "\\$", # Don't escape $ as it is used for math mode
+        "%": "\\%",
+        "&": "\\&",
+        "~": "\\textasciitilde{}",
+        # "_": "\\_", # Don't escape _ as it is used for math mode
+        # "^": "\\textasciicircum{}", # Don't escape ^ as it is used for math mode
     }
 
     # Don't escape links as hyperref package will do it automatically:
 
     # Find all the links in the sentence:
-    links = re.findall(r"\[.*?\]\(.*?\)", sentence)
+    links = re.findall(r"\[.*?\]\(.*?\)", string)
 
     # Replace the links with a placeholder:
     for link in links:
-        sentence = sentence.replace(link, "!!-link-!!")
+        string = string.replace(link, "!!-link-!!")
 
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
-    copy_of_the_sentence = sentence
-    for character in copy_of_the_sentence:
+    copy_of_the_string = list(string)
+    for i, character in enumerate(copy_of_the_string):
         if character in escape_characters:
-            sentence = sentence.replace(character, escape_characters[character])
+            new_character = escape_characters[character]
+            copy_of_the_string[i] = new_character
 
+    string = "".join(copy_of_the_string)
     # Replace the links with the original links:
     for link in links:
-        sentence = sentence.replace("!!-link-!!", link)
+        string = string.replace("!!-link-!!", link)
 
-    return sentence
+    return string
 
 
 def markdown_to_latex(markdown_string: str) -> str:
