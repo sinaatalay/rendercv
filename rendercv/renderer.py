@@ -1,40 +1,48 @@
-"""This module implements LaTeX file generation and LaTeX runner utilities for RenderCV."""
+"""
+This module contains functions and classes for generating a $\\LaTeX$ file from the data
+model and rendering the $\\LaTeX$ file to produce a PDF.
+
+The $\\LaTeX$ files are generated with [Jinja2](https://jinja.palletsprojects.com/en/3.1.x/)
+templates. Then, the $\\LaTeX$ file is rendered into a PDF with
+[TinyTeX](https://yihui.org/tinytex/), a $\\LaTeX$ distribution.
+"""
 
 import subprocess
-import os
 import re
-import shutil
-from datetime import date as Date
-import logging
-import time
-from typing import Optional, Literal
+import pathlib
 import sys
-from importlib.resources import files
-
-from . import data_models as dm
+from datetime import date as Date
+from typing import Optional, Literal
 
 import jinja2
 
-logger = logging.getLogger(__name__)
+from . import data_models as dm
+from .terminal_reporter import time_the_event_below
 
 
 class LaTeXFile:
+    """This class represents a $\\LaTeX$ file. It generates the $\\LaTeX$ code with the
+    data model and Jinja2 templates.
+
+    Args:
+        data_model (dm.RenderCVDataModel): The data model.
+        environment (jinja2.Environment): The Jinja2 environment.
+    """
+
     def __init__(
         self,
-        cv: dm.CurriculumVitae,
-        design: dm.Design,
+        data_model: dm.RenderCVDataModel,
         environment: jinja2.Environment,
-        file_path,
     ):
-        self.file_path = file_path
-        self.cv = cv
-        self.design = design
+        self.cv = data_model.cv
+        self.design = data_model.design
         self.environment = environment
 
+        # Template the preamble, header, and sections:
         self.preamble = self.template("Preamble")
         self.header = self.template("Header")
         self.sections = []
-        for section in cv.sections:
+        for section in self.cv.sections:
             title = self.template("SectionTitle", section_title=section.title)
             entries = []
             for i, entry in enumerate(section.entries):
@@ -76,33 +84,38 @@ class LaTeXFile:
         section_title: Optional[str] = None,
         is_first_entry: Optional[bool] = None,
     ) -> str:
-        """Template one of the files in the `templates` directory.
+        """Template one of the files in the `themes` directory.
 
         Args:
-            cv (dm.CurriculumVitae): The CV.
-            design (dm.Design): The design.
-            entry (dm.EducationEntry): The education entry.
-            enty_type (Literal["EducationEntry", "ExperienceEntry", "NormalEntry", "PublicationEntry", "OneLineEntry", "TextEntry"]): The type of the entry.
-            environment (jinja2.Environment): The Jinja2 environment.
+            template_name (str): The name of the template file.
+            entry (Optional[
+                        dm.EducationEntry,
+                        dm.ExperienceEntry,
+                        dm.NormalEntry,
+                        dm.PublicationEntry,
+                        dm.OneLineEntry,
+                        str
+                    ]): The data model of the entry.
+            section_title (Optional[str]): The title of the section.
+            is_first_entry (Optional[bool]): Whether the entry is the first one in the
+                section.
 
         Returns:
-            str: The rendered education entry.
+            str: The templated $\\LaTeX$ code.
         """
-        education_entry_template = self.environment.get_template(
+        template = self.environment.get_template(
             f"{self.design.theme}/{template_name}.j2.tex"
         )
 
-        # loop through the entry attributes and make them "" if they are None:
+        # Loop through the entry attributes and make them "" if they are None:
+        # This is necessary because otherwise Jinja2 will template them as "None".
         if entry is not None and not isinstance(entry, str):
             for key, value in entry.model_dump().items():
                 if value is None:
-                    try:
-                        entry.__setattr__(key, "")
-                    except ValueError:
-                        # then it means it's a computed property, can be ignored
-                        pass
+                    entry.__setattr__(key, "")
 
-        latex_code = education_entry_template.render(
+        # The arguments of the template can be used in the template file:
+        latex_code = template.render(
             cv=self.cv,
             design=self.design,
             entry=entry,
@@ -114,6 +127,7 @@ class LaTeXFile:
         return latex_code
 
     def get_latex_code(self):
+        """Get the $\\LaTeX$ code of the file."""
         main_template = self.environment.get_template("main.j2.tex")
         latex_code = main_template.render(
             header=self.header,
@@ -121,6 +135,11 @@ class LaTeXFile:
             sections=self.sections,
         )
         return latex_code
+
+    def write_to_file(self, file_path: pathlib.Path):
+        """Write the $\\LaTeX$ code to a file."""
+        with open(file_path, "w") as latex_file:
+            latex_file.write(self.get_latex_code())
 
 
 def make_matched_part_something(
@@ -132,7 +151,7 @@ def make_matched_part_something(
     Warning:
         This function shouldn't be used directly. Use
         [make_matched_part_bold](renderer.md#rendercv.rendering.make_matched_part_bold),
-        [make_matched_pard_underlined](renderer.md#rendercv.rendering.make_matched_pard_underlined),
+        [make_matched_part_underlined](renderer.md#rendercv.rendering.make_matched_part_underlined),
         [make_matched_part_italic](renderer.md#rendercv.rendering.make_matched_part_italic),
         or
         [make_matched_part_non_line_breakable](renderer.md#rendercv.rendering.make_matched_part_non_line_breakable)
@@ -153,7 +172,7 @@ def make_matched_part_bold(value: str, match_str: Optional[str] = None) -> str:
     """Make the matched parts of the string bold. If the match_str is None, the whole
     string will be made bold.
 
-    This function is used as a Jinja2 filter.
+    This function can be used as a Jinja2 filter in templates.
 
     Example:
         ```python
@@ -175,7 +194,7 @@ def make_matched_part_underlined(value: str, match_str: Optional[str] = None) ->
     """Make the matched parts of the string underlined. If the match_str is None, the
     whole string will be made underlined.
 
-    This function is used as a Jinja2 filter.
+    This function can be used as a Jinja2 filter in templates.
 
     Example:
         ```python
@@ -197,7 +216,7 @@ def make_matched_part_italic(value: str, match_str: Optional[str] = None) -> str
     """Make the matched parts of the string italic. If the match_str is None, the whole
     string will be made italic.
 
-    This function is used as a Jinja2 filter.
+    This function can be used as a Jinja2 filter in templates.
 
     Example:
         ```python
@@ -215,13 +234,13 @@ def make_matched_part_italic(value: str, match_str: Optional[str] = None) -> str
     return make_matched_part_something(value, "textit", match_str)
 
 
-def make_matced_part_non_line_breakable(
+def make_matched_part_non_line_breakable(
     value: str, match_str: Optional[str] = None
 ) -> str:
     """Make the matched parts of the string non line breakable. If the match_str is
     None, the whole string will be made nonbreakable.
 
-    This function is used as a Jinja2 filter.
+    This function can be used as a Jinja2 filter in templates.
 
     Example:
         ```python
@@ -242,7 +261,7 @@ def make_matced_part_non_line_breakable(
 def abbreviate_name(name: str) -> str:
     """Abbreviate a name by keeping the first letters of the first names.
 
-    This function is used as a Jinja2 filter.
+    This function can be used as a Jinja2 filter in templates.
 
     Example:
         ```python
@@ -270,7 +289,7 @@ def divide_length_by(length: str, divider: float) -> str:
     r"""Divide a length by a number. Length is a string with the following regex
     pattern: `\d+\.?\d* *(cm|in|pt|mm|ex|em)`
 
-    This function is used as a Jinja2 filter.
+    This function can be used as a Jinja2 filter in templates.
 
     Example:
         ```python
@@ -294,24 +313,18 @@ def divide_length_by(length: str, divider: float) -> str:
     return str(float(value) / divider) + " " + unit
 
 
-def setup_theme_environment(theme_name: str) -> jinja2.Environment:
-    """Setup and return the theme environment.
-
-    Args:
-        theme_name (str): The name of the theme to use.
+def setup_jinja2_environment() -> jinja2.Environment:
+    """Setup and return the Jinja2 environment for templating the $\\LaTeX$ files.
 
     Returns:
         jinja2.Environment: The theme environment.
     """
     # create a Jinja2 environment:
     environment = jinja2.Environment(
-        loader=jinja2.PackageLoader("rendercv", os.path.join("themes")),
+        loader=jinja2.PackageLoader("rendercv", "themes"),
         trim_blocks=True,
         lstrip_blocks=True,
     )
-
-    # add new functions to the environment:
-    environment.globals.update(str=str)
 
     # set custom delimiters for LaTeX templating:
     environment.block_start_string = "((*"
@@ -321,12 +334,12 @@ def setup_theme_environment(theme_name: str) -> jinja2.Environment:
     environment.comment_start_string = "((#"
     environment.comment_end_string = "#))"
 
-    # add custom filters:
-    environment.filters["markdown_to_latex"] = markdown_to_latex
+    # add custom filters to make it easier to template the LaTeX files and add new
+    # themes:
     environment.filters["make_it_bold"] = make_matched_part_bold
     environment.filters["make_it_underlined"] = make_matched_part_underlined
     environment.filters["make_it_italic"] = make_matched_part_italic
-    environment.filters["make_it_nolinebreak"] = make_matced_part_non_line_breakable
+    environment.filters["make_it_nolinebreak"] = make_matched_part_non_line_breakable
     environment.filters["make_it_something"] = make_matched_part_something
     environment.filters["divide_length_by"] = divide_length_by
     environment.filters["abbreviate_name"] = abbreviate_name
@@ -334,118 +347,74 @@ def setup_theme_environment(theme_name: str) -> jinja2.Environment:
     return environment
 
 
-def generate_the_latex_file(
-    rendercv_data_model: dm.RenderCVDataModel, output_file_path: str
-) -> str:
-    """ """
-    environment = setup_theme_environment(rendercv_data_model.design.theme)
+@time_the_event_below("Generating the LaTeX file")
+def generate_latex_file(
+    rendercv_data_model: dm.RenderCVDataModel, latex_file_path: pathlib.Path
+):
+    """Generate the $\\LaTeX$ file with the given data model and write it to the given
+    path.
+    """
+    jinja2_environment = setup_jinja2_environment()
     latex_file_object = LaTeXFile(
-        rendercv_data_model.cv,
-        rendercv_data_model.design,
-        environment,
-        output_file_path,
+        rendercv_data_model,
+        jinja2_environment,
     )
 
-    with open(output_file_path, "w") as latex_file:
-        latex_file.write(latex_file_object.get_latex_code())
-
-    return latex_file_object.get_latex_code()
+    latex_file_object.write_to_file(latex_file_path)
 
 
-def render_the_latex_file(latex_file_path: str) -> str:
-    """
-    Run TinyTeX with the given LaTeX file and generate a PDF.
+@time_the_event_below("Generating the PDF file")
+def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
+    """Run TinyTeX with the given $\\LaTeX$ file to generate the PDF.
 
     Args:
-        latex_file_path (str): The path to the LaTeX file to compile.
+        latex_file_path (str): The path to the $\\LaTeX$ file to compile.
+    Returns:
+        pathlib.Path: The path to the generated PDF file.
     """
-    start_time = time.time()
-    logger.info("Running TinyTeX to generate the PDF has started.")
-    latex_file_name = os.path.basename(latex_file_path)
-    latex_file_path = os.path.normpath(latex_file_path)
-
     # check if the file exists:
-    if not os.path.exists(latex_file_path):
+    if not latex_file_path.is_file():
         raise FileNotFoundError(f"The file {latex_file_path} doesn't exist!")
 
-    output_file_name = latex_file_name.replace(".tex", ".pdf")
-    output_file_path = os.path.join(os.path.dirname(latex_file_path), output_file_name)
-
-    tinytex_binaries = files("rendercv").joinpath("tinytex-release", "TinyTeX", "bin")
-    if sys.platform == "win32":
-        # Windows
-        executable = str(tinytex_binaries.joinpath("windows", "lualatex.exe"))
-
-    elif sys.platform == "linux" or sys.platform == "linux2":
-        # Linux
-        executable = str(tinytex_binaries.joinpath("x86_64-linux", "lualatex"))
-    elif sys.platform == "darwin":
-        # MacOS
-        executable = str(tinytex_binaries.joinpath("universal-darwin", "lualatex"))
-    else:
-        raise OSError(f"Unknown OS {os.name}!")
-
-    # Check if the executable exists:
-    if not os.path.exists(executable):
-        raise FileNotFoundError(
-            f"The TinyTeX executable ({executable}) doesn't exist! Please install"
-            " RenderCV again."
-        )
-
-    # Run TinyTeX:
-    def run():
-        with subprocess.Popen(
-            [
-                executable,
-                f"{latex_file_name}",
-            ],
-            cwd=os.path.dirname(latex_file_path),
-            stdout=subprocess.PIPE,
-            stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
-            text=True,
-            encoding="utf-8",
-        ) as latex_process:
-            output, error = latex_process.communicate()
-
-            if latex_process.returncode != 0:
-                # Find the error line:
-                for line in output.split("\n"):
-                    if line.startswith("! "):
-                        error_line = line.replace("! ", "")
-                        break
-
-                raise RuntimeError(
-                    "Running TinyTeX has failed with the following error:",
-                    f"{error_line}",
-                    "If you can't solve the problem, please try to re-install RenderCV,"
-                    " or open an issue on GitHub.",
-                )
-
-    run()
-    run()  # run twice for cross-references
-
-    # check if the PDF file is generated:
-    if not os.path.exists(output_file_path):
-        raise FileNotFoundError(
-            f"The PDF file {output_file_path} couldn't be generated! If you can't"
-            " solve the problem, please try to re-install RenderCV, or open an issue"
-            " on GitHub."
-        )
-
-    # remove the unnecessary files:
-    for file_name in os.listdir(os.path.dirname(latex_file_path)):
-        if (
-            file_name.endswith(".aux")
-            or file_name.endswith(".log")
-            or file_name.endswith(".out")
-        ):
-            os.remove(os.path.join(os.path.dirname(latex_file_path), file_name))
-
-    end_time = time.time()
-    time_taken = end_time - start_time
-    logger.info(
-        f"Running TinyTeX to generate the PDF ({output_file_path}) has finished in"
-        f" {time_taken:.2f} s."
+    tinytex_binaries_directory = (
+        pathlib.Path(__file__).parent / "tinytex-release" / "TinyTeX" / "bin"
     )
 
-    return output_file_path
+    executables = {
+        "win32": tinytex_binaries_directory / "windows" / "latexmk.exe",
+        "linux": tinytex_binaries_directory / "x86_64-linux" / "latexmk",
+        "darwin": tinytex_binaries_directory / "universal-darwin" / "latexmk",
+    }
+
+    if sys.platform not in executables:
+        raise OSError(f"TinyTeX doesn't support the platform {sys.platform}!")
+
+    # Run TinyTeX:
+    with subprocess.Popen(
+        [
+            executables[sys.platform],
+            str(latex_file_path),
+            "-lualatex",
+        ],
+        cwd=latex_file_path.parent,
+        stdout=subprocess.DEVNULL,  # don't capture the output
+        stderr=subprocess.DEVNULL,  # don't capture the error
+        stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+    ) as latex_process:
+        latex_process.communicate()  # wait for the process to finish
+        if latex_process.returncode != 0:
+            raise RuntimeError(
+                "Running TinyTeX has failed! For debugging, we suggest running the"
+                " LaTeX file manually in overleaf.com or another LaTeX editor. If you"
+                " can't solve the problem, please open an issue on GitHub.",
+            )
+
+    # check if the PDF file is generated:
+    pdf_file_path = latex_file_path.with_suffix(".pdf")
+    if not pdf_file_path.is_file():
+        raise FileNotFoundError(
+            "The PDF file couldn't be generated! If you can't solve the problem,"
+            " please try to re-install RenderCV, or open an issue on GitHub."
+        )
+
+    return pdf_file_path
