@@ -10,6 +10,8 @@ templates. Then, the $\\LaTeX$ file is rendered into a PDF with
 import subprocess
 import re
 import pathlib
+import importlib.resources
+import shutil
 import sys
 from datetime import date as Date
 from typing import Optional, Literal
@@ -156,6 +158,13 @@ def make_matched_part_something(
         or
         [make_matched_part_non_line_breakable](renderer.md#rendercv.rendering.make_matched_part_non_line_breakable)
         instead.
+
+    Args:
+        value (str): The string to make something.
+        something (str): The LaTeX command to use.
+        match_str (str): The string to match.
+    Returns:
+        str: The string with the matched part something.
     """
     if match_str is None:
         return f"\\{something}{{{value}}}"
@@ -186,6 +195,8 @@ def make_matched_part_bold(value: str, match_str: Optional[str] = None) -> str:
     Args:
         value (str): The string to make bold.
         match_str (str): The string to match.
+    Returns:
+        str: The string with the matched part bold.
     """
     return make_matched_part_something(value, "textbf", match_str)
 
@@ -208,6 +219,8 @@ def make_matched_part_underlined(value: str, match_str: Optional[str] = None) ->
     Args:
         value (str): The string to make underlined.
         match_str (str): The string to match.
+    Returns:
+        str: The string with the matched part underlined.
     """
     return make_matched_part_something(value, "underline", match_str)
 
@@ -230,6 +243,8 @@ def make_matched_part_italic(value: str, match_str: Optional[str] = None) -> str
     Args:
         value (str): The string to make italic.
         match_str (str): The string to match.
+    Returns:
+        str: The string with the matched part italic.
     """
     return make_matched_part_something(value, "textit", match_str)
 
@@ -254,6 +269,8 @@ def make_matched_part_non_line_breakable(
     Args:
         value (str): The string to disable line breaks.
         match_str (str): The string to match.
+    Returns:
+        str: The string with the matched part non line breakable.
     """
     return make_matched_part_something(value, "mbox", match_str)
 
@@ -299,6 +316,12 @@ def divide_length_by(length: str, divider: float) -> str:
         will return:
 
         `#!python "5.2cm"`
+
+    Args:
+        length (str): The length to divide.
+        divider (float): The number to divide the length by.
+    Returns:
+        str: The divided length.
     """
     # Get the value as a float and the unit as a string:
     value = re.search(r"\d+\.?\d*", length)
@@ -349,18 +372,48 @@ def setup_jinja2_environment() -> jinja2.Environment:
 
 @time_the_event_below("Generating the LaTeX file")
 def generate_latex_file(
-    rendercv_data_model: dm.RenderCVDataModel, latex_file_path: pathlib.Path
-):
-    """Generate the $\\LaTeX$ file with the given data model and write it to the given
-    path.
+    rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
+) -> pathlib.Path:
+    """Generate the $\\LaTeX$ file with the given data model and write it to the output
+    directory. It also copies the theme files to the output directory.
+
+    Args:
+        rendercv_data_model (dm.RenderCVDataModel): The data model.
+        output_directory (pathlib.Path): Path to the output directory.
+    Returns:
+        pathlib.Path: The path to the generated $\\LaTeX$ file.
     """
+    # create output directory if it doesn't exist:
+    if not output_directory.is_dir():
+        output_directory.mkdir(parents=True)
+
     jinja2_environment = setup_jinja2_environment()
     latex_file_object = LaTeXFile(
         rendercv_data_model,
         jinja2_environment,
     )
 
+    latex_file_name = f"{rendercv_data_model.cv.name.replace(' ', '_')}_CV.tex"
+    latex_file_path = output_directory / latex_file_name
     latex_file_object.write_to_file(latex_file_path)
+
+    # copy auxiliary theme files (all the folders and files except the .j2.tex files and
+    # .py files) to the output directory:
+    theme_directory = importlib.resources.files(
+        f"rendercv.themes.{rendercv_data_model.design.theme}"
+    )
+    for theme_file in theme_directory.iterdir():
+        if not ("j2.tex" in theme_file.name or "py" in theme_file.name):
+            if theme_file.is_dir():
+                shutil.copytree(
+                    theme_file,
+                    output_directory / theme_file.name,
+                    dirs_exist_ok=True,
+                )
+            else:
+                shutil.copyfile(theme_file, output_directory / theme_file.name)
+
+    return latex_file_path
 
 
 @time_the_event_below("Generating the PDF file")
