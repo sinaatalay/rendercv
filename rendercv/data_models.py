@@ -16,7 +16,6 @@ from typing import Literal, Any
 from typing_extensions import Annotated, Optional
 from functools import cached_property
 from urllib.request import urlopen, HTTPError
-import os
 import json
 import re
 import ssl
@@ -24,11 +23,11 @@ import pathlib
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
-import strictyaml
+import ruamel.yaml
 
-from .terminal_reporter import warning
+from .user_communicator import warning
 from .themes.classic import ClassicThemeOptions
-from .terminal_reporter import time_the_event_below
+# from .user_communicator import time_the_event_below
 
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
@@ -165,7 +164,7 @@ class EntryBase(RenderCVBaseModel):
         examples=["2020-09-24", "My Custom Date"],
     )
     highlights: Optional[list[str]] = pydantic.Field(
-        default=[],
+        default=None,
         title="Highlights",
         description="The highlights of the event as a list of strings.",
         examples=["Did this.", "Did that."],
@@ -379,7 +378,7 @@ class EntryBase(RenderCVBaseModel):
         """
         Return a URL text based on the `url_text_input` and `url` fields.
         """
-        url_text = ""
+        url_text = None
         if self.url_text_input is not None:
             # If the user provides a custom URL text, then use it.
             url_text = self.url_text_input
@@ -446,9 +445,9 @@ class EducationEntry(EntryBase):
         title="Area",
         description="The area of study. It will be shown as normal text.",
     )
-    study_type: Optional[str] = pydantic.Field(
+    degree: Optional[str] = pydantic.Field(
         default=None,
-        title="Study Type",
+        title="Degree",
         description="The type of the degree.",
         examples=["BS", "BA", "PhD", "MS"],
     )
@@ -745,13 +744,6 @@ class CurriculumVitae(RenderCVBaseModel):
             "The social networks of the person. They will be rendered in the heading."
         ),
     )
-    section_order: Optional[list[str]] = pydantic.Field(
-        default=None,
-        title="Section Order",
-        description=(
-            "The order of sections in the CV. The section title should be used."
-        ),
-    )
     sections_input: dict[str, Section | list[Any]] = pydantic.Field(
         default=None,
         title="Sections",
@@ -986,7 +978,7 @@ def markdown_to_latex(markdown_string: str) -> str:
     return latex_string
 
 
-@time_the_event_below("Reading and validating the input file")
+# @time_the_event_below("Reading and validating the input file")
 def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
     """Read the input file and return an instance of RenderCVDataModel.
 
@@ -1000,7 +992,7 @@ def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
         str: The input file as a string.
     """
     # check if the file exists:
-    if not os.path.exists(file_path):
+    if not file_path.exists():
         raise FileNotFoundError(f"The input file {file_path} doesn't exist.")
 
     # check the file extension:
@@ -1013,7 +1005,7 @@ def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
 
     with open(file_path) as file:
         file_content = file.read()
-        parsed_dictionary: dict[str, Any] = strictyaml.load(file_content).data  # type: ignore
+        parsed_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
 
     def loop_through_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
         """Recursively loop through a dictionary and apply `markdown_to_latex` and
@@ -1055,6 +1047,149 @@ def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
     data = RenderCVDataModel(**parsed_dictionary)  ## type: ignore
 
     return data
+
+
+def get_a_sample_data_model(name: str) -> RenderCVDataModel:
+    """Return a sample data model for new users to start with."""
+    sections = {
+        "summary": [
+            (
+                "I am a mechanical engineer with a [passion](https://example.com) for"
+                " software development."
+            ),
+            "I am a **quick learner** and ***I love*** to learn new things.",
+        ],
+        "education": [
+            EducationEntry(
+                institution="Your University",
+                area="Mechanical Engineering",
+                degree="MS",
+                start_date="2019-12",
+                end_date="2021-12-22",
+                highlights=[
+                    "Did something great.",
+                    "Did something else great.",
+                ],
+            ),
+            EducationEntry(
+                institution="Your University",
+                area="Mechanical Engineering",
+                location="Istanbul, Turkey",
+                degree="BS",
+                start_date=2015,
+                end_date=2019,
+            ),
+        ],
+        "experience": [
+            ExperienceEntry(
+                company="Your Company",
+                position="Your Position",
+                date="My Whole Life",
+                location="USA",
+                url="https://yourcompany.com",  # type: ignore
+                url_text="view company website",
+                highlights=[
+                    "Did something great.",
+                    "Did something else great.",
+                ],
+            ),
+            ExperienceEntry(
+                company="Your Company",
+                position="Your Position",
+            ),
+        ],
+        "publications": [
+            PublicationEntry(
+                title="My first publication",
+                authors=["John Doe", name, "Jane Doe"],
+                date="2015-01",
+                doi="10.1109/TASC.2023.3340648",
+            )
+        ],
+        "projects": [
+            NormalEntry(
+                name="Your Project",
+                highlights=[
+                    "Did [something](https://example.com) great.",
+                    "Did something else great.",
+                ],
+            ),
+            NormalEntry(
+                name="Your Project",
+                location="Istanbul, Turkey",
+                date="2015-01",
+                url="https://yourproject.com",  # type: ignore
+                url_text="view details",
+                highlights=[
+                    "Did something **great**.",
+                    "Did *something* else great.",
+                ],
+            ),
+        ],
+        "skills": [
+            OneLineEntry(
+                name="Programming Languages",
+                details="Python, C++, JavaScript",
+            ),
+            OneLineEntry(
+                name="Languages",
+                details=(
+                    "English ([TOEFL: 120/120](https://example.com)), Turkish (Native)"
+                ),
+            ),
+        ],
+        "my_custom_section": SectionWithExperienceEntries(
+            entry_type="ExperienceEntry",
+            entries=[
+                ExperienceEntry(
+                    company="Your Company",
+                    position="Your Position",
+                    date="My Whole Life",
+                    location="USA",
+                    url="https://yourcompany.com",  # type: ignore
+                    url_text="view company website",
+                    highlights=[
+                        "Did something great.",
+                        "Did something else great.",
+                    ],
+                ),
+                ExperienceEntry(
+                    company="Your Company",
+                    position="Your Position",
+                ),
+            ],
+        ),
+        "This Format Is Also Accepted": SectionWithOneLineEntries(
+            entry_type="OneLineEntry",
+            entries=[
+                OneLineEntry(
+                    name="Your Entry",
+                    details="Your details.",
+                ),
+                OneLineEntry(
+                    name="Your *Entry*",
+                    details="Your details.",
+                ),
+            ],
+        ),
+    }
+
+    cv = CurriculumVitae(
+        name=name,
+        location="Your Location",
+        email="youremail@yourdomain.com",
+        phone="+905419999999",  # type: ignore
+        website="https://yourwebsite.com",  # type: ignore
+        social_networks=[
+            SocialNetwork(network="LinkedIn", username="yourusername"),
+            SocialNetwork(network="GitHub", username="yourusername"),
+        ],
+        sections=sections,
+    )
+
+    desgin = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
+
+    return RenderCVDataModel(cv=cv, design=desgin)
 
 
 def generate_json_schema(json_schema_path: pathlib.Path):
