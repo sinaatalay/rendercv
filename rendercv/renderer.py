@@ -2,9 +2,10 @@
 This module contains functions and classes for generating a $\\LaTeX$ file from the data
 model and rendering the $\\LaTeX$ file to produce a PDF.
 
-The $\\LaTeX$ files are generated with [Jinja2](https://jinja.palletsprojects.com/en/3.1.x/)
-templates. Then, the $\\LaTeX$ file is rendered into a PDF with
-[TinyTeX](https://yihui.org/tinytex/), a $\\LaTeX$ distribution.
+The $\\LaTeX$ files are generated with
+[Jinja2](https://jinja.palletsprojects.com/en/3.1.x/) templates. Then, the $\\LaTeX$
+file is rendered into a PDF with [TinyTeX](https://yihui.org/tinytex/), a $\\LaTeX$
+distribution.
 """
 
 import subprocess
@@ -19,7 +20,7 @@ from typing import Optional, Literal
 import jinja2
 
 from . import data_models as dm
-from .terminal_reporter import time_the_event_below
+# from .user_communicator import time_the_event_below
 
 
 class LaTeXFile:
@@ -114,7 +115,11 @@ class LaTeXFile:
         if entry is not None and not isinstance(entry, str):
             for key, value in entry.model_dump().items():
                 if value is None:
-                    entry.__setattr__(key, "")
+                    try:
+                        entry.__setattr__(key, "")
+                    except ValueError:
+                        # Then it means it's a computed_field, so it can be ignored.
+                        pass
 
         # The arguments of the template can be used in the template file:
         latex_code = template.render(
@@ -370,7 +375,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
     return environment
 
 
-@time_the_event_below("Generating the LaTeX file")
+# @time_the_event_below("Generating the LaTeX file")
 def generate_latex_file(
     rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
@@ -406,17 +411,17 @@ def generate_latex_file(
         if not ("j2.tex" in theme_file.name or "py" in theme_file.name):
             if theme_file.is_dir():
                 shutil.copytree(
-                    theme_file,
+                    str(theme_file),
                     output_directory / theme_file.name,
                     dirs_exist_ok=True,
                 )
             else:
-                shutil.copyfile(theme_file, output_directory / theme_file.name)
+                shutil.copyfile(str(theme_file), output_directory / theme_file.name)
 
     return latex_file_path
 
 
-@time_the_event_below("Generating the PDF file")
+# @time_the_event_below("Generating the PDF file")
 def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
     """Run TinyTeX with the given $\\LaTeX$ file to generate the PDF.
 
@@ -446,7 +451,7 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
     with subprocess.Popen(
         [
             executables[sys.platform],
-            str(latex_file_path),
+            str(latex_file_path.name),
             "-lualatex",
         ],
         cwd=latex_file_path.parent,
