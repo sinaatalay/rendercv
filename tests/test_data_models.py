@@ -142,6 +142,15 @@ def test_markdown_to_latex(markdown_string, expected_latex_string):
     assert dm.markdown_to_latex(markdown_string) == expected_latex_string
 
 
+# read input file
+
+
+def test_get_a_sample_data_model():
+    data_model = dm.get_a_sample_data_model("John Doe")
+    assert isinstance(data_model, dm.RenderCVDataModel)
+
+# generate json schema
+
 @pytest.mark.parametrize(
     "start_date, end_date, date, expected_date_string, expected_time_span",
     [
