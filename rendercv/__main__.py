@@ -1,142 +1,42 @@
-import os
-import logging
-from typing import Annotated, Callable
-from functools import wraps
-
-from .data_model import read_input_file
-from .rendering import render_template, run_latex
+import json
+import pathlib
+from typing import Annotated
 
 import typer
-from jinja2 import Environment, PackageLoader
-from pydantic import ValidationError
-from pydantic_core import ErrorDetails
-from ruamel.yaml.parser import ParserError
+from rich.prompt import Prompt
+import ruamel.yaml
+from rich.console import Console, Group
+from rich.panel import Panel
+from rich.live import Live
+from rich.progress import (
+    BarColumn,
+    Progress,
+    ProgressColumn,
+    TextColumn,
+    Task,
+)
+from rich.text import Text
 
-logger = logging.getLogger(__name__)
+
+from .user_communicator import handle_exceptions, welcome, LiveProgress
+from . import data_models as dm
+from . import renderer as r
+
 
 app = typer.Typer(
+    callback=welcome(),
     help="RenderCV - A LateX CV generator from YAML",
-    add_completion=False,
-    pretty_exceptions_enable=True,
-    pretty_exceptions_short=True,
-    pretty_exceptions_show_locals=True,
+    rich_markup_mode=(  # see https://typer.tiangolo.com/tutorial/commands/help/#rich-markdown
+        "markdown"
+    ),
 )
 
 
-def user_friendly_errors(func: Callable) -> Callable:
-    """Function decorator to make RenderCV's error messages more user-friendly.
-
-    Args:
-        func (Callable): Function to decorate
-    Returns:
-        Callable: Decorated function
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            func(*args, **kwargs)
-        except ValidationError as e:
-            # It is a Pydantic error
-            error_messages = []
-            error_messages.append("There are some problems with your input.")
-
-            # Translate Pydantic's error messages to make them more user-friendly
-            custom_error_messages_by_type = {
-                "url_scheme": "This is not a valid URL.",
-                "string_type": "This is not a valid string.",
-                "missing": "This field is required, but it is missing.",
-                "literal_error": "Only the following values are allowed: {expected}.",
-            }
-            custom_error_messages_by_msg = {
-                "value is not a valid phone number": (
-                    "This is not a valid phone number."
-                ),
-                "String should match pattern '\\d+\\.?\\d* *(cm|in|pt|mm|ex|em)'": (
-                    "This is not a valid length! Use a number followed by a unit "
-                    "of length (cm, in, pt, mm, ex, em)."
-                ),
-            }
-            new_errors: list[ErrorDetails] = []
-            for error in e.errors():
-                # Modify Pydantic's error message to make it more user-friendly
-
-                # Remove url:
-                error["url"] = None
-
-                # Make sure the entries of loc (location) are strings
-                error["loc"] = [str(loc) for loc in error["loc"]]
-
-                # Assign a custom error message if there is one
-                custom_message = None
-                if error["type"] in custom_error_messages_by_type:
-                    custom_message = custom_error_messages_by_type[error["type"]]
-                elif error["msg"] in custom_error_messages_by_msg:
-                    custom_message = custom_error_messages_by_msg[error["msg"]]
-
-                if custom_message:
-                    ctx = error.get("ctx")
-                    ctx_error = ctx.get("error") if ctx else None
-                    if ctx_error:
-                        # This means that there is a custom validation error that
-                        # comes from data_model.py
-                        error["msg"] = ctx["error"].args[0]
-                    elif ctx:
-                        # Some Pydantic errors have a context, see the custom message
-                        # for "literal_error" above
-                        error["msg"] = custom_message.format(**ctx)
-                    else:
-                        # If there is no context, just use the custom message
-                        error["msg"] = custom_message
-
-                if error["input"] is not None:
-                    # If the input value is a dictionary, remove it
-                    if isinstance(error["input"], dict):
-                        error["input"] = None
-                    elif isinstance(error["input"], (float, int, bool, str)):
-                        # Or if the input value is in the error message, remove it
-                        input_value = str(error["input"])
-                        if input_value in error["msg"]:
-                            error["input"] = None
-
-                new_errors.append(error)
-
-            # Create a custom error message for RenderCV users
-            for error in new_errors:
-                if len(error["loc"]) > 0:
-                    location = ".".join(error["loc"])
-                    error_messages.append(f"{location}:\n    {error['msg']}")
-                else:
-                    error_messages.append(f"{error['msg']}")
-
-                if error["input"]:
-                    error_messages[-1] += f"\n    Your input was \"{error['input']}\""
-            error_message = "\n\n  ".join(error_messages)
-            logger.error(error_message)
-
-        except ParserError as e:
-            # It is a YAML parser error
-            new_args = list(e.args)
-            new_args = [str(arg).strip() for arg in new_args]
-            new_args[0] = "There is a problem with your input file.‍"
-            error_message = "\n\n  ".join(new_args)
-            logger.error(error_message)
-
-        except Exception as e:
-            # It is not a Pydantic error
-            new_args = list(e.args)
-            new_args = [str(arg).strip() for arg in new_args]
-            error_message = "\n\n  ".join(new_args)
-            logger.error(error_message)
-
-    return wrapper
-
-
 @app.command(help="Render a YAML input file")
-@user_friendly_errors
+@handle_exceptions
 def render(
-    input_file: Annotated[
-        str,
+    input_file_path: Annotated[
+        pathlib.Path,
         typer.Argument(help="Name of the YAML input file"),
     ],
 ):
@@ -145,35 +45,73 @@ def render(
     Args:
         input_file (str): Name of the YAML input file
     """
-    file_path = os.path.abspath(input_file)
-    data = read_input_file(file_path)
-    output_latex_file = render_template(data)
-    run_latex(output_latex_file)
+    output_directory = input_file_path.parent / "rendercv_output"
 
+    number_of_steps = 3
 
-@app.command(help="Generate a YAML input file to get started")
-@user_friendly_errors
-def new(name: Annotated[str, typer.Argument(help="Full name")]):
-    """Generate a YAML input file to get started.
+    class TimeElapsedColumn(ProgressColumn):
+        """Renders time elapsed."""
 
-    Args:
-        name (str): Full name
-    """
-    environment = Environment(
-        loader=PackageLoader("rendercv", os.path.join("templates")),
+        def render(self, task: "Task") -> Text:
+            """Show time elapsed."""
+            elapsed = task.finished_time if task.finished else task.elapsed
+            if elapsed is None:
+                return Text("--.-", style="progress.elapsed")
+            delta = f"{elapsed:.1f} s"
+            return Text(str(delta), style="progress.elapsed")
+
+    step_progress = Progress(TimeElapsedColumn(), TextColumn("{task.description}"))
+
+    # overall progress bar
+    overall_progress = Progress(
+        TimeElapsedColumn(),
+        BarColumn(),
+        TextColumn("{task.description}"),
     )
-    environment.variable_start_string = "<<"
-    environment.variable_end_string = ">>"
 
-    template = environment.get_template("new_input.yaml.j2")
-    new_input_file = template.render(name=name)
+    # group of progress bars;
+    # some are always visible, others will disappear when progress is complete
+    group = Group(
+        Panel(Group(step_progress)),
+        overall_progress,
+    )
 
-    name = name.replace(" ", "_")
-    file_name = f"{name}_CV.yaml"
-    with open(file_name, "w", encoding="utf-8") as file:
-        file.write(new_input_file)
+    overall_task_id = overall_progress.add_task("", total=number_of_steps)
 
-    logger.info(f"New input file created: {file_name}")
+    overall_progress.update(
+        overall_task_id,
+        description=f"[bold #AAAAAA](0 out of 3 steps finished)",
+    )
+    with LiveProgress(
+        step_progress, overall_progress, group, overall_task_id
+    ) as progress:
+        progress.start_a_step("Reading the input file")
+        data_model = dm.read_input_file(input_file_path)
+        progress.finish_the_current_step()
+        latex_file_path = r.generate_latex_file(data_model, output_directory)
+        r.latex_to_pdf(latex_file_path)
+
+
+@app.command(help="Generate a YAML input file to get started.")
+def new():
+    """ """
+    name = Prompt.ask("What is your name?")
+    data_model = dm.get_a_sample_data_model(name)
+    file_name = f"{name.replace(' ', '_')}_CV.yaml"
+    file_path = pathlib.Path(file_name)
+
+    # Instead of getting the dictionary with data_model.model_dump() directy, we convert
+    # it to JSON and then to a dictionary. Because the YAML library we are using
+    # sometimes has problems with the dictionary returned by model_dump().
+    data_model_as_json = data_model.model_dump_json(
+        exclude_none=True, by_alias=True, exclude={"cv": {"sections"}}
+    )
+    data_model_as_dictionary = json.loads(data_model_as_json)
+
+    yaml = ruamel.yaml.YAML()
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    with open(file_path, "w") as file:
+        yaml.dump(data_model_as_dictionary, file)
 
 
 def cli():
