@@ -19,7 +19,7 @@ import pydantic
 error_console = Console(stderr=True)
 
 
-def welcome():
+def print_rendercv_graphics():
     """Print a welcome message to the terminal."""
     print("Welcome to [bold blue]RenderCV[/bold blue]!")
     print("Documentation: [link=https://sinaatalay.github.io/rendercv/]")
@@ -91,35 +91,43 @@ def handle_exceptions(function: Callable) -> Callable:
     return wrapper
 
 
-class TimeElapsedColumn(ProgressColumn):
-    """Renders time elapsed."""
+class LiveProgressReporter(Live):
+    def __init__(self, number_of_steps: int):
+        class TimeElapsedColumn(ProgressColumn):
+            def render(self, task: "Task") -> Text:
+                elapsed = task.finished_time if task.finished else task.elapsed
+                if elapsed is None:
+                    return Text("--.-", style="progress.elapsed")
+                delta = f"{elapsed:.1f} s"
+                return Text(str(delta), style="progress.elapsed")
 
-    def render(self, task: "Task") -> Text:
-        """Show time elapsed."""
-        elapsed = task.finished_time if task.finished else task.elapsed
-        if elapsed is None:
-            return Text("--.-", style="progress.elapsed")
-        delta = f"{elapsed:.1f} s"
-        return Text(str(delta), style="progress.elapsed")
+        self.step_progress = Progress(
+            TimeElapsedColumn(), TextColumn("{task.description}")
+        )
 
+        self.overall_progress = Progress(
+            TimeElapsedColumn(),
+            BarColumn(),
+            TextColumn("{task.description}"),
+        )
 
-class LiveProgress(Live):
-    def __init__(self, step_progress, overall_progress, group, overall_task_id):
-        super().__init__()
-        self.step_progress = step_progress
-        self.overall_progress = overall_progress
-        self.group = group
+        self.group = Group(
+            Panel(Group(self.step_progress)),
+            self.overall_progress,
+        )
 
-        self.overall_task_id = overall_task_id
-        self.number_of_tasks = 3
+        self.overall_task_id = self.overall_progress.add_task("", total=number_of_steps)
+        self.number_of_steps = number_of_steps
+        self.current_step = 0
         self.overall_progress.update(
             self.overall_task_id,
             description=(
-                f"[bold #AAAAAA](0 out of {self.number_of_tasks} steps finished)"
+                f"[bold #AAAAAA](0 out of {self.number_of_steps} steps finished)"
             ),
         )
+        super().__init__(self.group)
 
-    def __enter__(self) -> "LiveProgress":
+    def __enter__(self) -> "LiveProgressReporter":
         self.start(refresh=self._renderable is not None)
         return self
 
@@ -135,6 +143,9 @@ class LiveProgress(Live):
             self.current_step_id, description=f"{self.current_step_name} has finished."
         )
         self.overall_progress.update(self.overall_task_id, advance=1)
+        self.current_step += 1
+        if self.current_step == self.number_of_steps:
+            self.end()
 
     def end(self):
         self.overall_progress.update(
