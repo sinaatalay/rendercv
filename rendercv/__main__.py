@@ -5,26 +5,15 @@ from typing import Annotated
 import typer
 from rich.prompt import Prompt
 import ruamel.yaml
-from rich.console import Console, Group
-from rich.panel import Panel
-from rich.live import Live
-from rich.progress import (
-    BarColumn,
-    Progress,
-    ProgressColumn,
-    TextColumn,
-    Task,
-)
-from rich.text import Text
 
 
-from .user_communicator import handle_exceptions, welcome, LiveProgress
+from . import user_communicator as uc
 from . import data_models as dm
 from . import renderer as r
 
 
 app = typer.Typer(
-    callback=welcome(),
+    # callback=uc.print_rendercv_graphics(),
     help="RenderCV - A LateX CV generator from YAML",
     rich_markup_mode=(  # see https://typer.tiangolo.com/tutorial/commands/help/#rich-markdown
         "markdown"
@@ -33,7 +22,7 @@ app = typer.Typer(
 
 
 @app.command(help="Render a YAML input file")
-@handle_exceptions
+@uc.handle_exceptions
 def render(
     input_file_path: Annotated[
         pathlib.Path,
@@ -46,50 +35,18 @@ def render(
         input_file (str): Name of the YAML input file
     """
     output_directory = input_file_path.parent / "rendercv_output"
-
-    number_of_steps = 3
-
-    class TimeElapsedColumn(ProgressColumn):
-        """Renders time elapsed."""
-
-        def render(self, task: "Task") -> Text:
-            """Show time elapsed."""
-            elapsed = task.finished_time if task.finished else task.elapsed
-            if elapsed is None:
-                return Text("--.-", style="progress.elapsed")
-            delta = f"{elapsed:.1f} s"
-            return Text(str(delta), style="progress.elapsed")
-
-    step_progress = Progress(TimeElapsedColumn(), TextColumn("{task.description}"))
-
-    # overall progress bar
-    overall_progress = Progress(
-        TimeElapsedColumn(),
-        BarColumn(),
-        TextColumn("{task.description}"),
-    )
-
-    # group of progress bars;
-    # some are always visible, others will disappear when progress is complete
-    group = Group(
-        Panel(Group(step_progress)),
-        overall_progress,
-    )
-
-    overall_task_id = overall_progress.add_task("", total=number_of_steps)
-
-    overall_progress.update(
-        overall_task_id,
-        description=f"[bold #AAAAAA](0 out of 3 steps finished)",
-    )
-    with LiveProgress(
-        step_progress, overall_progress, group, overall_task_id
-    ) as progress:
+    with uc.LiveProgressReporter(number_of_steps=3) as progress:
         progress.start_a_step("Reading the input file")
         data_model = dm.read_input_file(input_file_path)
         progress.finish_the_current_step()
+
+        progress.start_a_step("Generating the LaTeX file")
         latex_file_path = r.generate_latex_file(data_model, output_directory)
+        progress.finish_the_current_step()
+
+        progress.start_a_step("Converting the LaTeX file to PDF")
         r.latex_to_pdf(latex_file_path)
+        progress.finish_the_current_step()
 
 
 @app.command(help="Generate a YAML input file to get started.")
