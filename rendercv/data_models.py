@@ -137,15 +137,18 @@ class EntryBase(RenderCVBaseModel):
     start_date: Optional[int | RenderCVDate] = pydantic.Field(
         default=None,
         title="Start Date",
-        description="The start date of the event in YYYY-MM-DD format.",
+        description=(
+            "The start date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format."
+        ),
         examples=["2020-09-24"],
     )
     end_date: Optional[Literal["present"] | int | RenderCVDate] = pydantic.Field(
         default=None,
         title="End Date",
         description=(
-            "The end date of the event in YYYY-MM-DD format. If the event is still"
-            ' ongoing, then the value should be "present".'
+            "The end date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format. If the"
+            ' event is still ongoing, then type "present" or provide only the start'
+            " date."
         ),
         examples=["2020-09-24", "present"],
     )
@@ -452,7 +455,9 @@ class PublicationEntry(RenderCVBaseModel):
     )
     date: int | RenderCVDate = pydantic.Field(
         title="Publication Date",
-        description="The date of the publication.",
+        description=(
+            "The date of the publication in YYYY-MM-DD, YYYY-MM, or YYYY format."
+        ),
         examples=["2021-10-31", "2010"],
     )
     journal: Optional[str] = pydantic.Field(
@@ -725,7 +730,18 @@ class CurriculumVitae(RenderCVBaseModel):
             "The social networks of the person. They will be rendered in the heading."
         ),
     )
-    sections_input: dict[str, Section | list[Any]] = pydantic.Field(
+    sections_input: dict[
+        str,
+        Section
+        | list[
+            EducationEntry
+            | ExperienceEntry
+            | PublicationEntry
+            | NormalEntry
+            | OneLineEntry
+            | str
+        ],
+    ] = pydantic.Field(
         default=None,
         title="Sections",
         description="The sections of the CV.",
@@ -839,7 +855,7 @@ class RenderCVDataModel(RenderCVBaseModel):
     )
     design: Design = pydantic.Field(
         title="Design",
-        description="The design information.",
+        description="The design information of the CV.",
         discriminator="theme",
     )
 
@@ -984,9 +1000,8 @@ def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
             f" {accepted_extensions}. The input file is {file_path}."
         )
 
-    with open(file_path) as file:
-        file_content = file.read()
-        parsed_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
+    file_content = file_path.read_text()
+    parsed_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
 
     def loop_through_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
         """Recursively loop through a dictionary and apply `markdown_to_latex` and
@@ -1173,32 +1188,28 @@ def get_a_sample_data_model(name: str) -> RenderCVDataModel:
     return RenderCVDataModel(cv=cv, design=desgin)
 
 
-def generate_json_schema(json_schema_path: pathlib.Path):
-    """Generate the JSON schema of the data model and save it to a file.
+def generate_json_schema() -> dict:
+    """Generate the JSON schema of RenderCV.
 
     JSON schema is generated for the users to make it easier for them to write the input
     file. The JSON Schema of RenderCV is saved in the `docs` directory of the repository
     and distributed to the users with the
     [JSON Schema Store](https://www.schemastore.org/).
 
-    Args:
-        json_schema_path (str): The path to save the JSON schema.
+    Returns:
+        dict: The JSON schema of RenderCV.
     """
 
     class RenderCVSchemaGenerator(pydantic.json_schema.GenerateJsonSchema):
         def generate(self, schema, mode="validation"):
             json_schema = super().generate(schema, mode=mode)
-            json_schema["title"] = "RenderCV Input"
 
-            # remove the description of the class (RenderCVDataModel)
-            del json_schema["description"]
-
-            # add $id
+            # Basic information about the schema:
+            json_schema["title"] = "RenderCV"
+            json_schema["description"] = "RenderCV data model."
             json_schema["$id"] = (
                 "https://raw.githubusercontent.com/sinaatalay/rendercv/main/schema.json"
             )
-
-            # add $schema
             json_schema["$schema"] = "http://json-schema.org/draft-07/schema#"
 
             # Loop through $defs and remove docstring descriptions and fix optional
@@ -1206,10 +1217,6 @@ def generate_json_schema(json_schema_path: pathlib.Path):
             for key, value in json_schema["$defs"].items():
                 # Don't allow additional properties
                 value["additionalProperties"] = False
-
-                # I don't want the docstrings in the schema, so remove them:
-                if "This class" in value["description"]:
-                    del value["description"]
 
                 # If a type is optional, then Pydantic sets the type to a list of two
                 # types, one of which is null. The null type can be removed since we
@@ -1225,6 +1232,9 @@ def generate_json_schema(json_schema_path: pathlib.Path):
                             and null_type_dict in field["anyOf"]
                         ):
                             field["allOf"] = [field["anyOf"][0]]
+                            del field["anyOf"]
+                        else:
+                            field["oneOf"] = field["anyOf"]
                             del field["anyOf"]
 
                 # In date field, we both accept normal strings and Date objects. They
@@ -1244,10 +1254,13 @@ def generate_json_schema(json_schema_path: pathlib.Path):
     schema = RenderCVDataModel.model_json_schema(
         schema_generator=RenderCVSchemaGenerator
     )
-    schema = json.dumps(schema, indent=2)
 
-    # Change all anyOf to oneOf
-    schema = schema.replace('"anyOf"', '"oneOf"')
+    return schema
 
-    with open(json_schema_path, "w") as f:
-        f.write(schema)
+
+def generate_json_schema_file(json_schema_path: pathlib.Path):
+    """Generate the JSON schema of RenderCV and save it to a file in the `docs`
+    """
+    schema = generate_json_schema()
+    schema_json = json.dumps(schema, indent=2)
+    json_schema_path.write_text(schema_json)
