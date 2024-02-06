@@ -20,6 +20,7 @@ from typing import Optional, Literal
 import jinja2
 
 from . import data_models as dm
+
 # from .user_communicator import time_the_event_below
 
 
@@ -145,8 +146,7 @@ class LaTeXFile:
 
     def write_to_file(self, file_path: pathlib.Path):
         """Write the $\\LaTeX$ code to a file."""
-        with open(file_path, "w") as latex_file:
-            latex_file.write(self.get_latex_code())
+        file_path.write_text(self.get_latex_code())
 
 
 def make_matched_part_something(
