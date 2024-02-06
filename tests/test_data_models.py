@@ -1,5 +1,6 @@
 from datetime import date as Date
 import pathlib
+import json
 
 import pydantic
 import pytest
@@ -60,8 +61,13 @@ def tests_directory_path() -> pathlib.Path:
 
 
 @pytest.fixture
+def root_directory_path(tests_directory_path) -> pathlib.Path:
+    return tests_directory_path.parent
+
+
+@pytest.fixture
 def input_file_path(tests_directory_path) -> pathlib.Path:
-    return tests_directory_path / "John_Doe_CV.yaml"
+    return tests_directory_path / "input_files" / "John_Doe_CV.yaml"
 
 
 @pytest.mark.parametrize(
@@ -142,14 +148,42 @@ def test_markdown_to_latex(markdown_string, expected_latex_string):
     assert dm.markdown_to_latex(markdown_string) == expected_latex_string
 
 
-# read input file
+def test_read_input_file(input_file_path):
+    data_model = dm.read_input_file(input_file_path)
+    assert isinstance(data_model, dm.RenderCVDataModel)
 
 
 def test_get_a_sample_data_model():
     data_model = dm.get_a_sample_data_model("John Doe")
     assert isinstance(data_model, dm.RenderCVDataModel)
 
-# generate json schema
+
+def test_generate_json_schema():
+    schema = dm.generate_json_schema()
+    assert isinstance(schema, dict)
+
+
+def test_generate_json_schema_file(tmp_path):
+    schema_file_path = tmp_path / "schema.json"
+    dm.generate_json_schema_file(schema_file_path)
+
+    assert schema_file_path.exists()
+
+    schema_text = schema_file_path.read_text()
+    schema = json.loads(schema_text)
+
+    assert isinstance(schema, dict)
+
+
+def test_if_the_schema_is_the_latest(root_directory_path):
+    original_schema_file_path = root_directory_path / "schema.json"
+    original_schema_text = original_schema_file_path.read_text()
+    original_schema = json.loads(original_schema_text)
+
+    new_schema = dm.generate_json_schema()
+
+    assert original_schema == new_schema
+
 
 @pytest.mark.parametrize(
     "start_date, end_date, date, expected_date_string, expected_time_span",
