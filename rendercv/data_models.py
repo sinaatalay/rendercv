@@ -25,10 +25,7 @@ import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import ruamel.yaml
 
-from .user_communicator import warning
 from .themes.classic import ClassicThemeOptions
-# from .user_communicator import time_the_event_below
-
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -195,34 +192,18 @@ class EntryBase(RenderCVBaseModel):
             end_date_is_provided = True
 
         if date_is_provided and start_date_is_provided and end_date_is_provided:
-            warning(
-                '"start_date", "end_date" and "date" are all provided in of the'
-                " entries. start_date and end_date will be ignored."
-            )
             model.start_date = None
             model.end_date = None
 
         elif date_is_provided and start_date_is_provided and not end_date_is_provided:
-            warning(
-                'Both "date" and "start_date" is provided in of the entries.'
-                ' "start_date" will be ignored.'
-            )
             model.start_date = None
             model.end_date = None
 
         elif date_is_provided and end_date_is_provided and not start_date_is_provided:
-            warning(
-                'Both "date" and "end_date" is provided in of the entries. "end_date"'
-                " will be ignored."
-            )
             model.start_date = None
             model.end_date = None
 
         elif start_date_is_provided and not end_date_is_provided:
-            warning(
-                '"start_date" is provided in of the entries, but "end_date" is not.'
-                ' "end_date" will be set to "present".'
-            )
             model.end_date = "present"
 
         elif not start_date_is_provided and end_date_is_provided:
