@@ -172,14 +172,11 @@ def make_matched_part_something(
         str: The string with the matched part something.
     """
     if match_str is None:
-        return f"\\{something}{{{value}}}"
-
-    elif match_str in value:
+        value = f"\\{something}{{{value}}}"
+    elif match_str in value and match_str != "":
         value = value.replace(match_str, f"\\{something}{{{match_str}}}")
-        return value
 
-    else:
-        return value
+    return value
 
 
 def make_matched_part_bold(value: str, match_str: Optional[str] = None) -> str:
@@ -299,6 +296,11 @@ def abbreviate_name(name: str) -> str:
     Returns:
         str: The abbreviated name.
     """
+    number_of_words = len(name.split(" "))
+
+    if number_of_words == 1:
+        return name
+
     first_names = name.split(" ")[:-1]
     first_names_initials = [first_name[0] + "." for first_name in first_names]
     last_name = name.split(" ")[-1]
@@ -335,6 +337,9 @@ def divide_length_by(length: str, divider: float) -> str:
         raise ValueError(f"Invalid length {length}!")
     else:
         value = value.group()
+
+    if divider <= 0:
+        raise ValueError(f"The divider must be greater than 0, but got {divider}!")
 
     unit = re.findall(r"[^\d\.\s]+", length)[0]
 
@@ -375,7 +380,6 @@ def setup_jinja2_environment() -> jinja2.Environment:
     return environment
 
 
-# @time_the_event_below("Generating the LaTeX file")
 def generate_latex_file(
     rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
@@ -421,7 +425,6 @@ def generate_latex_file(
     return latex_file_path
 
 
-# @time_the_event_below("Generating the PDF file")
 def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
     """Run TinyTeX with the given $\\LaTeX$ file to generate the PDF.
 
