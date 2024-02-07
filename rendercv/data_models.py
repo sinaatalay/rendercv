@@ -178,9 +178,9 @@ class EntryBase(RenderCVBaseModel):
     url: Optional[pydantic.HttpUrl] = None
     url_text_input: Optional[str] = pydantic.Field(default=None, alias="url_text")
 
-    @pydantic.model_validator(mode="after")
+    @pydantic.model_validator(mode="after")  # type: ignore
     @classmethod
-    def check_dates(cls, model):
+    def check_dates(cls, model: "EntryBase") -> "EntryBase":
         """
         Check if the dates are provided correctly and do the necessary adjustments.
         """
@@ -236,7 +236,7 @@ class EntryBase(RenderCVBaseModel):
 
         return model
 
-    @pydantic.computed_field
+    # @pydantic.computed_field
     @cached_property
     def date_string(self) -> str:
         """
@@ -285,7 +285,7 @@ class EntryBase(RenderCVBaseModel):
 
         return date_string
 
-    @pydantic.computed_field
+    # @pydantic.computed_field
     @cached_property
     def time_span_string(self) -> str:
         """
@@ -356,7 +356,7 @@ class EntryBase(RenderCVBaseModel):
 
             return time_span_string
 
-    @pydantic.computed_field
+    # @pydantic.computed_field
     @cached_property
     def url_text(self) -> Optional[str]:
         """
@@ -497,13 +497,13 @@ class PublicationEntry(RenderCVBaseModel):
 
         return doi
 
-    @pydantic.computed_field
+    # @pydantic.computed_field
     @cached_property
     def doi_url(self) -> str:
         """Return the URL of the DOI."""
         return f"https://doi.org/{self.doi}"
 
-    @pydantic.computed_field
+    # @pydantic.computed_field
     @cached_property
     def date_string(self) -> str:
         """Return the date string of the publication."""
@@ -661,9 +661,9 @@ class SocialNetwork(RenderCVBaseModel):
         description="The username of the social network. The link will be generated.",
     )
 
-    @pydantic.model_validator(mode="after")
+    @pydantic.model_validator(mode="after")  # type: ignore
     @classmethod
-    def check_networks(cls, model):
+    def check_networks(cls, model: "SocialNetwork") -> "SocialNetwork":
         """Check if the `SocialNetwork` is provided correctly."""
         if model.network == "Mastodon":
             if not model.username.startswith("@"):
@@ -679,7 +679,7 @@ class SocialNetwork(RenderCVBaseModel):
 
         return model
 
-    @pydantic.computed_field
+    # @pydantic.computed_field
     @cached_property
     def url(self) -> pydantic.HttpUrl:
         """Return the URL of the social network."""
@@ -788,7 +788,7 @@ class CurriculumVitae(RenderCVBaseModel):
 
         return sections_input
 
-    @pydantic.computed_field
+    # @pydantic.computed_field
     @cached_property
     def sections(self) -> list[Section]:
         """Return all the sections of the CV with their titles."""
@@ -975,7 +975,75 @@ def markdown_to_latex(markdown_string: str) -> str:
     return latex_string
 
 
-# @time_the_event_below("Reading and validating the input file")
+def convert_a_markdown_dictionary_to_a_latex_dictionary(
+    dictionary: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Recursively loop through a dictionary and convert all the markdown strings (keys and
+    values) to LaTeX. Also, escape special LaTeX characters in the keys and values.
+
+    Example:
+        ```python
+        convert_a_markdown_dictionary_to_a_latex_dictionary(
+            {
+                "key1": "This is a **bold** text with an [*italic link*](https://google.com).",
+                "key2": "This is a **bold** text with an [*italic link*](https://google.com).",
+                "**key3**": {
+                    "key4": "This is a **bold** text with an [*italic link*](https://google.com).",
+                    "key5": "This is a **bold** text with an [*italic link*](https://google.com).",
+                },
+            }
+        )
+        ```
+
+        will return:
+
+        ```python
+        {
+            "key1": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
+            "key2": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
+            "\\textbf{key3}": {
+                "key4": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
+                "key5": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
+            },
+        }
+        ```
+
+    Args:
+        dictionary (dict): The dictionary to convert.
+    Returns:
+        dict: The LaTeX dictionary.
+    """
+    for key, value in dictionary.copy().items():
+        if isinstance(value, str):
+            # if the value is a string, then apply markdown_to_latex and
+            # escape_latex_characters to it:
+            result = escape_latex_characters(value)
+            dictionary[key] = markdown_to_latex(result)
+        elif isinstance(value, list):
+            # if the value is a list, then loop through the list and apply
+            # markdown_to_latex and escape_latex_characters to each item:
+            for index, item in enumerate(value):
+                if isinstance(item, str):
+                    result = escape_latex_characters(item)
+                    dictionary[key][index] = markdown_to_latex(result)
+                elif isinstance(item, dict):
+                    # if the item is a dictionary, then call loop_through_dictionary
+                    # again:
+                    dictionary[key][index] = (
+                        convert_a_markdown_dictionary_to_a_latex_dictionary(item)
+                    )
+        elif isinstance(value, dict):
+            # if the value is a dictionary, then call loop_through_dictionary again:
+            dictionary[key] = convert_a_markdown_dictionary_to_a_latex_dictionary(value)
+
+        # do the same for the key:
+        result = escape_latex_characters(key)
+        dictionary[markdown_to_latex(result)] = dictionary.pop(key)
+
+    return dictionary
+
+
 def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
     """Read the input file and return an instance of RenderCVDataModel.
 
@@ -1002,42 +1070,9 @@ def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
 
     file_content = file_path.read_text()
     parsed_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
-
-    def loop_through_dictionary(dictionary: dict[str, Any]) -> dict[str, Any]:
-        """Recursively loop through a dictionary and apply `markdown_to_latex` and
-        `escape_latex_characters` to all the fields.
-
-        Args:
-            dictionary (dict[str, Any]): The dictionary to loop through.
-
-        Returns:
-            dict[str, Any]: The dictionary with markdown_to_latex and
-                escape_latex_characters applied to all the fields.
-        """
-        for key, value in dictionary.items():
-            if isinstance(value, str):
-                # if the value is a string, then apply markdown_to_latex and
-                # escape_latex_characters to it:
-                result = escape_latex_characters(value)
-                dictionary[key] = markdown_to_latex(result)
-            elif isinstance(value, list):
-                # if the value is a list, then loop through the list and apply
-                # markdown_to_latex and escape_latex_characters to each item:
-                for index, item in enumerate(value):
-                    if isinstance(item, str):
-                        result = escape_latex_characters(item)
-                        dictionary[key][index] = markdown_to_latex(result)
-                    elif isinstance(item, dict):
-                        # if the item is a dictionary, then call loop_through_dictionary
-                        # again:
-                        dictionary[key][index] = loop_through_dictionary(item)
-            elif isinstance(value, dict):
-                # if the value is a dictionary, then call loop_through_dictionary again:
-                dictionary[key] = loop_through_dictionary(value)
-
-        return dictionary
-
-    parsed_dictionary = loop_through_dictionary(parsed_dictionary)
+    parsed_dictionary = convert_a_markdown_dictionary_to_a_latex_dictionary(
+        parsed_dictionary
+    )
 
     # validate the parsed dictionary by creating an instance of RenderCVDataModel:
     data = RenderCVDataModel(**parsed_dictionary)  ## type: ignore
@@ -1259,8 +1294,7 @@ def generate_json_schema() -> dict:
 
 
 def generate_json_schema_file(json_schema_path: pathlib.Path):
-    """Generate the JSON schema of RenderCV and save it to a file in the `docs`
-    """
+    """Generate the JSON schema of RenderCV and save it to a file in the `docs`"""
     schema = generate_json_schema()
     schema_json = json.dumps(schema, indent=2)
     json_schema_path.write_text(schema_json)
