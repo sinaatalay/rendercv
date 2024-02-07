@@ -41,7 +41,9 @@ def render(
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
-        latex_file_path = r.generate_latex_file(data_model, output_directory)
+        latex_file_path = r.generate_latex_file_and_copy_theme_files(
+            data_model, output_directory
+        )
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
@@ -66,8 +68,7 @@ def new(full_name: Annotated[str, typer.Argument(help="Your full name")]):
 
     yaml = ruamel.yaml.YAML()
     yaml.indent(mapping=2, sequence=4, offset=2)
-    with open(file_path, "w") as file:
-        yaml.dump(data_model_as_dictionary, file)
+    yaml.dump(data_model_as_dictionary, file_path)
 
     uc.information(f"Your RenderCV input file has been created at {file_path}!")
 
