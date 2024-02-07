@@ -748,7 +748,7 @@ class CurriculumVitae(RenderCVBaseModel):
         alias="sections",
     )
 
-    @pydantic.field_validator("sections_input")
+    @pydantic.field_validator("sections_input", mode="before")
     @classmethod
     def validate_sections(
         cls,
