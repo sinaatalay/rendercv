@@ -2,6 +2,7 @@ import pathlib
 
 import pytest
 
+
 @pytest.fixture
 def publication_entry() -> dict[str, str | list[str]]:
     return {
@@ -59,5 +60,10 @@ def root_directory_path(tests_directory_path) -> pathlib.Path:
 
 
 @pytest.fixture
-def input_file_path(tests_directory_path) -> pathlib.Path:
-    return tests_directory_path / "input_files" / "John_Doe_CV.yaml"
+def reference_files_directory_path(tests_directory_path) -> pathlib.Path:
+    return tests_directory_path / "reference_files"
+
+
+@pytest.fixture
+def input_file_path(reference_files_directory_path) -> pathlib.Path:
+    return reference_files_directory_path / "John_Doe_CV.yaml"
