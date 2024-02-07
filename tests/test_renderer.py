@@ -1,9 +1,13 @@
 import math
+import filecmp
+import shutil
 
 import pytest
 import jinja2
+import time_machine
 
 from rendercv import renderer as r
+from rendercv import data_models as dm
 
 
 @pytest.mark.parametrize(
@@ -146,4 +150,89 @@ def test_setup_jinja2_environment():
     assert "make_it_something" in env.filters
     assert "divide_length_by" in env.filters
     assert "abbreviate_name" in env.filters
+    assert "get_an_item_with_a_specific_attribute_value" in env.filters
 
+
+themes = ["classic"]
+
+
+@pytest.mark.parametrize(
+    "theme_name",
+    themes,
+)
+@time_machine.travel("2024-01-01")
+def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_name):
+    file_name = f"{theme_name}_theme_CV.tex"
+    output_file_path = tmp_path / file_name
+    reference_file_path = reference_files_directory_path / file_name
+
+    data_model = dm.RenderCVDataModel(
+        cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
+        design=dm.Design(theme=theme_name),
+    )
+    r.generate_latex_file(data_model, tmp_path)
+    # Uncomment the line below to update the reference files:
+    # r.generate_latex_file(data_model, reference_files_directory_path)
+
+    assert filecmp.cmp(output_file_path, reference_file_path)
+
+
+@pytest.mark.parametrize(
+    "theme_name",
+    themes,
+)
+def test_copy_theme_files_to_output_directory(
+    tmp_path, reference_files_directory_path, theme_name
+):
+    reference_directory_path = (
+        reference_files_directory_path / f"{theme_name}_theme_auxiliary_files"
+    )
+
+    r.copy_theme_files_to_output_directory(theme_name, tmp_path)
+    # Uncomment the line below to update the reference files:
+    # r.copy_theme_files_to_output_directory(
+    #     theme_name, reference_files_directory_path / directory_name
+    # )
+
+    assert filecmp.dircmp(tmp_path, reference_directory_path).diff_files == []
+
+
+@pytest.mark.parametrize(
+    "theme_name",
+    themes,
+)
+@time_machine.travel("2024-01-01")
+def test_generate_latex_file_and_copy_theme_files(
+    tmp_path, reference_files_directory_path, theme_name
+):
+    reference_directory = reference_files_directory_path / f"{theme_name}_theme_full"
+
+    data_model = dm.RenderCVDataModel(
+        cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
+        design=dm.Design(theme=theme_name),
+    )
+    r.generate_latex_file_and_copy_theme_files(data_model, tmp_path)
+    # Uncomment the line below to update the reference files:
+    # r.generate_latex_file_and_copy_theme_files(
+    #     data_model, reference_directory
+    # )
+
+    assert filecmp.dircmp(tmp_path, reference_directory).diff_files == []
+
+
+@pytest.mark.parametrize(
+    "theme_name",
+    themes,
+)
+def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
+    reference_directory = reference_files_directory_path / f"{theme_name}_theme_full"
+    reference_pdf_file_path = reference_directory / f"{theme_name}_theme_CV.pdf"
+
+    shutil.copytree(reference_directory, tmp_path, dirs_exist_ok=True)
+    output_pdf_file_path = r.latex_to_pdf(tmp_path / f"{theme_name}_theme_CV.tex")
+    # Uncomment the line below to update the reference files:
+    # output_pdf_file_path = r.latex_to_pdf(
+    #     reference_directory / f"{theme_name}_theme_CV.tex"
+    # )
+
+    assert filecmp.cmp(output_pdf_file_path, reference_pdf_file_path)
