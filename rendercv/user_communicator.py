@@ -46,46 +46,6 @@ def information(text):
     console.print(f"[bold green]{text}")
 
 
-def time_the_event_below(event_name: str) -> Callable:
-    """Return a wrapper function that times the wrapped function.
-
-    A decorator in Python is a syntactic convenience that allows a Python to interpret
-    the code below:
-
-    ```python
-    @time_the_event_below("My event")
-    def my_function():
-        pass
-    ```
-    as
-    ```python
-    time_the_event_below("My event")(my_function)()
-    ```
-    which is step by step equivalent to
-
-    1.  Execute `#!python time_the_event_below("My event")` which will return the
-        function called `wrapper`.
-    2.  Execute `#!python wrapper(my_function)`, which will return another function
-        called `wrapped_function`, which does some modifications to `my_function.`
-    3.  Execute `#!python wrapped_function()`
-    """
-
-    def wrapper(function: Callable) -> Callable:
-        def wrapped_function(*args, **kwargs):
-            start_time = time.time()
-            # information(f"{event_name} has started.")
-            result = function(*args, **kwargs)
-            end_time = time.time()
-            # compute the time took in 2 decimal places
-            time_took = round(end_time - start_time, 2)
-            information(f"{event_name} has finished in {time_took} seconds.\n")
-            return result
-
-        return wrapped_function
-
-    return wrapper
-
-
 def handle_exceptions(function: Callable) -> Callable:
     """ """
 
