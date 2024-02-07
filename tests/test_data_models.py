@@ -86,6 +86,33 @@ def test_markdown_to_latex(markdown_string, expected_latex_string):
     assert dm.markdown_to_latex(markdown_string) == expected_latex_string
 
 
+@pytest.mark.parametrize(
+    "input_dict, expected_dict",
+    [
+        # Test 1: Basic key-value pairs
+        ({"k1": "v1"}, {"k1": "v1"}),
+        # Test 2: Bold and italic markdown in keys
+        ({"**k1**": "v1", "*k2*": "v2"}, {"\\textbf{k1}": "v1", "\\textit{k2}": "v2"}),
+        # Test 3: Links in keys
+        ({"[k1](https://g.com)": "v1"}, {"\\href{https://g.com}{k1}": "v1"}),
+        # Test 4: Nested dictionary
+        ({"k1": {"**k2**": "v2"}}, {"k1": {"\\textbf{k2}": "v2"}}),
+        # Test 5: List of strings
+        ({"k1": ["v1", "v2"]}, {"k1": ["v1", "v2"]}),
+        # Test 6: List of dictionaries
+        (
+            {"k1": [{"k2": "v2"}, {"*k3*": "v3"}]},
+            {"k1": [{"k2": "v2"}, {"\\textit{k3}": "v3"}]},
+        ),
+    ],
+)
+def test_convert_md_to_latex(input_dict, expected_dict):
+    assert (
+        dm.convert_a_markdown_dictionary_to_a_latex_dictionary(input_dict)
+        == expected_dict
+    )
+
+
 def test_read_input_file(input_file_path):
     data_model = dm.read_input_file(input_file_path)
     assert isinstance(data_model, dm.RenderCVDataModel)
@@ -386,3 +413,4 @@ def test_sections_with_invalid_entries(section_title):
     }]
     with pytest.raises(pydantic.ValidationError):
         dm.CurriculumVitae(**input)
+
