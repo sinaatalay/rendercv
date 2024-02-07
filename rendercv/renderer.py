@@ -15,7 +15,7 @@ import importlib.resources
 import shutil
 import sys
 from datetime import date as Date
-from typing import Optional, Literal
+from typing import Optional, Literal, Any
 
 import jinja2
 
@@ -346,6 +346,33 @@ def divide_length_by(length: str, divider: float) -> str:
     return str(float(value) / divider) + " " + unit
 
 
+def get_an_item_with_a_specific_attribute_value(
+    items: list[Any], attribute: str, value: Any
+) -> Any:
+    """Get an item from a list of items with a specific attribute value.
+
+    This function can be used as a Jinja2 filter in templates.
+
+    Args:
+        items (list[Any]): The list of items.
+        attribute (str): The attribute to check.
+        value (Any): The value of the attribute.
+    Returns:
+        Any: The item with the specific attribute value.
+    """
+    if items is not None:
+        for item in items:
+            if not hasattr(item, attribute):
+                raise AttributeError(
+                    f"The attribute {attribute} doesn't exist in the item {item}!"
+                )
+            else:
+                if getattr(item, attribute) == value:
+                    return item
+
+    return None
+
+
 def setup_jinja2_environment() -> jinja2.Environment:
     """Setup and return the Jinja2 environment for templating the $\\LaTeX$ files.
 
@@ -376,6 +403,9 @@ def setup_jinja2_environment() -> jinja2.Environment:
     environment.filters["make_it_something"] = make_matched_part_something
     environment.filters["divide_length_by"] = divide_length_by
     environment.filters["abbreviate_name"] = abbreviate_name
+    environment.filters["get_an_item_with_a_specific_attribute_value"] = (
+        get_an_item_with_a_specific_attribute_value
+    )
 
     return environment
 
@@ -384,7 +414,7 @@ def generate_latex_file(
     rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
     """Generate the $\\LaTeX$ file with the given data model and write it to the output
-    directory. It also copies the theme files to the output directory.
+    directory.
 
     Args:
         rendercv_data_model (dm.RenderCVDataModel): The data model.
@@ -406,11 +436,21 @@ def generate_latex_file(
     latex_file_path = output_directory / latex_file_name
     latex_file_object.write_to_file(latex_file_path)
 
-    # copy auxiliary theme files (all the folders and files except the .j2.tex files and
-    # .py files) to the output directory:
-    theme_directory = importlib.resources.files(
-        f"rendercv.themes.{rendercv_data_model.design.theme}"
-    )
+    return latex_file_path
+
+
+def copy_theme_files_to_output_directory(
+    theme_name: str, output_directory: pathlib.Path
+):
+    """Copy the auxiliary files (all the files that don't end with `.j2.tex` and `.py`)
+    of the theme to the output directory. For example, the "classic" theme has custom
+    fonts, and the $\\LaTeX$ needs it.
+
+    Args:
+        theme_name (str): The name of the theme.
+        output_directory (pathlib.Path): Path to the output directory.
+    """
+    theme_directory = importlib.resources.files(f"rendercv.themes.{theme_name}")
     for theme_file in theme_directory.iterdir():
         if not ("j2.tex" in theme_file.name or "py" in theme_file.name):
             if theme_file.is_dir():
@@ -422,6 +462,23 @@ def generate_latex_file(
             else:
                 shutil.copyfile(str(theme_file), output_directory / theme_file.name)
 
+
+def generate_latex_file_and_copy_theme_files(
+    rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
+) -> pathlib.Path:
+    """Generate the $\\LaTeX$ file with the given data model in the output directory and
+    copy the auxiliary theme files to the output directory.
+
+    Args:
+        rendercv_data_model (dm.RenderCVDataModel): The data model.
+        output_directory (pathlib.Path): Path to the output directory.
+    Returns:
+        pathlib.Path: The path to the generated $\\LaTeX$ file.
+    """
+    latex_file_path = generate_latex_file(rendercv_data_model, output_directory)
+    copy_theme_files_to_output_directory(
+        rendercv_data_model.design.theme, output_directory
+    )
     return latex_file_path
 
 
