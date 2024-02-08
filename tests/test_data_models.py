@@ -17,6 +17,10 @@ from rendercv import data_models as dm
         (2020, Date(2020, 1, 1), None),
         ("present", Date(2024, 1, 1), None),
         ("invalid", None, ValueError),
+        ("20222", None, ValueError),
+        ("202222-20200", None, ValueError),
+        ("202222-12-20", None, ValueError),
+        ("2022-20-20", None, ValueError),
     ],
 )
 @time_machine.travel("2024-01-01")
