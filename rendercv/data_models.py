@@ -12,7 +12,7 @@ has provided a valid RenderCV input. This is achieved through the use of
 """
 
 from datetime import date as Date
-from typing import Literal, Any
+from typing import Literal, Any, Type
 from typing_extensions import Annotated, Optional
 from functools import cached_property
 from urllib.request import urlopen, HTTPError
@@ -50,20 +50,21 @@ def get_date_object(date: str | int) -> Date:
     """
     if isinstance(date, int):
         date_object = Date.fromisoformat(f"{date}-01-01")
-    elif re.match(r"\d{4}-\d{2}-\d{2}", date):
+    elif re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
         # Then it is in YYYY-MM-DD format
         date_object = Date.fromisoformat(date)
-    elif re.match(r"\d{4}-\d{2}", date):
+    elif re.fullmatch(r"\d{4}-\d{2}", date):
         # Then it is in YYYY-MM format
         date_object = Date.fromisoformat(f"{date}-01")
-    elif re.match(r"\d{4}", date):
+    elif re.fullmatch(r"\d{4}", date):
         # Then it is in YYYY format
         date_object = Date.fromisoformat(f"{date}-01-01")
     elif date == "present":
         date_object = Date.today()
     else:
         raise ValueError(
-            f'The date string "{date}" is not in YYYY-MM-DD, YYYY-MM, or YYYY format.'
+            "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or"
+            " YYYY format."
         )
 
     return date_object
@@ -178,7 +179,9 @@ class EntryBase(RenderCVBaseModel):
     url: Optional[pydantic.HttpUrl] = None
     url_text_input: Optional[str] = pydantic.Field(default=None, alias="url_text")
 
-    @pydantic.model_validator(mode="after")  # type: ignore
+    @pydantic.model_validator(
+        mode="after",
+    )  # type: ignore
     @classmethod
     def check_dates(cls, model: "EntryBase") -> "EntryBase":
         """
@@ -212,31 +215,43 @@ class EntryBase(RenderCVBaseModel):
         elif not start_date_is_provided and end_date_is_provided:
             raise ValueError(
                 '"end_date" is provided in of the entries, but "start_date" is not.'
-                ' "start_date" is required.'
+                ' Either provide both "start_date" and "end_date" or provide "date".',
+                "start_date",  # this is the location of the error
+                "",  # this supposed to be the value of the error
             )
 
         if model.start_date is not None and model.end_date is not None:
-            end_date = get_date_object(model.end_date)
-            start_date = get_date_object(model.start_date)
+            try:
+                end_date = get_date_object(model.end_date)
+            except ValueError as e:
+                raise ValueError(str(e), "end_date", model.end_date)
+
+            try:
+                start_date = get_date_object(model.start_date)
+            except ValueError as e:
+                raise ValueError(str(e), "start_date", model.start_date)
 
             if start_date > end_date:
                 raise ValueError(
-                    '"start_date" can not be after "end_date". The start date is'
-                    f" {start_date} and the end date is {end_date}."
+                    '"start_date" can not be after "end_date"',
+                    "start_date/end_date",  # this is the location of the error
+                    "",  # this supposed to be the value of the error
                 )
             elif end_date > Date.today():
                 raise ValueError(
-                    f'"end_date" cannot be in the future. The end date is {end_date}.'
+                    '"end_date" cannot be in the future.',
+                    "end_date",  # this is the location of the error
+                    model.end_date,  # this is value of the error
                 )
             elif start_date > Date.today():
                 raise ValueError(
-                    '"start_date" cannot be in the future. The start date is'
-                    f" {start_date}."
+                    '"start_date" cannot be in the future.',
+                    "start_date",  # this is the location of the error
+                    model.start_date,  # this is value of the error
                 )
 
         return model
 
-    # @pydantic.computed_field
     @cached_property
     def date_string(self) -> str:
         """
@@ -285,7 +300,6 @@ class EntryBase(RenderCVBaseModel):
 
         return date_string
 
-    # @pydantic.computed_field
     @cached_property
     def time_span_string(self) -> str:
         """
@@ -356,7 +370,6 @@ class EntryBase(RenderCVBaseModel):
 
             return time_span_string
 
-    # @pydantic.computed_field
     @cached_property
     def url_text(self) -> Optional[str]:
         """
@@ -472,10 +485,7 @@ class PublicationEntry(RenderCVBaseModel):
         """Check if the date is in the past."""
         date_object = get_date_object(date)
         if date_object > Date.today():
-            raise ValueError(
-                f"The publication date {date} cannot be in the future. The publication"
-                " date should be in the past."
-            )
+            raise ValueError("The publication date cannot be in the future!")
 
         return date
 
@@ -493,17 +503,15 @@ class PublicationEntry(RenderCVBaseModel):
             urlopen(doi_url)
         except HTTPError as err:
             if err.code == 404:
-                raise ValueError(f"{doi} cannot be found in the DOI System.")
+                raise ValueError("DOI cannot be found in the DOI System!")
 
         return doi
 
-    # @pydantic.computed_field
     @cached_property
     def doi_url(self) -> str:
         """Return the URL of the DOI."""
         return f"https://doi.org/{self.doi}"
 
-    # @pydantic.computed_field
     @cached_property
     def date_string(self) -> str:
         """Return the date string of the publication."""
@@ -603,48 +611,141 @@ Section = Annotated[
     ),
 ]
 
+
+def get_entry_and_section_type(
+    entry: (
+        dict[str, Any]
+        | EducationEntry
+        | ExperienceEntry
+        | PublicationEntry
+        | NormalEntry
+        | OneLineEntry
+        | str
+    ),
+) -> tuple[
+    str,
+    Type[
+        SectionWithTextEntries
+        | SectionWithOneLineEntries
+        | SectionWithExperienceEntries
+        | SectionWithEducationEntries
+        | SectionWithPublicationEntries
+        | SectionWithNormalEntries
+    ],
+]:
+    """Determine the entry and section type based on the entry.
+
+    Args:
+        entry (dict[str, Any] | EducationEntry | ExperienceEntry | PublicationEntry |
+        NormalEntry | OneLineEntry | str): The entry to determine the type.
+    Returns:
+        tuple[str, Type[SectionWithTextEntries | SectionWithOneLineEntries |
+        SectionWithExperienceEntries | SectionWithEducationEntries |
+        SectionWithPublicationEntries | SectionWithNormalEntries]]: The entry type and the
+        section type.
+    """
+    if isinstance(entry, dict):
+        if isinstance(entry, str):
+            entry_type = "TextEntry"
+            section_type = SectionWithTextEntries
+        elif "details" in entry:
+            entry_type = "OneLineEntry"
+            section_type = SectionWithOneLineEntries
+        elif "company" in entry:
+            entry_type = "ExperienceEntry"
+            section_type = SectionWithExperienceEntries
+        elif "institution" in entry:
+            entry_type = "EducationEntry"
+            section_type = SectionWithEducationEntries
+        elif "title" in entry:
+            entry_type = "PublicationEntry"
+            section_type = SectionWithPublicationEntries
+        elif "name" in entry:
+            entry_type = "NormalEntry"
+            section_type = SectionWithNormalEntries
+        else:
+            raise ValueError("The entry is not provided correctly.")
+    else:
+        if isinstance(entry, str):
+            entry_type = "TextEntry"
+            section_type = SectionWithTextEntries
+        elif isinstance(entry, OneLineEntry):
+            entry_type = "OneLineEntry"
+            section_type = SectionWithOneLineEntries
+        elif isinstance(entry, ExperienceEntry):
+            entry_type = "ExperienceEntry"
+            section_type = SectionWithExperienceEntries
+        elif isinstance(entry, EducationEntry):
+            entry_type = "EducationEntry"
+            section_type = SectionWithEducationEntries
+        elif isinstance(entry, PublicationEntry):
+            entry_type = "PublicationEntry"
+            section_type = SectionWithPublicationEntries
+        elif isinstance(entry, NormalEntry):
+            entry_type = "NormalEntry"
+            section_type = SectionWithNormalEntries
+        else:
+            raise RuntimeError(
+                "This error shouldn't have been raised. Please open an issue on GitHub."
+            )
+
+    return entry_type, section_type
+
+
+def validate_section_input(
+    sections_input: Section | list[Any],
+) -> Section | list[Any]:
+    """Validate a SectionInput object and raise an error if it is not valid.
+
+    Sections input is very complex. It is either a `Section` object or a list of
+    entries. Since there are multiple entry types, it is not possible to validate it
+    directly. This function looks at the entry list's first element and determines the
+    section's entry type based on the first element. Then, it validates the rest of the
+    list based on the determined entry type. If it is a `Section` object, then it
+    validates it directly.
+
+    Args:
+        sections_input (Section | list[Any]): The sections input to validate.
+    Returns:
+        Section | list[Any]: The validated sections input.
+    """
+    if isinstance(sections_input, list):
+        # find the entry type based on the first element of the list:
+        try:
+            entry_type, section_type = get_entry_and_section_type(sections_input[0])
+        except ValueError:
+            raise ValueError("The entries are not provided correctly.")
+
+        test_section = {
+            "title": "Test Section",
+            "entry_type": entry_type,
+            "entries": sections_input,
+        }
+
+        section_type.model_validate(test_section)
+
+    return sections_input
+
+
+# Create a custom type called SectionInput so that it can be validated with
+# `validate_section_input` function.
+SectionInput = Annotated[
+    Section
+    | list[
+        EducationEntry
+        | ExperienceEntry
+        | PublicationEntry
+        | NormalEntry
+        | OneLineEntry
+        | str
+    ],
+    pydantic.BeforeValidator(validate_section_input),
+]
+
+
 # ======================================================================================
 # Full RenderCV data models: ===========================================================
 # ======================================================================================
-
-# RenderCV requires users to specify the entry type for each section in their CV in
-# order to render the correct thing in the CV. However, for certain sections, specifying
-# the entry type can be redundant (for example, for the "Education" section, the entry
-# type is probably "EducationEntry"). To simplify this process for users, default entry
-# types are stored in a dictionary for certain section titles so that users do not have
-# to specify them.
-
-# If you have new section titles that you would like to add to this dictionary, please
-# open an issue or pull request on GitHub.
-default_entry_types_for_a_given_title: dict[
-    str,
-    tuple[type[EducationEntry], type[SectionWithEducationEntries]]
-    | tuple[type[ExperienceEntry], type[SectionWithExperienceEntries]]
-    | tuple[type[PublicationEntry], type[SectionWithPublicationEntries]]
-    | tuple[type[NormalEntry], type[SectionWithNormalEntries]]
-    | tuple[type[OneLineEntry], type[SectionWithOneLineEntries]]
-    | tuple[type[str], type[SectionWithTextEntries]],
-] = {
-    "Education": (EducationEntry, SectionWithEducationEntries),
-    "Experience": (ExperienceEntry, SectionWithExperienceEntries),
-    "Work Experience": (ExperienceEntry, SectionWithExperienceEntries),
-    "Research Experience": (ExperienceEntry, SectionWithExperienceEntries),
-    "Publications": (PublicationEntry, SectionWithPublicationEntries),
-    "Papers": (PublicationEntry, SectionWithPublicationEntries),
-    "Projects": (NormalEntry, SectionWithNormalEntries),
-    "Academic Projects": (NormalEntry, SectionWithNormalEntries),
-    "University Projects": (NormalEntry, SectionWithNormalEntries),
-    "Personal Projects": (NormalEntry, SectionWithNormalEntries),
-    "Certificates": (NormalEntry, SectionWithNormalEntries),
-    "Extracurricular Activities": (ExperienceEntry, SectionWithExperienceEntries),
-    "Test Scores": (OneLineEntry, SectionWithOneLineEntries),
-    "Skills": (OneLineEntry, SectionWithOneLineEntries),
-    "Programming Skills": (NormalEntry, SectionWithNormalEntries),
-    "Other Skills": (OneLineEntry, SectionWithOneLineEntries),
-    "Awards": (OneLineEntry, SectionWithOneLineEntries),
-    "Interests": (OneLineEntry, SectionWithOneLineEntries),
-    "Summary": (str, SectionWithTextEntries),
-}
 
 
 class SocialNetwork(RenderCVBaseModel):
@@ -667,19 +768,14 @@ class SocialNetwork(RenderCVBaseModel):
         """Check if the `SocialNetwork` is provided correctly."""
         if model.network == "Mastodon":
             if not model.username.startswith("@"):
-                raise ValueError(
-                    "Mastodon username should start with '@'. The username is"
-                    f" {model.username}."
-                )
+                raise ValueError("Mastodon username should start with '@'!", "username")
             if model.username.count("@") > 2:
                 raise ValueError(
-                    "Mastodon username should contain only two '@'. The username is"
-                    f" {model.username}."
+                    "Mastodon username should contain only two '@'!", "username"
                 )
 
         return model
 
-    # @pydantic.computed_field
     @cached_property
     def url(self) -> pydantic.HttpUrl:
         """Return the URL of the social network."""
@@ -730,65 +826,13 @@ class CurriculumVitae(RenderCVBaseModel):
             "The social networks of the person. They will be rendered in the heading."
         ),
     )
-    sections_input: dict[
-        str,
-        Section
-        | list[
-            EducationEntry
-            | ExperienceEntry
-            | PublicationEntry
-            | NormalEntry
-            | OneLineEntry
-            | str
-        ],
-    ] = pydantic.Field(
+    sections_input: dict[str, SectionInput] = pydantic.Field(
         default=None,
         title="Sections",
         description="The sections of the CV.",
         alias="sections",
     )
 
-    @pydantic.field_validator("sections_input", mode="before")
-    @classmethod
-    def validate_sections(
-        cls,
-        sections_input: dict[str, Section | list[Any]],
-    ) -> dict[str, Section | list[Any]]:
-        """
-        Parse and validate the sections of the CV.
-        """
-        if sections_input is not None:
-            for title, section_or_entries in sections_input.items():
-                if isinstance(section_or_entries, list):
-                    title = title.replace("_", " ").title()
-                    if title in default_entry_types_for_a_given_title:
-                        (
-                            entry_type,
-                            section_type,
-                        ) = default_entry_types_for_a_given_title[title]
-
-                        if entry_type is str:
-                            entry_type = "TextEntry"
-                        else:
-                            entry_type = entry_type.__name__
-
-                        test_section = {
-                            "title": title,
-                            "entry_type": entry_type,
-                            "entries": section_or_entries,
-                        }
-
-                        section_type.model_validate(test_section)
-
-                    else:
-                        raise ValueError(
-                            f'The entry type for the section "{title}" is not provided!'
-                            " Please provide an entry type."
-                        )
-
-        return sections_input
-
-    # @pydantic.computed_field
     @cached_property
     def sections(self) -> list[Section]:
         """Return all the sections of the CV with their titles."""
@@ -797,28 +841,17 @@ class CurriculumVitae(RenderCVBaseModel):
             for title, section_or_entries in self.sections_input.items():
                 title = title.replace("_", " ").title()
                 if isinstance(section_or_entries, list):
-                    if title in default_entry_types_for_a_given_title:
-                        (
-                            entry_type,
-                            section_type,
-                        ) = default_entry_types_for_a_given_title[title]
+                    entry_type, section_type = get_entry_and_section_type(
+                        section_or_entries[0]
+                    )
 
-                        if entry_type is str:
-                            entry_type = "TextEntry"
-                        else:
-                            entry_type = entry_type.__name__
+                    section = section_type(
+                        title=title,
+                        entry_type=entry_type,  # type: ignore
+                        entries=section_or_entries,  # type: ignore
+                    )
+                    sections.append(section)
 
-                        section = section_type(
-                            title=title,
-                            entry_type=entry_type,  # type: ignore
-                            entries=section_or_entries,  # type: ignore
-                        )
-                        sections.append(section)
-                    else:
-                        raise RuntimeError(
-                            "This error shouldn't have been raised. Please open an"
-                            " issue on GitHub."
-                        )
                 elif hasattr(section_or_entries, "entry_type"):
                     if section_or_entries.title is None:
                         section_or_entries.title = title
