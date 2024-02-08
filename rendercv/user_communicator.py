@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 import re
 
 import rich
@@ -49,31 +49,59 @@ def information(text):
     console.print(f"[bold green]{text}")
 
 
+def get_error_message_and_location_and_value_from_a_custom_error(
+    error_string: str,
+) -> Optional[tuple[str, str, str]]:
+    pattern = r"\('(.*)', '(.*)', '(.*)'\)"
+    match = re.search(pattern, error_string)
+    if match:
+        return match.group(1), match.group(2), match.group(3)
+    else:
+        return None
+
+
 def handle_validation_error(exception: pydantic.ValidationError):
     error_dictionary: dict[str, str] = {
-        r"Value error, Invalid isoformat string: '(.*)'": (
-            "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or"
-            " YYYY format."
+        "Input should be 'present'": (
+            "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or YYYY"
+            ' format or "present"!'
         ),
-        r"URL scheme should be 'http' or 'https'": "This is not a valid URL!",
-        r"Field( )required": "This field is required!",
-        r"value is not a valid phone number": "This is not a valid phone number!",
-        r"String should match pattern '\\d\+\\\.\?\\d\* \*\(cm\|in\|pt\|mm\|ex\|em\)'": (
-            'This is not a valid dimension! For example, use "2 cm" or "3.5 in"'
+        "Input should be a valid integer, unable to parse string as an integer": (
+            "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or YYYY"
+            " format!"
         ),
+        "String should match pattern '\\d{4}-\\d{2}(-\\d{2})?'": (
+            "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or YYYY"
+            " format!"
+        ),
+        "URL scheme should be 'http' or 'https'": "This is not a valid URL!",
+        "Field required": "This field is required!",
+        "value is not a valid phone number": "This is not a valid phone number!",
     }
-    new_errors: list[pydantic_core.ErrorDetails] = []
+    new_errors: list[dict[str, str]] = []
     for error_object in exception.errors():
-        for key, value in error_dictionary.items():
-            match = re.match(key, error_object["msg"])
-            if match:
-                error_object["msg"] = value
-                try:
-                    error_object["input"] = match.group(1)
-                except IndexError:
-                    pass
+        message = error_object["msg"]
+        location = ".".join([str(loc) for loc in error_object["loc"]])
+        input = error_object["input"]
 
-        new_errors.append(error_object)
+        custom_error = get_error_message_and_location_and_value_from_a_custom_error(
+            message
+        )
+        if custom_error is None:
+            if message in error_dictionary:
+                message = error_dictionary[message]
+            else:
+                message = message
+        else:
+            message = custom_error[0]
+            location = f"{location}.{custom_error[1]}"
+            input = custom_error[2]
+
+        new_errors.append({
+            "loc": str(location),
+            "msg": message,
+            "input": str(input),
+        })
 
     table = rich.table.Table(
         title="[bold red]\nThere are some errors in the input file!\n",
@@ -86,7 +114,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
 
     for error_object in new_errors:
         table.add_row(
-            ".".join([str(i) for i in error_object["loc"]]),
+            error_object["loc"],
             error_object["input"],
             error_object["msg"],
         )
