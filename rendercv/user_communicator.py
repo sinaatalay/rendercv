@@ -150,8 +150,6 @@ class LiveProgressReporter(rich.live.Live):
         class TimeElapsedColumn(rich.progress.ProgressColumn):
             def render(self, task: "rich.progress.Task") -> rich.text.Text:
                 elapsed = task.finished_time if task.finished else task.elapsed
-                if elapsed is None:
-                    return rich.text.Text("--.-", style="progress.elapsed")
                 delta = f"{elapsed:.1f} s"
                 return rich.text.Text(str(delta), style="progress.elapsed")
 
