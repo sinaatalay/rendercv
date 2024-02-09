@@ -144,9 +144,9 @@ class LaTeXFile:
         )
         return latex_code
 
-    def write_to_file(self, file_path: pathlib.Path):
+    def generate_latex_file(self, file_path: pathlib.Path):
         """Write the $\\LaTeX$ code to a file."""
-        file_path.write_text(self.get_latex_code())
+        file_path.write_text(self.get_latex_code(), encoding="utf-8")
 
 
 def make_matched_part_something(
@@ -434,7 +434,7 @@ def generate_latex_file(
 
     latex_file_name = f"{rendercv_data_model.cv.name.replace(' ', '_')}_CV.tex"
     latex_file_path = output_directory / latex_file_name
-    latex_file_object.write_to_file(latex_file_path)
+    latex_file_object.generate_latex_file(latex_file_path)
 
     return latex_file_path
 
@@ -530,7 +530,7 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
     # check if the PDF file is generated:
     pdf_file_path = latex_file_path.with_suffix(".pdf")
     if not pdf_file_path.is_file():
-        raise FileNotFoundError(
+        raise RuntimeError(
             "The PDF file couldn't be generated! If you can't solve the problem,"
             " please try to re-install RenderCV, or open an issue on GitHub."
         )
