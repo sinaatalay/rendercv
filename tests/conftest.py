@@ -1,4 +1,5 @@
 import pathlib
+from typing import Type
 
 import jinja2
 import pytest
@@ -51,6 +52,57 @@ def one_line_entry() -> dict[str, str]:
 @pytest.fixture
 def text_entry() -> str:
     return "My Text Entry"
+
+
+@pytest.fixture
+def invalid_entries() -> dict[
+    Type[dm.EducationEntry]
+    | Type[dm.ExperienceEntry]
+    | Type[dm.PublicationEntry]
+    | Type[dm.OneLineEntry]
+    | Type[dm.NormalEntry],
+    list[dict[str, str]],
+]:
+    invalid_entries = dict()
+    invalid_entries[dm.EducationEntry] = [
+        {
+            "institution": "Boğaziçi University",
+            "area": "Mechanical Engineering",
+            "degree": "BS",
+            "date": "2028-12-08",
+        },
+        {
+            "area": "Mechanical Engineering",
+        },
+    ]
+    invalid_entries[dm.ExperienceEntry] = [
+        {
+            "company": "CERN",
+        },
+        {
+            "position": "Researcher",
+        },
+    ]
+    invalid_entries[dm.PublicationEntry] = [
+        {
+            "doi": "10.1109/TASC.2023.3340648",
+        },
+        {
+            "authors": ["John Doe", "Jane Doe"],
+        },
+    ]
+    invalid_entries[dm.OneLineEntry] = [
+        {
+            "name": "My One Line Entry",
+        },
+    ]
+    invalid_entries[dm.NormalEntry] = [
+        {
+            "name": "My Entry",
+        },
+    ]
+
+    return invalid_entries
 
 
 @pytest.fixture
