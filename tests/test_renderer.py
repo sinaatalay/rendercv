@@ -1,6 +1,7 @@
 import math
 import filecmp
 import shutil
+import pathlib
 
 import pytest
 import jinja2
@@ -8,6 +9,12 @@ import time_machine
 
 from rendercv import renderer as r
 from rendercv import data_models as dm
+
+
+def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
+    latex_file = r.LaTeXFile(rendercv_data_model, jinja2_environment)
+    latex_file.get_latex_code()
+    latex_file.generate_latex_file(tmp_path / "test.tex")
 
 
 @pytest.mark.parametrize(
@@ -128,6 +135,30 @@ def test_invalid_divide_length_by(length, divider):
         r.divide_length_by(length, divider)
 
 
+def test_get_an_item_with_a_specific_attribute_value():
+    entry_objects = [
+        dm.OneLineEntry(
+            name="Test1",
+            details="Test2",
+        ),
+        dm.OneLineEntry(
+            name="Test3",
+            details="Test4",
+        ),
+    ]
+    result = r.get_an_item_with_a_specific_attribute_value(
+        entry_objects, "name", "Test3"
+    )
+    assert result == entry_objects[1]
+    result = r.get_an_item_with_a_specific_attribute_value(
+        entry_objects, "name", "DoesntExist"
+    )
+    assert result is None
+
+    with pytest.raises(AttributeError):
+        r.get_an_item_with_a_specific_attribute_value(entry_objects, "invalid", "Test5")
+
+
 def test_setup_jinja2_environment():
     env = r.setup_jinja2_environment()
 
@@ -163,14 +194,14 @@ themes = ["classic"]
 @time_machine.travel("2024-01-01")
 def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_name):
     file_name = f"{theme_name}_theme_CV.tex"
-    output_file_path = tmp_path / file_name
+    output_file_path = tmp_path / "make_sure_it_generates_the_directory" / file_name
     reference_file_path = reference_files_directory_path / file_name
 
     data_model = dm.RenderCVDataModel(
         cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
         design=dm.Design(theme=theme_name),
     )
-    r.generate_latex_file(data_model, tmp_path)
+    r.generate_latex_file(data_model, tmp_path / "make_sure_it_generates_the_directory")
     # Uncomment the line below to update the reference files:
     # r.generate_latex_file(data_model, reference_files_directory_path)
 
@@ -236,3 +267,9 @@ def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
     # )
 
     assert filecmp.cmp(output_pdf_file_path, reference_pdf_file_path)
+
+
+def test_latex_to_pdf_invalid_latex_file(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        file_path = pathlib.Path("file_doesnt_exist.tex")
+        r.latex_to_pdf(file_path)
