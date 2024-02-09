@@ -197,17 +197,20 @@ class EntryBase(RenderCVBaseModel):
         if model.end_date is not None:
             end_date_is_provided = True
 
-        if date_is_provided and start_date_is_provided and end_date_is_provided:
-            model.start_date = None
-            model.end_date = None
-
-        elif date_is_provided and start_date_is_provided and not end_date_is_provided:
-            model.start_date = None
-            model.end_date = None
-
-        elif date_is_provided and end_date_is_provided and not start_date_is_provided:
-            model.start_date = None
-            model.end_date = None
+        if date_is_provided:
+            try:
+                date_object = get_date_object(model.date)  # type: ignore
+            except ValueError:
+                # Then it is a custom date string (e.g., "My Custom Date")
+                pass
+            else:
+                today_object = Date.today()
+                if date_object > today_object:
+                    raise ValueError(
+                        '"date" cannot be in the future.',
+                        "date",  # this is the location of the error
+                        model.date,  # this is value of the error
+                    )
 
         elif start_date_is_provided and not end_date_is_provided:
             model.end_date = "present"
@@ -242,12 +245,6 @@ class EntryBase(RenderCVBaseModel):
                     '"end_date" cannot be in the future.',
                     "end_date",  # this is the location of the error
                     model.end_date,  # this is value of the error
-                )
-            elif start_date > Date.today():
-                raise ValueError(
-                    '"start_date" cannot be in the future.',
-                    "start_date",  # this is the location of the error
-                    model.start_date,  # this is value of the error
                 )
 
         return model
@@ -520,8 +517,6 @@ class PublicationEntry(RenderCVBaseModel):
         elif isinstance(self.date, str):
             date_object = get_date_object(self.date)
             date_string = format_date(date_object)
-        else:
-            date_string = ""
 
         return date_string
 
@@ -645,10 +640,7 @@ def get_entry_and_section_type(
         section type.
     """
     if isinstance(entry, dict):
-        if isinstance(entry, str):
-            entry_type = "TextEntry"
-            section_type = SectionWithTextEntries
-        elif "details" in entry:
+        if "details" in entry:
             entry_type = "OneLineEntry"
             section_type = SectionWithOneLineEntries
         elif "company" in entry:
@@ -887,6 +879,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         description="The data of the CV.",
     )
     design: Design = pydantic.Field(
+        default=ClassicThemeOptions(theme="classic"),
         title="Design",
         description="The design information of the CV.",
         discriminator="theme",
@@ -1313,9 +1306,9 @@ def generate_json_schema() -> dict:
                 # is the string with the YYYY-MM-DD format.
                 if (
                     "date" in value["properties"]
-                    and "anyOf" in value["properties"]["date"]
+                    and "oneOf" in value["properties"]["date"]
                 ):
-                    del value["properties"]["date"]["anyOf"][0]
+                    del value["properties"]["date"]["oneOf"][0]
 
             return json_schema
 
