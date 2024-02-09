@@ -1,6 +1,10 @@
 import pathlib
 
+import jinja2
 import pytest
+
+from rendercv import data_models as dm
+import rendercv.renderer as r
 
 
 @pytest.fixture
@@ -47,6 +51,49 @@ def one_line_entry() -> dict[str, str]:
 @pytest.fixture
 def text_entry() -> str:
     return "My Text Entry"
+
+
+@pytest.fixture
+def rendercv_data_model(
+    education_entry,
+    experience_entry,
+    normal_entry,
+    publication_entry,
+    one_line_entry,
+    text_entry,
+) -> dm.RenderCVDataModel:
+    return dm.RenderCVDataModel(
+        cv=dm.CurriculumVitae(
+            name="John Doe",
+            sections={
+                "Section 1": [
+                    dm.NormalEntry(**normal_entry),
+                ],
+                "Section 2": [
+                    dm.OneLineEntry(**one_line_entry),
+                    dm.OneLineEntry(**one_line_entry),
+                    dm.OneLineEntry(**one_line_entry),
+                    dm.OneLineEntry(**one_line_entry),
+                ],
+                "Section 3": [
+                    dm.PublicationEntry(**publication_entry),
+                ],
+                "Section 4": [
+                    dm.ExperienceEntry(**experience_entry),
+                    dm.ExperienceEntry(**experience_entry),
+                ],
+                "Section 5": [
+                    dm.EducationEntry(**education_entry),
+                ],
+                "Section 6": [text_entry],
+            },
+        ),
+    )
+
+
+@pytest.fixture
+def jinja2_environment() -> jinja2.Environment:
+    return r.setup_jinja2_environment()
 
 
 @pytest.fixture

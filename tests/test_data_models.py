@@ -1,5 +1,6 @@
 from datetime import date as Date
 import json
+import pathlib
 
 import pydantic
 import pytest
@@ -122,6 +123,19 @@ def test_read_input_file(input_file_path):
     assert isinstance(data_model, dm.RenderCVDataModel)
 
 
+@pytest.mark.parametrize(
+    "input_file_name",
+    [
+        "invalid",
+        "invalid_extension.txt",
+    ],
+)
+def test_read_input_file_invalid_path(input_file_name):
+    with pytest.raises(FileNotFoundError):
+        invalid_path = pathlib.Path(input_file_name)
+        dm.read_input_file(invalid_path)
+
+
 def test_get_a_sample_data_model():
     data_model = dm.get_a_sample_data_model("John Doe")
     assert isinstance(data_model, dm.RenderCVDataModel)
@@ -167,6 +181,7 @@ def test_if_the_schema_is_the_latest(root_directory_path):
         ("2020", "2021", None, "2020 to 2021", "1 year"),
         ("2020", None, None, "2020 to present", "4 years"),
         ("2020-10-10", "2022", None, "Oct. 2020 to 2022", "2 years"),
+        ("2020-10-10", "2020-11-05", None, "Oct. 2020 to Nov. 2020", "1 month"),
         ("2022", "2023-10-10", None, "2022 to Oct. 2023", "1 year"),
         ("2020-01-01", "present", "My Custom Date", "My Custom Date", ""),
         ("2020-01-01", None, "My Custom Date", "My Custom Date", ""),
@@ -216,6 +231,12 @@ def test_invalid_publication_dates(publication_entry, date):
         ("2020-01-01", "2999-01-01", None),
         ("2022", "2021", None),
         ("2021", "2060", None),
+        ("2025", "2021", None),
+        (None, None, "2028"),
+        ("2020-01-01", "invalid_end_date", None),
+        ("invalid_start_date", "2021-01-01", None),
+        ("2020-99-99", "2021-01-01", None),
+        ("2020-10-12", "2020-99-99", None),
     ],
 )
 def test_invalid_dates(start_date, end_date, date):
@@ -262,6 +283,15 @@ def test_invalid_doi(publication_entry, doi):
 
 
 @pytest.mark.parametrize(
+    "network, username",
+    [("Mastodon", "invalidmastodon"), ("invalid@invalidmastodon", "@inva@l@id")],
+)
+def test_invalid_social_networks(network, username):
+    with pytest.raises(pydantic.ValidationError):
+        dm.SocialNetwork(network=network, username=username)
+
+
+@pytest.mark.parametrize(
     "network, username, expected_url",
     [
         ("LinkedIn", "myusername", "https://linkedin.com/in/myusername"),
@@ -275,6 +305,49 @@ def test_invalid_doi(publication_entry, doi):
 def test_social_network_url(network, username, expected_url):
     social_network = dm.SocialNetwork(network=network, username=username)
     assert str(social_network.url) == expected_url
+
+
+@pytest.mark.parametrize(
+    "entry, expected_entry_type, expected_section_type",
+    [
+        (
+            "publication_entry",
+            "PublicationEntry",
+            dm.SectionWithPublicationEntries,
+        ),
+        (
+            "experience_entry",
+            "ExperienceEntry",
+            dm.SectionWithExperienceEntries,
+        ),
+        (
+            "education_entry",
+            "EducationEntry",
+            dm.SectionWithEducationEntries,
+        ),
+        (
+            "normal_entry",
+            "NormalEntry",
+            dm.SectionWithNormalEntries,
+        ),
+        ("one_line_entry", "OneLineEntry", dm.SectionWithOneLineEntries),
+        ("text_entry", "TextEntry", dm.SectionWithTextEntries),
+    ],
+)
+def test_get_entry_and_section_type(
+    entry, expected_entry_type, expected_section_type, request
+):
+    entry = request.getfixturevalue(entry)
+    entry_type, section_type = dm.get_entry_and_section_type(entry)
+    assert entry_type == expected_entry_type
+    assert section_type == expected_section_type
+
+    # initialize the entry with the entry type
+    if not entry_type == "TextEntry":
+        entry = eval(f"dm.{entry_type}(**entry)")
+        entry_type, section_type = dm.get_entry_and_section_type(entry)
+        assert entry_type == expected_entry_type
+        assert section_type == expected_section_type
 
 
 @pytest.mark.parametrize(
@@ -417,4 +490,3 @@ def test_sections_with_invalid_entries(section_title):
     }]
     with pytest.raises(pydantic.ValidationError):
         dm.CurriculumVitae(**input)
-
