@@ -73,7 +73,7 @@ The whole CV consists of these entries. The table below shows what sections of t
 institution: Boğaziçi University
 url: https://boun.edu.tr
 area: Mechanical Engineering
-study_type: BS
+degree: BS
 location: Istanbul, Turkey
 start_date: "2017-09-01"
 end_date: "2023-01-01"
@@ -184,7 +184,7 @@ custom_sections:
   entries:
     - institution: Hop!
       area: Hop!
-      study_type: HA
+      degree: HA
       highlights:
       - "There are only five types of entries: *EducationEntry*, *ExperienceEntry*,
         *NormalEntry*, *OneLineEntry*, and *PublicationEntry*."
