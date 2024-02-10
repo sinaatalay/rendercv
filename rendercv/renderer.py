@@ -10,6 +10,7 @@ distribution.
 
 import subprocess
 import re
+import os
 import pathlib
 import importlib.resources
 import shutil
@@ -111,16 +112,27 @@ class LaTeXFile:
             f"{self.design.theme}/{template_name}.j2.tex"
         )
 
-        # Loop through the entry attributes and make them "" if they are None:
-        # This is necessary because otherwise Jinja2 will template them as "None".
-        if entry is not None and not isinstance(entry, str):
-            for key, value in entry.model_dump().items():
-                if value is None:
-                    try:
-                        entry.__setattr__(key, "")
-                    except ValueError:
-                        # Then it means it's a computed_field, so it can be ignored.
-                        pass
+        # # Loop through the entry attributes and make them "" if they are None:
+        # # This is necessary because otherwise Jinja2 will template them as "None".
+        # if entry is not None and not isinstance(entry, str):
+        #     for key, value in entry.model_dump().items():
+        #         if value is None:
+        #             if "date" not in key:
+        #                 # don't touch the date fields, because only date_string is
+        #                 # called and setting dates to "" will cause problems.
+        #                 try:
+        #                     entry.__setattr__(key, "")
+        #                 except ValueError:
+        #                     # Then it means it's a computed_field, so it can be ignored.
+        #                     pass
+
+        # do the below with a loop:
+        if hasattr(entry, "highlights") and entry.highlights is None:  # type: ignore
+            entry.highlights = ""  # type: ignore
+        if hasattr(entry, "location") and entry.location is None:  # type: ignore
+            entry.location = ""  # type: ignore
+        if hasattr(entry, "degree") and entry.degree is None:  # type: ignore
+            entry.degree = ""  # type: ignore
 
         # The arguments of the template can be used in the template file:
         latex_code = template.render(
@@ -380,8 +392,10 @@ def setup_jinja2_environment() -> jinja2.Environment:
         jinja2.Environment: The theme environment.
     """
     # create a Jinja2 environment:
+    # we need to add the current working directory because custom themes might be used.
+    themes_directory = pathlib.Path(__file__).parent / "themes"
     environment = jinja2.Environment(
-        loader=jinja2.PackageLoader("rendercv", "themes"),
+        loader=jinja2.FileSystemLoader([os.getcwd(), themes_directory]),
         trim_blocks=True,
         lstrip_blocks=True,
     )
@@ -450,7 +464,12 @@ def copy_theme_files_to_output_directory(
         theme_name (str): The name of the theme.
         output_directory (pathlib.Path): Path to the output directory.
     """
-    theme_directory = importlib.resources.files(f"rendercv.themes.{theme_name}")
+    try:
+        theme_directory = importlib.resources.files(f"rendercv.themes.{theme_name}")
+    except ModuleNotFoundError:
+        # Then it means the theme is a custom theme:
+        theme_directory = pathlib.Path(os.getcwd()) / theme_name
+
     for theme_file in theme_directory.iterdir():
         if not ("j2.tex" in theme_file.name or "py" in theme_file.name):
             if theme_file.is_dir():
@@ -508,12 +527,13 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
         raise OSError(f"TinyTeX doesn't support the platform {sys.platform}!")
 
     # Run TinyTeX:
+    command = [
+        executables[sys.platform],
+        str(latex_file_path.absolute()),
+        "-lualatex",
+    ]
     with subprocess.Popen(
-        [
-            executables[sys.platform],
-            str(latex_file_path.name),
-            "-lualatex",
-        ],
+        command,
         cwd=latex_file_path.parent,
         stdout=subprocess.DEVNULL,  # don't capture the output
         stderr=subprocess.DEVNULL,  # don't capture the error
@@ -523,8 +543,10 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
         if latex_process.returncode != 0:
             raise RuntimeError(
                 "Running TinyTeX has failed! For debugging, we suggest running the"
-                " LaTeX file manually in overleaf.com or another LaTeX editor. If you"
-                " can't solve the problem, please open an issue on GitHub.",
+                " LaTeX file manually in https://overleaf.com.",
+                "If you want to run it locally, run the command below in the terminal:",
+                " ".join([str(command_part) for command_part in command]),
+                "If you can't solve the problem, please open an issue on GitHub.",
             )
 
     # check if the PDF file is generated:
