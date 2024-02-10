@@ -14,7 +14,7 @@ has provided a valid RenderCV input. This is achieved through the use of
 from datetime import date as Date
 from typing import Literal, Any, Type
 from typing_extensions import Annotated, Optional
-from functools import cached_property
+import functools
 from urllib.request import urlopen, HTTPError
 import json
 import re
@@ -26,6 +26,7 @@ import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import ruamel.yaml
 
 from .themes.classic import ClassicThemeOptions
+from .themes.moderncv import ModerncvThemeOptions
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -249,7 +250,7 @@ class EntryBase(RenderCVBaseModel):
 
         return model
 
-    @cached_property
+    @functools.cached_property
     def date_string(self) -> str:
         """
         Return a date string based on the `date`, `start_date`, and `end_date` fields.
@@ -297,7 +298,56 @@ class EntryBase(RenderCVBaseModel):
 
         return date_string
 
-    @cached_property
+    @functools.cached_property
+    def date_string_only_years(self) -> str:
+        """
+        Return a date string that only contains years based on the `date`, `start_date`,
+        and `end_date` fields.
+
+        Example:
+            ```python
+            entry = dm.EntryBase(start_date=2020-10-11, end_date=2021-04-04).date_string
+            ```
+            will return:
+            `#!python "2020 to 2021"`
+        """
+        if self.date is not None:
+            try:
+                date_object = get_date_object(self.date)
+                date_string = format_date(date_object)
+            except ValueError:
+                # Then it is a custom date string (e.g., "My Custom Date")
+                date_string = str(self.date)
+
+        elif self.start_date is not None and self.end_date is not None:
+            if isinstance(self.start_date, int):
+                # Then it means only the year is provided
+                start_date = str(self.start_date)
+            else:
+                # Then it means start_date is either in YYYY-MM-DD or YYYY-MM format
+                date_object = get_date_object(self.start_date)
+                start_date = date_object.year
+
+            if self.end_date == "present":
+                end_date = "present"
+            elif isinstance(self.end_date, int):
+                # Then it means only the year is provided
+                end_date = str(self.end_date)
+            else:
+                # Then it means end_date is either in YYYY-MM-DD or YYYY-MM format
+                date_object = get_date_object(self.end_date)
+                end_date = date_object.year
+
+            date_string = f"{start_date} to {end_date}"
+
+        else:
+            # Neither date, start_date, nor end_date is provided, so return an empty
+            # string:
+            date_string = ""
+
+        return date_string
+
+    @functools.cached_property
     def time_span_string(self) -> str:
         """
         Return a time span string based on the `date`, `start_date`, and `end_date`
@@ -367,7 +417,7 @@ class EntryBase(RenderCVBaseModel):
 
             return time_span_string
 
-    @cached_property
+    @functools.cached_property
     def url_text(self) -> Optional[str]:
         """
         Return a URL text based on the `url_text_input` and `url` fields.
@@ -504,12 +554,12 @@ class PublicationEntry(RenderCVBaseModel):
 
         return doi
 
-    @cached_property
+    @functools.cached_property
     def doi_url(self) -> str:
         """Return the URL of the DOI."""
         return f"https://doi.org/{self.doi}"
 
-    @cached_property
+    @functools.cached_property
     def date_string(self) -> str:
         """Return the date string of the publication."""
         if isinstance(self.date, int):
@@ -739,6 +789,8 @@ SectionInput = Annotated[
 # Full RenderCV data models: ===========================================================
 # ======================================================================================
 
+url_validator = pydantic.TypeAdapter(pydantic.HttpUrl)  # type: ignore
+
 
 class SocialNetwork(RenderCVBaseModel):
     """This class is the data model of a social network."""
@@ -768,8 +820,18 @@ class SocialNetwork(RenderCVBaseModel):
 
         return model
 
-    @cached_property
-    def url(self) -> pydantic.HttpUrl:
+    @pydantic.model_validator(mode="after")  # type: ignore
+    @classmethod
+    def validate_urls(cls, model: "SocialNetwork") -> "SocialNetwork":
+        """Validate the URLs of the social networks."""
+        url = model.url
+
+        url_validator.validate_strings(url)
+
+        return model
+
+    @functools.cached_property
+    def url(self) -> str:
         """Return the URL of the social network."""
         url_dictionary = {
             "LinkedIn": "https://linkedin.com/in/",
@@ -780,9 +842,6 @@ class SocialNetwork(RenderCVBaseModel):
             "Twitter": "https://twitter.com/",
         }
         url = url_dictionary[self.network] + self.username
-
-        HttpUrlAdapter = pydantic.TypeAdapter(pydantic.HttpUrl)
-        url = HttpUrlAdapter.validate_python(url)
 
         return url
 
@@ -825,7 +884,7 @@ class CurriculumVitae(RenderCVBaseModel):
         alias="sections",
     )
 
-    @cached_property
+    @functools.cached_property
     def sections(self) -> list[Section]:
         """Return all the sections of the CV with their titles."""
         sections = []
@@ -868,7 +927,7 @@ class CurriculumVitae(RenderCVBaseModel):
 # the theme field, thanks Pydantic's discriminator feature.
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
 # about discriminators.
-Design = ClassicThemeOptions
+Design = ClassicThemeOptions | ModerncvThemeOptions
 
 
 class RenderCVDataModel(RenderCVBaseModel):
@@ -1094,7 +1153,7 @@ def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
             f" {accepted_extensions}. The input file is {file_path}."
         )
 
-    file_content = file_path.read_text()
+    file_content = file_path.read_text(encoding="utf-8")
     parsed_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
     parsed_dictionary = convert_a_markdown_dictionary_to_a_latex_dictionary(
         parsed_dictionary
