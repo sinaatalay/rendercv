@@ -96,7 +96,8 @@ def handle_validation_error(exception: pydantic.ValidationError):
                 message = message
         else:
             message = custom_error[0]
-            location = f"{location}.{custom_error[1]}"
+            if custom_error[1] != "":
+                location = f"{location}.{custom_error[1]}"
             input = custom_error[2]
 
         new_errors.append({
@@ -122,6 +123,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         )
 
     print(table)
+    print()
 
 
 def handle_exceptions(function: Callable) -> Callable:
