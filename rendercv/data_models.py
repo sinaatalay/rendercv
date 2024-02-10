@@ -28,6 +28,7 @@ import ruamel.yaml
 
 from .themes.classic import ClassicThemeOptions
 from .themes.moderncv import ModerncvThemeOptions
+from .themes.mcdowell import McdowellThemeOptions
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -173,7 +174,6 @@ class EntryBase(RenderCVBaseModel):
         examples=["Did this.", "Did that."],
     )
     location: Optional[str] = pydantic.Field(
-        default=None,
         title="Location",
         description="The location of the event.",
         examples=["Istanbul, Turkey"],
@@ -929,7 +929,8 @@ class CurriculumVitae(RenderCVBaseModel):
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
 # about discriminators.
 RenderCVDesign = Annotated[
-    ClassicThemeOptions | ModerncvThemeOptions, pydantic.Field(discriminator="theme")
+    ClassicThemeOptions | ModerncvThemeOptions | McdowellThemeOptions,
+    pydantic.Field(discriminator="theme"),
 ]
 
 
@@ -981,7 +982,8 @@ class RenderCVDataModel(RenderCVBaseModel):
                 "OneLineEntry.j2.tex",  # one line entry template
                 "PublicationEntry.j2.tex",  # publication entry template
                 "TextEntry.j2.tex",  # text entry template
-                "SectionTitle.j2.tex",  # section title template
+                "SectionBeginning.j2.tex",  # section beginning template
+                "SectionEnding.j2.tex",  # section ending template
                 "Preamble.j2.tex",  # preamble template
                 "Header.j2.tex",  # header template
             ]
