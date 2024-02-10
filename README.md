@@ -27,7 +27,7 @@ cv:
     - institution: My University
       url: https://example.com
       area: Mechanical Engineering
-      study_type: BS
+      degree: BS
       location: Geneva, Switzerland
       start_date: "2017-09-01"
       end_date: "2023-01-01"
