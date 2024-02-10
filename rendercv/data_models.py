@@ -13,7 +13,8 @@ has provided a valid RenderCV input. This is achieved through the use of
 
 from datetime import date as Date
 from typing import Literal, Any, Type
-from typing_extensions import Annotated, Optional
+from typing_extensions import Annotated, Optional, get_args
+import importlib
 import functools
 from urllib.request import urlopen, HTTPError
 import json
@@ -927,7 +928,9 @@ class CurriculumVitae(RenderCVBaseModel):
 # the theme field, thanks Pydantic's discriminator feature.
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
 # about discriminators.
-Design = ClassicThemeOptions | ModerncvThemeOptions
+RenderCVDesign = Annotated[
+    ClassicThemeOptions | ModerncvThemeOptions, pydantic.Field(discriminator="theme")
+]
 
 
 class RenderCVDataModel(RenderCVBaseModel):
@@ -937,12 +940,73 @@ class RenderCVDataModel(RenderCVBaseModel):
         title="Curriculum Vitae",
         description="The data of the CV.",
     )
-    design: Design = pydantic.Field(
+    design: RenderCVDesign | Any = pydantic.Field(
         default=ClassicThemeOptions(theme="classic"),
         title="Design",
         description="The design information of the CV.",
-        discriminator="theme",
     )
+
+    @pydantic.field_validator("design")
+    @classmethod
+    def initialize_if_custom_theme_is_used(
+        cls, design: RenderCVDesign | Any
+    ) -> RenderCVDesign | Any:
+        """Initialize the custom theme if it is used and validate it. Otherwise, return
+        the built-in theme."""
+        # `get_args` for an Annotated object returns the arguments when Annotated is
+        # used. The first argument is actually the union of the types, so we need to
+        # access the first argument to use isinstance function.
+        theme_data_model_types = get_args(RenderCVDesign)[0]
+        if isinstance(design, theme_data_model_types):
+            # it is a built-in theme
+            return design
+        else:
+            # check if the theme name is valid:
+            if not design["theme"].isalpha():  # type: ignore
+                raise ValueError(
+                    "The custom theme name should contain only letters.",
+                    "theme",  # this is the location of the error
+                    design["theme"],  # this is value of the error # type: ignore
+                )
+
+            # then it is a custom theme
+            custom_theme_folder = pathlib.Path(design["theme"])  # type: ignore
+
+            # check if all the necessary files are provided in the custom theme folder:
+            required_files = [
+                "__init__.py",  # design's data model
+                "EducationEntry.j2.tex",  # education entry template
+                "ExperienceEntry.j2.tex",  # experience entry template
+                "NormalEntry.j2.tex",  # normal entry template
+                "OneLineEntry.j2.tex",  # one line entry template
+                "PublicationEntry.j2.tex",  # publication entry template
+                "TextEntry.j2.tex",  # text entry template
+                "SectionTitle.j2.tex",  # section title template
+                "Preamble.j2.tex",  # preamble template
+                "Header.j2.tex",  # header template
+            ]
+
+            for file in required_files:
+                file_path = custom_theme_folder / file
+                if not file_path.exists():
+                    raise ValueError(
+                        f"You provided a custom theme, but the file `{file}` is not"
+                        f" found in the folder `{custom_theme_folder}`.",
+                        "",  # this is the location of the error
+                        design["theme"],  # this is value of the error # type: ignore
+                    )
+
+            # import __init__.py file from the custom theme folder:
+            theme_module = importlib.import_module(design["theme"])  # type: ignore
+
+            ThemeDataModel = getattr(
+                theme_module, f"{design['theme'].title()}ThemeOptions"  # type: ignore
+            )
+
+            # initialize and validate the custom theme data model:
+            theme_data_model = ThemeDataModel(**design)
+
+            return theme_data_model
 
 
 def escape_latex_characters(string: str) -> str:
