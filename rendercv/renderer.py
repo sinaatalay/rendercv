@@ -48,7 +48,9 @@ class LaTeXFile:
         self.header = self.template("Header")
         self.sections = []
         for section in self.cv.sections:
-            title = self.template("SectionTitle", section_title=section.title)
+            section_beginning = self.template(
+                "SectionBeginning", section_title=section.title
+            )
             entries = []
             for i, entry in enumerate(section.entries):
                 if i == 0:
@@ -63,7 +65,8 @@ class LaTeXFile:
                         is_first_entry=is_first_entry,
                     )
                 )
-            self.sections.append((title, entries))
+            section_ending = self.template("SectionEnding", section_title=section.title)
+            self.sections.append((section_beginning, entries, section_ending))
 
     def template(
         self,
@@ -76,7 +79,8 @@ class LaTeXFile:
             "TextEntry",
             "Header",
             "Preamble",
-            "SectionTitle",
+            "SectionBeginning",
+            "SectionEnding",
         ],
         entry: Optional[
             dm.EducationEntry
