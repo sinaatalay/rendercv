@@ -1,19 +1,16 @@
 from typing import Callable, Optional
 import re
 
-import rich
+from rich import print
 import rich.console
 import rich.panel
 import rich.live
 import rich.table
 import rich.text
 import rich.progress
-import pydantic_core
 import pydantic
 import ruamel.yaml
 import ruamel.yaml.parser
-
-console = rich.console.Console()
 
 
 def welcome():
@@ -31,22 +28,27 @@ def welcome():
     table.add_row("Bug reports", "https://github.com/sinaatalay/rendercv/issues/")
     table.add_row("Feature requests", "https://github.com/sinaatalay/rendercv/issues/")
 
-    console.print(table)
+    print(table)
 
 
 def warning(text):
     """Print a warning message to the terminal."""
-    console.print(f"[bold yellow]{text}")
+    print(f"[bold yellow]{text}")
 
 
 def error(text, exception=None):
     """Print an error message to the terminal."""
-    console.print(f"\n[bold red]{text}[/bold red]\n\n[orange4]{exception}")
+    if exception is not None:
+        exception_messages = exception.args
+        exception_message = "\n\n".join(exception_messages)
+        print(f"\n[bold red]{text}[/bold red]\n\n[orange4]{exception_message}[/orange4]")
+    else:
+        print(f"[bold red]{text}")
 
 
 def information(text):
     """Print an information message to the terminal."""
-    console.print(f"[bold green]{text}")
+    print(f"[bold green]{text}")
 
 
 def get_error_message_and_location_and_value_from_a_custom_error(
@@ -119,7 +121,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
             error_object["msg"],
         )
 
-    console.print(table)
+    print(table)
 
 
 def handle_exceptions(function: Callable) -> Callable:
