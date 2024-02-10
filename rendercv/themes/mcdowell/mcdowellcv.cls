@@ -245,6 +245,33 @@ Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
   \vspace*{\aftersubsectionspace}
 }
 
+\newenvironment{cvpublicationsubsection}[4][2]{
+  \notblank{#2}{\toggletrue{lefttitledefined}}{}
+  \notblank{#3}{\toggletrue{centertitledefined}}{}
+  \notblank{#4}{\toggletrue{righttitledefined}}{}
+  \ifboolexpr{togl {lefttitledefined} or togl {centertitledefined} or togl {righttitledefined}}{
+    \begin{tabu} to 1\textwidth { X[3.5,p] X[r,p] }
+      \textbf{#2} & \textbf{#4} \\
+    \end{tabu}
+    % Add space according to the specidied number of lines
+    \ifnumcomp{#1}{=}{1}{\vspace*{\aftersinglelinesubsectionheaderspace}}{
+      \ifnumcomp{#1}{=}{2}{\vspace*{\afterdoublelinesubsectionheaderspace}}{
+        \vspace*{\aftermultilinesubsectionheaderspace}
+      }
+    }
+  }{
+    \vspace*{\afteremptysubsectionheaderspace}
+  }
+  \togglefalse{lefttitledefined}
+  \togglefalse{centertitledefined}
+  \togglefalse{righttitledefined}
+  \begin{adjustwidth}{\subsectionmargin}{\subsectionmargin}
+}
+{
+  \end{adjustwidth}
+  \vspace*{\aftersubsectionspace}
+}
+
 \newenvironment{cvonelinesubsection}[4][1]{
   \notblank{#2}{\toggletrue{lefttitledefined}}{}
   \notblank{#3}{\toggletrue{centertitledefined}}{}
