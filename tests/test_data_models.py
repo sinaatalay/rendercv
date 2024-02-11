@@ -152,7 +152,7 @@ def test_generate_json_schema_file(tmp_path):
 
     assert schema_file_path.exists()
 
-    schema_text = schema_file_path.read_text()
+    schema_text = schema_file_path.read_text(encoding="utf-8")
     schema = json.loads(schema_text)
 
     assert isinstance(schema, dict)
