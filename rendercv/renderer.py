@@ -22,8 +22,6 @@ import jinja2
 
 from . import data_models as dm
 
-# from .user_communicator import time_the_event_below
-
 
 class LaTeXFile:
     """This class represents a $\\LaTeX$ file. It generates the $\\LaTeX$ code with the
@@ -116,27 +114,19 @@ class LaTeXFile:
             f"{self.design.theme}/{template_name}.j2.tex"
         )
 
-        # # Loop through the entry attributes and make them "" if they are None:
-        # # This is necessary because otherwise Jinja2 will template them as "None".
-        # if entry is not None and not isinstance(entry, str):
-        #     for key, value in entry.model_dump().items():
-        #         if value is None:
-        #             if "date" not in key:
-        #                 # don't touch the date fields, because only date_string is
-        #                 # called and setting dates to "" will cause problems.
-        #                 try:
-        #                     entry.__setattr__(key, "")
-        #                 except ValueError:
-        #                     # Then it means it's a computed_field, so it can be ignored.
-        #                     pass
+        # Loop through the entry attributes and make them "" if they are None:
+        # This is necessary because otherwise they will be templated as "None" since
+        # it's the string representation of None.
 
-        # do the below with a loop:
-        if hasattr(entry, "highlights") and entry.highlights is None:  # type: ignore
-            entry.highlights = ""  # type: ignore
-        if hasattr(entry, "location") and entry.location is None:  # type: ignore
-            entry.location = ""  # type: ignore
-        if hasattr(entry, "degree") and entry.degree is None:  # type: ignore
-            entry.degree = ""  # type: ignore
+        # Only don't touch the date fields, because only date_string is called and
+        # setting dates to "" will cause problems.
+        fields_to_ignore = ["start_date", "end_date", "date"]
+
+        if entry is not None and not isinstance(entry, str):
+            entry_dictionary = entry.model_dump()
+            for key, value in entry_dictionary.items():
+                if value is None and key not in fields_to_ignore:
+                    entry.__setattr__(key, "")
 
         # The arguments of the template can be used in the template file:
         latex_code = template.render(
