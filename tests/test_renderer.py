@@ -184,7 +184,7 @@ def test_setup_jinja2_environment():
     assert "get_an_item_with_a_specific_attribute_value" in env.filters
 
 
-themes = ["classic"]
+themes = ["classic", "moderncv", "mcdowell"]
 
 
 @pytest.mark.parametrize(
@@ -199,11 +199,11 @@ def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_nam
 
     data_model = dm.RenderCVDataModel(
         cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
-        design=dm.Design(theme=theme_name),
+        design={"theme": theme_name},
     )
     r.generate_latex_file(data_model, tmp_path / "make_sure_it_generates_the_directory")
     # Uncomment the line below to update the reference files:
-    # r.generate_latex_file(data_model, reference_files_directory_path)
+    r.generate_latex_file(data_model, reference_files_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
 
@@ -221,8 +221,9 @@ def test_copy_theme_files_to_output_directory(
 
     r.copy_theme_files_to_output_directory(theme_name, tmp_path)
     # Uncomment the line below to update the reference files:
+    # reference_directory_path.mkdir(parents=True, exist_ok=True)
     # r.copy_theme_files_to_output_directory(
-    #     theme_name, reference_files_directory_path / directory_name
+    #     theme_name, reference_files_directory_path
     # )
 
     assert filecmp.dircmp(tmp_path, reference_directory_path).diff_files == []
@@ -240,7 +241,7 @@ def test_generate_latex_file_and_copy_theme_files(
 
     data_model = dm.RenderCVDataModel(
         cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
-        design=dm.Design(theme=theme_name),
+        design={"theme": theme_name},
     )
     r.generate_latex_file_and_copy_theme_files(data_model, tmp_path)
     # Uncomment the line below to update the reference files:
