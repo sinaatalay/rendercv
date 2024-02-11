@@ -543,6 +543,15 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
                 "If you can't solve the problem, please open an issue on GitHub.",
             )
 
+        # clean the auxiliary files:
+        subprocess.run(
+            command + ["-c"],
+            cwd=latex_file_path.parent,
+            stdout=subprocess.DEVNULL,  # don't capture the output
+            stderr=subprocess.DEVNULL,  # don't capture the error
+            stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+        )
+
     # check if the PDF file is generated:
     pdf_file_path = latex_file_path.with_suffix(".pdf")
     if not pdf_file_path.is_file():
