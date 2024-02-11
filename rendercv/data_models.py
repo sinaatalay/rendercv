@@ -212,7 +212,7 @@ class EntryBase(RenderCVBaseModel):
                 today_object = Date.today()
                 if date_object > today_object:
                     raise ValueError(
-                        '"date" cannot be in the future.',
+                        '"date" cannot be in the future!',
                         "date",  # this is the location of the error
                         model.date,  # this is value of the error
                     )
@@ -241,13 +241,13 @@ class EntryBase(RenderCVBaseModel):
 
             if start_date > end_date:
                 raise ValueError(
-                    '"start_date" can not be after "end_date"',
-                    "start_date/end_date",  # this is the location of the error
-                    "",  # this supposed to be the value of the error
+                    '"start_date" can not be after "end_date"!',
+                    "start_date",  # this is the location of the error
+                    model.start_date,  # this is value of the error
                 )
             elif end_date > Date.today():
                 raise ValueError(
-                    '"end_date" cannot be in the future.',
+                    '"end_date" cannot be in the future!',
                     "end_date",  # this is the location of the error
                     model.end_date,  # this is value of the error
                 )
@@ -694,16 +694,16 @@ def get_entry_and_section_type(
         section type.
     """
     if isinstance(entry, dict):
-        if "details" in entry:
+        if "details" in entry and "name" in entry:
             entry_type = "OneLineEntry"
             section_type = SectionWithOneLineEntries
-        elif "company" in entry:
+        elif "company" in entry and "position" in entry:
             entry_type = "ExperienceEntry"
             section_type = SectionWithExperienceEntries
-        elif "institution" in entry:
+        elif "institution" in entry and "area" in entry and "degree" in entry:
             entry_type = "EducationEntry"
             section_type = SectionWithEducationEntries
-        elif "title" in entry:
+        elif "title" in entry and "authors" in entry and "doi" in entry and "date" in entry:
             entry_type = "PublicationEntry"
             section_type = SectionWithPublicationEntries
         elif "name" in entry:
@@ -756,11 +756,20 @@ def validate_section_input(
         Section | list[Any]: The validated sections input.
     """
     if isinstance(sections_input, list):
-        # find the entry type based on the first element of the list:
-        try:
-            entry_type, section_type = get_entry_and_section_type(sections_input[0])
-        except ValueError:
-            raise ValueError("The entries are not provided correctly.")
+        # find the entry type based on the first identifiable entry:
+        entry_type = None
+        section_type = None
+        for entry in sections_input:
+            try:
+                entry_type, section_type = get_entry_and_section_type(entry)
+                break
+            except ValueError:
+                pass
+        
+        if entry_type is None or section_type is None:
+            raise ValueError(
+                "Please check your entries. They are not provided correctly."
+            )
 
         test_section = {
             "title": "Test Section",
