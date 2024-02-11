@@ -6,6 +6,7 @@ import json
 import pathlib
 from typing import Annotated, Callable, Optional
 import re
+import functools
 
 from rich import print
 import rich.console
@@ -28,9 +29,6 @@ from . import renderer as r
 
 app = typer.Typer(
     help="RenderCV - A LaTeX CV generator from YAML",
-    rich_markup_mode=(  # see https://typer.tiangolo.com/tutorial/commands/help/#rich-markdown
-        "markdown"
-    ),
 )
 
 
@@ -115,8 +113,6 @@ def handle_validation_error(exception: pydantic.ValidationError):
         if custom_error is None:
             if message in error_dictionary:
                 message = error_dictionary[message]
-            else:
-                message = message
         else:
             message = custom_error[0]
             if custom_error[1] != "":
@@ -152,6 +148,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
 def handle_exceptions(function: Callable) -> Callable:
     """ """
 
+    @functools.wraps(function)
     def wrapper(*args, **kwargs):
         try:
             function(*args, **kwargs)
@@ -246,11 +243,11 @@ class LiveProgressReporter(rich.live.Live):
         )
 
 
-@app.command(help="Render a YAML input file")
+@app.command(name="render", help="Render a YAML input file")
 @handle_exceptions
-def render(
+def cli_command_render(
     input_file_path: Annotated[
-        pathlib.Path,
+        str,
         typer.Argument(help="Name of the YAML input file"),
     ],
 ):
@@ -260,11 +257,14 @@ def render(
         input_file (str): Name of the YAML input file
     """
     welcome()
-    output_directory = input_file_path.parent / "rendercv_output"
+
+    input_file_path_obj = pathlib.Path(input_file_path)
+
+    output_directory = input_file_path_obj.parent / "rendercv_output"
 
     with LiveProgressReporter(number_of_steps=3) as progress:
         progress.start_a_step("Reading and validating the input file")
-        data_model = dm.read_input_file(input_file_path)
+        data_model = dm.read_input_file(input_file_path_obj)
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
@@ -278,8 +278,8 @@ def render(
         progress.finish_the_current_step()
 
 
-@app.command(help="Generate a YAML input file to get started.")
-def new(full_name: Annotated[str, typer.Argument(help="Your full name")]):
+@app.command(name="new", help="Generate a YAML input file to get started.")
+def cli_command_new(full_name: Annotated[str, typer.Argument(help="Your full name")]):
     """Generate a YAML input file to get started."""
     data_model = dm.get_a_sample_data_model(full_name)
     file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
@@ -297,12 +297,4 @@ def new(full_name: Annotated[str, typer.Argument(help="Your full name")]):
     yaml.indent(mapping=2, sequence=4, offset=2)
     yaml.dump(data_model_as_dictionary, file_path)
 
-    information(f"Your RenderCV input file has been created at {file_path}!")
-
-
-def cli():
-    """Start the CLI application.
-
-    This function is the entry point of the RenderCV. The execution starts here.
-    """
-    app()
+    information(f"Your RenderCV input file has been created: {file_path}!")
