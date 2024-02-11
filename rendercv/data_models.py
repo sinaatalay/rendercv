@@ -174,6 +174,7 @@ class EntryBase(RenderCVBaseModel):
         examples=["Did this.", "Did that."],
     )
     location: Optional[str] = pydantic.Field(
+        default=None,
         title="Location",
         description="The location of the event.",
         examples=["Istanbul, Turkey"],
