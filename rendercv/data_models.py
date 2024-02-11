@@ -15,6 +15,8 @@ from datetime import date as Date
 from typing import Literal, Any, Type
 from typing_extensions import Annotated, Optional, get_args
 import importlib
+import importlib.util
+import importlib.machinery
 import functools
 from urllib.request import urlopen, HTTPError
 import json
@@ -974,6 +976,15 @@ class RenderCVDataModel(RenderCVBaseModel):
             # then it is a custom theme
             custom_theme_folder = pathlib.Path(design["theme"])  # type: ignore
 
+            # check if the custom theme folder exists:
+            if not custom_theme_folder.exists():
+                raise ValueError(
+                    f"The custom theme folder `{custom_theme_folder}` does not exist."
+                    " It should be in the working directory as the input file.",
+                    "",  # this is the location of the error
+                    design["theme"],  # this is value of the error # type: ignore
+                )
+
             # check if all the necessary files are provided in the custom theme folder:
             required_files = [
                 "__init__.py",  # design's data model
@@ -1000,14 +1011,24 @@ class RenderCVDataModel(RenderCVBaseModel):
                     )
 
             # import __init__.py file from the custom theme folder:
-            theme_module = importlib.import_module(design["theme"])  # type: ignore
-
-            ThemeDataModel = getattr(
-                theme_module, f"{design['theme'].title()}ThemeOptions"  # type: ignore
+            spec = importlib.util.spec_from_file_location(
+                "", # this is somehow not required
+                pathlib.Path(f"{design["theme"]}/__init__.py"), # type: ignore
             )
+            if spec is None:
+                raise RuntimeError(
+                    "This error shouldn't have been raised. Please open an issue on GitHub."
+                )
+            else:
+                theme_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(theme_module) # type: ignore
 
-            # initialize and validate the custom theme data model:
-            theme_data_model = ThemeDataModel(**design)
+                ThemeDataModel = getattr(
+                    theme_module, f"{design['theme'].title()}ThemeOptions"  # type: ignore
+                )
+
+                # initialize and validate the custom theme data model:
+                theme_data_model = ThemeDataModel(**design)
 
             return theme_data_model
 
