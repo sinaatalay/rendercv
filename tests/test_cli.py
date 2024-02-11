@@ -1,35 +1,39 @@
-import rendercv.user_communicator as uc
+import rendercv.cli as cli
 
 import pydantic
 import ruamel.yaml
 import pytest
+import typer.testing
+
+
+runner = typer.testing.CliRunner()
 
 
 def test_welcome():
-    uc.welcome()
+    cli.welcome()
 
 
 def test_warning():
-    uc.warning("This is a warning message.")
+    cli.warning("This is a warning message.")
 
 
 def test_error():
-    uc.error("This is an error message.")
+    cli.error("This is an error message.")
 
 
 def test_information():
-    uc.information("This is an information message.")
+    cli.information("This is an information message.")
 
 
 def test_get_error_message_and_location_and_value_from_a_custom_error():
     error_string = "('error message', 'location', 'value')"
-    result = uc.get_error_message_and_location_and_value_from_a_custom_error(
+    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result == ("error message", "location", "value")
 
     error_string = "error message"
-    result = uc.get_error_message_and_location_and_value_from_a_custom_error(
+    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result is None
@@ -41,7 +45,7 @@ def test_handle_validation_error(invalid_entries):
             try:
                 entry_type(**entry)
             except pydantic.ValidationError as e:
-                uc.handle_validation_error(e)
+                cli.handle_validation_error(e)
 
 
 @pytest.mark.parametrize(
@@ -49,7 +53,7 @@ def test_handle_validation_error(invalid_entries):
     [ruamel.yaml.YAMLError, RuntimeError],
 )
 def test_handle_exceptions(exception):
-    @uc.handle_exceptions
+    @cli.handle_exceptions
     def function_that_raises_exception():
         raise exception("This is an exception!")
 
@@ -57,7 +61,7 @@ def test_handle_exceptions(exception):
 
 
 def test_live_progress_reporter_class():
-    with uc.LiveProgressReporter(number_of_steps=3) as progress:
+    with cli.LiveProgressReporter(number_of_steps=3) as progress:
         progress.start_a_step("Test step 1")
         progress.finish_the_current_step()
 
