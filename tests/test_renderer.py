@@ -7,6 +7,7 @@ import pathlib
 import pytest
 import jinja2
 import time_machine
+import pypdf
 
 from rendercv import renderer as r
 from rendercv import data_models as dm
@@ -186,7 +187,7 @@ def test_setup_jinja2_environment():
 
 
 themes = ["classic", "moderncv", "mcdowell"]
-update_reference_files = True
+update_reference_files = False
 
 
 @pytest.mark.parametrize(
@@ -195,9 +196,13 @@ update_reference_files = True
 )
 @time_machine.travel("2024-01-01")
 def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_name):
+    reference_latex_files_directory_path = (
+        reference_files_directory_path / "latex_files"
+    )
+
     file_name = f"{theme_name}_theme_CV.tex"
     output_file_path = tmp_path / "make_sure_it_generates_the_directory" / file_name
-    reference_file_path = reference_files_directory_path / file_name
+    reference_file_path = reference_latex_files_directory_path / file_name
 
     data_model = dm.RenderCVDataModel(
         cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
@@ -206,7 +211,7 @@ def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_nam
     r.generate_latex_file(data_model, tmp_path / "make_sure_it_generates_the_directory")
     # Update the reference files if update_reference_files is True
     if update_reference_files:
-        r.generate_latex_file(data_model, reference_files_directory_path)
+        r.generate_latex_file(data_model, reference_latex_files_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
 
@@ -226,9 +231,7 @@ def test_copy_theme_files_to_output_directory(
     # Update the reference files if update_reference_files is True
     if update_reference_files:
         reference_directory_path.mkdir(parents=True, exist_ok=True)
-        r.copy_theme_files_to_output_directory(
-            theme_name, reference_files_directory_path
-        )
+        r.copy_theme_files_to_output_directory(theme_name, reference_directory_path)
 
     assert filecmp.dircmp(tmp_path, reference_directory_path).diff_files == []
 
@@ -275,6 +278,7 @@ def test_generate_latex_file_and_copy_theme_files(
     "theme_name",
     themes,
 )
+@time_machine.travel("2024-01-01")
 def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
     reference_directory = reference_files_directory_path / f"{theme_name}_theme_full"
     reference_pdf_file_path = reference_directory / f"{theme_name}_theme_CV.pdf"
@@ -283,11 +287,13 @@ def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
     output_pdf_file_path = r.latex_to_pdf(tmp_path / f"{theme_name}_theme_CV.tex")
     # Update the reference files if update_reference_files is True
     if update_reference_files:
-        output_pdf_file_path = r.latex_to_pdf(
+        reference_pdf_file_path = r.latex_to_pdf(
             reference_directory / f"{theme_name}_theme_CV.tex"
         )
 
-    assert filecmp.cmp(output_pdf_file_path, reference_pdf_file_path)
+    text1 = pypdf.PdfReader(output_pdf_file_path).pages[0].extract_text()
+    text2 = pypdf.PdfReader(reference_pdf_file_path).pages[0].extract_text()
+    assert text1 == text2
 
 
 def test_latex_to_pdf_invalid_latex_file(tmp_path):

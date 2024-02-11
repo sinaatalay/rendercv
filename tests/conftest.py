@@ -31,6 +31,7 @@ def education_entry() -> dict[str, str]:
     return {
         "institution": "Boğaziçi University",
         "area": "Mechanical Engineering",
+        "degree": "BS",
     }
 
 
