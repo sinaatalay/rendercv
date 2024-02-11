@@ -1,6 +1,7 @@
 from datetime import date as Date
 import json
 import pathlib
+import os
 
 import pydantic
 import pytest
@@ -123,17 +124,17 @@ def test_read_input_file(input_file_path):
     assert isinstance(data_model, dm.RenderCVDataModel)
 
 
-@pytest.mark.parametrize(
-    "input_file_name",
-    [
-        "invalid",
-        "invalid_extension.txt",
-    ],
-)
-def test_read_input_file_invalid_path(input_file_name):
+def test_read_input_file_not_found():
     with pytest.raises(FileNotFoundError):
-        invalid_path = pathlib.Path(input_file_name)
+        invalid_path = pathlib.Path("doesntexist.yaml")
         dm.read_input_file(invalid_path)
+
+
+def test_read_input_file_invalid_file(tmp_path):
+    invalid_file_path = tmp_path / "invalid.extension"
+    invalid_file_path.write_text("dummy content", encoding="utf-8")
+    with pytest.raises(ValueError):
+        dm.read_input_file(invalid_file_path)
 
 
 def test_get_a_sample_data_model():
@@ -169,33 +170,119 @@ def test_if_the_schema_is_the_latest(root_directory_path):
 
 
 @pytest.mark.parametrize(
-    "start_date, end_date, date, expected_date_string, expected_time_span",
+    "start_date, end_date, date, expected_date_string, expected_date_string_only_years,"
+    " expected_time_span",
     [
-        ("2020-01-01", "2021-01-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
-        ("2020-01", "2021-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
-        ("2020-01", "2021-01-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
-        ("2020-01-01", "2021-01", None, "Jan. 2020 to Jan. 2021", "1 year 1 month"),
-        ("2020-01-01", None, None, "Jan. 2020 to present", "4 years 1 month"),
-        ("2020-02-01", "present", None, "Feb. 2020 to present", "3 years 11 months"),
-        ("2020-01-01", "2021-01-01", "2023-02-01", "Feb. 2023", ""),
-        ("2020", "2021", None, "2020 to 2021", "1 year"),
-        ("2020", None, None, "2020 to present", "4 years"),
-        ("2020-10-10", "2022", None, "Oct. 2020 to 2022", "2 years"),
-        ("2020-10-10", "2020-11-05", None, "Oct. 2020 to Nov. 2020", "1 month"),
-        ("2022", "2023-10-10", None, "2022 to Oct. 2023", "1 year"),
-        ("2020-01-01", "present", "My Custom Date", "My Custom Date", ""),
-        ("2020-01-01", None, "My Custom Date", "My Custom Date", ""),
-        (None, None, "My Custom Date", "My Custom Date", ""),
-        (None, "2020-01-01", "My Custom Date", "My Custom Date", ""),
-        (None, None, "2020-01-01", "Jan. 2020", ""),
-        (None, None, None, "", ""),
+        (
+            "2020-01-01",
+            "2021-01-01",
+            None,
+            "Jan. 2020 to Jan. 2021",
+            "2020 to 2021",
+            "1 year 1 month",
+        ),
+        (
+            "2020-01",
+            "2021-01",
+            None,
+            "Jan. 2020 to Jan. 2021",
+            "2020 to 2021",
+            "1 year 1 month",
+        ),
+        (
+            "2020-01",
+            "2021-01-01",
+            None,
+            "Jan. 2020 to Jan. 2021",
+            "2020 to 2021",
+            "1 year 1 month",
+        ),
+        (
+            "2020-01-01",
+            "2021-01",
+            None,
+            "Jan. 2020 to Jan. 2021",
+            "2020 to 2021",
+            "1 year 1 month",
+        ),
+        (
+            "2020-01-01",
+            None,
+            None,
+            "Jan. 2020 to present",
+            "2020 to present",
+            "4 years 1 month",
+        ),
+        (
+            "2020-02-01",
+            "present",
+            None,
+            "Feb. 2020 to present",
+            "2020 to present",
+            "3 years 11 months",
+        ),
+        ("2020-01-01", "2021-01-01", "2023-02-01", "Feb. 2023", "Feb. 2023", ""),
+        ("2020", "2021", None, "2020 to 2021", "2020 to 2021", "1 year"),
+        ("2020", None, None, "2020 to present", "2020 to present", "4 years"),
+        ("2020-10-10", "2022", None, "Oct. 2020 to 2022", "2020 to 2022", "2 years"),
+        (
+            "2020-10-10",
+            "2020-11-05",
+            None,
+            "Oct. 2020 to Nov. 2020",
+            "2020 to 2020",
+            "1 month",
+        ),
+        ("2022", "2023-10-10", None, "2022 to Oct. 2023", "2022 to 2023", "1 year"),
+        (
+            "2020-01-01",
+            "present",
+            "My Custom Date",
+            "My Custom Date",
+            "My Custom Date",
+            "",
+        ),
+        (
+            "2020-01-01",
+            None,
+            "My Custom Date",
+            "My Custom Date",
+            "My Custom Date",
+            "",
+        ),
+        (
+            None,
+            None,
+            "My Custom Date",
+            "My Custom Date",
+            "My Custom Date",
+            "",
+        ),
+        (
+            None,
+            "2020-01-01",
+            "My Custom Date",
+            "My Custom Date",
+            "My Custom Date",
+            "",
+        ),
+        (None, None, "2020-01-01", "Jan. 2020", "Jan. 2020", ""),
+        (None, None, None, "", "", ""),
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_dates(start_date, end_date, date, expected_date_string, expected_time_span):
+def test_dates(
+    start_date,
+    end_date,
+    date,
+    expected_date_string,
+    expected_date_string_only_years,
+    expected_time_span,
+):
     entry_base = dm.EntryBase(start_date=start_date, end_date=end_date, date=date)
 
     assert entry_base.date_string == expected_date_string
+    assert entry_base.date_string_only_years == expected_date_string_only_years
     assert entry_base.time_span_string == expected_time_span
 
 
@@ -284,7 +371,7 @@ def test_invalid_doi(publication_entry, doi):
 
 @pytest.mark.parametrize(
     "network, username",
-    [("Mastodon", "invalidmastodon"), ("invalid@invalidmastodon", "@inva@l@id")],
+    [("Mastodon", "invalidmastodon"), ("Mastodon", "@inva@l@id")],
 )
 def test_invalid_social_networks(network, username):
     with pytest.raises(pydantic.ValidationError):
@@ -490,3 +577,39 @@ def test_sections_with_invalid_entries(section_title):
     }]
     with pytest.raises(pydantic.ValidationError):
         dm.CurriculumVitae(**input)
+
+
+@pytest.mark.parametrize(
+    "invalid_custom_theme_name",
+    [
+        "pathdoesntexist",
+        "invalid_theme_name",
+    ],
+)
+def test_invalid_custom_theme(invalid_custom_theme_name):
+    with pytest.raises(pydantic.ValidationError):
+        dm.RenderCVDataModel(**{
+            "cv": {"name": "John Doe"},
+            "design": {"theme": invalid_custom_theme_name},
+        })
+
+
+def test_custom_theme_with_missing_files(tmp_path):
+    custom_theme_path = tmp_path / "customtheme"
+    custom_theme_path.mkdir()
+    with pytest.raises(pydantic.ValidationError):
+        os.chdir(tmp_path)
+        dm.RenderCVDataModel(**{  # type: ignore
+            "cv": {"name": "John Doe"},
+            "design": {"theme": "customtheme"},
+        })
+
+
+def test_custom_theme(reference_files_directory_path):
+    os.chdir(reference_files_directory_path)
+    data_model = dm.RenderCVDataModel(**{  # type: ignore
+        "cv": {"name": "John Doe"},
+        "design": {"theme": "dummytheme"},
+    })
+
+    assert data_model.design.theme == "dummytheme"

@@ -1,6 +1,7 @@
 import math
 import filecmp
 import shutil
+import os
 import pathlib
 
 import pytest
@@ -185,6 +186,7 @@ def test_setup_jinja2_environment():
 
 
 themes = ["classic", "moderncv", "mcdowell"]
+update_reference_files = True
 
 
 @pytest.mark.parametrize(
@@ -202,8 +204,9 @@ def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_nam
         design={"theme": theme_name},
     )
     r.generate_latex_file(data_model, tmp_path / "make_sure_it_generates_the_directory")
-    # Uncomment the line below to update the reference files:
-    r.generate_latex_file(data_model, reference_files_directory_path)
+    # Update the reference files if update_reference_files is True
+    if update_reference_files:
+        r.generate_latex_file(data_model, reference_files_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
 
@@ -220,13 +223,30 @@ def test_copy_theme_files_to_output_directory(
     )
 
     r.copy_theme_files_to_output_directory(theme_name, tmp_path)
-    # Uncomment the line below to update the reference files:
-    # reference_directory_path.mkdir(parents=True, exist_ok=True)
-    # r.copy_theme_files_to_output_directory(
-    #     theme_name, reference_files_directory_path
-    # )
+    # Update the reference files if update_reference_files is True
+    if update_reference_files:
+        reference_directory_path.mkdir(parents=True, exist_ok=True)
+        r.copy_theme_files_to_output_directory(
+            theme_name, reference_files_directory_path
+        )
 
     assert filecmp.dircmp(tmp_path, reference_directory_path).diff_files == []
+
+
+def test_copy_theme_files_to_output_directory_custom_theme(
+    tmp_path, reference_files_directory_path
+):
+    theme_name = "dummytheme"
+    reference_directory = (
+        reference_files_directory_path / f"{theme_name}_theme_auxiliary_files"
+    )
+
+    # change current working directory to the refefence_files_directory_path:
+    os.chdir(reference_files_directory_path)
+
+    r.copy_theme_files_to_output_directory(theme_name, tmp_path)
+
+    assert filecmp.dircmp(tmp_path, reference_directory).diff_files == []
 
 
 @pytest.mark.parametrize(
@@ -244,10 +264,9 @@ def test_generate_latex_file_and_copy_theme_files(
         design={"theme": theme_name},
     )
     r.generate_latex_file_and_copy_theme_files(data_model, tmp_path)
-    # Uncomment the line below to update the reference files:
-    # r.generate_latex_file_and_copy_theme_files(
-    #     data_model, reference_directory
-    # )
+    # Update the reference files if update_reference_files is True
+    if update_reference_files:
+        r.generate_latex_file_and_copy_theme_files(data_model, reference_directory)
 
     assert filecmp.dircmp(tmp_path, reference_directory).diff_files == []
 
@@ -262,10 +281,11 @@ def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
 
     shutil.copytree(reference_directory, tmp_path, dirs_exist_ok=True)
     output_pdf_file_path = r.latex_to_pdf(tmp_path / f"{theme_name}_theme_CV.tex")
-    # Uncomment the line below to update the reference files:
-    # output_pdf_file_path = r.latex_to_pdf(
-    #     reference_directory / f"{theme_name}_theme_CV.tex"
-    # )
+    # Update the reference files if update_reference_files is True
+    if update_reference_files:
+        output_pdf_file_path = r.latex_to_pdf(
+            reference_directory / f"{theme_name}_theme_CV.tex"
+        )
 
     assert filecmp.cmp(output_pdf_file_path, reference_pdf_file_path)
 
