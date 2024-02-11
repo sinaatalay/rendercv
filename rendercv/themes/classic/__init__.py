@@ -128,6 +128,8 @@ class ClassicThemeMargins(pydantic.BaseModel):
 class ClassicThemeOptions(pydantic.BaseModel):
     """ """
 
+    model_config = pydantic.ConfigDict(extra="forbid")
+
     theme: Literal["classic"]
     font: Literal["SourceSans3", "Roboto", "EBGaramond"] = pydantic.Field(
         default="SourceSans3",

@@ -13,4 +13,6 @@ LaTeXDimension = Annotated[
 class McdowellThemeOptions(pydantic.BaseModel):
     """ """
 
+    model_config = pydantic.ConfigDict(extra="forbid")
+
     theme: Literal["mcdowell"]
