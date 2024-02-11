@@ -58,7 +58,7 @@ def warning(text):
 def error(text, exception=None):
     """Print an error message to the terminal."""
     if exception is not None:
-        exception_messages = exception.args
+        exception_messages = [str(arg) for arg in exception.args]
         exception_message = "\n\n".join(exception_messages)
         print(
             f"\n[bold red]{text}[/bold red]\n\n[orange4]{exception_message}[/orange4]"
@@ -100,24 +100,51 @@ def handle_validation_error(exception: pydantic.ValidationError):
         "URL scheme should be 'http' or 'https'": "This is not a valid URL!",
         "Field required": "This field is required!",
         "value is not a valid phone number": "This is not a valid phone number!",
+        "month must be in 1..12": "The month must be between 1 and 12!",
+        "Value error, day is out of range for month": (
+            "The day is out of range for the month!"
+        ),
+        "Extra inputs are not permitted": (
+            "This field is unknown for this object. Are you sure you are following the"
+            " correct schema?"
+        ),
     }
     new_errors: list[dict[str, str]] = []
+    end_date_error_is_found = False
     for error_object in exception.errors():
         message = error_object["msg"]
         location = ".".join([str(loc) for loc in error_object["loc"]])
         input = error_object["input"]
 
+        # remove `.entries.` because that location is not user's location but
+        # RenderCV's own data model's location
+        location = location.replace(".entries", "")
+
         custom_error = get_error_message_and_location_and_value_from_a_custom_error(
             message
         )
-        if custom_error is None:
-            if message in error_dictionary:
-                message = error_dictionary[message]
-        else:
+        if custom_error is not None:
             message = custom_error[0]
             if custom_error[1] != "":
                 location = f"{location}.{custom_error[1]}"
             input = custom_error[2]
+
+        if message in error_dictionary:
+            message = error_dictionary[message]
+
+        # Special case for end_date because Pydantic returns multiple end_date errors
+        # since it has multiple valid formats:
+        if "end_date." in location:
+            if end_date_error_is_found:
+                continue
+            end_date_error_is_found = True
+            # omit the next location after .end_date
+            # (e.g. avoid stuff like .end_date.literal['present'])
+            # location = re.sub(r"(\.end_date)\..*", r"\1", location)
+            message = (
+                "This is not a valid end date! Please use either YYYY-MM-DD, YYYY-MM,"
+                ' or YYYY format or "present"!'
+            )
 
         new_errors.append({
             "loc": str(location),
