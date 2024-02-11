@@ -14,6 +14,8 @@ LaTeXDimension = Annotated[
 class ModerncvThemeOptions(pydantic.BaseModel):
     """ """
 
+    model_config = pydantic.ConfigDict(extra="forbid")
+
     theme: Literal["moderncv"]
     font_size: Literal["10pt", "11pt", "12pt"] = pydantic.Field(
         default="10pt",
