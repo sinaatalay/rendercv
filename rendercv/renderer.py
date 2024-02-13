@@ -15,12 +15,12 @@ import pathlib
 import importlib.resources
 import shutil
 import sys
+import copy
 from datetime import date as Date
 from typing import Optional, Literal, Any
 
 import jinja2
 import markdown
-import fpdf
 
 from . import data_models as dm
 
@@ -133,6 +133,16 @@ class LaTeXFile(TemplatedFile):
     """This class represents a $\\LaTeX$ file. It generates the $\\LaTeX$ code with the
     data model and Jinja2 templates. It inherits from the TemplatedFile class.
     """
+
+    def __init__(
+        self,
+        data_model: dm.RenderCVDataModel,
+        environment: jinja2.Environment,
+    ):
+        data_model = transform_markdown_data_model_to_latex_data_model(
+            copy.deepcopy(data_model)
+        )
+        super().__init__(data_model, environment)
 
     def render_templates(self):
         """Render and return all the templates for the $\\LaTeX$ file.
@@ -310,6 +320,189 @@ class MarkdownFile(TemplatedFile):
     def generate_markdown_file(self, file_path: pathlib.Path):
         """Write the Markdown code to a file."""
         file_path.write_text(self.get_markdown_code(), encoding="utf-8")
+
+
+def escape_latex_characters(string: str) -> str:
+    """Escape $\\LaTeX$ characters in a string.
+
+    This function is called during the reading of the input file. Before the validation
+    process, each input field's special $\\LaTeX$ characters are escaped.
+
+    Example:
+        ```python
+        escape_latex_characters("This is a # string.")
+        ```
+        will return:
+        `#!python "This is a \\# string."`
+    """
+
+    # Dictionary of escape characters:
+    escape_characters = {
+        "#": "\\#",
+        # "$": "\\$", # Don't escape $ as it is used for math mode
+        "%": "\\%",
+        "&": "\\&",
+        "~": "\\textasciitilde{}",
+        # "_": "\\_", # Don't escape _ as it is used for math mode
+        # "^": "\\textasciicircum{}", # Don't escape ^ as it is used for math mode
+    }
+
+    # Don't escape links as hyperref package will do it automatically:
+
+    # Find all the links in the sentence:
+    links = re.findall(r"\[.*?\]\(.*?\)", string)
+
+    # Replace the links with a placeholder:
+    for link in links:
+        string = string.replace(link, "!!-link-!!")
+
+    # Loop through the letters of the sentence and if you find an escape character,
+    # replace it with its LaTeX equivalent:
+    copy_of_the_string = list(string)
+    for i, character in enumerate(copy_of_the_string):
+        if character in escape_characters:
+            new_character = escape_characters[character]
+            copy_of_the_string[i] = new_character
+
+    string = "".join(copy_of_the_string)
+    # Replace the links with the original links:
+    for link in links:
+        string = string.replace("!!-link-!!", link)
+
+    return string
+
+
+def markdown_to_latex(markdown_string: str) -> str:
+    """Convert a markdown string to LaTeX.
+
+    This function is called during the reading of the input file. Before the validation
+    process, each input field is converted from markdown to LaTeX.
+
+    Example:
+        ```python
+        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
+        ```
+
+        will return:
+
+        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
+
+    Args:
+        markdown_string (str): The markdown string to convert.
+
+    Returns:
+        str: The LaTeX string.
+    """
+    # convert links
+    links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
+    if links is not None:
+        for link in links:
+            link_text = link[0]
+            link_url = link[1]
+
+            old_link_string = f"[{link_text}]({link_url})"
+            new_link_string = "\\href{" + link_url + "}{" + link_text + "}"
+
+            markdown_string = markdown_string.replace(old_link_string, new_link_string)
+
+    # convert bold
+    bolds = re.findall(r"\*\*([^\*]*)\*\*", markdown_string)
+    if bolds is not None:
+        for bold_text in bolds:
+            old_bold_text = f"**{bold_text}**"
+            new_bold_text = "\\textbf{" + bold_text + "}"
+
+            markdown_string = markdown_string.replace(old_bold_text, new_bold_text)
+
+    # convert italic
+    italics = re.findall(r"\*([^\*]*)\*", markdown_string)
+    if italics is not None:
+        for italic_text in italics:
+            old_italic_text = f"*{italic_text}*"
+            new_italic_text = "\\textit{" + italic_text + "}"
+
+            markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
+
+    # convert code
+    codes = re.findall(r"`([^`]*)`", markdown_string)
+    if codes is not None:
+        for code_text in codes:
+            old_code_text = f"`{code_text}`"
+            new_code_text = "\\texttt{" + code_text + "}"
+
+            markdown_string = markdown_string.replace(old_code_text, new_code_text)
+
+    latex_string = markdown_string
+
+    return latex_string
+
+
+def transform_markdown_data_model_to_latex_data_model(
+    data_model: dm.RenderCVDataModel,
+) -> dm.RenderCVDataModel:
+    """
+    Recursively loop through a `RenderCVDataModel` and convert all the markdown strings
+    (user input is in markdown format) to LaTeX strings. Also, escape special LaTeX
+    characters.
+
+    Args:
+        data_model (RenderCVDataModel): The data model to transform.
+    Returns:
+        dict: The data model with LaTeX strings.
+    """
+    data_model_as_dict = data_model.model_dump()
+    for key, value in data_model_as_dict.items():
+        if isinstance(value, str):
+            # if the value is a string, then apply markdown_to_latex and
+            # escape_latex_characters to it:
+            result = markdown_to_latex(escape_latex_characters(value))
+            # update data_model object's attribute with the new value:
+            setattr(data_model, key, result)
+        elif isinstance(value, list):
+            # if the value is a list, then loop through the list and apply
+            # markdown_to_latex and escape_latex_characters to each item:
+            transformed_list = []
+            for index, item in enumerate(value):
+                if isinstance(item, str):
+                    result = markdown_to_latex(escape_latex_characters(item))
+                    transformed_list.append(result)
+                elif isinstance(item, dict):
+                    # if the item is a dictionary, then it means it's a sub data model.
+                    # So, call transform_markdown_data_model_to_latex_data_model again:
+                    sub_data_model = getattr(data_model, key)[index]
+                    transformed_sub_data_model = (
+                        transform_markdown_data_model_to_latex_data_model(
+                            sub_data_model
+                        )
+                    )
+                    transformed_list.append(transformed_sub_data_model)
+
+            # update data_model object's attribute with the new value:
+            setattr(data_model, key, transformed_list)
+        elif isinstance(value, dict):
+            if key == "sections_input":
+                # Then it means it's the `sections` field:
+                sections = getattr(data_model, key)
+                for section_title, entries in sections.items():
+                    transformed_entries = []
+                    for entry in entries:
+                        transformed_entry = (
+                            transform_markdown_data_model_to_latex_data_model(entry)
+                        )
+                        transformed_entries.append(transformed_entry)
+                setattr(data_model, key, sections)
+            else:
+                # Then it means it's a sub data model.
+                # So, call transform_markdown_data_model_to_latex_data_model again:
+                sub_data_model = getattr(data_model, key)
+                transformed_sub_data_model = (
+                    transform_markdown_data_model_to_latex_data_model(sub_data_model)
+                )
+
+                # update data_model object's attribute with the new value:
+                setattr(data_model, key, transformed_sub_data_model)
+
+    return data_model
 
 
 def make_matched_part_something(

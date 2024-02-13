@@ -23,7 +23,6 @@ import json
 import re
 import ssl
 import pathlib
-import copy
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
@@ -1071,193 +1070,9 @@ class RenderCVDataModel(RenderCVBaseModel):
             return theme_data_model
 
 
-def escape_latex_characters(string: str) -> str:
-    """Escape $\\LaTeX$ characters in a string.
-
-    This function is called during the reading of the input file. Before the validation
-    process, each input field's special $\\LaTeX$ characters are escaped.
-
-    Example:
-        ```python
-        escape_latex_characters("This is a # string.")
-        ```
-        will return:
-        `#!python "This is a \\# string."`
-    """
-
-    # Dictionary of escape characters:
-    escape_characters = {
-        "#": "\\#",
-        # "$": "\\$", # Don't escape $ as it is used for math mode
-        "%": "\\%",
-        "&": "\\&",
-        "~": "\\textasciitilde{}",
-        # "_": "\\_", # Don't escape _ as it is used for math mode
-        # "^": "\\textasciicircum{}", # Don't escape ^ as it is used for math mode
-    }
-
-    # Don't escape links as hyperref package will do it automatically:
-
-    # Find all the links in the sentence:
-    links = re.findall(r"\[.*?\]\(.*?\)", string)
-
-    # Replace the links with a placeholder:
-    for link in links:
-        string = string.replace(link, "!!-link-!!")
-
-    # Loop through the letters of the sentence and if you find an escape character,
-    # replace it with its LaTeX equivalent:
-    copy_of_the_string = list(string)
-    for i, character in enumerate(copy_of_the_string):
-        if character in escape_characters:
-            new_character = escape_characters[character]
-            copy_of_the_string[i] = new_character
-
-    string = "".join(copy_of_the_string)
-    # Replace the links with the original links:
-    for link in links:
-        string = string.replace("!!-link-!!", link)
-
-    return string
-
-
-def markdown_to_latex(markdown_string: str) -> str:
-    """Convert a markdown string to LaTeX.
-
-    This function is called during the reading of the input file. Before the validation
-    process, each input field is converted from markdown to LaTeX.
-
-    Example:
-        ```python
-        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
-        ```
-
-        will return:
-
-        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
-
-    Args:
-        markdown_string (str): The markdown string to convert.
-
-    Returns:
-        str: The LaTeX string.
-    """
-    # convert links
-    links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
-    if links is not None:
-        for link in links:
-            link_text = link[0]
-            link_url = link[1]
-
-            old_link_string = f"[{link_text}]({link_url})"
-            new_link_string = "\\href{" + link_url + "}{" + link_text + "}"
-
-            markdown_string = markdown_string.replace(old_link_string, new_link_string)
-
-    # convert bold
-    bolds = re.findall(r"\*\*([^\*]*)\*\*", markdown_string)
-    if bolds is not None:
-        for bold_text in bolds:
-            old_bold_text = f"**{bold_text}**"
-            new_bold_text = "\\textbf{" + bold_text + "}"
-
-            markdown_string = markdown_string.replace(old_bold_text, new_bold_text)
-
-    # convert italic
-    italics = re.findall(r"\*([^\*]*)\*", markdown_string)
-    if italics is not None:
-        for italic_text in italics:
-            old_italic_text = f"*{italic_text}*"
-            new_italic_text = "\\textit{" + italic_text + "}"
-
-            markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
-
-    # convert code
-    codes = re.findall(r"`([^`]*)`", markdown_string)
-    if codes is not None:
-        for code_text in codes:
-            old_code_text = f"`{code_text}`"
-            new_code_text = "\\texttt{" + code_text + "}"
-
-            markdown_string = markdown_string.replace(old_code_text, new_code_text)
-
-    latex_string = markdown_string
-
-    return latex_string
-
-
-def convert_a_markdown_dictionary_to_a_latex_dictionary(
-    dictionary: dict[str, Any],
-) -> dict[str, Any]:
-    """
-    Recursively loop through a dictionary and convert all the markdown strings (keys and
-    values) to LaTeX. Also, escape special LaTeX characters in the keys and values.
-
-    Example:
-        ```python
-        convert_a_markdown_dictionary_to_a_latex_dictionary(
-            {
-                "key1": "This is a **bold** text with an [*italic link*](https://google.com).",
-                "key2": "This is a **bold** text with an [*italic link*](https://google.com).",
-                "**key3**": {
-                    "key4": "This is a **bold** text with an [*italic link*](https://google.com).",
-                    "key5": "This is a **bold** text with an [*italic link*](https://google.com).",
-                },
-            }
-        )
-        ```
-
-        will return:
-
-        ```python
-        {
-            "key1": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
-            "key2": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
-            "\\textbf{key3}": {
-                "key4": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
-                "key5": "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}.",
-            },
-        }
-        ```
-
-    Args:
-        dictionary (dict): The dictionary to convert.
-    Returns:
-        dict: The LaTeX dictionary.
-    """
-    for key, value in dictionary.copy().items():
-        if isinstance(value, str):
-            # if the value is a string, then apply markdown_to_latex and
-            # escape_latex_characters to it:
-            result = escape_latex_characters(value)
-            dictionary[key] = markdown_to_latex(result)
-        elif isinstance(value, list):
-            # if the value is a list, then loop through the list and apply
-            # markdown_to_latex and escape_latex_characters to each item:
-            for index, item in enumerate(value):
-                if isinstance(item, str):
-                    result = escape_latex_characters(item)
-                    dictionary[key][index] = markdown_to_latex(result)
-                elif isinstance(item, dict):
-                    # if the item is a dictionary, then call loop_through_dictionary
-                    # again:
-                    dictionary[key][index] = (
-                        convert_a_markdown_dictionary_to_a_latex_dictionary(item)
-                    )
-        elif isinstance(value, dict):
-            # if the value is a dictionary, then call loop_through_dictionary again:
-            dictionary[key] = convert_a_markdown_dictionary_to_a_latex_dictionary(value)
-
-        # do the same for the key:
-        result = escape_latex_characters(key)
-        dictionary[markdown_to_latex(result)] = dictionary.pop(key)
-
-    return dictionary
-
-
 def read_input_file(
     file_path: pathlib.Path,
-) -> tuple[RenderCVDataModel, RenderCVDataModel]:
+) -> RenderCVDataModel:
     """Read the input file and return two instances of RenderCVDataModel. The first
     instance is the data model with LaTeX strings and the second instance is the data
     model with markdown strings.
@@ -1282,16 +1097,12 @@ def read_input_file(
         )
 
     file_content = file_path.read_text(encoding="utf-8")
-    original_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
-    parsed_dictionary = convert_a_markdown_dictionary_to_a_latex_dictionary(
-        copy.deepcopy(original_dictionary)
-    )
+    input_as_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
 
     # validate the parsed dictionary by creating an instance of RenderCVDataModel:
-    data_model_markdown = RenderCVDataModel(**original_dictionary)
-    data_model_latex = RenderCVDataModel(**parsed_dictionary)
+    rendercv_data_model = RenderCVDataModel(**input_as_dictionary)
 
-    return data_model_latex, data_model_markdown
+    return rendercv_data_model
 
 
 def get_a_sample_data_model(name: str) -> RenderCVDataModel:
