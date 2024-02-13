@@ -23,6 +23,7 @@ import json
 import re
 import ssl
 import pathlib
+import copy
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
@@ -126,7 +127,7 @@ class RenderCVBaseModel(pydantic.BaseModel):
     unknown key is provided in the input file.
     """
 
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(extra="forbid", validation_error_cause=True)
 
 
 # ======================================================================================
@@ -703,7 +704,12 @@ def get_entry_and_section_type(
         elif "institution" in entry and "area" in entry and "degree" in entry:
             entry_type = "EducationEntry"
             section_type = SectionWithEducationEntries
-        elif "title" in entry and "authors" in entry and "doi" in entry and "date" in entry:
+        elif (
+            "title" in entry
+            and "authors" in entry
+            and "doi" in entry
+            and "date" in entry
+        ):
             entry_type = "PublicationEntry"
             section_type = SectionWithPublicationEntries
         elif "name" in entry:
@@ -765,7 +771,7 @@ def validate_section_input(
                 break
             except ValueError:
                 pass
-        
+
         if entry_type is None or section_type is None:
             raise ValueError(
                 "Please check your entries. They are not provided correctly."
@@ -777,7 +783,19 @@ def validate_section_input(
             "entries": sections_input,
         }
 
-        section_type.model_validate(test_section)
+        try:
+            section_type.model_validate(
+                test_section,
+                context={"section": "test"},
+            )
+        except pydantic.ValidationError as e:
+            new_error = ValueError(
+                "There are problems with the entries. RenderCV detected the entry type"
+                f" of this section to be {entry_type}! The problems are shown below.",
+                "",  # this is the location of the error
+                "",  # this is value of the error
+            )
+            raise new_error from e
 
     return sections_input
 
@@ -974,16 +992,17 @@ class RenderCVDataModel(RenderCVBaseModel):
             # it is a built-in theme
             return design
         else:
+            theme_name: str = design["theme"]  # type: ignore
             # check if the theme name is valid:
-            if not design["theme"].isalpha():  # type: ignore
+            if not theme_name.isalpha():
                 raise ValueError(
                     "The custom theme name should contain only letters.",
                     "theme",  # this is the location of the error
-                    design["theme"],  # this is value of the error # type: ignore
+                    theme_name,  # this is value of the error
                 )
 
             # then it is a custom theme
-            custom_theme_folder = pathlib.Path(design["theme"])  # type: ignore
+            custom_theme_folder = pathlib.Path(theme_name)
 
             # check if the custom theme folder exists:
             if not custom_theme_folder.exists():
@@ -991,12 +1010,11 @@ class RenderCVDataModel(RenderCVBaseModel):
                     f"The custom theme folder `{custom_theme_folder}` does not exist."
                     " It should be in the working directory as the input file.",
                     "",  # this is the location of the error
-                    design["theme"],  # this is value of the error # type: ignore
+                    theme_name,  # this is value of the error
                 )
 
             # check if all the necessary files are provided in the custom theme folder:
             required_files = [
-                "__init__.py",  # design's data model
                 "EducationEntry.j2.tex",  # education entry template
                 "ExperienceEntry.j2.tex",  # experience entry template
                 "NormalEntry.j2.tex",  # normal entry template
@@ -1016,28 +1034,39 @@ class RenderCVDataModel(RenderCVBaseModel):
                         f"You provided a custom theme, but the file `{file}` is not"
                         f" found in the folder `{custom_theme_folder}`.",
                         "",  # this is the location of the error
-                        design["theme"],  # this is value of the error # type: ignore
+                        theme_name,  # this is value of the error
                     )
 
-            # import __init__.py file from the custom theme folder:
-            spec = importlib.util.spec_from_file_location(
-                "", # this is somehow not required
-                pathlib.Path(f"{design["theme"]}/__init__.py"), # type: ignore
-            )
-            if spec is None:
-                raise RuntimeError(
-                    "This error shouldn't have been raised. Please open an issue on GitHub."
+            # import __init__.py file from the custom theme folder if it exists:
+            path_to_init_file = pathlib.Path(f"{theme_name}/__init__.py")
+
+            if path_to_init_file.exists():
+                spec = importlib.util.spec_from_file_location(
+                    "",  # this is somehow not required
+                    path_to_init_file,
                 )
-            else:
+                if spec is None:
+                    raise RuntimeError(
+                        "This error shouldn't have been raised. Please open an issue on"
+                        " GitHub."
+                    )
+
                 theme_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(theme_module) # type: ignore
+                spec.loader.exec_module(theme_module)  # type: ignore
 
                 ThemeDataModel = getattr(
-                    theme_module, f"{design['theme'].title()}ThemeOptions"  # type: ignore
+                    theme_module, f"{theme_name.title()}ThemeOptions"  # type: ignore
                 )
 
                 # initialize and validate the custom theme data model:
                 theme_data_model = ThemeDataModel(**design)
+            else:
+                # Then it means there is no __init__.py file in the custom theme folder.
+                # So, create a dummy data model and use that instead.
+                class ThemeOptionsAreNotProvided(RenderCVBaseModel):
+                    theme: str = theme_name
+
+                theme_data_model = ThemeOptionsAreNotProvided(theme=theme_name)
 
             return theme_data_model
 
@@ -1226,17 +1255,19 @@ def convert_a_markdown_dictionary_to_a_latex_dictionary(
     return dictionary
 
 
-def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
-    """Read the input file and return an instance of RenderCVDataModel.
-
-    This function reads the input file, converts the markdown strings to $\\LaTeX$, and
-    validates the input file with the data models.
+def read_input_file(
+    file_path: pathlib.Path,
+) -> tuple[RenderCVDataModel, RenderCVDataModel]:
+    """Read the input file and return two instances of RenderCVDataModel. The first
+    instance is the data model with LaTeX strings and the second instance is the data
+    model with markdown strings.
 
     Args:
         file_path (str): The path to the input file.
 
     Returns:
-        str: The input file as a string.
+        tuple[RenderCVDataModel, RenderCVDataModel]: The data models with LaTeX and
+        markdown strings.
     """
     # check if the file exists:
     if not file_path.exists():
@@ -1251,15 +1282,16 @@ def read_input_file(file_path: pathlib.Path) -> RenderCVDataModel:
         )
 
     file_content = file_path.read_text(encoding="utf-8")
-    parsed_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
+    original_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
     parsed_dictionary = convert_a_markdown_dictionary_to_a_latex_dictionary(
-        parsed_dictionary
+        copy.deepcopy(original_dictionary)
     )
 
     # validate the parsed dictionary by creating an instance of RenderCVDataModel:
-    data = RenderCVDataModel(**parsed_dictionary)  ## type: ignore
+    data_model_markdown = RenderCVDataModel(**original_dictionary)
+    data_model_latex = RenderCVDataModel(**parsed_dictionary)
 
-    return data
+    return data_model_latex, data_model_markdown
 
 
 def get_a_sample_data_model(name: str) -> RenderCVDataModel:
