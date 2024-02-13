@@ -306,28 +306,26 @@ def cli_command_render(
 
     with LiveProgressReporter(number_of_steps=5) as progress:
         progress.start_a_step("Reading and validating the input file")
-        data_model_latex, data_model_markdown = dm.read_input_file(input_file_path_obj)
+        data_model = dm.read_input_file(input_file_path_obj)
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
         latex_file_path = r.generate_latex_file_and_copy_theme_files(
-            data_model_latex, output_directory
+            data_model, output_directory
         )
         progress.finish_the_current_step()
 
-        # progress.start_a_step("Generating the Markdown file")
-        # markdown_file_path = r.generate_markdown_file(
-        #     data_model_markdown, output_directory
-        # )
+        progress.start_a_step("Generating the Markdown file")
+        markdown_file_path = r.generate_markdown_file(data_model, output_directory)
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
         r.latex_to_pdf(latex_file_path)
         progress.finish_the_current_step()
 
-        # progress.start_a_step("Rendering the Markdown file to a PDF")
-        # r.markdown_to_pdf(markdown_file_path)
-        # progress.finish_the_current_step()
+        progress.start_a_step("Rendering the Markdown file to a HTML (for Grammarly)")
+        r.markdown_to_html(markdown_file_path)
+        progress.finish_the_current_step()
 
 
 @app.command(name="new", help="Generate a YAML input file to get started.")
