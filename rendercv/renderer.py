@@ -19,13 +19,16 @@ from datetime import date as Date
 from typing import Optional, Literal, Any
 
 import jinja2
+import markdown
+import fpdf
 
 from . import data_models as dm
 
 
-class LaTeXFile:
-    """This class represents a $\\LaTeX$ file. It generates the $\\LaTeX$ code with the
-    data model and Jinja2 templates.
+class TemplatedFile:
+    """This class is a base class for LaTeXFile and MarkdownFile classes. It contains
+    the common methods and attributes for both classes. These classes are used to
+    generate the LaTeX and Markdown files with the data model and Jinja2 templates.
 
     Args:
         data_model (dm.RenderCVDataModel): The data model.
@@ -41,33 +44,9 @@ class LaTeXFile:
         self.design = data_model.design
         self.environment = environment
 
-        # Template the preamble, header, and sections:
-        self.preamble = self.template("Preamble")
-        self.header = self.template("Header")
-        self.sections = []
-        for section in self.cv.sections:
-            section_beginning = self.template(
-                "SectionBeginning", section_title=section.title
-            )
-            entries = []
-            for i, entry in enumerate(section.entries):
-                if i == 0:
-                    is_first_entry = True
-                else:
-                    is_first_entry = False
-                entries.append(
-                    self.template(
-                        section.entry_type,
-                        entry=entry,
-                        section_title=section.title,
-                        is_first_entry=is_first_entry,
-                    )
-                )
-            section_ending = self.template("SectionEnding", section_title=section.title)
-            self.sections.append((section_beginning, entries, section_ending))
-
     def template(
         self,
+        theme_name,
         template_name: Literal[
             "EducationEntry",
             "ExperienceEntry",
@@ -80,6 +59,7 @@ class LaTeXFile:
             "SectionBeginning",
             "SectionEnding",
         ],
+        extension: str,
         entry: Optional[
             dm.EducationEntry
             | dm.ExperienceEntry
@@ -108,10 +88,10 @@ class LaTeXFile:
                 section.
 
         Returns:
-            str: The templated $\\LaTeX$ code.
+            str: The templated file.
         """
         template = self.environment.get_template(
-            f"{self.design.theme}/{template_name}.j2.tex"
+            f"{theme_name}/{template_name}.j2.{extension}"
         )
 
         # Loop through the entry attributes and make them "" if they are None:
@@ -129,7 +109,7 @@ class LaTeXFile:
                     entry.__setattr__(key, "")
 
         # The arguments of the template can be used in the template file:
-        latex_code = template.render(
+        result = template.render(
             cv=self.cv,
             design=self.design,
             entry=entry,
@@ -138,21 +118,198 @@ class LaTeXFile:
             is_first_entry=is_first_entry,
         )
 
+        return result
+
+    def get_full_code(self, main_template_name: str, **kwargs) -> str:
+        """Combine all the templates to get the full code of the file."""
+        main_template = self.environment.get_template(main_template_name)
+        latex_code = main_template.render(
+            **kwargs,
+        )
         return latex_code
+
+
+class LaTeXFile(TemplatedFile):
+    """This class represents a $\\LaTeX$ file. It generates the $\\LaTeX$ code with the
+    data model and Jinja2 templates. It inherits from the TemplatedFile class.
+    """
+
+    def render_templates(self):
+        """Render and return all the templates for the $\\LaTeX$ file.
+
+        Returns:
+            Tuple[str, str, List[Tuple[str, List[str], str]]]: The preamble, header, and
+                sections of the $\\LaTeX$ file.
+        """
+        # Template the preamble, header, and sections:
+        preamble = self.template("Preamble")
+        header = self.template("Header")
+        sections = []
+        for section in self.cv.sections:
+            section_beginning = self.template(
+                "SectionBeginning", section_title=section.title
+            )
+            entries = []
+            for i, entry in enumerate(section.entries):
+                if i == 0:
+                    is_first_entry = True
+                else:
+                    is_first_entry = False
+                entries.append(
+                    self.template(
+                        section.entry_type,
+                        entry=entry,
+                        section_title=section.title,
+                        is_first_entry=is_first_entry,
+                    )
+                )
+            section_ending = self.template("SectionEnding", section_title=section.title)
+            sections.append((section_beginning, entries, section_ending))
+
+        return preamble, header, sections
+
+    def template(
+        self,
+        template_name: Literal[
+            "EducationEntry",
+            "ExperienceEntry",
+            "NormalEntry",
+            "PublicationEntry",
+            "OneLineEntry",
+            "TextEntry",
+            "Header",
+            "Preamble",
+            "SectionBeginning",
+            "SectionEnding",
+        ],
+        entry: Optional[
+            dm.EducationEntry
+            | dm.ExperienceEntry
+            | dm.NormalEntry
+            | dm.PublicationEntry
+            | dm.OneLineEntry
+            | str  # TextEntry
+        ] = None,
+        section_title: Optional[str] = None,
+        is_first_entry: Optional[bool] = None,
+    ) -> str:
+        """Template one of the files in the `themes` directory."""
+        result = super().template(
+            self.design.theme,
+            template_name,
+            "tex",
+            entry,
+            section_title,
+            is_first_entry,
+        )
+        return result
 
     def get_latex_code(self):
         """Get the $\\LaTeX$ code of the file."""
-        main_template = self.environment.get_template("main.j2.tex")
-        latex_code = main_template.render(
-            header=self.header,
-            preamble=self.preamble,
-            sections=self.sections,
+        preamble, header, sections = self.render_templates()
+        return self.get_full_code(
+            "main.j2.tex",
+            preamble=preamble,
+            header=header,
+            sections=sections,
         )
-        return latex_code
 
     def generate_latex_file(self, file_path: pathlib.Path):
         """Write the $\\LaTeX$ code to a file."""
         file_path.write_text(self.get_latex_code(), encoding="utf-8")
+
+
+class MarkdownFile(TemplatedFile):
+    """This class represents a Markdown file. It generates the Markdown code with the
+    data model and Jinja2 templates. It inherits from the TemplatedFile class. Markdown
+    files are generated to produce a PDF which can be copy-pasted to
+    [Grammarly](https://app.grammarly.com/) for proofreading.
+
+    Args:
+        data_model (dm.RenderCVDataModel): The data model.
+        environment (jinja2.Environment): The Jinja2 environment.
+    """
+
+    def render_templates(self):
+        """Render and return all the templates for the Markdown file.
+
+        Returns:
+            Tuple[str, List[Tuple[str, List[str]]]: The header and sections of the
+                Markdown file.
+        """
+        # Template the header and sections:
+        header = self.template("Header")
+        sections = []
+        for section in self.cv.sections:
+            section_beginning = self.template(
+                "SectionBeginning", section_title=section.title
+            )
+            entries = []
+            for i, entry in enumerate(section.entries):
+                if i == 0:
+                    is_first_entry = True
+                else:
+                    is_first_entry = False
+                entries.append(
+                    self.template(
+                        section.entry_type,
+                        entry=entry,
+                        section_title=section.title,
+                        is_first_entry=is_first_entry,
+                    )
+                )
+            sections.append((section_beginning, entries))
+
+        return header, sections
+
+    def template(
+        self,
+        template_name: Literal[
+            "EducationEntry",
+            "ExperienceEntry",
+            "NormalEntry",
+            "PublicationEntry",
+            "OneLineEntry",
+            "TextEntry",
+            "Header",
+            "Preamble",
+            "SectionBeginning",
+            "SectionEnding",
+        ],
+        entry: Optional[
+            dm.EducationEntry
+            | dm.ExperienceEntry
+            | dm.NormalEntry
+            | dm.PublicationEntry
+            | dm.OneLineEntry
+            | str  # TextEntry
+        ] = None,
+        section_title: Optional[str] = None,
+        is_first_entry: Optional[bool] = None,
+    ) -> str:
+        """Template one of the files in the `themes` directory."""
+        result = super().template(
+            "markdown",
+            template_name,
+            "md",
+            entry,
+            section_title,
+            is_first_entry,
+        )
+        return result
+
+    def get_markdown_code(self):
+        """Get the Markdown code of the file."""
+        header, sections = self.render_templates()
+        return self.get_full_code(
+            "main.j2.md",
+            header=header,
+            sections=sections,
+        )
+
+    def generate_markdown_file(self, file_path: pathlib.Path):
+        """Write the Markdown code to a file."""
+        file_path.write_text(self.get_markdown_code(), encoding="utf-8")
 
 
 def make_matched_part_something(
@@ -447,6 +604,35 @@ def generate_latex_file(
     return latex_file_path
 
 
+def generate_markdown_file(
+    rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
+) -> pathlib.Path:
+    """Generate the Markdown file with the given data model and write it to the output
+    directory.
+
+    Args:
+        rendercv_data_model (dm.RenderCVDataModel): The data model.
+        output_directory (pathlib.Path): Path to the output directory.
+    Returns:
+        pathlib.Path: The path to the generated Markdown file.
+    """
+    # create output directory if it doesn't exist:
+    if not output_directory.is_dir():
+        output_directory.mkdir(parents=True)
+
+    jinja2_environment = setup_jinja2_environment()
+    markdown_file_object = MarkdownFile(
+        rendercv_data_model,
+        jinja2_environment,
+    )
+
+    markdown_file_name = f"{rendercv_data_model.cv.name.replace(' ', '_')}_CV.md"
+    markdown_file_path = output_directory / markdown_file_name
+    markdown_file_object.generate_markdown_file(markdown_file_path)
+
+    return markdown_file_path
+
+
 def copy_theme_files_to_output_directory(
     theme_name: str, output_directory: pathlib.Path
 ):
@@ -512,9 +698,9 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
     )
 
     executables = {
-        "win32": tinytex_binaries_directory / "windows" / "latexmk.exe",
-        "linux": tinytex_binaries_directory / "x86_64-linux" / "latexmk",
-        "darwin": tinytex_binaries_directory / "universal-darwin" / "latexmk",
+        "win32": tinytex_binaries_directory / "windows" / "pdflatex.exe",
+        "linux": tinytex_binaries_directory / "x86_64-linux" / "pdflatex",
+        "darwin": tinytex_binaries_directory / "universal-darwin" / "pdflatex",
     }
 
     if sys.platform not in executables:
@@ -524,16 +710,15 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
     command = [
         executables[sys.platform],
         str(latex_file_path.absolute()),
-        "-lualatex",
     ]
     with subprocess.Popen(
         command,
         cwd=latex_file_path.parent,
-        stdout=subprocess.DEVNULL,  # don't capture the output
+        stdout=subprocess.PIPE,  # capture the output
         stderr=subprocess.DEVNULL,  # don't capture the error
         stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
     ) as latex_process:
-        latex_process.communicate()  # wait for the process to finish
+        output = latex_process.communicate()  # wait for the process to finish
         if latex_process.returncode != 0:
             raise RuntimeError(
                 "Running TinyTeX has failed! For debugging, we suggest running the"
@@ -542,15 +727,17 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
                 " ".join([str(command_part) for command_part in command]),
                 "If you can't solve the problem, please open an issue on GitHub.",
             )
-
-        # clean the auxiliary files:
-        subprocess.run(
-            command + ["-c"],
-            cwd=latex_file_path.parent,
-            stdout=subprocess.DEVNULL,  # don't capture the output
-            stderr=subprocess.DEVNULL,  # don't capture the error
-            stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
-        )
+        else:
+            output = output[0].decode("utf-8")
+            if "Rerun to get" in output:
+                # Run TinyTeX again to get the references right:
+                subprocess.run(
+                    command,
+                    cwd=latex_file_path.parent,
+                    stdout=subprocess.DEVNULL,  # don't capture the output
+                    stderr=subprocess.DEVNULL,  # don't capture the error
+                    stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+                )
 
     # check if the PDF file is generated:
     pdf_file_path = latex_file_path.with_suffix(".pdf")
@@ -559,5 +746,48 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
             "The PDF file couldn't be generated! If you can't solve the problem,"
             " please try to re-install RenderCV, or open an issue on GitHub."
         )
+
+    return pdf_file_path
+
+
+def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
+    """C
+    Args:
+        markdown_file_path (pathlib.Path): The path to the Markdown file to convert.
+    Returns:
+        pathlib.Path: The path to the generated PDF file.
+    """
+
+    # check if the file exists:
+    if not markdown_file_path.is_file():
+        raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
+
+    pdf_file_path = markdown_file_path.with_suffix(".pdf")
+
+    # Convert the markdown file to HTML:
+    html = markdown.markdown(markdown_file_path.read_text(encoding="utf-8"))
+
+    # write html into a file:
+    html_file_path = markdown_file_path.with_suffix(".html")
+    html_file_path.write_text(html, encoding="utf-8")
+
+    # Convert the HTML to PDF:
+    # classic_theme_fonts_path = (
+    #     pathlib.Path(__file__).parent / "themes" / "classic" / "fonts"
+    # )
+    # regular_font_path = classic_theme_fonts_path / "SourceSans3-Regular.ttf"
+    # bold_font_path = classic_theme_fonts_path / "SourceSans3-Bold.ttf"
+    # italic_font_path = classic_theme_fonts_path / "SourceSans3-Italic.ttf"
+    # bold_italic_font_path = classic_theme_fonts_path / "SourceSans3-BoldItalic.ttf"
+    # pdf = fpdf.FPDF()
+    # pdf.add_page()
+    # pdf.add_font("SourceSans3", "", regular_font_path)
+    # pdf.add_font("SourceSans3", "B", bold_font_path)
+    # pdf.add_font("SourceSans3", "I", italic_font_path)
+    # pdf.add_font("SourceSans3", "BI", bold_italic_font_path) # type: ignore
+    # pdf.set_font("SourceSans3", size=10)
+    # pdf.write_html(html)
+    # os.chdir(markdown_file_path.parent)
+    # pdf.output(pdf_file_path.name)
 
     return pdf_file_path
