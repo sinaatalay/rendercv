@@ -104,21 +104,36 @@ def handle_validation_error(exception: pydantic.ValidationError):
         "Value error, day is out of range for month": (
             "The day is out of range for the month!"
         ),
-        "Extra inputs are not permitted": (
-            "This field is unknown for this object. Are you sure you are following the"
-            " correct schema?"
-        ),
+        "Extra inputs are not permitted": "This field is unknown for this object.",
     }
     new_errors: list[dict[str, str]] = []
     end_date_error_is_found = False
-    for error_object in exception.errors():
+    errors = exception.errors()
+
+    # Check if there are nested errors and flatten them:
+    # This is needed because of validate_section_input function. We need to tell the
+    # users what is the entry type RenderCV is looking for, for the given section.
+    for error_object in errors.copy():
+        if "ctx" in error_object:
+            location = error_object["loc"]
+            ctx_object = error_object["ctx"]
+            if "error" in ctx_object:
+                error_object = ctx_object["error"]
+                if hasattr(error_object, "__cause__"):
+                    cause_object = error_object.__cause__
+                    cause_object_errors = cause_object.errors()
+                    for cause_error_object in cause_object_errors:
+                        # we use 1: to avoid `entries` location. It is a location for
+                        # RenderCV's own data model, not the user's data model.
+                        cause_error_object["loc"] = tuple(
+                            list(location) + list(cause_error_object["loc"][1:])
+                        )
+                    errors.extend(cause_object_errors)
+
+    for error_object in errors:
         message = error_object["msg"]
         location = ".".join([str(loc) for loc in error_object["loc"]])
         input = error_object["input"]
-
-        # remove `.entries.` because that location is not user's location but
-        # RenderCV's own data model's location
-        location = location.replace(".entries", "")
 
         custom_error = get_error_message_and_location_and_value_from_a_custom_error(
             message
@@ -289,20 +304,30 @@ def cli_command_render(
 
     output_directory = input_file_path_obj.parent / "rendercv_output"
 
-    with LiveProgressReporter(number_of_steps=3) as progress:
+    with LiveProgressReporter(number_of_steps=5) as progress:
         progress.start_a_step("Reading and validating the input file")
-        data_model = dm.read_input_file(input_file_path_obj)
+        data_model_latex, data_model_markdown = dm.read_input_file(input_file_path_obj)
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
         latex_file_path = r.generate_latex_file_and_copy_theme_files(
-            data_model, output_directory
+            data_model_latex, output_directory
         )
+        progress.finish_the_current_step()
+
+        # progress.start_a_step("Generating the Markdown file")
+        # markdown_file_path = r.generate_markdown_file(
+        #     data_model_markdown, output_directory
+        # )
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
         r.latex_to_pdf(latex_file_path)
         progress.finish_the_current_step()
+
+        # progress.start_a_step("Rendering the Markdown file to a PDF")
+        # r.markdown_to_pdf(markdown_file_path)
+        # progress.finish_the_current_step()
 
 
 @app.command(name="new", help="Generate a YAML input file to get started.")
