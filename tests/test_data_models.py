@@ -2,6 +2,7 @@ from datetime import date as Date
 import json
 import pathlib
 import os
+import shutil
 
 import pydantic
 import pytest
@@ -120,8 +121,9 @@ def test_convert_md_to_latex(input_dict, expected_dict):
 
 
 def test_read_input_file(input_file_path):
-    data_model = dm.read_input_file(input_file_path)
-    assert isinstance(data_model, dm.RenderCVDataModel)
+    data_model_latex, data_model_markdown = dm.read_input_file(input_file_path)
+    assert isinstance(data_model_latex, dm.RenderCVDataModel)
+    assert isinstance(data_model_markdown, dm.RenderCVDataModel)
 
 
 def test_read_input_file_not_found():
@@ -607,6 +609,26 @@ def test_custom_theme_with_missing_files(tmp_path):
 
 def test_custom_theme(reference_files_directory_path):
     os.chdir(reference_files_directory_path)
+    data_model = dm.RenderCVDataModel(**{  # type: ignore
+        "cv": {"name": "John Doe"},
+        "design": {"theme": "dummytheme"},
+    })
+
+    assert data_model.design.theme == "dummytheme"
+
+
+def test_custom_theme_without_init_file(tmp_path, reference_files_directory_path):
+    reference_custom_theme_path = reference_files_directory_path / "dummytheme"
+
+    # copy the directory to tmp_path:
+    custom_theme_path = tmp_path / "dummytheme"
+    shutil.copytree(reference_custom_theme_path, custom_theme_path, dirs_exist_ok=True)
+
+    # remove the __init__.py file:
+    init_file = custom_theme_path / "__init__.py"
+    init_file.unlink()
+
+    os.chdir(tmp_path)
     data_model = dm.RenderCVDataModel(**{  # type: ignore
         "cv": {"name": "John Doe"},
         "design": {"theme": "dummytheme"},
