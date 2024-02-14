@@ -74,13 +74,13 @@ def information(text):
 
 def get_error_message_and_location_and_value_from_a_custom_error(
     error_string: str,
-) -> Optional[tuple[str, str, str]]:
-    pattern = r"\('(.*)', '(.*)', '(.*)'\)"
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    pattern = r"""\(['"](.*)['"], '(.*)', '(.*)'\)"""
     match = re.search(pattern, error_string)
     if match:
         return match.group(1), match.group(2), match.group(3)
     else:
-        return None
+        return None, None, None
 
 
 def handle_validation_error(exception: pydantic.ValidationError):
@@ -104,7 +104,13 @@ def handle_validation_error(exception: pydantic.ValidationError):
         "Value error, day is out of range for month": (
             "The day is out of range for the month!"
         ),
-        "Extra inputs are not permitted": "This field is unknown for this object.",
+        "Extra inputs are not permitted": (
+            "This field is unknown for this object! Please remove it."
+        ),
+        "Input should be a valid string": "This field should be a string!",
+        "Input should be a valid list": (
+            "This field should contain a list of items but it doesn't!"
+        ),
     }
     new_errors: list[dict[str, str]] = []
     end_date_error_is_found = False
@@ -114,7 +120,10 @@ def handle_validation_error(exception: pydantic.ValidationError):
     # This is needed because how dm.validate_section_input function raises an exception.
     # This is done to tell the user which which EntryType RenderCV excepts to see.
     for error_object in errors.copy():
-        if "Please check your entries" in error_object["msg"] and "ctx" in error_object:
+        if (
+            "There are problems with the entries." in error_object["msg"]
+            and "ctx" in error_object
+        ):
             location = error_object["loc"]
             ctx_object = error_object["ctx"]
             if "error" in ctx_object:
@@ -130,19 +139,34 @@ def handle_validation_error(exception: pydantic.ValidationError):
                         )
                     errors.extend(cause_object_errors)
 
+    # some locations are not really the locations in the input file, but some
+    # information about the model coming from Pydantic. We need to remove them.
+    # (e.g. avoid stuff like .end_date.literal['present'])
+    unwanted_locations = ["tagged-union", "list", "literal"]
+    for error_object in errors:
+        location = error_object["loc"]
+        new_location = [str(location_element) for location_element in location]
+        for location_element in location:
+            location_element = str(location_element)
+            for unwanted_location in unwanted_locations:
+                if unwanted_location in location_element:
+                    new_location.remove(location_element)
+        error_object["loc"] = new_location  # type: ignore
+
     for error_object in errors:
         message = error_object["msg"]
-        location = ".".join([str(loc) for loc in error_object["loc"]])
+        location = ".".join(error_object["loc"])  # type: ignore
         input = error_object["input"]
 
-        custom_error = get_error_message_and_location_and_value_from_a_custom_error(
-            message
+        custom_message, custom_location, custom_input_value = (
+            get_error_message_and_location_and_value_from_a_custom_error(message)
         )
-        if custom_error is not None:
-            message = custom_error[0]
-            if custom_error[1] != "":
-                location = f"{location}.{custom_error[1]}"
-            input = custom_error[2]
+        if custom_message is not None:
+            message = custom_message
+            if custom_location != "":
+                # If the custom location is not empty, then add it to the location.
+                location = f"{location}.{custom_location}"
+            input = custom_input_value
 
         if message in error_dictionary:
             message = error_dictionary[message]
@@ -153,13 +177,15 @@ def handle_validation_error(exception: pydantic.ValidationError):
             if end_date_error_is_found:
                 continue
             end_date_error_is_found = True
-            # omit the next location after .end_date
-            # (e.g. avoid stuff like .end_date.literal['present'])
-            # location = re.sub(r"(\.end_date)\..*", r"\1", location)
             message = (
                 "This is not a valid end date! Please use either YYYY-MM-DD, YYYY-MM,"
                 ' or YYYY format or "present"!'
             )
+
+        if isinstance(input, (dict, list)):
+            # If the input is a dictionary (the model itself fails to validate),
+            # then don't show the input. It looks confusing and it is not helpful.
+            input = ""
 
         new_errors.append({
             "loc": str(location),
