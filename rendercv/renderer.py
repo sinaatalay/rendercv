@@ -965,7 +965,9 @@ def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
     if not markdown_file_path.is_file():
         raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
 
-    html_file_path = markdown_file_path.with_suffix(".html")
+    html_file_path = (
+        markdown_file_path.parent / f"{markdown_file_path.name}_PASTETOGRAMMARLY.html"
+    )
 
     # Convert the markdown file to HTML:
     html = markdown.markdown(markdown_file_path.read_text(encoding="utf-8"))
