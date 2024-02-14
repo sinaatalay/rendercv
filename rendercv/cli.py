@@ -1,5 +1,8 @@
 """
-to be continued...
+This module contains the functions and classes that handle the command line interface
+(CLI) of RenderCV. It uses [Typer](https://typer.tiangolo.com/) to create the CLI and
+[Rich](https://rich.readthedocs.io/en/latest/) to provide a nice looking terminal
+output.
 """
 
 import json
@@ -51,12 +54,21 @@ def welcome():
 
 
 def warning(text):
-    """Print a warning message to the terminal."""
+    """Print a warning message to the terminal.
+
+    Args:
+        text (str): The text of the warning message.
+    """
     print(f"[bold yellow]{text}")
 
 
 def error(text, exception=None):
-    """Print an error message to the terminal."""
+    """Print an error message to the terminal.
+
+    Args:
+        text (str): The text of the error message.
+        exception (Exception, optional): An exception object. Defaults to None.
+    """
     if exception is not None:
         exception_messages = [str(arg) for arg in exception.args]
         exception_message = "\n\n".join(exception_messages)
@@ -68,13 +80,34 @@ def error(text, exception=None):
 
 
 def information(text):
-    """Print an information message to the terminal."""
+    """Print an information message to the terminal.
+
+    Args:
+        text (str): The text of the information message.
+    """
     print(f"[bold green]{text}")
 
 
 def get_error_message_and_location_and_value_from_a_custom_error(
     error_string: str,
 ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    """Look at a string and figure out if it's a custom error message that has been
+    sent from [`data_models.py`](data_models.md). If it is, then return the custom
+    message, location, and the input value.
+
+    This is done because sometimes we raise an error about a specific field in the model
+    validation level, but Pydantic doesn't give us the exact location of the error
+    because it's a model-level error. So, we raise a custom error with three string
+    arguments: message, location, and input value. Those arguments then combined into a
+    string by Python. This function is used to parse that custom error message and
+    return the three values.
+
+    Args:
+        error_string (str): The error message.
+    Returns:
+        tuple[Optional[str], Optional[str], Optional[str]]: The custom message,
+            location, and the input value.
+    """
     pattern = r"""\(['"](.*)['"], '(.*)', '(.*)'\)"""
     match = re.search(pattern, error_string)
     if match:
@@ -84,6 +117,18 @@ def get_error_message_and_location_and_value_from_a_custom_error(
 
 
 def handle_validation_error(exception: pydantic.ValidationError):
+    """Take a Pydantic validation error and print the error messages in a nice table.
+
+    Pydantic's ValidationError object is a complex object that contains a lot of
+    information about the error. This function takes a ValidationError object and
+    extracts the error messages, locations, and the input values. Then, it prints them
+    in a nice table with [Rich](https://rich.readthedocs.io/en/latest/).
+
+    Args:
+        exception (pydantic.ValidationError): The Pydantic validation error object.
+    """
+    # This dictionary is used to convert the error messages that Pydantic returns to
+    # more user-friendly messages.
     error_dictionary: dict[str, str] = {
         "Input should be 'present'": (
             "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or YYYY"
@@ -112,13 +157,11 @@ def handle_validation_error(exception: pydantic.ValidationError):
             "This field should contain a list of items but it doesn't!"
         ),
     }
-    new_errors: list[dict[str, str]] = []
-    end_date_error_is_found = False
-    errors = exception.errors()
 
-    # Check if this is a section error. If it is, we need to
+    # Check if this is a section error. If it is, we need to handle it differently.
     # This is needed because how dm.validate_section_input function raises an exception.
     # This is done to tell the user which which EntryType RenderCV excepts to see.
+    errors = exception.errors()
     for error_object in errors.copy():
         if (
             "There are problems with the entries." in error_object["msg"]
@@ -132,7 +175,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
                     cause_object = error_object.__cause__
                     cause_object_errors = cause_object.errors()
                     for cause_error_object in cause_object_errors:
-                        # we use 1: to avoid `entries` location. It is a location for
+                        # we use [1:] to avoid `entries` location. It is a location for
                         # RenderCV's own data model, not the user's data model.
                         cause_error_object["loc"] = tuple(
                             list(location) + list(cause_error_object["loc"][1:])
@@ -153,11 +196,15 @@ def handle_validation_error(exception: pydantic.ValidationError):
                     new_location.remove(location_element)
         error_object["loc"] = new_location  # type: ignore
 
+    # Parse all the errors and create a new list of errors.
+    new_errors: list[dict[str, str]] = []
+    end_date_error_is_found = False
     for error_object in errors:
         message = error_object["msg"]
         location = ".".join(error_object["loc"])  # type: ignore
         input = error_object["input"]
 
+        # Check if this is a custom error message:
         custom_message, custom_location, custom_input_value = (
             get_error_message_and_location_and_value_from_a_custom_error(message)
         )
@@ -168,6 +215,8 @@ def handle_validation_error(exception: pydantic.ValidationError):
                 location = f"{location}.{custom_location}"
             input = custom_input_value
 
+        # Convert the error message to a more user-friendly message if it's in the
+        # error_dictionary:
         if message in error_dictionary:
             message = error_dictionary[message]
 
@@ -182,9 +231,9 @@ def handle_validation_error(exception: pydantic.ValidationError):
                 ' or YYYY format or "present"!'
             )
 
+        # If the input is a dictionary or a list (the model itself fails to validate),
+        # then don't show the input. It looks confusing and it is not helpful.
         if isinstance(input, (dict, list)):
-            # If the input is a dictionary (the model itself fails to validate),
-            # then don't show the input. It looks confusing and it is not helpful.
             input = ""
 
         new_errors.append({
@@ -193,6 +242,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
             "input": str(input),
         })
 
+    # Print the errors in a nice table:
     table = rich.table.Table(
         title="[bold red]\nThere are some errors in the input file!\n",
         title_justify="left",
@@ -210,11 +260,35 @@ def handle_validation_error(exception: pydantic.ValidationError):
         )
 
     print(table)
-    print()
+    print()  # Add an empty line at the end to make it look better.
 
 
 def handle_exceptions(function: Callable) -> Callable:
-    """ """
+    """Return a wrapper function that handles exceptions.
+
+    A decorator in Python is a syntactic convenience that allows a Python to interpret
+    the code below:
+
+    ```python
+    @handle_exceptions
+    def my_function():
+        pass
+    ```
+    as
+    ```python
+    handle_exceptions(my_function)()
+    ```
+    which is step by step equivalent to
+
+    1.  Execute `#!python handle_exceptions(my_function)` which will return the
+        function called `wrapper`.
+    2.  Execute `#!python wrapper()`.
+
+    Args:
+        function (Callable): The function to be wrapped.
+    Returns:
+        Callable: The wrapped function.
+    """
 
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
