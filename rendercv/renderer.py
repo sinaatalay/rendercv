@@ -481,7 +481,10 @@ def transform_markdown_data_model_to_latex_data_model(
             setattr(data_model, key, transformed_list)
         elif isinstance(value, dict):
             if key == "sections_input":
-                # Then it means it's the `sections` field:
+                # Then it means it's the `sections` field, it is a dictionary but
+                # not a sub data model. Therefore the same function cannot be called.
+                # So, loop through the dictionary and apply markdown_to_latex and
+                # escape_latex_characters to each item:
                 sections = getattr(data_model, key)
                 for section_title, entries in sections.items():
                     transformed_entries = []
@@ -959,32 +962,12 @@ def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
     if not markdown_file_path.is_file():
         raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
 
-    pdf_file_path = markdown_file_path.with_suffix(".pdf")
+    html_file_path = markdown_file_path.with_suffix(".html")
 
     # Convert the markdown file to HTML:
     html = markdown.markdown(markdown_file_path.read_text(encoding="utf-8"))
 
     # write html into a file:
-    html_file_path = markdown_file_path.with_suffix(".html")
     html_file_path.write_text(html, encoding="utf-8")
 
-    # Convert the HTML to PDF:
-    # classic_theme_fonts_path = (
-    #     pathlib.Path(__file__).parent / "themes" / "classic" / "fonts"
-    # )
-    # regular_font_path = classic_theme_fonts_path / "SourceSans3-Regular.ttf"
-    # bold_font_path = classic_theme_fonts_path / "SourceSans3-Bold.ttf"
-    # italic_font_path = classic_theme_fonts_path / "SourceSans3-Italic.ttf"
-    # bold_italic_font_path = classic_theme_fonts_path / "SourceSans3-BoldItalic.ttf"
-    # pdf = fpdf.FPDF()
-    # pdf.add_page()
-    # pdf.add_font("SourceSans3", "", regular_font_path)
-    # pdf.add_font("SourceSans3", "B", bold_font_path)
-    # pdf.add_font("SourceSans3", "I", italic_font_path)
-    # pdf.add_font("SourceSans3", "BI", bold_italic_font_path) # type: ignore
-    # pdf.set_font("SourceSans3", size=10)
-    # pdf.write_html(html)
-    # os.chdir(markdown_file_path.parent)
-    # pdf.output(pdf_file_path.name)
-
-    return pdf_file_path
+    return html_file_path
