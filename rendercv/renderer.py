@@ -486,10 +486,14 @@ def transform_markdown_data_model_to_latex_data_model(
                 for section_title, entries in sections.items():
                     transformed_entries = []
                     for entry in entries:
-                        transformed_entry = (
-                            transform_markdown_data_model_to_latex_data_model(entry)
-                        )
-                        transformed_entries.append(transformed_entry)
+                        if isinstance(entry, str):
+                            result = markdown_to_latex(escape_latex_characters(entry))
+                            transformed_entries.append(result)
+                        else:
+                            transformed_entry = (
+                                transform_markdown_data_model_to_latex_data_model(entry)
+                            )
+                            transformed_entries.append(transformed_entry)
                 setattr(data_model, key, sections)
             else:
                 # Then it means it's a sub data model.
