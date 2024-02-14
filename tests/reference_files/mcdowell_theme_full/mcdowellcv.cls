@@ -53,9 +53,9 @@
 \usepackage[left=0.75in,top=0.6in,right=0.75in,bottom=0.6in]{geometry}
 
 % Set font face
-\usepackage{fontspec}
-\setmainfont[SmallCapsFeatures={Renderer=Basic},
-Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
+% \usepackage{fontspec}
+% \setmainfont[SmallCapsFeatures={Renderer=Basic},
+% Ligatures={TeX, NoCommon, NoDiscretionary}]{\mainfontface}
 
 % Remove paragraph indentation
 \usepackage[parfill]{parskip}
