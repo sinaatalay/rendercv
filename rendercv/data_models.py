@@ -1212,9 +1212,9 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
         sections=sections,
     )
 
-    desgin = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
+    design = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
 
-    return RenderCVDataModel(cv=cv, design=desgin)
+    return RenderCVDataModel(cv=cv, design=design)
 
 
 def generate_json_schema() -> dict:

@@ -435,8 +435,8 @@ def cli_command_new(full_name: Annotated[str, typer.Argument(help="Your full nam
     file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
     file_path = pathlib.Path(file_name)
 
-    # Instead of getting the dictionary with data_model.model_dump() directy, we convert
-    # it to JSON and then to a dictionary. Because the YAML library we are using
+    # Instead of getting the dictionary with data_model.model_dump() directly, we
+    # convert it to JSON and then to a dictionary. Because the YAML library we are using
     # sometimes has problems with the dictionary returned by model_dump().
     data_model_as_json = data_model.model_dump_json(
         exclude_none=True, by_alias=True, exclude={"cv": {"sections"}}

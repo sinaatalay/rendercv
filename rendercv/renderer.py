@@ -385,7 +385,7 @@ def markdown_to_latex(markdown_string: str) -> str:
 
         will return:
 
-        `#!pytjon "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
+        `#!python "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
 
     Args:
         markdown_string (str): The markdown string to convert.
