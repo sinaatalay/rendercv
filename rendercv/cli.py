@@ -110,11 +110,11 @@ def handle_validation_error(exception: pydantic.ValidationError):
     end_date_error_is_found = False
     errors = exception.errors()
 
-    # Check if there are nested errors and flatten them:
-    # This is needed because of validate_section_input function. We need to tell the
-    # users what is the entry type RenderCV is looking for, for the given section.
+    # Check if this is a section error. If it is, we need to
+    # This is needed because how dm.validate_section_input function raises an exception.
+    # This is done to tell the user which which EntryType RenderCV excepts to see.
     for error_object in errors.copy():
-        if "ctx" in error_object:
+        if "Please check your entries" in error_object["msg"] and "ctx" in error_object:
             location = error_object["loc"]
             ctx_object = error_object["ctx"]
             if "error" in ctx_object:

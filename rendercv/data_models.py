@@ -1126,8 +1126,6 @@ def get_a_sample_data_model(name: str) -> RenderCVDataModel:
                 position="Your Position",
                 date="My Whole Life",
                 location="USA",
-                url="https://yourcompany.com",  # type: ignore
-                url_text="view company website",
                 highlights=[
                     "Did something great.",
                     "Did something else great.",
@@ -1158,8 +1156,6 @@ def get_a_sample_data_model(name: str) -> RenderCVDataModel:
                 name="Your Project",
                 location="Istanbul, Turkey",
                 date="2015-01",
-                url="https://yourproject.com",  # type: ignore
-                url_text="view details",
                 highlights=[
                     "Did something **great**.",
                     "Did *something* else great.",
@@ -1186,8 +1182,6 @@ def get_a_sample_data_model(name: str) -> RenderCVDataModel:
                     position="Your Position",
                     date="My Whole Life",
                     location="USA",
-                    url="https://yourcompany.com",  # type: ignore
-                    url_text="view company website",
                     highlights=[
                         "Did something great.",
                         "Did something else great.",
