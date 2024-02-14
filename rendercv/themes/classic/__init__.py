@@ -131,11 +131,7 @@ class ClassicThemeOptions(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid")
 
     theme: Literal["classic"]
-    font: Literal["SourceSans3", "Roboto", "EBGaramond"] = pydantic.Field(
-        default="SourceSans3",
-        title="Font",
-        description="The font of the CV.",
-    )
+
     font_size: Literal["10pt", "11pt", "12pt"] = pydantic.Field(
         default="10pt",
         title="Font Size",
@@ -146,7 +142,7 @@ class ClassicThemeOptions(pydantic.BaseModel):
         title="Page Size",
         description="The page size of the CV. It can be a4paper or letterpaper.",
     )
-    primary_color: pydantic_color.Color = pydantic.Field(
+    color: pydantic_color.Color = pydantic.Field(
         default="rgb(0,79,144)",
         validate_default=True,
         title="Primary Color",
@@ -157,6 +153,13 @@ class ClassicThemeOptions(pydantic.BaseModel):
             " value, RGB value, or HSL value."
         ),
         examples=["Black", "7fffd4", "rgb(0,79,144)", "hsl(270, 60%, 70%)"],
+    )
+    disable_page_numbering: bool = pydantic.Field(
+        default=False,
+        title="Disable Page Numbering",
+        description=(
+            "If this option is set to true, then the page numbering will be disabled."
+        ),
     )
     date_and_location_width: LaTeXDimension = pydantic.Field(
         default="4.1 cm",
