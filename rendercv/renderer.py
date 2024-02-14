@@ -951,13 +951,16 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
 
 
 def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
-    """C
-    Args:
-        markdown_file_path (pathlib.Path): The path to the Markdown file to convert.
-    Returns:
-        pathlib.Path: The path to the generated PDF file.
-    """
+    """Convert a markdown file to HTML.
 
+    RenderCV doesn't produce an HTML file as the final output, but generates it for
+    users to easily copy and paste the HTML into Grammarly for proofreading purposes.
+
+    Args:
+        markdown_file_path (pathlib.Path): The path to the markdown file to convert.
+    Returns:
+        pathlib.Path: The path to the generated HTML file.
+    """
     # check if the file exists:
     if not markdown_file_path.is_file():
         raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
