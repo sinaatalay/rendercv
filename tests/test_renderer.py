@@ -243,7 +243,7 @@ def test_setup_jinja2_environment():
 
 
 themes = ["classic", "moderncv", "mcdowell"]
-update_reference_files = True
+update_reference_files = False
 
 
 @pytest.mark.parametrize(
@@ -397,7 +397,9 @@ def test_latex_to_pdf_invalid_latex_file():
 @time_machine.travel("2024-01-01")
 def test_markdown_to_html(tmp_path, reference_files_directory_path, theme_name):
     reference_directory = reference_files_directory_path / "markdown_and_html_files"
-    reference_html_file_path = reference_directory / f"{theme_name}_theme_CV.html"
+    reference_html_file_path = (
+        reference_directory / f"{theme_name}_theme_CV_PASTETOGRAMMARLY.html"
+    )
 
     shutil.copytree(reference_directory, tmp_path, dirs_exist_ok=True)
     output_html_file_path = r.markdown_to_html(tmp_path / f"{theme_name}_theme_CV.md")
