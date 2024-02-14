@@ -56,74 +56,9 @@ def test_format_date(date, expected_date_string):
     assert dm.format_date(date) == expected_date_string
 
 
-@pytest.mark.parametrize(
-    "string, expected_string",
-    [
-        ("My Text", "My Text"),
-        ("My # Text", "My \\# Text"),
-        ("My % Text", "My \\% Text"),
-        ("My & Text", "My \\& Text"),
-        ("My ~ Text", "My \\textasciitilde{} Text"),
-        ("##%%&&~~", "\\#\\#\\%\\%\\&\\&\\textasciitilde{}\\textasciitilde{}"),
-    ],
-)
-def test_escape_latex_characters(string, expected_string):
-    assert dm.escape_latex_characters(string) == expected_string
-
-
-@pytest.mark.parametrize(
-    "markdown_string, expected_latex_string",
-    [
-        ("My Text", "My Text"),
-        ("**My** Text", "\\textbf{My} Text"),
-        ("*My* Text", "\\textit{My} Text"),
-        ("***My*** Text", "\\textit{\\textbf{My}} Text"),
-        ("[My](https://myurl.com) Text", "\\href{https://myurl.com}{My} Text"),
-        ("`My` Text", "\\texttt{My} Text"),
-        (
-            "[**My** *Text* ***Is*** `Here`](https://myurl.com)",
-            (
-                "\\href{https://myurl.com}{\\textbf{My} \\textit{Text}"
-                " \\textit{\\textbf{Is}} \\texttt{Here}}"
-            ),
-        ),
-    ],
-)
-def test_markdown_to_latex(markdown_string, expected_latex_string):
-    assert dm.markdown_to_latex(markdown_string) == expected_latex_string
-
-
-@pytest.mark.parametrize(
-    "input_dict, expected_dict",
-    [
-        # Test 1: Basic key-value pairs
-        ({"k1": "v1"}, {"k1": "v1"}),
-        # Test 2: Bold and italic markdown in keys
-        ({"**k1**": "v1", "*k2*": "v2"}, {"\\textbf{k1}": "v1", "\\textit{k2}": "v2"}),
-        # Test 3: Links in keys
-        ({"[k1](https://g.com)": "v1"}, {"\\href{https://g.com}{k1}": "v1"}),
-        # Test 4: Nested dictionary
-        ({"k1": {"**k2**": "v2"}}, {"k1": {"\\textbf{k2}": "v2"}}),
-        # Test 5: List of strings
-        ({"k1": ["v1", "v2"]}, {"k1": ["v1", "v2"]}),
-        # Test 6: List of dictionaries
-        (
-            {"k1": [{"k2": "v2"}, {"*k3*": "v3"}]},
-            {"k1": [{"k2": "v2"}, {"\\textit{k3}": "v3"}]},
-        ),
-    ],
-)
-def test_convert_md_to_latex(input_dict, expected_dict):
-    assert (
-        dm.convert_a_markdown_dictionary_to_a_latex_dictionary(input_dict)
-        == expected_dict
-    )
-
-
 def test_read_input_file(input_file_path):
-    data_model_latex, data_model_markdown = dm.read_input_file(input_file_path)
-    assert isinstance(data_model_latex, dm.RenderCVDataModel)
-    assert isinstance(data_model_markdown, dm.RenderCVDataModel)
+    data_model = dm.read_input_file(input_file_path)
+    assert isinstance(data_model, dm.RenderCVDataModel)
 
 
 def test_read_input_file_not_found():
@@ -334,22 +269,6 @@ def test_invalid_dates(start_date, end_date, date):
 
 
 @pytest.mark.parametrize(
-    "url, url_text, expected_url_text",
-    [
-        ("https://linkedin.com", None, "view on LinkedIn"),
-        ("https://github.com", None, "view on GitHub"),
-        ("https://instagram.com", None, "view on Instagram"),
-        ("https://youtube.com", None, "view on YouTube"),
-        ("https://twitter.com", "My URL Text", "My URL Text"),
-        ("https://google.com", None, "view on my website"),
-    ],
-)
-def test_url_text(url, url_text, expected_url_text):
-    entry_base = dm.EntryBase(url=url, url_text=url_text)
-    assert entry_base.url_text == expected_url_text
-
-
-@pytest.mark.parametrize(
     "doi, expected_doi_url",
     [
         ("10.1109/TASC.2023.3340648", "https://doi.org/10.1109/TASC.2023.3340648"),
@@ -439,140 +358,53 @@ def test_get_entry_and_section_type(
         assert section_type == expected_section_type
 
 
-@pytest.mark.parametrize(
-    "title, default_entry",
-    [
-        ("Education", "education_entry"),
-        ("Experience", "experience_entry"),
-        ("Work Experience", "experience_entry"),
-        ("Research Experience", "experience_entry"),
-        ("Publications", "publication_entry"),
-        ("Papers", "publication_entry"),
-        ("Projects", "normal_entry"),
-        ("Academic Projects", "normal_entry"),
-        ("University Projects", "normal_entry"),
-        ("Personal Projects", "normal_entry"),
-        ("Certificates", "normal_entry"),
-        ("Extracurricular Activities", "experience_entry"),
-        ("Test Scores", "one_line_entry"),
-        ("Skills", "one_line_entry"),
-        ("programming_skills", "normal_entry"),
-        ("other_skills", "one_line_entry"),
-        ("Awards", "one_line_entry"),
-        ("Interests", "one_line_entry"),
-        ("Summary", "text_entry"),
-    ],
-)
-def test_sections_with_default_types(
+def test_sections(
     education_entry,
     experience_entry,
     publication_entry,
     normal_entry,
     one_line_entry,
     text_entry,
-    title,
-    default_entry,
 ):
     input = {
         "name": "John Doe",
         "sections": {
-            title: [
-                eval(default_entry),
-                eval(default_entry),
+            "arbitrary_title": [
+                education_entry,
+                education_entry,
+            ],
+            "arbitrary_title_2": [
+                experience_entry,
+                experience_entry,
+            ],
+            "arbitrary_title_3": [
+                publication_entry,
+                publication_entry,
+            ],
+            "arbitrary_title_4": [
+                normal_entry,
+                normal_entry,
+            ],
+            "arbitrary_title_5": [
+                one_line_entry,
+                one_line_entry,
+            ],
+            "arbitrary_title_6": [
+                text_entry,
+                text_entry,
             ],
         },
     }
 
     cv = dm.CurriculumVitae(**input)
-    assert len(cv.sections) == 1
-    assert len(cv.sections[0].entries) == 2
-
-    # test with other entry types:
-    entries = [
-        (education_entry, "EducationEntry"),
-        (experience_entry, "ExperienceEntry"),
-        (publication_entry, "PublicationEntry"),
-        (normal_entry, "NormalEntry"),
-        (one_line_entry, "OneLineEntry"),
-        (text_entry, "TextEntry"),
-    ]
-    for entry, entry_type in entries:
-        input["sections"][title] = {
-            "entry_type": entry_type,
-            "entries": [entry, entry],
-        }
-        cv = dm.CurriculumVitae(**input)
-        assert len(cv.sections) == 1
-        assert len(cv.sections[0].entries) == 2
+    assert len(cv.sections) == 6
+    for section in cv.sections:
+        assert len(section.entries) == 2
 
 
-def test_sections_without_default_types(
-    education_entry,
-    experience_entry,
-    publication_entry,
-    normal_entry,
-    one_line_entry,
-    text_entry,
-):
+def test_sections_with_invalid_entries():
     input = {"name": "John Doe", "sections": dict()}
-    entries = [
-        (education_entry, "EducationEntry"),
-        (experience_entry, "ExperienceEntry"),
-        (publication_entry, "PublicationEntry"),
-        (normal_entry, "NormalEntry"),
-        (one_line_entry, "OneLineEntry"),
-        (text_entry, "TextEntry"),
-    ]
-    for i, (entry, entry_type) in enumerate(entries):
-        input["sections"][f"My Section {i}"] = {
-            "entry_type": entry_type,
-            "entries": [entry, entry],
-        }
-
-    cv = dm.CurriculumVitae(**input)
-    assert len(cv.sections) == len(entries)
-    for i, entry in enumerate(entries):
-        assert len(cv.sections[i].entries) == 2
-
-
-def test_section_with_invalid_entry_type():
-    input = {"name": "John Doe", "sections": dict()}
-    input["sections"]["My Section"] = {
-        "entry_type": "InvalidEntryType",
-        "entries": [],
-    }
-    with pytest.raises(pydantic.ValidationError):
-        dm.CurriculumVitae(**input)
-
-
-@pytest.mark.parametrize(
-    "section_title",
-    [
-        "Education",
-        "Experience",
-        "Work Experience",
-        "Research Experience",
-        "Publications",
-        "Papers",
-        "Projects",
-        "Academic Projects",
-        "University Projects",
-        "Personal Projects",
-        "Certificates",
-        "Extracurricular Activities",
-        "Test Scores",
-        "Skills",
-        "Programming Skills",
-        "Other Skills",
-        "Awards",
-        "Interests",
-        "Summary",
-        "My Custom Section",
-    ],
-)
-def test_sections_with_invalid_entries(section_title):
-    input = {"name": "John Doe", "sections": dict()}
-    input["sections"][section_title] = [{
+    input["sections"]["section_title"] = [{
         "this": "is",
         "an": "invalid",
         "entry": 10,

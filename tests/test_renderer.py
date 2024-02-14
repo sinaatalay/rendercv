@@ -19,6 +19,62 @@ def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file.generate_latex_file(tmp_path / "test.tex")
 
 
+def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
+    latex_file = r.MarkdownFile(rendercv_data_model, jinja2_environment)
+    latex_file.get_markdown_code()
+    latex_file.generate_markdown_file(tmp_path / "test.tex")
+
+
+def test_transform_markdown_data_model_to_latex_data_model(rendercv_data_model):
+    latex_data_model = r.transform_markdown_data_model_to_latex_data_model(
+        rendercv_data_model
+    )
+    assert isinstance(latex_data_model, dm.RenderCVDataModel)
+    assert latex_data_model.cv.name == rendercv_data_model.cv.name
+    assert latex_data_model.design == rendercv_data_model.design
+
+
+@pytest.mark.parametrize(
+    "string, expected_string",
+    [
+        ("My Text", "My Text"),
+        ("My # Text", "My \\# Text"),
+        ("My % Text", "My \\% Text"),
+        ("My & Text", "My \\& Text"),
+        ("My ~ Text", "My \\textasciitilde{} Text"),
+        ("##%%&&~~", "\\#\\#\\%\\%\\&\\&\\textasciitilde{}\\textasciitilde{}"),
+        (
+            "[link](you shouldn't escape whatever is in here & % # ~)",
+            "[link](you shouldn't escape whatever is in here & % # ~)",
+        ),
+    ],
+)
+def test_escape_latex_characters(string, expected_string):
+    assert r.escape_latex_characters(string) == expected_string
+
+
+@pytest.mark.parametrize(
+    "markdown_string, expected_latex_string",
+    [
+        ("My Text", "My Text"),
+        ("**My** Text", "\\textbf{My} Text"),
+        ("*My* Text", "\\textit{My} Text"),
+        ("***My*** Text", "\\textit{\\textbf{My}} Text"),
+        ("[My](https://myurl.com) Text", "\\href{https://myurl.com}{My} Text"),
+        ("`My` Text", "\\texttt{My} Text"),
+        (
+            "[**My** *Text* ***Is*** `Here`](https://myurl.com)",
+            (
+                "\\href{https://myurl.com}{\\textbf{My} \\textit{Text}"
+                " \\textit{\\textbf{Is}} \\texttt{Here}}"
+            ),
+        ),
+    ],
+)
+def test_markdown_to_latex(markdown_string, expected_latex_string):
+    assert r.markdown_to_latex(markdown_string) == expected_latex_string
+
+
 @pytest.mark.parametrize(
     "value, something, match_str, expected",
     [
@@ -187,7 +243,7 @@ def test_setup_jinja2_environment():
 
 
 themes = ["classic", "moderncv", "mcdowell"]
-update_reference_files = False
+update_reference_files = True
 
 
 @pytest.mark.parametrize(
@@ -212,6 +268,34 @@ def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_nam
     # Update the reference files if update_reference_files is True
     if update_reference_files:
         r.generate_latex_file(data_model, reference_latex_files_directory_path)
+
+    assert filecmp.cmp(output_file_path, reference_file_path)
+
+
+@pytest.mark.parametrize(
+    "theme_name",
+    themes,
+)
+@time_machine.travel("2024-01-01")
+def test_generate_markdown_file(tmp_path, reference_files_directory_path, theme_name):
+    reference_latex_files_directory_path = (
+        reference_files_directory_path / "markdown_and_html_files"
+    )
+
+    file_name = f"{theme_name}_theme_CV.md"
+    output_file_path = tmp_path / "make_sure_it_generates_the_directory" / file_name
+    reference_file_path = reference_latex_files_directory_path / file_name
+
+    data_model = dm.RenderCVDataModel(
+        cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
+        design={"theme": theme_name},
+    )
+    r.generate_markdown_file(
+        data_model, tmp_path / "make_sure_it_generates_the_directory"
+    )
+    # Update the reference files if update_reference_files is True
+    if update_reference_files:
+        r.generate_markdown_file(data_model, reference_latex_files_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
 
@@ -246,10 +330,14 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 
     # change current working directory to the refefence_files_directory_path:
     os.chdir(reference_files_directory_path)
-
     r.copy_theme_files_to_output_directory(theme_name, tmp_path)
 
-    assert filecmp.dircmp(tmp_path, reference_directory).diff_files == []
+    # Update the reference files if update_reference_files is True
+    if update_reference_files:
+        r.copy_theme_files_to_output_directory(theme_name, reference_directory)
+
+    assert filecmp.dircmp(tmp_path, reference_directory).left_only == []
+    assert filecmp.dircmp(tmp_path, reference_directory).right_only == []
 
 
 @pytest.mark.parametrize(
@@ -293,6 +381,29 @@ def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
 
     text1 = pypdf.PdfReader(output_pdf_file_path).pages[0].extract_text()
     text2 = pypdf.PdfReader(reference_pdf_file_path).pages[0].extract_text()
+    assert text1 == text2
+
+
+@pytest.mark.parametrize(
+    "theme_name",
+    themes,
+)
+@time_machine.travel("2024-01-01")
+def test_markdown_to_html(tmp_path, reference_files_directory_path, theme_name):
+    reference_directory = reference_files_directory_path / "markdown_and_html_files"
+    reference_html_file_path = reference_directory / f"{theme_name}_theme_CV.html"
+
+    shutil.copytree(reference_directory, tmp_path, dirs_exist_ok=True)
+    output_html_file_path = r.markdown_to_html(tmp_path / f"{theme_name}_theme_CV.md")
+    # Update the reference files if update_reference_files is True
+    if update_reference_files:
+        reference_html_file_path = r.markdown_to_html(
+            reference_directory / f"{theme_name}_theme_CV.md"
+        )
+
+    text1 = output_html_file_path.read_text()
+    text2 = reference_html_file_path.read_text()
+
     assert text1 == text2
 
 

@@ -2,6 +2,7 @@ import os
 import importlib.machinery
 
 import rendercv.cli as cli
+import rendercv.data_models as dm
 
 import pydantic
 import ruamel.yaml
@@ -32,20 +33,109 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
     )
     assert result == ("error message", "location", "value")
 
+    error_string = """("er'ror message", 'location', 'value')"""
+    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
+        error_string
+    )
+    assert result == ("er'ror message", "location", "value")
+
     error_string = "error message"
     result = cli.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
-    assert result is None
+    assert result == (None, None, None)
 
 
-def test_handle_validation_error(invalid_entries):
-    for entry_type, entries in invalid_entries.items():
-        for entry in entries:
-            try:
-                entry_type(**entry)
-            except pydantic.ValidationError as e:
-                cli.handle_validation_error(e)
+@pytest.mark.parametrize(
+    "data_model_class, invalid_model",
+    [
+        (
+            dm.EducationEntry,
+            {
+                "institution": "Boğaziçi University",
+                "area": "Mechanical Engineering",
+                "degree": "BS",
+                "date": "2028-12-08",
+            },
+        ),
+        (
+            dm.EducationEntry,
+            {
+                "area": "Mechanical Engineering",
+                "extra": "Extra",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "company": "CERN",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "position": "Researcher",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "company": "CERN",
+                "position": "Researcher",
+                "stat_date": "2023-12-08",
+                "end_date": "INVALID END DATE",
+            },
+        ),
+        (
+            dm.PublicationEntry,
+            {
+                "doi": "10.1109/TASC.2023.3340648",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "authors": ["John Doe", "Jane Doe"],
+            },
+        ),
+        (
+            dm.OneLineEntry,
+            {
+                "name": "My One Line Entry",
+            },
+        ),
+        (
+            dm.NormalEntry,
+            {
+                "name": "My Entry",
+            },
+        ),
+        (
+            dm.CurriculumVitae,
+            {
+                "name": "John Doe",
+                "sections": {
+                    "education": [
+                        {
+                            "institution": "Boğaziçi University",
+                            "area": "Mechanical Engineering",
+                            "degree": "BS",
+                            "date": "2028-12-08",
+                        },
+                        {
+                            "degree": "BS",
+                        },
+                    ]
+                },
+            },
+        ),
+    ],
+)
+def test_handle_validation_error(data_model_class, invalid_model):
+    try:
+        data_model_class(**invalid_model)
+    except pydantic.ValidationError as e:
+        cli.handle_validation_error(e)
 
 
 @pytest.mark.parametrize(
