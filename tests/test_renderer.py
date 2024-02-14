@@ -25,15 +25,6 @@ def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file.generate_markdown_file(tmp_path / "test.tex")
 
 
-def test_transform_markdown_data_model_to_latex_data_model(rendercv_data_model):
-    latex_data_model = r.transform_markdown_data_model_to_latex_data_model(
-        rendercv_data_model
-    )
-    assert isinstance(latex_data_model, dm.RenderCVDataModel)
-    assert latex_data_model.cv.name == rendercv_data_model.cv.name
-    assert latex_data_model.design == rendercv_data_model.design
-
-
 @pytest.mark.parametrize(
     "string, expected_string",
     [
@@ -73,6 +64,15 @@ def test_escape_latex_characters(string, expected_string):
 )
 def test_markdown_to_latex(markdown_string, expected_latex_string):
     assert r.markdown_to_latex(markdown_string) == expected_latex_string
+
+
+def test_transform_markdown_data_model_to_latex_data_model(rendercv_data_model):
+    latex_data_model = r.transform_markdown_data_model_to_latex_data_model(
+        rendercv_data_model
+    )
+    assert isinstance(latex_data_model, dm.RenderCVDataModel)
+    assert latex_data_model.cv.name == rendercv_data_model.cv.name
+    assert latex_data_model.design == rendercv_data_model.design
 
 
 @pytest.mark.parametrize(
@@ -384,6 +384,12 @@ def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
     assert text1 == text2
 
 
+def test_latex_to_pdf_invalid_latex_file():
+    with pytest.raises(FileNotFoundError):
+        file_path = pathlib.Path("file_doesnt_exist.tex")
+        r.latex_to_pdf(file_path)
+
+
 @pytest.mark.parametrize(
     "theme_name",
     themes,
@@ -405,9 +411,3 @@ def test_markdown_to_html(tmp_path, reference_files_directory_path, theme_name):
     text2 = reference_html_file_path.read_text()
 
     assert text1 == text2
-
-
-def test_latex_to_pdf_invalid_latex_file(tmp_path):
-    with pytest.raises(FileNotFoundError):
-        file_path = pathlib.Path("file_doesnt_exist.tex")
-        r.latex_to_pdf(file_path)
