@@ -672,21 +672,16 @@ def get_entry_and_section_type(
         section type.
     """
     if isinstance(entry, dict):
-        if "details" in entry and "name" in entry:
+        if "details" in entry:
             entry_type = "OneLineEntry"
             section_type = SectionWithOneLineEntries
-        elif "company" in entry and "position" in entry:
+        elif "company" in entry or "position" in entry:
             entry_type = "ExperienceEntry"
             section_type = SectionWithExperienceEntries
-        elif "institution" in entry and "area" in entry and "degree" in entry:
+        elif "institution" in entry or "area" in entry or "degree" in entry:
             entry_type = "EducationEntry"
             section_type = SectionWithEducationEntries
-        elif (
-            "title" in entry
-            and "authors" in entry
-            and "doi" in entry
-            and "date" in entry
-        ):
+        elif "title" in entry or "authors" in entry or "doi" in entry:
             entry_type = "PublicationEntry"
             section_type = SectionWithPublicationEntries
         elif "name" in entry:
@@ -751,7 +746,10 @@ def validate_section_input(
 
         if entry_type is None or section_type is None:
             raise ValueError(
-                "Please check your entries. They are not provided correctly."
+                "RenderCV couldn't match this section with any entry type! Please check"
+                " the entries and make sure they are provided correctly.",
+                "",  # this is the location of the error
+                "",  # this is value of the error
             )
 
         test_section = {
@@ -780,8 +778,7 @@ def validate_section_input(
 # Create a custom type called SectionInput so that it can be validated with
 # `validate_section_input` function.
 SectionInput = Annotated[
-    Section
-    | list[
+    list[
         EducationEntry
         | ExperienceEntry
         | PublicationEntry
@@ -916,12 +913,6 @@ class CurriculumVitae(RenderCVBaseModel):
                         entries=section_or_entries,  # type: ignore
                     )
                     sections.append(section)
-
-                elif hasattr(section_or_entries, "entry_type"):
-                    if section_or_entries.title is None:
-                        section_or_entries.title = title
-
-                    sections.append(section_or_entries)
 
                 else:
                     raise RuntimeError(
@@ -1089,7 +1080,7 @@ def read_input_file(
     return rendercv_data_model
 
 
-def get_a_sample_data_model(name: str) -> RenderCVDataModel:
+def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
     """Return a sample data model for new users to start with."""
     sections = {
         "summary": [
@@ -1174,38 +1165,32 @@ def get_a_sample_data_model(name: str) -> RenderCVDataModel:
                 ),
             ),
         ],
-        "my_custom_section": SectionWithExperienceEntries(
-            entry_type="ExperienceEntry",
-            entries=[
-                ExperienceEntry(
-                    company="Your Company",
-                    position="Your Position",
-                    date="My Whole Life",
-                    location="USA",
-                    highlights=[
-                        "Did something great.",
-                        "Did something else great.",
-                    ],
-                ),
-                ExperienceEntry(
-                    company="Your Company",
-                    position="Your Position",
-                ),
-            ],
-        ),
-        "This Format Is Also Accepted": SectionWithOneLineEntries(
-            entry_type="OneLineEntry",
-            entries=[
-                OneLineEntry(
-                    name="Your Entry",
-                    details="Your details.",
-                ),
-                OneLineEntry(
-                    name="Your *Entry*",
-                    details="Your details.",
-                ),
-            ],
-        ),
+        "my_custom_section": [
+            ExperienceEntry(
+                company="Your Company",
+                position="Your Position",
+                date="My Whole Life",
+                location="USA",
+                highlights=[
+                    "Did something great.",
+                    "Did something else great.",
+                ],
+            ),
+            ExperienceEntry(
+                company="Your Company",
+                position="Your Position",
+            ),
+        ],
+        "This Format Is Also Accepted": [
+            OneLineEntry(
+                name="Your Entry",
+                details="Your details.",
+            ),
+            OneLineEntry(
+                name="Your *Entry*",
+                details="Your details.",
+            ),
+        ],
     }
 
     cv = CurriculumVitae(
