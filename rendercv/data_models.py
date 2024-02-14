@@ -147,6 +147,7 @@ class EntryBase(RenderCVBaseModel):
             "The start date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format."
         ),
         examples=["2020-09-24"],
+        json_schema_extra={"default": "2000-01-01"},
     )
     end_date: Optional[Literal["present"] | int | RenderCVDate] = pydantic.Field(
         default=None,
@@ -157,6 +158,7 @@ class EntryBase(RenderCVBaseModel):
             " date."
         ),
         examples=["2020-09-24", "present"],
+        json_schema_extra={"default": "2020-01-01"},
     )
     date: Optional[RenderCVDate | int | str] = pydantic.Field(
         default=None,
@@ -168,6 +170,7 @@ class EntryBase(RenderCVBaseModel):
             " the same time."
         ),
         examples=["2020-09-24", "My Custom Date"],
+        json_schema_extra={"default": "Custom Date or 2020-01-01"},
     )
     highlights: Optional[list[str]] = pydantic.Field(
         default=None,
@@ -179,10 +182,8 @@ class EntryBase(RenderCVBaseModel):
         default=None,
         title="Location",
         description="The location of the event.",
-        examples=["Istanbul, Turkey"],
+        examples=["Istanbul, Türkiye"],
     )
-    url: Optional[pydantic.HttpUrl] = None
-    url_text_input: Optional[str] = pydantic.Field(default=None, alias="url_text")
 
     @pydantic.model_validator(
         mode="after",
@@ -421,30 +422,6 @@ class EntryBase(RenderCVBaseModel):
 
             return time_span_string
 
-    @functools.cached_property
-    def url_text(self) -> Optional[str]:
-        """
-        Return a URL text based on the `url_text_input` and `url` fields.
-        """
-        url_text = None
-        if self.url_text_input is not None:
-            # If the user provides a custom URL text, then use it.
-            url_text = self.url_text_input
-        elif self.url is not None:
-            url_text_dictionary = {
-                "github": "view on GitHub",
-                "linkedin": "view on LinkedIn",
-                "instagram": "view on Instagram",
-                "youtube": "view on YouTube",
-            }
-            url_text = "view on my website"
-            for key in url_text_dictionary:
-                if key in str(self.url):
-                    url_text = url_text_dictionary[key]
-                    break
-
-        return url_text
-
 
 class OneLineEntry(RenderCVBaseModel):
     """This class is the data model of `OneLineEntry`."""
@@ -487,7 +464,6 @@ class EducationEntry(EntryBase):
     institution: str = pydantic.Field(
         title="Institution",
         description="The institution name. It will be shown as bold text.",
-        examples=["Bogazici University"],
     )
     area: str = pydantic.Field(
         title="Area",
@@ -498,6 +474,7 @@ class EducationEntry(EntryBase):
         title="Degree",
         description="The type of the degree.",
         examples=["BS", "BA", "PhD", "MS"],
+        json_schema_extra={"default": "PhD"},
     )
 
 
@@ -523,6 +500,7 @@ class PublicationEntry(RenderCVBaseModel):
             "The date of the publication in YYYY-MM-DD, YYYY-MM, or YYYY format."
         ),
         examples=["2021-10-31", "2010"],
+        json_schema_extra={"default": "2020-01-01"},
     )
     journal: Optional[str] = pydantic.Field(
         default=None,
@@ -896,16 +874,22 @@ class CurriculumVitae(RenderCVBaseModel):
     email: Optional[pydantic.EmailStr] = pydantic.Field(
         default=None,
         title="Email",
-        description="The email of the person. It will be rendered in the heading.",
+        description="The email of the person.",
     )
-    phone: Optional[pydantic_phone_numbers.PhoneNumber] = None
-    website: Optional[pydantic.HttpUrl] = None
+    phone: Optional[pydantic_phone_numbers.PhoneNumber] = pydantic.Field(
+        default=None,
+        title="Phone",
+        description="The phone number of the person.",
+    )
+    website: Optional[pydantic.HttpUrl] = pydantic.Field(
+        default=None,
+        title="Website",
+        description="The website of the person.",
+    )
     social_networks: Optional[list[SocialNetwork]] = pydantic.Field(
         default=None,
         title="Social Networks",
-        description=(
-            "The social networks of the person. They will be rendered in the heading."
-        ),
+        description="The social networks of the person.",
     )
     sections_input: dict[str, SectionInput] = pydantic.Field(
         default=None,
