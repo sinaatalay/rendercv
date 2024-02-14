@@ -1081,7 +1081,13 @@ def read_input_file(
 
 
 def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
-    """Return a sample data model for new users to start with."""
+    """Return a sample data model for new users to start with.
+
+    Args:
+        name (str, optional): The name of the person. Defaults to "John Doe".
+    Returns:
+        RenderCVDataModel: A sample data model.
+    """
     sections = {
         "summary": [
             (
@@ -1282,7 +1288,11 @@ def generate_json_schema() -> dict:
 
 
 def generate_json_schema_file(json_schema_path: pathlib.Path):
-    """Generate the JSON schema of RenderCV and save it to a file in the `docs`"""
+    """Generate the JSON schema of RenderCV and save it to a file.
+
+    Args:
+        json_schema_path (pathlib.Path): The path to save the JSON schema.
+    """
     schema = generate_json_schema()
     schema_json = json.dumps(schema, indent=2)
     json_schema_path.write_text(schema_json)
