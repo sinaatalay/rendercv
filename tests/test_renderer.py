@@ -242,13 +242,12 @@ def test_setup_jinja2_environment():
     assert "get_an_item_with_a_specific_attribute_value" in env.filters
 
 
-themes = ["classic", "moderncv", "mcdowell"]
 update_reference_files = False
 
 
 @pytest.mark.parametrize(
     "theme_name",
-    themes,
+    dm.available_themes,
 )
 @time_machine.travel("2024-01-01")
 def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_name):
@@ -274,7 +273,7 @@ def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_nam
 
 @pytest.mark.parametrize(
     "theme_name",
-    themes,
+    dm.available_themes,
 )
 @time_machine.travel("2024-01-01")
 def test_generate_markdown_file(tmp_path, reference_files_directory_path, theme_name):
@@ -302,7 +301,7 @@ def test_generate_markdown_file(tmp_path, reference_files_directory_path, theme_
 
 @pytest.mark.parametrize(
     "theme_name",
-    themes,
+    dm.available_themes,
 )
 def test_copy_theme_files_to_output_directory(
     tmp_path, reference_files_directory_path, theme_name
@@ -342,7 +341,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 
 @pytest.mark.parametrize(
     "theme_name",
-    themes,
+    dm.available_themes,
 )
 @time_machine.travel("2024-01-01")
 def test_generate_latex_file_and_copy_theme_files(
@@ -364,7 +363,7 @@ def test_generate_latex_file_and_copy_theme_files(
 
 @pytest.mark.parametrize(
     "theme_name",
-    themes,
+    dm.available_themes,
 )
 @time_machine.travel("2024-01-01")
 def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
@@ -392,7 +391,7 @@ def test_latex_to_pdf_invalid_latex_file():
 
 @pytest.mark.parametrize(
     "theme_name",
-    themes,
+    dm.available_themes,
 )
 @time_machine.travel("2024-01-01")
 def test_markdown_to_html(tmp_path, reference_files_directory_path, theme_name):
