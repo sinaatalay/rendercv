@@ -166,6 +166,13 @@ class ClassicThemeOptions(pydantic.BaseModel):
         title="Date and Location Column Width",
         description="The width of the date and location column.",
     )
+    space_between_connection_objects: LaTeXDimension = pydantic.Field(
+        default="0.5 cm",
+        title="Space Between Connection Objects",
+        description=(
+            "The space between the connection objects (like phone, email, and website)."
+        ),
+    )
     text_alignment: Literal["left-aligned", "justified"] = pydantic.Field(
         default="left-aligned",
         title="Text Alignment",
