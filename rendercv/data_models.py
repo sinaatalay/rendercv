@@ -30,7 +30,7 @@ import ruamel.yaml
 
 from .themes.classic import ClassicThemeOptions
 from .themes.moderncv import ModerncvThemeOptions
-from .themes.mcdowell import McdowellThemeOptions
+from .themes.sb2nov import Sb2novThemeOptions
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -933,11 +933,11 @@ class CurriculumVitae(RenderCVBaseModel):
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
 # about discriminators.
 RenderCVDesign = Annotated[
-    ClassicThemeOptions | ModerncvThemeOptions | McdowellThemeOptions,
+    ClassicThemeOptions | ModerncvThemeOptions | Sb2novThemeOptions,
     pydantic.Field(discriminator="theme"),
 ]
 rendercv_design_validator = pydantic.TypeAdapter(RenderCVDesign)
-available_themes = ["classic", "moderncv", "mcdowell"]
+available_themes = ["classic", "moderncv", "sb2nov"]
 
 
 class RenderCVDataModel(RenderCVBaseModel):
