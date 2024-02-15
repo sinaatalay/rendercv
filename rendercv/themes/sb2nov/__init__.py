@@ -2,13 +2,7 @@ from typing import Literal, Annotated
 
 import pydantic
 
-
-LaTeXDimension = Annotated[
-    str,
-    pydantic.Field(
-        pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
-    ),
-]
+from .. import LaTeXDimension, PageMargins
 
 
 class Sb2novThemeOptions(pydantic.BaseModel):
@@ -28,13 +22,31 @@ class Sb2novThemeOptions(pydantic.BaseModel):
         title="Page Size",
         description="The page size of the CV. It can be a4paper or letterpaper.",
     )
-    disable_page_numbering: bool = pydantic.Field(
-        default=False,
-        title="Disable Page Numbering",
-        description=(
-            "If this option is set to true, then the page numbering will be disabled."
-        ),
+
+    link_color: (
+        Literal["black"]
+        | Literal["red"]
+        | Literal["green"]
+        | Literal["blue"]
+        | Literal["cyan"]
+        | Literal["magenta"]
+        | Literal["yellow"]
+    ) = pydantic.Field(
+        default="cyan",
+        validate_default=True,
+        title="Link Color",
+        description="The color of the links in the CV.",
+        examples=[
+            "black",
+            "red",
+            "green",
+            "blue",
+            "cyan",
+            "magenta",
+            "yellow",
+        ],
     )
+
     date_and_location_width: LaTeXDimension = pydantic.Field(
         default="4.1 cm",
         title="Date and Location Column Width",
@@ -45,19 +57,6 @@ class Sb2novThemeOptions(pydantic.BaseModel):
         title="Space Between Connection Objects",
         description=(
             "The space between the connection objects (like phone, email, and website)."
-        ),
-    )
-    text_alignment: Literal["left-aligned", "justified"] = pydantic.Field(
-        default="left-aligned",
-        title="Text Alignment",
-        description="The alignment of the text.",
-    )
-    show_timespan_in: list[str] = pydantic.Field(
-        default=[],
-        title="Show Time Span in These Sections",
-        description=(
-            "The time span will be shown in the date and location column in these"
-            " sections. The input should be a list of strings."
         ),
     )
     show_last_updated_date: bool = pydantic.Field(
@@ -72,4 +71,9 @@ class Sb2novThemeOptions(pydantic.BaseModel):
         default="30 pt",
         title="Header Font Size",
         description="The font size of the header (the name of the person).",
+    )
+    margins: PageMargins = pydantic.Field(
+        default=PageMargins(),
+        title="Margins",
+        description="The page margins of the CV.",
     )

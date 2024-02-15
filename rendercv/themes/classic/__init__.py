@@ -3,35 +3,8 @@ from typing import Literal, Annotated
 import pydantic
 import pydantic_extra_types.color as pydantic_color
 
-LaTeXDimension = Annotated[
-    str,
-    pydantic.Field(
-        pattern=r"\d+\.?\d* *(cm|in|pt|mm|ex|em)",
-    ),
-]
-
-
-class ClassicThemePageMargins(pydantic.BaseModel):
-    top: LaTeXDimension = pydantic.Field(
-        default="2 cm",
-        title="Top Margin",
-        description="The top margin of the page with units.",
-    )
-    bottom: LaTeXDimension = pydantic.Field(
-        default="2 cm",
-        title="Bottom Margin",
-        description="The bottom margin of the page with units.",
-    )
-    left: LaTeXDimension = pydantic.Field(
-        default="1.24 cm",
-        title="Left Margin",
-        description="The left margin of the page with units.",
-    )
-    right: LaTeXDimension = pydantic.Field(
-        default="1.24 cm",
-        title="Right Margin",
-        description="The right margin of the page with units.",
-    )
+from .. import LaTeXDimension
+from .. import PageMargins
 
 
 class ClassicThemeSectionTitleMargins(pydantic.BaseModel):
@@ -98,8 +71,8 @@ class ClassicThemeHeaderMargins(pydantic.BaseModel):
 
 
 class ClassicThemeMargins(pydantic.BaseModel):
-    page: ClassicThemePageMargins = pydantic.Field(
-        default=ClassicThemePageMargins(),
+    page: PageMargins = pydantic.Field(
+        default=PageMargins(),
         title="Page Margins",
         description="Page margins for the classic theme.",
     )
