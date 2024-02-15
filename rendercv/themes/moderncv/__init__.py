@@ -29,18 +29,6 @@ class ModerncvThemeOptions(pydantic.BaseModel):
         description='The page size of the CV. The default value is "a4paper".',
         examples=["a4paper", "letterpaper"],
     )
-    moderncv_style: (
-        Literal["casual"]
-        | Literal["classic"]
-        | Literal["banking"]
-        | Literal["oldstyle"]
-        | Literal["fancy"]
-    ) = pydantic.Field(
-        default="classic",
-        title="ModernCV Style",
-        description='The style of the moderncv theme. The default value is "classic".',
-        examples=["casual", "classic", "banking", "oldstyle", "fancy"],
-    )
     color: (
         Literal["blue"]
         | Literal["black"]
