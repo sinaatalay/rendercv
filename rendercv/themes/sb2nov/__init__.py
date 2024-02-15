@@ -1,4 +1,4 @@
-from typing import Literal, Annotated
+from typing import Literal
 
 import pydantic
 
