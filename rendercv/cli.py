@@ -31,7 +31,8 @@ from . import renderer as r
 
 
 app = typer.Typer(
-    help="RenderCV - A LaTeX CV generator from YAML",
+    rich_markup_mode="rich",
+    add_completion=False,
 )
 
 
@@ -73,10 +74,10 @@ def error(text, exception=None):
         exception_messages = [str(arg) for arg in exception.args]
         exception_message = "\n\n".join(exception_messages)
         print(
-            f"\n[bold red]{text}[/bold red]\n\n[orange4]{exception_message}[/orange4]"
+            f"\n[bold red]{text}[/bold red]\n\n[orange4]{exception_message}[/orange4]\n"
         )
     else:
-        print(f"[bold red]{text}")
+        print(f"\n[bold red]{text}\n")
 
 
 def information(text):
@@ -298,6 +299,10 @@ def handle_exceptions(function: Callable) -> Callable:
             handle_validation_error(e)
         except ruamel.yaml.YAMLError as e:
             error("There is a YAML error in the input file!", e)
+        except FileNotFoundError as e:
+            error(e)
+        except ValueError as e:
+            error(e)
         except RuntimeError as e:
             error("An error occurred:", e)
 
@@ -385,7 +390,13 @@ class LiveProgressReporter(rich.live.Live):
         )
 
 
-@app.command(name="render", help="Render a YAML input file")
+@app.command(
+    name="render",
+    help=(
+        "Render a YAML input file. Example: [bold green]rendercv render"
+        " John_Doe_CV.yaml[/bold green]"
+    ),
+)
 @handle_exceptions
 def cli_command_render(
     input_file_path: Annotated[
@@ -428,7 +439,13 @@ def cli_command_render(
         progress.finish_the_current_step()
 
 
-@app.command(name="new", help="Generate a YAML input file to get started.")
+@app.command(
+    name="new",
+    help=(
+        "Generate a YAML input file to get started. Example: [bold green]rendercv new"
+        ' "John Doe"[/bold green]'
+    ),
+)
 def cli_command_new(full_name: Annotated[str, typer.Argument(help="Your full name")]):
     """Generate a YAML input file to get started."""
     data_model = dm.get_a_sample_data_model(full_name)
