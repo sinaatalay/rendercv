@@ -212,6 +212,11 @@ class ThemeOptions(pydantic.BaseModel):
             " 30 pt."
         ),
     )
+    text_alignment: Literal["left-aligned", "justified"] = pydantic.Field(
+        default="justified",
+        title="Text Alignment",
+        description="The alignment of the text. The default value is justified.",
+    )
     margins: Margins = pydantic.Field(
         default=Margins(),
         title="Margins",
