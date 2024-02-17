@@ -512,6 +512,25 @@ def transform_markdown_data_model_to_latex_data_model(
     return data_model
 
 
+def replace_placeholders_with_actual_values(
+    string: str, placeholders: dict[str, str]
+) -> str:
+    """Replace the placeholders in a string with actual values.
+
+    This function can be used as a Jinja2 filter in templates.
+
+    Args:
+        string (str): The string with placeholders.
+        placeholders (dict[str, str]): The placeholders and their values.
+    Returns:
+        str: The string with actual values.
+    """
+    for placeholder, value in placeholders.items():
+        string = string.replace(placeholder, value)
+
+    return string
+
+
 def make_matched_part_something(
     value: str, something: str, match_str: Optional[str] = None
 ) -> str:
@@ -768,6 +787,9 @@ def setup_jinja2_environment() -> jinja2.Environment:
     environment.filters["make_it_something"] = make_matched_part_something
     environment.filters["divide_length_by"] = divide_length_by
     environment.filters["abbreviate_name"] = abbreviate_name
+    environment.filters["replace_placeholders_with_actual_values"] = (
+        replace_placeholders_with_actual_values
+    )
     environment.filters["get_an_item_with_a_specific_attribute_value"] = (
         get_an_item_with_a_specific_attribute_value
     )
