@@ -37,9 +37,14 @@ from .themes.sb2nov import Sb2novThemeOptions
 # This type is used to validate the date fields in the data.
 # See https://docs.pydantic.dev/2.5/concepts/types/#custom-types for more information
 # about custom types.
+date_pattern_for_json_schema = r"\d{4}(-\d{2})?(-\d{2})?"
+date_pattern_for_validation = r"\d{4}-\d{2}(-\d{2})?"
 RenderCVDate = Annotated[
     str,
-    pydantic.Field(pattern=r"\d{4}-\d{2}(-\d{2})?"),
+    pydantic.Field(
+        pattern=date_pattern_for_validation,
+        json_schema_extra={"pattern": date_pattern_for_json_schema},
+    ),
 ]
 
 
@@ -233,24 +238,24 @@ class EntryBase(RenderCVBaseModel):
             try:
                 end_date = get_date_object(model.end_date)
             except ValueError as e:
-                raise ValueError(str(e), "end_date", model.end_date)
+                raise ValueError(str(e), "end_date", str(model.end_date))
 
             try:
                 start_date = get_date_object(model.start_date)
             except ValueError as e:
-                raise ValueError(str(e), "start_date", model.start_date)
+                raise ValueError(str(e), "start_date", str(model.start_date))
 
             if start_date > end_date:
                 raise ValueError(
                     '"start_date" can not be after "end_date"!',
                     "start_date",  # this is the location of the error
-                    model.start_date,  # this is value of the error
+                    str(model.start_date),  # this is value of the error
                 )
             elif end_date > Date.today():
                 raise ValueError(
                     '"end_date" cannot be in the future!',
                     "end_date",  # this is the location of the error
-                    model.end_date,  # this is value of the error
+                    str(model.end_date),  # this is value of the error
                 )
 
         return model
@@ -947,7 +952,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         title="Curriculum Vitae",
         description="The data of the CV.",
     )
-    design: RenderCVDesign | Any = pydantic.Field(
+    design: RenderCVDesign | pydantic.json_schema.SkipJsonSchema[Any] = pydantic.Field(
         default=ClassicThemeOptions(theme="classic"),
         title="Design",
         description="The design information of the CV.",
