@@ -9,12 +9,6 @@ class ClassicThemeOptions(ThemeOptions):
     """ """
 
     theme: Literal["classic"]
-
-    text_alignment: Literal["left-aligned", "justified"] = pydantic.Field(
-        default="justified",
-        title="Text Alignment",
-        description="The alignment of the text. The default value is justified.",
-    )
     show_timespan_in: list[str] = pydantic.Field(
         default=[],
         title="Show Time Span in These Sections",
