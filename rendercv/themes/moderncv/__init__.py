@@ -6,7 +6,7 @@ from .. import LaTeXDimension
 
 
 class ModerncvThemeOptions(pydantic.BaseModel):
-    """ """
+    """This class is the data model of the theme options for the moderncv theme."""
 
     model_config = pydantic.ConfigDict(extra="forbid")
 
@@ -18,9 +18,9 @@ class ModerncvThemeOptions(pydantic.BaseModel):
         examples=["10pt", "11pt", "12pt"],
     )
     page_size: Literal["a4paper", "letterpaper"] = pydantic.Field(
-        default="a4paper",
+        default="letterpaper",
         title="Page Size",
-        description='The page size of the CV. The default value is "a4paper".',
+        description='The page size of the CV. The default value is "letterpaper".',
         examples=["a4paper", "letterpaper"],
     )
     color: (
