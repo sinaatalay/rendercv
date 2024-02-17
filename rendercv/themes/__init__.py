@@ -1,10 +1,18 @@
-""" """
+"""This module containts some general-purpose data models for the themes. The themes
+are encouraged to inherit from these data models and add their own options, to avoid
+code duplication.
+"""
 
 from typing import Literal, Annotated
 
 import pydantic
 import pydantic_extra_types.color as pydantic_color
 
+# Create a custom type called LaTeXDimension that accepts only strings in a specified
+# format.
+# This type is used to validate the dimension fields in the design data.
+# See https://docs.pydantic.dev/2.5/concepts/types/#custom-types for more information
+# about custom types.
 LaTeXDimension = Annotated[
     str,
     pydantic.Field(
@@ -14,42 +22,54 @@ LaTeXDimension = Annotated[
 
 
 class PageMargins(pydantic.BaseModel):
+    """This class is a data model for the page margins."""
+
     top: LaTeXDimension = pydantic.Field(
         default="2 cm",
         title="Top Margin",
-        description="The top margin of the page with units.",
+        description="The top margin of the page with units. The default value is 2 cm.",
     )
     bottom: LaTeXDimension = pydantic.Field(
         default="2 cm",
         title="Bottom Margin",
-        description="The bottom margin of the page with units.",
+        description=(
+            "The bottom margin of the page with units. The default value is 2 cm."
+        ),
     )
     left: LaTeXDimension = pydantic.Field(
-        default="1.24 cm",
+        default="2 cm",
         title="Left Margin",
-        description="The left margin of the page with units.",
+        description=(
+            "The left margin of the page with units. The default value is 2 cm."
+        ),
     )
     right: LaTeXDimension = pydantic.Field(
-        default="1.24 cm",
+        default="2 cm",
         title="Right Margin",
-        description="The right margin of the page with units.",
+        description=(
+            "The right margin of the page with units. The default value is 2 cm."
+        ),
     )
 
 
 class SectionTitleMargins(pydantic.BaseModel):
+    """This class is a data model for the section title margins."""
+
     top: LaTeXDimension = pydantic.Field(
-        default="0.2 cm",
+        default="0.3 cm",
         title="Top Margin",
-        description="The top margin of section titles. The default value is 0.2 cm.",
+        description="The top margin of section titles. The default value is 0.3 cm.",
     )
     bottom: LaTeXDimension = pydantic.Field(
         default="0.2 cm",
         title="Bottom Margin",
-        description="The bottom margin of section titles. The default value is 0.2 cm.",
+        description="The bottom margin of section titles. The default value is 0.3 cm.",
     )
 
 
 class EntryAreaMargins(pydantic.BaseModel):
+    """This class is a data model for the entry area margins."""
+
     left_and_right: LaTeXDimension = pydantic.Field(
         default="0.2 cm",
         title="Left Margin",
@@ -57,10 +77,10 @@ class EntryAreaMargins(pydantic.BaseModel):
     )
 
     vertical_between: LaTeXDimension = pydantic.Field(
-        default="0.12 cm",
+        default="0.2 cm",
         title="Vertical Margin Between Entry Areas",
         description=(
-            "The vertical margin between entry areas. The default value is 0.12 cm."
+            "The vertical margin between entry areas. The default value is 0.2 cm."
         ),
     )
 
@@ -74,6 +94,8 @@ class EntryAreaMargins(pydantic.BaseModel):
 
 
 class HighlightsAreaMargins(pydantic.BaseModel):
+    """This class is a data model for the highlights area margins."""
+
     top: LaTeXDimension = pydantic.Field(
         default="0.10 cm",
         title="Top Margin",
@@ -94,20 +116,22 @@ class HighlightsAreaMargins(pydantic.BaseModel):
 
 
 class HeaderMargins(pydantic.BaseModel):
+    """This class is a data model for the header margins."""
+
     vertical_between_name_and_connections: LaTeXDimension = pydantic.Field(
-        default="0.2 cm",
+        default="0.3 cm",
         title="Vertical Margin Between the Name and Connections",
         description=(
             "The vertical margin between the name of the person and the connections."
-            " The default value is 0.2 cm."
+            " The default value is 0.3 cm."
         ),
     )
     bottom: LaTeXDimension = pydantic.Field(
-        default="0.2 cm",
+        default="0.3 cm",
         title="Bottom Margin",
         description=(
             "The bottom margin of the header, i.e., the vertical margin between the"
-            " connections and the first section title. The default value is 0.2 cm."
+            " connections and the first section title. The default value is 0.3 cm."
         ),
     )
     horizontal_between_connections: LaTeXDimension = pydantic.Field(
@@ -121,6 +145,8 @@ class HeaderMargins(pydantic.BaseModel):
 
 
 class Margins(pydantic.BaseModel):
+    """This class is a data model for the margins."""
+
     page: PageMargins = pydantic.Field(
         default=PageMargins(),
         title="Page Margins",
@@ -149,7 +175,10 @@ class Margins(pydantic.BaseModel):
 
 
 class ThemeOptions(pydantic.BaseModel):
-    """ """
+    """This class is a generic data model for the theme options. The themes are
+    encouraged to inherit from this data model and add their own options, to avoid code
+    duplication.
+    """
 
     model_config = pydantic.ConfigDict(extra="forbid")
 
@@ -187,13 +216,13 @@ class ThemeOptions(pydantic.BaseModel):
         ),
     )
     page_numbering_style: str = pydantic.Field(
-        default="NAME -- Page PAGE_NUMBER of TOTAL_PAGES",
+        default="NAME - Page PAGE_NUMBER of TOTAL_PAGES",
         title="Page Numbering Style",
         description=(
             "The style of the page numbering. The following placeholders can be used:"
             "\n- NAME: The name of the person\n- PAGE_NUMBER: The current page number"
             "\n- TOTAL_PAGES: The total number of pages\nThe default value is"
-            " NAME -- Page PAGE_NUMBER of TOTAL_PAGES."
+            " NAME - Page PAGE_NUMBER of TOTAL_PAGES."
         ),
     )
     show_last_updated_date: bool = pydantic.Field(

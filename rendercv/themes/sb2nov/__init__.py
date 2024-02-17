@@ -6,7 +6,7 @@ from .. import ThemeOptions, LaTeXDimension
 
 
 class Sb2novThemeOptions(ThemeOptions):
-    """ """
+    """This class is the data model of the theme options for the sb2nov theme."""
 
     theme: Literal["sb2nov"]
 
