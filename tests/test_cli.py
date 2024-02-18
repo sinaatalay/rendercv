@@ -1,5 +1,4 @@
 import os
-import filecmp
 import shutil
 
 import rendercv.cli as cli
