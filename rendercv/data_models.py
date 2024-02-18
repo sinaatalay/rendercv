@@ -967,8 +967,18 @@ class RenderCVDataModel(RenderCVBaseModel):
     ) -> RenderCVDesign | Any:
         """Initialize the custom theme if it is used and validate it. Otherwise, return
         the built-in theme."""
-        if design["theme"] in available_themes:  # type: ignore
-            # it is a built-in theme, validate and return it:
+        # `get_args` for an Annotated object returns the arguments when Annotated is
+        # used. The first argument is actually the union of the types, so we need to
+        # access the first argument to use isinstance function.
+        theme_data_model_types = get_args(RenderCVDesign)[0]
+
+        if isinstance(design, theme_data_model_types):
+            # then it means RenderCVDataModel is already initialized with a design, so
+            # return it as is:
+            return design
+        elif design["theme"] in available_themes:  # type: ignore
+            # then it means it's a built-in theme, but it is not initialized (validated)
+            # yet. So, validate and return it:
             return rendercv_design_validator.validate_python(design)
         else:
             theme_name: str = design["theme"]  # type: ignore
@@ -1101,13 +1111,7 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
         RenderCVDataModel: A sample data model.
     """
     sections = {
-        "summary": [
-            (
-                "I am a mechanical engineer with a [passion](https://example.com) for"
-                " software development."
-            ),
-            "I am a **quick learner** and ***I love*** to learn new things.",
-        ],
+        "summary_or_something_else": [""],
         "education": [
             EducationEntry(
                 institution="Your University",
