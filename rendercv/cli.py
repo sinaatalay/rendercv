@@ -54,7 +54,7 @@ def welcome():
     print(table)
 
 
-def warning(text):
+def warning(text: str):
     """Print a warning message to the terminal.
 
     Args:
@@ -63,7 +63,7 @@ def warning(text):
     print(f"[bold yellow]{text}")
 
 
-def error(text, exception=None):
+def error(text: str, exception: Optional[Exception] = None):
     """Print an error message to the terminal.
 
     Args:
@@ -80,7 +80,7 @@ def error(text, exception=None):
         print(f"\n[bold red]{text}\n")
 
 
-def information(text):
+def information(text: str):
     """Print an information message to the terminal.
 
     Args:

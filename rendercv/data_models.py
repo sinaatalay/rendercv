@@ -53,7 +53,7 @@ def get_date_object(date: str | int) -> Date:
     data models.
 
     Args:
-        date_string (str): The date string to parse.
+        date (str): The date string to parse.
     Returns:
         datetime.date: The parsed date.
     """
@@ -528,7 +528,7 @@ class PublicationEntry(RenderCVBaseModel):
         """Check if the DOI exists in the DOI System."""
         # see https://stackoverflow.com/a/60671292/18840665 for the explanation of the
         # next line:
-        ssl._create_default_https_context = ssl._create_unverified_context
+        ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
 
         doi_url = f"http://doi.org/{doi}"
 
@@ -550,7 +550,8 @@ class PublicationEntry(RenderCVBaseModel):
         """Return the date string of the publication."""
         if isinstance(self.date, int):
             date_string = str(self.date)
-        elif isinstance(self.date, str):
+        else:
+            # Then it is a string
             date_object = get_date_object(self.date)
             date_string = format_date(date_object)
 
@@ -667,13 +668,9 @@ def get_entry_and_section_type(
     """Determine the entry and section type based on the entry.
 
     Args:
-        entry (dict[str, Any] | EducationEntry | ExperienceEntry | PublicationEntry |
-        NormalEntry | OneLineEntry | str): The entry to determine the type.
+        entry (dict[str, Any] | EducationEntry | ExperienceEntry | PublicationEntry | NormalEntry | OneLineEntry | str): The entry to determine the type.
     Returns:
-        tuple[str, Type[SectionWithTextEntries | SectionWithOneLineEntries |
-        SectionWithExperienceEntries | SectionWithEducationEntries |
-        SectionWithPublicationEntries | SectionWithNormalEntries]]: The entry type and the
-        section type.
+        tuple[str, Type[SectionWithTextEntries | SectionWithOneLineEntries | SectionWithExperienceEntries | SectionWithEducationEntries | SectionWithPublicationEntries | SectionWithNormalEntries]]: The entry type and the section type.
     """
     if isinstance(entry, dict):
         if "details" in entry:
@@ -709,7 +706,7 @@ def get_entry_and_section_type(
         elif isinstance(entry, PublicationEntry):
             entry_type = "PublicationEntry"
             section_type = SectionWithPublicationEntries
-        elif isinstance(entry, NormalEntry):
+        elif isinstance(entry, NormalEntry):  # type: ignore
             entry_type = "NormalEntry"
             section_type = SectionWithNormalEntries
         else:
@@ -892,7 +889,7 @@ class CurriculumVitae(RenderCVBaseModel):
         title="Social Networks",
         description="The social networks of the person.",
     )
-    sections_input: dict[str, SectionInput] = pydantic.Field(
+    sections_input: Optional[dict[str, SectionInput]] = pydantic.Field(
         default=None,
         title="Sections",
         description="The sections of the CV.",
@@ -902,27 +899,21 @@ class CurriculumVitae(RenderCVBaseModel):
     @functools.cached_property
     def sections(self) -> list[Section]:
         """Return all the sections of the CV with their titles."""
-        sections = []
+        sections: list[Section] = []
         if self.sections_input is not None:
             for title, section_or_entries in self.sections_input.items():
                 title = title.replace("_", " ").title()
-                if isinstance(section_or_entries, list):
-                    entry_type, section_type = get_entry_and_section_type(
-                        section_or_entries[0]
-                    )
 
-                    section = section_type(
-                        title=title,
-                        entry_type=entry_type,  # type: ignore
-                        entries=section_or_entries,  # type: ignore
-                    )
-                    sections.append(section)
+                entry_type, section_type = get_entry_and_section_type(
+                    section_or_entries[0]
+                )
 
-                else:
-                    raise RuntimeError(
-                        "This error shouldn't have been raised. Please open an"
-                        " issue on GitHub."
-                    )
+                section = section_type(
+                    title=title,
+                    entry_type=entry_type,  # type: ignore
+                    entries=section_or_entries,  # type: ignore
+                )
+                sections.append(section)
 
         return sections
 
@@ -981,6 +972,12 @@ class RenderCVDataModel(RenderCVBaseModel):
             return rendercv_design_validator.validate_python(design)
         else:
             theme_name: str = design["theme"]  # type: ignore
+            if not isinstance(theme_name, str):
+                raise RuntimeError(
+                    "This error shouldn't have been raised. Please open an issue on"
+                    " GitHub."
+                )
+
             # check if the theme name is valid:
             if not theme_name.isalpha():
                 raise ValueError(
@@ -1093,7 +1090,7 @@ def read_input_file(
         )
 
     file_content = file_path.read_text(encoding="utf-8")
-    input_as_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)
+    input_as_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)  # type: ignore
 
     # validate the parsed dictionary by creating an instance of RenderCVDataModel:
     rendercv_data_model = RenderCVDataModel(**input_as_dictionary)
@@ -1224,7 +1221,7 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
             SocialNetwork(network="LinkedIn", username="yourusername"),
             SocialNetwork(network="GitHub", username="yourusername"),
         ],
-        sections=sections,
+        sections=sections,  # type: ignore
     )
 
     design = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
@@ -1232,7 +1229,7 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
     return RenderCVDataModel(cv=cv, design=design)
 
 
-def generate_json_schema() -> dict:
+def generate_json_schema() -> dict[str, Any]:
     """Generate the JSON schema of RenderCV.
 
     JSON schema is generated for the users to make it easier for them to write the input
@@ -1245,7 +1242,7 @@ def generate_json_schema() -> dict:
     """
 
     class RenderCVSchemaGenerator(pydantic.json_schema.GenerateJsonSchema):
-        def generate(self, schema, mode="validation"):
+        def generate(self, schema, mode="validation"):  # type: ignore
             json_schema = super().generate(schema, mode=mode)
 
             # Basic information about the schema:
@@ -1258,7 +1255,7 @@ def generate_json_schema() -> dict:
 
             # Loop through $defs and remove docstring descriptions and fix optional
             # fields
-            for key, value in json_schema["$defs"].items():
+            for _, value in json_schema["$defs"].items():
                 # Don't allow additional properties
                 value["additionalProperties"] = False
 
