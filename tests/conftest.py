@@ -46,7 +46,7 @@ def normal_entry() -> dict[str, str]:
 def one_line_entry() -> dict[str, str]:
     return {
         "name": "My One Line Entry",
-        "details": "My Details",
+        "details": "My Details and some math $a=6^4 \\frac{3}{5}$",
     }
 
 
