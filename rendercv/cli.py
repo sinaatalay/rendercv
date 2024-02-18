@@ -237,11 +237,13 @@ def handle_validation_error(exception: pydantic.ValidationError):
         if isinstance(input, (dict, list)):
             input = ""
 
-        new_errors.append({
-            "loc": str(location),
-            "msg": message,
-            "input": str(input),
-        })
+        new_errors.append(
+            {
+                "loc": str(location),
+                "msg": message,
+                "input": str(input),
+            }
+        )
 
     # Print the errors in a nice table:
     table = rich.table.Table(
