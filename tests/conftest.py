@@ -1,5 +1,4 @@
 import pathlib
-from typing import Type
 
 import jinja2
 import pytest
