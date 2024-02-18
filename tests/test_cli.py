@@ -1,5 +1,6 @@
 import os
-import importlib.machinery
+import filecmp
+import shutil
 
 import rendercv.cli as cli
 import rendercv.data_models as dm
@@ -8,6 +9,7 @@ import pydantic
 import ruamel.yaml
 import pytest
 import typer.testing
+import time_machine
 
 
 def test_welcome():
@@ -140,7 +142,7 @@ def test_handle_validation_error(data_model_class, invalid_model):
 
 @pytest.mark.parametrize(
     "exception",
-    [ruamel.yaml.YAMLError, RuntimeError],
+    [ruamel.yaml.YAMLError, RuntimeError, FileNotFoundError, ValueError],
 )
 def test_handle_exceptions(exception):
     @cli.handle_exceptions
@@ -165,9 +167,13 @@ def test_live_progress_reporter_class():
 runner = typer.testing.CliRunner()
 
 
-def test_render_command(input_file_path):
-    str_input_file_path = str(input_file_path)
-    result = runner.invoke(cli.app, ["render", str_input_file_path])
+@time_machine.travel("2024-01-01")
+def test_render_command(tmp_path, input_file_path):
+    # copy input file to the temporary directory to create the output directory there:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    result = runner.invoke(cli.app, ["render", str(input_file_path)])
+
     assert result.exit_code == 0
     assert "Your CV is rendered!" in result.stdout
 

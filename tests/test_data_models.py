@@ -7,8 +7,11 @@ import shutil
 import pydantic
 import pytest
 import time_machine
+import ruamel.yaml
 
 from rendercv import data_models as dm
+
+from .test_renderer import update_auxiliary_files
 
 
 @pytest.mark.parametrize(
@@ -57,7 +60,23 @@ def test_format_date(date, expected_date_string):
 
 
 def test_read_input_file(input_file_path):
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
+        input_dictionary = {
+            "cv": {
+                "name": "John Doe",
+            },
+            "design": {
+                "theme": "classic",
+            },
+        }
+
+        # dump the dictionary to a yaml file
+        yaml = ruamel.yaml.YAML()
+        yaml.dump(input_dictionary, input_file_path)
+
     data_model = dm.read_input_file(input_file_path)
+
     assert isinstance(data_model, dm.RenderCVDataModel)
 
 
@@ -404,11 +423,13 @@ def test_sections(
 
 def test_sections_with_invalid_entries():
     input = {"name": "John Doe", "sections": dict()}
-    input["sections"]["section_title"] = [{
-        "this": "is",
-        "an": "invalid",
-        "entry": 10,
-    }]
+    input["sections"]["section_title"] = [
+        {
+            "this": "is",
+            "an": "invalid",
+            "entry": 10,
+        }
+    ]
     with pytest.raises(pydantic.ValidationError):
         dm.CurriculumVitae(**input)
 
@@ -422,10 +443,12 @@ def test_sections_with_invalid_entries():
 )
 def test_invalid_custom_theme(invalid_custom_theme_name):
     with pytest.raises(pydantic.ValidationError):
-        dm.RenderCVDataModel(**{
-            "cv": {"name": "John Doe"},
-            "design": {"theme": invalid_custom_theme_name},
-        })
+        dm.RenderCVDataModel(
+            **{
+                "cv": {"name": "John Doe"},
+                "design": {"theme": invalid_custom_theme_name},
+            }
+        )
 
 
 def test_custom_theme_with_missing_files(tmp_path):
@@ -433,24 +456,35 @@ def test_custom_theme_with_missing_files(tmp_path):
     custom_theme_path.mkdir()
     with pytest.raises(pydantic.ValidationError):
         os.chdir(tmp_path)
-        dm.RenderCVDataModel(**{  # type: ignore
+        dm.RenderCVDataModel(
+            **{  # type: ignore
+                "cv": {"name": "John Doe"},
+                "design": {"theme": "customtheme"},
+            }
+        )
+
+
+def test_custom_theme(auxiliary_files_directory_path):
+    os.chdir(
+        auxiliary_files_directory_path
+        / "test_copy_theme_files_to_output_directory_custom_theme"
+    )
+    data_model = dm.RenderCVDataModel(
+        **{  # type: ignore
             "cv": {"name": "John Doe"},
-            "design": {"theme": "customtheme"},
-        })
-
-
-def test_custom_theme(reference_files_directory_path):
-    os.chdir(reference_files_directory_path)
-    data_model = dm.RenderCVDataModel(**{  # type: ignore
-        "cv": {"name": "John Doe"},
-        "design": {"theme": "dummytheme"},
-    })
+            "design": {"theme": "dummytheme"},
+        }
+    )
 
     assert data_model.design.theme == "dummytheme"
 
 
-def test_custom_theme_without_init_file(tmp_path, reference_files_directory_path):
-    reference_custom_theme_path = reference_files_directory_path / "dummytheme"
+def test_custom_theme_without_init_file(tmp_path, auxiliary_files_directory_path):
+    reference_custom_theme_path = (
+        auxiliary_files_directory_path
+        / "test_copy_theme_files_to_output_directory_custom_theme"
+        / "dummytheme"
+    )
 
     # copy the directory to tmp_path:
     custom_theme_path = tmp_path / "dummytheme"
@@ -461,9 +495,11 @@ def test_custom_theme_without_init_file(tmp_path, reference_files_directory_path
     init_file.unlink()
 
     os.chdir(tmp_path)
-    data_model = dm.RenderCVDataModel(**{  # type: ignore
-        "cv": {"name": "John Doe"},
-        "design": {"theme": "dummytheme"},
-    })
+    data_model = dm.RenderCVDataModel(
+        **{  # type: ignore
+            "cv": {"name": "John Doe"},
+            "design": {"theme": "dummytheme"},
+        }
+    )
 
     assert data_model.design.theme == "dummytheme"

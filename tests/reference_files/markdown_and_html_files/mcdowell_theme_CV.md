@@ -1,4 +1,0 @@
-# mcdowell theme's CV
-
-
-

@@ -61,6 +61,64 @@ def rendercv_data_model() -> dm.RenderCVDataModel:
 
 
 @pytest.fixture
+def rendercv_empty_curriculum_vitae_data_model() -> dm.CurriculumVitae:
+    return dm.CurriculumVitae(name="John Doe")
+
+
+@pytest.fixture
+def rendercv_filled_curriculum_vitae_data_model(
+    text_entry,
+    publication_entry,
+    experience_entry,
+    education_entry,
+    normal_entry,
+    one_line_entry,
+) -> dm.CurriculumVitae:
+    return dm.CurriculumVitae(
+        name="John Doe",
+        label="Mechanical Engineer",
+        location="Istanbul, Turkey",
+        email="johndoe@example.com",
+        phone="+905419999999",  # type: ignore
+        website="https://example.com",  # type: ignore
+        social_networks=[
+            dm.SocialNetwork(network="LinkedIn", username="johndoe"),
+            dm.SocialNetwork(network="GitHub", username="johndoe"),
+            dm.SocialNetwork(network="Instagram", username="johndoe"),
+            dm.SocialNetwork(network="Orcid", username="0000-0000-0000-0000"),
+            dm.SocialNetwork(network="Mastodon", username="@johndoe@example"),
+            dm.SocialNetwork(network="Twitter", username="johndoe"),
+        ],
+        sections={
+            "section1": [
+                text_entry,
+                text_entry,
+            ],
+            "section2": [
+                publication_entry,
+                publication_entry,
+            ],
+            "section3": [
+                experience_entry,
+                experience_entry,
+            ],
+            "section4": [
+                education_entry,
+                education_entry,
+            ],
+            "section5": [
+                normal_entry,
+                normal_entry,
+            ],
+            "section6": [
+                one_line_entry,
+                one_line_entry,
+            ],
+        },
+    )
+
+
+@pytest.fixture
 def jinja2_environment() -> jinja2.Environment:
     return r.setup_jinja2_environment()
 
@@ -76,10 +134,10 @@ def root_directory_path(tests_directory_path) -> pathlib.Path:
 
 
 @pytest.fixture
-def reference_files_directory_path(tests_directory_path) -> pathlib.Path:
-    return tests_directory_path / "reference_files"
+def auxiliary_files_directory_path(tests_directory_path) -> pathlib.Path:
+    return tests_directory_path / "auxiliary_files"
 
 
 @pytest.fixture
-def input_file_path(reference_files_directory_path) -> pathlib.Path:
-    return reference_files_directory_path / "John_Doe_CV.yaml"
+def input_file_path(auxiliary_files_directory_path) -> pathlib.Path:
+    return auxiliary_files_directory_path / "John_Doe_CV.yaml"

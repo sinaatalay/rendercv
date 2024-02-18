@@ -13,6 +13,14 @@ from rendercv import renderer as r
 from rendercv import data_models as dm
 
 
+update_auxiliary_files = True
+
+folder_name_dictionary = {
+    "rendercv_empty_curriculum_vitae_data_model": "empty",
+    "rendercv_filled_curriculum_vitae_data_model": "filled",
+}
+
+
 def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file = r.LaTeXFile(rendercv_data_model, jinja2_environment)
     latex_file.get_latex_code()
@@ -73,6 +81,29 @@ def test_transform_markdown_data_model_to_latex_data_model(rendercv_data_model):
     assert isinstance(latex_data_model, dm.RenderCVDataModel)
     assert latex_data_model.cv.name == rendercv_data_model.cv.name
     assert latex_data_model.design == rendercv_data_model.design
+
+
+@pytest.mark.parametrize(
+    "string, placeholders, expected_string",
+    [
+        ("Hello, {name}!", {"{name}": "World"}, "Hello, World!"),
+        (
+            "{greeting}, {name}!",
+            {"{greeting}": "Hello", "{name}": "World"},
+            "Hello, World!",
+        ),
+        ("No placeholders here.", {}, "No placeholders here."),
+        (
+            "{missing} placeholder.",
+            {"{not_missing}": "value"},
+            "{missing} placeholder.",
+        ),
+        ("", {"{placeholder}": "value"}, ""),
+    ],
+)
+def test_replace_placeholders_with_actual_values(string, placeholders, expected_string):
+    result = r.replace_placeholders_with_actual_values(string, placeholders)
+    assert result == expected_string
 
 
 @pytest.mark.parametrize(
@@ -242,31 +273,43 @@ def test_setup_jinja2_environment():
     assert "get_an_item_with_a_specific_attribute_value" in env.filters
 
 
-update_reference_files = False
-
-
 @pytest.mark.parametrize(
     "theme_name",
     dm.available_themes,
 )
+@pytest.mark.parametrize(
+    "curriculum_vitae_data_model",
+    [
+        "rendercv_empty_curriculum_vitae_data_model",
+        "rendercv_filled_curriculum_vitae_data_model",
+    ],
+)
 @time_machine.travel("2024-01-01")
-def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_name):
-    reference_latex_files_directory_path = (
-        reference_files_directory_path / "latex_files"
+def test_generate_latex_file(
+    tmp_path,
+    auxiliary_files_directory_path,
+    request,
+    theme_name,
+    curriculum_vitae_data_model,
+):
+    reference_directory_path = (
+        auxiliary_files_directory_path
+        / "test_generate_latex_file"
+        / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
 
-    file_name = f"{theme_name}_theme_CV.tex"
+    file_name = "John_Doe_CV.tex"
     output_file_path = tmp_path / "make_sure_it_generates_the_directory" / file_name
-    reference_file_path = reference_latex_files_directory_path / file_name
+    reference_file_path = reference_directory_path / file_name
 
     data_model = dm.RenderCVDataModel(
-        cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
+        cv=request.getfixturevalue(curriculum_vitae_data_model),
         design={"theme": theme_name},
     )
     r.generate_latex_file(data_model, tmp_path / "make_sure_it_generates_the_directory")
-    # Update the reference files if update_reference_files is True
-    if update_reference_files:
-        r.generate_latex_file(data_model, reference_latex_files_directory_path)
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
+        r.generate_latex_file(data_model, reference_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
 
@@ -275,26 +318,40 @@ def test_generate_latex_file(tmp_path, reference_files_directory_path, theme_nam
     "theme_name",
     dm.available_themes,
 )
+@pytest.mark.parametrize(
+    "curriculum_vitae_data_model",
+    [
+        "rendercv_empty_curriculum_vitae_data_model",
+        "rendercv_filled_curriculum_vitae_data_model",
+    ],
+)
 @time_machine.travel("2024-01-01")
-def test_generate_markdown_file(tmp_path, reference_files_directory_path, theme_name):
-    reference_latex_files_directory_path = (
-        reference_files_directory_path / "markdown_and_html_files"
+def test_generate_markdown_file(
+    tmp_path,
+    auxiliary_files_directory_path,
+    request,
+    theme_name,
+    curriculum_vitae_data_model,
+):
+    reference_directory_path = (
+        auxiliary_files_directory_path
+        / "test_generate_markdown_file"
+        / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
 
-    file_name = f"{theme_name}_theme_CV.md"
+    file_name = "John_Doe_CV.md"
     output_file_path = tmp_path / "make_sure_it_generates_the_directory" / file_name
-    reference_file_path = reference_latex_files_directory_path / file_name
+    reference_file_path = reference_directory_path / file_name
 
     data_model = dm.RenderCVDataModel(
-        cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
-        design={"theme": theme_name},
+        cv=request.getfixturevalue(curriculum_vitae_data_model),
     )
     r.generate_markdown_file(
         data_model, tmp_path / "make_sure_it_generates_the_directory"
     )
-    # Update the reference files if update_reference_files is True
-    if update_reference_files:
-        r.generate_markdown_file(data_model, reference_latex_files_directory_path)
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
+        r.generate_markdown_file(data_model, reference_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
 
@@ -304,15 +361,15 @@ def test_generate_markdown_file(tmp_path, reference_files_directory_path, theme_
     dm.available_themes,
 )
 def test_copy_theme_files_to_output_directory(
-    tmp_path, reference_files_directory_path, theme_name
+    tmp_path, auxiliary_files_directory_path, theme_name
 ):
     reference_directory_path = (
-        reference_files_directory_path / f"{theme_name}_theme_auxiliary_files"
+        auxiliary_files_directory_path / "test_copy_theme_files_to_output_directory"
     )
 
     r.copy_theme_files_to_output_directory(theme_name, tmp_path)
-    # Update the reference files if update_reference_files is True
-    if update_reference_files:
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
         reference_directory_path.mkdir(parents=True, exist_ok=True)
         r.copy_theme_files_to_output_directory(theme_name, reference_directory_path)
 
@@ -320,65 +377,152 @@ def test_copy_theme_files_to_output_directory(
 
 
 def test_copy_theme_files_to_output_directory_custom_theme(
-    tmp_path, reference_files_directory_path
+    tmp_path, auxiliary_files_directory_path
 ):
     theme_name = "dummytheme"
-    reference_directory = (
-        reference_files_directory_path / f"{theme_name}_theme_auxiliary_files"
+
+    test_auxiliary_files_directory_path = (
+        auxiliary_files_directory_path
+        / "test_copy_theme_files_to_output_directory_custom_theme"
+    )
+    custom_theme_directory_path = test_auxiliary_files_directory_path / "dummytheme"
+    reference_directory_path = (
+        test_auxiliary_files_directory_path / "theme_auxiliary_files"
     )
 
-    # change current working directory to the refefence_files_directory_path:
-    os.chdir(reference_files_directory_path)
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
+        # create dummytheme:
+        if not custom_theme_directory_path.exists():
+            custom_theme_directory_path.mkdir(parents=True, exist_ok=True)
+
+        # create a txt file called test.txt in the custom theme directory:
+        pathlib.Path(custom_theme_directory_path / "EducationEntry.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "ExperienceEntry.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "Header.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "NormalEntry.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "OneLineEntry.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "Preamble.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "PublicationEntry.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "SectionBeginning.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "SectionEnding.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "TextEntry.j2.tex").touch()
+        pathlib.Path(custom_theme_directory_path / "theme_auxiliary_file.cls").touch()
+        pathlib.Path(custom_theme_directory_path / "theme_auxiliary_dir").mkdir(
+            exist_ok=True
+        )
+        init_file = pathlib.Path(custom_theme_directory_path / "__init__.py")
+
+        init_file.touch()
+        init_file.write_text(
+            "from typing import Literal\n\nimport pydantic\n\n\nclass"
+            " DummythemeThemeOptions(pydantic.BaseModel):\n    theme:"
+            " Literal['dummytheme']\n"
+        )
+
+        # create reference_directory_path:
+        os.chdir(test_auxiliary_files_directory_path)
+        r.copy_theme_files_to_output_directory(theme_name, reference_directory_path)
+
+    # change current working directory to the test_auxiliary_files_directory_path
+    os.chdir(test_auxiliary_files_directory_path)
+
+    # copy the auxiliary theme files to tmp_path:
     r.copy_theme_files_to_output_directory(theme_name, tmp_path)
 
-    # Update the reference files if update_reference_files is True
-    if update_reference_files:
-        r.copy_theme_files_to_output_directory(theme_name, reference_directory)
-
-    assert filecmp.dircmp(tmp_path, reference_directory).left_only == []
-    assert filecmp.dircmp(tmp_path, reference_directory).right_only == []
+    assert filecmp.dircmp(tmp_path, reference_directory_path).left_only == []
+    assert filecmp.dircmp(tmp_path, reference_directory_path).right_only == []
 
 
 @pytest.mark.parametrize(
     "theme_name",
     dm.available_themes,
+)
+@pytest.mark.parametrize(
+    "curriculum_vitae_data_model",
+    [
+        "rendercv_empty_curriculum_vitae_data_model",
+        "rendercv_filled_curriculum_vitae_data_model",
+    ],
 )
 @time_machine.travel("2024-01-01")
 def test_generate_latex_file_and_copy_theme_files(
-    tmp_path, reference_files_directory_path, theme_name
+    tmp_path,
+    auxiliary_files_directory_path,
+    request,
+    theme_name,
+    curriculum_vitae_data_model,
 ):
-    reference_directory = reference_files_directory_path / f"{theme_name}_theme_full"
+    reference_directory_path = (
+        auxiliary_files_directory_path
+        / "test_generate_latex_file_and_copy_theme_files"
+        / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
+    )
 
     data_model = dm.RenderCVDataModel(
-        cv=dm.CurriculumVitae(name=f"{theme_name} theme"),
+        cv=request.getfixturevalue(curriculum_vitae_data_model),
         design={"theme": theme_name},
     )
     r.generate_latex_file_and_copy_theme_files(data_model, tmp_path)
-    # Update the reference files if update_reference_files is True
-    if update_reference_files:
-        r.generate_latex_file_and_copy_theme_files(data_model, reference_directory)
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
+        r.generate_latex_file_and_copy_theme_files(data_model, reference_directory_path)
 
-    assert filecmp.dircmp(tmp_path, reference_directory).diff_files == []
+    assert filecmp.dircmp(tmp_path, reference_directory_path).left_only == []
+    assert filecmp.dircmp(tmp_path, reference_directory_path).right_only == []
 
 
 @pytest.mark.parametrize(
     "theme_name",
     dm.available_themes,
 )
+@pytest.mark.parametrize(
+    "curriculum_vitae_data_model",
+    [
+        "rendercv_empty_curriculum_vitae_data_model",
+        "rendercv_filled_curriculum_vitae_data_model",
+    ],
+)
 @time_machine.travel("2024-01-01")
-def test_latex_to_pdf(tmp_path, reference_files_directory_path, theme_name):
-    reference_directory = reference_files_directory_path / f"{theme_name}_theme_full"
-    reference_pdf_file_path = reference_directory / f"{theme_name}_theme_CV.pdf"
+def test_latex_to_pdf(
+    tmp_path, auxiliary_files_directory_path, theme_name, curriculum_vitae_data_model
+):
+    latex_sources_path = (
+        auxiliary_files_directory_path
+        / "test_generate_latex_file_and_copy_theme_files"
+        / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
+    )
+    reference_directory_path = (
+        auxiliary_files_directory_path
+        / "test_latex_to_pdf"
+        / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
+    )
 
-    shutil.copytree(reference_directory, tmp_path, dirs_exist_ok=True)
-    output_pdf_file_path = r.latex_to_pdf(tmp_path / f"{theme_name}_theme_CV.tex")
-    # Update the reference files if update_reference_files is True
-    if update_reference_files:
-        reference_pdf_file_path = r.latex_to_pdf(
-            reference_directory / f"{theme_name}_theme_CV.tex"
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
+        # copy the latex sources to the reference_directory_path
+        shutil.copytree(
+            latex_sources_path, reference_directory_path, dirs_exist_ok=True
         )
 
-    text1 = pypdf.PdfReader(output_pdf_file_path).pages[0].extract_text()
+        # convert the latex code to a pdf
+        reference_pdf_file_path = r.latex_to_pdf(
+            reference_directory_path / "John_Doe_CV.tex"
+        )
+
+        # remove the latex sources from the reference_directory_path, but keep the pdf
+        for file in reference_directory_path.iterdir():
+            if file.is_file() and file.suffix != ".pdf":
+                file.unlink()
+
+    # copy the latex sources to the tmp_path
+    shutil.copytree(latex_sources_path, tmp_path, dirs_exist_ok=True)
+
+    # convert the latex code to a pdf
+    reference_pdf_file_path = reference_directory_path / "John_Doe_CV.pdf"
+    output_file_path = r.latex_to_pdf(tmp_path / "John_Doe_CV.tex")
+
+    text1 = pypdf.PdfReader(output_file_path).pages[0].extract_text()
     text2 = pypdf.PdfReader(reference_pdf_file_path).pages[0].extract_text()
     assert text1 == text2
 
@@ -393,22 +537,52 @@ def test_latex_to_pdf_invalid_latex_file():
     "theme_name",
     dm.available_themes,
 )
+@pytest.mark.parametrize(
+    "curriculum_vitae_data_model",
+    [
+        "rendercv_empty_curriculum_vitae_data_model",
+        "rendercv_filled_curriculum_vitae_data_model",
+    ],
+)
 @time_machine.travel("2024-01-01")
-def test_markdown_to_html(tmp_path, reference_files_directory_path, theme_name):
-    reference_directory = reference_files_directory_path / "markdown_and_html_files"
-    reference_html_file_path = (
-        reference_directory / f"{theme_name}_theme_CV_PASTETOGRAMMARLY.html"
+def test_markdown_to_html(
+    tmp_path, auxiliary_files_directory_path, theme_name, curriculum_vitae_data_model
+):
+    markdown_sources_path = (
+        auxiliary_files_directory_path
+        / "test_generate_markdown_file"
+        / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
+    )
+    reference_directory = (
+        auxiliary_files_directory_path
+        / "test_markdown_to_html"
+        / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
 
-    shutil.copytree(reference_directory, tmp_path, dirs_exist_ok=True)
-    output_html_file_path = r.markdown_to_html(tmp_path / f"{theme_name}_theme_CV.md")
-    # Update the reference files if update_reference_files is True
-    if update_reference_files:
-        reference_html_file_path = r.markdown_to_html(
-            reference_directory / f"{theme_name}_theme_CV.md"
-        )
+    # Update the auxiliary files if update_auxiliary_files is True
+    if update_auxiliary_files:
+        # copy the markdown sources to the reference_directory
+        shutil.copytree(markdown_sources_path, reference_directory, dirs_exist_ok=True)
 
-    text1 = output_html_file_path.read_text()
-    text2 = reference_html_file_path.read_text()
+        # convert markdown to html
+        r.markdown_to_html(reference_directory / "John_Doe_CV.md")
 
-    assert text1 == text2
+        # remove the markdown sources from the reference_directory
+        for file in reference_directory.iterdir():
+            if file.is_file() and file.suffix != ".html":
+                file.unlink()
+
+    # copy the markdown sources to the tmp_path
+    shutil.copytree(markdown_sources_path, tmp_path, dirs_exist_ok=True)
+
+    # convert markdown to html
+    output_file_path = r.markdown_to_html(tmp_path / "John_Doe_CV.md")
+    reference_file_path = reference_directory / "John_Doe_CV_PASTETOGRAMMARLY.html"
+
+    assert filecmp.cmp(output_file_path, reference_file_path)
+
+
+def test_markdown_to_html_invalid_markdown_file():
+    with pytest.raises(FileNotFoundError):
+        file_path = pathlib.Path("file_doesnt_exist.md")
+        r.markdown_to_html(file_path)
