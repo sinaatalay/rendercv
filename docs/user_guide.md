@@ -86,7 +86,7 @@ highlights:
 
 which renders into
 
-![EducationEntry](images/EducationEntry.png)
+![EducationEntry](assets/images/imagesEducationEntry.png)
 
 ### *ExperienceEntry*
 
@@ -107,7 +107,7 @@ highlights:
 
 which renders into
 
-![ExperienceEntry](images/ExperienceEntry.png)
+![ExperienceEntry](assets/images/imagesExperienceEntry.png)
 
 ### *NormalEntry*
 
@@ -124,7 +124,7 @@ url: https://example.com
 
 which renders into
 
-![NormalEntry](images/NormalEntry.png)
+![NormalEntry](assets/images/imagesNormalEntry.png)
 
 ### *OneLineEntry*
 ```yaml
@@ -134,7 +134,7 @@ details: C++, C, Python, JavaScript, MATLAB, Lua, LaTeX
 
 which renders into
 
-![OneLineEntry](images/OneLineEntry.png)
+![OneLineEntry](assets/images/imagesOneLineEntry.png)
 
 ### *PublicationEntry*
 
@@ -152,7 +152,7 @@ cited_by: 243
 
 which renders into
 
-![PublicationEntry](images/PublicationEntry.png)
+![PublicationEntry](assets/images/imagesPublicationEntry.png)
 
 
 ## Custom Sections
