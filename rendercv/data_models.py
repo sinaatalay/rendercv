@@ -955,7 +955,9 @@ class RenderCVDataModel(RenderCVBaseModel):
     design: RenderCVDesign | pydantic.json_schema.SkipJsonSchema[Any] = pydantic.Field(
         default=ClassicThemeOptions(theme="classic"),
         title="Design",
-        description="The design information of the CV.",
+        description=(
+            "The design information of the CV. The default is the classic theme."
+        ),
     )
 
     @pydantic.field_validator("design", mode="before")
