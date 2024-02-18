@@ -46,7 +46,7 @@ class TemplatedFile:
 
     def template(
         self,
-        theme_name,
+        theme_name: str,
         template_name: Literal[
             "EducationEntry",
             "ExperienceEntry",
@@ -75,14 +75,7 @@ class TemplatedFile:
 
         Args:
             template_name (str): The name of the template file.
-            entry (Optional[
-                        dm.EducationEntry,
-                        dm.ExperienceEntry,
-                        dm.NormalEntry,
-                        dm.PublicationEntry,
-                        dm.OneLineEntry,
-                        str
-                    ]): The data model of the entry.
+            entry (Optional[dm.EducationEntry, dm.ExperienceEntry, dm.NormalEntry,dm.PublicationEntry, dm.OneLineEntry, str]): The data model of the entry.
             section_title (Optional[str]): The title of the section.
             is_first_entry (Optional[bool]): Whether the entry is the first one in the
                 section.
@@ -144,7 +137,7 @@ class LaTeXFile(TemplatedFile):
         )
         super().__init__(data_model, environment)
 
-    def render_templates(self):
+    def render_templates(self) -> tuple[str, str, list[tuple[str, list[str], str]]]:
         """Render and return all the templates for the $\\LaTeX$ file.
 
         Returns:
@@ -154,12 +147,12 @@ class LaTeXFile(TemplatedFile):
         # Template the preamble, header, and sections:
         preamble = self.template("Preamble")
         header = self.template("Header")
-        sections = []
+        sections: list[tuple[str, list[str], str]] = []
         for section in self.cv.sections:
             section_beginning = self.template(
                 "SectionBeginning", section_title=section.title
             )
-            entries = []
+            entries: list[str] = []
             for i, entry in enumerate(section.entries):
                 if i == 0:
                     is_first_entry = True
@@ -203,7 +196,17 @@ class LaTeXFile(TemplatedFile):
         section_title: Optional[str] = None,
         is_first_entry: Optional[bool] = None,
     ) -> str:
-        """Template one of the files in the `themes` directory."""
+        """Template one of the files in the `themes` directory.
+
+        Args:
+            template_name (str): The name of the template file.
+            entry (Optional[dm.EducationEntry, dm.ExperienceEntry, dm.NormalEntry,dm.PublicationEntry, dm.OneLineEntry, str]): The data model of the entry.
+            section_title (Optional[str]): The title of the section.
+            is_first_entry (Optional[bool]): Whether the entry is the first one in the section.
+
+        Returns:
+            str: The templated file.
+        """
         result = super().template(
             self.design.theme,
             template_name,
@@ -215,7 +218,11 @@ class LaTeXFile(TemplatedFile):
         return result
 
     def get_latex_code(self):
-        """Get the $\\LaTeX$ code of the file."""
+        """Get the $\\LaTeX$ code of the file.
+
+        Returns:
+            str: The $\\LaTeX$ code.
+        """
         preamble, header, sections = self.render_templates()
         return self.get_full_code(
             "main.j2.tex",
@@ -234,18 +241,13 @@ class MarkdownFile(TemplatedFile):
     data model and Jinja2 templates. It inherits from the TemplatedFile class. Markdown
     files are generated to produce a PDF which can be copy-pasted to
     [Grammarly](https://app.grammarly.com/) for proofreading.
-
-    Args:
-        data_model (dm.RenderCVDataModel): The data model.
-        environment (jinja2.Environment): The Jinja2 environment.
     """
 
     def render_templates(self):
         """Render and return all the templates for the Markdown file.
 
         Returns:
-            Tuple[str, List[Tuple[str, List[str]]]: The header and sections of the
-                Markdown file.
+            Tuple[str, List[Tuple[str, List[str]]]]: The header and sections of the Markdown file.
         """
         # Template the header and sections:
         header = self.template("Header")
@@ -297,7 +299,17 @@ class MarkdownFile(TemplatedFile):
         section_title: Optional[str] = None,
         is_first_entry: Optional[bool] = None,
     ) -> str:
-        """Template one of the files in the `themes` directory."""
+        """Template one of the files in the `themes` directory.
+
+        Args:
+            template_name (str): The name of the template file.
+            entry (Optional[dm.EducationEntry, dm.ExperienceEntry, dm.NormalEntry,dm.PublicationEntry, dm.OneLineEntry, str]): The data model of the entry.
+            section_title (Optional[str]): The title of the section.
+            is_first_entry (Optional[bool]): Whether the entry is the first one in the section.
+
+        Returns:
+            str: The templated file.
+        """
         result = super().template(
             "markdown",
             template_name,
@@ -729,7 +741,7 @@ def divide_length_by(length: str, divider: float) -> str:
 
 
 def get_an_item_with_a_specific_attribute_value(
-    items: list[Any], attribute: str, value: Any
+    items: Optional[list[Any]], attribute: str, value: Any
 ) -> Any:
     """Get an item from a list of items with a specific attribute value.
 
