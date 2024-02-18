@@ -12,8 +12,7 @@ has provided a valid RenderCV input. This is achieved through the use of
 """
 
 from datetime import date as Date
-from typing import Literal, Any, Type
-from typing_extensions import Annotated, Optional, get_args
+from typing import Literal, Any, Type, Annotated, Optional, get_args
 import importlib
 import importlib.util
 import importlib.machinery
