@@ -860,7 +860,8 @@ def copy_theme_files_to_output_directory(
 ):
     """Copy the auxiliary files (all the files that don't end with `.j2.tex` and `.py`)
     of the theme to the output directory. For example, the "classic" theme has custom
-    fonts, and the $\\LaTeX$ needs it.
+    fonts, and the $\\LaTeX$ needs it. If the theme is a custom theme, then it will be
+    copied from the current working directory.
 
     Args:
         theme_name (str): The name of the theme.
@@ -988,7 +989,7 @@ def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
         raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
 
     html_file_path = (
-        markdown_file_path.parent / f"{markdown_file_path.name}_PASTETOGRAMMARLY.html"
+        markdown_file_path.parent / f"{markdown_file_path.stem}_PASTETOGRAMMARLY.html"
     )
 
     # Convert the markdown file to HTML:
