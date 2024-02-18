@@ -1,4 +1,0 @@
-# classic theme's CV
-
-
-

@@ -1,4 +1,0 @@
-# moderncv theme's CV
-
-
-
