@@ -62,5 +62,5 @@ My Text Entry
 
 # Section6
 
-- My One Line Entry: My Details
-- My One Line Entry: My Details
+- My One Line Entry: My Details and some math $a=6^4 \frac{3}{5}$
+- My One Line Entry: My Details and some math $a=6^4 \frac{3}{5}$
