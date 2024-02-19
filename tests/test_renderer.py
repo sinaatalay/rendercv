@@ -13,7 +13,7 @@ from rendercv import renderer as r
 from rendercv import data_models as dm
 
 
-update_auxiliary_files = True
+update_auxiliary_files = False
 
 folder_name_dictionary = {
     "rendercv_empty_curriculum_vitae_data_model": "empty",
