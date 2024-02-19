@@ -132,9 +132,10 @@ class LaTeXFile(TemplatedFile):
         data_model: dm.RenderCVDataModel,
         environment: jinja2.Environment,
     ):
-        data_model = transform_markdown_data_model_to_latex_data_model(
-            copy.deepcopy(data_model)
+        transformed_sections = transform_markdown_sections_to_latex_sections(
+            copy.deepcopy(data_model.cv.sections_input)
         )
+        data_model.cv.sections_input = transformed_sections
         super().__init__(data_model, environment)
 
     def render_templates(self) -> tuple[str, str, list[tuple[str, list[str], str]]]:
@@ -449,79 +450,50 @@ def markdown_to_latex(markdown_string: str) -> str:
     return latex_string
 
 
-def transform_markdown_data_model_to_latex_data_model(
-    data_model: dm.RenderCVDataModel,
-) -> dm.RenderCVDataModel:
+def transform_markdown_sections_to_latex_sections(
+    sections: Optional[dict[str, dm.SectionInput]],
+) -> Optional[dict[str, dm.SectionInput]]:
     """
-    Recursively loop through a `RenderCVDataModel` and convert all the markdown strings
-    (user input is in markdown format) to LaTeX strings. Also, escape special LaTeX
+    Recursively loop through sections and convert all the markdown strings (user input
+    is in markdown format) to $\\LaTeX$ strings. Also, escape special $\\LaTeX$
     characters.
 
     Args:
-        data_model (RenderCVDataModel): The data model to transform.
+        sections (Optional[dict[str, dm.SectionInput]]): Sections with markdown strings.
     Returns:
-        dict: The data model with LaTeX strings.
+        Optional[dict[str, dm.SectionInput]]: Sections with $\\LaTeX$ strings.
     """
-    data_model_as_dict = data_model.model_dump()
-    for key, value in data_model_as_dict.items():
-        if isinstance(value, str):
-            # if the value is a string, then apply markdown_to_latex and
-            # escape_latex_characters to it:
-            result = markdown_to_latex(escape_latex_characters(value))
-            # update data_model object's attribute with the new value:
-            setattr(data_model, key, result)
-        elif isinstance(value, list):
-            # if the value is a list, then loop through the list and apply
-            # markdown_to_latex and escape_latex_characters to each item:
-            transformed_list = []
-            for index, item in enumerate(value):
-                if isinstance(item, str):
-                    result = markdown_to_latex(escape_latex_characters(item))
-                    transformed_list.append(result)
-                elif isinstance(item, dict):
-                    # if the item is a dictionary, then it means it's a sub data model.
-                    # So, call transform_markdown_data_model_to_latex_data_model again:
-                    sub_data_model = getattr(data_model, key)[index]
-                    transformed_sub_data_model = (
-                        transform_markdown_data_model_to_latex_data_model(
-                            sub_data_model
-                        )
-                    )
-                    transformed_list.append(transformed_sub_data_model)
+    if sections is None:
+        return None
 
-            # update data_model object's attribute with the new value:
-            setattr(data_model, key, transformed_list)
-        elif isinstance(value, dict):
-            if key == "sections_input":
-                # Then it means it's the `sections` field, it is a dictionary but
-                # not a sub data model. Therefore the same function cannot be called.
-                # So, loop through the dictionary and apply markdown_to_latex and
-                # escape_latex_characters to each item:
-                sections = getattr(data_model, key)
-                for section_title, entries in sections.items():
-                    transformed_entries = []
-                    for entry in entries:
-                        if isinstance(entry, str):
-                            result = markdown_to_latex(escape_latex_characters(entry))
-                            transformed_entries.append(result)
-                        else:
-                            transformed_entry = (
-                                transform_markdown_data_model_to_latex_data_model(entry)
-                            )
-                            transformed_entries.append(transformed_entry)
-                setattr(data_model, key, sections)
+    for key, value in sections.items():
+        # loop through the list and apply markdown_to_latex and escape_latex_characters
+        # to each item:
+        transformed_list = []
+        for entry in value:
+            if isinstance(entry, str):
+                # Then it means it's a TextEntry.
+                result = markdown_to_latex(escape_latex_characters(entry))
+                transformed_list.append(result)
             else:
-                # Then it means it's a sub data model.
-                # So, call transform_markdown_data_model_to_latex_data_model again:
-                sub_data_model = getattr(data_model, key)
-                transformed_sub_data_model = (
-                    transform_markdown_data_model_to_latex_data_model(sub_data_model)
-                )
+                # Then it means it's one of the other entries.
+                entry_as_dict = entry.model_dump()
+                for entry_key, value in entry_as_dict.items():
+                    if isinstance(value, str):
+                        result = markdown_to_latex(escape_latex_characters(value))
+                        setattr(entry, entry_key, result)
+                    elif isinstance(value, list):
+                        for j, item in enumerate(value):
+                            if isinstance(item, str):
+                                value[j] = markdown_to_latex(
+                                    escape_latex_characters(item)
+                                )
+                        setattr(entry, entry_key, value)
+                transformed_list.append(entry)
 
-                # update data_model object's attribute with the new value:
-                setattr(data_model, key, transformed_sub_data_model)
+        sections[key] = transformed_list
 
-    return data_model
+    return sections
 
 
 def replace_placeholders_with_actual_values(
