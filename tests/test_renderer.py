@@ -74,13 +74,13 @@ def test_markdown_to_latex(markdown_string, expected_latex_string):
     assert r.markdown_to_latex(markdown_string) == expected_latex_string
 
 
-def test_transform_markdown_data_model_to_latex_data_model(rendercv_data_model):
-    latex_data_model = r.transform_markdown_data_model_to_latex_data_model(
-        rendercv_data_model
+def test_transform_markdown_sections_to_latex_sections(rendercv_data_model):
+    r.transform_markdown_sections_to_latex_sections(
+        rendercv_data_model.cv.sections_input
     )
-    assert isinstance(latex_data_model, dm.RenderCVDataModel)
-    assert latex_data_model.cv.name == rendercv_data_model.cv.name
-    assert latex_data_model.design == rendercv_data_model.design
+    assert isinstance(rendercv_data_model, dm.RenderCVDataModel)
+    assert rendercv_data_model.cv.name == rendercv_data_model.cv.name
+    assert rendercv_data_model.design == rendercv_data_model.design
 
 
 @pytest.mark.parametrize(
