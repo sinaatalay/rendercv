@@ -497,7 +497,7 @@ def transform_markdown_sections_to_latex_sections(
 
 
 def replace_placeholders_with_actual_values(
-    string: str, placeholders: dict[str, str]
+    string: str, placeholders: dict[str, Optional[str]]
 ) -> str:
     """Replace the placeholders in a string with actual values.
 
@@ -510,7 +510,7 @@ def replace_placeholders_with_actual_values(
         str: The string with actual values.
     """
     for placeholder, value in placeholders.items():
-        string = string.replace(placeholder, value)
+        string = string.replace(placeholder, str(value))
 
     return string
 
@@ -643,7 +643,7 @@ def make_matched_part_non_line_breakable(
     return make_matched_part_something(value, "mbox", match_str)
 
 
-def abbreviate_name(name: str) -> str:
+def abbreviate_name(name: Optional[str]) -> str:
     """Abbreviate a name by keeping the first letters of the first names.
 
     This function can be used as a Jinja2 filter in templates.
@@ -662,6 +662,9 @@ def abbreviate_name(name: str) -> str:
     Returns:
         str: The abbreviated name.
     """
+    if name is None:
+        return ""
+
     number_of_words = len(name.split(" "))
 
     if number_of_words == 1:
@@ -803,7 +806,10 @@ def generate_latex_file(
         jinja2_environment,
     )
 
-    latex_file_name = f"{rendercv_data_model.cv.name.replace(' ', '_')}_CV.tex"
+    if rendercv_data_model.cv.name is None:
+        latex_file_name = "CV.tex"
+    else:
+        latex_file_name = f"{rendercv_data_model.cv.name.replace(' ', '_')}_CV.tex"
     latex_file_path = output_directory / latex_file_name
     latex_file_object.generate_latex_file(latex_file_path)
 
@@ -888,7 +894,9 @@ def generate_latex_file_and_copy_theme_files(
     return latex_file_path
 
 
-def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
+def latex_to_pdf(
+    latex_file_path: pathlib.Path, use_local_latex: bool = False
+) -> pathlib.Path:
     """Run TinyTeX with the given $\\LaTeX$ file to generate the PDF.
 
     Args:
@@ -900,22 +908,40 @@ def latex_to_pdf(latex_file_path: pathlib.Path) -> pathlib.Path:
     if not latex_file_path.is_file():
         raise FileNotFoundError(f"The file {latex_file_path} doesn't exist!")
 
-    tinytex_binaries_directory = (
-        pathlib.Path(__file__).parent / "tinytex-release" / "TinyTeX" / "bin"
-    )
+    if use_local_latex:
+        executable = "pdflatex"
 
-    executables = {
-        "win32": tinytex_binaries_directory / "windows" / "pdflatex.exe",
-        "linux": tinytex_binaries_directory / "x86_64-linux" / "pdflatex",
-        "darwin": tinytex_binaries_directory / "universal-darwin" / "pdflatex",
-    }
+        # check if pdflatex is installed:
+        try:
+            subprocess.run(
+                [executable, "--version"],
+                stdout=subprocess.DEVNULL,  # don't capture the output
+                stderr=subprocess.DEVNULL,  # don't capture the error
+            )
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                "[blue]pdflatex[/blue] isn't installed! Please install LaTeX and try"
+                " again (or don't use the"
+                " [bright_black]--use_local_latex[/bright_black] option)."
+            )
+    else:
+        tinytex_binaries_directory = (
+            pathlib.Path(__file__).parent / "tinytex-release" / "TinyTeX" / "bin"
+        )
 
-    if sys.platform not in executables:
-        raise OSError(f"TinyTeX doesn't support the platform {sys.platform}!")
+        executables = {
+            "win32": tinytex_binaries_directory / "windows" / "pdflatex.exe",
+            "linux": tinytex_binaries_directory / "x86_64-linux" / "pdflatex",
+            "darwin": tinytex_binaries_directory / "universal-darwin" / "pdflatex",
+        }
 
+        if sys.platform not in executables:
+            raise OSError(f"TinyTeX doesn't support the platform {sys.platform}!")
+
+        executable = executables[sys.platform]
     # Run TinyTeX:
     command = [
-        executables[sys.platform],
+        executable,
         str(latex_file_path.absolute()),
     ]
     with subprocess.Popen(
