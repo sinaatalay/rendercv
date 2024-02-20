@@ -86,7 +86,7 @@ def test_transform_markdown_sections_to_latex_sections(rendercv_data_model):
 @pytest.mark.parametrize(
     "string, placeholders, expected_string",
     [
-        ("Hello, {name}!", {"{name}": "World"}, "Hello, World!"),
+        ("Hello, {name}!", {"{name}": None}, "Hello, World!"),
         (
             "{greeting}, {name}!",
             {"{greeting}": "Hello", "{name}": "World"},
@@ -188,6 +188,7 @@ def test_make_matched_part_non_line_breakable(value, match_str, expected):
         ("John Jacob Jingleheimer Schmidt", "J. J. J. Schmidt"),
         ("SingleName", "SingleName"),
         ("", ""),
+        (None, ""),
     ],
 )
 def test_abbreviate_name(name, expected):

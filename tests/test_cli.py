@@ -177,6 +177,13 @@ def test_render_command(tmp_path, input_file_path):
     assert "Your CV is rendered!" in result.stdout
 
 
+def test_render_command_with_use_local_latex_option(tmp_path, input_file_path):
+    # copy input file to the temporary directory to create the output directory there:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    runner.invoke(cli.app, ["render", str(input_file_path), "--use-local-latex"])
+
+
 def test_new_command(tmp_path):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
