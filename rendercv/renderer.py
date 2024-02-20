@@ -806,10 +806,7 @@ def generate_latex_file(
         jinja2_environment,
     )
 
-    if rendercv_data_model.cv.name is None:
-        latex_file_name = "CV.tex"
-    else:
-        latex_file_name = f"{rendercv_data_model.cv.name.replace(' ', '_')}_CV.tex"
+    latex_file_name = f"{str(rendercv_data_model.cv.name).replace(' ', '_')}_CV.tex"
     latex_file_path = output_directory / latex_file_name
     latex_file_object.generate_latex_file(latex_file_path)
 
@@ -838,7 +835,7 @@ def generate_markdown_file(
         jinja2_environment,
     )
 
-    markdown_file_name = f"{rendercv_data_model.cv.name.replace(' ', '_')}_CV.md"
+    markdown_file_name = f"{str(rendercv_data_model.cv.name).replace(' ', '_')}_CV.md"
     markdown_file_path = output_directory / markdown_file_name
     markdown_file_object.generate_markdown_file(markdown_file_path)
 
