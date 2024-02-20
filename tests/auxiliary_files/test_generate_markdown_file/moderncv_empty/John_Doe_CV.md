@@ -1,4 +1,0 @@
-# John Doe's CV
-
-
-

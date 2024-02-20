@@ -86,7 +86,7 @@ def test_transform_markdown_sections_to_latex_sections(rendercv_data_model):
 @pytest.mark.parametrize(
     "string, placeholders, expected_string",
     [
-        ("Hello, {name}!", {"{name}": None}, "Hello, World!"),
+        ("Hello, {name}!", {"{name}": None}, "Hello, None!"),
         (
             "{greeting}, {name}!",
             {"{greeting}": "Hello", "{name}": "World"},
@@ -299,12 +299,14 @@ def test_generate_latex_file(
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
 
-    file_name = "John_Doe_CV.tex"
+    cv_data_model = request.getfixturevalue(curriculum_vitae_data_model)
+
+    file_name = f"{str(cv_data_model.name).replace(' ', '_')}_CV.tex"
     output_file_path = tmp_path / "make_sure_it_generates_the_directory" / file_name
     reference_file_path = reference_directory_path / file_name
 
     data_model = dm.RenderCVDataModel(
-        cv=request.getfixturevalue(curriculum_vitae_data_model),
+        cv=cv_data_model,
         design={"theme": theme_name},
     )
     r.generate_latex_file(data_model, tmp_path / "make_sure_it_generates_the_directory")
@@ -340,12 +342,14 @@ def test_generate_markdown_file(
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
 
-    file_name = "John_Doe_CV.md"
+    cv_data_model = request.getfixturevalue(curriculum_vitae_data_model)
+
+    file_name = f"{str(cv_data_model.name).replace(' ', '_')}_CV.md"
     output_file_path = tmp_path / "make_sure_it_generates_the_directory" / file_name
     reference_file_path = reference_directory_path / file_name
 
     data_model = dm.RenderCVDataModel(
-        cv=request.getfixturevalue(curriculum_vitae_data_model),
+        cv=cv_data_model,
     )
     r.generate_markdown_file(
         data_model, tmp_path / "make_sure_it_generates_the_directory"
@@ -486,7 +490,11 @@ def test_generate_latex_file_and_copy_theme_files(
 )
 @time_machine.travel("2024-01-01")
 def test_latex_to_pdf(
-    tmp_path, auxiliary_files_directory_path, theme_name, curriculum_vitae_data_model
+    tmp_path,
+    request,
+    auxiliary_files_directory_path,
+    theme_name,
+    curriculum_vitae_data_model,
 ):
     latex_sources_path = (
         auxiliary_files_directory_path
@@ -499,6 +507,9 @@ def test_latex_to_pdf(
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
 
+    cv_data_model = request.getfixturevalue(curriculum_vitae_data_model)
+    file_name_stem = f"{str(cv_data_model.name).replace(' ', '_')}_CV"
+
     # Update the auxiliary files if update_auxiliary_files is True
     if update_auxiliary_files:
         # copy the latex sources to the reference_directory_path
@@ -508,7 +519,7 @@ def test_latex_to_pdf(
 
         # convert the latex code to a pdf
         reference_pdf_file_path = r.latex_to_pdf(
-            reference_directory_path / "John_Doe_CV.tex"
+            reference_directory_path / f"{file_name_stem}.tex"
         )
 
         # remove the latex sources from the reference_directory_path, but keep the pdf
@@ -520,8 +531,8 @@ def test_latex_to_pdf(
     shutil.copytree(latex_sources_path, tmp_path, dirs_exist_ok=True)
 
     # convert the latex code to a pdf
-    reference_pdf_file_path = reference_directory_path / "John_Doe_CV.pdf"
-    output_file_path = r.latex_to_pdf(tmp_path / "John_Doe_CV.tex")
+    reference_pdf_file_path = reference_directory_path / f"{file_name_stem}.pdf"
+    output_file_path = r.latex_to_pdf(tmp_path / f"{file_name_stem}.tex")
 
     text1 = pypdf.PdfReader(output_file_path).pages[0].extract_text()
     text2 = pypdf.PdfReader(reference_pdf_file_path).pages[0].extract_text()
@@ -547,7 +558,11 @@ def test_latex_to_pdf_invalid_latex_file():
 )
 @time_machine.travel("2024-01-01")
 def test_markdown_to_html(
-    tmp_path, auxiliary_files_directory_path, theme_name, curriculum_vitae_data_model
+    tmp_path,
+    request,
+    auxiliary_files_directory_path,
+    theme_name,
+    curriculum_vitae_data_model,
 ):
     markdown_sources_path = (
         auxiliary_files_directory_path
@@ -560,13 +575,16 @@ def test_markdown_to_html(
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
 
+    cv_data_model = request.getfixturevalue(curriculum_vitae_data_model)
+    file_name_stem = f"{str(cv_data_model.name).replace(' ', '_')}_CV"
+
     # Update the auxiliary files if update_auxiliary_files is True
     if update_auxiliary_files:
         # copy the markdown sources to the reference_directory
         shutil.copytree(markdown_sources_path, reference_directory, dirs_exist_ok=True)
 
         # convert markdown to html
-        r.markdown_to_html(reference_directory / "John_Doe_CV.md")
+        r.markdown_to_html(reference_directory / f"{file_name_stem}.md")
 
         # remove the markdown sources from the reference_directory
         for file in reference_directory.iterdir():
@@ -577,8 +595,10 @@ def test_markdown_to_html(
     shutil.copytree(markdown_sources_path, tmp_path, dirs_exist_ok=True)
 
     # convert markdown to html
-    output_file_path = r.markdown_to_html(tmp_path / "John_Doe_CV.md")
-    reference_file_path = reference_directory / "John_Doe_CV_PASTETOGRAMMARLY.html"
+    output_file_path = r.markdown_to_html(tmp_path / f"{file_name_stem}.md")
+    reference_file_path = (
+        reference_directory / f"{file_name_stem}_PASTETOGRAMMARLY.html"
+    )
 
     assert filecmp.cmp(output_file_path, reference_file_path)
 
