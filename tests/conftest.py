@@ -61,7 +61,7 @@ def rendercv_data_model() -> dm.RenderCVDataModel:
 
 @pytest.fixture
 def rendercv_empty_curriculum_vitae_data_model() -> dm.CurriculumVitae:
-    return dm.CurriculumVitae(name="John Doe")
+    return dm.CurriculumVitae()
 
 
 @pytest.fixture
