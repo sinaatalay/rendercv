@@ -405,6 +405,11 @@ def cli_command_render(
         str,
         typer.Argument(help="Name of the YAML input file"),
     ],
+    use_local_latex: bool = typer.Option(
+        False,
+        "--use-local-latex",
+        help="Use the local LaTeX installation instead of the RenderCV's TinyTeX.",
+    ),
 ):
     """Generate a LaTeX CV from a YAML input file.
 
@@ -433,7 +438,7 @@ def cli_command_render(
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
-        r.latex_to_pdf(latex_file_path)
+        r.latex_to_pdf(latex_file_path, use_local_latex)
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the Markdown file to a HTML (for Grammarly)")
