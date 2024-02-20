@@ -855,7 +855,8 @@ class SocialNetwork(RenderCVBaseModel):
 class CurriculumVitae(RenderCVBaseModel):
     """This class is the data model of the CV."""
 
-    name: str = pydantic.Field(
+    name: Optional[str] = pydantic.Field(
+        default=None,
         title="Name",
         description="The name of the person.",
     )
