@@ -11,7 +11,7 @@ import ruamel.yaml
 
 from rendercv import data_models as dm
 
-from .test_renderer import update_auxiliary_files
+from .conftest import update_auxiliary_files
 
 
 @pytest.mark.parametrize(

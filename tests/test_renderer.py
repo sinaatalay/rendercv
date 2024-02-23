@@ -12,13 +12,7 @@ import pypdf
 from rendercv import renderer as r
 from rendercv import data_models as dm
 
-
-update_auxiliary_files = False
-
-folder_name_dictionary = {
-    "rendercv_empty_curriculum_vitae_data_model": "empty",
-    "rendercv_filled_curriculum_vitae_data_model": "filled",
-}
+from .conftest import update_auxiliary_files, folder_name_dictionary
 
 
 def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
