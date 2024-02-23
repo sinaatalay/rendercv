@@ -1,5 +1,0 @@
----
-hide:
-  - navigation
----
-test

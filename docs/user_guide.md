@@ -1,5 +1,8 @@
 # RenderCV: User Guide
 
+
+
+
 After you've installed RenderCV with
 
 ```bash
@@ -49,167 +52,15 @@ There are five entry types in RenderCV:
 4.  *OneLineEntry*
 5.  *PublicationEntry*
 
-The whole CV consists of these entries. The table below shows what sections of the input file use which entry type.
+The whole CV consists of these entries.
 
-| YAML section                   | Entry Type                       |
-| ------------------------------ | -------------------------------- |
-| `education`                  | *EducationEntry*               |
-| `work_experience`            | *ExperienceEntry*              |
-| `academic_projects`          | *NormalEntry*                  |
-| `publications`               | *PublicationEntry*             |
-| `certificates`               | *NormalEntry*                  |
-| `skills`                     | *OneLineEntry*                 |
-| `test_scores`                | *OneLineEntry*                 |
-| `personal_projects`          | *NormalEntry*                  |
-| `extracurricular_activities` | *ExperienceEntry*              |
-| `custom_sections`            | **They can be any of the five!** |
-
-!!! info
-    Note that *EducationEntry* is not necessarily for education entries only. It's one of the five entry designs that RenderCV offers, and it could be used for anything (see [custom sections](http://user_guide.md#custom-sections)). *EducationEntry* just happens to be its name. The same goes for other entries, too.
-
-### *EducationEntry*
-
+{% for entry_name, entry in showcase_entries.items() %}
+## {{ entry_name }}
 ```yaml
-institution: Boğaziçi University
-url: https://boun.edu.tr
-area: Mechanical Engineering
-degree: BS
-location: Istanbul, Turkey
-start_date: "2017-09-01"
-end_date: "2023-01-01"
-transcript_url: https://example.com
-gpa: 3.10/4.00
-highlights:
-- "Class rank: 10 of 62"
-
+{{ entry["yaml"] }}
 ```
-
-which renders into
-
-![EducationEntry](assets/images/imagesEducationEntry.png)
-
-### *ExperienceEntry*
-
-```yaml
-company: AmIACompany
-position: Summer Intern
-location: Istanbul, Turkey
-url: https://example.com
-start_date: "2022-06-15"
-end_date: "2022-08-01"
-highlights:
-- AmIACompany is a technology company that provides web-based engineering
-  applications that enable the simulation and optimization of products and
-  manufacturing tools.
-- Modeled and simulated a metal-forming process deep drawing using finite element
-  analysis with open-source software called CalculiX.
-```
-
-which renders into
-
-![ExperienceEntry](assets/images/imagesExperienceEntry.png)
-
-### *NormalEntry*
-
-```yaml
-name: Design and Construction of a Dynamometer
-location: Istanbul, Turkey
-date: Fall 2022
-highlights:
-- Designed and constructed a controllable dynamometer that measures an electric
-  motor's torque and power output at different speeds for my senior design project.
-url: https://example.com
-
-```
-
-which renders into
-
-![NormalEntry](assets/images/imagesNormalEntry.png)
-
-### *OneLineEntry*
-```yaml
-name: Programming
-details: C++, C, Python, JavaScript, MATLAB, Lua, LaTeX
-```
-
-which renders into
-
-![OneLineEntry](assets/images/imagesOneLineEntry.png)
-
-### *PublicationEntry*
-
-```yaml
-title: Phononic band gaps induced by inertial amplification in periodic media
-authors:
-- Author 1
-- John Doe
-- Author 3
-journal: Physical Review B
-doi: 10.1103/PhysRevB.76.054309
-date: "2007-08-01"
-cited_by: 243
-```
-
-which renders into
-
-![PublicationEntry](assets/images/imagesPublicationEntry.png)
-
-
-## Custom Sections
-
-Custom sections with custom titles can be created. Each custom section will be an object that looks like this:
-
-```yaml
-title: My Custom Section
-entry_type: OneLineEntry
-entries:
-- name: Testing custom sections
-  details: Wohooo!
-- name: This is a
-  details: OneLineEntry!
-```
-
-And `custom_sections` part of the data model will be a list of customs section objects that look like this:
-```yaml
-custom_sections:
-- title: My Custom Section
-  entry_type: OneLineEntry
-  entries:
-    - name: Testing custom sections
-      details: Wohooo!
-    - name: This is a
-      details: OneLineEntry!
-- title: My Other Custom Section
-  entry_type: EducationEntry
-  entries:
-    - institution: Hop!
-      area: Hop!
-      degree: HA
-      highlights:
-      - "There are only five types of entries: *EducationEntry*, *ExperienceEntry*,
-        *NormalEntry*, *OneLineEntry*, and *PublicationEntry*."
-      - This is an EducationEntry!
-      start_date: "2022-06-15"
-      end_date: "2022-08-01"
-```
-
-Each custom section needs to have an entry type, and entries should be adjusted according to the entry type selection.
-
-!!! note
-
-    Some entry types use links, and all the links have a text placeholder. That placeholder can be changed with `link_text` setting as shown below:
-    ```yaml
-    title: My Third Custom Section
-    entry_type: ExperienceEntry
-    link_text: My Link Text
-    entries:
-    - company: Hop!
-      position: Hop!
-      date: My Date
-      location: My Location
-      url: https://example.com
-      highlights:
-      - I think this is really working. This is an *ExperienceEntry*!
-    ```
-
-
+    {% for figure in entry["figures"] %}
+`{{ figure["theme"] }}` theme:
+![figure["alt_text"]]({{ figure["path"] }})
+    {% endfor %}
+{% endfor %}
