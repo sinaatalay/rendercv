@@ -6,6 +6,13 @@ import pytest
 from rendercv import data_models as dm
 import rendercv.renderer as r
 
+update_auxiliary_files = False
+
+folder_name_dictionary = {
+    "rendercv_empty_curriculum_vitae_data_model": "empty",
+    "rendercv_filled_curriculum_vitae_data_model": "filled",
+}
+
 
 @pytest.fixture
 def publication_entry() -> dict[str, str | list[str]]:
