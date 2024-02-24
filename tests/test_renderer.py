@@ -60,12 +60,12 @@ def test_escape_latex_characters(string, expected_string):
         ("*My* Text", "\\textit{My} Text"),
         ("***My*** Text", "\\textit{\\textbf{My}} Text"),
         ("[My](https://myurl.com) Text", "\\href{https://myurl.com}{My} Text"),
-        ("`My` Text", "\\texttt{My} Text"),
+        ("`My` Text", "`My` Text"),
         (
             "[**My** *Text* ***Is*** `Here`](https://myurl.com)",
             (
                 "\\href{https://myurl.com}{\\textbf{My} \\textit{Text}"
-                " \\textit{\\textbf{Is}} \\texttt{Here}}"
+                " \\textit{\\textbf{Is}} `Here`}"
             ),
         ),
     ],
