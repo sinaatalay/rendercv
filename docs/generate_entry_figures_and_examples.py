@@ -4,6 +4,8 @@ import importlib
 import importlib.machinery
 import importlib.util
 import io
+import os
+import shutil
 from typing import Any
 
 import pdfCropMargins
@@ -30,6 +32,10 @@ spec = importlib.util.spec_from_file_location(
 r = importlib.util.module_from_spec(spec)  # type: ignore
 spec.loader.exec_module(r)  # type: ignore
 
+# Import the rendercv.cli as cli:
+spec = importlib.util.spec_from_file_location("rendercv.cli", rendercv_path / "cli.py")
+cli = importlib.util.module_from_spec(spec)  # type: ignore
+spec.loader.exec_module(cli)  # type: ignore
 
 # The entries below will be pasted into the documentation as YAML, and their
 # corresponding figures will be generated with this script.
@@ -140,7 +146,8 @@ def define_env(env):
     env.variables["showcase_entries"] = entries_showcase
 
 
-if __name__ == "__main__":
+def generate_entry_figures():
+    """Generate an image for each entry type and theme."""
     # Generate PDF figures for each entry type and theme
     entries = {
         "education_entry": dm.EducationEntry(**education_entry),
@@ -227,3 +234,49 @@ if __name__ == "__main__":
 
                 # Remove the pdf file
                 output_pdf_file_path.unlink()
+
+
+def generate_examples():
+    """Generate example YAML and PDF files."""
+    examples_directory_path = pathlib.Path(__file__).parent.parent / "examples"
+
+    os.chdir(examples_directory_path)
+    themes = dm.available_themes
+    for theme in themes:
+        cli.cli_command_new("John Doe", theme)
+        yaml_file_path = examples_directory_path / "John_Doe_CV.yaml"
+
+        # Rename John_Doe_CV.yaml:
+        proper_theme_name = theme.replace("_", " ").title() + "Theme"
+        new_yaml_file_path = (
+            examples_directory_path / f"John_Doe_{proper_theme_name}_CV.yaml"
+        )
+        if new_yaml_file_path.exists():
+            new_yaml_file_path.unlink()
+        yaml_file_path.rename(new_yaml_file_path)
+        yaml_file_path = new_yaml_file_path
+
+        # Generate the PDF file:
+        cli.cli_command_render(yaml_file_path)
+
+        output_pdf_file = (
+            examples_directory_path / "rendercv_output" / "John_Doe_CV.pdf"
+        )
+
+        # Move pdf file to the examples directory:
+        new_pdf_file_path = (
+            examples_directory_path / f"{yaml_file_path.stem}.pdf"
+        )
+        if new_pdf_file_path.exists():
+            new_pdf_file_path.unlink()
+        output_pdf_file.rename(new_pdf_file_path)
+
+        # Remove the rendercv_output directory:
+        rendercv_output_directory = examples_directory_path / "rendercv_output"
+
+        shutil.rmtree(rendercv_output_directory)
+
+
+if __name__ == "__main__":
+    # generate_entry_figures()
+    generate_examples()
