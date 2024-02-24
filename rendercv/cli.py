@@ -470,9 +470,12 @@ def cli_command_render(
         ' "John Doe"[/bold green]'
     ),
 )
-def cli_command_new(full_name: Annotated[str, typer.Argument(help="Your full name")]):
+def cli_command_new(
+    full_name: Annotated[str, typer.Argument(help="Your full name")],
+    theme: Annotated[str, typer.Option(help="The theme of the CV")] = "classic",
+):
     """Generate a YAML input file to get started."""
-    data_model = dm.get_a_sample_data_model(full_name)
+    data_model = dm.get_a_sample_data_model(full_name, theme)
     file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
     file_path = pathlib.Path(file_name)
 
