@@ -1,21 +1,69 @@
+# Every modern Python package today has a `pyproject.toml` file. It is a Python
+# standard. `pyproject.toml` file contains all the metadata about the package. It also
+# includes the dependencies and required information for building the package. For more
+# details, see https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/.
+
+[build-system]
+# If a code needs to be distributed, it might need to be compiled, or it might need to
+# be bundled with other files. This process of making a code ready for distribution is
+# called building.
+
+# Python packages need to be built too, even though they are not compiled (mostly). At
+# the end of the building process, a source Distribution Package, `sdist`, is created.
+# This sdist is a compressed archive of the source code, and it is ready to be uploaded
+# to PyPI. See https://packaging.python.org/en/latest/tutorials/packaging-projects/
+
+# To build RenderCV, we need to specify which build package we want to use. There are
+# many build packages like `setuptools`, `flit`, `poetry`, `hatchling`, etc. We will use
+# `hatchling`.
+requires = ["hatchling==1.21.1"] # Our dependency to build RenderCV
+
+# Python has a standard object format called build-backend object. Python standard asks
+# this object to have some specific methods that do a specific job. For example, it
+# should have a method called `build_wheel` that builds a wheel file. We use hatchling
+# to build RenderCV, and hatchling's build-backend object is `hatchling.build`.
+# See https://peps.python.org/pep-0517/
+build-backend = "hatchling.build" # A build-backend object for building RenderCV
+
+[tool.hatch.version]
+# We will use hatchling to generate the version number of RenderCV. It will go to the
+# `path` below and get the version number from there.
+# See https://hatch.pypa.io/latest/version/
+path = "rendercv/__init__.py"
+
+[tool.hatch.build]
+# In the sdist package, what do we want to include and exclude? For example, we don't
+# want to include `docs` and `tests` because they are not needed to run RenderCV.
+include = ["/README.md", "/rendercv"]
+
+# We use tinytex-release as a git submodule, so it's a seperate repository. We don't
+# want to ship all the files from that repository with RenderCV.
+exclude = [
+    "/rendercv/tinytex-release/minimize_tinytex_for_rendercv.py",
+    "/rendercv/tinytex-release/.gitignore",
+]
+
 [project]
+# Under the `project` section, we specify the metadata about RenderCV.
 name = 'rendercv'
-description = 'LaTeX CV generator from a YAML/JSON file'
-version = '0.10'
+description = 'LaTeX CV generator engine from a YAML input file'
+dynamic = [
+    "version",
+] # We will use hatchling to generate the version number                                         
 authors = [{ name = 'Sina Atalay' }]
 requires-python = '>=3.10'
 readme = "README.md"
+# RenderCV depends on these packages. They will be installed automatically when RenderCV
+# is installed:
 dependencies = [
-    'annotated-types==0.6.0',
-    'Jinja2==3.1.2',
-    'phonenumbers==8.13.22',
-    'pydantic==2.4.2',
-    'pydantic-extra-types==2.1.0',
-    'pydantic_core==2.10.1',
-    'typing_extensions==4.8.0',
-    'ruamel.yaml==0.17.35',
-    'email-validator==2.0.0.post2',
-    'typer[all]==0.9.0',
+    'Jinja2==3.1.3',                # to generate LaTeX and Markdown files
+    'phonenumbers==8.13.30',        # to validate phone numbers
+    'email-validator==2.1.0.post1', # to validate email addresses
+    'pydantic==2.6.1',              # to validate and parse the input file
+    'pydantic-extra-types==2.5.0',  # to validate some extra types
+    'ruamel.yaml==0.18.6',          # to parse YAML files
+    'typer[all]==0.9.0',            # to create the command-line interface
+    "markdown==3.5.2",              # to convert Markdown to HTML
 ]
 classifiers = [
     "Intended Audience :: Science/Research",
@@ -28,50 +76,67 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-]
+] # go to https://pypi.org/classifiers/ to see all classifiers
 
 [project.urls]
+# Here, we can specify the URLs related to RenderCV. They will be listed under the
+# "Project links" section in PyPI. See https://pypi.org/project/rendercv/
 Documentation = 'https://sinaatalay.github.io/rendercv/'
 Source = 'https://github.com/sinaatalay/rendercv'
 
 [project.scripts]
-rendercv = 'rendercv.__main__:cli'
+# Here, we specify the entry points of RenderCV.
+# See https://packaging.python.org/en/latest/specifications/entry-points/#entry-points
+# See https://hatch.pypa.io/latest/config/metadata/#cli
+
+# The key and value below mean this: If someone installs RenderCV, then running
+# `rendercv` in the terminal will run the function `app` in the module `__main__` in the
+# package `rendercv`.
+rendercv = 'rendercv.__main__:app'
 
 [project.optional-dependencies]
-docs = ["mkdocs", "mkdocs-material", "mkdocstrings-python"]
-testing = ["coverage", "pytest", "pytest-cov"]
-linting = ["black", "ruff"]
+# RenderCV depends on other packages. However, some of these packages are not required
+# to run RenderCV, but they are required to develop RenderCV. For example, to build the
+# documentation of RenderCV, we need to install some packages. However, not all the
+# users of RenderCV will build the documentation, so these are optional dependencies.
 
-[build-system]
-# Use setuptools-scm to be able to include TinyTeX in the package
-requires = ['setuptools>=68.2.2', "setuptools-scm>=8.0.4"]
-build-backend = 'setuptools.build_meta'
+docs = [
+    "mkdocs-material==9.5.9",      # to build docs
+    "mkdocstrings-python==1.8.0",  # to build reference documentation from docstrings
+    "pdfCropMargins==2.0.3",       # to generate entry figures for the documentation
+    "pypdfium2==4.27.0",           # to convert entry figure PDF files to images
+    "mkdocs-macros-plugin==1.0.5", # to be able to have dynamic content in the documentation
+]
+tests = [
+    "pytest==8.0.1",        # to run the tests
+    "coverage==7.4.1",      # to generate coverage reports
+    "time-machine==2.13.0", # to select an arbitrary date and time for testing
+    "pypdf==4.0.2",         # to read PDF files
+]
+dev = [
+    "ruff==0.2.2",   # to lint the code
+    "black==24.2.0", # to format the code
+]
 
-[tool.setuptools]
-packages = ["rendercv"]
 
-[tool.ruff]
-line-length = 88
+# RenderCV uses different tools to check the code quality, format the code, build the
+# documentation, build the package, etc. We can specify the settings for these tools in
+# `pyproject.toml` file under `[tool.name_of_the_tool]` so that new contributors can use
+# these tools easily. Generally, popular IDEs grab these settings from `pyproject.toml`
+# file automatically.
+
+[tool.black]
+line-length = 88 # maximum line length
+preview = true # to allow enable-unstable-feature
+enable-unstable-feature = [
+    "string_processing",
+] # breaking strings into multiple lines
 
 [tool.coverage.run]
 source = ['rendercv']
+# use relative paths instead of absolute paths, this is useful for combining coverage
+# reports from different OSes:
 relative_files = true
 
-# [tool.coverage.report]
-# precision = 2
-# exclude_lines = [
-#     'pragma: no cover',
-#     'raise NotImplementedError',
-#     'if TYPE_CHECKING:',
-#     'if typing.TYPE_CHECKING:',
-#     '@overload',
-#     '@typing.overload',
-#     '\(Protocol\):$',
-#     'typing.assert_never',
-#     'assert_never',
-# ]
-
-[tool.black]
-color = true
-line-length = 88
-experimental-string-processing = true
+# don't include jinja templates in the coverage report:
+omit = ["*.j2.*"]

@@ -1,43 +1,11 @@
 """RenderCV package.
 
-It parses the user input YAML/JSON file and validates the data (checks if the
-dates are consistent, if the URLs are valid, etc.). Then, with the data, it creates a
-$\\LaTeX$ file and renders it with [TinyTeX](https://yihui.org/tinytex/).
+RenderCV is a $\\LaTeX$ CV generator from a JSON/YAML input file. It is a $\\LaTeX$ framework,
+and users can use RenderCV with their custom $\\LaTeX$ CVs. It allows you to separate your
+CV's content from its design.
+
+Write your content, and get a high-quality, professional-looking CV as a PDF with its
+LaTeX source!
 """
-import logging
-import os
-import sys
 
-
-class LoggingFormatter(logging.Formatter):
-    grey = "\x1b[38;20m"  # debug level
-    white = "\x1b[37;20m"  # info level
-    yellow = "\x1b[33;20m"  # warning level
-    red = "\x1b[31;20m"  # error level
-    bold_red = "\x1b[31;1m"  # critical level
-
-    reset = "\x1b[0m"
-    format = "%(levelname)s | %(message)s"  # type: ignore
-
-    FORMATS = {
-        logging.DEBUG: grey + format + reset,  # type: ignore
-        logging.INFO: white + format + reset,  # type: ignore
-        logging.WARNING: yellow + format + reset,  # type: ignore
-        logging.ERROR: red + format + reset,  # type: ignore
-        logging.CRITICAL: bold_red + format + reset,  # type: ignore
-    }
-
-    def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
-
-
-# Initialize logger with colors
-if sys.platform == "win32":
-    os.system("COLOR 0")  # enable colors in Windows terminal
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-stdout_handler = logging.StreamHandler()
-stdout_handler.setFormatter(LoggingFormatter())
-logger.addHandler(stdout_handler)
+__version__ = "1.0"
