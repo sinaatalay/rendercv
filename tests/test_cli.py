@@ -141,7 +141,13 @@ def test_handle_validation_error(data_model_class, invalid_model):
 
 @pytest.mark.parametrize(
     "exception",
-    [ruamel.yaml.YAMLError, RuntimeError, FileNotFoundError, ValueError],
+    [
+        ruamel.yaml.YAMLError,
+        RuntimeError,
+        FileNotFoundError,
+        ValueError,
+        UnicodeDecodeError("utf-8", b"", 1, 2, "message"),
+    ],
 )
 def test_handle_exceptions(exception):
     @cli.handle_exceptions
