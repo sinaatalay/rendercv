@@ -373,8 +373,8 @@ def escape_latex_characters(string: str) -> str:
     links = re.findall(r"\[.*?\]\(.*?\)", string)
 
     # Replace the links with a placeholder:
-    for link in links:
-        string = string.replace(link, "!!-link-!!")
+    for i, link in enumerate(links):
+        string = string.replace(link, f"!!-link{i}-!!")
 
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
@@ -386,8 +386,8 @@ def escape_latex_characters(string: str) -> str:
 
     string = "".join(copy_of_the_string)
     # Replace the links with the original links:
-    for link in links:
-        string = string.replace("!!-link-!!", link)
+    for i, link in enumerate(links):
+        string = string.replace(f"!!-link{i}-!!", link)
 
     return string
 
@@ -444,13 +444,14 @@ def markdown_to_latex(markdown_string: str) -> str:
             markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
 
     # convert code
-    codes = re.findall(r"`([^`]*)`", markdown_string)
-    if codes is not None:
-        for code_text in codes:
-            old_code_text = f"`{code_text}`"
-            new_code_text = "\\texttt{" + code_text + "}"
+    # not supported by rendercv currently
+    # codes = re.findall(r"`([^`]*)`", markdown_string)
+    # if codes is not None:
+    #     for code_text in codes:
+    #         old_code_text = f"`{code_text}`"
+    #         new_code_text = "\\texttt{" + code_text + "}"
 
-            markdown_string = markdown_string.replace(old_code_text, new_code_text)
+    #         markdown_string = markdown_string.replace(old_code_text, new_code_text)
 
     latex_string = markdown_string
 
