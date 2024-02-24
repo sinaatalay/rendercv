@@ -132,11 +132,12 @@ class LaTeXFile(TemplatedFile):
         data_model: dm.RenderCVDataModel,
         environment: jinja2.Environment,
     ):
+        latexfile_data_model = copy.deepcopy(data_model)
         transformed_sections = transform_markdown_sections_to_latex_sections(
-            copy.deepcopy(data_model.cv.sections_input)
+            latexfile_data_model.cv.sections_input
         )
-        data_model.cv.sections_input = transformed_sections
-        super().__init__(data_model, environment)
+        latexfile_data_model.cv.sections_input = transformed_sections
+        super().__init__(latexfile_data_model, environment)
 
     def render_templates(self) -> tuple[str, str, list[tuple[str, list[str], str]]]:
         """Render and return all the templates for the $\\LaTeX$ file.
