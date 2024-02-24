@@ -28,7 +28,7 @@ from . import data_models as dm
 class TemplatedFile:
     """This class is a base class for LaTeXFile and MarkdownFile classes. It contains
     the common methods and attributes for both classes. These classes are used to
-    generate the LaTeX and Markdown files with the data model and Jinja2 templates.
+    generate the $\\LaTeX$ and Markdown files with the data model and Jinja2 templates.
 
     Args:
         data_model (dm.RenderCVDataModel): The data model.
@@ -411,7 +411,7 @@ def markdown_to_latex(markdown_string: str) -> str:
         markdown_string (str): The markdown string to convert.
 
     Returns:
-        str: The LaTeX string.
+        str: The $\\LaTeX$ string.
     """
     # convert links
     links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
@@ -539,7 +539,7 @@ def make_matched_part_something(
 
     Args:
         value (str): The string to make something.
-        something (str): The LaTeX command to use.
+        something (str): The $\\LaTeX$ command to use.
         match_str (str): The string to match.
     Returns:
         str: The string with the matched part something.

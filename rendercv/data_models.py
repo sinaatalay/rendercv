@@ -2,7 +2,7 @@
 This module contains all the necessary classes to store CV data. These classes are called
 data models. The YAML input file is transformed into instances of these classes (i.e.,
 the input file is read) with the [`read_input_file`](#read_input_file) function.
-RenderCV utilizes these instances to generate a LaTeX file which is then rendered into a
+RenderCV utilizes these instances to generate a $\\LaTeX$ file which is then rendered into a
 PDF file.
 
 The data models are initialized with data validation to prevent unexpected bugs. During
@@ -1061,14 +1061,14 @@ def read_input_file(
     file_path: pathlib.Path,
 ) -> RenderCVDataModel:
     """Read the input file and return two instances of RenderCVDataModel. The first
-    instance is the data model with LaTeX strings and the second instance is the data
+    instance is the data model with $\\LaTeX$ strings and the second instance is the data
     model with markdown strings.
 
     Args:
         file_path (str): The path to the input file.
 
     Returns:
-        tuple[RenderCVDataModel, RenderCVDataModel]: The data models with LaTeX and
+        tuple[RenderCVDataModel, RenderCVDataModel]: The data models with $\\LaTeX$ and
         markdown strings.
     """
     # check if the file exists:
