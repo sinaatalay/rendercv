@@ -415,6 +415,8 @@ def cli_command_render(
 
     Args:
         input_file_path (str): Path to the YAML input file as a string.
+        use_local_latex (bool, optional): Use the local LaTeX installation instead of
+            the RenderCV's TinyTeX. The default is False.
     """
     welcome()
 
