@@ -37,8 +37,14 @@ def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
         ("My ~ Text", "My \\textasciitilde{} Text"),
         ("##%%&&~~", "\\#\\#\\%\\%\\&\\&\\textasciitilde{}\\textasciitilde{}"),
         (
-            "[link](you shouldn't escape whatever is in here & % # ~)",
-            "[link](you shouldn't escape whatever is in here & % # ~)",
+            (
+                "[link](you shouldn't escape whatever is in here & % # ~) [second"
+                " link](https://myurl.com)"
+            ),
+            (
+                "[link](you shouldn't escape whatever is in here & % # ~) [second"
+                " link](https://myurl.com)"
+            ),
         ),
     ],
 )
