@@ -303,6 +303,19 @@ def handle_exceptions(function: Callable) -> Callable:
             error("There is a YAML error in the input file!", e)
         except FileNotFoundError as e:
             error(e)
+        except UnicodeDecodeError as e:
+            # find the problematic character that cannot be decoded with utf-8
+            bad_character = str(e.object[e.start : e.end])
+            try:
+                bad_character_context = str(e.object[e.start - 16 : e.end + 16])
+            except IndexError:
+                bad_character_context = ""
+
+            error(
+                "The input file contains a character that cannot be decoded with"
+                f" UTF-8 ({bad_character}):\n {bad_character_context}",
+            )
+
         except ValueError as e:
             error(e)
         except RuntimeError as e:
@@ -405,11 +418,14 @@ def cli_command_render(
         str,
         typer.Argument(help="Path to the YAML input file as a string"),
     ],
-    use_local_latex: bool = typer.Option(
-        False,
-        "--use-local-latex",
-        help="Use the local LaTeX installation instead of the RenderCV's TinyTeX.",
-    ),
+    use_local_latex: Annotated[
+        bool,
+        typer.Option(
+            False,
+            "--use-local-latex",
+            help="Use the local LaTeX installation instead of the RenderCV's TinyTeX.",
+        ),
+    ] = False,
 ):
     """Generate a $\\LaTeX$ CV from a YAML input file.
 
