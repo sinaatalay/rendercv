@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project after v1.0 will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
@@ -25,9 +25,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The reference has been rewritten.
 - The build system has been changed from `setuptools` to `hatchling`.
 
-<!-- ### Removed
-
--  -->
-
-[unreleased]: https://github.com/sinaatalay/rendercv/compare/v1.0...HEAD
 [1.0]: https://github.com/sinaatalay/rendercv/releases/tag/v1.0

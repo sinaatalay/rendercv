@@ -61,7 +61,7 @@ RenderCV's input file consists of two parts: `cv` and `design`.
 ```yaml
 cv:
   ...
-  YOUR CONTENT]
+  YOUR CONTENT
   ...
 design:
   ...
@@ -69,9 +69,9 @@ design:
   ...
 ```
 
-The `cv` part contains only the content of the CV, and the `design` part contains only the design properties of the CV. That's how the design and content are separated.
+The `cv` part contains only the **content of the CV**, and the `design` part contains only the **design options of the CV**. That's how the design and content are separated.
 
-### `cv` section of the YAML input
+### "`cv`" section of the YAML input
 
 The `cv` section of the YAML input starts with generic information, as shown below:
 
@@ -83,6 +83,7 @@ cv:
   website: https://example.com
   label: Mechanical Engineer
   location: Istanbul, Türkiye
+  ...
 ```
 
 None of the values above are required. You can omit any or all of them, and RenderCV will adapt to your input.
@@ -103,7 +104,7 @@ cv:
     ...
 ```
 
-The `sections` field is a dictionary where the keys are the section titles, and the values are lists. Each item on the list is an entry in the CV.
+The `sections` field is a dictionary where the keys are the section titles, and the values are lists. Each item of the list is an entry for that section.
 
 Here is an example:
 
@@ -126,14 +127,14 @@ cv:
       - company: Another ExperienceEntry.
         position: Your position
         start_date: 2019-01-01
-        end_date: 2020-01
+        end_date: 2020-01-10
         location: TX, USA
         highlights: 
           - This is a highlight (bullet point).
           - This is another highlight.
 ```
 
-There are six different entry types in RenderCV. You must choose one for each section and cannot mix types within a section.
+There are six different entry types in RenderCV. Different types of entries cannot be mixed under the same section, so for each section, you can only use one type of entry.
 
 The available entry types are: `EducationEntry`, `ExperienceEntry`, `PublicationEntry`, `NormalEntry`, `OneLineEntry`, and `TextEntry`.
 
@@ -150,16 +151,17 @@ Each entry type is a different object (a dictionary). All of the entry types and
     {% endfor %}
 {% endfor %}
 
-### `design` section of the YAML input
+### "`design`" section of the YAML input
 
-The `cv` part of the input contains your content, and the `design` part contains your design. The `design` part starts with the name of the theme. Currently, there are three built-in themes (`classic`, `sb2nov`, and `moderncv`), but custom themes can also be used (see below.)
+The `cv` part of the input contains your content, and the `design` part contains your design. The `design` part starts with a theme name. Currently, there are three built-in themes (`classic`, `sb2nov`, and `moderncv`), but custom themes can also be used (see [below](#using-custom-themes).)
 
 ```yaml
 design:
   theme: classic
+  ...
 ```
 
-Each theme has different options for design. `classic` and `sb2nov` almost use identical options, but `moderncv` is slightly different. Please use an IDE that supports JSON schema to avoid missing any available options for the theme (see above).
+Each theme has different options for design. `classic` and `sb2nov` almost use identical options, but `moderncv` is slightly different. Please use an IDE that supports JSON schema to avoid missing any available options for the theme (see [above](#generating-the-input-file)).
 
 An example `design` part for a `classic` theme is shown below:
 
@@ -201,15 +203,32 @@ design:
 
 RenderCV allows you to move your $\LaTeX$ CV code to RenderCV. To do this, you will need to create some files:
 
-BURAYA FOLDER STRUCTURE GOSTERE, INPUT FILE I DA BELIRTEREK, YOUR_THEME SEKLINDE BIR DIRECTORY ALTINDA ZORUNLU TUM DOSYALARI GOSTER.
+``` { .sh .no-copy }
+├── yourcustomtheme
+│   ├── Preamble.j2.tex
+│   ├── Header.j2.tex
+│   ├── EducationEntry.j2.tex
+│   ├── ExperienceEntry.j2.tex
+│   ├── NormalEntry.j2.tex
+│   ├── OneLineEntry.j2.tex
+│   ├── PublicationEntry.j2.tex
+│   ├── TextEntry.j2.tex
+│   ├── SectionBeginning.j2.tex
+│   └── SectionEnding.j2.tex
+└── Your_Full_Name_CV.yaml
+```
 
-Each of these files is LaTeX code with some Python in it. These files allow RenderCV to create your CV out of the YAML input.
+Each of these `*.j2.tex` files is $\LaTeX$ code with some Python in it. These files allow RenderCV to create your CV out of the YAML input.
 
 The best way to understand how they work is to look at the source code of built-in themes. For example, the content of `ExperienceEntry.j2.tex` for the `moderncv` theme is shown below:
 
 ```latex
 \cventry{
-    ((* if design.show_only_years *))<<entry.date_string_only_years>>((* else *))<<entry.date_string>>((* endif *))
+    ((* if design.show_only_years *))
+    <<entry.date_string_only_years>>
+    ((* else *))
+    <<entry.date_string>>
+    ((* endif *))
 }{
     <<entry.position>>
 }{
@@ -222,7 +241,9 @@ The best way to understand how they work is to look at the source code of built-
 ((* endfor *))
 ```
 
-The values between `<<` and `>>` are the names of Python variables, allowing you to write a LaTeX CV without writing any content. Those will be replaced with the values found in the YAML input. Also, the values between `((*` and `*))` are Python blocks, allowing you to use loops and conditional statements. The process of generating LaTeX files like this is called "templating," and it's achieved with a Python package called [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
+The values between `<<` and `>>` are the names of Python variables, allowing you to write a $\\LaTeX$ CV without writing any content. Those will be replaced with the values found in the YAML input. Also, the values between `((*` and `*))` are Python blocks, allowing you to use loops and conditional statements.
+
+The process of generating $\\LaTeX$ files like this is called "templating," and it's achieved with a Python package called [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
 
 ### Creating custom theme options
 
@@ -245,5 +266,10 @@ class YourcustomthemeThemeOptions(pydantic.BaseModel):
 
 Then, RenderCV will parse your custom design options, and you can use these variables inside your `*.j2.tex` as shown below:
 
-```
+```latex
+<<design.option1>>
+<<design.option2>>
+((* if design.option4 *))
+    <<design.option3>>
+((* endif *))
 ```
