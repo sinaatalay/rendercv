@@ -421,7 +421,6 @@ def cli_command_render(
     use_local_latex: Annotated[
         bool,
         typer.Option(
-            False,
             "--use-local-latex",
             help="Use the local LaTeX installation instead of the RenderCV's TinyTeX.",
         ),
