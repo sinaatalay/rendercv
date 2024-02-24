@@ -225,12 +225,13 @@ class LaTeXFile(TemplatedFile):
             str: The $\\LaTeX$ code.
         """
         preamble, header, sections = self.render_templates()
-        return self.get_full_code(
+        latex_code: str = self.get_full_code(
             "main.j2.tex",
             preamble=preamble,
             header=header,
             sections=sections,
         )
+        return latex_code
 
     def generate_latex_file(self, file_path: pathlib.Path):
         """Write the $\\LaTeX$ code to a file."""
@@ -248,16 +249,16 @@ class MarkdownFile(TemplatedFile):
         """Render and return all the templates for the Markdown file.
 
         Returns:
-            Tuple[str, List[Tuple[str, List[str]]]]: The header and sections of the Markdown file.
+            tuple[str, List[Tuple[str, List[str]]]]: The header and sections of the Markdown file.
         """
         # Template the header and sections:
         header = self.template("Header")
-        sections = []
+        sections: list[tuple[str, list[str]]] = []
         for section in self.cv.sections:
             section_beginning = self.template(
                 "SectionBeginning", section_title=section.title
             )
-            entries = []
+            entries: list[str] = []
             for i, entry in enumerate(section.entries):
                 if i == 0:
                     is_first_entry = True
@@ -273,7 +274,8 @@ class MarkdownFile(TemplatedFile):
                 )
             sections.append((section_beginning, entries))
 
-        return header, sections
+        result: tuple[str, list[tuple[str, list[str]]]] = (header, sections)
+        return result
 
     def template(
         self,
@@ -322,13 +324,18 @@ class MarkdownFile(TemplatedFile):
         return result
 
     def get_markdown_code(self):
-        """Get the Markdown code of the file."""
+        """Get the Markdown code of the file.
+
+        Returns:
+            str: The Markdown code.
+        """
         header, sections = self.render_templates()
-        return self.get_full_code(
+        markdown_code: str = self.get_full_code(
             "main.j2.md",
             header=header,
             sections=sections,
         )
+        return markdown_code
 
     def generate_markdown_file(self, file_path: pathlib.Path):
         """Write the Markdown code to a file."""

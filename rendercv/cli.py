@@ -403,7 +403,7 @@ class LiveProgressReporter(rich.live.Live):
 def cli_command_render(
     input_file_path: Annotated[
         str,
-        typer.Argument(help="Name of the YAML input file"),
+        typer.Argument(help="Path to the YAML input file as a string"),
     ],
     use_local_latex: bool = typer.Option(
         False,
@@ -414,7 +414,7 @@ def cli_command_render(
     """Generate a LaTeX CV from a YAML input file.
 
     Args:
-        input_file (str): Name of the YAML input file
+        input_file_path (str): Path to the YAML input file as a string.
     """
     welcome()
 
@@ -467,8 +467,8 @@ def cli_command_new(full_name: Annotated[str, typer.Argument(help="Your full nam
     )
     data_model_as_dictionary = json.loads(data_model_as_json)
 
-    yaml = ruamel.yaml.YAML()
-    yaml.indent(mapping=2, sequence=4, offset=2)
-    yaml.dump(data_model_as_dictionary, file_path)
+    yaml_object = ruamel.yaml.YAML()
+    yaml_object.indent(mapping=2, sequence=4, offset=2)
+    yaml_object.dump(data_model_as_dictionary, file_path)
 
     information(f"Your RenderCV input file has been created: {file_path}!")
