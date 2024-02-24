@@ -1099,7 +1099,9 @@ def read_input_file(
     return rendercv_data_model
 
 
-def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
+def get_a_sample_data_model(
+    name: str = "John Doe", theme: str = "classic"
+) -> RenderCVDataModel:
     """Return a sample data model for new users to start with.
 
     Args:
@@ -1135,7 +1137,7 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
                 ],
             ),
         ],
-        "employment": [
+        "experience": [
             ExperienceEntry(
                 company="Apple Computer",
                 position="Software Engineer, Intern",
@@ -1145,16 +1147,16 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
                 highlights=[
                     (
                         "Reduced time to render the user's buddy list by 75% by"
-                        " implementing prediction algorithm."
+                        " implementing a prediction algorithm."
                     ),
                     (
                         "Implemented iChat integration with OS X Spotlight Search by"
-                        " creating tool which extracts metadata from saved chat"
+                        " creating a tool that extracts metadata from saved chat"
                         " transcripts and provides metadata to a system-wide search"
                         " database."
                     ),
                     (
-                        "Redesigned chat file format and implemented backwards"
+                        "Redesigned chat file format and implemented backward"
                         " compatibility for search."
                     ),
                 ],
@@ -1167,11 +1169,11 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
                 location="WA, USA",
                 highlights=[
                     (
-                        "Promoted to Lead Student Ambassador in Fall 2004, supervised"
+                        "Promoted to Lead Student Ambassador in the Fall of 2004, supervised"
                         " 10 - 15 Student Ambassadors."
                     ),
                     (
-                        "Created and taught Computer Science course, CSE 099: Software"
+                        "Created and taught a computer science course, CSE 099: Software"
                         " Design and Development."
                     ),
                 ],
@@ -1188,17 +1190,17 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
                         " (ctrl-tab) and extended it to tool windows."
                     ),
                     (
-                        "Created service to provide gradient across VS and VS add-ins."
+                        "Created a service to provide gradient across VS and VS add-ins."
                         " Optimized service via caching."
                     ),
                     "Programmer Productivity Research Center (Summers 2001, 2002)",
                     (
-                        "Built app to compute similarity of all methods in a code base,"
+                        "Built app to compute the similarity of all methods in a code base,"
                         " reduced time from $\\mathcal{O}(n^2)$ to $\\mathcal{O}(n"
                         " \\log n)$. "
                     ),
                     (
-                        "Created test case generation tool which creates random XML"
+                        "Created a test case generation tool that creates random XML"
                         " docs from XML Schema."
                     ),
                 ],
@@ -1211,12 +1213,8 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
                 location="WA, USA",
                 highlights=[
                     (
-                        "Promoted to Lead Student Ambassador in Fall 2004, supervised"
+                        "Promoted to Lead Student Ambassador in the Fall of 2004, supervised"
                         " 10 - 15 Student Ambassadors."
-                    ),
-                    (
-                        "Created and taught Computer Science course, CSE 099: Software"
-                        " Design and Development."
                     ),
                 ],
             ),
@@ -1261,7 +1259,7 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
                         " synchronized calendars, allowing users to schedule meetings"
                         " with other users."
                     ),
-                    "Used C#.NET, SQL and XML.",
+                    "Used C#.NET, SQL, and XML.",
                 ],
             ),
             NormalEntry(
@@ -1269,8 +1267,8 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
                 date="2002",
                 highlights=[
                     (
-                        "Developed a UNIX-style OS with scheduler, file system, text"
-                        " editor and calculator."
+                        "Developed a UNIX-style OS with a scheduler, file system, text"
+                        " editor, and calculator."
                     ),
                     "Used C.",
                 ],
@@ -1284,7 +1282,7 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
             OneLineEntry(
                 name="Third Prize, Senior Design Projects",
                 details=(
-                    "Awarded 3rd prize for Synchronized Calendar project, out of 100"
+                    "Awarded 3rd prize for a synchronized calendar project out of 100"
                     " projects."
                 ),
             ),
@@ -1317,8 +1315,16 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
         sections=sections,  # type: ignore
     )
 
-    # design = ClassicThemeOptions(theme="classic", show_timespan_in=["Employment"])
-    design = Sb2novThemeOptions(theme="sb2nov")
+    if theme not in available_themes:
+        raise ValueError(
+            f"The theme should be one of the following: {available_themes}! The"
+            f" provided theme is {theme}."
+        )
+
+    if theme == "classic":
+        design = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
+    else:
+        design = rendercv_design_validator.validate_python({"theme": theme}) # type: ignore
 
     return RenderCVDataModel(cv=cv, design=design)
 
