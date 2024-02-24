@@ -411,7 +411,7 @@ def cli_command_render(
         help="Use the local LaTeX installation instead of the RenderCV's TinyTeX.",
     ),
 ):
-    """Generate a LaTeX CV from a YAML input file.
+    """Generate a $\\LaTeX$ CV from a YAML input file.
 
     Args:
         input_file_path (str): Path to the YAML input file as a string.
