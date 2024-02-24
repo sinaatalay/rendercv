@@ -1,0 +1,1 @@
+- <<entry.name>>: <<entry.details>>

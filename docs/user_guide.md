@@ -1,20 +1,40 @@
 # RenderCV: User Guide
 
-After you've installed RenderCV with
+This document provides everything you need to know about the usage of RenderCV.
+
+## Installation
+
+> RenderCV doesn't require a $\LaTeX$ installation; it comes with it!
+
+1. Install [Python](https://www.python.org/downloads/) (3.10 or newer).
+
+2. Run the command below to install RenderCV.
 
 ```bash
 pip install rendercv
 ```
 
-you can start rendering your CV.
+or
 
-Firstly, go to the directory where you want your CV files located and run:
+```bash
+python -m pip install rendercv
+```
+
+## Generating the input file
+
+To get started, navigate to the directory where you want to create your CV and run the command below to create the input file.
 
 ```bash
 rendercv new "Your Full Name"
 ```
 
-This will create a YAML input file for RenderCV called `Your_Name_CV.yaml`. Open this generated file in your favorite IDE and start editing. It governs all the features of RenderCV.
+or
+
+```bash
+python -m rendercv new "Your Full Name"
+```
+
+This will create a YAML input file for RenderCV called `Your_Name_CV.yaml`. Open this file in your favorite IDE and start editing.
 
 !!! tip
 
@@ -27,189 +47,229 @@ This will create a YAML input file for RenderCV called `Your_Name_CV.yaml`. Open
 
     === "Other"
 
-        1.  Ensure your editor of choice has support for YAML schema validation.
+        1.  Ensure your editor of choice has support for JSON Schema.
         2.  Add the following line at the top of `Your_Name_CV.yaml`:
 
             ``` yaml
             # yaml-language-server: $schema=https://github.com/sinaatalay/rendercv/blob/main/schema.json?raw=true
             ```
 
-After you're done editing your input file, run the command below to render your CV:
-```bash
-rendercv render Your_Name_CV.yaml
-```
+## The YAML structure of the input file
 
-## Entry Types
-
-There are five entry types in RenderCV:
-
-1.  *EducationEntry*
-2.  *ExperienceEntry*
-3.  *NormalEntry*
-4.  *OneLineEntry*
-5.  *PublicationEntry*
-
-The whole CV consists of these entries. The table below shows what sections of the input file use which entry type.
-
-| YAML section                   | Entry Type                       |
-| ------------------------------ | -------------------------------- |
-| `education`                  | *EducationEntry*               |
-| `work_experience`            | *ExperienceEntry*              |
-| `academic_projects`          | *NormalEntry*                  |
-| `publications`               | *PublicationEntry*             |
-| `certificates`               | *NormalEntry*                  |
-| `skills`                     | *OneLineEntry*                 |
-| `test_scores`                | *OneLineEntry*                 |
-| `personal_projects`          | *NormalEntry*                  |
-| `extracurricular_activities` | *ExperienceEntry*              |
-| `custom_sections`            | **They can be any of the five!** |
-
-!!! info
-    Note that *EducationEntry* is not necessarily for education entries only. It's one of the five entry designs that RenderCV offers, and it could be used for anything (see [custom sections](http://user_guide.md#custom-sections)). *EducationEntry* just happens to be its name. The same goes for other entries, too.
-
-### *EducationEntry*
+RenderCV's input file consists of two parts: `cv` and `design`.
 
 ```yaml
-institution: Boğaziçi University
-url: https://boun.edu.tr
-area: Mechanical Engineering
-study_type: BS
-location: Istanbul, Turkey
-start_date: "2017-09-01"
-end_date: "2023-01-01"
-transcript_url: https://example.com
-gpa: 3.10/4.00
-highlights:
-- "Class rank: 10 of 62"
-
+cv:
+  ...
+  YOUR CONTENT
+  ...
+design:
+  ...
+  YOUR DESIGN
+  ...
 ```
 
-which renders into
+The `cv` part contains only the **content of the CV**, and the `design` part contains only the **design options of the CV**. That's how the design and content are separated.
 
-![EducationEntry](images/EducationEntry.png)
+### "`cv`" section of the YAML input
 
-### *ExperienceEntry*
+The `cv` section of the YAML input starts with generic information, as shown below:
 
 ```yaml
-company: AmIACompany
-position: Summer Intern
-location: Istanbul, Turkey
-url: https://example.com
-start_date: "2022-06-15"
-end_date: "2022-08-01"
-highlights:
-- AmIACompany is a technology company that provides web-based engineering
-  applications that enable the simulation and optimization of products and
-  manufacturing tools.
-- Modeled and simulated a metal-forming process deep drawing using finite element
-  analysis with open-source software called CalculiX.
+cv:
+  name: John Doe
+  email: johndoe@example.com
+  phone: "+905555555555"
+  website: https://example.com
+  label: Mechanical Engineer
+  location: Istanbul, Türkiye
+  ...
 ```
 
-which renders into
+None of the values above are required. You can omit any or all of them, and RenderCV will adapt to your input.
 
-![ExperienceEntry](images/ExperienceEntry.png)
-
-### *NormalEntry*
+The real content of your CV is stored in a field called sections.
 
 ```yaml
-name: Design and Construction of a Dynamometer
-location: Istanbul, Turkey
-date: Fall 2022
-highlights:
-- Designed and constructed a controllable dynamometer that measures an electric
-  motor's torque and power output at different speeds for my senior design project.
-url: https://example.com
-
+cv:
+  name: John Doe
+  email: johndoe@example.com
+  phone: "+905555555555"
+  website: https://example.com
+  label: Mechanical Engineer
+  location: Istanbul, Türkiye
+  sections:
+    ...
+    YOUR CONTENT
+    ...
 ```
 
-which renders into
+The `sections` field is a dictionary where the keys are the section titles, and the values are lists. Each item of the list is an entry for that section.
 
-![NormalEntry](images/NormalEntry.png)
-
-### *OneLineEntry*
-```yaml
-name: Programming
-details: C++, C, Python, JavaScript, MATLAB, Lua, LaTeX
-```
-
-which renders into
-
-![OneLineEntry](images/OneLineEntry.png)
-
-### *PublicationEntry*
+Here is an example:
 
 ```yaml
-title: Phononic band gaps induced by inertial amplification in periodic media
-authors:
-- Author 1
-- John Doe
-- Author 3
-journal: Physical Review B
-doi: 10.1103/PhysRevB.76.054309
-date: "2007-08-01"
-cited_by: 243
+cv:
+  sections:
+    this_is_a_section_title:
+      - This is a TextEntry.
+      - This is another TextEntry under the same section.
+      - This is another another TextEntry under the same section.
+    this_is_another_section_title:
+      - company: This time it's an ExperienceEntry.
+        position: Your position
+        start_date: 2019-01-01
+        end_date: 2020-01
+        location: TX, USA
+        highlights: 
+          - This is a highlight (bullet point).
+          - This is another highlight.
+      - company: Another ExperienceEntry.
+        position: Your position
+        start_date: 2019-01-01
+        end_date: 2020-01-10
+        location: TX, USA
+        highlights: 
+          - This is a highlight (bullet point).
+          - This is another highlight.
 ```
 
-which renders into
+There are six different entry types in RenderCV. Different types of entries cannot be mixed under the same section, so for each section, you can only use one type of entry.
 
-![PublicationEntry](images/PublicationEntry.png)
+The available entry types are: `EducationEntry`, `ExperienceEntry`, `PublicationEntry`, `NormalEntry`, `OneLineEntry`, and `TextEntry`.
 
+Each entry type is a different object (a dictionary). All of the entry types and their corresponding look in each built-in theme are shown below:
 
-## Custom Sections
+{% for entry_name, entry in showcase_entries.items() %}
+#### {{ entry_name }}
+```yaml
+{{ entry["yaml"] }}
+```
+    {% for figure in entry["figures"] %}
+`{{ figure["theme"] }}` theme:
+![figure["alt_text"]]({{ figure["path"] }})
+    {% endfor %}
+{% endfor %}
 
-Custom sections with custom titles can be created. Each custom section will be an object that looks like this:
+### "`design`" section of the YAML input
+
+The `cv` part of the input contains your content, and the `design` part contains your design. The `design` part starts with a theme name. Currently, there are three built-in themes (`classic`, `sb2nov`, and `moderncv`), but custom themes can also be used (see [below](#using-custom-themes).)
 
 ```yaml
-title: My Custom Section
-entry_type: OneLineEntry
-entries:
-- name: Testing custom sections
-  details: Wohooo!
-- name: This is a
-  details: OneLineEntry!
+design:
+  theme: classic
+  ...
 ```
 
-And `custom_sections` part of the data model will be a list of customs section objects that look like this:
+Each theme has different options for design. `classic` and `sb2nov` almost use identical options, but `moderncv` is slightly different. Please use an IDE that supports JSON schema to avoid missing any available options for the theme (see [above](#generating-the-input-file)).
+
+An example `design` part for a `classic` theme is shown below:
+
 ```yaml
-custom_sections:
-- title: My Custom Section
-  entry_type: OneLineEntry
-  entries:
-    - name: Testing custom sections
-      details: Wohooo!
-    - name: This is a
-      details: OneLineEntry!
-- title: My Other Custom Section
-  entry_type: EducationEntry
-  entries:
-    - institution: Hop!
-      area: Hop!
-      study_type: HA
-      highlights:
-      - "There are only five types of entries: *EducationEntry*, *ExperienceEntry*,
-        *NormalEntry*, *OneLineEntry*, and *PublicationEntry*."
-      - This is an EducationEntry!
-      start_date: "2022-06-15"
-      end_date: "2022-08-01"
+design:
+  theme: classic
+  color: rgb(0,79,144)
+  disable_page_numbering: false
+  font_size: 10pt
+  header_font_size: 30 pt
+  page_numbering_style: NAME - Page PAGE_NUMBER of TOTAL_PAGES
+  page_size: a4paper
+  show_last_updated_date: true
+  text_alignment: justified
+  margins: 
+    page:
+      bottom: 2 cm
+      left: 1.24 cm
+      right: 1.24 cm
+      top: 2 cm
+    section_title:
+      bottom: 0.2 cm
+      top: 0.2 cm
+    entry_area:
+      date_and_location_width: 4.1 cm
+      left_and_right: 0.2 cm
+      vertical_between: 0.12 cm
+    highlights_area:
+      left: 0.4 cm
+      top: 0.10 cm
+      vertical_between_bullet_points: 0.10 cm
+    header:
+      bottom: 0.2 cm
+      horizontal_between_connections: 1.5 cm
+      vertical_between_name_and_connections: 0.2 cm
 ```
 
-Each custom section needs to have an entry type, and entries should be adjusted according to the entry type selection.
+## Using custom themes
 
-!!! note
+RenderCV allows you to move your $\LaTeX$ CV code to RenderCV. To do this, you will need to create some files:
 
-    Some entry types use links, and all the links have a text placeholder. That placeholder can be changed with `link_text` setting as shown below:
-    ```yaml
-    title: My Third Custom Section
-    entry_type: ExperienceEntry
-    link_text: My Link Text
-    entries:
-    - company: Hop!
-      position: Hop!
-      date: My Date
-      location: My Location
-      url: https://example.com
-      highlights:
-      - I think this is really working. This is an *ExperienceEntry*!
-    ```
+``` { .sh .no-copy }
+├── yourcustomtheme
+│   ├── Preamble.j2.tex
+│   ├── Header.j2.tex
+│   ├── EducationEntry.j2.tex
+│   ├── ExperienceEntry.j2.tex
+│   ├── NormalEntry.j2.tex
+│   ├── OneLineEntry.j2.tex
+│   ├── PublicationEntry.j2.tex
+│   ├── TextEntry.j2.tex
+│   ├── SectionBeginning.j2.tex
+│   └── SectionEnding.j2.tex
+└── Your_Full_Name_CV.yaml
+```
 
+Each of these `*.j2.tex` files is $\LaTeX$ code with some Python in it. These files allow RenderCV to create your CV out of the YAML input.
 
+The best way to understand how they work is to look at the source code of built-in themes. For example, the content of `ExperienceEntry.j2.tex` for the `moderncv` theme is shown below:
+
+```latex
+\cventry{
+    ((* if design.show_only_years *))
+    <<entry.date_string_only_years>>
+    ((* else *))
+    <<entry.date_string>>
+    ((* endif *))
+}{
+    <<entry.position>>
+}{
+    <<entry.company>>
+}{
+    <<entry.location>>
+}{}{}
+((* for item in entry.highlights *))
+\cvline{}{\small <<item>>}
+((* endfor *))
+```
+
+The values between `<<` and `>>` are the names of Python variables, allowing you to write a $\\LaTeX$ CV without writing any content. Those will be replaced with the values found in the YAML input. Also, the values between `((*` and `*))` are Python blocks, allowing you to use loops and conditional statements.
+
+The process of generating $\\LaTeX$ files like this is called "templating," and it's achieved with a Python package called [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
+
+### Creating custom theme options
+
+If you want to have some `design` options under your YAML input file's `design` section for your custom theme, you can create a `__init__.py` file inside your theme directory.
+
+For example, the `moderncv` theme's `__init__.py` file is shown below:
+
+```python
+from typing import Literal
+
+import pydantic
+
+class YourcustomthemeThemeOptions(pydantic.BaseModel):
+    theme: Literal["yourcustomtheme"]
+    option1: str
+    option2: str
+    option3: int
+    option4: bool
+```
+
+Then, RenderCV will parse your custom design options, and you can use these variables inside your `*.j2.tex` as shown below:
+
+```latex
+<<design.option1>>
+<<design.option2>>
+((* if design.option4 *))
+    <<design.option3>>
+((* endif *))
+```

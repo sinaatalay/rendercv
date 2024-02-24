@@ -1,76 +1,192 @@
-import unittest
 import os
 import shutil
-import subprocess
-import sys
 
-from rendercv import data_model
+import rendercv.cli as cli
+import rendercv.data_models as dm
+
+import pydantic
+import ruamel.yaml
+import pytest
+import typer.testing
+import time_machine
 
 
-class TestCLI(unittest.TestCase):
-    def test_render(self):
-        # Change the working directory to the root of the project:
-        workspace_path = os.path.dirname(os.path.dirname(__file__))
+def test_welcome():
+    cli.welcome()
 
-        with self.subTest(msg="Correct input"):
-            test_input_file_path = os.path.join(
-                workspace_path,
-                "tests",
-                "reference_files",
-                "John_Doe_CV_yaml_reference.yaml",
-            )
-            subprocess.run(
-                [sys.executable, "-m", "rendercv", "render", test_input_file_path],
-                check=True,
-            )
 
-            # Read the necessary information and remove the output directory:
-            output_file_path = os.path.join(workspace_path, "output", "John_Doe_CV.pdf")
-            pdf_file_size = os.path.getsize(output_file_path)
-            file_exists = os.path.exists(output_file_path)
-            shutil.rmtree(os.path.join(workspace_path, "output"))
+def test_warning():
+    cli.warning("This is a warning message.")
 
-            # Check if the output file exists:
-            self.assertTrue(file_exists, msg="PDF file couldn't be generated.")
 
-            # Compare the pdf file with the reference pdf file:
-            reference_pdf_file = os.path.join(
-                workspace_path,
-                "tests",
-                "reference_files",
-                "John_Doe_CV_pdf_reference.pdf",
-            )
-            reference_pdf_file_size = os.path.getsize(reference_pdf_file)
-            ratio = min(reference_pdf_file_size, pdf_file_size) / max(
-                reference_pdf_file_size, pdf_file_size
-            )
-            self.assertTrue(ratio > 0.98, msg="PDF file didn't match the reference.")
+def test_error():
+    cli.error("This is an error message.")
 
-        # Wrong input:
-        with self.subTest(msg="Wrong input"):
-            with self.assertRaises(subprocess.CalledProcessError):
-                subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "rendercv",
-                        "wrong_input.yaml",
-                    ],
-                    check=True,
-                )
 
-    def test_new(self):
-        # Change the working directory to the root of the project:
-        workspace_path = os.path.dirname(os.path.dirname(__file__))
+def test_information():
+    cli.information("This is an information message.")
 
-        subprocess.run(
-            [sys.executable, "-m", "rendercv", "new", "John Doe"],
-            check=True,
-        )
-        output_file_path = os.path.join(workspace_path, "John_Doe_CV.yaml")
 
-        model: data_model.RenderCVDataModel = data_model.read_input_file(
-            output_file_path
-        )
+def test_get_error_message_and_location_and_value_from_a_custom_error():
+    error_string = "('error message', 'location', 'value')"
+    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
+        error_string
+    )
+    assert result == ("error message", "location", "value")
 
-        self.assertTrue(model.cv.name == "John Doe")
+    error_string = """("er'ror message", 'location', 'value')"""
+    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
+        error_string
+    )
+    assert result == ("er'ror message", "location", "value")
+
+    error_string = "error message"
+    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
+        error_string
+    )
+    assert result == (None, None, None)
+
+
+@pytest.mark.parametrize(
+    "data_model_class, invalid_model",
+    [
+        (
+            dm.EducationEntry,
+            {
+                "institution": "Boğaziçi University",
+                "area": "Mechanical Engineering",
+                "degree": "BS",
+                "date": "2028-12-08",
+            },
+        ),
+        (
+            dm.EducationEntry,
+            {
+                "area": "Mechanical Engineering",
+                "extra": "Extra",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "company": "CERN",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "position": "Researcher",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "company": "CERN",
+                "position": "Researcher",
+                "stat_date": "2023-12-08",
+                "end_date": "INVALID END DATE",
+            },
+        ),
+        (
+            dm.PublicationEntry,
+            {
+                "doi": "10.1109/TASC.2023.3340648",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "authors": ["John Doe", "Jane Doe"],
+            },
+        ),
+        (
+            dm.OneLineEntry,
+            {
+                "name": "My One Line Entry",
+            },
+        ),
+        (
+            dm.NormalEntry,
+            {
+                "name": "My Entry",
+            },
+        ),
+        (
+            dm.CurriculumVitae,
+            {
+                "name": "John Doe",
+                "sections": {
+                    "education": [
+                        {
+                            "institution": "Boğaziçi University",
+                            "area": "Mechanical Engineering",
+                            "degree": "BS",
+                            "date": "2028-12-08",
+                        },
+                        {
+                            "degree": "BS",
+                        },
+                    ]
+                },
+            },
+        ),
+    ],
+)
+def test_handle_validation_error(data_model_class, invalid_model):
+    try:
+        data_model_class(**invalid_model)
+    except pydantic.ValidationError as e:
+        cli.handle_validation_error(e)
+
+
+@pytest.mark.parametrize(
+    "exception",
+    [ruamel.yaml.YAMLError, RuntimeError, FileNotFoundError, ValueError],
+)
+def test_handle_exceptions(exception):
+    @cli.handle_exceptions
+    def function_that_raises_exception():
+        raise exception("This is an exception!")
+
+    function_that_raises_exception()
+
+
+def test_live_progress_reporter_class():
+    with cli.LiveProgressReporter(number_of_steps=3) as progress:
+        progress.start_a_step("Test step 1")
+        progress.finish_the_current_step()
+
+        progress.start_a_step("Test step 2")
+        progress.finish_the_current_step()
+
+        progress.start_a_step("Test step 3")
+        progress.finish_the_current_step()
+
+
+runner = typer.testing.CliRunner()
+
+
+@time_machine.travel("2024-01-01")
+def test_render_command(tmp_path, input_file_path):
+    # copy input file to the temporary directory to create the output directory there:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    result = runner.invoke(cli.app, ["render", str(input_file_path)])
+
+    assert result.exit_code == 0
+    assert "Your CV is rendered!" in result.stdout
+
+
+def test_render_command_with_use_local_latex_option(tmp_path, input_file_path):
+    # copy input file to the temporary directory to create the output directory there:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    runner.invoke(cli.app, ["render", str(input_file_path), "--use-local-latex"])
+
+
+def test_new_command(tmp_path):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+    result = runner.invoke(cli.app, ["new", "John Doe"])
+    assert result.exit_code == 0
+    assert "Your RenderCV input file has been created" in result.stdout

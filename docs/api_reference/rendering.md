@@ -1,3 +1,0 @@
-# Rendering
-
-::: rendercv.rendering

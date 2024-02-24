@@ -1,0 +1,39 @@
+name: Publish to PyPI
+
+# GitHub events that triggers the workflow:
+on:
+  release:
+    types: [released]
+
+jobs:
+  call_ci_workflow:
+    name: Continuous integration
+    uses: ./.github/workflows/ci.yaml
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    environment: release
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Check if the release tag matches the version
+        uses: samuelcolvin/check-python-version@v4.1
+        with:
+          version_file_path: rendercv/__init__.py
+
+      - name: Build
+        run: |
+          pip install -U build
+          python -m build
+
+      - name: Upload package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
