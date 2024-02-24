@@ -76,7 +76,7 @@ publication_entry = {
         "Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of"
         " No-Insulation Coils"
     ),
-    "authors": ["John Doe", "Harry Tom"],
+    "authors": ["John Doe", "Harry Tom", "Sina Doe", "Anotherfirstname Andsurname"],
     "date": "2023-12-08",
     "journal": "IEEE Transactions on Applied Superconductivity",
     "doi": "10.1109/TASC.2023.3340648",
@@ -103,6 +103,8 @@ def dictionary_to_yaml(dictionary: dict[str, Any]):
         str: The YAML string.
     """
     yaml_object = ruamel.yaml.YAML()
+    yaml_object.width = 60
+    yaml_object.indent(mapping=2, sequence=4, offset=2)
     with io.StringIO() as string_stream:
         yaml_object.dump(dictionary, string_stream)
         yaml_string = string_stream.getvalue()
