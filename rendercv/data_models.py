@@ -1108,106 +1108,198 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
         RenderCVDataModel: A sample data model.
     """
     sections = {
-        "summary_or_something_else": [""],
-        "education": [
-            EducationEntry(
-                institution="Your University",
-                area="Mechanical Engineering",
-                degree="MS",
-                start_date="2019-12",
-                end_date="2021-12-22",
-                highlights=[
-                    "Did something great.",
-                    "Did something else great.",
-                ],
-            ),
-            EducationEntry(
-                institution="Your University",
-                area="Mechanical Engineering",
-                location="Istanbul, Turkey",
-                degree="BS",
-                start_date=2015,
-                end_date=2019,
+        "summary": [
+            (
+                "This is an example resume to showcase the capabilities of the"
+                " open-source LaTeX CV generator,"
+                " [RenderCV](https://github.com/sinaatalay/rendercv). A substantial"
+                " part of the content is taken from"
+                " [here](https://www.careercup.com/resume), where a *clean and tidy CV*"
+                " pattern is proposed by **Gayle L. McDowell**."
             ),
         ],
-        "experience": [
-            ExperienceEntry(
-                company="Your Company",
-                position="Your Position",
-                date="My Whole Life",
-                location="USA",
+        "education": [
+            EducationEntry(
+                institution="University of Pennsylvania",
+                area="Computer Science",
+                degree="BS",
+                start_date="2000-09",
+                end_date="2005-05",
                 highlights=[
-                    "Did something great.",
-                    "Did something else great.",
+                    "GPA: 3.9/4.0 ([Transcript](https://example.com))",
+                    (
+                        "**Coursework:** Software Foundations, Computer"
+                        " Architecture, Algorithms, Artificial Intelligence, Comparison"
+                        " of Learning Algorithms, Computational Theory."
+                    ),
+                ],
+            ),
+        ],
+        "employment": [
+            ExperienceEntry(
+                company="Apple Computer",
+                position="Software Engineer, Intern",
+                start_date="2004-06",
+                end_date="2004-08",
+                location="CA, USA",
+                highlights=[
+                    (
+                        "Reduced time to render the user's buddy list by 75% by"
+                        " implementing prediction algorithm."
+                    ),
+                    (
+                        "Implemented iChat integration with OS X Spotlight Search by"
+                        " creating tool which extracts metadata from saved chat"
+                        " transcripts and provides metadata to a system-wide search"
+                        " database."
+                    ),
+                    (
+                        "Redesigned chat file format and implemented backwards"
+                        " compatibility for search."
+                    ),
                 ],
             ),
             ExperienceEntry(
-                company="Your Company",
-                position="Your Position",
+                company="Microsoft Corporation",
+                position="Lead Student Ambassador",
+                start_date="2003-09",
+                end_date="2005-04",
+                location="WA, USA",
+                highlights=[
+                    (
+                        "Promoted to Lead Student Ambassador in Fall 2004, supervised"
+                        " 10 - 15 Student Ambassadors."
+                    ),
+                    (
+                        "Created and taught Computer Science course, CSE 099: Software"
+                        " Design and Development."
+                    ),
+                ],
+            ),
+            ExperienceEntry(
+                company="University of Pennsylvania",
+                position="Head Teaching Assistant",
+                start_date="2001-10",
+                end_date="2005-05",
+                location="PA, USA",
+                highlights=[
+                    (
+                        "Implemented a user interface for the VS open file switcher"
+                        " (ctrl-tab) and extended it to tool windows."
+                    ),
+                    (
+                        "Created service to provide gradient across VS and VS add-ins."
+                        " Optimized service via caching."
+                    ),
+                    "Programmer Productivity Research Center (Summers 2001, 2002)",
+                    (
+                        "Built app to compute similarity of all methods in a code base,"
+                        " reduced time from $\\mathcal{O}(n^2)$ to $\\mathcal{O}(n"
+                        " \\log n)$. "
+                    ),
+                    (
+                        "Created test case generation tool which creates random XML"
+                        " docs from XML Schema."
+                    ),
+                ],
+            ),
+            ExperienceEntry(
+                company="Microsoft Corporation",
+                position="Software Design Engineer, Intern",
+                start_date="2003-06",
+                end_date="2003-08",
+                location="WA, USA",
+                highlights=[
+                    (
+                        "Promoted to Lead Student Ambassador in Fall 2004, supervised"
+                        " 10 - 15 Student Ambassadors."
+                    ),
+                    (
+                        "Created and taught Computer Science course, CSE 099: Software"
+                        " Design and Development."
+                    ),
+                ],
             ),
         ],
         "publications": [
             PublicationEntry(
-                title="My first publication",
-                authors=["John Doe", name, "Jane Doe"],
-                date="2015-01",
+                title=(
+                    "Magneto-Thermal Thin Shell Approximation for 3D Finite Element"
+                    " Analysis of No-Insulation Coils"
+                ),
+                authors=[
+                    "Albert Smith",
+                    name,
+                    "Jane Derry",
+                    "Harry Tom",
+                    "Anotherfirstname Andsurname",
+                ],
+                date="2004-01",
                 doi="10.1109/TASC.2023.3340648",
             )
         ],
         "projects": [
             NormalEntry(
-                name="Your Project",
+                name="Multi-User Drawing Tool",
+                date="2004",
                 highlights=[
-                    "Did [something](https://example.com) great.",
-                    "Did something else great.",
+                    (
+                        "Developed an electronic classroom where multiple users can"
+                        ' view and simultaneously draw on a "chalkboard" with each'
+                        " person's edits synchronized."
+                    ),
+                    "Used C++ and MFC.",
                 ],
             ),
             NormalEntry(
-                name="Your Project",
-                location="Istanbul, Turkey",
-                date="2015-01",
+                name="Synchronized Calendar",
+                start_date="2003",
+                end_date="2004",
                 highlights=[
-                    "Did something **great**.",
-                    "Did *something* else great.",
+                    (
+                        "Developed a desktop calendar with globally shared and"
+                        " synchronized calendars, allowing users to schedule meetings"
+                        " with other users."
+                    ),
+                    "Used C#.NET, SQL and XML.",
+                ],
+            ),
+            NormalEntry(
+                name="Operating System",
+                date="2002",
+                highlights=[
+                    (
+                        "Developed a UNIX-style OS with scheduler, file system, text"
+                        " editor and calculator."
+                    ),
+                    "Used C.",
                 ],
             ),
         ],
-        "skills": [
+        "additional_experience_and_awards": [
             OneLineEntry(
-                name="Programming Languages",
-                details="Python, C++, JavaScript",
+                name="Instructor (2003 - 2005)",
+                details="Taught two full-credit Computer Science courses.",
             ),
             OneLineEntry(
-                name="Languages",
+                name="Third Prize, Senior Design Projects",
                 details=(
-                    "English ([TOEFL: 120/120](https://example.com)), Turkish (Native)"
+                    "Awarded 3rd prize for Synchronized Calendar project, out of 100"
+                    " projects."
                 ),
             ),
         ],
-        "my_custom_section": [
-            ExperienceEntry(
-                company="Your Company",
-                position="Your Position",
-                date="My Whole Life",
-                location="USA",
-                highlights=[
-                    "Did something great.",
-                    "Did something else great.",
-                ],
-            ),
-            ExperienceEntry(
-                company="Your Company",
-                position="Your Position",
-            ),
-        ],
-        "This Format Is Also Accepted": [
+        "technologies": [
             OneLineEntry(
-                name="Your Entry",
-                details="Your details.",
+                name="Languages",
+                details="C++, C, Java, Objective-C, C#.NET, SQL, JavaScript",
             ),
             OneLineEntry(
-                name="Your *Entry*",
-                details="Your details.",
+                name="Software",
+                details=(
+                    "Visual Studio, Microsoft SQL Server, Eclipse, XCode, Interface"
+                    " Builder"
+                ),
             ),
         ],
     }
@@ -1225,7 +1317,8 @@ def get_a_sample_data_model(name: str = "John Doe") -> RenderCVDataModel:
         sections=sections,  # type: ignore
     )
 
-    design = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
+    # design = ClassicThemeOptions(theme="classic", show_timespan_in=["Employment"])
+    design = Sb2novThemeOptions(theme="sb2nov")
 
     return RenderCVDataModel(cv=cv, design=design)
 
