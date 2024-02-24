@@ -14,14 +14,44 @@ Write your content, and get a high-quality, professional-looking CV as a PDF wit
 It takes a YAML file that looks like this:
 
 ```yaml
-...
+cv:
+  name: John Doe
+  location: Your Location
+  email: youremail@yourdomain.com
+  phone: tel:+90-541-999-99-99
+  website: https://yourwebsite.com/
+  social_networks:
+    - network: LinkedIn
+      username: yourusername
+    - network: GitHub
+      username: yourusername
+  sections:
+    summary:
+      - This is an example resume to showcase the capabilities
+        of the open-source LaTeX CV generator, [RenderCV](https://github.com/sinaatalay/rendercv).
+        A substantial part of the content is taken from [here](https://www.careercup.com/resume),
+        where a *clean and tidy CV* pattern is proposed by **Gayle
+        L. McDowell**.
+    education:
+      - start_date: 2000-09
+        end_date: 2005-05
+        highlights:
+          - 'GPA: 3.9/4.0 ([Transcript](https://example.com))'
+          - '**Coursework:** Software Foundations, Computer Architecture,
+            Algorithms, Artificial Intelligence, Comparison of
+            Learning Algorithms, Computational Theory.'
+        institution: University of Pennsylvania
+        area: Computer Science
+        degree: BS
+    employment:
+    ...
 ```
 
 And then produces these PDFs and their $\LaTeX$ code (click on images to preview PDFs):
 
 | `classic` theme | `sb2nov` theme | `moderncv` theme |
 |:---------------:|----------------|------------------|
-|                 |                |                  |
+|[![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ClassicTheme_CV.pdf)|[![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_Sb2novTheme_CV.pdf)|[![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ModerncvTheme_CV.pdf)|
 
 
 It also generates an HTML file so that the content can be pasted into Grammarly for spell-checking:
