@@ -93,9 +93,18 @@ def test_read_input_file_invalid_file(tmp_path):
         dm.read_input_file(invalid_file_path)
 
 
-def test_get_a_sample_data_model():
-    data_model = dm.get_a_sample_data_model("John Doe")
+@pytest.mark.parametrize(
+    "theme",
+    dm.available_themes,
+)
+def test_get_a_sample_data_model(theme):
+    data_model = dm.get_a_sample_data_model("John Doe", theme)
     assert isinstance(data_model, dm.RenderCVDataModel)
+
+
+def test_get_a_sample_data_model_invalid_theme():
+    with pytest.raises(ValueError):
+        dm.get_a_sample_data_model("John Doe", "invalid")
 
 
 def test_generate_json_schema():
