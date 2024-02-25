@@ -6,9 +6,7 @@
 [![pypi-downloads](https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144))](https://pypi.python.org/pypi/rendercv)
 
 
-RenderCV is a $\LaTeX$ CV/resume generator from a JSON/YAML input file. It is a $\LaTeX$ framework that can be used with any $\LaTeX$ CV. The primary motivation behind the RenderCV is to allow the separation between the content and design of a CV.
-
-Write your content, and get a high-quality, professional-looking CV as a PDF with its $\LaTeX$ source!
+RenderCV is a $\LaTeX$ CV/resume generator from a JSON/YAML input file. The primary motivation behind the RenderCV is to allow the separation between the content and design of a CV.
 
 It takes a YAML file that looks like this:
 
@@ -80,13 +78,13 @@ RenderCV also validates the input file, and if there are any problems, it tells 
     rendercv render Full_Name_CV.yaml
     ```
 
-You can find a comprehensive user guide that covers adding custom themes and the data model (YAML structure) in greater detail [here](https://sinaatalay.github.io/rendercv/user_guide).
+You can find a comprehensive user guide that covers the data model (YAML structure) and adding custom themes in greater detail [here](https://sinaatalay.github.io/rendercv/user_guide).
 
 ## Motivation
 
-Writing the content of a CV and designing a CV are separate issues, and they should be treated separately. RenderCV attempts to provide this separation and encourages users not to worry too much about the appearance of their CV but to concentrate on the content.
+Writing the content of a CV and designing a CV are separate issues, and they should be treated separately. RenderCV attempts to provide this separation. With this approach, users are encouraged not to worry too much about the appearance of their CV but to concentrate on the content.
 
-You can automatize your CV generation process with RenderCV and version control your CV in a well-structured manner. It will make updating your CV as simple as updating your YAML input file.
+You can automatize your CV generation process with RenderCV and version control your CV in a well-structured manner. It will make updating your CV as simple as updating the YAML input file.
 
 Here are some answers to frequently asked questions about RenderCV:
 
@@ -94,20 +92,21 @@ Here are some answers to frequently asked questions about RenderCV:
 
 Because:
 
+- RenderCV is a tool that allows you to separate your CV content from your $\LaTeX$ code. $\LaTeX$ is still there, and you can leverage it by moving your custom $\LaTeX$ CV to RenderCV.
 - You might want to version control the content and design of your CV separately without mixing them into each other. You cannot achieve this with $\LaTeX$. If you have a plain $\LaTeX$ CV, changing your design will require you to do almost everything from scratch.
-- If you return to your $\LaTeX$ CV code after a year, you may find yourself confused about all the commands like `\hpace{1cm}` you put in a year ago everywhere to make your CV work, and it may not be appealing to update your CV anymore. Why not separate $\LaTeX$ code from your content?
-- You will have a lot of code duplication if you make your CV in $\LaTeX$ because a CV is a list of sections with lists of entries. Why not have only one $\LaTeX$ code for each entry type and let another software duplicate them for you?
-- RenderCV is not a replacement for $\LaTeX$ in the context of CVs but a tool that allows you to create $\LaTeX$ CVs seamlessly. You can always move your $\LaTeX$ CV to RenderCV!
+- Updating a YAML file may be easier than updating a $\LaTeX$ file.
+- You will have a lot of code duplication if you make your CV in $\LaTeX$ because a CV is a list of sections with lists of entries. With RenderCV, you will have only one $\LaTeX$ code for each entry type, which will be duplicated automatically based on the YAML input.
 - Spell checking may be difficult to do in $\LaTeX$. You will need to copy and paste each sentence separately to some other software for spell-checking. With RenderCV, it's one copy-paste.
-- It is not very easy to use $\LaTeX$ for CVs since they require a unique design.
 
 ### Is it flexible enough?
 
-RenderCV gives you the flexibility required for a CV, but not more. RenderCV will force users to be strict about the content of their CVs, and that's helpful! Because CVs are strict documents, and you may not want to go in the wrong direction. You can't make design mistakes with RenderCV, but you can be flexible enough. It supports Markdown syntax, so you can put links anywhere or make your text italic or bold. Additionally, you can specify various design options in your input file's `design` section.
+RenderCV gives you the flexibility required for a CV, but not more. RenderCV forces users to be strict about the content of their CVs, and that's helpful! A CV is a strict and structured document, and you may not want to change that strictness arbitrarily.
+
+You can't make design mistakes with RenderCV, but you can be flexible enough. It supports Markdown syntax, so you can put links anywhere or make your text italic or bold. Additionally, you can specify various design options (margins, colors, font sizes, etc.) in your input file's `design` section.
 
 ### Isn't putting all of my data into a YAML file cumbersome?
 
-You always have to put all of your data somewhere to produce a PDF with all your data. If you do it for RenderCV once, you may not have to do it again for a long time. It will help you to avoid this process in the future.
+If you do it for RenderCV once, you may not have to do it again for a long time. It will help you to avoid this process in the future.
 
 ## Documentation
 
