@@ -416,6 +416,11 @@ def test_copy_theme_files_to_output_directory_custom_theme(
         pathlib.Path(custom_theme_directory_path / "theme_auxiliary_dir").mkdir(
             exist_ok=True
         )
+        pathlib.Path(
+            custom_theme_directory_path
+            / "theme_auxiliary_dir"
+            / "theme_auxiliary_file.txt"
+        ).touch()
         init_file = pathlib.Path(custom_theme_directory_path / "__init__.py")
 
         init_file.touch()
