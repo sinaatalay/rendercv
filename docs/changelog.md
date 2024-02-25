@@ -1,10 +1,10 @@
 # Changelog
 
-All notable changes to this project after v1.0 will be documented in this file.
+All notable changes to this project after v1.1 will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.0] - 2024-02-25
+## [1.1] - 2024-02-25
 
 ### Added
 
@@ -25,4 +25,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The reference has been rewritten.
 - The build system has been changed from `setuptools` to `hatchling`.
 
-[1.0]: https://github.com/sinaatalay/rendercv/releases/tag/v1.0
+[1.1]: https://github.com/sinaatalay/rendercv/releases/tag/v1.1
