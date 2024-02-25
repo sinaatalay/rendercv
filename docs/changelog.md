@@ -4,7 +4,7 @@ All notable changes to this project after v1.0 will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.0] - 2024-??-??
+## [1.0] - 2024-02-25
 
 ### Added
 
