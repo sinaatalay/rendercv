@@ -60,7 +60,7 @@ experience_entry = {
     "end_date": "2021-08-12",
     "highlights": [
         (
-            "Developed a [IOS application](https://example.com) that has recieved"
+            "Developed a [IOS application](https://example.com) that has received"
             " more than **100,000 downloads**."
         ),
         "Managed a team of **5** engineers.",
@@ -278,5 +278,5 @@ def generate_examples():
 
 
 if __name__ == "__main__":
-    # generate_entry_figures()
-    generate_examples()
+    generate_entry_figures()
+    # generate_examples()
