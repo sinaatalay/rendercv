@@ -78,11 +78,15 @@ The `cv` section of the YAML input starts with generic information, as shown bel
 ```yaml
 cv:
   name: John Doe
-  email: johndoe@example.com
-  phone: "+905555555555"
-  website: https://example.com
-  label: Mechanical Engineer
-  location: Istanbul, Türkiye
+  location: Your Location
+  email: youremail@yourdomain.com
+  phone: tel:+90-541-999-99-99
+  website: https://yourwebsite.com/
+  social_networks:
+    - network: LinkedIn
+      username: yourusername
+    - network: GitHub
+      username: yourusername
   ...
 ```
 
@@ -93,11 +97,15 @@ The real content of your CV is stored in a field called sections.
 ```yaml
 cv:
   name: John Doe
-  email: johndoe@example.com
-  phone: "+905555555555"
-  website: https://example.com
-  label: Mechanical Engineer
-  location: Istanbul, Türkiye
+  location: Your Location
+  email: youremail@yourdomain.com
+  phone: tel:+90-541-999-99-99
+  website: https://yourwebsite.com/
+  social_networks:
+    - network: LinkedIn
+      username: yourusername
+    - network: GitHub
+      username: yourusername
   sections:
     ...
     YOUR CONTENT
@@ -136,7 +144,7 @@ cv:
 
 There are six different entry types in RenderCV. Different types of entries cannot be mixed under the same section, so for each section, you can only use one type of entry.
 
-The available entry types are: `EducationEntry`, `ExperienceEntry`, `PublicationEntry`, `NormalEntry`, `OneLineEntry`, and `TextEntry`.
+The available entry types are: [`EducationEntry`](#education-entry), [`ExperienceEntry`](#experience-entry), [`PublicationEntry`](#publication-entry), [`NormalEntry`](#normal-entry), [`OneLineEntry`](#one-line-entry), and [`TextEntry`](#text-entry).
 
 Each entry type is a different object (a dictionary). All of the entry types and their corresponding look in each built-in theme are shown below:
 
@@ -249,7 +257,7 @@ The process of generating $\\LaTeX$ files like this is called "templating," and 
 
 If you want to have some `design` options under your YAML input file's `design` section for your custom theme, you can create a `__init__.py` file inside your theme directory.
 
-For example, the `moderncv` theme's `__init__.py` file is shown below:
+For example, an `__init__.py` file is shown below:
 
 ```python
 from typing import Literal
@@ -264,7 +272,7 @@ class YourcustomthemeThemeOptions(pydantic.BaseModel):
     option4: bool
 ```
 
-Then, RenderCV will parse your custom design options, and you can use these variables inside your `*.j2.tex` as shown below:
+Then, RenderCV will parse your custom design options from the YAML input, and you can use these variables inside your `*.j2.tex` files as shown below:
 
 ```latex
 <<design.option1>>
