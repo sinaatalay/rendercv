@@ -6,7 +6,7 @@
 [![pypi-downloads](https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144))](https://pypistats.org/packages/rendercv)
 
 
-RenderCV is a $\LaTeX$ CV/resume generator from a JSON/YAML input file. The primary motivation behind the RenderCV is to allow the separation between the content and design of a CV.
+RenderCV is a $\LaTeX$ CV/resume generator from a JSON/YAML input file. The primary motivation behind the RenderCV is to allow the separation between the content and design of a CV. If you want to see RenderCV in action, you can check out [this YouTube video](https://youtu.be/0aXEArrN-_c?feature=shared).
 
 It takes a YAML file that looks like this:
 
