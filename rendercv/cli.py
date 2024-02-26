@@ -28,7 +28,7 @@ import ruamel.yaml
 
 from . import data_models as dm
 from . import renderer as r
-
+from .translation import T
 
 app = typer.Typer(
     rich_markup_mode="rich",
@@ -439,9 +439,13 @@ def cli_command_render(
 
     output_directory = input_file_path_obj.parent / "rendercv_output"
 
-    with LiveProgressReporter(number_of_steps=5) as progress:
+    with LiveProgressReporter(number_of_steps=6) as progress:
         progress.start_a_step("Reading and validating the input file")
         data_model = dm.read_input_file(input_file_path_obj)
+        progress.finish_the_current_step()
+
+        progress.start_a_step(f"Initializing translations ({data_model.language})")
+        T().initialize(data_model.language)
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")

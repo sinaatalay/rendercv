@@ -11,25 +11,27 @@ has provided a valid RenderCV input. This is achieved through the use of
 [Pydantic](https://pypi.org/project/pydantic/).
 """
 
-from datetime import date as Date
-from typing import Literal, Any, Type, Annotated, Optional, get_args
-import importlib
-import importlib.util
-import importlib.machinery
 import functools
-from urllib.request import urlopen, HTTPError
+import importlib
+import importlib.machinery
+import importlib.util
 import json
+import pathlib
 import re
 import ssl
-import pathlib
+from datetime import date as Date
+from typing import Literal, Any, Type, Annotated, Optional, get_args
+from urllib.request import urlopen, HTTPError
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import ruamel.yaml
+from babel.dates import format_date as babel_format_date
 
 from .themes.classic import ClassicThemeOptions
 from .themes.moderncv import ModerncvThemeOptions
 from .themes.sb2nov import Sb2novThemeOptions
+from .translation import _, T
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -80,10 +82,7 @@ def get_date_object(date: str | int) -> Date:
 
 
 def format_date(date: Date) -> str:
-    """Formats a `Date` object to a string in the following format: "Jan. 2021".
-
-    It uses month abbreviations, taken from
-    [Yale University Library](https://web.library.yale.edu/cataloging/months).
+    """Formats a `Date` object to a string in shortened month + year format.
 
     Example:
         ```python
@@ -93,35 +92,15 @@ def format_date(date: Date) -> str:
 
         `#!python "May 2024"`
 
+        if the locale is English
+
     Args:
         date (Date): The date to format.
 
     Returns:
         str: The formatted date.
     """
-    # Month abbreviations,
-    # taken from: https://web.library.yale.edu/cataloging/months
-    abbreviations_of_months = [
-        "Jan.",
-        "Feb.",
-        "Mar.",
-        "Apr.",
-        "May",
-        "June",
-        "July",
-        "Aug.",
-        "Sept.",
-        "Oct.",
-        "Nov.",
-        "Dec.",
-    ]
-
-    month = int(date.strftime("%m"))
-    month_abbreviation = abbreviations_of_months[month - 1]
-    year = date.strftime(format="%Y")
-    date_string = f"{month_abbreviation} {year}"
-
-    return date_string
+    return babel_format_date(date, "MMM yyyy", T().language)
 
 
 class RenderCVBaseModel(pydantic.BaseModel):
@@ -223,7 +202,7 @@ class EntryBase(RenderCVBaseModel):
                     )
 
         elif start_date_is_provided and not end_date_is_provided:
-            model.end_date = "present"
+            model.end_date = _("present")
 
         elif not start_date_is_provided and end_date_is_provided:
             raise ValueError(
@@ -289,7 +268,7 @@ class EntryBase(RenderCVBaseModel):
                 start_date = format_date(date_object)
 
             if self.end_date == "present":
-                end_date = "present"
+                end_date = _("present")
             elif isinstance(self.end_date, int):
                 # Then it means only the year is provided
                 end_date = str(self.end_date)
@@ -298,7 +277,7 @@ class EntryBase(RenderCVBaseModel):
                 date_object = get_date_object(self.end_date)
                 end_date = format_date(date_object)
 
-            date_string = f"{start_date} to {end_date}"
+            date_string = f"{start_date} {_('to')} {end_date}"
 
         else:
             # Neither date, start_date, nor end_date is provided, so return an empty
@@ -338,7 +317,7 @@ class EntryBase(RenderCVBaseModel):
                 start_date = date_object.year
 
             if self.end_date == "present":
-                end_date = "present"
+                end_date = _("present")
             elif isinstance(self.end_date, int):
                 # Then it means only the year is provided
                 end_date = str(self.end_date)
@@ -347,7 +326,7 @@ class EntryBase(RenderCVBaseModel):
                 date_object = get_date_object(self.end_date)
                 end_date = date_object.year
 
-            date_string = f"{start_date} to {end_date}"
+            date_string = f"{start_date} {_('to')} {end_date}"
 
         else:
             # Neither date, start_date, nor end_date is provided, so return an empty
@@ -387,9 +366,9 @@ class EntryBase(RenderCVBaseModel):
             time_span_in_years = end_year - start_year
 
             if time_span_in_years < 2:
-                time_span_string = "1 year"
+                time_span_string = _("1 year")
             else:
-                time_span_string = f"{time_span_in_years} years"
+                time_span_string = f"{time_span_in_years} {_('years')}"
 
             return time_span_string
 
@@ -407,16 +386,16 @@ class EntryBase(RenderCVBaseModel):
             if how_many_years == 0:
                 how_many_years_string = None
             elif how_many_years == 1:
-                how_many_years_string = "1 year"
+                how_many_years_string = _("1 year")
             else:
-                how_many_years_string = f"{how_many_years} years"
+                how_many_years_string = f"{how_many_years} {_('years')}"
 
             # calculate the number of months between start_date and end_date:
             how_many_months = round((timespan_in_days % 365) / 30)
             if how_many_months <= 1:
-                how_many_months_string = "1 month"
+                how_many_months_string = _("1 month")
             else:
-                how_many_months_string = f"{how_many_months} months"
+                how_many_months_string = f"{how_many_months} {_('months')}"
 
             # combine howManyYearsString and howManyMonthsString:
             if how_many_years_string is None:
@@ -942,6 +921,11 @@ class RenderCVDataModel(RenderCVBaseModel):
     cv: CurriculumVitae = pydantic.Field(
         title="Curriculum Vitae",
         description="The data of the CV.",
+    )
+    language: Literal["en", "nl"] = pydantic.Field(
+        default="en",
+        title="Language",
+        description="The language to generate the CV in"
     )
     design: RenderCVDesign | pydantic.json_schema.SkipJsonSchema[Any] = pydantic.Field(
         default=ClassicThemeOptions(theme="classic"),

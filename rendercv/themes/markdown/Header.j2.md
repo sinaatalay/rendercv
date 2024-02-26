@@ -1,16 +1,16 @@
 # <<cv.name>>'s CV
 
 ((* if cv.phone *))
-- Phone: <<cv.phone|replace("tel:", "")|replace("-"," ")>>
+- ((* trans *))Phone((* endtrans *)): <<cv.phone|replace("tel:", "")|replace("-"," ")>>
 ((* endif *))
 ((* if cv.email *))
-- Email: [<<cv.email>>](mailto:<<cv.email>>)
+- ((* trans *))Email((* endtrans *)): [<<cv.email>>](mailto:<<cv.email>>)
 ((* endif *))
 ((* if cv.location *))
-- Location: <<cv.location>>
+- ((* trans *))Location((* endtrans *)): <<cv.location>>
 ((* endif *))
 ((* if cv.website *))
-- Website: [<<cv.website|replace("https://","")|replace("/","")>>](<<cv.website>>)
+- ((* trans *))Website((* endtrans *)): [<<cv.website|replace("https://","")|replace("/","")>>](<<cv.website>>)
 ((* endif *))
 ((* if cv.social_networks *))
     ((* for network in cv.social_networks *))

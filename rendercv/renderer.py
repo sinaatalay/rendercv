@@ -8,21 +8,23 @@ file is rendered into a PDF with [TinyTeX](https://yihui.org/tinytex/), a $\\LaT
 distribution.
 """
 
-import subprocess
-import re
+import copy
+import importlib.resources
 import os
 import pathlib
-import importlib.resources
+import re
 import shutil
+import subprocess
 import sys
-import copy
 from datetime import date as Date
 from typing import Optional, Literal, Any
 
 import jinja2
 import markdown
+from babel.dates import format_date
 
 from . import data_models as dm
+from .translation import T
 
 
 class TemplatedFile:
@@ -42,6 +44,7 @@ class TemplatedFile:
     ):
         self.cv = data_model.cv
         self.design = data_model.design
+        self.language = data_model.language
         self.environment = environment
 
     def template(
@@ -107,7 +110,7 @@ class TemplatedFile:
             design=self.design,
             entry=entry,
             section_title=section_title,
-            today=Date.today().strftime("%B %Y"),
+            today=format_date(Date.today(), "MMMM yyyy", locale=self.language),
             is_first_entry=is_first_entry,
         )
 
@@ -751,7 +754,7 @@ def get_an_item_with_a_specific_attribute_value(
     return None
 
 
-def setup_jinja2_environment() -> jinja2.Environment:
+def setup_jinja2_environment(lang: str) -> jinja2.Environment:
     """Setup and return the Jinja2 environment for templating the $\\LaTeX$ files.
 
     Returns:
@@ -763,8 +766,12 @@ def setup_jinja2_environment() -> jinja2.Environment:
     environment = jinja2.Environment(
         loader=jinja2.FileSystemLoader([os.getcwd(), themes_directory]),
         trim_blocks=True,
-        lstrip_blocks=True,
+        lstrip_blocks=True
     )
+
+    # setup translations
+    environment.add_extension("jinja2.ext.i18n")
+    environment.install_gettext_translations(T().translations)
 
     # set custom delimiters for LaTeX templating:
     environment.block_start_string = "((*"
@@ -809,7 +816,7 @@ def generate_latex_file(
     if not output_directory.is_dir():
         output_directory.mkdir(parents=True)
 
-    jinja2_environment = setup_jinja2_environment()
+    jinja2_environment = setup_jinja2_environment(lang=rendercv_data_model.language)
     latex_file_object = LaTeXFile(
         rendercv_data_model,
         jinja2_environment,
@@ -838,7 +845,7 @@ def generate_markdown_file(
     if not output_directory.is_dir():
         output_directory.mkdir(parents=True)
 
-    jinja2_environment = setup_jinja2_environment()
+    jinja2_environment = setup_jinja2_environment(rendercv_data_model.language)
     markdown_file_object = MarkdownFile(
         rendercv_data_model,
         jinja2_environment,
