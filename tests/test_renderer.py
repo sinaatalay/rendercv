@@ -250,7 +250,7 @@ def test_get_an_item_with_a_specific_attribute_value():
 
 
 def test_setup_jinja2_environment():
-    env = r.setup_jinja2_environment()
+    env = r.setup_jinja2_environment('en')
 
     # Check if the returned object is a jinja2.Environment instance
     assert isinstance(env, jinja2.Environment)

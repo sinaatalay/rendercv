@@ -20,12 +20,12 @@ My Text Entry
 
 ## My Title ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
 
-- Dec. 2023
+- Dec 2023
 - J. Doe, J. Doe
 
 ## My Title ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
 
-- Dec. 2023
+- Dec 2023
 - J. Doe, J. Doe
 
 # Section3

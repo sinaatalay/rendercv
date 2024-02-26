@@ -126,7 +126,7 @@ def rendercv_filled_curriculum_vitae_data_model(
 
 @pytest.fixture
 def jinja2_environment() -> jinja2.Environment:
-    return r.setup_jinja2_environment()
+    return r.setup_jinja2_environment('en')
 
 
 @pytest.fixture
