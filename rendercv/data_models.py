@@ -202,7 +202,7 @@ class EntryBase(RenderCVBaseModel):
                     )
 
         elif start_date_is_provided and not end_date_is_provided:
-            model.end_date = _("present")
+            model.end_date = "present"
 
         elif not start_date_is_provided and end_date_is_provided:
             raise ValueError(
