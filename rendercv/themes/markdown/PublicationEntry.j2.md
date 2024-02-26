@@ -2,4 +2,4 @@
 
 - <<entry.date_string>>
 - <<entry.authors|map("abbreviate_name")|join(", ")>>
-((* if entry.journal *))- <<entry.journal>> ((* endif *))
+((* if entry.journal != "" *))- <<entry.journal>> ((* endif *))
