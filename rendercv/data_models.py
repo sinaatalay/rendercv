@@ -1109,6 +1109,7 @@ def get_a_sample_data_model(
     Returns:
         RenderCVDataModel: A sample data model.
     """
+    name = name.encode().decode("unicode-escape")
     sections = {
         "summary": [
             (
@@ -1169,12 +1170,12 @@ def get_a_sample_data_model(
                 location="WA, USA",
                 highlights=[
                     (
-                        "Promoted to Lead Student Ambassador in the Fall of 2004, supervised"
-                        " 10 - 15 Student Ambassadors."
+                        "Promoted to Lead Student Ambassador in the Fall of 2004,"
+                        " supervised 10 - 15 Student Ambassadors."
                     ),
                     (
-                        "Created and taught a computer science course, CSE 099: Software"
-                        " Design and Development."
+                        "Created and taught a computer science course, CSE 099:"
+                        " Software Design and Development."
                     ),
                 ],
             ),
@@ -1190,14 +1191,14 @@ def get_a_sample_data_model(
                         " (ctrl-tab) and extended it to tool windows."
                     ),
                     (
-                        "Created a service to provide gradient across VS and VS add-ins."
-                        " Optimized service via caching."
+                        "Created a service to provide gradient across VS and VS"
+                        " add-ins. Optimized service via caching."
                     ),
                     "Programmer Productivity Research Center (Summers 2001, 2002)",
                     (
-                        "Built app to compute the similarity of all methods in a code base,"
-                        " reduced time from $\\mathcal{O}(n^2)$ to $\\mathcal{O}(n"
-                        " \\log n)$. "
+                        "Built app to compute the similarity of all methods in a code"
+                        " base, reduced time from $\\mathcal{O}(n^2)$ to"
+                        " $\\mathcal{O}(n \\log n)$. "
                     ),
                     (
                         "Created a test case generation tool that creates random XML"
@@ -1213,8 +1214,8 @@ def get_a_sample_data_model(
                 location="WA, USA",
                 highlights=[
                     (
-                        "Promoted to Lead Student Ambassador in the Fall of 2004, supervised"
-                        " 10 - 15 Student Ambassadors."
+                        "Promoted to Lead Student Ambassador in the Fall of 2004,"
+                        " supervised 10 - 15 Student Ambassadors."
                     ),
                 ],
             ),
@@ -1324,7 +1325,7 @@ def get_a_sample_data_model(
     if theme == "classic":
         design = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
     else:
-        design = rendercv_design_validator.validate_python({"theme": theme}) # type: ignore
+        design = rendercv_design_validator.validate_python({"theme": theme})  # type: ignore
 
     return RenderCVDataModel(cv=cv, design=design)
 
