@@ -46,10 +46,17 @@ def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
                 " link](https://myurl.com)"
             ),
         ),
+        ("$a=5_4^3$", "$a=5_4^3$"),
     ],
 )
-def test_escape_latex_characters(string, expected_string):
-    assert r.escape_latex_characters(string) == expected_string
+def test_escape_latex_characters_not_strict(string, expected_string):
+    assert r.escape_latex_characters(string, strict=False) == expected_string
+
+
+def test_escape_latex_characters_strict():
+    string = "$a=5_4^3$"
+    expected_string = "\\$a=5\\_4\\textasciicircum{}3\\$"
+    assert r.escape_latex_characters(string, strict=True) == expected_string
 
 
 @pytest.mark.parametrize(
