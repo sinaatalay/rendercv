@@ -343,11 +343,12 @@ class MarkdownFile(TemplatedFile):
         file_path.write_text(self.get_markdown_code(), encoding="utf-8")
 
 
-def escape_latex_characters(string: str) -> str:
+def escape_latex_characters(string: str, strict: bool = True) -> str:
     """Escape $\\LaTeX$ characters in a string.
 
     This function is called during the reading of the input file. Before the validation
-    process, each input field's special $\\LaTeX$ characters are escaped.
+    process, each input field's special $\\LaTeX$ characters are escaped. It is also can
+    be used as a Jinja2 filter in templates.
 
     Example:
         ```python
@@ -355,21 +356,30 @@ def escape_latex_characters(string: str) -> str:
         ```
         will return:
         `#!python "This is a \\# string."`
+
+    Args:
+        string (str): The string to escape.
+        strict (bool): Whether to escape all the special $\\LaTeX$ characters or not. If
+            you want to allow math input, set it to False.
+    Returns:
+        str: The escaped string.
     """
 
     # Dictionary of escape characters:
     escape_characters = {
         "#": "\\#",
-        # "$": "\\$", # Don't escape $ as it is used for math mode
         "%": "\\%",
         "&": "\\&",
         "~": "\\textasciitilde{}",
-        # "_": "\\_", # Don't escape _ as it is used for math mode
-        # "^": "\\textasciicircum{}", # Don't escape ^ as it is used for math mode
     }
 
-    # Don't escape links as hyperref package will do it automatically:
+    if strict:
+        # To allow math input, users can use this function with strict = False
+        escape_characters["$"] = "\\$"
+        escape_characters["_"] = "\\_"
+        escape_characters["^"] = "\\textasciicircum{}"
 
+    # Don't escape links as hyperref package will do it automatically:
     # Find all the links in the sentence:
     links = re.findall(r"\[.*?\]\(.*?\)", string)
 
@@ -482,20 +492,22 @@ def transform_markdown_sections_to_latex_sections(
         for entry in value:
             if isinstance(entry, str):
                 # Then it means it's a TextEntry.
-                result = markdown_to_latex(escape_latex_characters(entry))
+                result = markdown_to_latex(escape_latex_characters(entry, strict=False))
                 transformed_list.append(result)
             else:
                 # Then it means it's one of the other entries.
                 entry_as_dict = entry.model_dump()
                 for entry_key, value in entry_as_dict.items():
                     if isinstance(value, str):
-                        result = markdown_to_latex(escape_latex_characters(value))
+                        result = markdown_to_latex(
+                            escape_latex_characters(value, strict=False)
+                        )
                         setattr(entry, entry_key, result)
                     elif isinstance(value, list):
                         for j, item in enumerate(value):
                             if isinstance(item, str):
                                 value[j] = markdown_to_latex(
-                                    escape_latex_characters(item)
+                                    escape_latex_characters(item, strict=False)
                                 )
                         setattr(entry, entry_key, value)
                 transformed_list.append(entry)
@@ -789,6 +801,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
     environment.filters["get_an_item_with_a_specific_attribute_value"] = (
         get_an_item_with_a_specific_attribute_value
     )
+    environment.filters["escape_latex_characters"] = escape_latex_characters
 
     return environment
 
