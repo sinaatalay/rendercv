@@ -488,6 +488,7 @@ def cli_command_new(
     data_model_as_dictionary = json.loads(data_model_as_json)
 
     yaml_object = ruamel.yaml.YAML()
+    yaml_object.encoding = "utf-8"
     yaml_object.indent(mapping=2, sequence=4, offset=2)
     yaml_object.dump(data_model_as_dictionary, file_path)
 
