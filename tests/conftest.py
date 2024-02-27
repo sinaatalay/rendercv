@@ -1,4 +1,5 @@
 import pathlib
+import copy
 
 import jinja2
 import pytest
@@ -13,7 +14,7 @@ folder_name_dictionary = {
 }
 
 # copy sample entries from docs/generate_entry_figures_and_examples.py:
-education_entry = {
+education_entry_dictionary = {
     "institution": "Boğaziçi University",
     "location": "Istanbul, Turkey",
     "degree": "BS",
@@ -26,7 +27,7 @@ education_entry = {
     ],
 }
 
-experience_entry = {
+experience_entry_dictionary = {
     "company": "Some Company",
     "location": "TX, USA",
     "position": "Software Engineer",
@@ -41,7 +42,7 @@ experience_entry = {
     ],
 }
 
-normal_entry = {
+normal_entry_dictionary = {
     "name": "Some Project",
     "location": "Remote",
     "date": "2021-09",
@@ -51,7 +52,7 @@ normal_entry = {
     ],
 }
 
-publication_entry = {
+publication_entry_dictionary = {
     "title": (
         "Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of"
         " No-Insulation Coils"
@@ -62,41 +63,35 @@ publication_entry = {
     "doi": "10.1109/TASC.2023.3340648",
 }
 
-one_line_entry = {
+one_line_entry_dictionary = {
     "name": "Programming",
     "details": "Python, C++, JavaScript, MATLAB",
 }
 
-text_entry = (
-    "This is a *TextEntry*. It is only a text and can be useful for sections like"
-    " **Summary**. To showcase the TextEntry completely, this sentence is added, but it"
-    " doesn't contain any information."
-)
-
 
 @pytest.fixture
 def publication_entry() -> dict[str, str | list[str]]:
-    return publication_entry
+    return copy.deepcopy(publication_entry_dictionary)
 
 
 @pytest.fixture
 def experience_entry() -> dict[str, str]:
-    return experience_entry
+    return copy.deepcopy(experience_entry_dictionary)
 
 
 @pytest.fixture
 def education_entry() -> dict[str, str]:
-    return education_entry
+    return copy.deepcopy(education_entry_dictionary)
 
 
 @pytest.fixture
 def normal_entry() -> dict[str, str]:
-    return normal_entry
+    return copy.deepcopy(normal_entry_dictionary)
 
 
 @pytest.fixture
 def one_line_entry() -> dict[str, str]:
-    return one_line_entry
+    return copy.deepcopy(one_line_entry_dictionary)
 
 
 @pytest.fixture
