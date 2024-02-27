@@ -5,6 +5,7 @@ import importlib.machinery
 import importlib.util
 import io
 import os
+import sys
 import shutil
 from typing import Any
 
@@ -60,7 +61,7 @@ experience_entry = {
     "end_date": "2021-08-12",
     "highlights": [
         (
-            "Developed a [IOS application](https://example.com) that has received"
+            "Developed an [IOS application](https://example.com) that has received"
             " more than **100,000 downloads**."
         ),
         "Managed a team of **5** engineers.",
@@ -83,7 +84,7 @@ publication_entry = {
         " No-Insulation Coils"
     ),
     "authors": ["John Doe", "Harry Tom", "Sina Doe", "Anotherfirstname Andsurname"],
-    "date": "2023-12-08",
+    "date": "2021-12-08",
     "journal": "IEEE Transactions on Applied Superconductivity",
     "doi": "10.1109/TASC.2023.3340648",
 }
@@ -264,9 +265,7 @@ def generate_examples():
         )
 
         # Move pdf file to the examples directory:
-        new_pdf_file_path = (
-            examples_directory_path / f"{yaml_file_path.stem}.pdf"
-        )
+        new_pdf_file_path = examples_directory_path / f"{yaml_file_path.stem}.pdf"
         if new_pdf_file_path.exists():
             new_pdf_file_path.unlink()
         output_pdf_file.rename(new_pdf_file_path)
