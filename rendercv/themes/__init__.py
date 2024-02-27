@@ -180,6 +180,8 @@ class ThemeOptions(pydantic.BaseModel):
     duplication.
     """
 
+    theme: Literal["tobeoverwritten"]
+
     model_config = pydantic.ConfigDict(extra="forbid")
 
     font_size: Literal["10pt", "11pt", "12pt"] = pydantic.Field(
