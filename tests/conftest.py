@@ -1,4 +1,7 @@
 import pathlib
+import importlib
+import importlib.machinery
+import importlib.util
 
 import jinja2
 import pytest
@@ -8,6 +11,18 @@ import rendercv.renderer as r
 
 update_auxiliary_files = False
 
+# import docs/generate_entry_figures_and_examples.py to get example entries (SSOT)
+path = (
+    pathlib.Path(__file__).parent.parent
+    / "docs"
+    / "generate_entry_figures_and_examples.py"
+)
+spec = importlib.util.spec_from_file_location(
+    "generate_entry_figures_and_examples", path
+)
+generate_entry_figures_and_examples = importlib.util.module_from_spec(spec)  # type: ignore
+spec.loader.exec_module(generate_entry_figures_and_examples)  # type: ignore
+
 folder_name_dictionary = {
     "rendercv_empty_curriculum_vitae_data_model": "empty",
     "rendercv_filled_curriculum_vitae_data_model": "filled",
@@ -16,49 +31,32 @@ folder_name_dictionary = {
 
 @pytest.fixture
 def publication_entry() -> dict[str, str | list[str]]:
-    return {
-        "title": "My Title",
-        "authors": ["John Doe", "Jane Doe"],
-        "doi": "10.1109/TASC.2023.3340648",
-        "date": "2023-12-08",
-    }
+    return generate_entry_figures_and_examples.publication_entry
 
 
 @pytest.fixture
 def experience_entry() -> dict[str, str]:
-    return {
-        "company": "CERN",
-        "position": "Researcher",
-    }
+    return generate_entry_figures_and_examples.experience_entry
 
 
 @pytest.fixture
 def education_entry() -> dict[str, str]:
-    return {
-        "institution": "Boğaziçi University",
-        "area": "Mechanical Engineering",
-        "degree": "BS",
-    }
+    return generate_entry_figures_and_examples.education_entry
 
 
 @pytest.fixture
 def normal_entry() -> dict[str, str]:
-    return {
-        "name": "My Entry",
-    }
+    return generate_entry_figures_and_examples.normal_entry
 
 
 @pytest.fixture
 def one_line_entry() -> dict[str, str]:
-    return {
-        "name": "My One Line Entry",
-        "details": "My Details and some math $a=6^4 \\frac{3}{5}$",
-    }
+    return generate_entry_figures_and_examples.one_line_entry
 
 
 @pytest.fixture
 def text_entry() -> str:
-    return "My Text Entry"
+    return "My Text Entry with some **markdown** and [links](https://example.com)!"
 
 
 @pytest.fixture
