@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fixed Markdown `TextEntry`, where all the paragraphs were concatenated into a single paragraph.
 - Fixed Markdown `OneLineEntry`, where all the one-line entries were concatenated into a single line.
 - Fixed the `classic` theme's `PublicationEntry`, where blank parentheses were rendered when the `journal` field was not provided.
-- Fixed a bug where email with special characters caused a LaTeX error.
+- Fixed a bug where an email with special characters caused a LaTeX error.
 - Fixed Unicode error when `rendercv new` is called with a name with special characters.
 
 
