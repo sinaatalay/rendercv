@@ -19,24 +19,34 @@ import pypdfium2
 # import the modules using the full path of the files.
 rendercv_path = pathlib.Path(__file__).parent.parent / "rendercv"
 
+
+def import_a_module(module_name: str, file_path: pathlib.Path):
+    """Imports a module from a file.
+
+    Args:
+        module_name (str): The name of the module.
+        file_path (pathlib.Path): The path to the file.
+    Returns:
+        Any: The imported module.
+    """
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)  # type: ignore
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)  # type: ignore
+    return module
+
+
+# Import rendercv:
+rendercv = import_a_module("rendercv", rendercv_path / "__init__.py")
+
 # Import the rendercv.data_models as dm:
-spec = importlib.util.spec_from_file_location(
-    "rendercv.data_models", rendercv_path / "data_models.py"
-)
-dm = importlib.util.module_from_spec(spec)  # type: ignore
-spec.loader.exec_module(dm)  # type: ignore
+dm = import_a_module("rendercv.data_models", rendercv_path / "data_models.py")
 
 # Import the rendercv.renderer as r:
-spec = importlib.util.spec_from_file_location(
-    "rendercv.renderer", rendercv_path / "renderer.py"
-)
-r = importlib.util.module_from_spec(spec)  # type: ignore
-spec.loader.exec_module(r)  # type: ignore
+r = import_a_module("rendercv.renderer", rendercv_path / "renderer.py")
 
 # Import the rendercv.cli as cli:
-spec = importlib.util.spec_from_file_location("rendercv.cli", rendercv_path / "cli.py")
-cli = importlib.util.module_from_spec(spec)  # type: ignore
-spec.loader.exec_module(cli)  # type: ignore
+cli = import_a_module("rendercv.cli", rendercv_path / "cli.py")
 
 # The entries below will be pasted into the documentation as YAML, and their
 # corresponding figures will be generated with this script.
@@ -278,4 +288,4 @@ def generate_examples():
 
 if __name__ == "__main__":
     generate_entry_figures()
-    # generate_examples()
+    generate_examples()
