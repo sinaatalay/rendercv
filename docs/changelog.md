@@ -1,8 +1,27 @@
 # Changelog
 
-All notable changes to this project after v1.1 will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.2...HEAD)
+
+<!-- ### Fixed
+### Changed
+### Removed
+### Added -->
+
+
+## [1.2] - 2024-02-27
+
+### Fixed
+
+- Fixed Markdown `TextEntry`, where all the paragraphs were concatenated into a single paragraph.
+- Fixed Markdown `OneLineEntry`, where all the one-line entries were concatenated into a single line.
+- Fixed the `classic` theme's `PublicationEntry`, where blank parentheses were rendered when the `journal` field was not provided.
+- Fixed a bug where email with special characters caused a LaTeX error.
+- Fixed Unicode error when `rendercv new` is called with a name with special characters.
+
 
 ## [1.1] - 2024-02-25
 
@@ -25,4 +44,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The reference has been rewritten.
 - The build system has been changed from `setuptools` to `hatchling`.
 
+[1.2]: https://github.com/sinaatalay/rendercv/releases/tag/v1.2
 [1.1]: https://github.com/sinaatalay/rendercv/releases/tag/v1.1
