@@ -208,22 +208,15 @@ class EntryBase(RenderCVBaseModel):
             end_date_is_provided = True
 
         if date_is_provided:
-            try:
-                date_object = get_date_object(model.date)  # type: ignore
-            except ValueError:
-                # Then it is a custom date string (e.g., "My Custom Date")
-                pass
-            else:
-                today_object = Date.today()
-                if date_object > today_object:
-                    raise ValueError(
-                        '"date" cannot be in the future!',
-                        "date",  # this is the location of the error
-                        model.date,  # this is value of the error
-                    )
+            model.start_date = None
+            model.end_date = None
 
-        elif start_date_is_provided and not end_date_is_provided:
-            model.end_date = "present"
+            if re.fullmatch(date_pattern_for_json_schema, model.date):
+                # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
+                try:
+                    get_date_object(model.date)
+                except ValueError as e:
+                    raise ValueError(str(e), "date", str(model.date))
 
         elif not start_date_is_provided and end_date_is_provided:
             raise ValueError(
@@ -232,8 +225,11 @@ class EntryBase(RenderCVBaseModel):
                 "start_date",  # this is the location of the error
                 "",  # this supposed to be the value of the error
             )
+        elif start_date_is_provided:
+            if not end_date_is_provided:
+                model.end_date = "present"
 
-        if model.start_date is not None and model.end_date is not None:
+            # Check if start_date and end_date are provided correctly:
             try:
                 end_date = get_date_object(model.end_date)
             except ValueError as e:
@@ -249,12 +245,6 @@ class EntryBase(RenderCVBaseModel):
                     '"start_date" can not be after "end_date"!',
                     "start_date",  # this is the location of the error
                     str(model.start_date),  # this is value of the error
-                )
-            elif end_date > Date.today():
-                raise ValueError(
-                    '"end_date" cannot be in the future!',
-                    "end_date",  # this is the location of the error
-                    str(model.end_date),  # this is value of the error
                 )
 
         return model
@@ -515,10 +505,9 @@ class PublicationEntry(RenderCVBaseModel):
     @pydantic.field_validator("date")
     @classmethod
     def check_date(cls, date: int | RenderCVDate) -> int | RenderCVDate:
-        """Check if the date is in the past."""
-        date_object = get_date_object(date)
-        if date_object > Date.today():
-            raise ValueError("The publication date cannot be in the future!")
+        """Check if the date is a valid date."""
+        # The function below will raise an error if the date is not valid:
+        get_date_object(date)
 
         return date
 
