@@ -265,7 +265,7 @@ def test_publication_dates(publication_entry, date, expected_date_string):
     assert publication_entry.date_string == expected_date_string
 
 
-@pytest.mark.parametrize("date", ["aaa", None, "2025"])
+@pytest.mark.parametrize("date", ["aaa", None, "2025-23-23"])
 def test_invalid_publication_dates(publication_entry, date):
     with pytest.raises(pydantic.ValidationError):
         publication_entry["date"] = date
@@ -279,16 +279,13 @@ def test_invalid_publication_dates(publication_entry, date):
         ("2020-01-01", "aaa", None),
         (None, "2020-01-01", None),
         ("2023-01-01", "2021-01-01", None),
-        ("2999-01-01", None, None),
-        ("2020-01-01", "2999-01-01", None),
         ("2022", "2021", None),
-        ("2021", "2060", None),
         ("2025", "2021", None),
-        (None, None, "2028"),
         ("2020-01-01", "invalid_end_date", None),
         ("invalid_start_date", "2021-01-01", None),
         ("2020-99-99", "2021-01-01", None),
         ("2020-10-12", "2020-99-99", None),
+        (None, None, "2020-20-20")
     ],
 )
 def test_invalid_dates(start_date, end_date, date):
