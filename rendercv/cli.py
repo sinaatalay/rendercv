@@ -39,7 +39,10 @@ app = typer.Typer(
 def welcome():
     """Print a welcome message to the terminal."""
     table = rich.table.Table(
-        title="\nWelcome to [bold]Render[dodger_blue3]CV[/dodger_blue3][/bold]!",
+        title=(
+            "\nWelcome to [bold]Render[dodger_blue3]CV[/dodger_blue3][/bold]! Some"
+            " useful links:"
+        ),
         title_justify="left",
     )
 
@@ -50,6 +53,7 @@ def welcome():
     table.add_row("Source code", "https://github.com/sinaatalay/rendercv/")
     table.add_row("Bug reports", "https://github.com/sinaatalay/rendercv/issues/")
     table.add_row("Feature requests", "https://github.com/sinaatalay/rendercv/issues/")
+    table.add_row("Discussions", "https://github.com/sinaatalay/rendercv/discussions/")
 
     print(table)
 
@@ -220,6 +224,9 @@ def handle_validation_error(exception: pydantic.ValidationError):
         # error_dictionary:
         if message in error_dictionary:
             message = error_dictionary[message]
+
+        # Don't show "Value error, ", since the message is already clear.
+        message = message.replace("Value error, ", "")
 
         # Special case for end_date because Pydantic returns multiple end_date errors
         # since it has multiple valid formats:
