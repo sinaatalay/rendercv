@@ -227,8 +227,8 @@ class EntryBase(RenderCVBaseModel):
 
         elif not start_date_is_provided and end_date_is_provided:
             raise ValueError(
-                '"end_date" is provided in of the entries, but "start_date" is not.'
-                ' Either provide both "start_date" and "end_date" or provide "date".',
+                '"end_date" is provided, but "start_date" is not. Either provide both'
+                ' "start_date" and "end_date" or provide "date".',
                 "start_date",  # this is the location of the error
                 "",  # this supposed to be the value of the error
             )
