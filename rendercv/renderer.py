@@ -17,7 +17,7 @@ import shutil
 import sys
 import copy
 from datetime import date as Date
-from typing import Optional, Literal, Any
+from typing import Optional, Literal, Any, List, Optional
 
 import jinja2
 import markdown
@@ -150,6 +150,12 @@ class LaTeXFile(TemplatedFile):
         preamble = self.template("Preamble")
         header = self.template("Header")
         sections: list[tuple[str, list[str], str]] = []
+
+        if self.design.sort_publications is not None:
+            for i, section in enumerate(self.cv.sections):
+                if section.entry_type == "PublicationEntry":
+                    self.cv.sections[i].entries = sort_dates(section.entries, order=self.design.sort_publications)
+
         for section in self.cv.sections:
             section_beginning = self.template(
                 "SectionBeginning", section_title=section.title
@@ -255,6 +261,12 @@ class MarkdownFile(TemplatedFile):
         # Template the header and sections:
         header = self.template("Header")
         sections: list[tuple[str, list[str]]] = []
+
+        if self.design.sort_publications is not None:
+            for i, section in enumerate(self.cv.sections):
+                if section.entry_type == "PublicationEntry":
+                    self.cv.sections[i].entries = sort_dates(section.entries, order=self.design.sort_publications)
+
         for section in self.cv.sections:
             section_beginning = self.template(
                 "SectionBeginning", section_title=section.title
@@ -534,6 +546,14 @@ def replace_placeholders_with_actual_values(
         string = string.replace(placeholder, str(value))
 
     return string
+
+
+def sort_dates(objects: List, order: Optional[str] = None) -> List:
+    if order == "ascending":
+        return sorted(objects, key=lambda obj: dm.get_date_object(obj.date))
+    elif order == "descending":
+        return sorted(objects, key=lambda obj: dm.get_date_object(obj.date), reverse=True)
+    return objects
 
 
 def make_matched_part_something(

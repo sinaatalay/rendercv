@@ -3,7 +3,7 @@ are encouraged to inherit from these data models and add their own options, to a
 code duplication.
 """
 
-from typing import Literal, Annotated
+from typing import Literal, Annotated, Optional
 
 import pydantic
 import pydantic_extra_types.color as pydantic_color
@@ -250,4 +250,9 @@ class ThemeOptions(pydantic.BaseModel):
         default=Margins(),
         title="Margins",
         description="Page, section title, entry field, and highlights field margins.",
+    )
+    sort_publications: Optional[Literal["ascending", "descending"]] = pydantic.Field(
+        default=None,
+        title="Sort Publications",
+        description="The sorting order of the publications. It can be 'ascending', 'descending', or None. The default value is None.",
     )
