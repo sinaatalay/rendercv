@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 import pydantic
 
@@ -77,4 +77,9 @@ class ModerncvThemeOptions(pydantic.BaseModel):
             'If "True", the page numbers will be disabled. The default value is'
             ' "False".'
         ),
+    )
+    sort_publications: Optional[Literal["ascending", "descending"]] = pydantic.Field(
+        default=None,
+        title="Sort Publications",
+        description="The sorting order of the publications. It can be 'ascending', 'descending', or None. The default value is None.",
     )
