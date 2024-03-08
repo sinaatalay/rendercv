@@ -166,7 +166,7 @@ def generate_entry_figures():
         "normal_entry": dm.NormalEntry(**normal_entry),
         "publication_entry": dm.PublicationEntry(**publication_entry),
         "one_line_entry": dm.OneLineEntry(**one_line_entry),
-        "text_entry": f'"{text_entry}',
+        "text_entry": f"{text_entry}",
     }
     themes = dm.available_themes
 
