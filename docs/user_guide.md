@@ -92,7 +92,7 @@ cv:
 
 None of the values above are required. You can omit any or all of them, and RenderCV will adapt to your input.
 
-The real content of your CV is stored in a field called sections.
+The main content of your CV is stored in a field called sections.
 
 ```yaml
 cv:
