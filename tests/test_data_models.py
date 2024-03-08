@@ -72,8 +72,8 @@ def test_read_input_file(input_file_path):
         }
 
         # dump the dictionary to a yaml file
-        yaml = ruamel.yaml.YAML()
-        yaml.dump(input_dictionary, input_file_path)
+        yaml_object = ruamel.yaml.YAML()
+        yaml_object.dump(input_dictionary, input_file_path)
 
     data_model = dm.read_input_file(input_file_path)
 
