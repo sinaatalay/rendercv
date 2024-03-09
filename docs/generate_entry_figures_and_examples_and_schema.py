@@ -17,7 +17,8 @@ import pypdfium2
 # of using `import rendercv` because in order for that to work, the current working
 # directory must be the root of the project. To make it convenient for the user, I
 # import the modules using the full path of the files.
-rendercv_path = pathlib.Path(__file__).parent.parent / "rendercv"
+repository_root = pathlib.Path(__file__).parent.parent
+rendercv_path = repository_root / "rendercv"
 
 
 def import_a_module(module_name: str, file_path: pathlib.Path):
@@ -286,6 +287,13 @@ def generate_examples():
         shutil.rmtree(rendercv_output_directory)
 
 
+def generate_schema():
+    """Generate the schema."""
+    json_schema_file_path = repository_root / "schema.json"
+    dm.generate_json_schema_file(json_schema_file_path)
+
+
 if __name__ == "__main__":
     generate_entry_figures()
     generate_examples()
+    generate_schema()
