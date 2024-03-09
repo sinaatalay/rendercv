@@ -9,10 +9,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 [Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.2...HEAD)
 
-<!-- ### Fixed
+<!--
+### Fixed
 ### Changed
 ### Removed
-### Added -->
+### Added
+-->
+
+## [1.3] - 2024-03-09
+
+### Fixed
+- The `journal` is now displayed in the `PublicationEntry`of the `sb2nov` theme.
+
+### Changed
+- Future dates are now allowed.
+- Authors' first names are no longer abbreviated in `PublicationEntry`.
+- Markdown is now supported in the `authors` field of `PublicationEntry`.
+- `doi` field is now optional for `PublicationEntry`.
+
+### Added
+- CLI documentation has been added to the user guide.
 
 
 ## [1.2] - 2024-02-27
@@ -47,5 +63,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The reference has been rewritten.
 - The build system has been changed from `setuptools` to `hatchling`.
 
+[1.3]: https://github.com/sinaatalay/rendercv/releases/tag/v1.3
 [1.2]: https://github.com/sinaatalay/rendercv/releases/tag/v1.2
 [1.1]: https://github.com/sinaatalay/rendercv/releases/tag/v1.1
