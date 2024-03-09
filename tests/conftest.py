@@ -118,6 +118,8 @@ def rendercv_filled_curriculum_vitae_data_model(
     normal_entry,
     one_line_entry,
 ) -> dm.CurriculumVitae:
+    publication_entry_without_doi = copy.deepcopy(publication_entry)
+    del publication_entry_without_doi["doi"]
     return dm.CurriculumVitae(
         name="John Doe",
         label="Mechanical Engineer",
@@ -140,7 +142,7 @@ def rendercv_filled_curriculum_vitae_data_model(
             ],
             "section2": [
                 publication_entry,
-                publication_entry,
+                publication_entry_without_doi,
             ],
             "section3": [
                 experience_entry,
