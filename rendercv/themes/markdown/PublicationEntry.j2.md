@@ -1,5 +1,5 @@
 ## <<entry.title>> ([<<entry.doi>>](<<entry.doi_url>>))
 
 - <<entry.date_string>>
-- <<entry.authors|map("abbreviate_name")|join(", ")>>
+- <<entry.authors|join(", ")>>
 ((* if entry.journal != "" *))- <<entry.journal>> ((* endif *))
