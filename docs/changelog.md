@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.3] - 2024-03-09
 
 ### Fixed
-- The `journal` is now displayed in the `PublicationEntry`of the `sb2nov` theme.
+- The `journal` is now displayed in the `PublicationEntry` of the `sb2nov` theme.
 
 ### Changed
 - Future dates are now allowed.
