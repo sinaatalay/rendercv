@@ -23,12 +23,12 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
 
 - Dec. 2021
-- J. Doe, H. Tom, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname
 - IEEE Transactions on Applied Superconductivity 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
 
 - Dec. 2021
-- J. Doe, H. Tom, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname
 - IEEE Transactions on Applied Superconductivity 
 # Section3
 
