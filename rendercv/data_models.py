@@ -483,7 +483,8 @@ class PublicationEntry(RenderCVBaseModel):
         title="Authors",
         description="The authors of the publication in order as a list of strings.",
     )
-    doi: str = pydantic.Field(
+    doi: Optional[str] = pydantic.Field(
+        default=None,
         title="DOI",
         description="The DOI of the publication.",
         examples=["10.48550/arXiv.2310.03138"],
@@ -513,26 +514,32 @@ class PublicationEntry(RenderCVBaseModel):
 
     @pydantic.field_validator("doi")
     @classmethod
-    def check_doi(cls, doi: str) -> str:
+    def check_doi(cls, doi: Optional[str]) -> Optional[str]:
         """Check if the DOI exists in the DOI System."""
-        # see https://stackoverflow.com/a/60671292/18840665 for the explanation of the
-        # next line:
-        ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
+        if doi is not None:
+            # see https://stackoverflow.com/a/60671292/18840665 for the explanation of
+            # the next line:
+            ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
 
-        doi_url = f"http://doi.org/{doi}"
+            doi_url = f"http://doi.org/{doi}"
 
-        try:
-            urlopen(doi_url)
-        except HTTPError as err:
-            if err.code == 404:
-                raise ValueError("DOI cannot be found in the DOI System!")
+            try:
+                urlopen(doi_url)
+            except HTTPError as err:
+                if err.code == 404:
+                    raise ValueError("DOI cannot be found in the DOI System!")
 
         return doi
 
     @functools.cached_property
     def doi_url(self) -> str:
         """Return the URL of the DOI."""
-        return f"https://doi.org/{self.doi}"
+        # self.doi == "" is added because None values are replaced with "" in
+        # renderer.TemplatedFile class (to make templating easier)
+        if self.doi is None or self.doi == "":
+            return ""
+        else:
+            return f"https://doi.org/{self.doi}"
 
     @functools.cached_property
     def date_string(self) -> str:
