@@ -207,6 +207,27 @@ design:
       vertical_between_name_and_connections: 0.2 cm
 ```
 
+## Command-line interface (CLI)
+
+Currently, RenderCV has two command-line interface functions: `new`, and `render`.
+
+### `rendercv new`
+
+`rendercv new YOUR_FULL_NAME` generates a sample YAML input file to get started. An optional `theme` input allows you to generate a YAML file for a specific built-in theme.
+
+```bash
+rendercv new --theme THEME_NAME "John Doe"
+```
+
+### `rendercv render`
+
+`rendercv render INPUT_FILE_PATH` renders the given YAML input file. An optional `use-local-latex` option can be used to generate the CV with the local LaTeX installation.
+
+```bash
+rendercv render --use-local-latex John_Doe_CV.yaml
+```
+
+
 ## Using custom themes
 
 RenderCV allows you to move your $\LaTeX$ CV code to RenderCV. To do this, you will need to create some files:
