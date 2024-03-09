@@ -93,7 +93,7 @@ publication_entry = {
         "Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of"
         " No-Insulation Coils"
     ),
-    "authors": ["John Doe", "Harry Tom", "Sina Doe", "Anotherfirstname Andsurname"],
+    "authors": ["J. Doe", "***H. Tom***", "S. Doe", "A. Andsurname"],
     "date": "2021-12-08",
     "journal": "IEEE Transactions on Applied Superconductivity",
     "doi": "10.1109/TASC.2023.3340648",
