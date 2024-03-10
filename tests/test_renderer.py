@@ -2,6 +2,7 @@ import math
 import filecmp
 import shutil
 import os
+import copy
 import pathlib
 
 import pytest
@@ -82,12 +83,16 @@ def test_markdown_to_latex(markdown_string, expected_latex_string):
 
 
 def test_transform_markdown_sections_to_latex_sections(rendercv_data_model):
-    r.transform_markdown_sections_to_latex_sections(
-        rendercv_data_model.cv.sections_input
+    new_data_model = copy.deepcopy(rendercv_data_model)
+    new_sections_input = r.transform_markdown_sections_to_latex_sections(
+        new_data_model.cv.sections_input
     )
-    assert isinstance(rendercv_data_model, dm.RenderCVDataModel)
-    assert rendercv_data_model.cv.name == rendercv_data_model.cv.name
-    assert rendercv_data_model.design == rendercv_data_model.design
+    new_data_model.cv.sections_input = new_sections_input
+
+    assert isinstance(new_data_model, dm.RenderCVDataModel)
+    assert new_data_model.cv.name == rendercv_data_model.cv.name
+    assert new_data_model.design == rendercv_data_model.design
+    assert new_data_model.cv.sections != rendercv_data_model.cv.sections
 
 
 @pytest.mark.parametrize(
