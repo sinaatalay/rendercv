@@ -68,6 +68,10 @@ one_line_entry_dictionary = {
     "details": "Python, C++, JavaScript, MATLAB",
 }
 
+bullet_entry_dictionary = {
+    "bullet": "This is a bullet entry.",
+}
+
 
 @pytest.fixture
 def publication_entry() -> dict[str, str | list[str]]:
@@ -95,6 +99,11 @@ def one_line_entry() -> dict[str, str]:
 
 
 @pytest.fixture
+def bullet_entry() -> dict[str, str]:
+    return copy.deepcopy(bullet_entry_dictionary)
+
+
+@pytest.fixture
 def text_entry() -> str:
     return "My Text Entry with some **markdown** and [links](https://example.com)!"
 
@@ -117,6 +126,7 @@ def rendercv_filled_curriculum_vitae_data_model(
     education_entry,
     normal_entry,
     one_line_entry,
+    bullet_entry,
 ) -> dm.CurriculumVitae:
     publication_entry_without_doi = copy.deepcopy(publication_entry)
     del publication_entry_without_doi["doi"]
@@ -159,6 +169,10 @@ def rendercv_filled_curriculum_vitae_data_model(
             "section6": [
                 one_line_entry,
                 one_line_entry,
+            ],
+            "section7": [
+                bullet_entry,
+                bullet_entry,
             ],
         },
     )
