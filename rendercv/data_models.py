@@ -556,6 +556,15 @@ class PublicationEntry(RenderCVBaseModel):
         return date_string
 
 
+class BulletEntry(RenderCVBaseModel):
+    """This class is the data model of `BulletEntry`."""
+
+    bullet: str = pydantic.Field(
+        title="Bullet",
+        description="The bullet of the BulletEntry.",
+    )
+
+
 # Create a custom type called Entry and ListOfEntries:
 Entry = (
     OneLineEntry
@@ -563,6 +572,7 @@ Entry = (
     | ExperienceEntry
     | EducationEntry
     | PublicationEntry
+    | BulletEntry
     | str
 )
 ListOfEntries = (
@@ -571,9 +581,11 @@ ListOfEntries = (
     | list[ExperienceEntry]
     | list[EducationEntry]
     | list[PublicationEntry]
+    | list[BulletEntry]
     | list[str]
 )
 entry_types = Entry.__args__[:-1]  # a tuple of all the entry types except str
+entry_type_names = [entry_type.__name__ for entry_type in entry_types] + ["TextEntry"]
 
 # ======================================================================================
 # Section models: ======================================================================
@@ -954,18 +966,15 @@ class RenderCVDataModel(RenderCVBaseModel):
                 )
 
             # check if all the necessary files are provided in the custom theme folder:
+            required_entry_files = [
+                entry_type_name + ".j2.tex" for entry_type_name in entry_type_names
+            ]
             required_files = [
-                "EducationEntry.j2.tex",  # education entry template
-                "ExperienceEntry.j2.tex",  # experience entry template
-                "NormalEntry.j2.tex",  # normal entry template
-                "OneLineEntry.j2.tex",  # one line entry template
-                "PublicationEntry.j2.tex",  # publication entry template
-                "TextEntry.j2.tex",  # text entry template
                 "SectionBeginning.j2.tex",  # section beginning template
                 "SectionEnding.j2.tex",  # section ending template
                 "Preamble.j2.tex",  # preamble template
                 "Header.j2.tex",  # header template
-            ]
+            ] + required_entry_files
 
             for file in required_files:
                 file_path = custom_theme_folder / file
