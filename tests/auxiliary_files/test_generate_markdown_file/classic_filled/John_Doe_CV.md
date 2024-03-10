@@ -76,3 +76,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Programming: Python, C++, JavaScript, MATLAB
 - Programming: Python, C++, JavaScript, MATLAB
+# Section7
+
+- This is a bullet entry.
+- This is a bullet entry.

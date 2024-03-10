@@ -414,16 +414,14 @@ def test_copy_theme_files_to_output_directory_custom_theme(
             custom_theme_directory_path.mkdir(parents=True, exist_ok=True)
 
         # create a txt file called test.txt in the custom theme directory:
-        pathlib.Path(custom_theme_directory_path / "EducationEntry.j2.tex").touch()
-        pathlib.Path(custom_theme_directory_path / "ExperienceEntry.j2.tex").touch()
+        for entry_type_name in dm.entry_type_names:
+            pathlib.Path(
+                custom_theme_directory_path / f"{entry_type_name}.j2.tex"
+            ).touch()
         pathlib.Path(custom_theme_directory_path / "Header.j2.tex").touch()
-        pathlib.Path(custom_theme_directory_path / "NormalEntry.j2.tex").touch()
-        pathlib.Path(custom_theme_directory_path / "OneLineEntry.j2.tex").touch()
         pathlib.Path(custom_theme_directory_path / "Preamble.j2.tex").touch()
-        pathlib.Path(custom_theme_directory_path / "PublicationEntry.j2.tex").touch()
         pathlib.Path(custom_theme_directory_path / "SectionBeginning.j2.tex").touch()
         pathlib.Path(custom_theme_directory_path / "SectionEnding.j2.tex").touch()
-        pathlib.Path(custom_theme_directory_path / "TextEntry.j2.tex").touch()
         pathlib.Path(custom_theme_directory_path / "theme_auxiliary_file.cls").touch()
         pathlib.Path(custom_theme_directory_path / "theme_auxiliary_dir").mkdir(
             exist_ok=True

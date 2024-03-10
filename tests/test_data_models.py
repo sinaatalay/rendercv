@@ -365,6 +365,7 @@ def test_social_network_url(network, username, expected_url):
         ),
         ("one_line_entry", "OneLineEntry", "SectionWithOneLineEntries"),
         ("text_entry", "TextEntry", "SectionWithTextEntries"),
+        ("bullet_entry", "BulletEntry", "SectionWithBulletEntries"),
     ],
 )
 def test_get_entry_and_section_type(
