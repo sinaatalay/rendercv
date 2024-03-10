@@ -64,7 +64,7 @@ publication_entry_dictionary = {
 }
 
 one_line_entry_dictionary = {
-    "name": "Programming",
+    "label": "Programming",
     "details": "Python, C++, JavaScript, MATLAB",
 }
 

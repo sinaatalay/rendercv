@@ -240,20 +240,20 @@ def test_invalid_divide_length_by(length, divider):
 def test_get_an_item_with_a_specific_attribute_value():
     entry_objects = [
         dm.OneLineEntry(
-            name="Test1",
+            label="Test1",
             details="Test2",
         ),
         dm.OneLineEntry(
-            name="Test3",
+            label="Test3",
             details="Test4",
         ),
     ]
     result = r.get_an_item_with_a_specific_attribute_value(
-        entry_objects, "name", "Test3"
+        entry_objects, "label", "Test3"
     )
     assert result == entry_objects[1]
     result = r.get_an_item_with_a_specific_attribute_value(
-        entry_objects, "name", "DoesntExist"
+        entry_objects, "label", "DoesntExist"
     )
     assert result is None
 
