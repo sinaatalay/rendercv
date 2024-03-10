@@ -1,1 +1,1 @@
-- <<entry.name>>: <<entry.details>>
+- <<entry.label>>: <<entry.details>>
