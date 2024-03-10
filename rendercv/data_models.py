@@ -2,17 +2,19 @@
 This module contains all the necessary classes to store CV data. These classes are called
 data models. The YAML input file is transformed into instances of these classes (i.e.,
 the input file is read) with the [`read_input_file`](#read_input_file) function.
-RenderCV utilizes these instances to generate a $\\LaTeX$ file which is then rendered into a
-PDF file.
+RenderCV utilizes these instances to generate a $\\LaTeX$ file which is then rendered
+into a PDF file.
 
 The data models are initialized with data validation to prevent unexpected bugs. During
 the initialization, we ensure that everything is in the correct place and that the user
 has provided a valid RenderCV input. This is achieved through the use of
-[Pydantic](https://pypi.org/project/pydantic/).
+[Pydantic](https://pypi.org/project/pydantic/). Each class method decorated with
+'pydantic.model_validator` or 'pydantic.field_validator` is executed automatically
+during the data classes' initialization.
 """
 
 from datetime import date as Date
-from typing import Literal, Any, Type, Annotated, Optional, get_args
+from typing import Literal, Any, Type, Annotated, Optional, get_args, Union
 import importlib
 import importlib.util
 import importlib.machinery
@@ -158,8 +160,8 @@ class EntryBase(RenderCVBaseModel):
         title="End Date",
         description=(
             "The end date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format. If the"
-            ' event is still ongoing, then type "present" or provide only the start'
-            " date."
+            ' event is still ongoing, then type "present" or provide only the'
+            " start_date."
         ),
         examples=["2020-09-24", "present"],
         json_schema_extra={"default": "2020-01-01"},
@@ -168,10 +170,9 @@ class EntryBase(RenderCVBaseModel):
         default=None,
         title="Date",
         description=(
-            "If the event is a one-day event, then this field should be filled in"
-            " YYYY-MM-DD format. If the event is a multi-day event, then the start date"
-            " and end date should be provided instead. All of them can't be provided at"
-            " the same time."
+            "If the event is a one-day event, then this field can be filled in"
+            " YYYY-MM-DD format. Also, this field can be used if you would like to use"
+            ' a custom date string (like "Fall 2020").'
         ),
         examples=["2020-09-24", "My Custom Date"],
         json_schema_extra={"default": "Custom Date or 2020-01-01"},
@@ -197,15 +198,9 @@ class EntryBase(RenderCVBaseModel):
         """
         Check if the dates are provided correctly and do the necessary adjustments.
         """
-        date_is_provided = False
-        start_date_is_provided = False
-        end_date_is_provided = False
-        if model.date is not None:
-            date_is_provided = True
-        if model.start_date is not None:
-            start_date_is_provided = True
-        if model.end_date is not None:
-            end_date_is_provided = True
+        date_is_provided = model.date is not None
+        start_date_is_provided = model.start_date is not None
+        end_date_is_provided = model.end_date is not None
 
         if date_is_provided:
             model.start_date = None
@@ -213,6 +208,7 @@ class EntryBase(RenderCVBaseModel):
 
             if re.fullmatch(date_pattern_for_json_schema, model.date):
                 # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
+                # Check if it is a valid date:
                 try:
                     get_date_object(model.date)
                 except ValueError as e:
@@ -227,6 +223,8 @@ class EntryBase(RenderCVBaseModel):
             )
         elif start_date_is_provided:
             if not end_date_is_provided:
+                # Then it means only the start_date is provided, so it is an ongoing
+                # event:
                 model.end_date = "present"
 
             # Check if start_date and end_date are provided correctly:
@@ -359,20 +357,24 @@ class EntryBase(RenderCVBaseModel):
             will return:
             `#!python "4 months"`
         """
-        start_date = self.start_date
-        end_date = self.end_date
-        date = self.date
+        date_is_provided = self.date is not None
+        start_date_is_provided = self.start_date is not None
+        end_date_is_provided = self.end_date is not None
 
-        if date is not None or (start_date is None and end_date is None):
+        if date_is_provided:
             # If only the date is provided, the time span is irrelevant. So, return an
             # empty string.
             return ""
 
-        elif isinstance(start_date, int) or isinstance(end_date, int):
+        elif not start_date_is_provided and not end_date_is_provided:
+            # If neither start_date nor end_date is provided, return an empty string.
+            return ""
+
+        elif isinstance(self.start_date, int) or isinstance(self.end_date, int):
             # Then it means one of the dates is year, so time span cannot be more
             # specific than years.
-            start_year = get_date_object(start_date).year  # type: ignore
-            end_year = get_date_object(end_date).year  # type: ignore
+            start_year = get_date_object(self.start_date).year  # type: ignore
+            end_year = get_date_object(self.end_date).year  # type: ignore
 
             time_span_in_years = end_year - start_year
 
@@ -386,8 +388,8 @@ class EntryBase(RenderCVBaseModel):
         else:
             # Then it means both start_date and end_date are in YYYY-MM-DD or YYYY-MM
             # format.
-            end_date = get_date_object(end_date)  # type: ignore
-            start_date = get_date_object(start_date)  # type: ignore
+            end_date = get_date_object(self.end_date)  # type: ignore
+            start_date = get_date_object(self.start_date)  # type: ignore
 
             # calculate the number of days between start_date and end_date:
             timespan_in_days = (end_date - start_date).days  # type: ignore
@@ -420,13 +422,13 @@ class EntryBase(RenderCVBaseModel):
 class OneLineEntry(RenderCVBaseModel):
     """This class is the data model of `OneLineEntry`."""
 
-    name: str = pydantic.Field(
+    label: str = pydantic.Field(
         title="Name",
-        description="The name of the entry. It will be shown as bold text.",
+        description="The label of the OneLineEntry.",
     )
     details: str = pydantic.Field(
         title="Details",
-        description="The details of the entry. It will be shown as normal text.",
+        description="The details of the OneLineEntry.",
     )
 
 
@@ -435,7 +437,7 @@ class NormalEntry(EntryBase):
 
     name: str = pydantic.Field(
         title="Name",
-        description="The name of the entry. It will be shown as bold text.",
+        description="The name of the NormalEntry.",
     )
 
 
@@ -444,11 +446,11 @@ class ExperienceEntry(EntryBase):
 
     company: str = pydantic.Field(
         title="Company",
-        description="The company name. It will be shown as bold text.",
+        description="The company name.",
     )
     position: str = pydantic.Field(
         title="Position",
-        description="The position. It will be shown as normal text.",
+        description="The position.",
     )
 
 
@@ -457,11 +459,11 @@ class EducationEntry(EntryBase):
 
     institution: str = pydantic.Field(
         title="Institution",
-        description="The institution name. It will be shown as bold text.",
+        description="The institution name.",
     )
     area: str = pydantic.Field(
         title="Area",
-        description="The area of study. It will be shown as normal text.",
+        description="The area of study.",
     )
     degree: Optional[str] = pydantic.Field(
         default=None,
@@ -477,7 +479,7 @@ class PublicationEntry(RenderCVBaseModel):
 
     title: str = pydantic.Field(
         title="Title of the Publication",
-        description="The title of the publication. It will be shown as bold text.",
+        description="The title of the publication.",
     )
     authors: list[str] = pydantic.Field(
         title="Authors",
@@ -554,6 +556,25 @@ class PublicationEntry(RenderCVBaseModel):
         return date_string
 
 
+# Create a custom type called Entry and ListOfEntries:
+Entry = (
+    OneLineEntry
+    | NormalEntry
+    | ExperienceEntry
+    | EducationEntry
+    | PublicationEntry
+    | str
+)
+ListOfEntries = (
+    list[OneLineEntry]
+    | list[NormalEntry]
+    | list[ExperienceEntry]
+    | list[EducationEntry]
+    | list[PublicationEntry]
+    | list[str]
+)
+entry_types = Entry.__args__[:-1]  # a tuple of all the entry types except str
+
 # ======================================================================================
 # Section models: ======================================================================
 # ======================================================================================
@@ -578,144 +599,88 @@ class SectionBase(RenderCVBaseModel):
     # Title is excluded from the JSON schema because this will be written by RenderCV
     # depending on the key in the input file.
     title: Optional[str] = pydantic.Field(default=None, exclude=True)
+    entry_type: str
+    entries: list[Entry]
 
 
-class SectionWithEducationEntries(SectionBase):
-    """This class is the data model of the section with `EducationEntry`s."""
+def create_a_section_model(entry_type: Type[Entry]) -> Type[SectionBase]:
+    """Create a section model based on the entry type. See [Pydantic's documentation
+    about dynamic model
+    creation](https://pydantic-docs.helpmanual.io/usage/models/#dynamic-model-creation)
+    for more information.
 
-    entry_type: Literal["EducationEntry"] = entry_type_field_of_section_model
-    entries: list[EducationEntry] = entries_field_of_section_model
+    Args:
+        entry_type (Type[Entry]): The entry type to create the section model.
+    Returns:
+        Type[SectionBase]: The section model.
+    """
+    if entry_type == str:
+        model_name = "SectionWithTextEntries"
+        entry_type_name = "TextEntry"
+    else:
+        model_name = "SectionWith" + entry_type.__name__.replace("Entry", "Entries")
+        entry_type_name = entry_type.__name__
 
+    SectionModel = pydantic.create_model(
+        model_name,
+        entry_type=(Literal[entry_type_name], ...),  # type: ignore
+        entries=(list[entry_type], ...),
+        __base__=SectionBase,
+    )
 
-class SectionWithExperienceEntries(SectionBase):
-    """This class is the data model of the section with `ExperienceEntry`s."""
-
-    entry_type: Literal["ExperienceEntry"] = entry_type_field_of_section_model
-    entries: list[ExperienceEntry] = entries_field_of_section_model
-
-
-class SectionWithNormalEntries(SectionBase):
-    """This class is the data model of the section with `NormalEntry`s."""
-
-    entry_type: Literal["NormalEntry"] = entry_type_field_of_section_model
-    entries: list[NormalEntry] = entries_field_of_section_model
-
-
-class SectionWithOneLineEntries(SectionBase):
-    """This class is the data model of the section with `OneLineEntry`s."""
-
-    entry_type: Literal["OneLineEntry"] = entry_type_field_of_section_model
-    entries: list[OneLineEntry] = entries_field_of_section_model
-
-
-class SectionWithPublicationEntries(SectionBase):
-    """This class is the data model of the section with `PublicationEntry`s."""
-
-    entry_type: Literal["PublicationEntry"] = entry_type_field_of_section_model
-    entries: list[PublicationEntry] = entries_field_of_section_model
-
-
-class SectionWithTextEntries(SectionBase):
-    """This class is the data model of the section with `TextEntry`s."""
-
-    entry_type: Literal["TextEntry"] = entry_type_field_of_section_model
-    entries: list[str] = entries_field_of_section_model
-
-
-# Create a custom type called Section:
-# It is a union of all the section types and the correct section type is determined by
-# the entry_type field, thanks Pydantic's discriminator feature.
-# See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
-# about discriminators.
-Section = Annotated[
-    SectionWithEducationEntries
-    | SectionWithExperienceEntries
-    | SectionWithNormalEntries
-    | SectionWithOneLineEntries
-    | SectionWithPublicationEntries
-    | SectionWithTextEntries,
-    pydantic.Field(
-        discriminator="entry_type",
-    ),
-]
+    return SectionModel
 
 
 def get_entry_and_section_type(
-    entry: (
-        dict[str, Any]
-        | EducationEntry
-        | ExperienceEntry
-        | PublicationEntry
-        | NormalEntry
-        | OneLineEntry
-        | str
-    ),
+    entry: dict[str, Any] | Entry,
 ) -> tuple[
     str,
-    Type[
-        SectionWithTextEntries
-        | SectionWithOneLineEntries
-        | SectionWithExperienceEntries
-        | SectionWithEducationEntries
-        | SectionWithPublicationEntries
-        | SectionWithNormalEntries
-    ],
+    Type[SectionBase],
 ]:
     """Determine the entry and section type based on the entry.
 
     Args:
-        entry (dict[str, Any] | EducationEntry | ExperienceEntry | PublicationEntry | NormalEntry | OneLineEntry | str): The entry to determine the type.
+        entry: The entry to determine the type.
     Returns:
-        tuple[str, Type[SectionWithTextEntries | SectionWithOneLineEntries | SectionWithExperienceEntries | SectionWithEducationEntries | SectionWithPublicationEntries | SectionWithNormalEntries]]: The entry type and the section type.
+        tuple[str, Type[Section]]: The entry type and the section type.
     """
+    # Get class attributes of EntryBase class:
+    common_attributes = set(EntryBase.model_fields.keys())
+
     if isinstance(entry, dict):
-        if "details" in entry:
-            entry_type = "OneLineEntry"
-            section_type = SectionWithOneLineEntries
-        elif "company" in entry or "position" in entry:
-            entry_type = "ExperienceEntry"
-            section_type = SectionWithExperienceEntries
-        elif "institution" in entry or "area" in entry or "degree" in entry:
-            entry_type = "EducationEntry"
-            section_type = SectionWithEducationEntries
-        elif "title" in entry or "authors" in entry or "doi" in entry:
-            entry_type = "PublicationEntry"
-            section_type = SectionWithPublicationEntries
-        elif "name" in entry:
-            entry_type = "NormalEntry"
-            section_type = SectionWithNormalEntries
-        else:
-            raise ValueError("The entry is not provided correctly.")
-    else:
-        if isinstance(entry, str):
-            entry_type = "TextEntry"
-            section_type = SectionWithTextEntries
-        elif isinstance(entry, OneLineEntry):
-            entry_type = "OneLineEntry"
-            section_type = SectionWithOneLineEntries
-        elif isinstance(entry, ExperienceEntry):
-            entry_type = "ExperienceEntry"
-            section_type = SectionWithExperienceEntries
-        elif isinstance(entry, EducationEntry):
-            entry_type = "EducationEntry"
-            section_type = SectionWithEducationEntries
-        elif isinstance(entry, PublicationEntry):
-            entry_type = "PublicationEntry"
-            section_type = SectionWithPublicationEntries
-        elif isinstance(entry, NormalEntry):  # type: ignore
-            entry_type = "NormalEntry"
-            section_type = SectionWithNormalEntries
-        else:
-            raise RuntimeError(
-                "This error shouldn't have been raised. Please open an issue on GitHub."
+        entry_type = None  # the entry type is not determined yet
+
+        for EntryType in entry_types:
+            characteristic_entry_attributes = (
+                set(EntryType.model_fields.keys()) - common_attributes
             )
+
+            # If at least one of the characteristic_entry_attributes is in the entry,
+            # then it means the entry is of this type:
+            if characteristic_entry_attributes & set(entry.keys()):
+                entry_type = EntryType.__name__
+                section_type = create_a_section_model(EntryType)
+                break
+
+        if entry_type is None:
+            raise ValueError("The entry is not provided correctly.")
+
+    elif isinstance(entry, str):
+        # Then it is a TextEntry
+        entry_type = "TextEntry"
+        section_type = create_a_section_model(str)
+
+    else:
+        # Then the entry is already initialized with a data model:
+        entry_type = entry.__class__.__name__
+        section_type = create_a_section_model(entry.__class__)
 
     return entry_type, section_type
 
 
 def validate_section_input(
-    sections_input: Section | list[Any],
-) -> Section | list[Any]:
+    sections_input: SectionBase | list[Any],
+) -> SectionBase | list[Any]:
     """Validate a SectionInput object and raise an error if it is not valid.
 
     Sections input is very complex. It is either a `Section` object or a list of
@@ -775,14 +740,7 @@ def validate_section_input(
 # Create a custom type called SectionInput so that it can be validated with
 # `validate_section_input` function.
 SectionInput = Annotated[
-    list[
-        EducationEntry
-        | ExperienceEntry
-        | PublicationEntry
-        | NormalEntry
-        | OneLineEntry
-        | str
-    ],
+    ListOfEntries,
     pydantic.BeforeValidator(validate_section_input),
 ]
 
@@ -864,7 +822,7 @@ class CurriculumVitae(RenderCVBaseModel):
     location: Optional[str] = pydantic.Field(
         default=None,
         title="Location",
-        description="The location of the person. This is not rendered currently.",
+        description="The location of the person.",
     )
     email: Optional[pydantic.EmailStr] = pydantic.Field(
         default=None,
@@ -894,9 +852,9 @@ class CurriculumVitae(RenderCVBaseModel):
     )
 
     @functools.cached_property
-    def sections(self) -> list[Section]:
+    def sections(self) -> list[SectionBase]:
         """Return all the sections of the CV with their titles."""
-        sections: list[Section] = []
+        sections: list[SectionBase] = []
         if self.sections_input is not None:
             for title, section_or_entries in self.sections_input.items():
                 title = title.replace("_", " ").title()
@@ -939,7 +897,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         title="Curriculum Vitae",
         description="The data of the CV.",
     )
-    design: RenderCVDesign | pydantic.json_schema.SkipJsonSchema[Any] = pydantic.Field(
+    design: pydantic.json_schema.SkipJsonSchema[Any] | RenderCVDesign = pydantic.Field(
         default=ClassicThemeOptions(theme="classic"),
         title="Design",
         description=(
@@ -1057,8 +1015,8 @@ def read_input_file(
     file_path: pathlib.Path,
 ) -> RenderCVDataModel:
     """Read the input file and return two instances of RenderCVDataModel. The first
-    instance is the data model with $\\LaTeX$ strings and the second instance is the data
-    model with markdown strings.
+    instance is the data model with $\\LaTeX$ strings and the second instance is the
+    data model with markdown strings.
 
     Args:
         file_path (str): The path to the input file.
@@ -1273,11 +1231,11 @@ def get_a_sample_data_model(
         ],
         "additional_experience_and_awards": [
             OneLineEntry(
-                name="Instructor (2003 - 2005)",
+                label="Instructor (2003 - 2005)",
                 details="Taught two full-credit Computer Science courses.",
             ),
             OneLineEntry(
-                name="Third Prize, Senior Design Projects",
+                label="Third Prize, Senior Design Projects",
                 details=(
                     "Awarded 3rd prize for a synchronized calendar project out of 100"
                     " projects."
@@ -1286,11 +1244,11 @@ def get_a_sample_data_model(
         ],
         "technologies": [
             OneLineEntry(
-                name="Languages",
+                label="Languages",
                 details="C++, C, Java, Objective-C, C#.NET, SQL, JavaScript",
             ),
             OneLineEntry(
-                name="Software",
+                label="Software",
                 details=(
                     "Visual Studio, Microsoft SQL Server, Eclipse, XCode, Interface"
                     " Builder"
