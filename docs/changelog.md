@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.3...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.4...HEAD)
 
 <!--
 ### Fixed
@@ -15,6 +15,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 ### Added
 -->
+
+## [1.4] - 2024-03-10
+
+### Added
+- A new entry type is added: `BulletEntry`
+
+### Changed
+- `OneLineEntry`'s `name` field has been changed to `label`. This was required to generalize the entry validations.
+- `moderncv`'s highlights are now bullet points.
+- `moderncv`'s `TextEntries` don't have bullet points anymore.
+- `sb2nov`'s `TextEntries` don't have bullet points anymore.
+
 
 ## [1.3] - 2024-03-09
 
@@ -63,6 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The reference has been rewritten.
 - The build system has been changed from `setuptools` to `hatchling`.
 
+[1.4]: https://github.com/sinaatalay/rendercv/releases/tag/v1.4
 [1.3]: https://github.com/sinaatalay/rendercv/releases/tag/v1.3
 [1.2]: https://github.com/sinaatalay/rendercv/releases/tag/v1.2
 [1.1]: https://github.com/sinaatalay/rendercv/releases/tag/v1.1
