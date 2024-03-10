@@ -285,7 +285,7 @@ def test_invalid_publication_dates(publication_entry, date):
         ("invalid_start_date", "2021-01-01", None),
         ("2020-99-99", "2021-01-01", None),
         ("2020-10-12", "2020-99-99", None),
-        (None, None, "2020-20-20")
+        (None, None, "2020-20-20"),
     ],
 )
 def test_invalid_dates(start_date, end_date, date):
@@ -346,25 +346,25 @@ def test_social_network_url(network, username, expected_url):
         (
             "publication_entry",
             "PublicationEntry",
-            dm.SectionWithPublicationEntries,
+            "SectionWithPublicationEntries",
         ),
         (
             "experience_entry",
             "ExperienceEntry",
-            dm.SectionWithExperienceEntries,
+            "SectionWithExperienceEntries",
         ),
         (
             "education_entry",
             "EducationEntry",
-            dm.SectionWithEducationEntries,
+            "SectionWithEducationEntries",
         ),
         (
             "normal_entry",
             "NormalEntry",
-            dm.SectionWithNormalEntries,
+            "SectionWithNormalEntries",
         ),
-        ("one_line_entry", "OneLineEntry", dm.SectionWithOneLineEntries),
-        ("text_entry", "TextEntry", dm.SectionWithTextEntries),
+        ("one_line_entry", "OneLineEntry", "SectionWithOneLineEntries"),
+        ("text_entry", "TextEntry", "SectionWithTextEntries"),
     ],
 )
 def test_get_entry_and_section_type(
@@ -373,14 +373,14 @@ def test_get_entry_and_section_type(
     entry = request.getfixturevalue(entry)
     entry_type, section_type = dm.get_entry_and_section_type(entry)
     assert entry_type == expected_entry_type
-    assert section_type == expected_section_type
+    assert section_type.__name__ == expected_section_type
 
     # initialize the entry with the entry type
-    if not entry_type == "TextEntry":
+    if entry_type != "TextEntry":
         entry = eval(f"dm.{entry_type}(**entry)")
         entry_type, section_type = dm.get_entry_and_section_type(entry)
         assert entry_type == expected_entry_type
-        assert section_type == expected_section_type
+        assert section_type.__name__ == expected_section_type
 
 
 def test_sections(
