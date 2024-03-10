@@ -47,27 +47,9 @@ class TemplatedFile:
     def template(
         self,
         theme_name: str,
-        template_name: Literal[
-            "EducationEntry",
-            "ExperienceEntry",
-            "NormalEntry",
-            "PublicationEntry",
-            "OneLineEntry",
-            "TextEntry",
-            "Header",
-            "Preamble",
-            "SectionBeginning",
-            "SectionEnding",
-        ],
+        template_name: str,
         extension: str,
-        entry: Optional[
-            dm.EducationEntry
-            | dm.ExperienceEntry
-            | dm.NormalEntry
-            | dm.PublicationEntry
-            | dm.OneLineEntry
-            | str  # TextEntry
-        ] = None,
+        entry: Optional[dm.Entry] = None,
         section_title: Optional[str] = None,
         is_first_entry: Optional[bool] = None,
     ) -> str:
@@ -75,8 +57,7 @@ class TemplatedFile:
 
         Args:
             template_name (str): The name of the template file.
-            entry (Optional[dm.EducationEntry, dm.ExperienceEntry, dm.NormalEntry,dm.PublicationEntry, dm.OneLineEntry, str]): The data model of the entry.
-            section_title (Optional[str]): The title of the section.
+            entry (Optional[dm.Entry]): The title of the section.
             is_first_entry (Optional[bool]): Whether the entry is the first one in the
                 section.
 
@@ -175,26 +156,8 @@ class LaTeXFile(TemplatedFile):
 
     def template(
         self,
-        template_name: Literal[
-            "EducationEntry",
-            "ExperienceEntry",
-            "NormalEntry",
-            "PublicationEntry",
-            "OneLineEntry",
-            "TextEntry",
-            "Header",
-            "Preamble",
-            "SectionBeginning",
-            "SectionEnding",
-        ],
-        entry: Optional[
-            dm.EducationEntry
-            | dm.ExperienceEntry
-            | dm.NormalEntry
-            | dm.PublicationEntry
-            | dm.OneLineEntry
-            | str  # TextEntry
-        ] = None,
+        template_name: str,
+        entry: Optional[dm.Entry] = None,
         section_title: Optional[str] = None,
         is_first_entry: Optional[bool] = None,
     ) -> str:
@@ -202,7 +165,7 @@ class LaTeXFile(TemplatedFile):
 
         Args:
             template_name (str): The name of the template file.
-            entry (Optional[dm.EducationEntry, dm.ExperienceEntry, dm.NormalEntry,dm.PublicationEntry, dm.OneLineEntry, str]): The data model of the entry.
+            entry (Optional[dm.Entry]): The data model of the entry.
             section_title (Optional[str]): The title of the section.
             is_first_entry (Optional[bool]): Whether the entry is the first one in the section.
 
@@ -280,26 +243,8 @@ class MarkdownFile(TemplatedFile):
 
     def template(
         self,
-        template_name: Literal[
-            "EducationEntry",
-            "ExperienceEntry",
-            "NormalEntry",
-            "PublicationEntry",
-            "OneLineEntry",
-            "TextEntry",
-            "Header",
-            "Preamble",
-            "SectionBeginning",
-            "SectionEnding",
-        ],
-        entry: Optional[
-            dm.EducationEntry
-            | dm.ExperienceEntry
-            | dm.NormalEntry
-            | dm.PublicationEntry
-            | dm.OneLineEntry
-            | str  # TextEntry
-        ] = None,
+        template_name: str,
+        entry: Optional[dm.Entry] = None,
         section_title: Optional[str] = None,
         is_first_entry: Optional[bool] = None,
     ) -> str:
@@ -307,9 +252,10 @@ class MarkdownFile(TemplatedFile):
 
         Args:
             template_name (str): The name of the template file.
-            entry (Optional[dm.EducationEntry, dm.ExperienceEntry, dm.NormalEntry,dm.PublicationEntry, dm.OneLineEntry, str]): The data model of the entry.
+            entry (Optional[dm.Entry]): The data model of the entry.
             section_title (Optional[str]): The title of the section.
-            is_first_entry (Optional[bool]): Whether the entry is the first one in the section.
+            is_first_entry (Optional[bool]): Whether the entry is the first one in the
+                section.
 
         Returns:
             str: The templated file.
