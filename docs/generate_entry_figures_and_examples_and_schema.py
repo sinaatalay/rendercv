@@ -105,6 +105,10 @@ one_line_entry = {
     "details": "Python, C++, JavaScript, MATLAB",
 }
 
+bullet_entry = {
+    "bullet": "This is a bullet entry.",
+}
+
 text_entry = (
     "This is a *TextEntry*. It is only a text and can be useful for sections like"
     " **Summary**. To showcase the TextEntry completely, this sentence is added, but it"
@@ -137,6 +141,7 @@ def define_env(env):
         "normal_entry",
         "publication_entry",
         "one_line_entry",
+        "bullet_entry",
         "text_entry",
     ]
 
@@ -162,12 +167,13 @@ def generate_entry_figures():
     """Generate an image for each entry type and theme."""
     # Generate PDF figures for each entry type and theme
     entries = {
-        "education_entry": dm.EducationEntry(**education_entry),
-        "experience_entry": dm.ExperienceEntry(**experience_entry),
-        "normal_entry": dm.NormalEntry(**normal_entry),
-        "publication_entry": dm.PublicationEntry(**publication_entry),
-        "one_line_entry": dm.OneLineEntry(**one_line_entry),
-        "text_entry": f"{text_entry}",
+        # "education_entry": dm.EducationEntry(**education_entry),
+        # "experience_entry": dm.ExperienceEntry(**experience_entry),
+        # "normal_entry": dm.NormalEntry(**normal_entry),
+        # "publication_entry": dm.PublicationEntry(**publication_entry),
+        # "one_line_entry": dm.OneLineEntry(**one_line_entry),
+        # "text_entry": f"{text_entry}",
+        "bullet_entry": dm.BulletEntry(**bullet_entry),
     }
     themes = dm.available_themes
 
@@ -295,5 +301,5 @@ def generate_schema():
 
 if __name__ == "__main__":
     generate_entry_figures()
-    generate_examples()
-    generate_schema()
+    # generate_examples()
+    # generate_schema()
