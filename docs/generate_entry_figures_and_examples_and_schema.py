@@ -101,7 +101,7 @@ publication_entry = {
 }
 
 one_line_entry = {
-    "name": "Programming",
+    "label": "Programming",
     "details": "Python, C++, JavaScript, MATLAB",
 }
 
