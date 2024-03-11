@@ -14,7 +14,7 @@ during the data classes' initialization.
 """
 
 from datetime import date as Date
-from typing import Literal, Any, Type, Annotated, Optional, get_args, Union
+from typing import Literal, Any, Type, Annotated, Optional, get_args
 import importlib
 import importlib.util
 import importlib.machinery
