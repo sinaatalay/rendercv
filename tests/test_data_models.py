@@ -186,7 +186,7 @@ def test_if_the_schema_is_the_latest(root_directory_path):
             "2020 to present",
             "3 years 11 months",
         ),
-        ("2020-01-01", "2021-01-01", "2023-02-01", "Feb. 2023", "Feb. 2023", ""),
+        ("2020-01-01", "2021-01-01", "2023-02-01", "Feb. 2023", "2023", ""),
         ("2020", "2021", None, "2020 to 2021", "2020 to 2021", "1 year"),
         ("2020", None, None, "2020 to present", "2020 to present", "4 years"),
         ("2020-10-10", "2022", None, "Oct. 2020 to 2022", "2020 to 2022", "2 years"),
@@ -231,8 +231,9 @@ def test_if_the_schema_is_the_latest(root_directory_path):
             "My Custom Date",
             "",
         ),
-        (None, None, "2020-01-01", "Jan. 2020", "Jan. 2020", ""),
+        (None, None, "2020-01-01", "Jan. 2020", "2020", ""),
         (None, None, None, "", "", ""),
+        (None, "2020-01-01", None, "Jan. 2020", "2020", ""),
     ],
 )
 @time_machine.travel("2024-01-01")
@@ -277,7 +278,6 @@ def test_invalid_publication_dates(publication_entry, date):
     [
         ("aaa", "2021-01-01", None),
         ("2020-01-01", "aaa", None),
-        (None, "2020-01-01", None),
         ("2023-01-01", "2021-01-01", None),
         ("2022", "2021", None),
         ("2025", "2021", None),
@@ -307,7 +307,7 @@ def test_doi_url(publication_entry, doi, expected_doi_url):
 
 @pytest.mark.parametrize(
     "doi",
-    ["aaa10.1109/TASC.2023.3340648", "aaa"],
+    ["aaa10.1109/TASC.2023.3340648", "aaa", "A string"],
 )
 def test_invalid_doi(publication_entry, doi):
     with pytest.raises(pydantic.ValidationError):
