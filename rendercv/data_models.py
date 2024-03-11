@@ -20,6 +20,7 @@ import importlib.util
 import importlib.machinery
 import functools
 from urllib.request import urlopen, HTTPError
+from http.client import InvalidURL
 import json
 import re
 import ssl
@@ -215,12 +216,10 @@ class EntryBase(RenderCVBaseModel):
                     raise ValueError(str(e), "date", str(model.date))
 
         elif not start_date_is_provided and end_date_is_provided:
-            raise ValueError(
-                '"end_date" is provided, but "start_date" is not. Either provide both'
-                ' "start_date" and "end_date" or provide "date".',
-                "start_date",  # this is the location of the error
-                "",  # this supposed to be the value of the error
-            )
+            # If only end_date is provided, assume it is a one-day event:
+            model.date = model.end_date
+            model.start_date = None
+            model.end_date = None
         elif start_date_is_provided:
             if not end_date_is_provided:
                 # Then it means only the start_date is provided, so it is an ongoing
@@ -311,7 +310,7 @@ class EntryBase(RenderCVBaseModel):
         if self.date is not None:
             try:
                 date_object = get_date_object(self.date)
-                date_string = format_date(date_object)
+                date_string = str(date_object.year)
             except ValueError:
                 # Then it is a custom date string (e.g., "My Custom Date")
                 date_string = str(self.date)
@@ -530,6 +529,8 @@ class PublicationEntry(RenderCVBaseModel):
             except HTTPError as err:
                 if err.code == 404:
                     raise ValueError("DOI cannot be found in the DOI System!")
+            except InvalidURL:
+                raise ValueError("This DOI is not valid!")
 
         return doi
 
