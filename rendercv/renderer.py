@@ -17,7 +17,7 @@ import shutil
 import sys
 import copy
 from datetime import date as Date
-from typing import Optional, Literal, Any
+from typing import Optional, Any
 
 import jinja2
 import markdown
