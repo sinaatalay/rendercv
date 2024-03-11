@@ -383,7 +383,7 @@ def markdown_to_latex(markdown_string: str) -> str:
             markdown_string = markdown_string.replace(old_link_string, new_link_string)
 
     # convert bold
-    bolds = re.findall(r"\*\*([^\*]*)\*\*", markdown_string)
+    bolds = re.findall(r"\*\*(.+?)\*\*", markdown_string)
     if bolds is not None:
         for bold_text in bolds:
             old_bold_text = f"**{bold_text}**"
@@ -392,7 +392,7 @@ def markdown_to_latex(markdown_string: str) -> str:
             markdown_string = markdown_string.replace(old_bold_text, new_bold_text)
 
     # convert italic
-    italics = re.findall(r"\*([^\*]*)\*", markdown_string)
+    italics = re.findall(r"\*(.+?)\*", markdown_string)
     if italics is not None:
         for italic_text in italics:
             old_italic_text = f"*{italic_text}*"
