@@ -66,15 +66,19 @@ def test_escape_latex_characters_strict():
         ("My Text", "My Text"),
         ("**My** Text", "\\textbf{My} Text"),
         ("*My* Text", "\\textit{My} Text"),
-        ("***My*** Text", "\\textit{\\textbf{My}} Text"),
+        ("***My*** Text", "\\textbf{\\textit{My}} Text"),
         ("[My](https://myurl.com) Text", "\\href{https://myurl.com}{My} Text"),
         ("`My` Text", "`My` Text"),
         (
             "[**My** *Text* ***Is*** `Here`](https://myurl.com)",
             (
                 "\\href{https://myurl.com}{\\textbf{My} \\textit{Text}"
-                " \\textit{\\textbf{Is}} `Here`}"
+                " \\textbf{\\textit{Is}} `Here`}"
             ),
+        ),
+        (
+            "Some other *** tests, which should be tricky* to parse!**",
+            "Some other \\textbf{\\textit{ tests, which should be tricky} to parse!}",
         ),
     ],
 )

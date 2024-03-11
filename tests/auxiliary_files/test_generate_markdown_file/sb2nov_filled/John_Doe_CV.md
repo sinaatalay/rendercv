@@ -12,71 +12,747 @@
 - Twitter: [johndoe](https://twitter.com/johndoe)
 
 
-# Section1
+# Text Entries
 
 My Text Entry with some **markdown** and [links](https://example.com)!
 
 My Text Entry with some **markdown** and [links](https://example.com)!
 
-# Section2
+Some other *** tests, which should be tricky* to parse!**
+
+# Bullet Entries
+
+- This is a bullet entry.
+- My Text Entry with some **markdown** and [links](https://example.com)!
+- Some other *** tests, which should be tricky* to parse!**
+# Publication Entries
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 
+- Sept. 2021
+- J. Doe, **H. Tom**, S. Doe, A. Andsurname
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
-- Dec. 2021
-- J. Doe, ***H. Tom***, S. Doe, A. Andsurname
-- IEEE Transactions on Applied Superconductivity 
+- Sept. 2021
+- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 
-- Dec. 2021
-- J. Doe, ***H. Tom***, S. Doe, A. Andsurname
+- Sept. 2021
+- J. Doe, **H. Tom**, S. Doe, A. Andsurname
 - IEEE Transactions on Applied Superconductivity 
-# Section3
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
+- Sept. 2021
+- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- IEEE Transactions on Applied Superconductivity 
+# Experience Entries
 
 ## Some Company, Software Engineer
 
-- July 2020 to Aug. 2021 
-- TX, USA 
-- Developed an [IOS application](https://example.com) that has received more than **100,000 downloads**.
-- Managed a team of **5** engineers.
+
+
 
 ## Some Company, Software Engineer
 
-- July 2020 to Aug. 2021 
-- TX, USA 
-- Developed an [IOS application](https://example.com) that has received more than **100,000 downloads**.
-- Managed a team of **5** engineers.
+- Sept. 2015 to present 
 
-# Section4
+
+## Some Company, Software Engineer
+
+- Jan. 2024 
+
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+
+## Some Company, Software Engineer
+
+
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+
+## Some Company, Software Engineer
+
+- Jan. 2024 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Jan. 2024 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Jan. 2024 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+# Education Entries
+
+## Boğaziçi University, Mechanical Engineering
+
+
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Jan. 2024 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+
+- Istanbul, Turkey 
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
-- Sept. 2015 to June 2020 
+
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
 - Istanbul, Turkey 
-- GPA: 3.24/4.00 ([Transcript](https://example.com))
-- Awards: Dean's Honor List, Sportsperson of the Year
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
-- Sept. 2015 to June 2020 
+- Sept. 2015 to present 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Jan. 2024 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Jan. 2024 
 - Istanbul, Turkey 
-- GPA: 3.24/4.00 ([Transcript](https://example.com))
-- Awards: Dean's Honor List, Sportsperson of the Year
 
-# Section5
+## Boğaziçi University, BS in Mechanical Engineering
 
-## Some Project
+- Jan. 2024 
 
-- Sept. 2021 - Remote - Developed a web application with **React** and **Django**.
-- Implemented a **RESTful API**
 
-## Some Project
+## Boğaziçi University, Mechanical Engineering
 
-- Sept. 2021 - Remote - Developed a web application with **React** and **Django**.
-- Implemented a **RESTful API**
+- Sept. 2021 
 
-# Section6
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Jan. 2024 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Jan. 2024 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Jan. 2024 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Jan. 2024 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+# Normal Entries
+
+## My Project
+
+
+## My Project
+
+- Sept. 2015 to present 
+## My Project
+
+- Jan. 2024 
+## My Project
+
+- Sept. 2021 
+## My Project
+
+- Did this.
+- Did that.
+
+## My Project
+
+- Istanbul, Turkey 
+## My Project
+
+- Sept. 2015 to present 
+## My Project
+
+- Sept. 2021 
+## My Project
+
+- Sept. 2015 to present - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2015 to present - Istanbul, Turkey 
+## My Project
+
+- Sept. 2021 
+## My Project
+
+- Jan. 2024 - Did this.
+- Did that.
+
+## My Project
+
+- Jan. 2024 - Istanbul, Turkey 
+## My Project
+
+- Sept. 2021 - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey 
+## My Project
+
+- Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 
+## My Project
+
+- Sept. 2015 to present - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2015 to present - Istanbul, Turkey 
+## My Project
+
+- Sept. 2021 - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey 
+## My Project
+
+- Sept. 2015 to present - Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey 
+## My Project
+
+- Jan. 2024 - Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey 
+## My Project
+
+- Sept. 2015 to present - Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey - Did this.
+- Did that.
+
+# One Line Entries
 
 - Programming: Python, C++, JavaScript, MATLAB
-- Programming: Python, C++, JavaScript, MATLAB
-# Section7
-
-- This is a bullet entry.
-- This is a bullet entry.
