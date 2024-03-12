@@ -11,7 +11,7 @@ import ruamel.yaml
 
 from rendercv import data_models as dm
 
-from .conftest import update_auxiliary_files
+from .conftest import update_testdata
 
 
 @pytest.mark.parametrize(
@@ -60,8 +60,8 @@ def test_format_date(date, expected_date_string):
 
 
 def test_read_input_file(input_file_path):
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         input_dictionary = {
             "cv": {
                 "name": "John Doe",
@@ -471,9 +471,9 @@ def test_custom_theme_with_missing_files(tmp_path):
         )
 
 
-def test_custom_theme(auxiliary_files_directory_path):
+def test_custom_theme(testdata_directory_path):
     os.chdir(
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_copy_theme_files_to_output_directory_custom_theme"
     )
     data_model = dm.RenderCVDataModel(
@@ -486,9 +486,9 @@ def test_custom_theme(auxiliary_files_directory_path):
     assert data_model.design.theme == "dummytheme"
 
 
-def test_custom_theme_without_init_file(tmp_path, auxiliary_files_directory_path):
+def test_custom_theme_without_init_file(tmp_path, testdata_directory_path):
     reference_custom_theme_path = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_copy_theme_files_to_output_directory_custom_theme"
         / "dummytheme"
     )

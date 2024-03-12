@@ -13,7 +13,7 @@ import pypdf
 from rendercv import renderer as r
 from rendercv import data_models as dm
 
-from .conftest import update_auxiliary_files, folder_name_dictionary
+from .conftest import update_testdata, folder_name_dictionary
 
 
 def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
@@ -304,13 +304,13 @@ def test_setup_jinja2_environment():
 @time_machine.travel("2024-01-01")
 def test_generate_latex_file(
     tmp_path,
-    auxiliary_files_directory_path,
+    testdata_directory_path,
     request,
     theme_name,
     curriculum_vitae_data_model,
 ):
     reference_directory_path = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_generate_latex_file"
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
@@ -326,8 +326,8 @@ def test_generate_latex_file(
         design={"theme": theme_name},
     )
     r.generate_latex_file(data_model, tmp_path / "make_sure_it_generates_the_directory")
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         r.generate_latex_file(data_model, reference_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
@@ -347,13 +347,13 @@ def test_generate_latex_file(
 @time_machine.travel("2024-01-01")
 def test_generate_markdown_file(
     tmp_path,
-    auxiliary_files_directory_path,
+    testdata_directory_path,
     request,
     theme_name,
     curriculum_vitae_data_model,
 ):
     reference_directory_path = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_generate_markdown_file"
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
@@ -370,8 +370,8 @@ def test_generate_markdown_file(
     r.generate_markdown_file(
         data_model, tmp_path / "make_sure_it_generates_the_directory"
     )
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         r.generate_markdown_file(data_model, reference_directory_path)
 
     assert filecmp.cmp(output_file_path, reference_file_path)
@@ -382,15 +382,15 @@ def test_generate_markdown_file(
     dm.available_themes,
 )
 def test_copy_theme_files_to_output_directory(
-    tmp_path, auxiliary_files_directory_path, theme_name
+    tmp_path, testdata_directory_path, theme_name
 ):
     reference_directory_path = (
-        auxiliary_files_directory_path / "test_copy_theme_files_to_output_directory"
+        testdata_directory_path / "test_copy_theme_files_to_output_directory"
     )
 
     r.copy_theme_files_to_output_directory(theme_name, tmp_path)
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         reference_directory_path.mkdir(parents=True, exist_ok=True)
         r.copy_theme_files_to_output_directory(theme_name, reference_directory_path)
 
@@ -398,21 +398,21 @@ def test_copy_theme_files_to_output_directory(
 
 
 def test_copy_theme_files_to_output_directory_custom_theme(
-    tmp_path, auxiliary_files_directory_path
+    tmp_path, testdata_directory_path
 ):
     theme_name = "dummytheme"
 
-    test_auxiliary_files_directory_path = (
-        auxiliary_files_directory_path
+    test_testdata_directory_path = (
+        testdata_directory_path
         / "test_copy_theme_files_to_output_directory_custom_theme"
     )
-    custom_theme_directory_path = test_auxiliary_files_directory_path / "dummytheme"
+    custom_theme_directory_path = test_testdata_directory_path / "dummytheme"
     reference_directory_path = (
-        test_auxiliary_files_directory_path / "theme_auxiliary_files"
+        test_testdata_directory_path / "theme_testdata"
     )
 
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         # create dummytheme:
         if not custom_theme_directory_path.exists():
             custom_theme_directory_path.mkdir(parents=True, exist_ok=True)
@@ -445,11 +445,11 @@ def test_copy_theme_files_to_output_directory_custom_theme(
         )
 
         # create reference_directory_path:
-        os.chdir(test_auxiliary_files_directory_path)
+        os.chdir(test_testdata_directory_path)
         r.copy_theme_files_to_output_directory(theme_name, reference_directory_path)
 
-    # change current working directory to the test_auxiliary_files_directory_path
-    os.chdir(test_auxiliary_files_directory_path)
+    # change current working directory to the test_testdata_directory_path
+    os.chdir(test_testdata_directory_path)
 
     # copy the auxiliary theme files to tmp_path:
     r.copy_theme_files_to_output_directory(theme_name, tmp_path)
@@ -472,13 +472,13 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 @time_machine.travel("2024-01-01")
 def test_generate_latex_file_and_copy_theme_files(
     tmp_path,
-    auxiliary_files_directory_path,
+    testdata_directory_path,
     request,
     theme_name,
     curriculum_vitae_data_model,
 ):
     reference_directory_path = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_generate_latex_file_and_copy_theme_files"
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
@@ -488,8 +488,8 @@ def test_generate_latex_file_and_copy_theme_files(
         design={"theme": theme_name},
     )
     r.generate_latex_file_and_copy_theme_files(data_model, tmp_path)
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         r.generate_latex_file_and_copy_theme_files(data_model, reference_directory_path)
 
     assert filecmp.dircmp(tmp_path, reference_directory_path).left_only == []
@@ -511,17 +511,17 @@ def test_generate_latex_file_and_copy_theme_files(
 def test_latex_to_pdf(
     tmp_path,
     request,
-    auxiliary_files_directory_path,
+    testdata_directory_path,
     theme_name,
     curriculum_vitae_data_model,
 ):
     latex_sources_path = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_generate_latex_file_and_copy_theme_files"
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
     reference_directory_path = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_latex_to_pdf"
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
@@ -529,8 +529,8 @@ def test_latex_to_pdf(
     cv_data_model = request.getfixturevalue(curriculum_vitae_data_model)
     file_name_stem = f"{str(cv_data_model.name).replace(' ', '_')}_CV"
 
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         # copy the latex sources to the reference_directory_path
         shutil.copytree(
             latex_sources_path, reference_directory_path, dirs_exist_ok=True
@@ -579,17 +579,17 @@ def test_latex_to_pdf_invalid_latex_file():
 def test_markdown_to_html(
     tmp_path,
     request,
-    auxiliary_files_directory_path,
+    testdata_directory_path,
     theme_name,
     curriculum_vitae_data_model,
 ):
     markdown_sources_path = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_generate_markdown_file"
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
     reference_directory = (
-        auxiliary_files_directory_path
+        testdata_directory_path
         / "test_markdown_to_html"
         / f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
@@ -597,8 +597,8 @@ def test_markdown_to_html(
     cv_data_model = request.getfixturevalue(curriculum_vitae_data_model)
     file_name_stem = f"{str(cv_data_model.name).replace(' ', '_')}_CV"
 
-    # Update the auxiliary files if update_auxiliary_files is True
-    if update_auxiliary_files:
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
         # copy the markdown sources to the reference_directory
         shutil.copytree(markdown_sources_path, reference_directory, dirs_exist_ok=True)
 
