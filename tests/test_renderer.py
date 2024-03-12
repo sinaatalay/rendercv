@@ -16,6 +16,8 @@ from rendercv import data_models as dm
 from .conftest import update_testdata, folder_name_dictionary
 
 
+
+
 def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file = r.LaTeXFile(rendercv_data_model, jinja2_environment)
     latex_file.get_latex_code()
@@ -305,7 +307,7 @@ def test_setup_jinja2_environment():
 def test_generate_latex_file(
     tmp_path,
     testdata_directory_path,
-    request,
+    request: pytest.FixtureRequest,
     theme_name,
     curriculum_vitae_data_model,
 ):
@@ -348,7 +350,7 @@ def test_generate_latex_file(
 def test_generate_markdown_file(
     tmp_path,
     testdata_directory_path,
-    request,
+    request: pytest.FixtureRequest,
     theme_name,
     curriculum_vitae_data_model,
 ):
@@ -473,7 +475,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 def test_generate_latex_file_and_copy_theme_files(
     tmp_path,
     testdata_directory_path,
-    request,
+    request : pytest.FixtureRequest,
     theme_name,
     curriculum_vitae_data_model,
 ):
@@ -510,7 +512,7 @@ def test_generate_latex_file_and_copy_theme_files(
 @time_machine.travel("2024-01-01")
 def test_latex_to_pdf(
     tmp_path,
-    request,
+    request: pytest.FixtureRequest,
     testdata_directory_path,
     theme_name,
     curriculum_vitae_data_model,
@@ -578,7 +580,7 @@ def test_latex_to_pdf_invalid_latex_file():
 @time_machine.travel("2024-01-01")
 def test_markdown_to_html(
     tmp_path,
-    request,
+    request: pytest.FixtureRequest,
     testdata_directory_path,
     theme_name,
     curriculum_vitae_data_model,
