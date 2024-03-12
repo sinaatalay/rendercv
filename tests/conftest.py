@@ -11,7 +11,7 @@ import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 from rendercv import data_models as dm
 import rendercv.renderer as r
 
-update_auxiliary_files = False
+update_testdata = False
 folder_name_dictionary = {
     "rendercv_empty_curriculum_vitae_data_model": "empty",
     "rendercv_filled_curriculum_vitae_data_model": "filled",
@@ -326,10 +326,10 @@ def root_directory_path(tests_directory_path) -> pathlib.Path:
 
 
 @pytest.fixture
-def auxiliary_files_directory_path(tests_directory_path) -> pathlib.Path:
-    return tests_directory_path / "auxiliary_files"
+def testdata_directory_path(tests_directory_path) -> pathlib.Path:
+    return tests_directory_path / "testdata"
 
 
 @pytest.fixture
-def input_file_path(auxiliary_files_directory_path) -> pathlib.Path:
-    return auxiliary_files_directory_path / "John_Doe_CV.yaml"
+def input_file_path(testdata_directory_path) -> pathlib.Path:
+    return testdata_directory_path / "John_Doe_CV.yaml"
