@@ -369,7 +369,7 @@ def test_social_network_url(network, username, expected_url):
     ],
 )
 def test_get_entry_and_section_type(
-    entry, expected_entry_type, expected_section_type, request
+    entry, expected_entry_type, expected_section_type, request: pytest.FixtureRequest
 ):
     entry = request.getfixturevalue(entry)
     entry_type, section_type = dm.get_entry_and_section_type(entry)

@@ -18,13 +18,12 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 My Text Entry with some **markdown** and [links](https://example.com)!
 
-Some other *** tests, which should be tricky* to parse!**
+My Text Entry with some **markdown** and [links](https://example.com)!
 
 # Bullet Entries
 
-- This is a bullet entry.
-- My Text Entry with some **markdown** and [links](https://example.com)!
-- Some other *** tests, which should be tricky* to parse!**
+- My Bullet Entry with some **markdown** and [links](https://example.com)!
+- My Bullet Entry with some **markdown** and [links](https://example.com)!
 # Publication Entries
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 

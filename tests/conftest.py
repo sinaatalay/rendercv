@@ -2,6 +2,8 @@ import pathlib
 import copy
 import typing
 import itertools
+import os
+import filecmp
 
 import jinja2
 import pytest
@@ -111,7 +113,17 @@ def bullet_entry() -> dict[str, str]:
 
 @pytest.fixture
 def text_entry() -> str:
-    return ("My Text Entry with some **markdown** and [links](https://example.com)!",)
+    return "My Text Entry with some **markdown** and [links](https://example.com)!"
+
+
+@pytest.fixture
+def rendercv_data_model() -> dm.RenderCVDataModel:
+    return dm.get_a_sample_data_model()
+
+
+@pytest.fixture
+def rendercv_empty_curriculum_vitae_data_model() -> dm.CurriculumVitae:
+    return dm.CurriculumVitae(sections={"test": ["test"]})
 
 
 def return_a_value_for_a_field_type(
@@ -263,6 +275,44 @@ def root_directory_path(tests_directory_path) -> pathlib.Path:
 @pytest.fixture
 def testdata_directory_path(tests_directory_path) -> pathlib.Path:
     return tests_directory_path / "testdata"
+
+
+@pytest.fixture
+def run_a_function_and_return_output_and_reference_paths(
+    tmp_path: pathlib.Path,
+    testdata_directory_path: pathlib.Path,
+    request: pytest.FixtureRequest,
+) -> typing.Callable:
+    def function(
+        function: typing.Callable,
+        file_name: str,
+        **kwargs,
+    ):
+        reference_directory_path = (
+            testdata_directory_path / request.node.name / file_name
+        )
+        reference_file_path = reference_directory_path / file_name
+        output_file_path = tmp_path / file_name
+
+        os.chdir(tmp_path)
+
+        function(**kwargs)
+
+        # Update the auxiliary files if update_testdata is True
+        if update_testdata:
+            # create the reference directory if it does not exist
+            reference_directory_path.mkdir(parents=True, exist_ok=True)
+
+            # remove the reference file if it exists
+            if reference_file_path.exists():
+                reference_file_path.unlink()
+
+            # copy the output file to the reference directory
+            output_file_path.copy(reference_file_path)
+
+        assert filecmp.cmp(output_file_path, reference_file_path)
+
+    return function
 
 
 @pytest.fixture
