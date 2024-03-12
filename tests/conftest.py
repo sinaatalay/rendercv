@@ -73,7 +73,9 @@ one_line_entry_dictionary = {
 }
 
 bullet_entry_dictionary = {
-    "bullet": "This is a bullet entry.",
+    "bullet": (
+        "My Bullet Entry with some **markdown** and [links](https://example.com)!"
+    ),
 }
 
 
@@ -109,7 +111,7 @@ def bullet_entry() -> dict[str, str]:
 
 @pytest.fixture
 def text_entry() -> str:
-    return "My Text Entry with some **markdown** and [links](https://example.com)!"
+    return ("My Text Entry with some **markdown** and [links](https://example.com)!",)
 
 
 def return_a_value_for_a_field_type(
@@ -213,71 +215,8 @@ def create_combinations_of_a_model(
 
 
 @pytest.fixture
-def all_combinations_of_text_entries() -> list[str]:
-    return [
-        "My Text Entry with some **markdown** and [links](https://example.com)!",
-        "My Text Entry with some **markdown** and [links](https://example.com)!",
-        "Some other *** tests, which should be tricky* to parse!**",
-    ]
-
-
-@pytest.fixture
-def all_combinations_of_bullet_entries() -> list[dict[str, str]]:
-    return [
-        {"bullet": "This is a bullet entry."},
-        {
-            "bullet": (
-                "My Text Entry with some **markdown** and [links](https://example.com)!"
-            )
-        },
-        {"bullet": "Some other *** tests, which should be tricky* to parse!**"},
-    ]
-
-
-@pytest.fixture
-def all_combinations_of_one_line_entries() -> list[dict[str, str]]:
-    return create_combinations_of_a_model(dm.OneLineEntry)
-
-
-@pytest.fixture
-def all_combinations_of_normal_entries() -> list[dict[str, str]]:
-    return create_combinations_of_a_model(dm.NormalEntry)
-
-
-@pytest.fixture
-def all_combinations_of_education_entries() -> list[dict[str, str]]:
-    return create_combinations_of_a_model(dm.EducationEntry)
-
-
-@pytest.fixture
-def all_combinations_of_experience_entries() -> list[dict[str, str]]:
-    return create_combinations_of_a_model(dm.ExperienceEntry)
-
-
-@pytest.fixture
-def all_combinations_of_publication_entries() -> list[dict[str, str | list[str]]]:
-    return create_combinations_of_a_model(dm.PublicationEntry)
-
-
-@pytest.fixture
-def rendercv_data_model() -> dm.RenderCVDataModel:
-    return dm.get_a_sample_data_model()
-
-
-@pytest.fixture
-def rendercv_empty_curriculum_vitae_data_model() -> dm.CurriculumVitae:
-    return dm.CurriculumVitae(sections={"test": ["test"]})
-
-
-@pytest.fixture
 def rendercv_filled_curriculum_vitae_data_model(
-    text_entry,
-    all_combinations_of_publication_entries,
-    all_combinations_of_experience_entries,
-    all_combinations_of_education_entries,
-    all_combinations_of_normal_entries,
-    all_combinations_of_one_line_entries,
-    all_combinations_of_bullet_entries,
+    text_entry, bullet_entry
 ) -> dm.CurriculumVitae:
     return dm.CurriculumVitae(
         name="John Doe",
@@ -295,17 +234,13 @@ def rendercv_filled_curriculum_vitae_data_model(
             dm.SocialNetwork(network="Twitter", username="johndoe"),
         ],
         sections={
-            "Text Entries": [
-                text_entry,
-                text_entry,
-                "Some other *** tests, which should be tricky* to parse!**",
-            ],
-            "Bullet Entries": all_combinations_of_bullet_entries,
-            "Publication Entries": all_combinations_of_publication_entries,
-            "Experience Entries": all_combinations_of_experience_entries,
-            "Education Entries": all_combinations_of_education_entries,
-            "Normal Entries": all_combinations_of_normal_entries,
-            "One Line Entries": all_combinations_of_one_line_entries,
+            "Text Entries": [text_entry, text_entry, text_entry],
+            "Bullet Entries": [bullet_entry, bullet_entry],
+            "Publication Entries": create_combinations_of_a_model(dm.PublicationEntry),
+            "Experience Entries": create_combinations_of_a_model(dm.ExperienceEntry),
+            "Education Entries": create_combinations_of_a_model(dm.EducationEntry),
+            "Normal Entries": create_combinations_of_a_model(dm.NormalEntry),
+            "One Line Entries": create_combinations_of_a_model(dm.OneLineEntry),
         },
     )
 
