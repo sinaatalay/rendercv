@@ -408,7 +408,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
     )
     custom_theme_directory_path = test_testdata_directory_path / "dummytheme"
     reference_directory_path = (
-        test_testdata_directory_path / "theme_testdata"
+        test_testdata_directory_path / "theme_auxiliary_files"
     )
 
     # Update the auxiliary files if update_testdata is True
