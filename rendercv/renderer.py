@@ -811,7 +811,9 @@ def generate_markdown_file(
 
 
 def copy_theme_files_to_output_directory(
-    theme_name: str, output_directory: pathlib.Path
+    theme_name: str,
+    output_directory_path: pathlib.Path,
+    theme_directory_path: Optional[pathlib.Path] = None,
 ):
     """Copy the auxiliary files (all the files that don't end with `.j2.tex` and `.py`)
     of the theme to the output directory. For example, the "classic" theme has custom
@@ -822,22 +824,34 @@ def copy_theme_files_to_output_directory(
         theme_name (str): The name of the theme.
         output_directory (pathlib.Path): Path to the output directory.
     """
-    try:
-        theme_directory = importlib.resources.files(f"rendercv.themes.{theme_name}")
-    except ModuleNotFoundError:
-        # Then it means the theme is a custom theme:
-        theme_directory = pathlib.Path(os.getcwd()) / theme_name
+    if theme_directory_path is None:
+        if theme_name in dm.available_themes:
+            theme_directory_path = importlib.resources.files(
+                f"rendercv.themes.{theme_name}"
+            )
+        else:
+            # Then it means the theme is a custom theme. If theme_directory is not given
+            # as an argument, then look for the theme in the current working directory.
+            theme_directory_path = pathlib.Path(os.getcwd()) / theme_name
 
-    for theme_file in theme_directory.iterdir():
+            if not theme_directory_path.is_dir():
+                raise FileNotFoundError(
+                    f"The theme {theme_name} doesn't exist in the current working"
+                    " directory!"
+                )
+
+    for theme_file in theme_directory_path.iterdir():
         if not ("j2.tex" in theme_file.name or "py" in theme_file.name):
             if theme_file.is_dir():
                 shutil.copytree(
                     str(theme_file),
-                    output_directory / theme_file.name,
+                    output_directory_path / theme_file.name,
                     dirs_exist_ok=True,
                 )
             else:
-                shutil.copyfile(str(theme_file), output_directory / theme_file.name)
+                shutil.copyfile(
+                    str(theme_file), output_directory_path / theme_file.name
+                )
 
 
 def generate_latex_file_and_copy_theme_files(
