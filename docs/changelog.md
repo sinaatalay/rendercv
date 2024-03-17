@@ -75,7 +75,86 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The reference has been rewritten.
 - The build system has been changed from `setuptools` to `hatchling`.
 
+## [0.10] - 2023-11-29
+
+### Fixed
+- Author highlighting issue is fixed in PublicationEntry.
+
+## [0.9] - 2023-11-29
+
+### Added
+- Page numbering is added.
+- Text alignment options are added (left-aligned or justified).
+- Header options are added (margins and header font size).
+- `university_projects` field is added.
+
+## [0.8] - 2023-11-17
+
+### Fixed
+- YYYY date issue has been solved ([#5](https://github.com/sinaatalay/rendercv/issues/5)).
+
+## [0.7] - 2023-11-03
+
+### Changed
+- The date type is improved. It supports `YYYY-MM-DD`, `YYYY-MM`, and `YYYY` formats now.
+
+### Fixed
+- Custom sections' error messages fixed.
+
+## [0.6] - 2023-10-28
+
+### Added
+- New fields are added: `experience`, `projects`, `awards`, `interests`, and `programming_skills`.
+
+### Fixed
+- DOI validation bug has been fixed by [@LabAsim](https://github.com/LabAsim) in [#3](https://github.com/sinaatalay/rendercv/pull/3)/
+
+
+## [0.5] - 2023-10-27
+
+### Added
+
+- Orcid support has been added.
+
+### Fixed
+
+- Special $\LaTeX$ characters' escaping has been fixed.
+
+
+## [0.4] - 2023-10-22
+
+### Changed
+
+- CLI has been improved for more intuitive validation error messages.
+
+## [0.3] - 2023-10-20
+
+### Fixed
+
+- Fixed colors of CLI output.
+- Fixed encoding problem.
+
+## [0.2] - 2023-10-17
+
+### Fixed
+
+- Fixed MacOS compatibility issues.
+
+## [0.1] - 2023-10-15
+
+The first release of RenderCV.
+
 [1.4]: https://github.com/sinaatalay/rendercv/releases/tag/v1.4
 [1.3]: https://github.com/sinaatalay/rendercv/releases/tag/v1.3
 [1.2]: https://github.com/sinaatalay/rendercv/releases/tag/v1.2
 [1.1]: https://github.com/sinaatalay/rendercv/releases/tag/v1.1
+[0.10]: https://github.com/sinaatalay/rendercv/releases/tag/v0.10
+[0.9]: https://github.com/sinaatalay/rendercv/releases/tag/v0.9
+[0.8]: https://github.com/sinaatalay/rendercv/releases/tag/v0.8
+[0.7]: https://github.com/sinaatalay/rendercv/releases/tag/v0.7
+[0.6]: https://github.com/sinaatalay/rendercv/releases/tag/v0.6
+[0.5]: https://github.com/sinaatalay/rendercv/releases/tag/v0.5
+[0.4]: https://github.com/sinaatalay/rendercv/releases/tag/v0.4
+[0.3]: https://github.com/sinaatalay/rendercv/releases/tag/v0.3
+[0.2]: https://github.com/sinaatalay/rendercv/releases/tag/v0.2
+[0.1]: https://github.com/sinaatalay/rendercv/releases/tag/v0.1
