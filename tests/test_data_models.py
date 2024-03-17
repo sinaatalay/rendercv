@@ -514,3 +514,28 @@ def test_custom_theme_without_init_file(tmp_path, testdata_directory_path):
     )
 
     assert data_model.design.theme == "dummytheme"
+
+
+def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
+    reference_custom_theme_path = (
+        testdata_directory_path
+        / "test_copy_theme_files_to_output_directory_custom_theme"
+        / "dummytheme"
+    )
+
+    # copy the directory to tmp_path:
+    custom_theme_path = tmp_path / "dummytheme"
+    shutil.copytree(reference_custom_theme_path, custom_theme_path, dirs_exist_ok=True)
+
+    # remove the __init__.py file:
+    init_file = custom_theme_path / "__init__.py"
+    init_file.write_text("invalid python code", encoding="utf-8")
+
+    os.chdir(tmp_path)
+    with pytest.raises(pydantic.ValidationError):
+        dm.RenderCVDataModel(
+            **{  # type: ignore
+                "cv": {"name": "John Doe"},
+                "design": {"theme": "dummytheme"},
+            }
+        )
