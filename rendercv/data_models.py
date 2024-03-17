@@ -218,12 +218,7 @@ class PublicationEntry(RenderCVBaseModel):
     @functools.cached_property
     def doi_url(self) -> str:
         """Return the URL of the DOI."""
-        # self.doi == "" is added because None values are replaced with "" in
-        # renderer.TemplatedFile class (to make templating easier)
-        if self.doi is None or self.doi == "":
-            return ""
-        else:
-            return f"https://doi.org/{self.doi}"
+        return f"https://doi.org/{self.doi}"
 
     @functools.cached_property
     def date_string(self) -> str:
