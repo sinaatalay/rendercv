@@ -1,10 +1,15 @@
+"""This module contains fixtures and other helpful functions for the tests."""
+
 import pathlib
 import copy
 import typing
 import itertools
-import os
 import filecmp
+from typing import Optional
+import os
+import shutil
 
+import pypdf
 import jinja2
 import pytest
 import pydantic
@@ -13,11 +18,12 @@ import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 from rendercv import data_models as dm
 import rendercv.renderer as r
 
+# RenderCV is being tested by comparing the output to reference files. Therefore,
+# reference files should be updated when RenderCV is updated in a way that changes
+# the output. Setting update_testdata to True will update the reference files with
+# the latest RenderCV. This should be done with caution, as it will overwrite the
+# reference files with the latest output.
 update_testdata = False
-folder_name_dictionary = {
-    "rendercv_empty_curriculum_vitae_data_model": "empty",
-    "rendercv_filled_curriculum_vitae_data_model": "filled",
-}
 
 # copy sample entries from docs/generate_entry_figures_and_examples.py:
 education_entry_dictionary = {
@@ -83,46 +89,55 @@ bullet_entry_dictionary = {
 
 @pytest.fixture
 def publication_entry() -> dict[str, str | list[str]]:
+    """Return a sample publication entry."""
     return copy.deepcopy(publication_entry_dictionary)
 
 
 @pytest.fixture
 def experience_entry() -> dict[str, str]:
+    """Return a sample experience entry."""
     return copy.deepcopy(experience_entry_dictionary)
 
 
 @pytest.fixture
 def education_entry() -> dict[str, str]:
+    """Return a sample education entry."""
     return copy.deepcopy(education_entry_dictionary)
 
 
 @pytest.fixture
 def normal_entry() -> dict[str, str]:
+    """Return a sample normal entry."""
     return copy.deepcopy(normal_entry_dictionary)
 
 
 @pytest.fixture
 def one_line_entry() -> dict[str, str]:
+    """Return a sample one line entry."""
     return copy.deepcopy(one_line_entry_dictionary)
 
 
 @pytest.fixture
 def bullet_entry() -> dict[str, str]:
+    """Return a sample bullet entry."""
     return copy.deepcopy(bullet_entry_dictionary)
 
 
 @pytest.fixture
 def text_entry() -> str:
+    """Return a sample text entry."""
     return "My Text Entry with some **markdown** and [links](https://example.com)!"
 
 
 @pytest.fixture
 def rendercv_data_model() -> dm.RenderCVDataModel:
+    """Return a sample RenderCV data model."""
     return dm.get_a_sample_data_model()
 
 
 @pytest.fixture
 def rendercv_empty_curriculum_vitae_data_model() -> dm.CurriculumVitae:
+    """Return an empty CurriculumVitae data model."""
     return dm.CurriculumVitae(sections={"test": ["test"]})
 
 
@@ -130,7 +145,14 @@ def return_a_value_for_a_field_type(
     field: str,
     field_type: typing.Any,
 ) -> str:
-    """Return a value for a field type.
+    """Return a value for a given field and field type.
+
+    Example:
+        ```python
+        return_a_value_for_a_field_type("institution", str)
+        ```
+        will return:
+        `#!python "Boğaziçi University"`
 
     Args:
         field_type (typing.Any): _description_
@@ -230,6 +252,9 @@ def create_combinations_of_a_model(
 def rendercv_filled_curriculum_vitae_data_model(
     text_entry, bullet_entry
 ) -> dm.CurriculumVitae:
+    """Return a filled CurriculumVitae data model, where each section has all possible
+    combinations of entry types.
+    """
     return dm.CurriculumVitae(
         name="John Doe",
         label="Mechanical Engineer",
@@ -259,62 +284,156 @@ def rendercv_filled_curriculum_vitae_data_model(
 
 @pytest.fixture
 def jinja2_environment() -> jinja2.Environment:
+    """Return a Jinja2 environment."""
     return r.setup_jinja2_environment()
 
 
 @pytest.fixture
 def tests_directory_path() -> pathlib.Path:
+    """Return the path to the tests directory."""
     return pathlib.Path(__file__).parent
 
 
 @pytest.fixture
 def root_directory_path(tests_directory_path) -> pathlib.Path:
+    """Return the path to the repository's root directory."""
     return tests_directory_path.parent
 
 
 @pytest.fixture
 def testdata_directory_path(tests_directory_path) -> pathlib.Path:
+    """Return the path to the testdata directory."""
     return tests_directory_path / "testdata"
 
 
 @pytest.fixture
-def run_a_function_and_return_output_and_reference_paths(
+def specific_testdata_directory_path(testdata_directory_path, request) -> pathlib.Path:
+    """Return the path to a specific testdata directory.
+
+    For example, if the test function is named `test_rendercv`, this will return the
+    path to the `testdata/test_rendercv` directory.
+    """
+    return testdata_directory_path / request.node.originalname
+
+
+def are_these_two_directories_the_same(
+    directory1: pathlib.Path, directory2: pathlib.Path
+) -> None:
+    """Check if two directories are the same.
+
+    Args:
+        directory1 (pathlib.Path): The first directory to compare.
+        directory2 (pathlib.Path): The second directory to compare.
+
+    Raises:
+        AssertionError: If the two directories are not the same.
+    """
+    for file1 in directory1.iterdir():
+        file2 = directory2 / file1.name
+        if file1.is_dir():
+            if not file2.is_dir():
+                return False
+            are_these_two_directories_the_same(file1, file2)
+        else:
+            if are_these_two_files_the_same(file1, file2) is False:
+                return False
+
+    return True
+
+
+def are_these_two_files_the_same(file1: pathlib.Path, file2: pathlib.Path) -> None:
+    """Check if two files are the same.
+
+    Args:
+        file1 (pathlib.Path): The first file to compare.
+        file2 (pathlib.Path): The second file to compare.
+
+    Raises:
+        AssertionError: If the two files are not the same.
+    """
+    extension1 = file1.suffix
+    extension2 = file2.suffix
+
+    if extension1 != extension2:
+        return False
+
+    if extension1 == ".pdf":
+        pages1 = pypdf.PdfReader(file1).pages
+        pages2 = pypdf.PdfReader(file2).pages
+        if len(pages1) != len(pages2):
+            return False
+
+        for i in range(len(pages1)):
+            if pages1[i].extract_text() != pages2[i].extract_text():
+                return False
+
+        return True
+    else:
+        return filecmp.cmp(file1, file2)
+
+
+@pytest.fixture
+def run_a_function_and_check_if_output_is_the_same_as_reference(
     tmp_path: pathlib.Path,
-    testdata_directory_path: pathlib.Path,
-    request: pytest.FixtureRequest,
+    specific_testdata_directory_path: pathlib.Path,
 ) -> typing.Callable:
+    """Run a function and check if the output is the same as the reference."""
+
     def function(
         function: typing.Callable,
-        file_name: str,
+        reference_file_or_directory_name: str,
+        output_file_name: Optional[str] = None,
+        generate_reference_files_function: Optional[typing.Callable] = None,
         **kwargs,
     ):
-        reference_directory_path = (
-            testdata_directory_path / request.node.name / file_name
+        output_is_a_single_file = output_file_name is not None
+        if output_is_a_single_file:
+            output_file_path = tmp_path / output_file_name
+
+        reference_directory_path: pathlib.Path = specific_testdata_directory_path
+        reference_file_or_directory_path = (
+            reference_directory_path / reference_file_or_directory_name
         )
-        reference_file_path = reference_directory_path / file_name
-        output_file_path = tmp_path / file_name
 
-        os.chdir(tmp_path)
-
-        function(**kwargs)
-
-        # Update the auxiliary files if update_testdata is True
+        # Update the testdata if update_testdata is True
         if update_testdata:
             # create the reference directory if it does not exist
             reference_directory_path.mkdir(parents=True, exist_ok=True)
 
-            # remove the reference file if it exists
-            if reference_file_path.exists():
-                reference_file_path.unlink()
+            # remove the reference file or directory if it exists
+            if reference_file_or_directory_path.is_dir():
+                shutil.rmtree(reference_file_or_directory_path)
+            elif reference_file_or_directory_path.exists():
+                reference_file_or_directory_path.unlink()
 
-            # copy the output file to the reference directory
-            output_file_path.copy(reference_file_path)
+            if generate_reference_files_function:
+                generate_reference_files_function(
+                    reference_file_or_directory_path, **kwargs
+                )
+            else:
+                # copy the output file or directory to the reference directory
+                function(tmp_path, reference_file_or_directory_path, **kwargs)
+                if output_is_a_single_file:
+                    shutil.move(output_file_path, reference_file_or_directory_path)
+                else:
+                    shutil.move(tmp_path, reference_file_or_directory_path)
+                    os.mkdir(tmp_path)
 
-        assert filecmp.cmp(output_file_path, reference_file_path)
+        function(tmp_path, reference_file_or_directory_path, **kwargs)
+
+        if output_is_a_single_file:
+            return are_these_two_files_the_same(
+                output_file_path, reference_file_or_directory_path
+            )
+        else:
+            return are_these_two_directories_the_same(
+                tmp_path, reference_file_or_directory_path
+            )
 
     return function
 
 
 @pytest.fixture
 def input_file_path(testdata_directory_path) -> pathlib.Path:
+    """Return the path to the input file."""
     return testdata_directory_path / "John_Doe_CV.yaml"
