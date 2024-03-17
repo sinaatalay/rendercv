@@ -1014,7 +1014,7 @@ class RenderCVDataModel(RenderCVBaseModel):
 
             if path_to_init_file.exists():
                 spec = importlib.util.spec_from_file_location(
-                    "",  # this is somehow not required
+                    "theme",
                     path_to_init_file,
                 )
                 if spec is None:
@@ -1024,7 +1024,13 @@ class RenderCVDataModel(RenderCVBaseModel):
                     )
 
                 theme_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(theme_module)  # type: ignore
+                try:
+                    spec.loader.exec_module(theme_module)  # type: ignore
+                except SyntaxError or ImportError:
+                    raise ValueError(
+                        f"The custom theme {theme_name}'s __init__.py file is not"
+                        " valid. Please check the file and try again.",
+                    )
 
                 ThemeDataModel = getattr(
                     theme_module, f"{theme_name.title()}ThemeOptions"  # type: ignore
