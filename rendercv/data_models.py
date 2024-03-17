@@ -141,12 +141,124 @@ class RenderCVBaseModel(pydantic.BaseModel):
 # ======================================================================================
 
 
+class OneLineEntry(RenderCVBaseModel):
+    """This class is the data model of `OneLineEntry`."""
+
+    label: str = pydantic.Field(
+        title="Name",
+        description="The label of the OneLineEntry.",
+    )
+    details: str = pydantic.Field(
+        title="Details",
+        description="The details of the OneLineEntry.",
+    )
+
+
+class PublicationEntry(RenderCVBaseModel):
+    """This class is the data model of `PublicationEntry`."""
+
+    title: str = pydantic.Field(
+        title="Title of the Publication",
+        description="The title of the publication.",
+    )
+    authors: list[str] = pydantic.Field(
+        title="Authors",
+        description="The authors of the publication in order as a list of strings.",
+    )
+    doi: Optional[str] = pydantic.Field(
+        default=None,
+        title="DOI",
+        description="The DOI of the publication.",
+        examples=["10.48550/arXiv.2310.03138"],
+    )
+    date: int | RenderCVDate = pydantic.Field(
+        title="Publication Date",
+        description=(
+            "The date of the publication in YYYY-MM-DD, YYYY-MM, or YYYY format."
+        ),
+        examples=["2021-10-31", "2010"],
+        json_schema_extra={"default": "2020-01-01"},
+    )
+    journal: Optional[str] = pydantic.Field(
+        default=None,
+        title="Journal",
+        description="The journal or the conference name.",
+    )
+
+    @pydantic.field_validator("date")
+    @classmethod
+    def check_date(cls, date: int | RenderCVDate) -> int | RenderCVDate:
+        """Check if the date is a valid date."""
+        # The function below will raise an error if the date is not valid:
+        get_date_object(date)
+
+        return date
+
+    @pydantic.field_validator("doi")
+    @classmethod
+    def check_doi(cls, doi: Optional[str]) -> Optional[str]:
+        """Check if the DOI exists in the DOI System."""
+        if doi is not None:
+            # see https://stackoverflow.com/a/60671292/18840665 for the explanation of
+            # the next line:
+            ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
+
+            doi_url = f"http://doi.org/{doi}"
+
+            try:
+                urlopen(doi_url)
+            except HTTPError as err:
+                if err.code == 404:
+                    raise ValueError("DOI cannot be found in the DOI System!")
+            except InvalidURL:
+                raise ValueError("This DOI is not valid!")
+
+        return doi
+
+    @functools.cached_property
+    def doi_url(self) -> str:
+        """Return the URL of the DOI."""
+        # self.doi == "" is added because None values are replaced with "" in
+        # renderer.TemplatedFile class (to make templating easier)
+        if self.doi is None or self.doi == "":
+            return ""
+        else:
+            return f"https://doi.org/{self.doi}"
+
+    @functools.cached_property
+    def date_string(self) -> str:
+        """Return the date string of the publication."""
+        if isinstance(self.date, int):
+            date_string = str(self.date)
+        else:
+            # Then it is a string
+            date_object = get_date_object(self.date)
+            date_string = format_date(date_object)
+
+        return date_string
+
+
+class BulletEntry(RenderCVBaseModel):
+    """This class is the data model of `BulletEntry`."""
+
+    bullet: str = pydantic.Field(
+        title="Bullet",
+        description="The bullet of the BulletEntry.",
+    )
+
+
 class EntryBase(RenderCVBaseModel):
     """This class is the parent class of some of the entry types. It is being used
     because some of the entry types have common fields like dates, highlights, location,
     etc.
     """
 
+    location: Optional[str] = pydantic.Field(
+        default=None,
+        title="Location",
+        description="The location of the event.",
+        examples=["Istanbul, Türkiye"],
+    )
     start_date: Optional[int | RenderCVDate] = pydantic.Field(
         default=None,
         title="Start Date",
@@ -183,12 +295,6 @@ class EntryBase(RenderCVBaseModel):
         title="Highlights",
         description="The highlights of the event as a list of strings.",
         examples=["Did this.", "Did that."],
-    )
-    location: Optional[str] = pydantic.Field(
-        default=None,
-        title="Location",
-        description="The location of the event.",
-        examples=["Istanbul, Türkiye"],
     )
 
     @pydantic.model_validator(
@@ -418,21 +524,7 @@ class EntryBase(RenderCVBaseModel):
             return time_span_string
 
 
-class OneLineEntry(RenderCVBaseModel):
-    """This class is the data model of `OneLineEntry`."""
-
-    label: str = pydantic.Field(
-        title="Name",
-        description="The label of the OneLineEntry.",
-    )
-    details: str = pydantic.Field(
-        title="Details",
-        description="The details of the OneLineEntry.",
-    )
-
-
-class NormalEntry(EntryBase):
-    """This class is the data model of `NormalEntry`."""
+class NormalEntryBase(RenderCVBaseModel):
 
     name: str = pydantic.Field(
         title="Name",
@@ -440,9 +532,16 @@ class NormalEntry(EntryBase):
     )
 
 
-class ExperienceEntry(EntryBase):
-    """This class is the data model of `ExperienceEntry`."""
+# The following class is to make sure NormalEntryBase keys comes first,
+# then the keys of the EntryBase class. The only way to achieve this in Pydantic is
+# to do this.
+class NormalEntry(EntryBase, NormalEntryBase):
+    """This class is the data model of `NormalEntry`."""
 
+    pass
+
+
+class ExperienceEntryBase(RenderCVBaseModel):
     company: str = pydantic.Field(
         title="Company",
         description="The company name.",
@@ -453,9 +552,16 @@ class ExperienceEntry(EntryBase):
     )
 
 
-class EducationEntry(EntryBase):
-    """This class is the data model of `EducationEntry`."""
+# The following class is to make sure ExperienceEntryBase keys comes first,
+# then the keys of the EntryBase class. The only way to achieve this in Pydantic is
+# to do this.
+class ExperienceEntry(EntryBase, ExperienceEntryBase):
+    """This class is the data model of `ExperienceEntry`."""
 
+    pass
+
+
+class EducationEntryBase(RenderCVBaseModel):
     institution: str = pydantic.Field(
         title="Institution",
         description="The institution name.",
@@ -473,97 +579,13 @@ class EducationEntry(EntryBase):
     )
 
 
-class PublicationEntry(RenderCVBaseModel):
-    """This class is the data model of `PublicationEntry`."""
+# The following class is to make sure EducationEntryBase keys comes first,
+# then the keys of the EntryBase class. The only way to achieve this in Pydantic is
+# to do this.
+class EducationEntry(EntryBase, EducationEntryBase):
+    """This class is the data model of `EducationEntry`."""
 
-    title: str = pydantic.Field(
-        title="Title of the Publication",
-        description="The title of the publication.",
-    )
-    authors: list[str] = pydantic.Field(
-        title="Authors",
-        description="The authors of the publication in order as a list of strings.",
-    )
-    doi: Optional[str] = pydantic.Field(
-        default=None,
-        title="DOI",
-        description="The DOI of the publication.",
-        examples=["10.48550/arXiv.2310.03138"],
-    )
-    date: int | RenderCVDate = pydantic.Field(
-        title="Publication Date",
-        description=(
-            "The date of the publication in YYYY-MM-DD, YYYY-MM, or YYYY format."
-        ),
-        examples=["2021-10-31", "2010"],
-        json_schema_extra={"default": "2020-01-01"},
-    )
-    journal: Optional[str] = pydantic.Field(
-        default=None,
-        title="Journal",
-        description="The journal or the conference name.",
-    )
-
-    @pydantic.field_validator("date")
-    @classmethod
-    def check_date(cls, date: int | RenderCVDate) -> int | RenderCVDate:
-        """Check if the date is a valid date."""
-        # The function below will raise an error if the date is not valid:
-        get_date_object(date)
-
-        return date
-
-    @pydantic.field_validator("doi")
-    @classmethod
-    def check_doi(cls, doi: Optional[str]) -> Optional[str]:
-        """Check if the DOI exists in the DOI System."""
-        if doi is not None:
-            # see https://stackoverflow.com/a/60671292/18840665 for the explanation of
-            # the next line:
-            ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
-
-            doi_url = f"http://doi.org/{doi}"
-
-            try:
-                urlopen(doi_url)
-            except HTTPError as err:
-                if err.code == 404:
-                    raise ValueError("DOI cannot be found in the DOI System!")
-            except InvalidURL:
-                raise ValueError("This DOI is not valid!")
-
-        return doi
-
-    @functools.cached_property
-    def doi_url(self) -> str:
-        """Return the URL of the DOI."""
-        # self.doi == "" is added because None values are replaced with "" in
-        # renderer.TemplatedFile class (to make templating easier)
-        if self.doi is None or self.doi == "":
-            return ""
-        else:
-            return f"https://doi.org/{self.doi}"
-
-    @functools.cached_property
-    def date_string(self) -> str:
-        """Return the date string of the publication."""
-        if isinstance(self.date, int):
-            date_string = str(self.date)
-        else:
-            # Then it is a string
-            date_object = get_date_object(self.date)
-            date_string = format_date(date_object)
-
-        return date_string
-
-
-class BulletEntry(RenderCVBaseModel):
-    """This class is the data model of `BulletEntry`."""
-
-    bullet: str = pydantic.Field(
-        title="Bullet",
-        description="The bullet of the BulletEntry.",
-    )
+    pass
 
 
 # Create a custom type called Entry and ListOfEntries:
