@@ -19,6 +19,7 @@ import pypdfium2
 # import the modules using the full path of the files.
 repository_root = pathlib.Path(__file__).parent.parent
 rendercv_path = repository_root / "rendercv"
+image_assets_directory = pathlib.Path(__file__).parent / "assets" / "images"
 
 
 def import_a_module(module_name: str, file_path: pathlib.Path):
@@ -177,8 +178,6 @@ def generate_entry_figures():
     }
     themes = dm.available_themes
 
-    pdf_assets_directory = pathlib.Path(__file__).parent / "assets" / "images"
-
     with tempfile.TemporaryDirectory() as temporary_directory:
         # create a temporary directory:
         temporary_directory_path = pathlib.Path(temporary_directory)
@@ -209,7 +208,7 @@ def generate_entry_figures():
                 pdf_file_path = r.latex_to_pdf(latex_file_path)
 
                 # Prepare the output directory and file path:
-                output_directory = pdf_assets_directory / theme
+                output_directory = image_assets_directory / theme
                 output_directory.mkdir(parents=True, exist_ok=True)
                 output_pdf_file_path = output_directory / f"{entry_type}.pdf"
 
@@ -292,6 +291,13 @@ def generate_examples():
 
         shutil.rmtree(rendercv_output_directory)
 
+        # convert first page of the pdf to an image:
+        pdf = pypdfium2.PdfDocument(str(new_pdf_file_path.absolute()))
+        page = pdf[0]
+        image = page.render(scale=2).to_pil()
+        image_path = image_assets_directory / f"{theme}.png"
+        image.save(image_path)
+
 
 def generate_schema():
     """Generate the schema."""
@@ -299,7 +305,15 @@ def generate_schema():
     dm.generate_json_schema_file(json_schema_file_path)
 
 
+def update_index():
+    """Update the index.md file by copying the README.md file."""
+    index_file_path = repository_root / "docs" / "index.md"
+    readme_file_path = repository_root / "README.md"
+    shutil.copy(readme_file_path, index_file_path)
+
+
 if __name__ == "__main__":
     generate_entry_figures()
-    # generate_examples()
-    # generate_schema()
+    generate_examples()
+    generate_schema()
+    update_index()
