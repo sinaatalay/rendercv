@@ -51,6 +51,11 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## Some Company, Software Engineer
 
+
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
 - Sept. 2015 to present 
 
 
@@ -73,8 +78,25 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## Some Company, Software Engineer
 
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Jan. 2024 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Some Company, Software Engineer
+
 
 - Istanbul, Turkey 
+- Did this.
+- Did that.
 
 ## Some Company, Software Engineer
 
@@ -92,11 +114,6 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Did this.
 - Did that.
-
-## Some Company, Software Engineer
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
 
 ## Some Company, Software Engineer
 
@@ -112,36 +129,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## Some Company, Software Engineer
 
-- Jan. 2024 
-- Istanbul, Turkey 
-
-## Some Company, Software Engineer
-
 - Sept. 2021 
-
-- Did this.
-- Did that.
-
-## Some Company, Software Engineer
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Some Company, Software Engineer
-
-
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Some Company, Software Engineer
-
-- Sept. 2021 
-
-
-## Some Company, Software Engineer
-
-- Sept. 2015 to present 
 
 - Did this.
 - Did that.
@@ -154,26 +142,12 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 ## Some Company, Software Engineer
 
 - Sept. 2021 
-
-- Did this.
-- Did that.
-
-## Some Company, Software Engineer
-
-- Sept. 2021 
 - Istanbul, Turkey 
 
 ## Some Company, Software Engineer
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Some Company, Software Engineer
-
-- Sept. 2021 
-
 - Did this.
 - Did that.
 
@@ -200,6 +174,25 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2021 
 
+
+## Some Company, Software Engineer
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
 - Did this.
 - Did that.
 
@@ -226,6 +219,13 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2021 
 - Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Some Company, Software Engineer
+
+- Sept. 2021 
+
 - Did this.
 - Did that.
 
@@ -245,6 +245,11 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## Boğaziçi University, Mechanical Engineering
 
+
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
 - Sept. 2015 to present 
 
 
@@ -265,15 +270,37 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Did this.
 - Did that.
 
-## Boğaziçi University, Mechanical Engineering
-
-
-- Istanbul, Turkey 
-
 ## Boğaziçi University, BS in Mechanical Engineering
 
 
 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Jan. 2024 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+
+- Istanbul, Turkey 
 
 ## Boğaziçi University, Mechanical Engineering
 
@@ -291,11 +318,6 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Did this.
 - Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
@@ -314,11 +336,6 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Did this.
 - Did that.
 
-## Boğaziçi University, Mechanical Engineering
-
-- Jan. 2024 
-- Istanbul, Turkey 
-
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Jan. 2024 
@@ -331,43 +348,14 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Did this.
 - Did that.
 
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2021 
 
 
-## Boğaziçi University, Mechanical Engineering
-
-
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
 ## Boğaziçi University, BS in Mechanical Engineering
 
 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-
-- Istanbul, Turkey 
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2015 to present 
 
 - Did this.
 - Did that.
@@ -377,27 +365,10 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2015 to present 
 - Istanbul, Turkey 
 
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
-
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-
-- Did this.
-- Did that.
-
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 - Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
 
 ## Boğaziçi University, Mechanical Engineering
 
@@ -409,31 +380,12 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2015 to present 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
 - Istanbul, Turkey 
 
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
 - Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
 
 ## Boğaziçi University, Mechanical Engineering
 
@@ -445,42 +397,83 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Jan. 2024 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+
+- Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
 
 - Did this.
 - Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Jan. 2024 
-- Istanbul, Turkey 
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
 
 - Did this.
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 
@@ -491,11 +484,6 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2021 
 - Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
 
 ## Boğaziçi University, Mechanical Engineering
 
@@ -507,26 +495,12 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2015 to present 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
 - Istanbul, Turkey 
 
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
 - Did this.
 - Did that.
 
@@ -546,13 +520,6 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
 - Did this.
 - Did that.
 
@@ -578,7 +545,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
-- Istanbul, Turkey 
+
 - Did this.
 - Did that.
 
@@ -586,6 +553,32 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2021 
 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did this.
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
 - Did this.
 - Did that.
 
@@ -612,6 +605,13 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2021 
 - Istanbul, Turkey 
+- Did this.
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
 - Did this.
 - Did that.
 
@@ -629,6 +629,9 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## My Project
 
+- Istanbul, Turkey 
+## My Project
+
 - Sept. 2015 to present 
 ## My Project
 
@@ -643,7 +646,18 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## My Project
 
-- Istanbul, Turkey 
+- Sept. 2015 to present - Istanbul, Turkey 
+## My Project
+
+- Jan. 2024 - Istanbul, Turkey 
+## My Project
+
+- Sept. 2021 - Istanbul, Turkey 
+## My Project
+
+- Istanbul, Turkey - Did this.
+- Did that.
+
 ## My Project
 
 - Sept. 2015 to present 
@@ -657,9 +671,6 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## My Project
 
-- Sept. 2015 to present - Istanbul, Turkey 
-## My Project
-
 - Sept. 2021 
 ## My Project
 
@@ -668,26 +679,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## My Project
 
-- Jan. 2024 - Istanbul, Turkey 
-## My Project
-
 - Sept. 2021 - Did this.
-- Did that.
-
-## My Project
-
-- Sept. 2021 - Istanbul, Turkey 
-## My Project
-
-- Istanbul, Turkey - Did this.
-- Did that.
-
-## My Project
-
-- Sept. 2021 
-## My Project
-
-- Sept. 2015 to present - Did this.
 - Did that.
 
 ## My Project
@@ -695,20 +687,10 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2015 to present - Istanbul, Turkey 
 ## My Project
 
-- Sept. 2021 - Did this.
-- Did that.
-
-## My Project
-
 - Sept. 2021 - Istanbul, Turkey 
 ## My Project
 
 - Sept. 2015 to present - Istanbul, Turkey - Did this.
-- Did that.
-
-## My Project
-
-- Sept. 2021 - Did this.
 - Did that.
 
 ## My Project
@@ -726,6 +708,19 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 ## My Project
 
+- Sept. 2021 
+## My Project
+
+- Sept. 2015 to present - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Did this.
+- Did that.
+
+## My Project
+
 - Sept. 2021 - Did this.
 - Did that.
 
@@ -745,6 +740,11 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 ## My Project
 
 - Sept. 2021 - Istanbul, Turkey - Did this.
+- Did that.
+
+## My Project
+
+- Sept. 2021 - Did this.
 - Did that.
 
 ## My Project

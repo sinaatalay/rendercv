@@ -62,6 +62,10 @@ def test_format_date(date, expected_date_string):
 def test_read_input_file(input_file_path):
     # Update the auxiliary files if update_testdata is True
     if update_testdata:
+        # create testdata directory if it doesn't exist
+        if not input_file_path.parent.exists():
+            input_file_path.parent.mkdir()
+
         input_dictionary = {
             "cv": {
                 "name": "John Doe",
