@@ -23,7 +23,7 @@ import rendercv.renderer as r
 # the output. Setting update_testdata to True will update the reference files with
 # the latest RenderCV. This should be done with caution, as it will overwrite the
 # reference files with the latest output.
-update_testdata = False
+update_testdata = True
 
 # copy sample entries from docs/generate_entry_figures_and_examples.py:
 education_entry_dictionary = {
@@ -172,10 +172,10 @@ def return_a_value_for_a_field_type(
             "Did this.",
             "Did that.",
         ],
-        "company": "Some Company",
+        "company": "Some **Company**",
         "position": "Software Engineer",
         "name": "My Project",
-        "label": "Programming",
+        "label": "Pro**gram**ming",
         "details": "Python, C++, JavaScript, MATLAB",
         "authors": ["J. Doe", "**H. Tom**", "S. Doe", "A. Andsurname"],
         "title": (

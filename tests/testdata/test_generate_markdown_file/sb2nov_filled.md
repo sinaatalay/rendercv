@@ -44,192 +44,192 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - IEEE Transactions on Applied Superconductivity 
 # Experience Entries
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Jan. 2024 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Jan. 2024 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 
 - Istanbul, Turkey 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Jan. 2024 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Jan. 2024 
 - Istanbul, Turkey 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
 - Did this.
 - Did that.
 
-## Some Company, Software Engineer
+## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
@@ -754,4 +754,4 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 # One Line Entries
 
-- Programming: Python, C++, JavaScript, MATLAB
+- Pro**gram**ming: Python, C++, JavaScript, MATLAB
