@@ -180,6 +180,22 @@ class LaTeXFile(TemplatedFile):
             section_title,
             is_first_entry,
         )
+
+        # If there is nested \textbf, \textit, or \underline commands, replace the inner
+        # ones with \textnormal:
+
+        # Find all the nested commands:
+        nested_commands = re.findall(r"\\textbf{.*?(\\textbf{.*?})", result)
+        nested_commands += re.findall(r"\\textit{.*?(\\textit{.*?})", result)
+        nested_commands += re.findall(r"\\underline{.*?(\\underline{.*?})", result)
+
+        # Replace the inner commands with \textnormal:
+        for nested_command in nested_commands:
+            new_command = nested_command.replace("textbf", "textnormal")
+            new_command = new_command.replace("textit", "textnormal")
+            new_command = new_command.replace("underline", "textnormal")
+            result = result.replace(nested_command, new_command)
+
         return result
 
     def get_latex_code(self):
