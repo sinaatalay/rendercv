@@ -956,7 +956,11 @@ def latex_to_pdf(
                 "If you can't solve the problem, please open an issue on GitHub.",
             )
         else:
-            output = output[0].decode("utf-8")
+            try:
+                output = output[0].decode("utf-8")
+            except UnicodeDecodeError:
+                output = output[0].decode("latin-1")
+
             if "Rerun to get" in output:
                 # Run TinyTeX again to get the references right:
                 subprocess.run(
