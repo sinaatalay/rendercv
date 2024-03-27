@@ -28,8 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `moderncv` theme's PDF title issue has been fixed.
 - The ordering of the data models' keys in JSON Schema has been fixed.
 - The unhandled exception when a custom theme's `__init__.py` file is invalid has been fixed.
-- The `sb2nov` themes' `PublicationEntry` without `journal` and `doi` fields is now rendered correctly.
-- The `sb2nov` themes' `OneLineEntry`'s colon issue has been fixed.
+- The `sb2nov` theme's `PublicationEntry` without `journal` and `doi` fields is now rendered correctly.
+- The `sb2nov` theme's `OneLineEntry`'s colon issue has been fixed.
 
 ## [1.4] - 2024-03-10
 
