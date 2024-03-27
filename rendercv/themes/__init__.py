@@ -243,7 +243,7 @@ class ThemeOptions(pydantic.BaseModel):
             " 30 pt."
         ),
     )
-    text_alignment: Literal["left-aligned", "justified"] = pydantic.Field(
+    text_alignment: Literal["left-aligned", "justified", "justified-with-no-hyphenation"] = pydantic.Field(
         default="justified",
         title="Text Alignment",
         description="The alignment of the text. The default value is justified.",
