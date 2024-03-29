@@ -221,10 +221,10 @@ rendercv new --theme THEME_NAME "John Doe"
 
 ### `rendercv render`
 
-`rendercv render INPUT_FILE_PATH` renders the given YAML input file. An optional `use-local-latex` option can be used to generate the CV with the local LaTeX installation.
+`rendercv render INPUT_FILE_PATH` renders the given YAML input file. An optional `use-local-latex-command` option can be used to generate the CV with the local LaTeX installation.
 
 ```bash
-rendercv render --use-local-latex John_Doe_CV.yaml
+rendercv render --use-local-latex-command pdflatex John_Doe_CV.yaml
 ```
 
 
