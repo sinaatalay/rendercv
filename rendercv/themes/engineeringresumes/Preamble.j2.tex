@@ -1,0 +1,105 @@
+\documentclass[<<design.font_size>>, <<design.page_size>>]{article}
+
+% Packages:
+\usepackage[
+        ignoreheadfoot, % set margins without considering header and footer
+        top=<<design.margins.page.top>>, % seperation between body and page edge from the top
+        bottom=<<design.margins.page.bottom>>, % seperation between body and page edge from the bottom
+        left=<<design.margins.page.left>>, % seperation between body and page edge from the left
+        right=<<design.margins.page.right>>, % seperation between body and page edge from the right
+        footskip=<<design.margins.page.bottom|divide_length_by(2)>>, % seperation between body and footer
+        % showframe % for debugging 
+    ]{geometry} % for adjusting page geometry
+\usepackage{titlesec} % for customizing section titles
+\usepackage[dvipsnames]{xcolor} % for coloring text
+\definecolor{primaryColor}{RGB}{<<design.color.as_rgb_tuple()|join(", ")>>} % define primary color
+\usepackage{enumitem} % for customizing lists
+\usepackage{fontawesome5} % for using icons
+\usepackage{amsmath} % for math
+\usepackage[
+    pdftitle={<<cv.name>>'s CV},
+    pdfauthor={<<cv.name>>},
+    colorlinks=true,
+    urlcolor=primaryColor
+]{hyperref} % for links, metadata and bookmarks
+\usepackage[pscoord]{eso-pic} % for floating text on the page
+\usepackage{calc} % for calculating lengths
+\usepackage{bookmark} % for bookmarks
+\usepackage{lastpage} % for getting the total number of pages
+\usepackage{charter} % for using charter font
+\usepackage{ifthen}
+
+% Some settings:
+\pagestyle{empty} % no header or footer
+\setcounter{secnumdepth}{0} % no section numbering
+\setlength{\parindent}{0pt} % no indentation
+\setlength{\topskip}{0pt} % no top skip
+((* if design.disable_page_numbering *))
+\pagenumbering{gobble} % no page numbering
+((* else *))
+((* set page_numbering_style_placeholders = {
+    "NAME": cv.name,
+    "PAGE_NUMBER": "\\thepage{}",
+    "TOTAL_PAGES": "\pageref*{LastPage}"
+} *))
+\makeatletter
+\let\ps@customFooterStyle\ps@plain % Copy the plain style to customFooterStyle
+\patchcmd{\ps@customFooterStyle}{\thepage}{
+    \color{gray}\textit{\small <<design.page_numbering_style|replace_placeholders_with_actual_values(page_numbering_style_placeholders)>>}
+}{}{} % replace number by desired string
+\makeatother
+\pagestyle{customFooterStyle}
+((* endif *))
+
+\titleformat{\section}{\bfseries\large}{}{0pt}{}[\vspace{1pt}\titlerule]
+
+\titlespacing{\section}{
+        % left space:
+        0pt
+    }{
+        % top space:
+        <<design.margins.section_title.top>>
+    }{
+        % bottom space:
+        <<design.margins.section_title.bottom>>
+    } % section title spacing
+
+  \renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
+\newenvironment{highlights}{
+        \begin{itemize}[
+                topsep=0pt,
+                parsep=<<design.margins.highlights_area.vertical_between_bullet_points>>,
+                partopsep=0pt,
+                itemsep=0pt,
+                after=\vspace{-1\baselineskip},
+                leftmargin=<<design.margins.highlights_area.left>> + 3pt
+            ]
+    }{
+        \end{itemize}
+    } % new environment for highlights
+
+\newenvironment{header}{
+        \setlength{\topsep}{0pt}\par\kern\topsep\centering\color{primaryColor}\linespread{1.5}
+    }{
+        \par\kern\topsep
+    } % new environment for the header
+
+\newcommand{\placelastupdatedtext}{% \placetextbox{<horizontal pos>}{<vertical pos>}{<stuff>}
+  \AddToShipoutPictureFG*{% Add <stuff> to current page foreground
+    \put(
+        \LenToUnit{\paperwidth-<<design.margins.page.right>>-<<design.margins.entry_area.left_and_right>>+0.05cm},
+        \LenToUnit{\paperheight-<<design.margins.page.top|divide_length_by(2)>>}
+    ){\vtop{{\null}\makebox[0pt][c]{
+        \small\color{gray}\textit{Last updated in <<today>>}\hspace{\widthof{Last updated in <<today>>}}
+    }}}%
+  }%
+}%
+
+% save the original href command in a new command:
+\let\hrefWithoutArrow\href
+ % new command for external links:
+\renewcommand{\href}[2]{\hrefWithoutArrow{#1}{\mbox{\ifthenelse{\equal{#2}{}}{ }{#2 }\raisebox{.15ex}{\footnotesize \faExternalLink*}}}}
+
+% Ensure that generate pdf is machine readable/ATS parsable
+\input{glyphtounicode}
+\pdfgentounicode=1
