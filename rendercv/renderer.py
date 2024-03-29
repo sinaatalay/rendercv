@@ -890,7 +890,7 @@ def generate_latex_file_and_copy_theme_files(
 
 
 def latex_to_pdf(
-    latex_file_path: pathlib.Path, use_local_latex: bool = False
+    latex_file_path: pathlib.Path, local_latex_command: Optional[str] = None
 ) -> pathlib.Path:
     """Run TinyTeX with the given $\\LaTeX$ file to generate the PDF.
 
@@ -903,10 +903,10 @@ def latex_to_pdf(
     if not latex_file_path.is_file():
         raise FileNotFoundError(f"The file {latex_file_path} doesn't exist!")
 
-    if use_local_latex:
-        executable = "pdflatex"
+    if local_latex_command:
+        executable = local_latex_command
 
-        # check if pdflatex is installed:
+        # check if the command is working:
         try:
             subprocess.run(
                 [executable, "--version"],
@@ -915,9 +915,9 @@ def latex_to_pdf(
             )
         except FileNotFoundError:
             raise FileNotFoundError(
-                "[blue]pdflatex[/blue] isn't installed! Please install LaTeX and try"
-                " again (or don't use the"
-                " [bright_black]--use_local_latex[/bright_black] option)."
+                f"[blue]{executable}[/blue] isn't installed! Please install LaTeX and"
+                " try again (or don't use the"
+                " [bright_black]--use-local-latex-command[/bright_black] option)."
             )
     else:
         tinytex_binaries_directory = (
