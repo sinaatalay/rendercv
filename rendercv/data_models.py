@@ -33,6 +33,7 @@ import ruamel.yaml
 from .themes.classic import ClassicThemeOptions
 from .themes.moderncv import ModerncvThemeOptions
 from .themes.sb2nov import Sb2novThemeOptions
+from .themes.engineeringresumes import EngineeringresumesThemeOptions
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -317,7 +318,7 @@ class EntryBase(RenderCVBaseModel):
 
         if date_is_provided:
             if date != "present":
-                date = get_date_object(date)
+                get_date_object(date)
 
         return date
 
@@ -344,8 +345,8 @@ class EntryBase(RenderCVBaseModel):
             self.start_date = None
             self.end_date = None
         elif start_date_is_provided:
-            start_date = get_date_object(self.start_date)
-            end_date = get_date_object(self.end_date)
+            start_date = self.start_date
+            end_date = self.end_date
             if not end_date_is_provided:
                 # Then it means only the start_date is provided, so it is an ongoing
                 # event:
@@ -926,11 +927,14 @@ class CurriculumVitae(RenderCVBaseModel):
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
 # about discriminators.
 RenderCVDesign = Annotated[
-    ClassicThemeOptions | ModerncvThemeOptions | Sb2novThemeOptions,
+    ClassicThemeOptions
+    | ModerncvThemeOptions
+    | Sb2novThemeOptions
+    | EngineeringresumesThemeOptions,
     pydantic.Field(discriminator="theme"),
 ]
 rendercv_design_validator = pydantic.TypeAdapter(RenderCVDesign)
-available_themes = ["classic", "moderncv", "sb2nov"]
+available_themes = ["classic", "moderncv", "sb2nov", "engineeringresumes"]
 
 
 class RenderCVDataModel(RenderCVBaseModel):
