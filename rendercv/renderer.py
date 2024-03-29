@@ -185,9 +185,9 @@ class LaTeXFile(TemplatedFile):
         # ones with \textnormal:
 
         # Find all the nested commands:
-        nested_commands = re.findall(r"\\textbf{.*?(\\textbf{.*?})", result)
-        nested_commands += re.findall(r"\\textit{.*?(\\textit{.*?})", result)
-        nested_commands += re.findall(r"\\underline{.*?(\\underline{.*?})", result)
+        nested_commands = re.findall(r"\\textbf{[^}]*?(\\textbf{.*?})", result)
+        nested_commands += re.findall(r"\\textit{[^}]*?(\\textit{.*?})", result)
+        nested_commands += re.findall(r"\\underline{[^}]*?(\\underline{.*?})", result)
 
         # Replace the inner commands with \textnormal:
         for nested_command in nested_commands:
