@@ -292,60 +292,74 @@ class EntryBase(RenderCVBaseModel):
         examples=["Did this.", "Did that."],
     )
 
+    @pydantic.field_validator("date")
+    @classmethod
+    def check_date(
+        cls, date: Optional[RenderCVDate | int | str]
+    ) -> Optional[RenderCVDate | int | str]:
+        date_is_provided = date is not None
+
+        if date_is_provided:
+            if re.fullmatch(date_pattern_for_json_schema, date):
+                # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
+                # Check if it is a valid date:
+                get_date_object(date)
+
+        return date
+
+    @pydantic.field_validator("start_date", "end_date")
+    @classmethod
+    def check_and_parse_dates(
+        cls,
+        date: Optional[Literal["present"] | int | RenderCVDate],
+    ) -> Optional[Literal["present"] | int | RenderCVDate]:
+        date_is_provided = date is not None
+
+        if date_is_provided:
+            if date != "present":
+                date = get_date_object(date)
+
+        return date
+
     @pydantic.model_validator(
         mode="after",
-    )  # type: ignore
-    @classmethod
-    def check_dates(cls, model: "EntryBase") -> "EntryBase":
+    )
+    def check_and_adjust_dates(self) -> "EntryBase":
         """
         Check if the dates are provided correctly and do the necessary adjustments.
         """
-        date_is_provided = model.date is not None
-        start_date_is_provided = model.start_date is not None
-        end_date_is_provided = model.end_date is not None
+        date_is_provided = self.date is not None
+        start_date_is_provided = self.start_date is not None
+        end_date_is_provided = self.end_date is not None
 
         if date_is_provided:
-            model.start_date = None
-            model.end_date = None
-
-            if re.fullmatch(date_pattern_for_json_schema, model.date):
-                # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
-                # Check if it is a valid date:
-                try:
-                    get_date_object(model.date)
-                except ValueError as e:
-                    raise ValueError(str(e), "date", str(model.date))
+            # If only date is provided, ignore start_date and end_date:
+            self.start_date = None
+            self.end_date = None
 
         elif not start_date_is_provided and end_date_is_provided:
-            # If only end_date is provided, assume it is a one-day event:
-            model.date = model.end_date
-            model.start_date = None
-            model.end_date = None
+            # If only end_date is provided, assume it is a one-day event and act like
+            # only the date is provided:
+            self.date = self.end_date
+            self.start_date = None
+            self.end_date = None
         elif start_date_is_provided:
+            start_date = get_date_object(self.start_date)
+            end_date = get_date_object(self.end_date)
             if not end_date_is_provided:
                 # Then it means only the start_date is provided, so it is an ongoing
                 # event:
-                model.end_date = "present"
-
-            # Check if start_date and end_date are provided correctly:
-            try:
-                end_date = get_date_object(model.end_date)
-            except ValueError as e:
-                raise ValueError(str(e), "end_date", str(model.end_date))
-
-            try:
-                start_date = get_date_object(model.start_date)
-            except ValueError as e:
-                raise ValueError(str(e), "start_date", str(model.start_date))
+                self.end_date = "present"
+                end_date = Date.today()
 
             if start_date > end_date:
                 raise ValueError(
                     '"start_date" can not be after "end_date"!',
                     "start_date",  # this is the location of the error
-                    str(model.start_date),  # this is value of the error
+                    str(start_date),  # this is value of the error
                 )
 
-        return model
+        return self
 
     @functools.cached_property
     def date_string(self) -> str:
@@ -796,29 +810,28 @@ class SocialNetwork(RenderCVBaseModel):
         description="The username of the social network. The link will be generated.",
     )
 
-    @pydantic.model_validator(mode="after")  # type: ignore
+    @pydantic.field_validator("username")
     @classmethod
-    def check_networks(cls, model: "SocialNetwork") -> "SocialNetwork":
-        """Check if the `SocialNetwork` is provided correctly."""
-        if model.network == "Mastodon":
-            if not model.username.startswith("@"):
-                raise ValueError("Mastodon username should start with '@'!", "username")
-            if model.username.count("@") > 2:
-                raise ValueError(
-                    "Mastodon username should contain only two '@'!", "username"
-                )
+    def check_username(cls, username: str, info: pydantic.ValidationInfo) -> str:
+        """Check if the username is provided correctly."""
+        network = info.data["network"]
 
-        return model
+        if network == "Mastodon":
+            if not username.startswith("@"):
+                raise ValueError("Mastodon username should start with '@'!")
+            if username.count("@") > 2:
+                raise ValueError("Mastodon username should contain only two '@'!")
+
+        return username
 
     @pydantic.model_validator(mode="after")  # type: ignore
-    @classmethod
-    def validate_urls(cls, model: "SocialNetwork") -> "SocialNetwork":
+    def validate_urls(self) -> "SocialNetwork":
         """Validate the URLs of the social networks."""
-        url = model.url
+        url = self.url
 
         url_validator.validate_strings(url)
 
-        return model
+        return self
 
     @functools.cached_property
     def url(self) -> str:
