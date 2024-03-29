@@ -426,7 +426,7 @@ def cli_command_render(
         typer.Argument(help="Name of the YAML input file."),
     ],
     local_latex_command: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--use-local-latex-command",
             help=(
@@ -434,7 +434,7 @@ def cli_command_render(
                 " RenderCV's TinyTeX."
             ),
         ),
-    ] = False,
+    ] = None,
 ):
     """Generate a $\\LaTeX$ CV from a YAML input file.
 
