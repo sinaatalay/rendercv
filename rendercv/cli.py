@@ -421,9 +421,9 @@ class LiveProgressReporter(rich.live.Live):
 )
 @handle_exceptions
 def cli_command_render(
-    input_file_path: Annotated[
+    input_file_name: Annotated[
         str,
-        typer.Argument(help="Path to the YAML input file as a string"),
+        typer.Argument(help="Name of the YAML input file."),
     ],
     use_local_latex: Annotated[
         bool,
@@ -442,13 +442,13 @@ def cli_command_render(
     """
     welcome()
 
-    input_file_path_obj = pathlib.Path(input_file_path)
+    input_file_path = pathlib.Path(input_file_name)
 
-    output_directory = input_file_path_obj.parent / "rendercv_output"
+    output_directory = input_file_path.parent / "rendercv_output"
 
     with LiveProgressReporter(number_of_steps=5) as progress:
         progress.start_a_step("Reading and validating the input file")
-        data_model = dm.read_input_file(input_file_path_obj)
+        data_model = dm.read_input_file(input_file_path)
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
@@ -478,8 +478,8 @@ def cli_command_render(
     ),
 )
 def cli_command_new(
-    full_name: Annotated[str, typer.Argument(help="Your full name")],
-    theme: Annotated[str, typer.Option(help="The theme of the CV")] = "classic",
+    full_name: Annotated[str, typer.Argument(help="Your full name.")],
+    theme: Annotated[str, typer.Option(help="The theme of the CV.")] = "classic",
 ):
     """Generate a YAML input file to get started."""
     data_model = dm.get_a_sample_data_model(full_name, theme)
