@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 -->
 
-## [1.5] = 2024-03-27
+## [1.5] - 2024-03-27
 
 ### Added
 - Users can now make bold or italic texts normal with Markdown syntax.
