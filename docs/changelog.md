@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.5...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.6...HEAD)
 
 <!--
 ### Added
@@ -15,6 +15,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 ### Removed
 -->
+
+## [1.6] - 2024-03-31
+
+### Added
+- A new theme has been added: `engineeringresumes`. It hasn't been tested fully yet.
+- A new text alignment option has been added to `classic` and `sb2nov`: `justified-with-no-hyphenation`.
+- Users are now allowed to run local `lualatex`, `xelatex`, `latexmk` commands in addition to `pdflatex` ([#48](https://github.com/sinaatalay/rendercv/issues/48)).
+
+### Changed
+- Orcid is now displayed in the header like other social media links.
+
+
+### Fixed
+- Decoding issues have been fixed ([#29](https://github.com/sinaatalay/rendercv/issues/29)).
+- Classic theme's `ExperienceEntry` has been fixed ([#49](https://github.com/sinaatalay/rendercv/issues/49)).
+
 
 ## [1.5] - 2024-03-27
 
@@ -160,6 +176,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[1.6]: https://github.com/sinaatalay/rendercv/releases/tag/v1.6
 [1.5]: https://github.com/sinaatalay/rendercv/releases/tag/v1.5
 [1.4]: https://github.com/sinaatalay/rendercv/releases/tag/v1.4
 [1.3]: https://github.com/sinaatalay/rendercv/releases/tag/v1.3
