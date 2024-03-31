@@ -183,19 +183,15 @@ class LaTeXFile(TemplatedFile):
         # ones with \textnormal:
 
         # Find all the nested commands:
-        nested_commands = re.findall(
-            r"\\textbf{[^}]*?(\\textbf{.*?})|\\textit{[^}]*?(\\textit{.*?})"
-            r"|\\underline{[^}]*?(\\underline{.*?})",
-            result,
-        )
+        nested_commands = re.findall(r"\\textbf{[^}]*?(\\textbf{.*?})", result)
+        nested_commands += re.findall(r"\\textit{[^}]*?(\\textit{.*?})", result)
+        nested_commands += re.findall(r"\\underline{[^}]*?(\\underline{.*?})", result)
 
         # Replace the inner commands with \textnormal:
         for nested_command in nested_commands:
-            new_command = (
-                nested_command.replace("textbf", "textnormal")
-                .replace("textit", "textnormal")
-                .replace("underline", "textnormal")
-            )
+            new_command = nested_command.replace("textbf", "textnormal")
+            new_command = new_command.replace("textit", "textnormal")
+            new_command = new_command.replace("underline", "textnormal")
             result = result.replace(nested_command, new_command)
 
         return result
@@ -860,7 +856,14 @@ def copy_theme_files_to_output_directory(
 
     for theme_file in theme_directory_path.iterdir():
         dont_copy_files_with_these_extensions = [".j2.tex", ".py"]
-        if theme_file.suffix not in dont_copy_files_with_these_extensions:
+        # theme_file.suffix returns the latest part of the file name after the last dot.
+        # But we need the latest part of the file name after the first dot:
+        try:
+            suffix = re.search(r"\..*", theme_file.name)[0]
+        except TypeError:
+            suffix = ""
+
+        if suffix not in dont_copy_files_with_these_extensions:
             if theme_file.is_dir():
                 shutil.copytree(
                     str(theme_file),
