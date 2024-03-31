@@ -137,10 +137,8 @@ class LaTeXFile(TemplatedFile):
             )
             entries: list[str] = []
             for i, entry in enumerate(section.entries):
-                if i == 0:
-                    is_first_entry = True
-                else:
-                    is_first_entry = False
+                is_first_entry = i == 0
+                
                 entries.append(
                     self.template(
                         section.entry_type,
