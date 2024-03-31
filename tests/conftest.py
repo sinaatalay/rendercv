@@ -329,6 +329,9 @@ def are_these_two_directories_the_same(
         AssertionError: If the two directories are not the same.
     """
     for file1 in directory1.iterdir():
+        if file1.name == "__pycache__":
+            continue
+
         file2 = directory2 / file1.name
         if file1.is_dir():
             if not file2.is_dir():
