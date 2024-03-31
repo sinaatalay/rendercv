@@ -73,7 +73,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
@@ -95,7 +95,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
@@ -112,7 +112,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
@@ -124,14 +124,14 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Jan. 2024 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
@@ -148,7 +148,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
@@ -160,14 +160,14 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Jan. 2024 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
@@ -179,21 +179,21 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
@@ -205,35 +205,35 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Some **Company**, Software Engineer
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 # Education Entries
@@ -272,7 +272,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
@@ -299,7 +299,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
@@ -321,7 +321,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
@@ -338,7 +338,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
@@ -350,14 +350,14 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Jan. 2024 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
@@ -379,7 +379,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
@@ -396,7 +396,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
@@ -408,14 +408,14 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Jan. 2024 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
@@ -432,7 +432,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
@@ -444,14 +444,14 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Jan. 2024 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
@@ -463,21 +463,21 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
@@ -494,7 +494,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Sept. 2015 to present 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
@@ -506,120 +506,120 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 
 - Jan. 2024 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2021 
 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2015 to present 
-- Istanbul, Turkey 
-- Did this.
-- Did that.
 
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did this.
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2021 
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2021 
 - Istanbul, Turkey 
-- Did this.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 # Normal Entries
@@ -641,7 +641,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 
 ## My Project
 
-- Did this.
+- Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -655,7 +655,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 - Istanbul, Turkey 
 ## My Project
 
-- Istanbul, Turkey - Did this.
+- Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -666,7 +666,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 
 ## My Project
 
-- Sept. 2015 to present - Did this.
+- Sept. 2015 to present - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -674,12 +674,12 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 
 ## My Project
 
-- Jan. 2024 - Did this.
+- Jan. 2024 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Did this.
+- Sept. 2021 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -690,7 +690,7 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 - Istanbul, Turkey 
 ## My Project
 
-- Sept. 2015 to present - Istanbul, Turkey - Did this.
+- Sept. 2015 to present - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -698,12 +698,12 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 - Istanbul, Turkey 
 ## My Project
 
-- Jan. 2024 - Istanbul, Turkey - Did this.
+- Jan. 2024 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Istanbul, Turkey - Did this.
+- Sept. 2021 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -711,17 +711,17 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 
 ## My Project
 
-- Sept. 2015 to present - Did this.
+- Sept. 2015 to present - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Did this.
+- Sept. 2021 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Did this.
+- Sept. 2021 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -729,27 +729,27 @@ My Text Entry with some **markdown** and [links](https://example.com)!
 - Sept. 2021 - Istanbul, Turkey 
 ## My Project
 
-- Sept. 2015 to present - Istanbul, Turkey - Did this.
+- Sept. 2015 to present - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Istanbul, Turkey - Did this.
+- Sept. 2021 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Istanbul, Turkey - Did this.
+- Sept. 2021 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Did this.
+- Sept. 2021 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
 
-- Sept. 2021 - Istanbul, Turkey - Did this.
+- Sept. 2021 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 # One Line Entries
