@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - A new theme has been added: `engineeringresumes`. It hasn't been tested fully yet.
-- A new text alignment option has been added to `classic` and `sb2nov`: `justified-with-no-hyphenation`.
+- A new text alignment option has been added to `classic` and `sb2nov`: `justified-with-no-hyphenation` ([#34](https://github.com/sinaatalay/rendercv/issues/34))
 - Users are now allowed to run local `lualatex`, `xelatex`, `latexmk` commands in addition to `pdflatex` ([#48](https://github.com/sinaatalay/rendercv/issues/48)).
 
 ### Changed
