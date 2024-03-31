@@ -169,7 +169,7 @@ def return_a_value_for_a_field_type(
         "end_date": "2020-06",
         "date": "2021-09",
         "highlights": [
-            "Did this.",
+            "Did *this* and this is a **bold** [link](https://example.com).",
             "Did that.",
         ],
         "company": "Some **Company**",
