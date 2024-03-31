@@ -345,13 +345,14 @@ class EntryBase(RenderCVBaseModel):
             self.start_date = None
             self.end_date = None
         elif start_date_is_provided:
-            start_date = self.start_date
-            end_date = self.end_date
+            start_date = get_date_object(self.start_date)
             if not end_date_is_provided:
                 # Then it means only the start_date is provided, so it is an ongoing
                 # event:
                 self.end_date = "present"
                 end_date = Date.today()
+            else:
+                end_date = get_date_object(self.end_date)
 
             if start_date > end_date:
                 raise ValueError(
