@@ -2,14 +2,14 @@
 
 % Packages:
 \usepackage[
-        ignoreheadfoot, % set margins without considering header and footer
-        top=<<design.margins.page.top>>, % seperation between body and page edge from the top
-        bottom=<<design.margins.page.bottom>>, % seperation between body and page edge from the bottom
-        left=<<design.margins.page.left>>, % seperation between body and page edge from the left
-        right=<<design.margins.page.right>>, % seperation between body and page edge from the right
-        footskip=<<design.margins.page.bottom|divide_length_by(2)>>, % seperation between body and footer
-        % showframe % for debugging 
-    ]{geometry} % for adjusting page geometry
+    ignoreheadfoot, % set margins without considering header and footer
+    top=<<design.margins.page.top>>, % seperation between body and page edge from the top
+    bottom=<<design.margins.page.bottom>>, % seperation between body and page edge from the bottom
+    left=<<design.margins.page.left>>, % seperation between body and page edge from the left
+    right=<<design.margins.page.right>>, % seperation between body and page edge from the right
+    footskip=<<design.margins.page.bottom|divide_length_by(2)>>, % seperation between body and footer
+    % showframe % for debugging 
+]{geometry} % for adjusting page geometry
 \usepackage[explicit]{titlesec} % for customizing section titles
 \usepackage{tabularx} % for making tables with fixed width columns
 \usepackage{array} % tabularx requires this
@@ -29,7 +29,16 @@
 \usepackage{bookmark} % for bookmarks
 \usepackage{lastpage} % for getting the total number of pages
 \usepackage[default, type1]{sourcesanspro} % for using source sans 3 font
-\usepackage{ifthen}
+\usepackage{changepage} % for one column entries (adjustwidth environment)
+\usepackage{paracol} % for two and three column entries
+\usepackage{ifthen} % for conditional statements
+\usepackage{needspace} % for avoiding page brake right after the section title
+
+% Ensure that generate pdf is machine readable/ATS parsable:
+\ifpdf
+    \input{glyphtounicode}
+    \pdfgentounicode=1
+\fi
 
 % Some settings:
 \pagestyle{empty} % no header or footer
@@ -44,6 +53,8 @@
     "PAGE_NUMBER": "\\thepage{}",
     "TOTAL_PAGES": "\pageref*{LastPage}"
 } *))
+\setlength{\columnsep}{0.15cm} % set column seperation
+
 \makeatletter
 \let\ps@customFooterStyle\ps@plain % Copy the plain style to customFooterStyle
 \patchcmd{\ps@customFooterStyle}{\thepage}{
@@ -54,66 +65,80 @@
 ((* endif *))
 
 \titleformat{\section}{
-        % make the font size of the section title large and color it with the primary color
-        \Large\color{primaryColor}
-    }{
-    }{
-    }{
-        % print bold title, give 0.15 cm space and draw a line of 0.8 pt thickness
-        % from the end of the title to the end of the body
-        \textbf{#1}\hspace{0.15cm}\titlerule[0.8pt]\hspace{-0.1cm}
-    }[] % section title formatting
+    % avoid page braking right after the section title
+    \needspace{4\baselineskip}
+    % make the font size of the section title large and color it with the primary color
+    \Large\color{primaryColor}
+}{
+}{
+}{
+    % print bold title, give 0.15 cm space and draw a line of 0.8 pt thickness
+    % from the end of the title to the end of the body
+    \textbf{#1}\hspace{0.15cm}\titlerule[0.8pt]\hspace{-0.1cm}
+}[] % section title formatting
 
 \titlespacing{\section}{
-        % left space:
-        0pt
-    }{
-        % top space:
-        <<design.margins.section_title.top>>
-    }{
-        % bottom space:
-        <<design.margins.section_title.bottom>>
-    } % section title spacing
+    % left space:
+    0pt
+}{
+    % top space:
+    <<design.margins.section_title.top>>
+}{
+    % bottom space:
+    <<design.margins.section_title.bottom>>
+} % section title spacing
 
-\newcolumntype{L}[1]{
-    >{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}p{#1}
-} % left-aligned fixed width column type
-\newcolumntype{R}[1]{
-    >{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}p{#1}
-} % right-aligned fixed width column type
-((* if design.text_alignment == "justified" *))
-\newcolumntype{K}[1]{
-    >{\let\newline\\\arraybackslash\hspace{0pt}}X
-} % justified flexible width column type
-((* elif design.text_alignment == "justified-with-no-hyphenation" *))
-\newcolumntype{K}[1]{
-    >{\let\newline\\\arraybackslash\hspace{0pt}}X
-} % justified flexible width column type
-\usepackage[none]{hyphenat} % for disabling hyphenation
-((* elif design.text_alignment == "left-aligned" *))
-\newcolumntype{K}[1]{
-    >{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}X
-} % left-aligned flexible width column type
-((* endif *))
-\setlength\tabcolsep{-1.5pt} % no space between columns
 \newenvironment{highlights}{
-        \begin{itemize}[
-                topsep=0pt,
-                parsep=<<design.margins.highlights_area.vertical_between_bullet_points>>,
-                partopsep=0pt,
-                itemsep=0pt,
-                after=\vspace{-1\baselineskip},
-                leftmargin=<<design.margins.highlights_area.left>> + 3pt
-            ]
+    \begin{itemize}[
+        topsep=<<design.margins.highlights_area.top>>,
+        parsep=<<design.margins.highlights_area.vertical_between_bullet_points>>,
+        partopsep=0pt,
+        itemsep=0pt,
+        leftmargin=<<design.margins.highlights_area.left>> + 3pt
+    ]
+}{
+    \end{itemize}
+} % new environment for highlights
+
+
+\newenvironment{onecolentry}{
+    \begin{adjustwidth}{
+        <<design.margins.entry_area.left_and_right>> + 0.00001 cm
     }{
-        \end{itemize}
-    } % new environment for highlights
+        <<design.margins.entry_area.left_and_right>> + 0.00001 cm
+    }
+}{
+    \end{adjustwidth}
+} % new environment for one column entries
+
+\newenvironment{twocolentry}[2][]{
+    \onecolentry
+    \def\secondColumn{#2}
+    \setcolumnwidth{\fill, 4.2cm}
+    \begin{paracol}{2}
+}{
+    \switchcolumn \raggedleft \secondColumn
+    \end{paracol}
+    \endonecolentry
+} % new environment for two column entries
+
+\newenvironment{threecolentry}[3][]{
+    \onecolentry
+    \def\thirdColumn{#3}
+    \setcolumnwidth{1cm, \fill, 4.2cm}
+    \begin{paracol}{3}
+    \raggedright #2 \switchcolumn
+}{
+    \switchcolumn \raggedleft \thirdColumn
+    \end{paracol}
+    \endonecolentry
+} % new environment for three column entries
 
 \newenvironment{header}{
-        \setlength{\topsep}{0pt}\par\kern\topsep\centering\color{primaryColor}\linespread{1.5}
-    }{
-        \par\kern\topsep
-    } % new environment for the header
+    \setlength{\topsep}{0pt}\par\kern\topsep\centering\color{primaryColor}\linespread{1.5}
+}{
+    \par\kern\topsep
+} % new environment for the header
 
 \newcommand{\placelastupdatedtext}{% \placetextbox{<horizontal pos>}{<vertical pos>}{<stuff>}
   \AddToShipoutPictureFG*{% Add <stuff> to current page foreground
@@ -130,16 +155,3 @@
 \let\hrefWithoutArrow\href
  % new command for external links:
 \renewcommand{\href}[2]{\hrefWithoutArrow{#1}{\mbox{\ifthenelse{\equal{#2}{}}{ }{#2 }\raisebox{.15ex}{\footnotesize \faExternalLink*}}}}
-
-\let\originalTabularx\tabularx
-\let\originalEndTabularx\endtabularx
-
-\renewenvironment{tabularx}{\bgroup\centering\originalTabularx}{\originalEndTabularx\par\egroup}
-
-% For TextEntrys (see https://tex.stackexchange.com/a/600/287984):
-\def\changemargin#1#2{\list{}{\rightmargin#2\leftmargin#1\topsep=0pt\itemsep=0pt\parsep=0pt\parskip=0pt\labelwidth=0pt\itemindent=0pt\labelsep=0pt}\item[]}
-\let\endchangemargin=\endlist 
-
-% Ensure that generate pdf is machine readable/ATS parsable
-\input{glyphtounicode}
-\pdfgentounicode=1
