@@ -6,7 +6,7 @@ from .. import LaTeXDimension
 
 
 class ModerncvThemeOptions(pydantic.BaseModel):
-    """This class is the data model of the theme options for the moderncv theme."""
+    """This class is the data model of the theme options for the `moderncv` theme."""
 
     model_config = pydantic.ConfigDict(extra="forbid")
 
