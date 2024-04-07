@@ -168,12 +168,12 @@ def generate_entry_figures():
     """Generate an image for each entry type and theme."""
     # Generate PDF figures for each entry type and theme
     entries = {
-        # "education_entry": dm.EducationEntry(**education_entry),
-        # "experience_entry": dm.ExperienceEntry(**experience_entry),
-        # "normal_entry": dm.NormalEntry(**normal_entry),
-        # "publication_entry": dm.PublicationEntry(**publication_entry),
-        # "one_line_entry": dm.OneLineEntry(**one_line_entry),
-        # "text_entry": f"{text_entry}",
+        "education_entry": dm.EducationEntry(**education_entry),
+        "experience_entry": dm.ExperienceEntry(**experience_entry),
+        "normal_entry": dm.NormalEntry(**normal_entry),
+        "publication_entry": dm.PublicationEntry(**publication_entry),
+        "one_line_entry": dm.OneLineEntry(**one_line_entry),
+        "text_entry": f"{text_entry}",
         "bullet_entry": dm.BulletEntry(**bullet_entry),
     }
     themes = dm.available_themes
