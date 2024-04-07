@@ -2,15 +2,17 @@
 
 % Packages:
 \usepackage[
-        ignoreheadfoot, % set margins without considering header and footer
-        top=2 cm, % seperation between body and page edge from the top
-        bottom=2 cm, % seperation between body and page edge from the bottom
-        left=2 cm, % seperation between body and page edge from the left
-        right=2 cm, % seperation between body and page edge from the right
-        footskip=1.0 cm, % seperation between body and footer
-        % showframe % for debugging 
-    ]{geometry} % for adjusting page geometry
+    ignoreheadfoot, % set margins without considering header and footer
+    top=2 cm, % seperation between body and page edge from the top
+    bottom=2 cm, % seperation between body and page edge from the bottom
+    left=2 cm, % seperation between body and page edge from the left
+    right=2 cm, % seperation between body and page edge from the right
+    footskip=1.0 cm, % seperation between body and footer
+    % showframe % for debugging 
+]{geometry} % for adjusting page geometry
 \usepackage{titlesec} % for customizing section titles
+\usepackage{tabularx} % for making tables with fixed width columns
+\usepackage{array} % tabularx requires this
 \usepackage[dvipsnames]{xcolor} % for coloring text
 \definecolor{primaryColor}{RGB}{0, 79, 144} % define primary color
 \usepackage{enumitem} % for customizing lists
@@ -26,14 +28,25 @@
 \usepackage{calc} % for calculating lengths
 \usepackage{bookmark} % for bookmarks
 \usepackage{lastpage} % for getting the total number of pages
-% \usepackage{charter} % for using charter font
-\usepackage{ifthen}
+\usepackage{changepage} % for one column entries (adjustwidth environment)
+\usepackage{paracol} % for two and three column entries
+\usepackage{ifthen} % for conditional statements
+\usepackage{needspace} % for avoiding page brake right after the section title
+\usepackage{charter} % for using charter font
+
+% Ensure that generate pdf is machine readable/ATS parsable:
+\ifpdf
+    \input{glyphtounicode}
+    \pdfgentounicode=1
+\fi
 
 % Some settings:
 \pagestyle{empty} % no header or footer
 \setcounter{secnumdepth}{0} % no section numbering
 \setlength{\parindent}{0pt} % no indentation
 \setlength{\topskip}{0pt} % no top skip
+\setlength{\columnsep}{0.15cm} % set column seperation
+
 \makeatletter
 \let\ps@customFooterStyle\ps@plain % Copy the plain style to customFooterStyle
 \patchcmd{\ps@customFooterStyle}{\thepage}{
@@ -42,42 +55,76 @@
 \makeatother
 \pagestyle{customFooterStyle}
 
-\titleformat{\section}{\bfseries\large}{}{0pt}{}[\vspace{1pt}\titlerule]
+\titleformat{\section}{\needspace{4\baselineskip}\bfseries\large}{}{0pt}{}[\vspace{1pt}\titlerule]
 
 \titlespacing{\section}{
-        % left space:
-        0pt
-    }{
-        % top space:
-        0.3 cm
-    }{
-        % bottom space:
-        0.2 cm
-    } % section title spacing
+    % left space:
+    0pt
+}{
+    % top space:
+    0.3 cm
+}{
+    % bottom space:
+    0.2 cm
+} % section title spacing
 
-  \renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
+\renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
 \newenvironment{highlights}{
-        \begin{itemize}[
-                topsep=0pt,
-                partopsep=0pt,
-                itemsep=0pt,
-                % after=\vspace{-1\baselineskip},
-                leftmargin=10pt
-            ]
+    \begin{itemize}[
+        topsep=0.10 cm,
+        parsep=0.10 cm,
+        partopsep=0pt,
+        itemsep=0pt,
+        leftmargin=0 cm + 10pt
+    ]
+}{
+    \end{itemize}
+} % new environment for highlights
+
+
+\newenvironment{onecolentry}{
+    \begin{adjustwidth}{
+        0 cm + 0.00001 cm
     }{
-        \end{itemize}
-    } % new environment for highlights
+        0 cm + 0.00001 cm
+    }
+}{
+    \end{adjustwidth}
+} % new environment for one column entries
+
+\newenvironment{twocolentry}[2][]{
+    \onecolentry
+    \def\secondColumn{#2}
+    \setcolumnwidth{\fill, 4.2cm}
+    \begin{paracol}{2}
+}{
+    \switchcolumn \raggedleft \secondColumn
+    \end{paracol}
+    \endonecolentry
+} % new environment for two column entries
+
+\newenvironment{threecolentry}[3][]{
+    \onecolentry
+    \def\thirdColumn{#3}
+    \setcolumnwidth{1cm, \fill, 4.2cm}
+    \begin{paracol}{3}
+    \raggedright #2 \switchcolumn
+}{
+    \switchcolumn \raggedleft \thirdColumn
+    \end{paracol}
+    \endonecolentry
+} % new environment for three column entries
 
 \newenvironment{header}{
-        \setlength{\topsep}{0pt}\par\kern\topsep\centering\linespread{1.5}
-    }{
-        \par\kern\topsep
-    } % new environment for the header
+    \setlength{\topsep}{0pt}\par\kern\topsep\centering\linespread{1.5}
+}{
+    \par\kern\topsep
+} % new environment for the header
 
 \newcommand{\placelastupdatedtext}{% \placetextbox{<horizontal pos>}{<vertical pos>}{<stuff>}
   \AddToShipoutPictureFG*{% Add <stuff> to current page foreground
     \put(
-        \LenToUnit{\paperwidth-2 cm+0.05cm},
+        \LenToUnit{\paperwidth-2 cm-0 cm+0.05cm},
         \LenToUnit{\paperheight-1.0 cm}
     ){\vtop{{\null}\makebox[0pt][c]{
         \small\color{gray}\textit{Last updated in January 2024}\hspace{\widthof{Last updated in January 2024}}
@@ -89,10 +136,6 @@
 \let\hrefWithoutArrow\href
  % new command for external links:
 \renewcommand{\href}[2]{\hrefWithoutArrow{#1}{\mbox{\ifthenelse{\equal{#2}{}}{ }{#2 }\raisebox{.15ex}{\footnotesize \faExternalLink*}}}}
-
-% Ensure that generate pdf is machine readable/ATS parsable
-\input{glyphtounicode}
-\pdfgentounicode=1
 
 \begin{document}
     \placelastupdatedtext
@@ -107,7 +150,7 @@
         \hspace*{0.5 cm}
         \mbox{\hrefWithoutArrow{mailto:johndoe@example.com}{\color{black}{\small\faEnvelope[regular]}\hspace*{0.13cm}johndoe@example.com}}
         \hspace*{0.5 cm}
-        \mbox{{\small\faMapMarker*}\hspace*{0.13cm}Istanbul, Turkey}
+        \mbox{\color{black}{\small\faMapMarker*}\hspace*{0.13cm}Istanbul, Turkey}
         \hspace*{0.5 cm}
         \mbox{\hrefWithoutArrow{https://example.com/}{\color{black}{\small\faLink}\hspace*{0.13cm}example.com}}
         \hspace*{0.5 cm}
@@ -129,313 +172,407 @@
     \section{Text Entries}
 
         
-        My Text Entry with some \textbf{markdown} and \href{https://example.com}{links}!
+        \begin{onecolentry}
+            This is an example resume to showcase the capabilities of the open-source LaTeX CV generator, \href{https://github.com/sinaatalay/rendercv}{RenderCV}. A substantial part of the content is taken from \href{https://www.careercup.com/resume}{here}, where a \textit{clean and tidy CV} pattern is proposed by \textbf{Gayle L. McDowell}.
+        \end{onecolentry}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            This is an example resume to showcase the capabilities of the open-source LaTeX CV generator, \href{https://github.com/sinaatalay/rendercv}{RenderCV}. A substantial part of the content is taken from \href{https://www.careercup.com/resume}{here}, where a \textit{clean and tidy CV} pattern is proposed by \textbf{Gayle L. McDowell}.
+        \end{onecolentry}
 
-        My Text Entry with some \textbf{markdown} and \href{https://example.com}{links}!
+        \vspace{0.1 cm}
 
-
-        \vspace{8pt}
-
-        My Text Entry with some \textbf{markdown} and \href{https://example.com}{links}!
-
+        \begin{onecolentry}
+            This is an example resume to showcase the capabilities of the open-source LaTeX CV generator, \href{https://github.com/sinaatalay/rendercv}{RenderCV}. A substantial part of the content is taken from \href{https://www.careercup.com/resume}{here}, where a \textit{clean and tidy CV} pattern is proposed by \textbf{Gayle L. McDowell}.
+        \end{onecolentry}
 
 
     
     \section{Bullet Entries}
 
-        $\vcenter{\hbox{\small$\bullet$}}$ My Bullet Entry with some \textbf{markdown} and \href{https://example.com}{links}!
+        
+        \begin{onecolentry}
+            \textbullet \hspace{3pt} My Bullet Entry with some \textbf{markdown} and \href{https://example.com}{links}!
+        \end{onecolentry}
 
+        \vspace{0.1 cm}
 
-        $\vcenter{\hbox{\small$\bullet$}}$ My Bullet Entry with some \textbf{markdown} and \href{https://example.com}{links}!
-
+        \begin{onecolentry}
+            \textbullet \hspace{3pt} My Bullet Entry with some \textbf{markdown} and \href{https://example.com}{links}!
+        \end{onecolentry}
 
 
     
     \section{Publication Entries}
 
         
-        \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils} -- Sept. 2021
-        \begin{highlights}
-            \item \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname}\end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils}
 
-        \vspace{8pt}
+            \vspace{0.10 cm}
 
-        \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils} -- Sept. 2021
-        \begin{highlights}
-            \item \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname} \item \href{https://doi.org/10.1109/TASC.2023.3340648}{10.1109/TASC.2023.3340648}\end{highlights}
+            \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname}
+        \end{twocolentry}
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils} -- Sept. 2021
-        \begin{highlights}
-            \item \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname} \item IEEE Transactions on Applied Superconductivity\end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils}
 
-        \vspace{8pt}
+            \vspace{0.10 cm}
 
-        \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils} -- Sept. 2021
-        \begin{highlights}
-            \item \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname} \item \href{https://doi.org/10.1109/TASC.2023.3340648}{10.1109/TASC.2023.3340648} (IEEE Transactions on Applied Superconductivity)\end{highlights}
+            \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname}
+            \vspace{0.10 cm}
+
+        \href{https://doi.org/10.1109/TASC.2023.3340648}{10.1109/TASC.2023.3340648}\end{twocolentry}
+
+        \vspace{0.1 cm}
+
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils}
+
+            \vspace{0.10 cm}
+
+            \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname}
+            \vspace{0.10 cm}
+
+        IEEE Transactions on Applied Superconductivity\end{twocolentry}
+
+        \vspace{0.1 cm}
+
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils}
+
+            \vspace{0.10 cm}
+
+            \mbox{J. Doe}, \mbox{\textbf{H. Tom}}, \mbox{S. Doe}, \mbox{A. Andsurname}
+            \vspace{0.10 cm}
+
+        \href{https://doi.org/10.1109/TASC.2023.3340648}{10.1109/TASC.2023.3340648} (IEEE Transactions on Applied Superconductivity)\end{twocolentry}
 
 
     
     \section{Experience Entries}
 
         
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill 
+        \begin{onecolentry}
+            \textbf{Software Engineer}, Some \textbf{Company}\end{onecolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{onecolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill 
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Jan. 2024
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill 
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Jan. 2024
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}\end{twocolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2015 to present
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{twocolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Jan. 2024
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2015 to present
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Jan. 2024
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
-
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2015 to present
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Software Engineer}, Some \textbf{Company} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
 
@@ -443,514 +580,626 @@
     \section{Education Entries}
 
         
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill 
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{onecolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{onecolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill 
 
+        \vspace{0.1 cm}
 
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{onecolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{twocolentry}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Jan. 2024
 
+        \vspace{0.1 cm}
 
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{onecolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill 
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Jan. 2024
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill 
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{twocolentry}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Jan. 2024
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2015 to present
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Jan. 2024
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Jan. 2024
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill 
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2015 to present
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Jan. 2024
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Jan. 2024
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering\end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey\end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Jan. 2024
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
-
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2015 to present
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, Mechanical Engineering \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2015 to present
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{Boğaziçi University}, BS in Mechanical Engineering -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
 
@@ -958,258 +1207,314 @@
     \section{Normal Entries}
 
         
-        \textbf{My Project} \hfill 
+        \begin{onecolentry}
+            \textbf{My Project}\end{onecolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{My Project} -- Istanbul, Turkey\end{onecolentry}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill 
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project}\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{My Project}\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{My Project} \hfill Jan. 2024
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
-        \textbf{My Project} \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project} -- Istanbul, Turkey\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} \hfill 
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{My Project} -- Istanbul, Turkey\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey\end{twocolentry}
 
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{onecolentry}
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{onecolentry}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Jan. 2024
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project}\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}\end{twocolentry}
 
-        \textbf{My Project} \hfill Sept. 2015 to present
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{My Project} \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project} -- Istanbul, Turkey\end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey\end{twocolentry}
 
-        \textbf{My Project} \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} \hfill Jan. 2024
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey\end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{My Project} \hfill Sept. 2021
+        \begin{twocolentry}{
+            Jan. 2024
+        }
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2015 to present
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2015 to present
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey\end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Jan. 2024
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2015 to present
+        }
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
-        \vspace{8pt}
+        \vspace{0.1 cm}
 
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
 
+        \vspace{0.1 cm}
 
-        \vspace{8pt}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \textbf{My Project} \hfill Sept. 2021
 
+        \vspace{0.1 cm}
 
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project}    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
-        \vspace{8pt}
 
-        \textbf{My Project} \hfill Sept. 2015 to present
+        \vspace{0.1 cm}
 
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
-
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2015 to present
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
-
-
-        \vspace{8pt}
-
-        \textbf{My Project} -- Istanbul, Turkey \hfill Sept. 2021
-
-        \begin{highlights}
-        \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
-        \item Did that.
-        \end{highlights}
+        \begin{twocolentry}{
+            Sept. 2021
+        }
+            \textbf{My Project} -- Istanbul, Turkey    \begin{highlights}
+                \item Did \textit{this} and this is a \textbf{bold} \href{https://example.com}{link}.
+                \item Did that.
+            \end{highlights}
+        \end{twocolentry}
 
 
 
@@ -1217,8 +1522,9 @@
     \section{One Line Entries}
 
         
-        \textbf{Pro\textnormal{gram}ming:} Python, C++, JavaScript, MATLAB
-
+        \begin{onecolentry}
+            \textbf{Pro\textnormal{gram}ming:} Python, C++, JavaScript, MATLAB
+        \end{onecolentry}
 
 
     
