@@ -6,7 +6,7 @@ from .. import ThemeOptions
 
 
 class ClassicThemeOptions(ThemeOptions):
-    """This class is the data model of the theme options for the classic theme."""
+    """This class is the data model of the theme options for the `classic` theme."""
 
     theme: Literal["classic"]
     show_timespan_in: list[str] = pydantic.Field(
