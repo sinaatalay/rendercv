@@ -25,7 +25,7 @@ import rendercv.renderer as r
 # reference files with the latest output.
 update_testdata = False
 
-# copy sample entries from docs/generate_entry_figures_and_examples.py:
+# copy sample entries from docs/update_rendercv_files.py:
 education_entry_dictionary = {
     "institution": "Boğaziçi University",
     "location": "Istanbul, Turkey",
@@ -81,9 +81,7 @@ one_line_entry_dictionary = {
 }
 
 bullet_entry_dictionary = {
-    "bullet": (
-        "My Bullet Entry with some **markdown** and [links](https://example.com)!"
-    ),
+    "bullet": "This is a bullet entry.",
 }
 
 
@@ -126,7 +124,11 @@ def bullet_entry() -> dict[str, str]:
 @pytest.fixture
 def text_entry() -> str:
     """Return a sample text entry."""
-    return "My Text Entry with some **markdown** and [links](https://example.com)!"
+    return (
+        "This is a *TextEntry*. It is only a text and can be useful for sections like"
+        " **Summary**. To showcase the TextEntry completely, this sentence is added,"
+        " but it doesn't contain any information."
+    )
 
 
 @pytest.fixture

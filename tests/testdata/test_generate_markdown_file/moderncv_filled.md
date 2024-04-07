@@ -14,16 +14,16 @@
 
 # Text Entries
 
-My Text Entry with some **markdown** and [links](https://example.com)!
+This is a *TextEntry*. It is only a text and can be useful for sections like **Summary**. To showcase the TextEntry completely, this sentence is added, but it doesn't contain any information.
 
-My Text Entry with some **markdown** and [links](https://example.com)!
+This is a *TextEntry*. It is only a text and can be useful for sections like **Summary**. To showcase the TextEntry completely, this sentence is added, but it doesn't contain any information.
 
-My Text Entry with some **markdown** and [links](https://example.com)!
+This is a *TextEntry*. It is only a text and can be useful for sections like **Summary**. To showcase the TextEntry completely, this sentence is added, but it doesn't contain any information.
 
 # Bullet Entries
 
-- My Bullet Entry with some **markdown** and [links](https://example.com)!
-- My Bullet Entry with some **markdown** and [links](https://example.com)!
+- This is a bullet entry.
+- This is a bullet entry.
 # Publication Entries
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 
