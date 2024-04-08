@@ -46,13 +46,8 @@ cv:
 
 And then produces these PDFs and their $\LaTeX$ code (click on images to preview PDFs):
 
-| `classic` theme            | `sb2nov` theme   |
-|----------------------------|------------------|
-|[![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ClassicTheme_CV.pdf)|[![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_Sb2novTheme_CV.pdf)|
-
-| `moderncv` theme | `engineeringresumes` theme |
-|----------------------------|------------------|
-|[![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ModerncvTheme_CV.pdf)|[![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf)|
+|[![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ClassicTheme_CV.pdf)|[![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_Sb2novTheme_CV.pdf)|[![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ModerncvTheme_CV.pdf)|[![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf)|
+|-|-|-|-|
 
 
 It also generates an HTML file so that the content can be pasted into Grammarly for spell-checking:
