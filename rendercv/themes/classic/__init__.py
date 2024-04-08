@@ -2,7 +2,30 @@ from typing import Literal
 
 import pydantic
 
-from .. import ThemeOptions
+from .. import ThemeOptions, EntryAreaMargins, Margins, LaTeXDimension
+
+
+class EntryAreaMarginsForClassic(EntryAreaMargins):
+    """This class is a data model for the entry area margins."""
+
+    education_degree_width: LaTeXDimension = pydantic.Field(
+        default="1 cm",
+        title="Date and Location Column Width",
+        description=(
+            "The width of the degree column in EducationEntry. The default value is"
+            " 1 cm."
+        ),
+    )
+
+
+class MarginsForClassic(Margins):
+    """This class is a data model for the margins."""
+
+    entry_area: EntryAreaMarginsForClassic = pydantic.Field(
+        default=EntryAreaMarginsForClassic(),
+        title="Entry Area Margins",
+        description="Entry area margins.",
+    )
 
 
 class ClassicThemeOptions(ThemeOptions):
