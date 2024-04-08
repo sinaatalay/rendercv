@@ -1347,6 +1347,8 @@ def generate_json_schema() -> dict[str, Any]:
         dict: The JSON schema of RenderCV.
     """
 
+    # def loop_through_pro
+
     class RenderCVSchemaGenerator(pydantic.json_schema.GenerateJsonSchema):
         def generate(self, schema, mode="validation"):  # type: ignore
             json_schema = super().generate(schema, mode=mode)
@@ -1361,7 +1363,7 @@ def generate_json_schema() -> dict[str, Any]:
 
             # Loop through $defs and remove docstring descriptions and fix optional
             # fields
-            for _, value in json_schema["$defs"].items():
+            for object_name, value in json_schema["$defs"].items():
                 # Don't allow additional properties
                 value["additionalProperties"] = False
 
@@ -1372,14 +1374,22 @@ def generate_json_schema() -> dict[str, Any]:
                 # don't want to provide them.
                 null_type_dict = {}
                 null_type_dict["type"] = "null"
-                for field in value["properties"].values():
+                for field_name, field in value["properties"].items():
                     if "anyOf" in field:
                         if (
                             len(field["anyOf"]) == 2
                             and null_type_dict in field["anyOf"]
                         ):
-                            field["allOf"] = [field["anyOf"][0]]
+                            field["oneOf"] = [field["anyOf"][0]]
                             del field["anyOf"]
+
+                            # for sections field of CurriculumVitae:
+                            if "additionalProperties" in field["oneOf"][0]:
+                                field["oneOf"][0]["additionalProperties"]["oneOf"] = (
+                                    field["oneOf"][0]["additionalProperties"]["anyOf"]
+                                )
+                                del field["oneOf"][0]["additionalProperties"]["anyOf"]
+
                         else:
                             field["oneOf"] = field["anyOf"]
                             del field["anyOf"]
