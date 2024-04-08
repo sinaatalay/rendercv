@@ -1294,7 +1294,7 @@ def get_a_sample_data_model(
                     name,
                     "Jane Derry",
                     "Harry Tom",
-                    "Anotherfirstname Andsurname",
+                    "Frodo Baggins",
                 ],
                 date="2004-01",
                 doi="10.1109/TASC.2023.3340648",
