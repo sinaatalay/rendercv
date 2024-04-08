@@ -897,6 +897,64 @@ class CurriculumVitae(RenderCVBaseModel):
     )
 
     @functools.cached_property
+    def connections(self) -> list[dict[str, str]]:
+        """Return all the connections of the person."""
+        connections: list[dict[str, str]] = []
+
+        if self.email is not None:
+            connections.append(
+                {
+                    "latex_icon": "\\faEnvelope[regular]",
+                    "url": f"mailto:{self.email}",
+                    "clean_url": self.email,
+                    "placeholder": self.email,
+                }
+            )
+        if self.phone is not None:
+            phone_placeholder = self.phone.replace("tel:", "").replace("-", " ")
+            connections.append(
+                {
+                    "latex_icon": "\\faPhone*",
+                    "url": f"{self.phone}",
+                    "clean_url": phone_placeholder,
+                    "placeholder": phone_placeholder,
+                }
+            )
+
+        if self.website is not None:
+            website_placeholder = str(self.website).replace("https://", "").rstrip("/")
+            connections.append(
+                {
+                    "latex_icon": "\\faLink",
+                    "url": self.website,
+                    "clean_url": website_placeholder,
+                    "placeholder": website_placeholder,
+                }
+            )
+
+        if self.social_networks is not None:
+            icon_dictionary = {
+                "LinkedIn": "\\faLinkedinIn",
+                "GitHub": "\\faGithub",
+                "Instagram": "\\faInstagram",
+                "Mastodon": "\\faMastodon",
+                "Orcid": "\\faOrcid",
+                "Twitter": "\\faTwitter",
+            }
+            for social_network in self.social_networks:
+                clean_url = social_network.url.replace("https://", "").rstrip("/")
+                connections.append(
+                    {
+                        "latex_icon": icon_dictionary[social_network.network],
+                        "url": social_network.url,
+                        "clean_url": clean_url,
+                        "placeholder": social_network.username,
+                    }
+                )
+
+        return connections
+
+    @functools.cached_property
     def sections(self) -> list[SectionBase]:
         """Return all the sections of the CV with their titles."""
         sections: list[SectionBase] = []
