@@ -317,7 +317,7 @@ def update_index():
 
 
 if __name__ == "__main__":
-    # generate_entry_figures()
+    generate_entry_figures()
     generate_examples()
     generate_schema()
     update_index()
