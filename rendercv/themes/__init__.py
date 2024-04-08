@@ -235,6 +235,15 @@ class ThemeOptions(pydantic.BaseModel):
             " in the header. The default value is true."
         ),
     )
+    last_updated_date_style: str = pydantic.Field(
+        default="Last updated in TODAY",
+        title="Last Updated Date Style",
+        description=(
+            "The style of the last updated date. The following placeholder can be"
+            " used:\n- TODAY: Today's month and year (April 2024)\nThe default value is"
+            " Last updated in TODAY."
+        ),
+    )
     header_font_size: LaTeXDimension = pydantic.Field(
         default="30 pt",
         title="Header Font Size",
@@ -243,7 +252,9 @@ class ThemeOptions(pydantic.BaseModel):
             " 30 pt."
         ),
     )
-    text_alignment: Literal["left-aligned", "justified", "justified-with-no-hyphenation"] = pydantic.Field(
+    text_alignment: Literal[
+        "left-aligned", "justified", "justified-with-no-hyphenation"
+    ] = pydantic.Field(
         default="justified",
         title="Text Alignment",
         description="The alignment of the text. The default value is justified.",
