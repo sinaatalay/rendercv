@@ -4,4 +4,4 @@ RenderCV is a $\\LaTeX$ CV generator from a JSON/YAML input file. The primary mo
 behind the RenderCV is to allow the separation between the content and design of a CV.
 """
 
-__version__ = "1.6"
+__version__ = "1.7"
