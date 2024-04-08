@@ -84,6 +84,39 @@ class EngineeringresumesThemeOptions(ThemeOptions):
             " 25 pt."
         ),
     )
+    color: pydantic_color.Color = pydantic.Field(
+        default="rgb(0,0,0)",
+        validate_default=True,
+        title="Primary Color",
+        description=(
+            "The primary color of the theme. \nThe color can be specified either with"
+            " their [name](https://www.w3.org/TR/SVG11/types.html#ColorKeywords),"
+            " hexadecimal value, RGB value, or HSL value. The default value is"
+            " rgb(0,0,0)."
+        ),
+        examples=["Black", "7fffd4", "rgb(0,79,144)", "hsl(270, 60%, 70%)"],
+    )
+    disable_page_numbering: bool = pydantic.Field(
+        default=True,
+        title="Disable Page Numbering",
+        description=(
+            "If this option is set to true, then the page numbering will be disabled."
+            " The default value is true."
+        ),
+    )
+    show_last_updated_date: bool = pydantic.Field(
+        default=False,
+        title="Show Last Updated Date",
+        description=(
+            "If this option is set to true, then the last updated date will be shown"
+            " in the header. The default value is false."
+        ),
+    )
+    text_alignment: Literal["left-aligned", "justified", "justified-with-no-hyphenation"] = pydantic.Field(
+        default="left-aligned",
+        title="Text Alignment",
+        description="The alignment of the text. The default value is left-aligned.",
+    )
     margins: MarginsForEngineeringresumes = pydantic.Field(
         default=MarginsForEngineeringresumes(),
         title="Margins",
