@@ -257,6 +257,10 @@ def generate_examples():
     """Generate example YAML and PDF files."""
     examples_directory_path = pathlib.Path(__file__).parent.parent / "examples"
 
+    # check if the examples directory exists, if not create it
+    if not examples_directory_path.exists():
+        examples_directory_path.mkdir()
+
     os.chdir(examples_directory_path)
     themes = dm.available_themes
     for theme in themes:
@@ -313,7 +317,7 @@ def update_index():
 
 
 if __name__ == "__main__":
-    generate_entry_figures()
+    # generate_entry_figures()
     generate_examples()
     generate_schema()
     update_index()
