@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.6...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.7...HEAD)
 
 <!--
 ### Added
@@ -15,6 +15,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 ### Removed
 -->
+
+## [1.7] - 2024-04-08
+
+### Added
+- The new theme, `engineeringresumes`, is ready to be used now.
+- The `education_degree_width` design option has been added for the `classic` theme.
+- `last_updated_date_style` design option has been added for all the themes except `moderncv`.
+
+### Fixed
+- Highlights can now be broken into multiple pages in the `classic` theme (#47).
+- Some JSON Schema bugs have been fixed.
 
 ## [1.6] - 2024-03-31
 
@@ -176,6 +187,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[1.7]: https://github.com/sinaatalay/rendercv/releases/tag/v1.7
 [1.6]: https://github.com/sinaatalay/rendercv/releases/tag/v1.6
 [1.5]: https://github.com/sinaatalay/rendercv/releases/tag/v1.5
 [1.4]: https://github.com/sinaatalay/rendercv/releases/tag/v1.4
