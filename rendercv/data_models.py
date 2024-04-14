@@ -931,6 +931,15 @@ class CurriculumVitae(RenderCVBaseModel):
                     "placeholder": website_placeholder,
                 }
             )
+        if self.location is not None:
+            connections.append(
+                {
+                    "latex_icon": "\\faMapMarker*",
+                    "url": None,
+                    "clean_url": None,
+                    "placeholder": self.location,
+                }
+            )
 
         if self.social_networks is not None:
             icon_dictionary = {
