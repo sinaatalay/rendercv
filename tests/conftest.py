@@ -198,14 +198,14 @@ def return_a_value_for_a_field_type(
         bool: True,
     }
 
-    if type(None) in typing.get_args(field_type):
+    if field in field_dictionary:
+        return field_dictionary[field]
+    elif type(None) in typing.get_args(field_type):
         return return_a_value_for_a_field_type(field, field_type.__args__[0])
     elif typing.get_origin(field_type) == typing.Literal:
         return field_type.__args__[0]
     elif typing.get_origin(field_type) == typing.Union:
         return return_a_value_for_a_field_type(field, field_type.__args__[0])
-    elif field in field_dictionary:
-        return field_dictionary[field]
     elif field_type in field_type_dictionary:
         return field_type_dictionary[field_type]
 
