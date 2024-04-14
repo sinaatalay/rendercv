@@ -61,7 +61,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Some **Company**, Software Engineer
 
-- Jan. 2024 
+- June 2020 
 
 
 ## Some **Company**, Software Engineer
@@ -83,7 +83,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Some **Company**, Software Engineer
 
-- Jan. 2024 
+- June 2020 
 - Istanbul, Turkey 
 
 ## Some **Company**, Software Engineer
@@ -100,75 +100,8 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Some **Company**, Software Engineer
 
-- Sept. 2015 to present 
+- Sept. 2015 to June 2020 
 
-
-## Some **Company**, Software Engineer
-
-- Sept. 2021 
-
-
-## Some **Company**, Software Engineer
-
-- Sept. 2015 to present 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Some **Company**, Software Engineer
-
-- Sept. 2021 
-
-
-## Some **Company**, Software Engineer
-
-- Jan. 2024 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Some **Company**, Software Engineer
-
-- Sept. 2021 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Some **Company**, Software Engineer
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
-
-## Some **Company**, Software Engineer
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Some **Company**, Software Engineer
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Some **Company**, Software Engineer
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Some **Company**, Software Engineer
-
-- Jan. 2024 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Some **Company**, Software Engineer
-
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
 
 ## Some **Company**, Software Engineer
 
@@ -186,6 +119,73 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 - Sept. 2021 
 
+
+## Some **Company**, Software Engineer
+
+- June 2020 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Some **Company**, Software Engineer
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Some **Company**, Software Engineer
+
+- Sept. 2015 to June 2020 
+- Istanbul, Turkey 
+
+## Some **Company**, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Some **Company**, Software Engineer
+
+- Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Some **Company**, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Some **Company**, Software Engineer
+
+- June 2020 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Some **Company**, Software Engineer
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Some **Company**, Software Engineer
+
+- Sept. 2021 
+
+
+## Some **Company**, Software Engineer
+
+- Sept. 2015 to June 2020 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Some **Company**, Software Engineer
+
+- Sept. 2021 
+
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
@@ -203,7 +203,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Some **Company**, Software Engineer
 
-- Sept. 2015 to present 
+- Sept. 2015 to June 2020 
 - Istanbul, Turkey 
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
@@ -260,7 +260,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Boğaziçi University, Mechanical Engineering
 
-- Jan. 2024 
+- June 2020 
 
 
 ## Boğaziçi University, Mechanical Engineering
@@ -287,7 +287,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
-- Jan. 2024 
+- June 2020 
 
 
 ## Boğaziçi University, BS in Mechanical Engineering
@@ -309,7 +309,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Boğaziçi University, Mechanical Engineering
 
-- Jan. 2024 
+- June 2020 
 - Istanbul, Turkey 
 
 ## Boğaziçi University, Mechanical Engineering
@@ -326,133 +326,8 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Boğaziçi University, Mechanical Engineering
 
-- Sept. 2015 to present 
+- Sept. 2015 to June 2020 
 
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2015 to present 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-
-
-## Boğaziçi University, Mechanical Engineering
-
-- Jan. 2024 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Jan. 2024 
-- Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
-
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Jan. 2024 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2021 
-
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-
-## Boğaziçi University, Mechanical Engineering
-
-- Jan. 2024 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
-
-## Boğaziçi University, Mechanical Engineering
-
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
 
 ## Boğaziçi University, Mechanical Engineering
 
@@ -469,6 +344,11 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 ## Boğaziçi University, Mechanical Engineering
 
 - Sept. 2021 
+
+
+## Boğaziçi University, Mechanical Engineering
+
+- June 2020 
 
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
@@ -487,15 +367,8 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
-- Sept. 2021 
+- June 2020 
 - Istanbul, Turkey 
-
-## Boğaziçi University, BS in Mechanical Engineering
-
-- Sept. 2015 to present 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
@@ -504,17 +377,15 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
-- Jan. 2024 
+
 - Istanbul, Turkey 
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
-- Sept. 2021 
-- Istanbul, Turkey 
-- Did *this* and this is a **bold** [link](https://example.com).
-- Did that.
+- Sept. 2015 to June 2020 
+
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
@@ -532,6 +403,11 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 - Sept. 2021 
 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- June 2020 
+
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
@@ -541,6 +417,11 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to June 2020 
+- Istanbul, Turkey 
 
 ## Boğaziçi University, Mechanical Engineering
 
@@ -558,6 +439,11 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 - Sept. 2021 
 - Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- June 2020 
+- Istanbul, Turkey 
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
@@ -572,8 +458,32 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 - Sept. 2021 
 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to June 2020 
+
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to June 2020 
+- Istanbul, Turkey 
 
 ## Boğaziçi University, BS in Mechanical Engineering
 
@@ -583,6 +493,96 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 ## Boğaziçi University, BS in Mechanical Engineering
 
 - Sept. 2015 to present 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- June 2020 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to June 2020 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2015 to June 2020 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, Mechanical Engineering
+
+- Sept. 2021 
+
+- Did *this* and this is a **bold** [link](https://example.com).
+- Did that.
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2021 
+- Istanbul, Turkey 
+
+## Boğaziçi University, BS in Mechanical Engineering
+
+- Sept. 2015 to June 2020 
 - Istanbul, Turkey 
 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
@@ -635,7 +635,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Sept. 2015 to present 
 ## My Project
 
-- Jan. 2024 
+- June 2020 
 ## My Project
 
 - Sept. 2021 
@@ -649,7 +649,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Sept. 2015 to present - Istanbul, Turkey 
 ## My Project
 
-- Jan. 2024 - Istanbul, Turkey 
+- June 2020 - Istanbul, Turkey 
 ## My Project
 
 - Sept. 2021 - Istanbul, Turkey 
@@ -660,7 +660,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## My Project
 
-- Sept. 2015 to present 
+- Sept. 2015 to June 2020 
 ## My Project
 
 - Sept. 2021 
@@ -674,7 +674,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Sept. 2021 
 ## My Project
 
-- Jan. 2024 - Did *this* and this is a **bold** [link](https://example.com).
+- June 2020 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -684,7 +684,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## My Project
 
-- Sept. 2015 to present - Istanbul, Turkey 
+- Sept. 2015 to June 2020 - Istanbul, Turkey 
 ## My Project
 
 - Sept. 2021 - Istanbul, Turkey 
@@ -698,7 +698,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Sept. 2021 - Istanbul, Turkey 
 ## My Project
 
-- Jan. 2024 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
+- June 2020 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -711,7 +711,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Sept. 2021 
 ## My Project
 
-- Sept. 2015 to present - Did *this* and this is a **bold** [link](https://example.com).
+- Sept. 2015 to June 2020 - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
@@ -729,7 +729,7 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Sept. 2021 - Istanbul, Turkey 
 ## My Project
 
-- Sept. 2015 to present - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
+- Sept. 2015 to June 2020 - Istanbul, Turkey - Did *this* and this is a **bold** [link](https://example.com).
 - Did that.
 
 ## My Project
