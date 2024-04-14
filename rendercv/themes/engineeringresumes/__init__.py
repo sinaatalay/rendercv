@@ -1,5 +1,4 @@
 from typing import Literal
-from typing import ClassVar as NotUsedInput
 
 import pydantic
 import pydantic_extra_types.color as pydantic_color
@@ -23,14 +22,12 @@ class EntryAreaMarginsForEngineeringresumes(EntryAreaMargins):
     )
 
     vertical_between: LaTeXDimension = pydantic.Field(
-        default="0.1 cm",
+        default="0.15 cm",
         title="Vertical Margin Between Entry Areas",
         description=(
             "The vertical margin between entry areas. The default value is 0.1 cm."
         ),
     )
-
-    date_and_location_width: NotUsedInput
 
 
 class HighlightsAreaMarginsForEngineeringresumes(HighlightsAreaMargins):
@@ -112,7 +109,9 @@ class EngineeringresumesThemeOptions(ThemeOptions):
             " in the header. The default value is false."
         ),
     )
-    text_alignment: Literal["left-aligned", "justified", "justified-with-no-hyphenation"] = pydantic.Field(
+    text_alignment: Literal[
+        "left-aligned", "justified", "justified-with-no-hyphenation"
+    ] = pydantic.Field(
         default="left-aligned",
         title="Text Alignment",
         description="The alignment of the text. The default value is left-aligned.",
