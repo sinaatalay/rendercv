@@ -236,8 +236,10 @@ def test_if_the_schema_is_the_latest(root_directory_path):
             "",
         ),
         (None, None, "2020-01-01", "Jan. 2020", "2020", ""),
+        (None, None, "2020-01-01", "Jan. 2020", "2020", ""),
         (None, None, None, "", "", ""),
         (None, "2020-01-01", None, "Jan. 2020", "2020", ""),
+        (None, "present", None, "Jan. 2024", "2024", ""),
     ],
 )
 @time_machine.travel("2024-01-01")
