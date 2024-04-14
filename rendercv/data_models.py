@@ -901,6 +901,16 @@ class CurriculumVitae(RenderCVBaseModel):
         """Return all the connections of the person."""
         connections: list[dict[str, str]] = []
 
+        if self.location is not None:
+            connections.append(
+                {
+                    "latex_icon": "\\faMapMarker*",
+                    "url": None,
+                    "clean_url": None,
+                    "placeholder": self.location,
+                }
+            )
+
         if self.email is not None:
             connections.append(
                 {
@@ -910,6 +920,7 @@ class CurriculumVitae(RenderCVBaseModel):
                     "placeholder": self.email,
                 }
             )
+            
         if self.phone is not None:
             phone_placeholder = self.phone.replace("tel:", "").replace("-", " ")
             connections.append(
@@ -929,15 +940,6 @@ class CurriculumVitae(RenderCVBaseModel):
                     "url": self.website,
                     "clean_url": website_placeholder,
                     "placeholder": website_placeholder,
-                }
-            )
-        if self.location is not None:
-            connections.append(
-                {
-                    "latex_icon": "\\faMapMarker*",
-                    "url": None,
-                    "clean_url": None,
-                    "placeholder": self.location,
                 }
             )
 
