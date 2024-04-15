@@ -182,7 +182,7 @@ design:
   header_font_size: 30 pt
   page_numbering_style: NAME - Page PAGE_NUMBER of TOTAL_PAGES
   page_size: a4paper
-  show_last_updated_date: true
+  disable_last_updated_date: false
   text_alignment: justified
   margins: 
     page:

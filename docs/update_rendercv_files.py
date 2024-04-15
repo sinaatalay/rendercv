@@ -186,12 +186,12 @@ def generate_entry_figures():
                 design_dictionary = {
                     "theme": theme,
                     "disable_page_numbering": True,
-                    "show_last_updated_date": False,
+                    "disable_last_updated_date": True,
                 }
                 if theme == "moderncv":
                     # moderncv theme does not support these options:
                     del design_dictionary["disable_page_numbering"]
-                    del design_dictionary["show_last_updated_date"]
+                    del design_dictionary["disable_last_updated_date"]
 
                 # Create the data model with only one section and one entry
                 data_model = dm.RenderCVDataModel(
