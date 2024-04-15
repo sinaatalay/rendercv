@@ -12,7 +12,7 @@ class EntryAreaMarginsForSb2nov(EntryAreaMargins):
         default="0.6 cm",
         title="Width of the Entry Bullet",
         description=(
-            "The width of the bullet for each entry. The default value is 1 cm."
+            "The width of the bullet for each entry. The default value is 0.6 cm."
         ),
     )
 
