@@ -85,10 +85,10 @@ class EntryAreaMargins(pydantic.BaseModel):
     )
 
     date_and_location_width: LaTeXDimension = pydantic.Field(
-        default="4.1 cm",
+        default="4.5 cm",
         title="Date and Location Column Width",
         description=(
-            "The width of the date and location column. The default value is 4.1 cm."
+            "The width of the date and location column. The default value is 4.5 cm."
         ),
     )
 
