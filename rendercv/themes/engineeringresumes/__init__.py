@@ -21,14 +21,6 @@ class EntryAreaMarginsForEngineeringresumes(EntryAreaMargins):
         description="The left margin of entry areas. The default value is 0 cm.",
     )
 
-    vertical_between: LaTeXDimension = pydantic.Field(
-        default="0.15 cm",
-        title="Vertical Margin Between Entry Areas",
-        description=(
-            "The vertical margin between entry areas. The default value is 0.1 cm."
-        ),
-    )
-
 
 class HighlightsAreaMarginsForEngineeringresumes(HighlightsAreaMargins):
     """This class is a data model for the highlights area margins."""
@@ -93,20 +85,28 @@ class EngineeringresumesThemeOptions(ThemeOptions):
         ),
         examples=["Black", "7fffd4", "rgb(0,79,144)", "hsl(270, 60%, 70%)"],
     )
+    disable_external_link_icons: bool = pydantic.Field(
+        default=True,
+        title="Disable External Link Icons",
+        description=(
+            "If this option is set to true, then the external link icons will not be"
+            " shown next to the links. The default value is true."
+        ),
+    )
     disable_page_numbering: bool = pydantic.Field(
         default=True,
         title="Disable Page Numbering",
         description=(
-            "If this option is set to true, then the page numbering will be disabled."
+            "If this option is set to true, then the page numbering will not be shown."
             " The default value is true."
         ),
     )
-    show_last_updated_date: bool = pydantic.Field(
-        default=False,
-        title="Show Last Updated Date",
+    disable_last_updated_date: bool = pydantic.Field(
+        default=True,
+        title="Disable Last Updated Date",
         description=(
-            "If this option is set to true, then the last updated date will be shown"
-            " in the header. The default value is false."
+            "If this option is set to true, then the last updated date will not be"
+            " shown in the header. The default value is true."
         ),
     )
     text_alignment: Literal[
