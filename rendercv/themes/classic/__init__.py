@@ -42,3 +42,8 @@ class ClassicThemeOptions(ThemeOptions):
             " time span will not be shown in any section."
         ),
     )
+    margins: MarginsForClassic = pydantic.Field(
+        default=MarginsForClassic(),
+        title="Margins",
+        description="Page, section title, entry field, and highlights field margins.",
+    )
