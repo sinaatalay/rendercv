@@ -209,11 +209,19 @@ class ThemeOptions(pydantic.BaseModel):
         ),
         examples=["Black", "7fffd4", "rgb(0,79,144)", "hsl(270, 60%, 70%)"],
     )
+    disable_external_link_icons: bool = pydantic.Field(
+        default=False,
+        title="Disable External Link Icons",
+        description=(
+            "If this option is set to true, then the external link icons will not be"
+            " shown next to the links. The default value is false."
+        ),
+    )
     disable_page_numbering: bool = pydantic.Field(
         default=False,
         title="Disable Page Numbering",
         description=(
-            "If this option is set to true, then the page numbering will be disabled."
+            "If this option is set to true, then the page numbering will not be shown."
             " The default value is false."
         ),
     )
@@ -227,12 +235,12 @@ class ThemeOptions(pydantic.BaseModel):
             " NAME - Page PAGE_NUMBER of TOTAL_PAGES."
         ),
     )
-    show_last_updated_date: bool = pydantic.Field(
-        default=True,
-        title="Show Last Updated Date",
+    disable_last_updated_date: bool = pydantic.Field(
+        default=False,
+        title="Disable Last Updated Date",
         description=(
-            "If this option is set to true, then the last updated date will be shown"
-            " in the header. The default value is true."
+            "If this option is set to true, then the last updated date will not be"
+            " shown in the header. The default value is false."
         ),
     )
     last_updated_date_style: str = pydantic.Field(
