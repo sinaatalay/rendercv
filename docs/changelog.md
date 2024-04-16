@@ -28,7 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `sb2nov` theme's $\LaTeX$ code has been changed completly. There are slight changes in the looks.
 - `classic`, `sb2nov`, and `engineeringresumes` use the same $\LaTeX$ code base now.
 - The design option `show_last_updated_date` has been renamed to `disable_last_updated_date` for consistency.
-- Mastodon links now use the original hostnames instead of `https://mastodon.social.`
+- Mastodon links now use the original hostnames instead of `https://mastodon.social/`.
 
 ### Fixed
 - The location is now shown in the header (#54).
