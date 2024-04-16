@@ -182,17 +182,17 @@ def generate_entry_figures():
         # create a temporary directory:
         temporary_directory_path = pathlib.Path(temporary_directory)
         for theme in themes:
+            design_dictionary = {
+                "theme": theme,
+                "disable_page_numbering": True,
+                "disable_last_updated_date": True,
+            }
+            if theme == "moderncv":
+                # moderncv theme does not support these options:
+                del design_dictionary["disable_page_numbering"]
+                del design_dictionary["disable_last_updated_date"]
+    
             for entry_type, entry in entries.items():
-                design_dictionary = {
-                    "theme": theme,
-                    "disable_page_numbering": True,
-                    "disable_last_updated_date": True,
-                }
-                if theme == "moderncv":
-                    # moderncv theme does not support these options:
-                    del design_dictionary["disable_page_numbering"]
-                    del design_dictionary["disable_last_updated_date"]
-
                 # Create the data model with only one section and one entry
                 data_model = dm.RenderCVDataModel(
                     **{
