@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.7...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.8...HEAD)
 
 <!--
 ### Added
@@ -15,6 +15,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 ### Removed
 -->
+
+## [1.8] - 2024-04-16
+
+### Added
+- Horizontal space has been added between entry titles and dates in the `engineeringresumes` theme.
+- The `date_and_location_width` option has been added to the `engineeringresumes` theme.
+- A new design option, `disable_external_link_icons`, has been added.
+
+    
+### Changed
+- `sb2nov` theme's $\LaTeX$ code has been changed completly. There are slight changes in the looks.
+- `classic`, `sb2nov`, and `engineeringresumes` use the same $\LaTeX$ code base now.
+- The design option `show_last_updated_date` has been renamed to `disable_last_updated_date` for consistency.
+- Mastodon links now use the original hostnames instead of `https://mastodon.social.`
+
+### Fixed
+- The location is now shown in the header (#54).
+- The `education_degree_width` option of the `classic` theme has been fixed.
+- Lualatex and xelatex rendering problems have been fixed (#52).
 
 ## [1.7] - 2024-04-08
 
@@ -187,6 +206,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[1.8]: https://github.com/sinaatalay/rendercv/releases/tag/v1.8
 [1.7]: https://github.com/sinaatalay/rendercv/releases/tag/v1.7
 [1.6]: https://github.com/sinaatalay/rendercv/releases/tag/v1.6
 [1.5]: https://github.com/sinaatalay/rendercv/releases/tag/v1.5
