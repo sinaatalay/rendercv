@@ -821,8 +821,8 @@ class SocialNetwork(RenderCVBaseModel):
         if network == "Mastodon":
             if not username.startswith("@"):
                 raise ValueError("Mastodon username should start with '@'!")
-            if username.count("@") > 2:
-                raise ValueError("Mastodon username should contain only two '@'!")
+            if username.count("@") != 2:
+                raise ValueError("Mastodon username should contain two '@'!")
 
         return username
 
@@ -838,15 +838,19 @@ class SocialNetwork(RenderCVBaseModel):
     @functools.cached_property
     def url(self) -> str:
         """Return the URL of the social network."""
-        url_dictionary = {
-            "LinkedIn": "https://linkedin.com/in/",
-            "GitHub": "https://github.com/",
-            "Instagram": "https://instagram.com/",
-            "Orcid": "https://orcid.org/",
-            "Mastodon": "https://mastodon.social/",
-            "Twitter": "https://twitter.com/",
-        }
-        url = url_dictionary[self.network] + self.username
+        if self.network == "Mastodon":
+            # split domain and username
+            dummy, username, domain = self.username.split("@")
+            url = f"https://{domain}/@{username}"
+        else:
+            url_dictionary = {
+                "LinkedIn": "https://linkedin.com/in/",
+                "GitHub": "https://github.com/",
+                "Instagram": "https://instagram.com/",
+                "Orcid": "https://orcid.org/",
+                "Twitter": "https://twitter.com/",
+            }
+            url = url_dictionary[self.network] + self.username
 
         return url
 
@@ -920,7 +924,7 @@ class CurriculumVitae(RenderCVBaseModel):
                     "placeholder": self.email,
                 }
             )
-            
+
         if self.phone is not None:
             phone_placeholder = self.phone.replace("tel:", "").replace("-", " ")
             connections.append(
