@@ -323,7 +323,11 @@ def test_invalid_doi(publication_entry, doi):
 
 @pytest.mark.parametrize(
     "network, username",
-    [("Mastodon", "invalidmastodon"), ("Mastodon", "@inva@l@id")],
+    [
+        ("Mastodon", "invalidmastodon"),
+        ("Mastodon", "@inva@l@id"),
+        ("Mastodon", "@invalid@ne<>twork.com"),
+    ],
 )
 def test_invalid_social_networks(network, username):
     with pytest.raises(pydantic.ValidationError):
@@ -338,7 +342,7 @@ def test_invalid_social_networks(network, username):
         ("Instagram", "myusername", "https://instagram.com/myusername"),
         ("Orcid", "myusername", "https://orcid.org/myusername"),
         ("Twitter", "myusername", "https://twitter.com/myusername"),
-        ("Mastodon", "@myusername", "https://mastodon.social/@myusername"),
+        ("Mastodon", "@myusername@test.org", "https://test.org/@myusername"),
     ],
 )
 def test_social_network_url(network, username, expected_url):
