@@ -8,7 +8,7 @@
 - GitHub: [johndoe](https://github.com/johndoe)
 - Instagram: [johndoe](https://instagram.com/johndoe)
 - Orcid: [0000-0000-0000-0000](https://orcid.org/0000-0000-0000-0000)
-- Mastodon: [@johndoe@example](https://mastodon.social/@johndoe@example)
+- Mastodon: [@johndoe@example](https://example/@johndoe)
 - Twitter: [johndoe](https://twitter.com/johndoe)
 
 
