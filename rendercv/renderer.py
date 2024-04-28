@@ -733,7 +733,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
     # we need to add the current working directory because custom themes might be used.
     themes_directory = pathlib.Path(__file__).parent / "themes"
     environment = jinja2.Environment(
-        loader=jinja2.FileSystemLoader([os.getcwd(), themes_directory]),
+        loader=jinja2.FileSystemLoader([pathlib.Path.cwd(), themes_directory]),
         trim_blocks=True,
         lstrip_blocks=True,
     )
@@ -846,7 +846,7 @@ def copy_theme_files_to_output_directory(
         else:
             # Then it means the theme is a custom theme. If theme_directory is not given
             # as an argument, then look for the theme in the current working directory.
-            theme_directory_path = pathlib.Path(os.getcwd()) / theme_name
+            theme_directory_path = pathlib.Path(pathlib.Path.cwd()) / theme_name
 
             if not theme_directory_path.is_dir():
                 raise FileNotFoundError(
