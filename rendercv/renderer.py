@@ -10,7 +10,6 @@ distribution.
 
 import subprocess
 import re
-import os
 import pathlib
 import importlib.resources
 import shutil
@@ -21,6 +20,8 @@ from typing import Optional, Any
 
 import jinja2
 import markdown
+import fitz
+
 
 from . import data_models as dm
 
@@ -986,6 +987,32 @@ def latex_to_pdf(
         )
 
     return pdf_file_path
+
+
+def pdf_to_pngs(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
+    """Convert the given PDF file to PNG files.
+
+    Args:
+        pdf_file_path (pathlib.Path): The path to the PDF file to convert.
+    Returns:
+        list[pathlib.Path]: The paths to the generated PNG files.
+    """
+    # check if the file exists:
+    if not pdf_file_path.is_file():
+        raise FileNotFoundError(f"The file {pdf_file_path} doesn't exist!")
+
+    # convert the PDF to PNG:
+    png_directory = pdf_file_path.parent
+    png_file_name = pdf_file_path.stem
+    png_files = []
+    pdf = fitz.open(pdf_file_path)  # open the PDF file
+    for page in pdf:  # iterate the pages
+        image = page.get_pixmap()
+        png_file_path = png_directory / f"{png_file_name}_page{page.number+1}.png"
+        image.save(png_file_path)
+        png_files.append(png_file_path)
+
+    return png_files
 
 
 def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
