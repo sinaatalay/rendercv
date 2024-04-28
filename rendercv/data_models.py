@@ -1187,6 +1187,13 @@ def get_a_sample_data_model(
     Returns:
         RenderCVDataModel: A sample data model.
     """
+    # check if the theme is valid:
+    if theme not in available_themes:
+        raise ValueError(
+            f"The theme should be one of the following: {", ".join(available_themes)}!"
+            f" The provided theme is \"{theme}\"."
+        )
+
     name = name.encode().decode("unicode-escape")
     sections = {
         "summary": [
@@ -1393,12 +1400,6 @@ def get_a_sample_data_model(
         ],
         sections=sections,  # type: ignore
     )
-
-    if theme not in available_themes:
-        raise ValueError(
-            f"The theme should be one of the following: {available_themes}! The"
-            f" provided theme is {theme}."
-        )
 
     if theme == "classic":
         design = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
