@@ -2,6 +2,7 @@ import math
 import shutil
 import copy
 import pathlib
+import os
 
 import pytest
 import jinja2
@@ -436,10 +437,10 @@ def test_copy_theme_files_to_output_directory_custom_theme(
         )
 
         # create reference_directory_path:
+        os.chdir(dummytheme_path.parent)
         r.copy_theme_files_to_output_directory(
             theme_name=theme_name,
             output_directory_path=reference_directory_path,
-            theme_directory_path=dummytheme_path,
         )
 
     def copy_theme_files_to_output_directory(
@@ -448,10 +449,10 @@ def test_copy_theme_files_to_output_directory_custom_theme(
         dummytheme_path = reference_directory_path.parent / theme_name
 
         # copy the auxiliary theme files to tmp_path:
+        os.chdir(dummytheme_path.parent)
         r.copy_theme_files_to_output_directory(
             theme_name=theme_name,
             output_directory_path=output_directory_path,
-            theme_directory_path=dummytheme_path,
         )
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
