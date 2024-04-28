@@ -380,6 +380,17 @@ def test_generate_markdown_file(
     )
 
 
+def test_if_generate_markdown_file_can_create_a_new_directory(
+    tmp_path, rendercv_data_model
+):
+    new_directory = tmp_path / "new_directory"
+    new_directory.mkdir()
+
+    latex_file_path = r.generate_markdown_file(rendercv_data_model, new_directory)
+
+    assert latex_file_path.exists()
+
+
 @pytest.mark.parametrize(
     "theme_name",
     dm.available_themes,
