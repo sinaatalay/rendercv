@@ -477,31 +477,31 @@ def cli_command_render(
             help="Name of the output folder.",
         ),
     ] = "rendercv_output",
-    latex_file_path: Annotated[
+    latex_path: Annotated[
         Optional[str],
         typer.Option(
             help="Copy the LaTeX file to the given path.",
         ),
     ] = None,
-    pdf_file_path: Annotated[
+    pdf_path: Annotated[
         Optional[str],
         typer.Option(
             help="Copy the PDF file to the given path.",
         ),
     ] = None,
-    markdown_file_path: Annotated[
+    markdown_path: Annotated[
         Optional[str],
         typer.Option(
             help="Copy the Markdown file to the given path.",
         ),
     ] = None,
-    html_file_path: Annotated[
+    html_path: Annotated[
         Optional[str],
         typer.Option(
             help="Copy the HTML file to the given path.",
         ),
     ] = None,
-    png_file_path: Annotated[
+    png_path: Annotated[
         Optional[str],
         typer.Option(
             help="Copy the PNG file to the given path.",
@@ -567,16 +567,16 @@ def cli_command_render(
         latex_file_path_in_output_folder = r.generate_latex_file_and_copy_theme_files(
             data_model, output_directory
         )
-        if latex_file_path:
-            shutil.copy2(latex_file_path_in_output_folder, latex_file_path)
+        if latex_path:
+            shutil.copy2(latex_file_path_in_output_folder, latex_path)
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
         pdf_file_path_in_output_folder = r.latex_to_pdf(
             latex_file_path_in_output_folder, use_local_latex_command
         )
-        if pdf_file_path:
-            shutil.copy2(pdf_file_path_in_output_folder, pdf_file_path)
+        if pdf_path:
+            shutil.copy2(pdf_file_path_in_output_folder, pdf_path)
         progress.finish_the_current_step()
 
         if not dont_generate_png:
@@ -584,18 +584,18 @@ def cli_command_render(
             png_file_paths_in_output_folder = r.pdf_to_pngs(
                 pdf_file_path_in_output_folder
             )
-            if png_file_path:
+            if png_path:
                 if len(png_file_paths_in_output_folder) == 1:
-                    shutil.copy2(png_file_paths_in_output_folder[0], png_file_path)
+                    shutil.copy2(png_file_paths_in_output_folder[0], png_path)
                 else:
-                    for i, png_path in enumerate(png_file_paths_in_output_folder):
+                    for i, png_file_path in enumerate(png_file_paths_in_output_folder):
                         # append the page number to the file name
                         page_number = i + 1
-                        png_file_path_with_page_number = (
-                            pathlib.Path(png_file_path).parent
-                            / f"{pathlib.Path(png_file_path).stem}_{page_number}.png"
+                        png_path_with_page_number = (
+                            pathlib.Path(png_path).parent
+                            / f"{pathlib.Path(png_path).stem}_{page_number}.png"
                         )
-                        shutil.copy2(png_path, png_file_path_with_page_number)
+                        shutil.copy2(png_file_path, png_path_with_page_number)
             progress.finish_the_current_step()
 
         if not dont_generate_markdown:
@@ -603,8 +603,8 @@ def cli_command_render(
             markdown_file_path_in_output_folder = r.generate_markdown_file(
                 data_model, output_directory
             )
-            if markdown_file_path:
-                shutil.copy2(markdown_file_path_in_output_folder, markdown_file_path)
+            if markdown_path:
+                shutil.copy2(markdown_file_path_in_output_folder, markdown_path)
             progress.finish_the_current_step()
 
             if not dont_generate_html:
@@ -614,8 +614,8 @@ def cli_command_render(
                 html_file_path_in_output_folder = r.markdown_to_html(
                     markdown_file_path_in_output_folder
                 )
-                if html_file_path:
-                    shutil.copy2(html_file_path_in_output_folder, html_file_path)
+                if html_path:
+                    shutil.copy2(html_file_path_in_output_folder, html_path)
                 progress.finish_the_current_step()
 
 
