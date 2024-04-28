@@ -501,6 +501,12 @@ def cli_command_render(
             help="Copy the HTML file to the given path.",
         ),
     ] = None,
+    png_file_path: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Copy the PNG file to the given path.",
+        ),
+    ] = None,
     dont_generate_markdown: Annotated[
         bool,
         typer.Option(
@@ -513,6 +519,13 @@ def cli_command_render(
         typer.Option(
             "--dont-generate-html",
             help="Don't generate the HTML file.",
+        ),
+    ] = False,
+    dont_generate_png: Annotated[
+        bool,
+        typer.Option(
+            "--dont-generate-png",
+            help="Don't generate the PNG file.",
         ),
     ] = False,
 ):
@@ -532,10 +545,13 @@ def cli_command_render(
     # compute the number of steps
     # 1. read and validate the input file
     # 2. generate the LaTeX file
-    # 3. generate the Markdown file
-    # 4. render the LaTeX file to a PDF
-    # 5. render the Markdown file to a HTML (for Grammarly)
-    number_of_steps = 5
+    # 3. render the LaTeX file to a PDF
+    # 4. render PNG files from the PDF
+    # 5. generate the Markdown file
+    # 6. render the Markdown file to a HTML (for Grammarly)
+    number_of_steps = 6
+    if dont_generate_png:
+        number_of_steps = number_of_steps - 1
     if dont_generate_markdown:
         number_of_steps = number_of_steps - 2
     else:
@@ -562,6 +578,25 @@ def cli_command_render(
         if pdf_file_path:
             shutil.copy2(pdf_file_path_in_output_folder, pdf_file_path)
         progress.finish_the_current_step()
+
+        if not dont_generate_png:
+            progress.start_a_step("Rendering PNG files from the PDF")
+            png_file_paths_in_output_folder = r.pdf_to_pngs(
+                pdf_file_path_in_output_folder
+            )
+            if png_file_path:
+                if len(png_file_paths_in_output_folder) == 1:
+                    shutil.copy2(png_file_paths_in_output_folder[0], png_file_path)
+                else:
+                    for i, png_path in enumerate(png_file_paths_in_output_folder):
+                        # append the page number to the file name
+                        page_number = i + 1
+                        png_file_path_with_page_number = (
+                            pathlib.Path(png_file_path).parent
+                            / f"{pathlib.Path(png_file_path).stem}_{page_number}.png"
+                        )
+                        shutil.copy2(png_path, png_file_path_with_page_number)
+            progress.finish_the_current_step()
 
         if not dont_generate_markdown:
             progress.start_a_step("Generating the Markdown file")
