@@ -23,7 +23,7 @@ import rendercv.renderer as r
 # the output. Setting update_testdata to True will update the reference files with
 # the latest RenderCV. This should be done with caution, as it will overwrite the
 # reference files with the latest output.
-update_testdata = False
+update_testdata = True
 
 # copy sample entries from docs/update_rendercv_files.py:
 education_entry_dictionary = {
@@ -171,8 +171,22 @@ def return_a_value_for_a_field_type(
         "end_date": "2020-06",
         "date": "2021-09",
         "highlights": [
-            "Did *this* and this is a **bold** [link](https://example.com).",
-            "Did that.",
+            (
+                "Did *this* and this is a **bold** [link](https://example.com). But I"
+                " must explain to you how all this mistaken idea of denouncing pleasure"
+                " and praising pain was born and I will give you a complete account of"
+                " the system, and expound the actual teachings of the great explorer of"
+                " the truth, the master-builder of human happiness. No one rejects,"
+                " dislikes, or avoids pleasure itself, because it is pleasure, but"
+                " because those who do not know how to pursue pleasure rationally"
+                " encounter consequences that are extremely painful."
+            ),
+            (
+                "Did that. Nor again is there anyone who loves or pursues or desires to"
+                " obtain pain of itself, because it is pain, but because occasionally"
+                " circumstances occur in which toil and pain can procure him some great"
+                " pleasure."
+            ),
         ],
         "company": "Some **Company**",
         "position": "Software Engineer",
