@@ -7,6 +7,7 @@ from .. import (
     ThemeOptions,
     EntryAreaMargins,
     HighlightsAreaMargins,
+    HeaderMargins,
     Margins,
     LaTeXDimension,
 )
@@ -44,6 +45,35 @@ class HighlightsAreaMarginsForEngineeringresumes(HighlightsAreaMargins):
     )
 
 
+class HeaderMarginsForEngineeringresumes(HeaderMargins):
+    """This class is a data model for the header margins."""
+
+    vertical_between_name_and_connections: LaTeXDimension = pydantic.Field(
+        default="5 pt",
+        title="Vertical Margin Between the Name and Connections",
+        description=(
+            "The vertical margin between the name of the person and the connections."
+            " The default value is 5 pt."
+        ),
+    )
+    bottom: LaTeXDimension = pydantic.Field(
+        default="5 pt",
+        title="Bottom Margin",
+        description=(
+            "The bottom margin of the header, i.e., the vertical margin between the"
+            " connections and the first section title. The default value is 5 pt."
+        ),
+    )
+    horizontal_between_connections: LaTeXDimension = pydantic.Field(
+        default="10 pt",
+        title="Space Between Connections",
+        description=(
+            "The space between the connections (like phone, email, and website). The"
+            " default value is 20 pt."
+        ),
+    )
+
+
 class MarginsForEngineeringresumes(Margins):
     """This class is a data model for the margins."""
 
@@ -56,6 +86,11 @@ class MarginsForEngineeringresumes(Margins):
         default=HighlightsAreaMarginsForEngineeringresumes(),
         title="Highlights Area Margins",
         description="Highlights area margins.",
+    )
+    header: HeaderMarginsForEngineeringresumes = pydantic.Field(
+        default=HeaderMarginsForEngineeringresumes(),
+        title="Header Margins",
+        description="Header margins.",
     )
 
 
