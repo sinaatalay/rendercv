@@ -699,7 +699,8 @@ def cli_command_new(
     if len(created_files_and_folders) == 1:
         information(f"The RenderCV input file has been created:\n{file_name}")
     else:
+        created_files_and_folders_string = ",\n".join(created_files_and_folders)
         information(
             "The following RenderCV input file and folders have been"
-            f" created:\n{',\n'.join(created_files_and_folders)}"
+            f" created:\n{created_files_and_folders_string}"
         )
