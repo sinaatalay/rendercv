@@ -828,7 +828,6 @@ def generate_markdown_file(
 def copy_theme_files_to_output_directory(
     theme_name: str,
     output_directory_path: pathlib.Path,
-    theme_directory_path: Optional[pathlib.Path] = None,
 ):
     """Copy the auxiliary files (all the files that don't end with `.j2.tex` and `.py`)
     of the theme to the output directory. For example, the "classic" theme has custom
@@ -839,21 +838,20 @@ def copy_theme_files_to_output_directory(
         theme_name (str): The name of the theme.
         output_directory (pathlib.Path): Path to the output directory.
     """
-    if theme_directory_path is None:
-        if theme_name in dm.available_themes:
-            theme_directory_path = importlib.resources.files(
-                f"rendercv.themes.{theme_name}"
-            )
-        else:
-            # Then it means the theme is a custom theme. If theme_directory is not given
-            # as an argument, then look for the theme in the current working directory.
-            theme_directory_path = pathlib.Path(pathlib.Path.cwd()) / theme_name
+    if theme_name in dm.available_themes:
+        theme_directory_path = importlib.resources.files(
+            f"rendercv.themes.{theme_name}"
+        )
+    else:
+        # Then it means the theme is a custom theme. If theme_directory is not given
+        # as an argument, then look for the theme in the current working directory.
+        theme_directory_path = pathlib.Path(pathlib.Path.cwd()) / theme_name
 
-            if not theme_directory_path.is_dir():
-                raise FileNotFoundError(
-                    f"The theme {theme_name} doesn't exist in the current working"
-                    " directory!"
-                )
+        if not theme_directory_path.is_dir():
+            raise FileNotFoundError(
+                f"The theme {theme_name} doesn't exist in the current working"
+                " directory!"
+            )
 
     for theme_file in theme_directory_path.iterdir():
         dont_copy_files_with_these_extensions = [".j2.tex", ".py"]
