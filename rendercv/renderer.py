@@ -1006,7 +1006,7 @@ def pdf_to_pngs(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
     pdf = fitz.open(pdf_file_path)  # open the PDF file
     for page in pdf:  # iterate the pages
         image = page.get_pixmap(dpi=300)
-        png_file_path = png_directory / f"{png_file_name}_page{page.number+1}.png"
+        png_file_path = png_directory / f"{png_file_name}_{page.number+1}.png"
         image.save(png_file_path)
         png_files.append(png_file_path)
 
