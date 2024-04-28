@@ -11,7 +11,6 @@ from typing import Any
 
 import pdfCropMargins
 import ruamel.yaml
-import pypdfium2
 
 # Import rendercv. I import the data_models and renderer modules like this instead
 # of using `import rendercv` because in order for that to work, the current working
@@ -191,7 +190,7 @@ def generate_entry_figures():
                 # moderncv theme does not support these options:
                 del design_dictionary["disable_page_numbering"]
                 del design_dictionary["disable_last_updated_date"]
-    
+
             for entry_type, entry in entries.items():
                 # Create the data model with only one section and one entry
                 data_model = dm.RenderCVDataModel(
@@ -236,18 +235,15 @@ def generate_entry_figures():
                 )
 
                 # Convert pdf to an image
-                image_name = output_pdf_file_path.with_suffix(".png")
-                pdf = pypdfium2.PdfDocument(str(output_pdf_file_path.absolute()))
-                page = pdf[0]
-                image = page.render(scale=5).to_pil()
+                png_file_path = r.pdf_to_pngs(output_pdf_file_path)[0]
+                desired_png_file_path = output_pdf_file_path.with_suffix(".png")
 
                 # If the image exists, remove it
-                if image_name.exists():
-                    image_name.unlink()
+                if desired_png_file_path.exists():
+                    desired_png_file_path.unlink()
 
-                image.save(image_name)
-
-                pdf.close()
+                # Move the image to the desired location
+                png_file_path.rename(desired_png_file_path)
 
                 # Remove the pdf file
                 output_pdf_file_path.unlink()
@@ -264,7 +260,12 @@ def generate_examples():
     os.chdir(examples_directory_path)
     themes = dm.available_themes
     for theme in themes:
-        cli.cli_command_new("John Doe", theme)
+        cli.cli_command_new(
+            "John Doe",
+            theme,
+            dont_create_theme_source_files=True,
+            dont_create_markdown_source_files=True,
+        )
         yaml_file_path = examples_directory_path / "John_Doe_CV.yaml"
 
         # Rename John_Doe_CV.yaml:
@@ -296,11 +297,21 @@ def generate_examples():
         shutil.rmtree(rendercv_output_directory)
 
         # convert first page of the pdf to an image:
-        pdf = pypdfium2.PdfDocument(str(new_pdf_file_path.absolute()))
-        page = pdf[0]
-        image = page.render(scale=2).to_pil()
-        image_path = image_assets_directory / f"{theme}.png"
-        image.save(image_path)
+        png_file_paths = r.pdf_to_pngs(new_pdf_file_path)
+        firt_page_png_file_path = png_file_paths[0]
+        if len(png_file_paths) > 1:
+            # remove the other pages
+            for png_file_path in png_file_paths[1:]:
+                png_file_path.unlink()
+
+        desired_png_file_path = image_assets_directory / f"{theme}.png"
+
+        # If the image exists, remove it
+        if desired_png_file_path.exists():
+            desired_png_file_path.unlink()
+
+        # Move the image to the desired location
+        firt_page_png_file_path.rename(desired_png_file_path)
 
 
 def generate_schema():
