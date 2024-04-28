@@ -10,6 +10,7 @@ import pathlib
 from typing import Annotated, Callable, Optional
 import re
 import functools
+import shutil
 
 from rich import print
 import rich.console
@@ -412,6 +413,42 @@ class LiveProgressReporter(rich.live.Live):
         )
 
 
+def copy_templates(folder_name: str, copy_to: pathlib.Path) -> Optional[pathlib.Path]:
+    """Copy one of the folders found in `rendercv.templates` to `copy_to`.
+
+    Args:
+        folder_name (str): The name of the folder to be copied.
+        copy_to (pathlib.Path): The path to copy the folder to.
+    Returns:
+        Optional[pathlib.Path]: The path to the copied folder.
+    """
+    # copy the package's theme files to the current directory
+    template_directory = pathlib.Path(__file__).parent / "themes" / folder_name
+    destination = copy_to / folder_name
+    if destination.exists():
+        if folder_name != "markdown":
+            warning(
+                f'The theme folder "{folder_name}" already exists! The theme files are'
+                " not copied."
+            )
+        else:
+            warning(
+                'The folder "markdown" already exists! The markdown files are not'
+                " copied."
+            )
+
+        return None
+    else:
+        # copy the folder but don't include __init__.py:
+        shutil.copytree(
+            template_directory,
+            destination,
+            ignore=shutil.ignore_patterns("__init__.py"),
+        )
+
+        return destination
+
+
 @app.command(
     name="render",
     help=(
@@ -425,16 +462,59 @@ def cli_command_render(
         str,
         typer.Argument(help="Name of the YAML input file."),
     ],
-    local_latex_command: Annotated[
+    use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
-            "--use-local-latex-command",
             help=(
                 "Use the local LaTeX installation with the given command instead of the"
                 " RenderCV's TinyTeX."
             ),
         ),
     ] = None,
+    output_folder_name: Annotated[
+        str,
+        typer.Option(
+            help="Name of the output folder.",
+        ),
+    ] = "rendercv_output",
+    latex_file_path: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Copy the LaTeX file to the given path.",
+        ),
+    ] = None,
+    pdf_file_path: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Copy the PDF file to the given path.",
+        ),
+    ] = None,
+    markdown_file_path: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Copy the Markdown file to the given path.",
+        ),
+    ] = None,
+    html_file_path: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Copy the HTML file to the given path.",
+        ),
+    ] = None,
+    dont_generate_markdown: Annotated[
+        bool,
+        typer.Option(
+            "--dont-generate-markdown",
+            help="Don't generate the Markdown and HTML file.",
+        ),
+    ] = False,
+    dont_generate_html: Annotated[
+        bool,
+        typer.Option(
+            "--dont-generate-html",
+            help="Don't generate the HTML file.",
+        ),
+    ] = False,
 ):
     """Generate a $\\LaTeX$ CV from a YAML input file.
 
@@ -447,30 +527,61 @@ def cli_command_render(
 
     input_file_path = pathlib.Path(input_file_name)
 
-    output_directory = input_file_path.parent / "rendercv_output"
+    output_directory = input_file_path.parent / output_folder_name
 
-    with LiveProgressReporter(number_of_steps=5) as progress:
+    # compute the number of steps
+    # 1. read and validate the input file
+    # 2. generate the LaTeX file
+    # 3. generate the Markdown file
+    # 4. render the LaTeX file to a PDF
+    # 5. render the Markdown file to a HTML (for Grammarly)
+    number_of_steps = 5
+    if dont_generate_markdown:
+        number_of_steps = number_of_steps - 2
+    else:
+        if dont_generate_html:
+            number_of_steps = number_of_steps - 1
+
+    with LiveProgressReporter(number_of_steps) as progress:
         progress.start_a_step("Reading and validating the input file")
         data_model = dm.read_input_file(input_file_path)
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
-        latex_file_path = r.generate_latex_file_and_copy_theme_files(
+        latex_file_path_in_output_folder = r.generate_latex_file_and_copy_theme_files(
             data_model, output_directory
         )
-        progress.finish_the_current_step()
-
-        progress.start_a_step("Generating the Markdown file")
-        markdown_file_path = r.generate_markdown_file(data_model, output_directory)
+        if latex_file_path:
+            shutil.copy2(latex_file_path_in_output_folder, latex_file_path)
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
-        r.latex_to_pdf(latex_file_path, local_latex_command)
+        pdf_file_path_in_output_folder = r.latex_to_pdf(
+            latex_file_path_in_output_folder, use_local_latex_command
+        )
+        if pdf_file_path:
+            shutil.copy2(pdf_file_path_in_output_folder, pdf_file_path)
         progress.finish_the_current_step()
 
-        progress.start_a_step("Rendering the Markdown file to a HTML (for Grammarly)")
-        r.markdown_to_html(markdown_file_path)
-        progress.finish_the_current_step()
+        if not dont_generate_markdown:
+            progress.start_a_step("Generating the Markdown file")
+            markdown_file_path_in_output_folder = r.generate_markdown_file(
+                data_model, output_directory
+            )
+            if markdown_file_path:
+                shutil.copy2(markdown_file_path_in_output_folder, markdown_file_path)
+            progress.finish_the_current_step()
+
+            if not dont_generate_html:
+                progress.start_a_step(
+                    "Rendering the Markdown file to a HTML (for Grammarly)"
+                )
+                html_file_path_in_output_folder = r.markdown_to_html(
+                    markdown_file_path_in_output_folder
+                )
+                if html_file_path:
+                    shutil.copy2(html_file_path_in_output_folder, html_file_path)
+                progress.finish_the_current_step()
 
 
 @app.command(
@@ -482,16 +593,51 @@ def cli_command_render(
 )
 def cli_command_new(
     full_name: Annotated[str, typer.Argument(help="Your full name.")],
-    theme: Annotated[str, typer.Option(help="The theme of the CV.")] = "classic",
+    theme: Annotated[
+        str,
+        typer.Option(
+            help=(
+                "The name of the theme. Available themes are:"
+                f" {', '.join(dm.available_themes)}."
+            )
+        ),
+    ] = "classic",
+    dont_create_theme_source_files: Annotated[
+        bool,
+        typer.Option(
+            "--dont-create-theme-source-files",
+            help="Don't create theme source files.",
+        ),
+    ] = False,
+    dont_create_markdown_source_files: Annotated[
+        bool,
+        typer.Option(
+            "--dont-create-markdown-source-files",
+            help="Don't create the Markdown source files.",
+        ),
+    ] = False,
 ):
     """Generate a YAML input file to get started."""
-    data_model = dm.get_a_sample_data_model(full_name, theme)
+    try:
+        data_model = dm.get_a_sample_data_model(full_name, theme)
+    except ValueError as e:
+        error(e)
+        return
+
     file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
     file_path = pathlib.Path(file_name)
 
     # Instead of getting the dictionary with data_model.model_dump() directly, we
     # convert it to JSON and then to a dictionary. Because the YAML library we are using
     # sometimes has problems with the dictionary returned by model_dump().
+
+    # We exclude "cv.sections" because the data model automatically generates them. The
+    # user's "cv.sections" input is actually "cv.sections_input" in the data model. It
+    # is shown as "cv.sections" in the YAML file because an alias is being used. If
+    # "cv.sections" were not excluded, the automatically generated "cv.sections" would
+    # overwrite the "cv.sections_input". "cv.sections" are automatically generated from
+    # "cv.sections_input" to make the templating process easier. "cv.sections_input"
+    # exists for the convenience of the user.
     data_model_as_json = data_model.model_dump_json(
         exclude_none=True, by_alias=True, exclude={"cv": {"sections"}}
     )
@@ -502,4 +648,23 @@ def cli_command_new(
     yaml_object.indent(mapping=2, sequence=4, offset=2)
     yaml_object.dump(data_model_as_dictionary, file_path)
 
-    information(f"Your RenderCV input file has been created: {file_path}!")
+    created_files_and_folders = [file_name]
+    if not dont_create_theme_source_files:
+        # copy the package's theme files to the current directory
+        theme_folder = copy_templates(theme, pathlib.Path.cwd())
+        if theme_folder is not None:
+            created_files_and_folders.append(theme_folder.name)
+
+    if not dont_create_markdown_source_files:
+        # copy the package's markdown files to the current directory
+        markdown_folder = copy_templates("markdown", pathlib.Path.cwd())
+        if markdown_folder is not None:
+            created_files_and_folders.append(markdown_folder.name)
+
+    if len(created_files_and_folders) == 1:
+        information(f"The RenderCV input file has been created:\n{file_name}")
+    else:
+        information(
+            "The following RenderCV input file and folders have been"
+            f" created:\n{',\n'.join(created_files_and_folders)}"
+        )
