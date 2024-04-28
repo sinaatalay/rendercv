@@ -1189,9 +1189,10 @@ def get_a_sample_data_model(
     """
     # check if the theme is valid:
     if theme not in available_themes:
+        available_themes_string = ", ".join(available_themes)
         raise ValueError(
-            f"The theme should be one of the following: {", ".join(available_themes)}!"
-            f" The provided theme is \"{theme}\"."
+            f"The theme should be one of the following: {available_themes_string}!"
+            f' The provided theme is "{theme}".'
         )
 
     name = name.encode().decode("unicode-escape")
