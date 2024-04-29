@@ -9,7 +9,7 @@ The data models are initialized with data validation to prevent unexpected bugs.
 the initialization, we ensure that everything is in the correct place and that the user
 has provided a valid RenderCV input. This is achieved through the use of
 [Pydantic](https://pypi.org/project/pydantic/). Each class method decorated with
-'pydantic.model_validator` or 'pydantic.field_validator` is executed automatically
+`pydantic.model_validator` or `pydantic.field_validator` is executed automatically
 during the data classes' initialization.
 """
 
@@ -53,8 +53,8 @@ RenderCVDate = Annotated[
 
 def get_date_object(date: str | int) -> Date:
     """Parse a date string in YYYY-MM-DD, YYYY-MM, or YYYY format and return a
-    datetime.date object. This function is used throughout the validation process of the
-    data models.
+    `datetime.date` object. This function is used throughout the validation process of
+    the data models.
 
     Args:
         date (str): The date string to parse.
@@ -727,7 +727,7 @@ def get_entry_and_section_type(
 def validate_section_input(
     sections_input: SectionBase | list[Any],
 ) -> SectionBase | list[Any]:
-    """Validate a SectionInput object and raise an error if it is not valid.
+    """Validate a `SectionInput` object and raise an error if it is not valid.
 
     Sections input is very complex. It is either a `Section` object or a list of
     entries. Since there are multiple entry types, it is not possible to validate it
@@ -737,9 +737,9 @@ def validate_section_input(
     validates it directly.
 
     Args:
-        sections_input (Section | list[Any]): The sections input to validate.
+        sections_input (SectionBase | list[Any]): The sections input to validate.
     Returns:
-        Section | list[Any]: The validated sections input.
+        SectionBase | list[Any]: The validated sections input.
     """
     if isinstance(sections_input, list):
         # find the entry type based on the first identifiable entry:
@@ -1138,16 +1138,16 @@ class RenderCVDataModel(RenderCVBaseModel):
 def read_input_file(
     file_path: pathlib.Path,
 ) -> RenderCVDataModel:
-    """Read the input file and return two instances of RenderCVDataModel. The first
-    instance is the data model with $\\LaTeX$ strings and the second instance is the
-    data model with markdown strings.
+    """Read the input file and return two instances of
+    [RenderCVDataModel](#rendercv.data_models.RenderCVDataModel). The first instance is
+    the data model with $\\LaTeX$ strings and the second instance is the data model with
+    markdown strings.
 
     Args:
         file_path (str): The path to the input file.
 
     Returns:
-        tuple[RenderCVDataModel, RenderCVDataModel]: The data models with $\\LaTeX$ and
-        markdown strings.
+        RenderCVDataModel: The data models with $\\LaTeX$ and markdown strings.
     """
     # check if the file exists:
     if not file_path.exists():

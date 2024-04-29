@@ -1,11 +1,12 @@
 """
-This module contains functions and classes for generating a $\\LaTeX$ file from the data
-model and rendering the $\\LaTeX$ file to produce a PDF.
+This module contains functions and classes for generating CVs as $\\LaTeX$ files, PDF
+files, Markdown files, HTML files, and PNG files from the data model.
 
-The $\\LaTeX$ files are generated with
+The $\\LaTeX$ and Markdown files are generated with
 [Jinja2](https://jinja.palletsprojects.com/en/3.1.x/) templates. Then, the $\\LaTeX$
 file is rendered into a PDF with [TinyTeX](https://yihui.org/tinytex/), a $\\LaTeX$
-distribution.
+distribution. The markdown file is rendered into an HTML file with markdown package. The
+PDF files are rendered into PNG files with PyMuPDF/fitz package.
 """
 
 import subprocess
@@ -27,9 +28,10 @@ from . import data_models as dm
 
 
 class TemplatedFile:
-    """This class is a base class for LaTeXFile and MarkdownFile classes. It contains
-    the common methods and attributes for both classes. These classes are used to
-    generate the $\\LaTeX$ and Markdown files with the data model and Jinja2 templates.
+    """This class is a base class for `LaTeXFile` and `MarkdownFile` classes. It
+    contains the common methods and attributes for both classes. These classes are used
+    to generate the $\\LaTeX$ and Markdown files with the data model and Jinja2
+    templates.
 
     Args:
         data_model (dm.RenderCVDataModel): The data model.
@@ -106,7 +108,7 @@ class TemplatedFile:
 
 class LaTeXFile(TemplatedFile):
     """This class represents a $\\LaTeX$ file. It generates the $\\LaTeX$ code with the
-    data model and Jinja2 templates. It inherits from the TemplatedFile class.
+    data model and Jinja2 templates. It inherits from the `TemplatedFile` class.
     """
 
     def __init__(
@@ -219,8 +221,8 @@ class LaTeXFile(TemplatedFile):
 
 class MarkdownFile(TemplatedFile):
     """This class represents a Markdown file. It generates the Markdown code with the
-    data model and Jinja2 templates. It inherits from the TemplatedFile class. Markdown
-    files are generated to produce a PDF which can be copy-pasted to
+    data model and Jinja2 templates. It inherits from the `TemplatedFile` class.
+    Markdown files are generated to produce an HTML which can be copy-pasted to
     [Grammarly](https://app.grammarly.com/) for proofreading.
     """
 
@@ -365,10 +367,10 @@ def escape_latex_characters(string: str, strict: bool = True) -> str:
 
 
 def markdown_to_latex(markdown_string: str) -> str:
-    """Convert a markdown string to LaTeX.
+    """Convert a markdown string to $\\LaTeX$.
 
     This function is called during the reading of the input file. Before the validation
-    process, each input field is converted from markdown to LaTeX.
+    process, each input field is converted from markdown to $\\LaTeX$.
 
     Example:
         ```python
@@ -830,7 +832,7 @@ def copy_theme_files_to_output_directory(
     output_directory_path: pathlib.Path,
 ):
     """Copy the auxiliary files (all the files that don't end with `.j2.tex` and `.py`)
-    of the theme to the output directory. For example, the "classic" theme has custom
+    of the theme to the output directory. For example, a theme can have custom
     fonts, and the $\\LaTeX$ needs it. If the theme is a custom theme, then it will be
     copied from the current working directory.
 
