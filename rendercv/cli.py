@@ -413,7 +413,12 @@ class LiveProgressReporter(rich.live.Live):
         )
 
 
-def copy_templates(folder_name: str, copy_to: pathlib.Path) -> Optional[pathlib.Path]:
+def copy_templates(
+    folder_name: str,
+    copy_to: pathlib.Path,
+    new_folder_name: Optional[str] = None,
+    suppress_warning: bool = False,
+) -> Optional[pathlib.Path]:
     """Copy one of the folders found in `rendercv.templates` to `copy_to`.
 
     Args:
@@ -424,18 +429,23 @@ def copy_templates(folder_name: str, copy_to: pathlib.Path) -> Optional[pathlib.
     """
     # copy the package's theme files to the current directory
     template_directory = pathlib.Path(__file__).parent / "themes" / folder_name
-    destination = copy_to / folder_name
+    if new_folder_name:
+        destination = copy_to / new_folder_name
+    else:
+        destination = copy_to / folder_name
+
     if destination.exists():
-        if folder_name != "markdown":
-            warning(
-                f'The theme folder "{folder_name}" already exists! The theme files are'
-                " not copied."
-            )
-        else:
-            warning(
-                'The folder "markdown" already exists! The markdown files are not'
-                " copied."
-            )
+        if not suppress_warning:
+            if folder_name != "markdown":
+                warning(
+                    f'The theme folder "{folder_name}" already exists! The theme files'
+                    " are not copied."
+                )
+            else:
+                warning(
+                    'The folder "markdown" already exists! The markdown files are not'
+                    " copied."
+                )
 
         return None
     else:
@@ -704,3 +714,65 @@ def cli_command_new(
             "The following RenderCV input file and folders have been"
             f" created:\n{created_files_and_folders_string}"
         )
+
+
+@app.command(
+    name="create-theme",
+    help=(
+        "Create a custom theme folder based on an existing theme. Example: [bold"
+        " green]rendercv create-theme --based-on classic customtheme[/bold green]"
+    ),
+)
+def cli_command_create_theme(
+    theme_name: Annotated[
+        str,
+        typer.Argument(help="The name of the new theme."),
+    ],
+    based_on: Annotated[
+        str,
+        typer.Option(
+            help=(
+                "The name of the existing theme to base the new theme on. Available"
+                f" themes are: {', '.join(dm.available_themes)}."
+            )
+        ),
+    ] = "classic",
+):
+    """Create a custom theme folder based on an existing theme."""
+    if based_on not in dm.available_themes:
+        error(
+            f'The theme "{based_on}" is not in the list of available themes:'
+            f' {", ".join(dm.available_themes)}'
+        )
+        return
+
+    theme_folder = copy_templates(
+        based_on, pathlib.Path.cwd(), new_folder_name=theme_name, suppress_warning=True
+    )
+
+    if theme_folder is None:
+        warning(
+            f'The theme folder "{theme_name}" already exists! The theme files are not'
+            " created."
+        )
+        return
+
+    based_on_theme_directory = pathlib.Path(__file__).parent / "themes" / based_on
+    based_on_theme_init_file = based_on_theme_directory / "__init__.py"
+    based_on_theme_init_file_contents = based_on_theme_init_file.read_text()
+
+    # generate the new init file:
+    class_name = f"{theme_name.title()}ThemeOptions"
+    literal_name = f'Literal["{theme_name}"]'
+    new_init_file_contents = (
+        based_on_theme_init_file_contents.replace(
+            f'Literal["{based_on}"]', literal_name
+        )
+        .replace(f"{based_on.title()}ThemeOptions", class_name)
+        .replace("..", "rendercv.themes")
+    )
+
+    # create the new __init__.py file:
+    (theme_folder / "__init__.py").write_text(new_init_file_contents)
+
+    information(f'The theme folder "{theme_folder.name}" has been created.')
