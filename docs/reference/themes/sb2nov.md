@@ -1,3 +1,10 @@
 # Sb2nov Theme
 
-::: rendercv.themes.sb2nov
+{% for template_name, template in theme_templates["sb2nov"].items() %}
+## {{ template_name }}
+
+```latex
+{{ template }}
+```
+
+{% endfor %}

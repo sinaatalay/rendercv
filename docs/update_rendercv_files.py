@@ -7,6 +7,7 @@ import io
 import os
 import sys
 import shutil
+from time import thread_time_ns
 from typing import Any
 
 import pdfCropMargins
@@ -161,6 +162,18 @@ def define_env(env):
         }
 
     env.variables["showcase_entries"] = entries_showcase
+
+    # for theme templates reference docs:
+    themes_path = rendercv_path / "themes"
+    theme_templates = dict()
+    for theme in dm.available_themes:
+        theme_templates[theme] = dict()
+        for theme_file in themes_path.glob(f"{theme}/*.tex"):
+            theme_templates[theme][
+                theme_file.stem.replace(".j2", "")
+            ] = theme_file.read_text()
+
+    env.variables["theme_templates"] = theme_templates
 
 
 def generate_entry_figures():

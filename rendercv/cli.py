@@ -125,8 +125,8 @@ def get_error_message_and_location_and_value_from_a_custom_error(
 def handle_validation_error(exception: pydantic.ValidationError):
     """Take a Pydantic validation error and print the error messages in a nice table.
 
-    Pydantic's ValidationError object is a complex object that contains a lot of
-    information about the error. This function takes a ValidationError object and
+    Pydantic's `ValidationError` object is a complex object that contains a lot of
+    information about the error. This function takes a `ValidationError` object and
     extracts the error messages, locations, and the input values. Then, it prints them
     in a nice table with [Rich](https://rich.readthedocs.io/en/latest/).
 
