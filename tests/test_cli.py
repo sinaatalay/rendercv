@@ -182,6 +182,21 @@ def test_copy_templates(tmp_path, folder_name):
     assert copied_path.exists()
 
 
+@pytest.mark.parametrize(
+    "folder_name",
+    ["markdown"] + dm.available_themes,
+)
+def test_copy_templates_destinations_exist(tmp_path, folder_name):
+    (tmp_path / folder_name).mkdir()
+
+    copied_path = cli.copy_templates(
+        folder_name=folder_name,
+        copy_to=tmp_path,
+    )
+
+    assert copied_path is None
+
+
 runner = typer.testing.CliRunner()
 
 
@@ -395,6 +410,16 @@ def test_render_command_with_dont_generate_png(tmp_path, input_file_path):
     assert not png_file_path.exists()
 
 
+def test_render_command_with_local_latex_command(tmp_path, input_file_path):
+    # copy input file to the temporary directory to create the output directory there:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    runner.invoke(
+        cli.app,
+        ["render", str(input_file_path), "--local-latex-command", "pdflatex"],
+    )
+
+
 def test_new_command(tmp_path):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
@@ -407,6 +432,15 @@ def test_new_command(tmp_path):
     assert markdown_source_files_path.exists()
     assert theme_source_files_path.exists()
     assert input_file_path.exists()
+
+
+def test_new_command_with_invalid_theme(tmp_path):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    result = runner.invoke(cli.app, ["new", "John Doe", "--theme", "invalid_theme"])
+
+    assert "The theme should be one of the following" in result.stdout
 
 
 def test_new_command_with_dont_create_theme_source_files(tmp_path):
@@ -427,3 +461,25 @@ def test_new_command_with_dont_create_markdown_source_files(tmp_path):
     markdown_source_files_path = tmp_path / "markdown"
 
     assert not markdown_source_files_path.exists()
+
+
+def test_new_command_with_only_input_file(tmp_path):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+    runner.invoke(
+        cli.app,
+        [
+            "new",
+            "John Doe",
+            "--dont-create-markdown-source-files",
+            "--dont-create-theme-source-files",
+        ],
+    )
+
+    markdown_source_files_path = tmp_path / "markdown"
+    theme_source_files_path = tmp_path / "classic"
+    input_file_path = tmp_path / "John_Doe_CV.yaml"
+
+    assert not markdown_source_files_path.exists()
+    assert not theme_source_files_path.exists()
+    assert input_file_path.exists()

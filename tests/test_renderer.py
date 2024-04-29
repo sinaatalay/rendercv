@@ -334,7 +334,6 @@ def test_if_generate_latex_file_can_create_a_new_directory(
     tmp_path, rendercv_data_model
 ):
     new_directory = tmp_path / "new_directory"
-    new_directory.mkdir()
 
     latex_file_path = r.generate_latex_file(rendercv_data_model, new_directory)
 
@@ -384,7 +383,6 @@ def test_if_generate_markdown_file_can_create_a_new_directory(
     tmp_path, rendercv_data_model
 ):
     new_directory = tmp_path / "new_directory"
-    new_directory.mkdir()
 
     latex_file_path = r.generate_markdown_file(rendercv_data_model, new_directory)
 
@@ -473,6 +471,11 @@ def test_copy_theme_files_to_output_directory_custom_theme(
     )
 
 
+def test_copy_theme_files_to_output_directory_nonexistent_theme():
+    with pytest.raises(FileNotFoundError):
+        r.copy_theme_files_to_output_directory("nonexistent_theme", pathlib.Path("."))
+
+
 @pytest.mark.parametrize(
     "theme_name",
     dm.available_themes,
@@ -558,7 +561,7 @@ def test_latex_to_pdf(
     )
 
 
-def test_latex_to_pdf_invalid_latex_file():
+def test_latex_to_pdf_nonexistent_latex_file():
     with pytest.raises(FileNotFoundError):
         file_path = pathlib.Path("file_doesnt_exist.tex")
         r.latex_to_pdf(file_path)
@@ -596,10 +599,10 @@ def test_markdown_to_html(
             / markdown_file_name
         )
 
-        # copy the latex source to the output path
+        # copy the markdown source to the output path
         shutil.copy(markdown_source_path, output_directory_path)
 
-        # convert the latex code to a md
+        # convert markdown to html
         r.markdown_to_html(output_directory_path / markdown_file_name)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
@@ -609,7 +612,70 @@ def test_markdown_to_html(
     )
 
 
-def test_markdown_to_html_invalid_markdown_file():
+def test_markdown_to_html_nonexistent_markdown_file():
     with pytest.raises(FileNotFoundError):
         file_path = pathlib.Path("file_doesnt_exist.md")
         r.markdown_to_html(file_path)
+
+
+def test_pdf_to_pngs_single_page(
+    run_a_function_and_check_if_output_is_the_same_as_reference,
+):
+    output_file_name = "classic_empty_1.png"
+    reference_file_name = "classic_empty.png"
+
+    def generate_pngs(output_directory_path, reference_file_or_directory_path):
+        pdf_file_name = "classic_empty.pdf"
+
+        pdf_path = (
+            reference_file_or_directory_path.parent.parent
+            / "test_latex_to_pdf"
+            / pdf_file_name
+        )
+
+        # copy the markdown source to the output path
+        shutil.copy(pdf_path, output_directory_path)
+
+        # convert pdf to pngs
+        r.pdf_to_pngs(output_directory_path / pdf_file_name)
+
+    assert run_a_function_and_check_if_output_is_the_same_as_reference(
+        generate_pngs,
+        reference_file_or_directory_name=reference_file_name,
+        output_file_name=output_file_name,
+    )
+
+
+def test_pdf_to_pngs(
+    run_a_function_and_check_if_output_is_the_same_as_reference,
+):
+    reference_directory_name = "pngs"
+
+    def generate_pngs(output_directory_path, reference_file_or_directory_path):
+        pdf_file_name = "classic_filled.pdf"
+
+        pdf_path = (
+            reference_file_or_directory_path.parent.parent
+            / "test_latex_to_pdf"
+            / pdf_file_name
+        )
+
+        # copy the markdown source to the output path
+        shutil.copy(pdf_path, output_directory_path)
+
+        # convert pdf to pngs
+        r.pdf_to_pngs(output_directory_path / pdf_file_name)
+
+        # remove the pdf file
+        (output_directory_path / pdf_file_name).unlink()
+
+    assert run_a_function_and_check_if_output_is_the_same_as_reference(
+        generate_pngs,
+        reference_directory_name,
+    )
+
+
+def test_pdf_to_png_nonexistent_pdf_file():
+    with pytest.raises(FileNotFoundError):
+        file_path = pathlib.Path("file_doesnt_exist.pdf")
+        r.pdf_to_pngs(file_path)
