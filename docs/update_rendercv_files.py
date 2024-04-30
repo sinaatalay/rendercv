@@ -281,7 +281,7 @@ def generate_examples():
         yaml_file_path = examples_directory_path / "John_Doe_CV.yaml"
 
         # Rename John_Doe_CV.yaml:
-        proper_theme_name = theme.replace("_", " ").title() + "Theme"
+        proper_theme_name = theme.capitalize() + "Theme"
         new_yaml_file_path = (
             examples_directory_path / f"John_Doe_{proper_theme_name}_CV.yaml"
         )
