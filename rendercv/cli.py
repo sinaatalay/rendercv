@@ -711,7 +711,6 @@ def cli_command_new(
         data_model = dm.get_a_sample_data_model(full_name, theme)
     except ValueError as e:
         error(e)
-        return
 
     file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
     file_path = pathlib.Path(file_name)
