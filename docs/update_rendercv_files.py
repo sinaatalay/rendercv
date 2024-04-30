@@ -7,7 +7,6 @@ import io
 import os
 import sys
 import shutil
-from time import thread_time_ns
 from typing import Any
 
 import pdfCropMargins
