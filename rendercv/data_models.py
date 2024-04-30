@@ -1133,7 +1133,7 @@ class RenderCVDataModel(RenderCVBaseModel):
 def set_or_update_a_value(
     data_model: pydantic.BaseModel | dict | list,
     key: str,
-    value: Any,
+    value: str,
     sub_model: pydantic.BaseModel | dict | list = None,
 ):
     """Set or update a value in a data model for a specific key. For example, a key can
@@ -1162,7 +1162,10 @@ def set_or_update_a_value(
     if len(keys) == 1:
         # set the value:
         if value.startswith("{") and value.endswith("}"):
-            # allow users to assign dictionaries directly in the input file:
+            # allow users to assign dictionaries:
+            value = eval(value)
+        elif value.startswith("[") and value.endswith("]"):
+            # allow users to assign lists:
             value = eval(value)
 
         if isinstance(model, pydantic.BaseModel):
