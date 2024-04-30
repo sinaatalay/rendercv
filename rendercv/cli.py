@@ -586,25 +586,26 @@ def cli_command_render(
         # double dashed, such as `--cv.sections.education.0.institution`. The following
         # elements are the corresponding values of the key, such as
         # `"Bogazici University"`. The for loop below parses `ctx.args` accordingly.
-        for i in range(0, len(ctx.args), 2):
-            key = ctx.args[i]
-            value = ctx.args[i + 1]
-            if not key.startswith("--"):
-                error(f"The key ({key}) should start with double dashes!")
+        if ctx:
+            for i in range(0, len(ctx.args), 2):
+                key = ctx.args[i]
+                value = ctx.args[i + 1]
+                if not key.startswith("--"):
+                    error(f"The key ({key}) should start with double dashes!")
 
-            key = key.replace("--", "")
+                key = key.replace("--", "")
 
-            key_and_values[key] = value
+                key_and_values[key] = value
 
-        for key, value in key_and_values.items():
-            try:
-                # set the key (for example, cv.sections.education.0.institution) to the
-                # value
-                data_model = dm.set_or_update_a_value(data_model, key, value)
-            except pydantic.ValidationError as e:
-                raise e
-            except (ValueError, KeyError, IndexError, AttributeError):
-                raise ValueError(f'The key "{key}" does not exist in the data model!')
+            for key, value in key_and_values.items():
+                try:
+                    # set the key (for example, cv.sections.education.0.institution) to the
+                    # value
+                    data_model = dm.set_or_update_a_value(data_model, key, value)
+                except pydantic.ValidationError as e:
+                    raise e
+                except (ValueError, KeyError, IndexError, AttributeError):
+                    raise ValueError(f'The key "{key}" does not exist in the data model!')
 
         progress.finish_the_current_step()
 
