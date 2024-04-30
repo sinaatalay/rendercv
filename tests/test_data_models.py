@@ -2,6 +2,7 @@ from datetime import date as Date
 import json
 import pathlib
 import os
+import re
 import shutil
 
 import pydantic
@@ -57,6 +58,52 @@ def test_get_date_object(date, expected_date_object, expected_error):
 )
 def test_format_date(date, expected_date_string):
     assert dm.format_date(date) == expected_date_string
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        ("cv.phone", "+905555555555"),
+        ("cv.email", "test@example.com"),
+        ("cv.sections.education.0.degree", "PhD"),
+        ("design.page_size", "a4paper"),
+    ],
+)
+def test_set_or_update_a_value(rendercv_data_model, key, value):
+    dm.set_or_update_a_value(rendercv_data_model, key, value)
+
+    # replace with regex pattern:
+    key = re.sub(r"sections\.([^\.]*?)\.(\d+)", 'sections_input["\\1"][\\2]', key)
+
+    assert eval(f"rendercv_data_model.{key}") == value
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        ("cv.phones", "+905555555555"),
+        ("cv.emssdsail", ""),
+        ("cv.sections.education.99.degree", "PhD"),
+        ("dessssign.page_size", "a4paper"),
+    ],
+)
+def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
+    with pytest.raises((ValueError, KeyError, IndexError, AttributeError)):
+        dm.set_or_update_a_value(rendercv_data_model, key, value)
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        ("cv.phone", "+9999995555555555"),
+        ("cv.email", "notanemail***"),
+        ("cv.sections.education.0.highlights", "this is not a list"),
+        ("design.page_size", "invalid_page_size"),
+    ],
+)
+def test_set_or_update_a_value_invalid_values(rendercv_data_model, key, value):
+    with pytest.raises(pydantic.ValidationError):
+        dm.set_or_update_a_value(rendercv_data_model, key, value)
 
 
 def test_read_input_file(input_file_path):
