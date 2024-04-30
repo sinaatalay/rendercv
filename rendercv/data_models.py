@@ -46,7 +46,7 @@ locale_catalog = {
     "year": "year",
     "years": "years",
     "present": "present",
-    "to": "-",
+    "to": "to",
     "abbreviations_for_months": [
         "Jan.",
         "Feb.",
