@@ -1114,7 +1114,7 @@ class RenderCVDataModel(RenderCVBaseModel):
                     )
 
                 ThemeDataModel = getattr(
-                    theme_module, f"{theme_name.title()}ThemeOptions"  # type: ignore
+                    theme_module, f"{theme_name.capitalize()}ThemeOptions"  # type: ignore
                 )
 
                 # initialize and validate the custom theme data model:
@@ -1161,6 +1161,10 @@ def set_or_update_a_value(
 
     if len(keys) == 1:
         # set the value:
+        if value.startswith("{") and value.endswith("}"):
+            # allow users to assign dictionaries directly in the input file:
+            value = eval(value)
+
         if isinstance(model, pydantic.BaseModel):
             setattr(model, key, value)
         elif isinstance(model, dict):
@@ -1173,7 +1177,10 @@ def set_or_update_a_value(
                 " list.",
             )
 
-        data_model.model_validate(data_model.model_dump(by_alias=True))
+        data_model = type(data_model).model_validate(
+            (data_model.model_dump(by_alias=True))
+        )
+        return data_model
     else:
         # get the first key and call the function with remaining keys:
         first_key = keys[0]
