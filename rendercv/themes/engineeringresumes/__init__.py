@@ -100,6 +100,17 @@ class EngineeringresumesThemeOptions(ThemeOptions):
     """
 
     theme: Literal["engineeringresumes"]
+    font: Literal[
+        "Latin Modern Serif",
+        "Latin Modern Sans Serif",
+        "Latin Modern Mono",
+        "Source Sans 3",
+        "Charter",
+    ] = pydantic.Field(
+        default="Charter",
+        title="Font",
+        description="The font family of the CV. The default value is Charter.",
+    )
     header_font_size: LaTeXDimension = pydantic.Field(
         default="25 pt",
         title="Header Font Size",

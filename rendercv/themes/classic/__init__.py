@@ -32,6 +32,17 @@ class ClassicThemeOptions(ThemeOptions):
     """This class is the data model of the theme options for the `classic` theme."""
 
     theme: Literal["classic"]
+    font: Literal[
+        "Latin Modern Serif",
+        "Latin Modern Sans Serif",
+        "Latin Modern Mono",
+        "Source Sans 3",
+        "Charter",
+    ] = pydantic.Field(
+        default="Source Sans 3",
+        title="Font",
+        description="The font family of the CV. The default value is Source Sans 3.",
+    )
     show_timespan_in: list[str] = pydantic.Field(
         default=[],
         title="Show Time Span in These Sections",

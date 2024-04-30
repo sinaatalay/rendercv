@@ -180,10 +180,23 @@ class ThemeOptions(pydantic.BaseModel):
     duplication.
     """
 
-    theme: Literal["tobeoverwritten"]
-
     model_config = pydantic.ConfigDict(extra="forbid")
 
+    theme: Literal["tobeoverwritten"]
+
+    font: Literal[
+        "Latin Modern Serif",
+        "Latin Modern Sans Serif",
+        "Latin Modern Mono",
+        "Source Sans 3",
+        "Charter",
+    ] = pydantic.Field(
+        default="Latin Modern Serif",
+        title="Font",
+        description=(
+            "The font family of the CV. The default value is Latin Modern Serif."
+        ),
+    )
     font_size: Literal["10pt", "11pt", "12pt"] = pydantic.Field(
         default="10pt",
         title="Font Size",
