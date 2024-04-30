@@ -1047,12 +1047,8 @@ class RenderCVDataModel(RenderCVBaseModel):
             # yet. So, validate and return it:
             return rendercv_design_validator.validate_python(design)
         else:
-            theme_name: str = design["theme"]  # type: ignore
-            if not isinstance(theme_name, str):
-                raise RuntimeError(
-                    "This error shouldn't have been raised. Please open an issue on"
-                    " GitHub."
-                )
+            # then it means it is a custom theme, so initialize and validate it:
+            theme_name: str = str(design["theme"])
 
             # check if the theme name is valid:
             if not theme_name.isalpha():
@@ -1103,11 +1099,6 @@ class RenderCVDataModel(RenderCVBaseModel):
                     "theme",
                     path_to_init_file,
                 )
-                if spec is None:
-                    raise RuntimeError(
-                        "This error shouldn't have been raised. Please open an issue on"
-                        " GitHub."
-                    )
 
                 theme_module = importlib.util.module_from_spec(spec)
                 try:
