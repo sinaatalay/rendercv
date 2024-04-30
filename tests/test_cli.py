@@ -139,7 +139,7 @@ def test_handle_exceptions(exception):
     @cli.handle_exceptions
     def function_that_raises_exception():
         raise exception
-    
+
     with pytest.raises(typer.Exit):
         function_that_raises_exception()
 
@@ -418,6 +418,35 @@ def test_render_command_with_local_latex_command(tmp_path, input_file_path):
     runner.invoke(
         cli.app,
         ["render", str(input_file_path), "--use-local-latex-command", "pdflatex"],
+    )
+
+
+@pytest.mark.parametrize(
+    "invalid_arguments",
+    [
+        ["--keywithoutvalue"],
+        ["--key", "value", "--keywithoutvalue"],
+        ["keywithoutdashes", "value"],
+        ["--cv.phone", "invalidphonenumber"],
+        ["--cv.sections.arbitrary.10", "value"],
+    ],
+)
+def test_render_command_with_invalid_arguments(
+    tmp_path, input_file_path, invalid_arguments
+):
+    # copy input file to the temporary directory to create the output directory there:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    result = runner.invoke(
+        cli.app,
+        ["render", str(input_file_path)] + invalid_arguments,
+    )
+
+    assert (
+        "There is a problem with the extra arguments!" in result.stdout
+        or "should start with double dashes!" in result.stdout
+        or "does not exist in the data model!" in result.stdout
+        or "There are some errors in the data model!" in result.stdout
     )
 
 

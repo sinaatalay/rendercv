@@ -66,14 +66,23 @@ def test_format_date(date, expected_date_string):
         ("cv.phone", "+905555555555"),
         ("cv.email", "test@example.com"),
         ("cv.sections.education.0.degree", "PhD"),
+        ("cv.sections.education.0.highlights.1", "Did this."),
+        ("cv.sections.this_is_a_new_section", '["This is a text entry."]'),
         ("design.page_size", "a4paper"),
+        ("design", '{"theme": "engineeringresumes"}'),
     ],
 )
 def test_set_or_update_a_value(rendercv_data_model, key, value):
     dm.set_or_update_a_value(rendercv_data_model, key, value)
 
     # replace with regex pattern:
-    key = re.sub(r"sections\.([^\.]*?)\.(\d+)", 'sections_input["\\1"][\\2]', key)
+    key = re.sub(r"sections\.([^\.]*)", 'sections_input["\\1"]', key)
+    key = re.sub(r"\.(\d+)", "[\\1]", key)
+
+    if value.startswith("{") and value.endswith("}"):
+        value = eval(value)
+    elif value.startswith("[") and value.endswith("]"):
+        value = eval(value)
 
     assert eval(f"rendercv_data_model.{key}") == value
 
