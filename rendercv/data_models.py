@@ -26,6 +26,7 @@ import re
 import ssl
 import pathlib
 import warnings
+import annotated_types as at
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
@@ -38,6 +39,29 @@ from .themes.engineeringresumes import EngineeringresumesThemeOptions
 
 # disable Pydantic warnings:
 warnings.filterwarnings("ignore")
+
+locale_catalog = {
+    "month": "month",
+    "months": "months",
+    "year": "year",
+    "years": "years",
+    "present": "present",
+    "to": "-",
+    "abbreviations_for_months": [
+        "Jan.",
+        "Feb.",
+        "Mar.",
+        "Apr.",
+        "May",
+        "June",
+        "July",
+        "Aug.",
+        "Sept.",
+        "Oct.",
+        "Nov.",
+        "Dec.",
+    ],
+}
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -109,20 +133,7 @@ def format_date(date: Date) -> str:
     """
     # Month abbreviations,
     # taken from: https://web.library.yale.edu/cataloging/months
-    abbreviations_of_months = [
-        "Jan.",
-        "Feb.",
-        "Mar.",
-        "Apr.",
-        "May",
-        "June",
-        "July",
-        "Aug.",
-        "Sept.",
-        "Oct.",
-        "Nov.",
-        "Dec.",
-    ]
+    abbreviations_of_months = locale_catalog["abbreviations_for_months"]
 
     month = int(date.strftime("%m"))
     month_abbreviation = abbreviations_of_months[month - 1]
@@ -397,7 +408,7 @@ class EntryBase(RenderCVBaseModel):
                 start_date = format_date(date_object)
 
             if self.end_date == "present":
-                end_date = "present"
+                end_date = locale_catalog["present"]
             elif isinstance(self.end_date, int):
                 # Then it means only the year is provided
                 end_date = str(self.end_date)
@@ -406,7 +417,7 @@ class EntryBase(RenderCVBaseModel):
                 date_object = get_date_object(self.end_date)
                 end_date = format_date(date_object)
 
-            date_string = f"{start_date} to {end_date}"
+            date_string = f"{start_date} {locale_catalog['to']} {end_date}"
 
         else:
             # Neither date, start_date, nor end_date is provided, so return an empty
@@ -455,7 +466,7 @@ class EntryBase(RenderCVBaseModel):
                 date_object = get_date_object(self.end_date)
                 end_date = date_object.year
 
-            date_string = f"{start_date} to {end_date}"
+            date_string = f"{start_date} {locale_catalog['to']} {end_date}"
 
         else:
             # Neither date, start_date, nor end_date is provided, so return an empty
@@ -519,16 +530,16 @@ class EntryBase(RenderCVBaseModel):
             if how_many_years == 0:
                 how_many_years_string = None
             elif how_many_years == 1:
-                how_many_years_string = "1 year"
+                how_many_years_string = f"1 {locale_catalog['year']}"
             else:
-                how_many_years_string = f"{how_many_years} years"
+                how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
 
             # calculate the number of months between start_date and end_date:
             how_many_months = round((timespan_in_days % 365) / 30)
             if how_many_months <= 1:
-                how_many_months_string = "1 month"
+                how_many_months_string = f"1 {locale_catalog['month']}"
             else:
-                how_many_months_string = f"{how_many_months} months"
+                how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
 
             # combine howManyYearsString and howManyMonthsString:
             if how_many_years_string is None:
@@ -995,6 +1006,59 @@ class CurriculumVitae(RenderCVBaseModel):
         return sections
 
 
+class LocaleCatalog(RenderCVBaseModel):
+    """This class is the data model of the locale catalog. The values of each field
+    updates the `locale_catalog` dictionary.
+    """
+
+    month: Optional[str] = pydantic.Field(
+        default=None,
+        title='Translation of "Month"',
+        description='Translation of the word "month" in the locale.',
+    )
+    months: Optional[str] = pydantic.Field(
+        default=None,
+        title='Translation of "Months"',
+        description='Translation of the word "months" in the locale.',
+    )
+    year: Optional[str] = pydantic.Field(
+        default=None,
+        title='Translation of "Year"',
+        description='Translation of the word "year" in the locale.',
+    )
+    years: Optional[str] = pydantic.Field(
+        default=None,
+        title='Translation of "Years"',
+        description='Translation of the word "years" in the locale.',
+    )
+    present: Optional[str] = pydantic.Field(
+        default=None,
+        title='Translation of "Present"',
+        description='Translation of the word "present" in the locale.',
+    )
+    to: Optional[str] = pydantic.Field(
+        default=None,
+        title='Translation of "To"',
+        description='Translation of the word "to" in the locale.',
+    )
+    abbreviations_for_months: Optional[
+        Annotated[list[str], at.Len(min_length=12, max_length=12)]
+    ] = pydantic.Field(
+        default=None,
+        title="Abbreviations of Months",
+        description="Abbreviations of the months in the locale.",
+    )
+
+    @pydantic.field_validator(
+        "month", "months", "year", "years", "present", "abbreviations_for_months", "to"
+    )
+    @classmethod
+    def check_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
+        """Check if the translations are provided correctly."""
+        if value:
+            locale_catalog[info.field_name] = value
+
+
 # ======================================================================================
 # ======================================================================================
 # ======================================================================================
@@ -1027,6 +1091,13 @@ class RenderCVDataModel(RenderCVBaseModel):
         title="Design",
         description=(
             "The design information of the CV. The default is the classic theme."
+        ),
+    )
+    locale_catalog: Optional[LocaleCatalog] = pydantic.Field(
+        default=None,
+        title="Locale Catalog",
+        description=(
+            "The locale catalog of the CV to allow the support of multiple languages."
         ),
     )
 
