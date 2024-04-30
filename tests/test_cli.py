@@ -550,3 +550,22 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
     assert html_file_path.exists()
     assert png_file_path.exists()
     assert "Your CV is rendered!" in result.stdout
+
+
+def test_create_theme_command_invalid_based_on_theme(tmp_path):
+    result = runner.invoke(
+        cli.app, ["create-theme", "newtheme", "--based-on", "invalid_theme"]
+    )
+
+    assert "is not in the list of available themes" in result.stdout
+
+
+def test_create_theme_command_theme_already_exists(tmp_path):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    (tmp_path / "newtheme").mkdir()
+
+    result = runner.invoke(cli.app, ["create-theme", "newtheme"])
+
+    assert "already exists!" in result.stdout
