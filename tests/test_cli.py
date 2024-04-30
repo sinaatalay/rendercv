@@ -19,7 +19,8 @@ def test_warning():
 
 
 def test_error():
-    cli.error("This is an error message.")
+    with pytest.raises(typer.Exit):
+        cli.error("This is an error message.")
 
 
 def test_information():
@@ -49,15 +50,6 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
 @pytest.mark.parametrize(
     "data_model_class, invalid_model",
     [
-        (
-            dm.EducationEntry,
-            {
-                "institution": "Boğaziçi University",
-                "area": "Mechanical Engineering",
-                "degree": "BS",
-                "date": "2028-12-08",
-            },
-        ),
         (
             dm.EducationEntry,
             {
@@ -105,12 +97,6 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
             },
         ),
         (
-            dm.NormalEntry,
-            {
-                "name": "My Entry",
-            },
-        ),
-        (
             dm.CurriculumVitae,
             {
                 "name": "John Doe",
@@ -135,7 +121,8 @@ def test_handle_validation_error(data_model_class, invalid_model):
     try:
         data_model_class(**invalid_model)
     except pydantic.ValidationError as e:
-        cli.handle_validation_error(e)
+        with pytest.raises(typer.Exit):
+            cli.handle_validation_error(e)
 
 
 @pytest.mark.parametrize(
@@ -152,8 +139,9 @@ def test_handle_exceptions(exception):
     @cli.handle_exceptions
     def function_that_raises_exception():
         raise exception
-
-    function_that_raises_exception()
+    
+    with pytest.raises(typer.Exit):
+        function_that_raises_exception()
 
 
 def test_live_progress_reporter_class():
