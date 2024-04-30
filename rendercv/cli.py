@@ -68,7 +68,7 @@ def warning(text: str):
     print(f"[bold yellow]{text}")
 
 
-def error(text: str, exception: Optional[Exception] = None):
+def error(text: Optional[str] = None, exception: Optional[Exception] = None):
     """Print an error message to the terminal.
 
     Args:
@@ -82,7 +82,12 @@ def error(text: str, exception: Optional[Exception] = None):
             f"\n[bold red]{text}[/bold red]\n\n[orange4]{exception_message}[/orange4]\n"
         )
     else:
-        print(f"\n[bold red]{text}\n")
+        if text:
+            print(f"\n[bold red]{text}\n")
+        else:
+            print()
+
+    raise typer.Exit(code=1)
 
 
 def information(text: str):
@@ -245,17 +250,19 @@ def handle_validation_error(exception: pydantic.ValidationError):
         if isinstance(input, (dict, list)):
             input = ""
 
-        new_errors.append(
-            {
-                "loc": str(location),
-                "msg": message,
-                "input": str(input),
-            }
-        )
+        new_error = {
+            "loc": str(location),
+            "msg": message,
+            "input": str(input),
+        }
+
+        # if new_error is not in new_errors, then add it to new_errors
+        if new_error not in new_errors:
+            new_errors.append(new_error)
 
     # Print the errors in a nice table:
     table = rich.table.Table(
-        title="[bold red]\nThere are some errors in the input file!\n",
+        title="[bold red]\nThere are some errors in the data model!\n",
         title_justify="left",
         show_lines=True,
     )
@@ -271,7 +278,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         )
 
     print(table)
-    print()  # Add an empty line at the end to make it look better.
+    error()  # exit the program
 
 
 def handle_exceptions(function: Callable) -> Callable:
@@ -323,9 +330,10 @@ def handle_exceptions(function: Callable) -> Callable:
                 "The input file contains a character that cannot be decoded with"
                 f" UTF-8 ({bad_character}):\n {bad_character_context}",
             )
-
         except ValueError as e:
             error(e)
+        except typer.Exit:
+            pass
         except RuntimeError as e:
             error("An error occurred:", e)
 
@@ -465,6 +473,8 @@ def copy_templates(
         "Render a YAML input file. Example: [bold green]rendercv render"
         " John_Doe_CV.yaml[/bold green]"
     ),
+    # allow extra arguments for updating the data model:
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
 @handle_exceptions
 def cli_command_render(
@@ -538,14 +548,9 @@ def cli_command_render(
             help="Don't generate the PNG file.",
         ),
     ] = False,
+    ctx: typer.Context = None,
 ):
-    """Generate a $\\LaTeX$ CV from a YAML input file.
-
-    Args:
-        input_file_path (str): Path to the YAML input file as a string.
-        use_local_latex (bool, optional): Use the local LaTeX installation instead of
-            the RenderCV's TinyTeX. The default is False.
-    """
+    """Generate a $\\LaTeX$ CV from a YAML input file."""
     welcome()
 
     input_file_path = pathlib.Path(input_file_name)
@@ -571,6 +576,36 @@ def cli_command_render(
     with LiveProgressReporter(number_of_steps) as progress:
         progress.start_a_step("Reading and validating the input file")
         data_model = dm.read_input_file(input_file_path)
+
+        # update the data model if there are extra arguments:
+        key_and_values = dict()
+
+        # `ctx.args` is a list of arbitrary arguments that haven't been specified in the
+        # function's definition. They are used to allow users to edit their data model
+        # in CLI. The elements with even indexes in this list are keys that start with
+        # double dashed, such as `--cv.sections.education.0.institution`. The following
+        # elements are the corresponding values of the key, such as
+        # `"Bogazici University"`. The for loop below parses `ctx.args` accordingly.
+        for i in range(0, len(ctx.args), 2):
+            key = ctx.args[i]
+            value = ctx.args[i + 1]
+            if not key.startswith("--"):
+                error(f"The key ({key}) should start with double dashes!")
+
+            key = key.replace("--", "")
+
+            key_and_values[key] = value
+
+        for key, value in key_and_values.items():
+            try:
+                # set the key (for example, cv.sections.education.0.institution) to the
+                # value
+                dm.set_or_update_a_value(data_model, key, value)
+            except pydantic.ValidationError as e:
+                raise e
+            except (ValueError, KeyError, IndexError, AttributeError):
+                raise ValueError(f'The key "{key}" does not exist in the data model!')
+
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
