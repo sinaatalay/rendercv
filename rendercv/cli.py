@@ -600,7 +600,7 @@ def cli_command_render(
             try:
                 # set the key (for example, cv.sections.education.0.institution) to the
                 # value
-                dm.set_or_update_a_value(data_model, key, value)
+                data_model = dm.set_or_update_a_value(data_model, key, value)
             except pydantic.ValidationError as e:
                 raise e
             except (ValueError, KeyError, IndexError, AttributeError):
@@ -797,13 +797,13 @@ def cli_command_create_theme(
     based_on_theme_init_file_contents = based_on_theme_init_file.read_text()
 
     # generate the new init file:
-    class_name = f"{theme_name.title()}ThemeOptions"
+    class_name = f"{theme_name.capitalize()}ThemeOptions"
     literal_name = f'Literal["{theme_name}"]'
     new_init_file_contents = (
         based_on_theme_init_file_contents.replace(
             f'Literal["{based_on}"]', literal_name
         )
-        .replace(f"{based_on.title()}ThemeOptions", class_name)
+        .replace(f"{based_on.capitalize()}ThemeOptions", class_name)
         .replace("..", "rendercv.themes")
     )
 
