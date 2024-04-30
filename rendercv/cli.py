@@ -87,7 +87,7 @@ def error(text: Optional[str] = None, exception: Optional[Exception] = None):
         else:
             print()
 
-    raise typer.Exit(code=1)
+    raise typer.Exit(code=4)
 
 
 def information(text: str):
@@ -587,6 +587,12 @@ def cli_command_render(
         # elements are the corresponding values of the key, such as
         # `"Bogazici University"`. The for loop below parses `ctx.args` accordingly.
         if ctx:
+            if len(ctx.args) % 2 != 0:
+                error(
+                    "There is a problem with the extra arguments! Each key should have"
+                    " a corresponding value."
+                )
+
             for i in range(0, len(ctx.args), 2):
                 key = ctx.args[i]
                 value = ctx.args[i + 1]
@@ -605,7 +611,9 @@ def cli_command_render(
                 except pydantic.ValidationError as e:
                     raise e
                 except (ValueError, KeyError, IndexError, AttributeError):
-                    raise ValueError(f'The key "{key}" does not exist in the data model!')
+                    raise ValueError(
+                        f'The key "{key}" does not exist in the data model!'
+                    )
 
         progress.finish_the_current_step()
 
