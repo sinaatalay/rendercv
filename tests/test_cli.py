@@ -180,6 +180,15 @@ def test_copy_templates(tmp_path, folder_name):
     assert copied_path.exists()
 
 
+def test_copy_templates_with_new_folder_name(tmp_path):
+    copied_path = cli.copy_templates(
+        folder_name="markdown",
+        copy_to=tmp_path,
+        new_folder_name="new_folder",
+    )
+    assert copied_path.exists()
+
+
 @pytest.mark.parametrize(
     "folder_name",
     ["markdown"] + dm.available_themes,
@@ -363,7 +372,9 @@ def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
 def test_render_command_with_dont_generate_markdown(tmp_path, input_file_path):
     # copy input file to the temporary directory to create the output directory there:
     input_file_path = shutil.copy(input_file_path, tmp_path)
+
     markdown_file_path = tmp_path / "rendercv_output" / "John_Doe_CV.md"
+
     runner.invoke(
         cli.app,
         [
@@ -379,7 +390,9 @@ def test_render_command_with_dont_generate_markdown(tmp_path, input_file_path):
 def test_render_command_with_dont_generate_html(tmp_path, input_file_path):
     # copy input file to the temporary directory to create the output directory there:
     input_file_path = shutil.copy(input_file_path, tmp_path)
+
     html_file_path = tmp_path / "rendercv_output" / "John_Doe_CV_PASTETOGRAMMARLY.html"
+
     runner.invoke(
         cli.app,
         [
@@ -395,7 +408,9 @@ def test_render_command_with_dont_generate_html(tmp_path, input_file_path):
 def test_render_command_with_dont_generate_png(tmp_path, input_file_path):
     # copy input file to the temporary directory to create the output directory there:
     input_file_path = shutil.copy(input_file_path, tmp_path)
+
     png_file_path = tmp_path / "rendercv_output" / "John_Doe_CV_1.png"
+
     runner.invoke(
         cli.app,
         [
@@ -481,3 +496,40 @@ def test_new_command_with_only_input_file(tmp_path):
     assert not markdown_source_files_path.exists()
     assert not theme_source_files_path.exists()
     assert input_file_path.exists()
+
+
+@pytest.mark.parametrize(
+    "based_on",
+    dm.available_themes,
+)
+def test_create_theme_command(tmp_path, input_file_path, based_on):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    runner.invoke(cli.app, ["create-theme", "newtheme", "--based-on", based_on])
+
+    new_theme_source_files_path = tmp_path / "newtheme"
+
+    assert new_theme_source_files_path.exists()
+
+    # test if the new theme is actually working:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    result = runner.invoke(
+        cli.app, ["render", str(input_file_path), "--design", "{'theme':'newtheme'}"]
+    )
+
+    output_folder_path = tmp_path / "rendercv_output"
+    pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
+    latex_file_path = output_folder_path / "John_Doe_CV.tex"
+    markdown_file_path = output_folder_path / "John_Doe_CV.md"
+    html_file_path = output_folder_path / "John_Doe_CV_PASTETOGRAMMARLY.html"
+    png_file_path = output_folder_path / "John_Doe_CV_1.png"
+
+    assert output_folder_path.exists()
+    assert pdf_file_path.exists()
+    assert latex_file_path.exists()
+    assert markdown_file_path.exists()
+    assert html_file_path.exists()
+    assert png_file_path.exists()
+    assert "Your CV is rendered!" in result.stdout
