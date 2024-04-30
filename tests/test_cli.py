@@ -1,4 +1,3 @@
-import copy
 import os
 import shutil
 
@@ -9,7 +8,6 @@ import pydantic
 import ruamel.yaml
 import pytest
 import typer.testing
-import time_machine
 
 
 def test_welcome():
@@ -416,7 +414,7 @@ def test_render_command_with_local_latex_command(tmp_path, input_file_path):
 
     runner.invoke(
         cli.app,
-        ["render", str(input_file_path), "--local-latex-command", "pdflatex"],
+        ["render", str(input_file_path), "--use-local-latex-command", "pdflatex"],
     )
 
 
