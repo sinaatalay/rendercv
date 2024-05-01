@@ -23,6 +23,63 @@ def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file.generate_latex_file(tmp_path / "test.tex")
 
 
+@pytest.mark.parametrize(
+    "string, expected_string",
+    [
+        (
+            "\\textit{This is a \\textit{nested} italic text.}",
+            "\\textit{This is a \\textnormal{nested} italic text.}",
+        ),
+        (
+            "\\underline{This is a \\underline{nested} underlined text.}",
+            "\\underline{This is a \\textnormal{nested} underlined text.}",
+        ),
+        (
+            "\\textbf{This is a \\textit{nested} bold text.}",
+            "\\textbf{This is a \\textit{nested} bold text.}",
+        ),
+        (
+            "\\textbf{This is not} a \\textbf{nested bold text.}",
+            "\\textbf{This is not} a \\textbf{nested bold text.}",
+        ),
+        (
+            (
+                "\\textbf{This is not} \\textbf{a nested bold text. But it \\textbf{is}"
+                " now.}"
+            ),
+            (
+                "\\textbf{This is not} \\textbf{a nested bold text. But it"
+                " \\textnormal{is} now.}"
+            ),
+        ),
+        (
+            "\\textit{This is a \\underline{nested} italic text.}",
+            "\\textit{This is a \\underline{nested} italic text.}",
+        ),
+        # The two scenarios below doesn't work. I couldn't find a way to implement it:
+        # (
+        #     "\\textbf{This is a \\textbf{nested} bold \\textbf{text}.}",
+        #     (
+        #         "\\textbf{This is a \\textnormal{nested} bold"
+        #         " \\textnormal{text}.}"
+        #     ),
+        # ),
+        # (
+        #     (
+        #         "\\textit{This \\textit{is} a \\textbf{n\\textit{ested}} underlined"
+        #         " \\textit{text}.}"
+        #     ),
+        #     (
+        #         "\\textit{This \\textnormal{is} a \\textbf{n\\textnormal{ested}}"
+        #         " underlined \\textnormal{text}.}"
+        #     ),
+        # ),
+    ],
+)
+def test_latex_file_revert_nested_latex_style_commands_method(string, expected_string):
+    assert r.LaTeXFile.revert_nested_latex_style_commands(string) == expected_string
+
+
 def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file = r.MarkdownFile(rendercv_data_model, jinja2_environment)
     latex_file.get_markdown_code()

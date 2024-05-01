@@ -53,16 +53,13 @@ class TemplatedFile:
         template_name: str,
         extension: str,
         entry: Optional[dm.Entry] = None,
-        section_title: Optional[str] = None,
-        is_first_entry: Optional[bool] = None,
+        **kwargs,
     ) -> str:
         """Template one of the files in the `themes` directory.
 
         Args:
             template_name (str): The name of the template file.
             entry (Optional[dm.Entry]): The title of the section.
-            is_first_entry (Optional[bool]): Whether the entry is the first one in the
-                section.
 
         Returns:
             str: The templated file.
@@ -90,9 +87,8 @@ class TemplatedFile:
             cv=self.cv,
             design=self.design,
             entry=entry,
-            section_title=section_title,
             today=Date.today().strftime("%B %Y"),
-            is_first_entry=is_first_entry,
+            **kwargs,
         )
 
         return result
@@ -159,16 +155,13 @@ class LaTeXFile(TemplatedFile):
         self,
         template_name: str,
         entry: Optional[dm.Entry] = None,
-        section_title: Optional[str] = None,
-        is_first_entry: Optional[bool] = None,
+        **kwargs,
     ) -> str:
         """Template one of the files in the `themes` directory.
 
         Args:
             template_name (str): The name of the template file.
             entry (Optional[dm.Entry]): The data model of the entry.
-            section_title (Optional[str]): The title of the section.
-            is_first_entry (Optional[bool]): Whether the entry is the first one in the section.
 
         Returns:
             str: The templated file.
@@ -178,26 +171,49 @@ class LaTeXFile(TemplatedFile):
             template_name,
             "tex",
             entry,
-            section_title,
-            is_first_entry,
+            **kwargs,
         )
 
-        # If there is nested \textbf, \textit, or \underline commands, replace the inner
-        # ones with \textnormal:
-
-        # Find all the nested commands:
-        nested_commands = re.findall(r"\\textbf{[^}]*?(\\textbf{.*?})", result)
-        nested_commands += re.findall(r"\\textit{[^}]*?(\\textit{.*?})", result)
-        nested_commands += re.findall(r"\\underline{[^}]*?(\\underline{.*?})", result)
-
-        # Replace the inner commands with \textnormal:
-        for nested_command in nested_commands:
-            new_command = nested_command.replace("textbf", "textnormal")
-            new_command = new_command.replace("textit", "textnormal")
-            new_command = new_command.replace("underline", "textnormal")
-            result = result.replace(nested_command, new_command)
+        result = self.revert_nested_latex_style_commands(result)
 
         return result
+
+    @classmethod
+    def revert_nested_latex_style_commands(cls, latex_string: str) -> str:
+        """Revert the nested $\\LaTeX$ style commands to allow users to unbold or
+        unitalicize a bold or italicized text.
+
+        Args:
+            string (str): The string to revert the nested $\\LaTeX$ style commands.
+
+        Returns:
+            str: The string with the reverted nested $\\LaTeX$ style commands.
+        """
+        # If there is nested \textbf, \textit, or \underline commands, replace the inner
+        # ones with \textnormal:
+        nested_commands_to_look_for = [
+            "textbf",
+            "textit",
+            "underline",
+        ]
+
+        for command in nested_commands_to_look_for:
+            nested_commands = True
+            while nested_commands:
+                # replace all the inner commands with \textnormal until there are no
+                # nested commands left:
+
+                # find the first nested command:
+                nested_commands = re.findall(
+                    rf"\\{command}{{[^}}]*?(\\{command}{{.*?}})", latex_string
+                )
+
+                # replace the nested command with \textnormal:
+                for nested_command in nested_commands:
+                    new_command = nested_command.replace(command, "textnormal")
+                    latex_string = latex_string.replace(nested_command, new_command)
+
+        return latex_string
 
     def get_latex_code(self):
         """Get the $\\LaTeX$ code of the file.
@@ -230,7 +246,8 @@ class MarkdownFile(TemplatedFile):
         """Render and return all the templates for the Markdown file.
 
         Returns:
-            tuple[str, List[Tuple[str, List[str]]]]: The header and sections of the Markdown file.
+            tuple[str, List[Tuple[str, List[str]]]]: The header and sections of the
+                Markdown file.
         """
         # Template the header and sections:
         header = self.template("Header")
@@ -262,17 +279,13 @@ class MarkdownFile(TemplatedFile):
         self,
         template_name: str,
         entry: Optional[dm.Entry] = None,
-        section_title: Optional[str] = None,
-        is_first_entry: Optional[bool] = None,
+        **kwargs,
     ) -> str:
         """Template one of the files in the `themes` directory.
 
         Args:
             template_name (str): The name of the template file.
             entry (Optional[dm.Entry]): The data model of the entry.
-            section_title (Optional[str]): The title of the section.
-            is_first_entry (Optional[bool]): Whether the entry is the first one in the
-                section.
 
         Returns:
             str: The templated file.
@@ -282,8 +295,7 @@ class MarkdownFile(TemplatedFile):
             template_name,
             "md",
             entry,
-            section_title,
-            is_first_entry,
+            **kwargs,
         )
         return result
 
@@ -306,7 +318,7 @@ class MarkdownFile(TemplatedFile):
         file_path.write_text(self.get_markdown_code(), encoding="utf-8")
 
 
-def escape_latex_characters(string: str, strict: bool = True) -> str:
+def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
     """Escape $\\LaTeX$ characters in a string.
 
     This function is called during the reading of the input file. Before the validation
@@ -344,26 +356,22 @@ def escape_latex_characters(string: str, strict: bool = True) -> str:
 
     # Don't escape links as hyperref package will do it automatically:
     # Find all the links in the sentence:
-    links = re.findall(r"\[.*?\]\(.*?\)", string)
+    links = re.findall(r"\[.*?\]\(.*?\)", latex_string)
 
     # Replace the links with a placeholder:
     for i, link in enumerate(links):
-        string = string.replace(link, f"!!-link{i}-!!")
+        latex_string = latex_string.replace(link, f"!!-link{i}-!!")
 
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
-    copy_of_the_string = list(string)
-    for i, character in enumerate(copy_of_the_string):
-        if character in escape_characters:
-            new_character = escape_characters[character]
-            copy_of_the_string[i] = new_character
+    translation_map = str.maketrans(escape_characters)
+    latex_string = latex_string.translate(translation_map)
 
-    string = "".join(copy_of_the_string)
     # Replace the links with the original links:
     for i, link in enumerate(links):
-        string = string.replace(f"!!-link{i}-!!", link)
+        latex_string = latex_string.replace(f"!!-link{i}-!!", link)
 
-    return string
+    return latex_string
 
 
 def markdown_to_latex(markdown_string: str) -> str:
