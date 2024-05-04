@@ -489,7 +489,7 @@ def transform_markdown_sections_to_latex_sections(
 
 
 def replace_placeholders_with_actual_values(
-    string: str, placeholders: dict[str, Optional[str]]
+    text: str, placeholders: dict[str, Optional[str]]
 ) -> str:
     """Replace the placeholders in a string with actual values.
 
@@ -502,9 +502,9 @@ def replace_placeholders_with_actual_values(
         str: The string with actual values.
     """
     for placeholder, value in placeholders.items():
-        string = string.replace(placeholder, str(value))
+        text = text.replace(placeholder, str(value))
 
-    return string
+    return text
 
 
 def make_matched_part_something(
@@ -964,11 +964,24 @@ def latex_to_pdf(
         output = latex_process.communicate()  # wait for the process to finish
         if latex_process.returncode != 0:
             raise RuntimeError(
-                "Running TinyTeX has failed! For debugging, we suggest running the"
-                " LaTeX file manually in https://overleaf.com.",
-                "If you want to run it locally, run the command below in the terminal:",
-                " ".join([str(command_part) for command_part in command]),
-                "If you can't solve the problem, please open an issue on GitHub.",
+                "Unfortunately, RenderCV's built-in TinyTeX binaries couldn't render"
+                " this LaTeX file into a PDF. This could be caused by one of two"
+                " reasons:\n\n1- The theme templates might have been updated in a way"
+                " RenderCV's TinyTeX cannot render. RenderCV's TinyTeX is minified to"
+                " keep the package size small. As a result, it doesn't function like a"
+                " general-purpose LaTeX distribution.\n2- Special characters, like"
+                " Greek or Chinese letters, that are not compatible with the fonts used"
+                " or RenderCV's TinyTeX might have been used.\n\nHowever, this issue"
+                " can be resolved quickly. RenderCV allows you to run your own LaTeX"
+                " distribution instead of the built-in TinyTeX. This can be done with"
+                " the '--use-local-latex-command' option, as shown below:\n\nrendercv"
+                " render --use-local-latex-command lualatex John_Doe_CV.yaml\n\nIf you"
+                " ensure that the generated LaTeX file can be compiled by your local"
+                " LaTeX distribution, RenderCV will work successfully. You can debug"
+                " the generated LaTeX file in your LaTeX editor to resolve any bugs."
+                " Then, you can start using RenderCV with your local LaTeX"
+                " distribution.\n\nIf you can't solve the problem, please open an issue"
+                " on GitHub."
             )
         else:
             try:
