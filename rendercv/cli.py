@@ -157,7 +157,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         "Field required": "This field is required!",
         "value is not a valid phone number": "This is not a valid phone number!",
         "month must be in 1..12": "The month must be between 1 and 12!",
-        "Value error, day is out of range for month": (
+        "day is out of range for month": (
             "The day is out of range for the month!"
         ),
         "Extra inputs are not permitted": (
@@ -168,6 +168,11 @@ def handle_validation_error(exception: pydantic.ValidationError):
             "This field should contain a list of items but it doesn't!"
         ),
     }
+
+    unwanted_texts = [
+        "value is not a valid email address: ",
+        "Value error, "
+    ]
 
     # Check if this is a section error. If it is, we need to handle it differently.
     # This is needed because how dm.validate_section_input function raises an exception.
@@ -226,13 +231,14 @@ def handle_validation_error(exception: pydantic.ValidationError):
                 location = f"{location}.{custom_location}"
             input = custom_input_value
 
+        # Don't show unwanted texts in the error message:
+        for unwanted_text in unwanted_texts:
+            message = message.replace(unwanted_text, "")
+
         # Convert the error message to a more user-friendly message if it's in the
         # error_dictionary:
         if message in error_dictionary:
             message = error_dictionary[message]
-
-        # Don't show "Value error, ", since the message is already clear.
-        message = message.replace("Value error, ", "")
 
         # Special case for end_date because Pydantic returns multiple end_date errors
         # since it has multiple valid formats:
