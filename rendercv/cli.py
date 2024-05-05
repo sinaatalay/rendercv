@@ -50,7 +50,7 @@ def welcome():
     table.add_column("Title", style="magenta")
     table.add_column("Link", style="cyan", justify="right", no_wrap=True)
 
-    table.add_row("Documentation", "https://sinaatalay.github.io/rendercv/")
+    table.add_row("Documentation", "https://docs.rendercv.com")
     table.add_row("Source code", "https://github.com/sinaatalay/rendercv/")
     table.add_row("Bug reports", "https://github.com/sinaatalay/rendercv/issues/")
     table.add_row("Feature requests", "https://github.com/sinaatalay/rendercv/issues/")

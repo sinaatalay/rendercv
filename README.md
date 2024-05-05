@@ -2,7 +2,7 @@
 
 [![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
-[![docs](https://img.shields.io/badge/docs-mkdocs-rgb(0%2C79%2C144))](https://sinaatalay.github.io/rendercv/)
+[![docs](https://img.shields.io/badge/docs-mkdocs-rgb(0%2C79%2C144))](https://docs.rendercv.com)
 [![pypi-version](https://img.shields.io/pypi/v/rendercv?label=PyPI%20version&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
 [![pypi-downloads](https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144))](https://pypistats.org/packages/rendercv)
 
@@ -79,7 +79,7 @@ RenderCV also validates the input file, and if there are any problems, it tells 
     rendercv render Full_Name_CV.yaml
     ```
 
-You can find a comprehensive user guide that covers the data model (YAML structure) and adding custom themes in greater detail [here](https://sinaatalay.github.io/rendercv/user_guide).
+You can find a comprehensive user guide that covers the data model (YAML structure) and adding custom themes in greater detail [here](https://docs.rendercv.comuser_guide).
 
 ## Motivation
 
@@ -113,11 +113,11 @@ If you do it for RenderCV once, you may not have to do it again for a long time.
 
 The source code of RenderCV is well-commented and documented. Reading the source code might be fun as the software structure is explained with docstrings and comments.
 
-A detailed user guide can be found [here](https://sinaatalay.github.io/rendercv/user_guide).
+A detailed user guide can be found [here](https://docs.rendercv.comuser_guide).
 
-Reference to the code can be found [here](https://sinaatalay.github.io/rendercv/reference).
+Reference to the code can be found [here](https://docs.rendercv.comreference).
 
-The changelog can be found [here](https://sinaatalay.github.io/rendercv/changelog).
+The changelog can be found [here](https://docs.rendercv.comchangelog).
 
 ## Contributing
 
