@@ -1275,7 +1275,7 @@ def set_or_update_a_value(
 
 
 def read_input_file(
-    file_path: pathlib.Path,
+    file_path_or_contents: pathlib.Path | str,
 ) -> RenderCVDataModel:
     """Read the input file and return two instances of
     [RenderCVDataModel](#rendercv.data_models.RenderCVDataModel). The first instance is
@@ -1288,26 +1288,33 @@ def read_input_file(
     Returns:
         RenderCVDataModel: The data models with $\\LaTeX$ and markdown strings.
     """
-    # check if the file exists:
-    if not file_path.exists():
-        raise FileNotFoundError(
-            f"The input file [magenta]{file_path}[/magenta] doesn't exist!"
-        )
+    if isinstance(file_path_or_contents, pathlib.Path):
+        # check if the file exists:
+        if not file_path_or_contents.exists():
+            raise FileNotFoundError(
+                f"The input file [magenta]{file_path_or_contents}[/magenta] doesn't"
+                " exist!"
+            )
 
-    # check the file extension:
-    accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
-    if file_path.suffix not in accepted_extensions:
-        user_friendly_accepted_extensions = [
-            f"[green]{ext}[/green]" for ext in accepted_extensions
-        ]
-        user_friendly_accepted_extensions = ", ".join(user_friendly_accepted_extensions)
-        raise ValueError(
-            "The input file should have one of the following extensions:"
-            f" {user_friendly_accepted_extensions}. The input file is"
-            f" [magenta]{file_path}[/magenta]."
-        )
+        # check the file extension:
+        accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
+        if file_path_or_contents.suffix not in accepted_extensions:
+            user_friendly_accepted_extensions = [
+                f"[green]{ext}[/green]" for ext in accepted_extensions
+            ]
+            user_friendly_accepted_extensions = ", ".join(
+                user_friendly_accepted_extensions
+            )
+            raise ValueError(
+                "The input file should have one of the following extensions:"
+                f" {user_friendly_accepted_extensions}. The input file is"
+                f" [magenta]{file_path_or_contents}[/magenta]."
+            )
 
-    file_content = file_path.read_text(encoding="utf-8")
+        file_content = file_path_or_contents.read_text(encoding="utf-8")
+    else:
+        file_content = file_path_or_contents
+
     input_as_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)  # type: ignore
 
     # validate the parsed dictionary by creating an instance of RenderCVDataModel:
