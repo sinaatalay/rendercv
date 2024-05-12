@@ -1,7 +1,7 @@
 # John Doe's CV
 
 - Phone: +90 541 999 99 99
-- Email: [johndoe@example.com](mailto:johndoe@example.com)
+- Email: [john_doe@example.com](mailto:john_doe@example.com)
 - Location: Istanbul, Turkey
 - Website: [example.com](https://example.com/)
 - LinkedIn: [johndoe](https://linkedin.com/in/johndoe)
