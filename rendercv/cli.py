@@ -11,6 +11,7 @@ from typing import Annotated, Callable, Optional
 import re
 import functools
 import shutil
+import os
 
 from rich import print
 import rich.console
@@ -157,9 +158,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         "Field required": "This field is required!",
         "value is not a valid phone number": "This is not a valid phone number!",
         "month must be in 1..12": "The month must be between 1 and 12!",
-        "day is out of range for month": (
-            "The day is out of range for the month!"
-        ),
+        "day is out of range for month": "The day is out of range for the month!",
         "Extra inputs are not permitted": (
             "This field is unknown for this object! Please remove it."
         ),
@@ -169,10 +168,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         ),
     }
 
-    unwanted_texts = [
-        "value is not a valid email address: ",
-        "Value error, "
-    ]
+    unwanted_texts = ["value is not a valid email address: ", "Value error, "]
 
     # Check if this is a section error. If it is, we need to handle it differently.
     # This is needed because how dm.validate_section_input function raises an exception.
@@ -473,6 +469,46 @@ def copy_templates(
         return destination
 
 
+def parse_data_model_override_arguments(
+    extra_arguments: typer.Context,
+) -> dict["str", "str"]:
+    """Parse extra arguments as data model key and value pairs and return them as a
+    dictionary.
+
+    Args:
+        extra_arguments (typer.Context): The extra arguments context.
+    Returns:
+        dict["str", "str"]: The key and value pairs.
+    """
+    key_and_values: dict["str", "str"] = dict()
+
+    # `extra_arguments.args` is a list of arbitrary arguments that haven't been
+    # specified in `cli_render_command` function's definition. They are used to allow
+    # users to edit their data model in CLI. The elements with even indexes in this list
+    # are keys that start with double dashed, such as
+    # `--cv.sections.education.0.institution`. The following elements are the
+    # corresponding values of the key, such as `"Bogazici University"`. The for loop
+    # below parses `ctx.args` accordingly.
+
+    if len(extra_arguments.args) % 2 != 0:
+        error(
+            "There is a problem with the extra arguments! Each key should have"
+            " a corresponding value."
+        )
+
+    for i in range(0, len(extra_arguments.args), 2):
+        key = extra_arguments.args[i]
+        value = extra_arguments.args[i + 1]
+        if not key.startswith("--"):
+            error(f"The key ({key}) should start with double dashes!")
+
+        key = key.replace("--", "")
+
+        key_and_values[key] = value
+
+    return key_and_values
+
+
 @app.command(
     name="render",
     help=(
@@ -554,14 +590,17 @@ def cli_command_render(
             help="Don't generate the PNG file.",
         ),
     ] = False,
-    ctx: typer.Context = None,
+    extra_data_model_override_argumets: typer.Context = None,
 ):
     """Generate a $\\LaTeX$ CV from a YAML input file."""
     welcome()
 
     input_file_path = pathlib.Path(input_file_name)
+    output_directory = pathlib.Path.cwd() / output_folder_name
 
-    output_directory = input_file_path.parent / output_folder_name
+    # change the current working directory to the input file's directory (because
+    # the template overrides are looked up in the current working directory):
+    os.chdir(input_file_path.parent)
 
     # compute the number of steps
     # 1. read and validate the input file
@@ -586,33 +625,14 @@ def cli_command_render(
         # update the data model if there are extra arguments:
         key_and_values = dict()
 
-        # `ctx.args` is a list of arbitrary arguments that haven't been specified in the
-        # function's definition. They are used to allow users to edit their data model
-        # in CLI. The elements with even indexes in this list are keys that start with
-        # double dashed, such as `--cv.sections.education.0.institution`. The following
-        # elements are the corresponding values of the key, such as
-        # `"Bogazici University"`. The for loop below parses `ctx.args` accordingly.
-        if ctx:
-            if len(ctx.args) % 2 != 0:
-                error(
-                    "There is a problem with the extra arguments! Each key should have"
-                    " a corresponding value."
-                )
-
-            for i in range(0, len(ctx.args), 2):
-                key = ctx.args[i]
-                value = ctx.args[i + 1]
-                if not key.startswith("--"):
-                    error(f"The key ({key}) should start with double dashes!")
-
-                key = key.replace("--", "")
-
-                key_and_values[key] = value
-
+        if extra_data_model_override_argumets:
+            key_and_values = parse_data_model_override_arguments(
+                extra_data_model_override_argumets
+            )
             for key, value in key_and_values.items():
                 try:
-                    # set the key (for example, cv.sections.education.0.institution) to the
-                    # value
+                    # set the key (for example, cv.sections.education.0.institution) to
+                    # the value
                     data_model = dm.set_or_update_a_value(data_model, key, value)
                 except pydantic.ValidationError as e:
                     raise e
