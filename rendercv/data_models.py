@@ -68,13 +68,11 @@ locale_catalog = {
 # This type is used to validate the date fields in the data.
 # See https://docs.pydantic.dev/2.5/concepts/types/#custom-types for more information
 # about custom types.
-date_pattern_for_json_schema = r"\d{4}(-\d{2})?(-\d{2})?"
 date_pattern_for_validation = r"\d{4}-\d{2}(-\d{2})?"
 RenderCVDate = Annotated[
     str,
     pydantic.Field(
         pattern=date_pattern_for_validation,
-        json_schema_extra={"pattern": date_pattern_for_json_schema},
     ),
 ]
 
@@ -187,13 +185,14 @@ class PublicationEntry(RenderCVBaseModel):
         description="The DOI of the publication.",
         examples=["10.48550/arXiv.2310.03138"],
     )
-    date: int | RenderCVDate = pydantic.Field(
-        title="Publication Date",
+    date: Optional[RenderCVDate | int | str] = pydantic.Field(
+        default=None,
+        title="Date",
         description=(
-            "The date of the publication in YYYY-MM-DD, YYYY-MM, or YYYY format."
+            "The publication date can be filled in YYYY-MM-DD, YYYY-MM, or YYYY format."
+            ' Also, any custom date string can be used (like "Fall 2020").'
         ),
-        examples=["2021-10-31", "2010"],
-        json_schema_extra={"default": "2020-01-01"},
+        examples=["2020-09-24", "My Custom Date"],
     )
     journal: Optional[str] = pydantic.Field(
         default=None,
@@ -277,7 +276,6 @@ class EntryBase(RenderCVBaseModel):
             "The start date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format."
         ),
         examples=["2020-09-24"],
-        json_schema_extra={"default": "2000-01-01"},
     )
     end_date: Optional[Literal["present"] | int | RenderCVDate] = pydantic.Field(
         default=None,
@@ -288,7 +286,6 @@ class EntryBase(RenderCVBaseModel):
             " start_date."
         ),
         examples=["2020-09-24", "present"],
-        json_schema_extra={"default": "2020-01-01"},
     )
     date: Optional[RenderCVDate | int | str] = pydantic.Field(
         default=None,
@@ -299,7 +296,6 @@ class EntryBase(RenderCVBaseModel):
             ' a custom date string (like "Fall 2020").'
         ),
         examples=["2020-09-24", "My Custom Date"],
-        json_schema_extra={"default": "Custom Date or 2020-01-01"},
     )
     highlights: Optional[list[str]] = pydantic.Field(
         default=None,
@@ -316,7 +312,8 @@ class EntryBase(RenderCVBaseModel):
         date_is_provided = date is not None
 
         if date_is_provided:
-            if re.fullmatch(date_pattern_for_json_schema, date):
+            date_pattern = r"\d{4}(-\d{2})?(-\d{2})?"
+            if re.fullmatch(date_pattern, date):
                 # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
                 # Check if it is a valid date:
                 get_date_object(date)
@@ -601,7 +598,6 @@ class EducationEntryBase(RenderCVBaseModel):
         title="Degree",
         description="The type of the degree.",
         examples=["BS", "BA", "PhD", "MS"],
-        json_schema_extra={"default": "PhD"},
     )
 
 
@@ -810,8 +806,6 @@ SectionInput = Annotated[
 # Full RenderCV data models: ===========================================================
 # ======================================================================================
 
-url_validator = pydantic.TypeAdapter(pydantic.HttpUrl)  # type: ignore
-
 
 class SocialNetwork(RenderCVBaseModel):
     """This class is the data model of a social network."""
@@ -842,11 +836,15 @@ class SocialNetwork(RenderCVBaseModel):
         return username
 
     @pydantic.model_validator(mode="after")  # type: ignore
-    def validate_urls(self) -> "SocialNetwork":
+    def check_url(self) -> "SocialNetwork":
         """Validate the URLs of the social networks."""
-        url = self.url
-
-        url_validator.validate_strings(url)
+        try:
+            urlopen(self.url)
+        except HTTPError:
+            # 404 or other errors are not important for us
+            pass
+        except InvalidURL:
+            raise ValueError(f"This social network URL ({self.url}) is not valid!")
 
         return self
 
