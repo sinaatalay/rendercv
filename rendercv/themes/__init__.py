@@ -216,7 +216,7 @@ class ThemeOptions(pydantic.BaseModel):
         title="Primary Color",
         description=(
             "The primary color of the theme. \nThe color can be specified either with"
-            " their [name](https://www.w3.org/TR/SVG11/types.html#ColorKeywords),"
+            " their name (https://www.w3.org/TR/SVG11/types.html#ColorKeywords),"
             " hexadecimal value, RGB value, or HSL value. The default value is"
             " rgb(0,79,144)."
         ),
