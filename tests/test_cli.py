@@ -1,13 +1,27 @@
 import os
 import shutil
 
-import rendercv.cli as cli
-import rendercv.data_models as dm
-
 import pydantic
 import ruamel.yaml
 import pytest
 import typer.testing
+
+
+import rendercv.cli as cli
+import rendercv.data_models as dm
+
+
+def run_render_command(input_file_path, working_path, extra_arguments=[]):
+    # copy input file to the temporary directory to create the output directory there:
+    if not input_file_path == working_path / input_file_path.name:
+        shutil.copy(input_file_path, working_path)
+
+    # change the current working directory to the temporary directory:
+    os.chdir(working_path)
+
+    result = runner.invoke(cli.app, ["render", "John_Doe_CV.yaml"] + extra_arguments)
+
+    return result
 
 
 def test_welcome():
@@ -196,10 +210,10 @@ runner = typer.testing.CliRunner()
 
 
 def test_render_command(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    result = runner.invoke(cli.app, ["render", str(input_file_path)])
+    result = run_render_command(
+        input_file_path,
+        tmp_path,
+    )
 
     output_folder_path = tmp_path / "rendercv_output"
     pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
@@ -217,120 +231,48 @@ def test_render_command(tmp_path, input_file_path):
     assert "Your CV is rendered!" in result.stdout
 
 
-def test_render_command_with_different_output_path(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    output_folder_path = tmp_path / "test"
-
-    result = runner.invoke(
-        cli.app,
+def test_render_command_with_different_output_path(input_file_path, tmp_path):
+    result = run_render_command(
+        input_file_path,
+        tmp_path,
         [
-            "render",
-            str(input_file_path),
             "--output-folder-name",
             "test",
         ],
     )
+
+    output_folder_path = tmp_path / "test"
 
     assert result.exit_code == 0
     assert output_folder_path.exists()
     assert "Your CV is rendered!" in result.stdout
 
 
-def test_render_command_with_custom_latex_path(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    latex_file_path = tmp_path / "test.tex"
-
-    runner.invoke(
-        cli.app,
+@pytest.mark.parametrize(
+    ("option", "file_name"),
+    [
+        ("--pdf-path", "test.pdf"),
+        ("--latex-path", "test.tex"),
+        ("--markdown-path", "test.md"),
+        ("--html-path", "test.html"),
+        ("--png-path", "test.png"),
+    ],
+)
+def test_render_command_with_different_output_path_for_each_file(
+    option, file_name, tmp_path, input_file_path
+):
+    result = run_render_command(
+        input_file_path,
+        tmp_path,
         [
-            "render",
-            str(input_file_path),
-            "--latex-path",
-            str(latex_file_path),
+            option,
+            file_name,
         ],
     )
 
-    assert latex_file_path.exists()
+    file_path = tmp_path / file_name
 
-
-def test_render_command_with_custom_pdf_path(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    pdf_file_path = tmp_path / "test.pdf"
-
-    runner.invoke(
-        cli.app,
-        [
-            "render",
-            str(input_file_path),
-            "--pdf-path",
-            str(pdf_file_path),
-        ],
-    )
-
-    assert pdf_file_path.exists()
-
-
-def test_render_command_with_custom_markdown_path(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    markdown_file_path = tmp_path / "test.md"
-
-    runner.invoke(
-        cli.app,
-        [
-            "render",
-            str(input_file_path),
-            "--markdown-path",
-            str(markdown_file_path),
-        ],
-    )
-
-    assert markdown_file_path.exists()
-
-
-def test_render_command_with_custom_html_path(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    html_file_path = tmp_path / "test.html"
-
-    runner.invoke(
-        cli.app,
-        [
-            "render",
-            str(input_file_path),
-            "--html-path",
-            str(html_file_path),
-        ],
-    )
-
-    assert html_file_path.exists()
-
-
-def test_render_command_with_custom_png_path(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    png_file_path = tmp_path / "test.png"
-
-    runner.invoke(
-        cli.app,
-        [
-            "render",
-            str(input_file_path),
-            "--png-path",
-            str(png_file_path),
-        ],
-    )
-
-    assert png_file_path.exists()
+    assert file_path.exists()
 
 
 def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
@@ -339,14 +281,12 @@ def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
     runner.invoke(cli.app, ["new", "John Doe"])
     input_file_path = tmp_path / "John_Doe_CV.yaml"
 
-    png_file_path = tmp_path / "test.png"
-    runner.invoke(
-        cli.app,
+    run_render_command(
+        input_file_path,
+        tmp_path,
         [
-            "render",
-            str(input_file_path),
             "--png-path",
-            str(png_file_path),
+            "test.png",
         ],
     )
 
@@ -357,67 +297,38 @@ def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
     assert png_page2_file_path.exists()
 
 
-def test_render_command_with_dont_generate_markdown(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    markdown_file_path = tmp_path / "rendercv_output" / "John_Doe_CV.md"
-
-    runner.invoke(
-        cli.app,
+@pytest.mark.parametrize(
+    ("option", "file_name"),
+    [
+        ("--dont-generate-markdown", "John_Doe_CV.md"),
+        ("--dont-generate-html", "John_Doe_CV_PASTETOGRAMMARLY.html"),
+        ("--dont-generate-png", "John_Doe_CV_1.png"),
+    ],
+)
+def test_render_command_with_dont_generate_files(
+    tmp_path, input_file_path, option, file_name
+):
+    result = run_render_command(
+        input_file_path,
+        tmp_path,
         [
-            "render",
-            str(input_file_path),
-            "--dont-generate-markdown",
+            option,
         ],
     )
 
-    assert not markdown_file_path.exists()
+    file_path = tmp_path / "rendercv_output" / file_name
 
-
-def test_render_command_with_dont_generate_html(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    html_file_path = tmp_path / "rendercv_output" / "John_Doe_CV_PASTETOGRAMMARLY.html"
-
-    runner.invoke(
-        cli.app,
-        [
-            "render",
-            str(input_file_path),
-            "--dont-generate-html",
-        ],
-    )
-
-    assert not html_file_path.exists()
-
-
-def test_render_command_with_dont_generate_png(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    png_file_path = tmp_path / "rendercv_output" / "John_Doe_CV_1.png"
-
-    runner.invoke(
-        cli.app,
-        [
-            "render",
-            str(input_file_path),
-            "--dont-generate-png",
-        ],
-    )
-
-    assert not png_file_path.exists()
+    assert not file_path.exists()
 
 
 def test_render_command_with_local_latex_command(tmp_path, input_file_path):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    runner.invoke(
-        cli.app,
-        ["render", str(input_file_path), "--use-local-latex-command", "pdflatex"],
+    run_render_command(
+        input_file_path,
+        tmp_path,
+        [
+            "--use-local-latex-command",
+            "pdflatex",
+        ],
     )
 
 
@@ -434,12 +345,10 @@ def test_render_command_with_local_latex_command(tmp_path, input_file_path):
 def test_render_command_with_invalid_arguments(
     tmp_path, input_file_path, invalid_arguments
 ):
-    # copy input file to the temporary directory to create the output directory there:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
-    result = runner.invoke(
-        cli.app,
-        ["render", str(input_file_path)] + invalid_arguments,
+    result = run_render_command(
+        input_file_path,
+        tmp_path,
+        invalid_arguments,
     )
 
     assert (
@@ -473,24 +382,21 @@ def test_new_command_with_invalid_theme(tmp_path):
     assert "The theme should be one of the following" in result.stdout
 
 
-def test_new_command_with_dont_create_theme_source_files(tmp_path):
+@pytest.mark.parametrize(
+    ("option", "folder_name"),
+    [
+        ("--dont-create-theme-source-files", "classic"),
+        ("--dont-create-markdown-source-files", "markdown"),
+    ],
+)
+def test_new_command_with_dont_create_files(tmp_path, option, folder_name):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "John Doe", "--dont-create-theme-source-files"])
+    runner.invoke(cli.app, ["new", "John Doe", option])
 
-    theme_source_files_path = tmp_path / "classic"
+    source_files_path = tmp_path / folder_name
 
-    assert not theme_source_files_path.exists()
-
-
-def test_new_command_with_dont_create_markdown_source_files(tmp_path):
-    # change the current working directory to the temporary directory:
-    os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "John Doe", "--dont-create-markdown-source-files"])
-
-    markdown_source_files_path = tmp_path / "markdown"
-
-    assert not markdown_source_files_path.exists()
+    assert not source_files_path.exists()
 
 
 def test_new_command_with_only_input_file(tmp_path):
