@@ -193,7 +193,7 @@ class EntryWithDate(RenderCVBaseModel):
         examples=["2020-09-24", "Fall 2023"],
     )
 
-    @pydantic.field_validator("date")
+    @pydantic.field_validator("date", mode="before")
     @classmethod
     def check_date(
         cls, date: Optional[int | RenderCVDate | str]
@@ -201,19 +201,25 @@ class EntryWithDate(RenderCVBaseModel):
         """Check if the date is provided correctly."""
         date_is_provided = date is not None
 
-        if date_is_provided and isinstance(date, str):
-            date_pattern = r"\d{4}(-\d{2})?(-\d{2})?"
-            if re.fullmatch(date_pattern, date):
-                # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
-                # Check if it is a valid date:
-                get_date_object(date)
+        if date_is_provided:
+            if isinstance(date, str):
+                date_pattern = r"\d{4}(-\d{2})?(-\d{2})?"
+                if re.fullmatch(date_pattern, date):
+                    # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
+                    # Check if it is a valid date:
+                    get_date_object(date)
 
-                # check if it is in YYYY format, and if so, convert it to an integer:
-                if re.fullmatch(r"\d{4}", date):
-                    # This is not required for start_date and end_date because they
-                    # can't be casted into a general string. For date, this needs to be
-                    # done manually, because it can be a general string.
-                    date = int(date)
+                    # check if it is in YYYY format, and if so, convert it to an
+                    # integer:
+                    if re.fullmatch(r"\d{4}", date):
+                        # This is not required for start_date and end_date because they
+                        # can't be casted into a general string. For date, this needs to
+                        # be done manually, because it can be a general string.
+                        date = int(date)
+            elif isinstance(date, Date):
+                # Pydantic parses YYYY-MM-DD dates as datetime.date objects. We need to
+                # convert them to strings because that's how RenderCV uses them.
+                date = date.isoformat()
 
         return date
 
@@ -323,7 +329,7 @@ class EntryBase(EntryWithDate):
         examples=["Did this.", "Did that."],
     )
 
-    @pydantic.field_validator("start_date", "end_date")
+    @pydantic.field_validator("start_date", "end_date", mode="before")
     @classmethod
     def check_and_parse_dates(
         cls,
@@ -332,7 +338,13 @@ class EntryBase(EntryWithDate):
         date_is_provided = date is not None
 
         if date_is_provided:
-            if date != "present":
+            if isinstance(date, Date):
+                # Pydantic parses YYYY-MM-DD dates as datetime.date objects. We need to
+                # convert them to strings because that's how RenderCV uses them.
+                date = date.isoformat()
+
+            elif date != "present":
+                # Validate the date:
                 get_date_object(date)
 
         return date
