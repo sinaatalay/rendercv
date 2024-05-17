@@ -81,7 +81,6 @@ experience_entry = {
 
 normal_entry = {
     "name": "Some Project",
-    "location": "Remote",
     "date": "2021-09",
     "highlights": [
         "Developed a web application with **React** and **Django**.",
