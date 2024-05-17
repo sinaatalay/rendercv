@@ -20,6 +20,7 @@ import importlib.util
 import importlib.machinery
 import functools
 from urllib.request import urlopen, HTTPError
+from urllib.error import URLError
 from http.client import InvalidURL
 import json
 import re
@@ -62,19 +63,6 @@ locale_catalog = {
         "Dec.",
     ],
 }
-
-# Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
-# YYYY-MM format:
-# This type is used to validate the date fields in the data.
-# See https://docs.pydantic.dev/2.5/concepts/types/#custom-types for more information
-# about custom types.
-date_pattern_for_validation = r"\d{4}-\d{2}(-\d{2})?"
-RenderCVDate = Annotated[
-    str,
-    pydantic.Field(
-        pattern=date_pattern_for_validation,
-    ),
-]
 
 
 def get_date_object(date: str | int) -> Date:
@@ -154,6 +142,23 @@ class RenderCVBaseModel(pydantic.BaseModel):
 # Entry models: ========================================================================
 # ======================================================================================
 
+# Create an URL validator to validate social network URLs:
+url_validator = pydantic.TypeAdapter(pydantic.HttpUrl)  # type: ignore
+
+
+# Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
+# YYYY-MM format:
+# This type is used to validate the date fields in the data.
+# See https://docs.pydantic.dev/2.5/concepts/types/#custom-types for more information
+# about custom types.
+date_pattern_for_validation = r"\d{4}-\d{2}(-\d{2})?"
+RenderCVDate = Annotated[
+    str,
+    pydantic.Field(
+        pattern=date_pattern_for_validation,
+    ),
+]
+
 
 class OneLineEntry(RenderCVBaseModel):
     """This class is the data model of `OneLineEntry`."""
@@ -168,7 +173,70 @@ class OneLineEntry(RenderCVBaseModel):
     )
 
 
-class PublicationEntry(RenderCVBaseModel):
+class BulletEntry(RenderCVBaseModel):
+    """This class is the data model of `BulletEntry`."""
+
+    bullet: str = pydantic.Field(
+        title="Bullet",
+        description="The bullet of the BulletEntry.",
+    )
+
+
+class EntryWithDate(RenderCVBaseModel):
+    date: Optional[int | RenderCVDate | str] = pydantic.Field(
+        default=None,
+        title="Date",
+        description=(
+            "The date field can be filled in YYYY-MM-DD, YYYY-MM, or YYYY formats or as"
+            ' an arbitrary string like "Fall 2023".'
+        ),
+        examples=["2020-09-24", "Fall 2023"],
+    )
+
+    @pydantic.field_validator("date")
+    @classmethod
+    def check_date(
+        cls, date: Optional[int | RenderCVDate | str]
+    ) -> Optional[int | RenderCVDate | str]:
+        """Check if the date is provided correctly."""
+        date_is_provided = date is not None
+
+        if date_is_provided and isinstance(date, str):
+            date_pattern = r"\d{4}(-\d{2})?(-\d{2})?"
+            if re.fullmatch(date_pattern, date):
+                # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
+                # Check if it is a valid date:
+                get_date_object(date)
+
+                # check if it is in YYYY format, and if so, convert it to an integer:
+                if re.fullmatch(r"\d{4}", date):
+                    # This is not required for start_date and end_date because they
+                    # can't be casted into a general string. For date, this needs to be
+                    # done manually, because it can be a general string.
+                    date = int(date)
+
+        return date
+
+    @functools.cached_property
+    def date_string(self) -> str:
+        if self.date:
+            if isinstance(self.date, int):
+                # Then it means only the year is provided
+                date_string = str(self.date)
+            else:
+                try:
+                    date_object = get_date_object(self.date)
+                    date_string = format_date(date_object)
+                except ValueError:
+                    # Then it is a custom date string (e.g., "My Custom Date")
+                    date_string = str(self.date)
+        else:
+            date_string = ""
+
+        return date_string
+
+
+class PublicationEntry(EntryWithDate):
     """This class is the data model of `PublicationEntry`."""
 
     title: str = pydantic.Field(
@@ -185,29 +253,11 @@ class PublicationEntry(RenderCVBaseModel):
         description="The DOI of the publication.",
         examples=["10.48550/arXiv.2310.03138"],
     )
-    date: Optional[RenderCVDate | int | str] = pydantic.Field(
-        default=None,
-        title="Date",
-        description=(
-            "The publication date can be filled in YYYY-MM-DD, YYYY-MM, or YYYY format."
-            ' Also, any custom date string can be used (like "Fall 2020").'
-        ),
-        examples=["2020-09-24", "My Custom Date"],
-    )
     journal: Optional[str] = pydantic.Field(
         default=None,
         title="Journal",
         description="The journal or the conference name.",
     )
-
-    @pydantic.field_validator("date")
-    @classmethod
-    def check_date(cls, date: int | RenderCVDate) -> int | RenderCVDate:
-        """Check if the date is a valid date."""
-        # The function below will raise an error if the date is not valid:
-        get_date_object(date)
-
-        return date
 
     @pydantic.field_validator("doi")
     @classmethod
@@ -225,7 +275,7 @@ class PublicationEntry(RenderCVBaseModel):
             except HTTPError as err:
                 if err.code == 404:
                     raise ValueError("DOI cannot be found in the DOI System!")
-            except InvalidURL:
+            except (InvalidURL, URLError):
                 raise ValueError("This DOI is not valid!")
 
         return doi
@@ -235,29 +285,8 @@ class PublicationEntry(RenderCVBaseModel):
         """Return the URL of the DOI."""
         return f"https://doi.org/{self.doi}"
 
-    @functools.cached_property
-    def date_string(self) -> str:
-        """Return the date string of the publication."""
-        if isinstance(self.date, int):
-            date_string = str(self.date)
-        else:
-            # Then it is a string
-            date_object = get_date_object(self.date)
-            date_string = format_date(date_object)
 
-        return date_string
-
-
-class BulletEntry(RenderCVBaseModel):
-    """This class is the data model of `BulletEntry`."""
-
-    bullet: str = pydantic.Field(
-        title="Bullet",
-        description="The bullet of the BulletEntry.",
-    )
-
-
-class EntryBase(RenderCVBaseModel):
+class EntryBase(EntryWithDate):
     """This class is the parent class of some of the entry types. It is being used
     because some of the entry types have common fields like dates, highlights, location,
     etc.
@@ -287,38 +316,12 @@ class EntryBase(RenderCVBaseModel):
         ),
         examples=["2020-09-24", "present"],
     )
-    date: Optional[RenderCVDate | int | str] = pydantic.Field(
-        default=None,
-        title="Date",
-        description=(
-            "If the event is a one-day event, then this field can be filled in"
-            " YYYY-MM-DD format. Also, this field can be used if you would like to use"
-            ' a custom date string (like "Fall 2020").'
-        ),
-        examples=["2020-09-24", "My Custom Date"],
-    )
     highlights: Optional[list[str]] = pydantic.Field(
         default=None,
         title="Highlights",
         description="The highlights of the event as a list of strings.",
         examples=["Did this.", "Did that."],
     )
-
-    @pydantic.field_validator("date")
-    @classmethod
-    def check_date(
-        cls, date: Optional[RenderCVDate | int | str]
-    ) -> Optional[RenderCVDate | int | str]:
-        date_is_provided = date is not None
-
-        if date_is_provided:
-            date_pattern = r"\d{4}(-\d{2})?(-\d{2})?"
-            if re.fullmatch(date_pattern, date):
-                # Then it is in YYYY-MM-DD, YYYY-MM, or YYYY format
-                # Check if it is a valid date:
-                get_date_object(date)
-
-        return date
 
     @pydantic.field_validator("start_date", "end_date")
     @classmethod
@@ -349,7 +352,6 @@ class EntryBase(RenderCVBaseModel):
             # If only date is provided, ignore start_date and end_date:
             self.start_date = None
             self.end_date = None
-
         elif not start_date_is_provided and end_date_is_provided:
             # If only end_date is provided, assume it is a one-day event and act like
             # only the date is provided:
@@ -359,8 +361,8 @@ class EntryBase(RenderCVBaseModel):
         elif start_date_is_provided:
             start_date = get_date_object(self.start_date)
             if not end_date_is_provided:
-                # Then it means only the start_date is provided, so it is an ongoing
-                # event:
+                # If only start_date is provided, assume it is an ongoing event, i.e.,
+                # the end_date is present:
                 self.end_date = "present"
                 end_date = Date.today()
             else:
@@ -382,20 +384,19 @@ class EntryBase(RenderCVBaseModel):
 
         Example:
             ```python
-            entry = dm.EntryBase(start_date=2020-10-11, end_date=2021-04-04).date_string
+            entry = dm.EntryBase(start_date="2020-10-11", end_date="2021-04-04").date_string
             ```
             will return:
-            `#!python "2020-10-11 to 2021-04-04"`
+            `#!python "Nov. 2020 to Apr. 2021"`
         """
-        if self.date is not None:
-            try:
-                date_object = get_date_object(self.date)
-                date_string = format_date(date_object)
-            except ValueError:
-                # Then it is a custom date string (e.g., "My Custom Date")
-                date_string = str(self.date)
+        date_is_provided = self.date is not None
+        start_date_is_provided = self.start_date is not None
+        end_date_is_provided = self.end_date is not None
 
-        elif self.start_date is not None and self.end_date is not None:
+        if date_is_provided:
+            date_string = super().date_string
+
+        elif start_date_is_provided and end_date_is_provided:
             if isinstance(self.start_date, int):
                 # Then it means only the year is provided
                 start_date = str(self.start_date)
@@ -431,12 +432,16 @@ class EntryBase(RenderCVBaseModel):
 
         Example:
             ```python
-            entry = dm.EntryBase(start_date=2020-10-11, end_date=2021-04-04).date_string
+            entry = dm.EntryBase(start_date="2020-10-11", end_date="2021-04-04").date_string
             ```
             will return:
             `#!python "2020 to 2021"`
         """
-        if self.date is not None:
+        date_is_provided = self.date is not None
+        start_date_is_provided = self.start_date is not None
+        end_date_is_provided = self.end_date is not None
+
+        if date_is_provided:
             try:
                 date_object = get_date_object(self.date)
                 date_string = str(date_object.year)
@@ -444,7 +449,7 @@ class EntryBase(RenderCVBaseModel):
                 # Then it is a custom date string (e.g., "My Custom Date")
                 date_string = str(self.date)
 
-        elif self.start_date is not None and self.end_date is not None:
+        elif start_date_is_provided and end_date_is_provided:
             if isinstance(self.start_date, int):
                 # Then it means only the year is provided
                 start_date = str(self.start_date)
@@ -480,7 +485,7 @@ class EntryBase(RenderCVBaseModel):
 
         Example:
             ```python
-            entry = dm.EntryBase(start_date=2020-01-01, end_date=2020-04-20).time_span
+            entry = dm.EntryBase(start_date="2020-01-01", end_date="2020-04-20").time_span
             ```
             will return:
             `#!python "4 months"`
@@ -838,13 +843,9 @@ class SocialNetwork(RenderCVBaseModel):
     @pydantic.model_validator(mode="after")  # type: ignore
     def check_url(self) -> "SocialNetwork":
         """Validate the URLs of the social networks."""
-        try:
-            urlopen(self.url)
-        except HTTPError:
-            # 404 or other errors are not important for us
-            pass
-        except InvalidURL:
-            raise ValueError(f"This social network URL ({self.url}) is not valid!")
+        url = self.url
+
+        url_validator.validate_strings(url)
 
         return self
 
