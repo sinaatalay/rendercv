@@ -207,6 +207,14 @@ def test_if_the_schema_is_the_latest(root_directory_path):
             "1 year 1 month",
         ),
         (
+            Date(2020, 1, 1),
+            Date(2021, 1, 1),
+            None,
+            "Jan. 2020 to Jan. 2021",
+            "2020 to 2021",
+            "1 year 1 month",
+        ),
+        (
             "2020-01",
             "2021-01",
             None,
@@ -293,6 +301,7 @@ def test_if_the_schema_is_the_latest(root_directory_path):
         ),
         (None, None, "2020-01-01", "Jan. 2020", "2020", ""),
         (None, None, "2020-01-01", "Jan. 2020", "2020", ""),
+        (None, None, Date(2020, 1, 1), "Jan. 2020", "2020", ""),
         (None, None, None, "", "", ""),
         (None, "2020-01-01", None, "Jan. 2020", "2020", ""),
         (None, "present", None, "Jan. 2024", "2024", ""),
