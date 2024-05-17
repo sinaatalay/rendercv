@@ -6,28 +6,56 @@
 [![pypi-version](https://img.shields.io/pypi/v/rendercv?label=PyPI%20version&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
 [![pypi-downloads](https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144))](https://pypistats.org/packages/rendercv)
 
-RenderCV is a LaTeX CV/resume framework. It allows you to create a high-quality CV as a PDF from a YAML file with full Markdown syntax support and complete control over the LaTeX code.
+RenderCV is a $\LaTeX$ CV/resume framework. It allows you to create a high-quality CV as a PDF from a YAML file with full Markdown syntax support and complete control over the $\LaTeX$ code.
 
 The primary motivation behind the RenderCV is to provide people with a concrete framework that will allow
 
-- Version controlling a CV's content and design separately in a very organized manner.
+- Version controlling a CV's content and design separately in an organized manner.
 - Building an automated pipeline that can generate the CV as PDF, markdown, and PNG files.
 - Making the CV's design uniform and nicely structured without room for human errors.
 
-RenderCV offers built-in LaTeX and Markdown templates ready to produce high-quality CVs. However, the templates are entirely arbitrary and can easily be updated to leverage RenderCV's capabilities with your custom CV themes.
+RenderCV offers built-in $\LaTeX$ and Markdown templates ready to produce high-quality CVs. However, the templates are entirely arbitrary and can easily be updated to leverage RenderCV's capabilities with your custom CV themes.
 
-It takes a YAML file that looks like this:
+RenderCV takes a YAML file that looks like this:
 
 ```yaml
 cv:
   name: John Doe
+  location: Your Location
+  email: youremail@yourdomain.com
+  social_networks:
+    - network: LinkedIn
+      username: yourusername
+    - network: GitHub
+      username: yourusername
+  sections:
+    this_is_a_section_title:
+      - This is a type of entry, TextEntry—just a plain string.
+      - You can have as many entries as you want under a section.
+      - RenderCV offers a variety of entry types, such as TextEntry,
+        BulletEntry, EducationEntry, ExperienceEntry, NormalEntry,
+        OneLineEntry, PublicationEntry.
+      - Each entry type has its own set of attributes and different
+        looks.
+    my_education_section:
+      - institution: Boğaziçi University
+        area: Mechanical Engineering
+        degree: BS
+        start_date: 2000-09
+        end_date: 2005-05
+        highlights:
+          - 'GPA: 3.9/4.0 ([Transcript](https://example.com))'
+          - '**Coursework:** Structural Analysis, Thermodynamics,
+            Heat Transfer'
+    experience:
+      ...
 ```
 
-Then, it produces one of these PDFs with its corresponding LaTeX code, markdown file, and images as PNGs. Each of these is an example of one of four built-in themes of RenderCV. Click on images to preview PDFs.
+Then, it produces one of these PDFs with its corresponding $\LaTeX$ code, markdown file, and images as PNGs. Each of these is an example of one of four built-in themes of RenderCV. Click on images to preview PDFs.
 
-| [![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ClassicTheme_CV.pdf)    | [![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_Sb2novTheme_CV.pdf)                                     |
+| [![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ClassicTheme_CV.pdf)    | [![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_Sb2novTheme_CV.pdf)                                     |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_ModerncvTheme_CV.pdf) | [![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://raw.githubusercontent.com/sinaatalay/rendercv/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf) |
+| [![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ModerncvTheme_CV.pdf) | [![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf) |
 
 
 
@@ -55,7 +83,7 @@ RenderCV comes with a JSON Schema so that the input YAML file can be filled out 
     ```bash
     pip install rendercv
     ```
-3.  Run the command below to generate a starting input file (Full_Name_CV.yaml) with default LaTeX and Markdown templates next to it ("classic" and "markdown" folders), ready to be customized.
+3.  Run the command below to generate a starting input files.
     ```bash
     rendercv new "Full Name"
     ```
@@ -67,36 +95,36 @@ RenderCV comes with a JSON Schema so that the input YAML file can be filled out 
 
 [Here](https://docs.rendercv.com/user_guide/), you can find a comprehensive user guide that covers the data model (YAML structure) and command-line interface (CLI) in greater detail.
 
-## Motivation in Detail
+## Motivation
 
 Writing the content of a CV and designing a CV are separate issues that should be treated separately. RenderCV attempts to provide this separation. This approach encourages users to concentrate on the content without getting distracted by the appearance of their CV and vice versa.
 
 RenderCV also provides a general set of utilities that will automate most of the manual work involved in the CV updating process. After updating a single sentence or a date in the YAML input file written in pure English, RenderCV will
-- re-create your LaTeX file.
+- re-create your $\LaTeX$ file.
 - render a new PDF file.
 - create a new Markdown file.
 - create a new HTML document to be pasted into word processors for spelling and grammar checking.
 - create PNG files for each page.
 
-### Why should I bother using RenderCV instead of LaTeX? I can version-control LaTeX code too!
+### Why should I bother using RenderCV instead of $\LaTeX$? I can version-control $\LaTeX$ code too!
 
-RenderCV is not a replacement for LaTeX, but it's a general set of utilities designed to create and manage LaTeX CVs. If you're currently using LaTeX to create your CV, you should try RenderCV. Using your existing LaTeX themes in RenderCV is very easy.
+RenderCV is not a replacement for $\LaTeX$, but it's a general set of utilities designed to create and manage $\LaTeX$ CVs. If you're currently using $\LaTeX$ to create your CV, you should try RenderCV. Using your existing $\LaTeX$ themes in RenderCV is very easy.
 
-Here are some advantages of RenderCV over using pure LaTeX:
+Here are some advantages of RenderCV over using pure $\LaTeX$:
 
-- RenderCV will separate the content of your CV from your LaTeX code. They will sit in independent files, and RenderCV will use both to generate your CV.
+- RenderCV will separate the content of your CV from your $\LaTeX$ code. They will sit in independent files, and RenderCV will use both to generate your CV.
 - You will be able to version-control your design and content separately.
-- Updating your content in a YAML file is easier than updating a complex LaTeX file.
-- A pure LaTeX CV will have many code duplications because a CV is a document with a list of sections that contain a list of entries. RenderCV has only one LaTeX code for each entry type, duplicated automatically based on the YAML input file.
-- Spell-checking is not very straightforward in LaTeX documents.
+- Updating your content in a YAML file is easier than updating a complex $\LaTeX$ file.
+- A pure $\LaTeX$ CV will have many code duplications because a CV is a document with a list of sections that contain a list of entries. RenderCV has only one $\LaTeX$ code for each entry type, duplicated automatically based on the YAML input file.
+- Spell-checking is not very straightforward in $\LaTeX$ documents.
 
 ## Documentation
 
 The source code of RenderCV is well-commented and documented. Reading the source code might be fun as the software structure is explained with docstrings and comments.
 
-A detailed user guide can be found [here](https://docs.rendercv.com/user_guide).
+The detailed user guide can be found [here](https://docs.rendercv.com/user_guide).
 
-A developer guide can be found [here](https://docs.rendercv.com/developer_guide).
+The developer guide can be found [here](https://docs.rendercv.com/developer_guide).
 
 Reference to the code can be found [here](https://docs.rendercv.com/reference).
 
