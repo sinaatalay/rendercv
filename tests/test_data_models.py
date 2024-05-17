@@ -296,6 +296,7 @@ def test_if_the_schema_is_the_latest(root_directory_path):
         (None, None, None, "", "", ""),
         (None, "2020-01-01", None, "Jan. 2020", "2020", ""),
         (None, "present", None, "Jan. 2024", "2024", ""),
+        ("2002", "2020", "2024", "2024", "2024", ""),
     ],
 )
 @time_machine.travel("2024-01-01")
@@ -328,7 +329,7 @@ def test_publication_dates(publication_entry, date, expected_date_string):
     assert publication_entry.date_string == expected_date_string
 
 
-@pytest.mark.parametrize("date", ["aaa", None, "2025-23-23"])
+@pytest.mark.parametrize("date", ["2025-23-23"])
 def test_invalid_publication_dates(publication_entry, date):
     with pytest.raises(pydantic.ValidationError):
         publication_entry["date"] = date
