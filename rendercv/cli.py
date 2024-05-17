@@ -197,7 +197,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
     # some locations are not really the locations in the input file, but some
     # information about the model coming from Pydantic. We need to remove them.
     # (e.g. avoid stuff like .end_date.literal['present'])
-    unwanted_locations = ["tagged-union", "list", "literal"]
+    unwanted_locations = ["tagged-union", "list", "literal", "int", "constrained-str"]
     for error_object in errors:
         location = error_object["loc"]
         new_location = [str(location_element) for location_element in location]
