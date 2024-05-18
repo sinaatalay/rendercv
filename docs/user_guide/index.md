@@ -27,9 +27,9 @@ This command will create the following files:
 
     This file will contain all the content and design options of your CV.
 
--   A directory called `classic`, which contains the LaTeX source code of the default built-in theme, "classic".
+-   A directory called `classic`, which contains the $\LaTeX$ source code of the default built-in theme, "classic".
 
-    This directory contains the LaTeX source code of RenderCV's default built-in theme, `classic`. You can update its contents to tweak the appearance of the output PDF file.
+    This directory contains the $\LaTeX$ source code of RenderCV's default built-in theme, `classic`. You can update its contents to tweak the appearance of the output PDF file.
 
 -   A directory called `markdown`, which contains the Markdown source code the CV.
 
@@ -70,14 +70,14 @@ rendercv render "Your_Name_CV.yaml"
 This command will generate a directory called `rendercv_output`, which contains the following files:
 
 -   The CV in PDF format, `Your_Name_CV.pdf`.
--   LaTeX source code of the PDF file, `Your_Name_CV.tex`.
+-   $\LaTeX$ source code of the PDF file, `Your_Name_CV.tex`.
 -   PNG files for each page of the PDF file.
 -   The CV in Markdown format, `Your_Name_CV.md`.
 -   An HTML file from the Markdown file, `Your_Name_CV_PASTETOGRAMMARLY.html`.
     
     This file is generated so that it can be opened in a browser and pasted into Grammarly or similar tools for spell and grammar checking.
 
--   Some log and auxiliary files related to the LaTeX compilation process.
+-   Some log and auxiliary files related to the $\LaTeX$ compilation process.
 
 If the theme and Markdown source files are found in the directory, they will override the default built-in theme and Markdown template. You don't need to provide all the source files; you can just provide the ones you want to override.
 
@@ -85,7 +85,7 @@ If the theme and Markdown source files are found in the directory, they will ove
 
 The `render` command has some options:
 
-- `#!bash --use-local-latex-command "LATEX_COMMAND"`: Generates the CV with the local LaTeX installation, i.e., runs `LATEX_COMMAND`. By default, RenderCV uses its own TinyTeX distribution.
+- `#!bash --use-local-latex-command "LATEX_COMMAND"`: Generates the CV with the local $\LaTeX$ installation, i.e., runs `LATEX_COMMAND`. By default, RenderCV uses its own TinyTeX distribution.
 ```bash
 rendercv render "Your_Name_CV.yaml" --use-local-latex-command "pdflatex" 
 ```
@@ -94,7 +94,7 @@ rendercv render "Your_Name_CV.yaml" --use-local-latex-command "pdflatex"
 rendercv render "Your_Name_CV.yaml" --output-folder-name "OUTPUT_FOLDER_NAME"
 ```
 
-- `#!bash --latex-path LATEX_PATH`: Copies the generated LaTeX source code from the output folder and pastes it to the specified path.
+- `#!bash --latex-path LATEX_PATH`: Copies the generated $\LaTeX$ source code from the output folder and pastes it to the specified path.
 ```bash
 rendercv render "Your_Name_CV.yaml" --latex-path "PATH"
 ```
@@ -146,7 +146,7 @@ rendercv render "Your_Name_CV.yaml" --cv.sections.education.1.institution "Your 
 
 ## Creating custom themes with the `create-theme` command
 
-RenderCV is a general LaTeX CV framework. It allows you to use any LaTeX code to generate your CVs. To begin developing a custom theme, run the command below.
+RenderCV is a general $\LaTeX$ CV framework. It allows you to use any $\LaTeX$ code to generate your CVs. To begin developing a custom theme, run the command below.
 
 ```bash
 rendercv create-theme "mycustomtheme"
