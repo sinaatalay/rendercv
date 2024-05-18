@@ -1,4 +1,4 @@
-# RenderCV: User Guide
+# User Guide
 
 This document provides everything you need to know about the usage of RenderCV.
 
