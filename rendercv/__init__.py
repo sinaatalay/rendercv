@@ -1,7 +1,8 @@
 """RenderCV package.
 
-RenderCV is a $\\LaTeX$ CV generator from a JSON/YAML input file. The primary motivation
-behind the RenderCV is to allow the separation between the content and design of a CV.
+RenderCV is a $\\LaTeX$ CV/resume framework that generates a CV from a JSON/YAML input
+file. Its primary motivation is to allow the separation between a CV's content and
+design.
 """
 
-__version__ = "1.8"
+__version__ = "1.9"
