@@ -242,9 +242,7 @@ class EntryWithDate(RenderCVBaseModel):
         return date_string
 
 
-class PublicationEntry(EntryWithDate):
-    """This class is the data model of `PublicationEntry`."""
-
+class PublicationEntryBase(RenderCVBaseModel):
     title: str = pydantic.Field(
         title="Title of the Publication",
         description="The title of the publication.",
@@ -290,6 +288,12 @@ class PublicationEntry(EntryWithDate):
     def doi_url(self) -> str:
         """Return the URL of the DOI."""
         return f"https://doi.org/{self.doi}"
+
+
+class PublicationEntry(EntryWithDate, PublicationEntryBase):
+    """This class is the data model of `PublicationEntry`."""
+
+    pass
 
 
 class EntryBase(EntryWithDate):
@@ -565,7 +569,6 @@ class EntryBase(EntryWithDate):
 
 
 class NormalEntryBase(RenderCVBaseModel):
-
     name: str = pydantic.Field(
         title="Name",
         description="The name of the NormalEntry.",
