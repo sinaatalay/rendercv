@@ -1,10 +1,12 @@
 # RenderCV
 
+<div align="center" markdown="span">
 [![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
 [![docs](https://img.shields.io/badge/docs-mkdocs-rgb(0%2C79%2C144))](https://docs.rendercv.com)
 [![pypi-version](https://img.shields.io/pypi/v/rendercv?label=PyPI%20version&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
 [![pypi-downloads](https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144))](https://pypistats.org/packages/rendercv)
+</div>
 
 RenderCV is a $\LaTeX$ CV/resume framework. It allows you to create a high-quality CV as a PDF from a YAML file with full Markdown syntax support and complete control over the $\LaTeX$ code.
 
@@ -23,11 +25,6 @@ cv:
   name: John Doe
   location: Your Location
   email: youremail@yourdomain.com
-  social_networks:
-    - network: LinkedIn
-      username: yourusername
-    - network: GitHub
-      username: yourusername
   sections:
     this_is_a_section_title:
       - This is a type of entry, TextEntry—just a plain string.
@@ -54,7 +51,7 @@ cv:
 Then, it produces one of these PDFs with its corresponding $\LaTeX$ code, markdown file, and images as PNGs. Each of these is an example of one of four built-in themes of RenderCV. Click on images to preview PDFs.
 
 | [![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ClassicTheme_CV.pdf)    | [![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_Sb2novTheme_CV.pdf)                                     |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ModerncvTheme_CV.pdf) | [![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf) |
 
 
@@ -106,7 +103,7 @@ RenderCV also provides a general set of utilities that will automate most of the
 - create a new HTML document to be pasted into word processors for spelling and grammar checking.
 - create PNG files for each page.
 
-### Why should I bother using RenderCV instead of $\LaTeX$? I can version-control $\LaTeX$ code too!
+> Why should I bother using RenderCV instead of $\LaTeX$? I can version-control $\LaTeX$ code too!
 
 RenderCV is not a replacement for $\LaTeX$, but it's a general set of utilities designed to create and manage $\LaTeX$ CVs. If you're currently using $\LaTeX$ to create your CV, you should try RenderCV. Using your existing $\LaTeX$ themes in RenderCV is very easy.
 
