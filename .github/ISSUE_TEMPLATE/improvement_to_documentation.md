@@ -1,5 +1,5 @@
 ---
-name: Bug report
+name: Improvement to the documentation
 about: Create a report to help us improve the documentation of RenderCV
 title: ''
 labels: documentation
