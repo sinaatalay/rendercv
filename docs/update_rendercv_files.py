@@ -151,7 +151,7 @@ def define_env(env):
             "yaml": dictionary_to_yaml(eval(entry)),
             "figures": [
                 {
-                    "path": f"assets/images/{theme}/{entry}.png",
+                    "path": f"../assets/images/{theme}/{entry}.png",
                     "alt_text": f"{proper_entry_name} in {theme}",
                     "theme": theme,
                 }
@@ -172,6 +172,10 @@ def define_env(env):
             ] = theme_file.read_text()
 
     env.variables["theme_templates"] = theme_templates
+
+    # available themes strings (put available themes between ``)
+    themes = [f"`{theme}`" for theme in dm.available_themes]
+    env.variables["available_themes"] = ", ".join(themes)
 
 
 def generate_entry_figures():
