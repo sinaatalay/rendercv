@@ -1,6 +1,6 @@
 ---
 name: Enhancement
-about: Suggest an idea for this project
+about: Suggest an idea for RenderCV
 title: ''
 labels: enhancement
 assignees: sinaatalay
