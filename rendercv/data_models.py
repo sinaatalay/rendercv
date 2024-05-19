@@ -1067,10 +1067,12 @@ class LocaleCatalog(RenderCVBaseModel):
         "month", "months", "year", "years", "present", "abbreviations_for_months", "to"
     )
     @classmethod
-    def check_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
-        """Check if the translations are provided correctly."""
+    def update_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
+        """Update the `locale_catalog` dictionary with the provided translations."""
         if value:
             locale_catalog[info.field_name] = value
+        
+        return value
 
 
 # ======================================================================================
