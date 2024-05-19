@@ -1384,15 +1384,9 @@ def get_a_sample_data_model(
             ),
             BulletEntry(
                 bullet=(
-                    "There are seven different entry types:"
-                    " [BulletEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#bullet-entry)"
-                    " (this section contains bullet entries),"
-                    " [TextEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#text-entry),"
-                    " [EducationEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#education-entry),"
-                    " [ExperienceEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#experience-entry),"
-                    " [NormalEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#normal-entry),"
-                    " [PublicationEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#publication-entry),"
-                    " and [OneLineEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#one-line-entry)."
+                    "There are seven different entry types: *BulletEntry*, *TextEntry*,"
+                    " *EducationEntry*, *ExperienceEntry*, *NormalEntry*,"
+                    " *PublicationEntry*, and *OneLineEntry*."
                 ),
             ),
             BulletEntry(
