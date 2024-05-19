@@ -1071,7 +1071,7 @@ class LocaleCatalog(RenderCVBaseModel):
         """Update the `locale_catalog` dictionary with the provided translations."""
         if value:
             locale_catalog[info.field_name] = value
-        
+
         return value
 
 
@@ -1360,113 +1360,135 @@ def get_a_sample_data_model(
 
     name = name.encode().decode("unicode-escape")
     sections = {
-        "summary": [
-            (
-                "This is an example resume to showcase the capabilities of the"
-                " open-source LaTeX CV generator,"
-                " [RenderCV](https://github.com/sinaatalay/rendercv). A substantial"
-                " part of the content is taken from"
-                " [here](https://www.careercup.com/resume), where a *clean and tidy CV*"
-                " pattern is proposed by **Gayle L. McDowell**."
+        "this_is_a_section_title": [
+            BulletEntry(
+                bullet=(
+                    "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX"
+                    " CV/resume framework. It allows you to create a high-quality CV as"
+                    " a PDF from a YAML file with **full Markdown syntax support** and"
+                    " **complete control over the LaTeX code**."
+                )
+            ),
+            BulletEntry(
+                bullet=(
+                    "Each section title is arbitrary, and each section contains a list"
+                    " of entries."
+                )
+            ),
+            BulletEntry(
+                bullet=(
+                    "There are seven different entry types:"
+                    " [BulletEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#bullet-entry)"
+                    " (this"
+                    " section contains bullet entries),"
+                    " [TextEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#text-entry),"
+                    " [EducationEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#education-entry),"
+                    " [ExperienceEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#experience-entry),"
+                    " [NormalEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#normal-entry),"
+                    " [PublicationEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#publication-entry),"
+                    " and [OneLineEntry](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/\\#one-line-entry)."
+                )
+            ),
+            BulletEntry(
+                bullet=(
+                    "Select a section title, pick an entry type, and start writing your"
+                    " section!"
+                )
+            ),
+            BulletEntry(
+                bullet=(
+                    "You can include some math as well:"
+                    " $\\mathcal{O}(n^2)\\vec{\\omega}$"
+                )
+            ),
+            BulletEntry(
+                bullet=(
+                    "[Here](https://docs.rendercv.com/user_guide/), you can find a"
+                    " comprehensive user guide that covers the data model (YAML"
+                    " structure) and command-line interface (CLI) in greater detail."
+                )
             ),
         ],
-        "education": [
+        "your_education_section": [
             EducationEntry(
-                institution="University of Pennsylvania",
-                area="Computer Science",
-                degree="BS",
-                start_date="2000-09",
-                end_date="2005-05",
+                institution="University of Example",
+                area="Mechanical Engineering",
+                degree="PhD",
+                start_date="2017-09",
+                end_date="2021-06",
                 highlights=[
-                    "GPA: 3.9/4.0 ([Transcript](https://example.com))",
+                    '**Thesis:** "This is an EducationEntry"',
+                ],
+            ),
+            EducationEntry(
+                institution="University of Example",
+                area="Mechanical Engineering",
+                degree="BS",
+                start_date="2012-01",
+                end_date="2017-06",
+                highlights=[
                     (
-                        "**Coursework:** Software Foundations, Computer"
-                        " Architecture, Algorithms, Artificial Intelligence, Comparison"
-                        " of Learning Algorithms, Computational Theory."
+                        "**GPA:** 3.9/4.0 ([Transcript](https://example.com), this is a"
+                        " Markdown link)"
+                    ),
+                    (
+                        "**Relevant Courses:** Advanced LaTeX, Python for Document"
+                        " Automation"
                     ),
                 ],
             ),
         ],
         "experience": [
             ExperienceEntry(
-                company="Apple Computer",
-                position="Software Engineer, Intern",
-                start_date="2004-06",
-                end_date="2004-08",
-                location="CA, USA",
+                company="RenderCV",
+                position="Lead Developer",
+                start_date="2020-05",
+                end_date="present",
+                location="Remote",
                 highlights=[
+                    "This is an *ExperienceEntry*.",
                     (
-                        "Reduced time to render the user's buddy list by 75% by"
-                        " implementing a prediction algorithm."
+                        "Implemented Markdown support to enhance text formatting"
+                        " capabilities in CVs."
                     ),
-                    (
-                        "Implemented iChat integration with OS X Spotlight Search by"
-                        " creating a tool that extracts metadata from saved chat"
-                        " transcripts and provides metadata to a system-wide search"
-                        " database."
-                    ),
-                    (
-                        "Redesigned chat file format and implemented backward"
-                        " compatibility for search."
-                    ),
+                    "Led a team of five in the design of new CV templates.",
                 ],
             ),
             ExperienceEntry(
-                company="Microsoft Corporation",
-                position="Lead Student Ambassador",
-                start_date="2003-09",
-                end_date="2005-04",
-                location="WA, USA",
+                company="GitHub",
+                position="Developer",
+                date="A Custom *Date*",
+                location="San Francisco, CA, USA",
                 highlights=[
-                    (
-                        "Promoted to Lead Student Ambassador in the Fall of 2004,"
-                        " supervised 10 - 15 Student Ambassadors."
-                    ),
-                    (
-                        "Created and taught a computer science course, CSE 099:"
-                        " Software Design and Development."
-                    ),
+                    "This is another *ExperienceEntry*.",
+                    "Used technologies: Python, JavaScript",
                 ],
             ),
-            ExperienceEntry(
-                company="University of Pennsylvania",
-                position="Head Teaching Assistant",
-                start_date="2001-10",
-                end_date="2005-05",
-                location="PA, USA",
+        ],
+        "personal_projects": [
+            NormalEntry(
+                name="Project Name",
+                location="[Github Repository](https://github.com)",
                 highlights=[
-                    (
-                        "Implemented a user interface for the VS open file switcher"
-                        " (ctrl-tab) and extended it to tool windows."
-                    ),
-                    (
-                        "Created a service to provide gradient across VS and VS"
-                        " add-ins. Optimized service via caching."
-                    ),
-                    "Programmer Productivity Research Center (Summers 2001, 2002)",
-                    (
-                        "Built app to compute the similarity of all methods in a code"
-                        " base, reduced time from $\\mathcal{O}(n^2)$ to"
-                        " $\\mathcal{O}(n \\log n)$. "
-                    ),
-                    (
-                        "Created a test case generation tool that creates random XML"
-                        " docs from XML Schema."
-                    ),
+                    "This is a *NormalEntry*.",
+                    "You don't have to provide all the fields in an entry!",
                 ],
             ),
-            ExperienceEntry(
-                company="Microsoft Corporation",
-                position="Software Design Engineer, Intern",
-                start_date="2003-06",
-                end_date="2003-08",
-                location="WA, USA",
-                highlights=[
-                    (
-                        "Promoted to Lead Student Ambassador in the Fall of 2004,"
-                        " supervised 10 - 15 Student Ambassadors."
-                    ),
-                ],
+            NormalEntry(
+                name="Another Project Name",
+                location="Istanbul",
+                date="Fall 2024",
+                highlights=["This is another *NormalEntry* with a custom date."],
+            ),
+        ],
+        "additional_skills_and_awards": [
+            OneLineEntry(
+                label="This is",
+                details="a *OneLineEntry*",
+            ),
+            OneLineEntry(
+                label="Languages",
+                details="English, Turkish",
             ),
         ],
         "publications": [
@@ -1486,68 +1508,12 @@ def get_a_sample_data_model(
                 doi="10.1109/TASC.2023.3340648",
             )
         ],
-        "projects": [
-            NormalEntry(
-                name="Multi-User Drawing Tool",
-                date="2004",
-                highlights=[
-                    (
-                        "Developed an electronic classroom where multiple users can"
-                        ' view and simultaneously draw on a "chalkboard" with each'
-                        " person's edits synchronized."
-                    ),
-                    "Used C++ and MFC.",
-                ],
-            ),
-            NormalEntry(
-                name="Synchronized Calendar",
-                start_date="2003",
-                end_date="2004",
-                highlights=[
-                    (
-                        "Developed a desktop calendar with globally shared and"
-                        " synchronized calendars, allowing users to schedule meetings"
-                        " with other users."
-                    ),
-                    "Used C#.NET, SQL, and XML.",
-                ],
-            ),
-            NormalEntry(
-                name="Operating System",
-                date="2002",
-                highlights=[
-                    (
-                        "Developed a UNIX-style OS with a scheduler, file system, text"
-                        " editor, and calculator."
-                    ),
-                    "Used C.",
-                ],
-            ),
-        ],
-        "additional_experience_and_awards": [
-            OneLineEntry(
-                label="Instructor (2003 - 2005)",
-                details="Taught two full-credit Computer Science courses.",
-            ),
-            OneLineEntry(
-                label="Third Prize, Senior Design Projects",
-                details=(
-                    "Awarded 3rd prize for a synchronized calendar project out of 100"
-                    " projects."
-                ),
-            ),
-        ],
-        "technologies": [
-            OneLineEntry(
-                label="Languages",
-                details="C++, C, Java, Objective-C, C#.NET, SQL, JavaScript",
-            ),
-            OneLineEntry(
-                label="Software",
-                details=(
-                    "Visual Studio, Microsoft SQL Server, Eclipse, XCode, Interface"
-                    " Builder"
-                ),
+        "anything_else": [
+            "This is a *TextEntry*. You can write anything here!",
+            (
+                "The source code of RenderCV is well-commented and documented. Reading"
+                " the source code might be fun as the software structure is explained"
+                " with docstrings and comments."
             ),
         ],
     }
