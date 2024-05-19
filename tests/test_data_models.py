@@ -65,8 +65,8 @@ def test_format_date(date, expected_date_string):
     [
         ("cv.phone", "+905555555555"),
         ("cv.email", "test@example.com"),
-        ("cv.sections.your_education_section.0.degree", "PhD"),
-        ("cv.sections.your_education_section.1.highlights.1", "Did this."),
+        ("cv.sections.education.0.degree", "PhD"),
+        ("cv.sections.education.0.highlights.0", "Did this."),
         ("cv.sections.this_is_a_new_section", '["This is a text entry."]'),
         ("design.page_size", "a4paper"),
         ("design", '{"theme": "engineeringresumes"}'),
@@ -106,7 +106,7 @@ def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
     [
         ("cv.phone", "+9999995555555555"),
         ("cv.email", "notanemail***"),
-        ("cv.sections.your_education_section.0.highlights", "this is not a list"),
+        ("cv.sections.education.0.highlights", "this is not a list"),
         ("design.page_size", "invalid_page_size"),
     ],
 )
