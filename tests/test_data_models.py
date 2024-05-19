@@ -65,8 +65,8 @@ def test_format_date(date, expected_date_string):
     [
         ("cv.phone", "+905555555555"),
         ("cv.email", "test@example.com"),
-        ("cv.sections.education.0.degree", "PhD"),
-        ("cv.sections.education.0.highlights.1", "Did this."),
+        ("cv.sections.your_education_section.0.degree", "PhD"),
+        ("cv.sections.your_education_section.1.highlights.1", "Did this."),
         ("cv.sections.this_is_a_new_section", '["This is a text entry."]'),
         ("design.page_size", "a4paper"),
         ("design", '{"theme": "engineeringresumes"}'),
@@ -106,7 +106,7 @@ def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
     [
         ("cv.phone", "+9999995555555555"),
         ("cv.email", "notanemail***"),
-        ("cv.sections.education.0.highlights", "this is not a list"),
+        ("cv.sections.your_education_section.0.highlights", "this is not a list"),
         ("design.page_size", "invalid_page_size"),
     ],
 )
@@ -317,7 +317,7 @@ def test_if_the_schema_is_the_latest(root_directory_path):
             "",
         ),
         (None, None, "2020-01-01", "Jan. 2020", "2020", ""),
-        (None, None, "2020-01-01", "Jan. 2020", "2020", ""),
+        (None, None, "2020-09", "Sept. 2020", "2020", ""),
         (None, None, Date(2020, 1, 1), "Jan. 2020", "2020", ""),
         (None, None, None, "", "", ""),
         (None, "2020-01-01", None, "Jan. 2020", "2020", ""),
@@ -656,3 +656,27 @@ def test_locale_catalog():
     )
 
     assert dm.locale_catalog == data_model.locale_catalog.model_dump()
+
+    # reset the locale catalog
+    dm.locale_catalog = {
+        "month": "month",
+        "months": "months",
+        "year": "year",
+        "years": "years",
+        "present": "present",
+        "to": "to",
+        "abbreviations_for_months": [
+            "Jan.",
+            "Feb.",
+            "Mar.",
+            "Apr.",
+            "May",
+            "June",
+            "July",
+            "Aug.",
+            "Sept.",
+            "Oct.",
+            "Nov.",
+            "Dec.",
+        ],
+    }
