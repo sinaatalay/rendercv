@@ -34,7 +34,7 @@ python -m venv .venv
 
 6. Install the dependencies.
 ```bash
-pip install .[docs,tests,dev]
+pip install --editable .[docs,tests,dev]
 ```
 
 ## How RenderCV works?
@@ -60,6 +60,14 @@ The documentation's source files are located in the `docs` directory and it is b
 
 ```bash
 mkdocs serve
+```
+
+### Updating the examples and the JSON Schema
+
+The example entry images found in the [Structure of the YAML input file](user_guide/structure_of_the_yaml_input_file.md), the `examples` folder, and the JSON Schema `schema.json` are generated using the script `docs/update_rendercv_files.py`. To update these files, run `update_rendercv_files.py` with the following command.
+
+```bash
+python docs/update_rendercv_files.py
 ```
 
 ## Testing
