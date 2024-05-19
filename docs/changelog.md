@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.8...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.9...HEAD)
 
 <!--
 ### Added
@@ -15,6 +15,102 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 ### Removed
 -->
+
+## [1.9] - 2024-05-19
+
+### Added
+- RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/sinaatalay/rendercv/issues/26), [#20](https://github.com/sinaatalay/rendercv/pull/20)). See the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#locale_catalog-section-of-the-yaml-input) for more information.
+- PNG files for each page can be generated now ([#57](https://github.com/sinaatalay/rendercv/issues/57)).
+- `rendercv new` command now generates Markdown and LaTeX source files in addition to the YAML input file so that the default templates can be modified easily.
+- A new CLI command has been added, `rendercv create-theme`, to allow users to create their own themes easily.
+    ```bash
+    rendercv create-theme "customtheme" --based-on "classic"
+    ```
+- [A developer guide](https://docs.rendercv.com/developer_guide/) has been written.
+- New options have been added to the `rendercv render` command: 
+    - `--use-local-latex-command "LATEX_COMMAND"`: Generates the CV with the local $\LaTeX$ installation, i.e., runs `LATEX_COMMAND`. By default, RenderCV uses its own TinyTeX distribution.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --use-local-latex-command "pdflatex" 
+        ```
+    - `--output-folder-name "OUTPUT_FOLDER_NAME"`: Generates the output files in a folder with the given name. By default, the output folder name is `rendercv_output`. The output folder will be created in the current working directory. ([#58](https://github.com/sinaatalay/rendercv/issues/58))
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --output-folder-name "OUTPUT_FOLDER_NAME"
+        ```
+
+    - `--latex-path LATEX_PATH`: Copies the generated $\LaTeX$ source code from the output folder and pastes it to the specified path.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --latex-path "PATH"
+        ```
+
+    - `--pdf-path PDF_PATH`: Copies the generated PDF file from the output folder and pastes it to the specified path.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --pdf-path "PATH"
+        ```
+
+    - `--markdown-path MARKDOWN_PATH`: Copies the generated Markdown file from the output folder and pastes it to the specified path.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --markdown-path "PATH"
+        ```
+
+    - `--html-path HTML_PATH`: Copies the generated HTML file from the output folder and pastes it to the specified path.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --html-path "PATH"
+        ```
+
+    - `--png-path PNG_PATH`: Copies the generated PNG files from the output folder and pastes them to the specified path.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --png-path "PATH"
+        ```
+
+    - `--dont-generate-markdown`: Prevents the generation of the Markdown file.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --dont-generate-markdown
+        ```
+
+    - `--dont-generate-html`: Prevents the generation of the HTML file.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --dont-generate-html
+        ```
+
+    - `--dont-generate-png`: Prevents the generation of the PNG files.
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --dont-generate-png
+        ```
+
+    - `--ANY.LOCATION.IN.THE.YAML.FILE "VALUE"`: Overrides the value of `ANY.LOCATION.IN.THE.YAML.FILE` with `VALUE`. This option can be used to avoid storing sensitive information in the YAML file. Sensitive information, like phone numbers, can be passed as a command-line argument with environment variables. This method is also beneficial for creating multiple CVs using the same YAML file by changing only a few values. Here are a few examples:
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --cv.phone "+905555555555"
+        ```
+        ```bash
+        rendercv render "Your_Name_CV.yaml" --cv.sections.education.1.institution "Your University"
+        ```
+
+        Multiple `--ANY.LOCATION.IN.THE.YAML.FILE "VALUE"` options can be used in the same command.
+- New options have been added to the `rendercv new` command: 
+    - `--theme "THEME_NAME"`: Generates files for a specific built-in theme, instead of the default `classic` theme. Currently, the available themes are: {{available_themes}}. 
+        ```bash
+        rendercv new "Your Full Name" --theme "THEME_NAME" 
+        ```
+
+    - `--dont-create-theme-source-files`: Prevents the creation of the theme source files. By default, the theme source files are created.
+        ```bash
+        rendercv new "Your Full Name" --dont-create-theme-source-files
+        ```
+
+    - `--dont-create-markdown-source-files`: Prevents the creation of the Markdown source files. By default, the Markdown source files are created.
+        ```bash
+        rendercv new "Your Full Name" --dont-create-markdown-source-files
+        ```
+
+### Changed
+- Package size has been reduced by removing unnecessary TinyTeX files.
+- `date` field is now optional in `PublicationEntry`.
+- [README.md](https://github.com/sinaatalay/rendercv) and the [documentation](https://docs.rendercv.com/) have been rewritten.
+
+### Fixed
+- ExperienceEntry and NormalEntry without location and dates have been fixed in the `engineeringresumes`, `classic`, and `sb2nov` themes.
+- LaTeX templates have been polished.
+- Bugs related to the special characters in email addresses have been fixed ([#64](https://github.com/sinaatalay/rendercv/issues/64)).
 
 ## [1.8] - 2024-04-16
 
@@ -206,6 +302,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[1.9]: https://github.com/sinaatalay/rendercv/releases/tag/v1.9
 [1.8]: https://github.com/sinaatalay/rendercv/releases/tag/v1.8
 [1.7]: https://github.com/sinaatalay/rendercv/releases/tag/v1.7
 [1.6]: https://github.com/sinaatalay/rendercv/releases/tag/v1.6
