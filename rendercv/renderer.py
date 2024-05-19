@@ -132,7 +132,9 @@ class LaTeXFile(TemplatedFile):
         sections: list[tuple[str, list[str], str]] = []
         for section in self.cv.sections:
             section_beginning = self.template(
-                "SectionBeginning", section_title=section.title
+                "SectionBeginning",
+                section_title=section.title,
+                entry_type=section.entry_type,
             )
             entries: list[str] = []
             for i, entry in enumerate(section.entries):
@@ -143,10 +145,15 @@ class LaTeXFile(TemplatedFile):
                         section.entry_type,
                         entry=entry,
                         section_title=section.title,
+                        entry_type=section.entry_type,
                         is_first_entry=is_first_entry,
                     )
                 )
-            section_ending = self.template("SectionEnding", section_title=section.title)
+            section_ending = self.template(
+                "SectionEnding",
+                section_title=section.title,
+                entry_type=section.entry_type,
+            )
             sections.append((section_beginning, entries, section_ending))
 
         return preamble, header, sections
@@ -255,7 +262,9 @@ class MarkdownFile(TemplatedFile):
         sections: list[tuple[str, list[str]]] = []
         for section in self.cv.sections:
             section_beginning = self.template(
-                "SectionBeginning", section_title=section.title
+                "SectionBeginning",
+                section_title=section.title,
+                entry_type=section.entry_type,
             )
             entries: list[str] = []
             for i, entry in enumerate(section.entries):
@@ -268,6 +277,7 @@ class MarkdownFile(TemplatedFile):
                         section.entry_type,
                         entry=entry,
                         section_title=section.title,
+                        entry_type=section.entry_type,
                         is_first_entry=is_first_entry,
                     )
                 )
