@@ -87,7 +87,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
         Multiple `--ANY.LOCATION.IN.THE.YAML.FILE "VALUE"` options can be used in the same command.
 - New options have been added to the `rendercv new` command: 
-    - `--theme "THEME_NAME"`: Generates files for a specific built-in theme, instead of the default `classic` theme. Currently, the available themes are: {{available_themes}}. 
+    - `--theme "THEME_NAME"`: Generates files for a specific built-in theme, instead of the default `classic` theme.
         ```bash
         rendercv new "Your Full Name" --theme "THEME_NAME" 
         ```
@@ -108,7 +108,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - [README.md](https://github.com/sinaatalay/rendercv) and the [documentation](https://docs.rendercv.com/) have been rewritten.
 
 ### Fixed
-- ExperienceEntry and NormalEntry without location and dates have been fixed in the `engineeringresumes`, `classic`, and `sb2nov` themes.
+- `ExperienceEntry` and `NormalEntry` without location and dates have been fixed in the `engineeringresumes`, `classic`, and `sb2nov` themes.
 - LaTeX templates have been polished.
 - Bugs related to the special characters in email addresses have been fixed ([#64](https://github.com/sinaatalay/rendercv/issues/64)).
 
