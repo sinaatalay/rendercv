@@ -27,11 +27,11 @@ This command will create the following files:
 
     This file will contain all the content and design options of your CV.
 
--   A directory called `classic`, which contains the $\LaTeX$ source code of the default built-in theme, "classic".
+-   A directory called `classic`.
 
     This directory contains the $\LaTeX$ source code of RenderCV's default built-in theme, `classic`. You can update its contents to tweak the appearance of the output PDF file.
 
--   A directory called `markdown`, which contains the Markdown source code the CV.
+-   A directory called `markdown`.
 
     This directory contains the Markdown source code of RenderCV's default Markdown template. You can update its contents to tweak the Markdown output of the CV.
 
@@ -56,7 +56,7 @@ rendercv new "Your Full Name" --dont-create-markdown-source-files
 
 ## Structure of the YAML input file
 
-The YAML input file contains all the content and design options of your CV. A detailed explanation of the structure of the YAML input file is provided [here](input_file_structure.md).
+The YAML input file contains all the content and design options of your CV. A detailed explanation of the structure of the YAML input file is provided [here](structure_of_the_yaml_input_file.md).
 
 
 ## Rendering the CV with the `render` command
@@ -202,7 +202,7 @@ For example, the content of `ExperienceEntry.j2.tex` for the `moderncv` theme is
 ((* endfor *))
 ```
 
-The values between `<<` and `>>` are the names of Python variables, allowing you to write a $\\LaTeX$ CV without writing any content. Those will be replaced with the values found in the YAML input. Also, the values between `((*` and `*))` are Python blocks, allowing you to use loops and conditional statements.
+The values between `<<` and `>>` are the names of Python variables, allowing you to write a $\\LaTeX$ CV without writing any content. They will be replaced with the values found in the YAML input. Also, the values between `((*` and `*))` are Python blocks, allowing you to use loops and conditional statements.
 
 The process of generating $\\LaTeX$ files like this is called "templating," and it's achieved with a Python package called [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
 

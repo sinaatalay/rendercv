@@ -269,7 +269,7 @@ Here is an example:
 
 ```yaml
 locale_catalog:
-  abbreviations_for_months: 
+  abbreviations_for_months: # translation of the month abbreviations
     - Jan
     - Feb
     - Mar
@@ -282,10 +282,10 @@ locale_catalog:
     - Oct
     - Nov
     - Dec
-  month: "month"
-  months: "months"
-  year: "year"
-  years: "years"
-  present: "present"
-  to: "to"
+  month: month      # translation of the word "month"
+  months: months    # translation of the word "months"
+  year: year        # translation of the word "year"
+  years: years      # translation of the word "years"
+  present: present  # translation of the word "present"
+  to: to            # translation of the word "to"
 ```

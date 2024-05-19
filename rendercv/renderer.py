@@ -184,7 +184,8 @@ class LaTeXFile(TemplatedFile):
         unitalicize a bold or italicized text.
 
         Args:
-            string (str): The string to revert the nested $\\LaTeX$ style commands.
+            latex_string (str): The string to revert the nested $\\LaTeX$ style
+                commands.
 
         Returns:
             str: The string with the reverted nested $\\LaTeX$ style commands.
@@ -215,7 +216,7 @@ class LaTeXFile(TemplatedFile):
 
         return latex_string
 
-    def get_latex_code(self):
+    def get_latex_code(self) -> str:
         """Get the $\\LaTeX$ code of the file.
 
         Returns:
@@ -242,7 +243,7 @@ class MarkdownFile(TemplatedFile):
     [Grammarly](https://app.grammarly.com/) for proofreading.
     """
 
-    def render_templates(self):
+    def render_templates(self) -> tuple[str, list[tuple[str, list[str]]]]:
         """Render and return all the templates for the Markdown file.
 
         Returns:
@@ -299,7 +300,7 @@ class MarkdownFile(TemplatedFile):
         )
         return result
 
-    def get_markdown_code(self):
+    def get_markdown_code(self) -> str:
         """Get the Markdown code of the file.
 
         Returns:
@@ -333,7 +334,7 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
         `#!python "This is a \\# string."`
 
     Args:
-        string (str): The string to escape.
+        latex_string (str): The string to escape.
         strict (bool): Whether to escape all the special $\\LaTeX$ characters or not. If
             you want to allow math input, set it to False.
     Returns:
@@ -496,7 +497,7 @@ def replace_placeholders_with_actual_values(
     This function can be used as a Jinja2 filter in templates.
 
     Args:
-        string (str): The string with placeholders.
+        text (str): The text with placeholders.
         placeholders (dict[str, str]): The placeholders and their values.
     Returns:
         str: The string with actual values.
@@ -515,11 +516,11 @@ def make_matched_part_something(
 
     Warning:
         This function shouldn't be used directly. Use
-        [make_matched_part_bold](renderer.md#rendercv.rendering.make_matched_part_bold),
-        [make_matched_part_underlined](renderer.md#rendercv.rendering.make_matched_part_underlined),
-        [make_matched_part_italic](renderer.md#rendercv.rendering.make_matched_part_italic),
+        [make_matched_part_bold][rendercv.renderer.make_matched_part_bold],
+        [make_matched_part_underlined][rendercv.renderer.make_matched_part_underlined],
+        [make_matched_part_italic][rendercv.renderer.make_matched_part_italic],
         or
-        [make_matched_part_non_line_breakable](renderer.md#rendercv.rendering.make_matched_part_non_line_breakable)
+        [make_matched_part_non_line_breakable][rendercv.renderer.make_matched_part_non_line_breakable]
         instead.
 
     Args:
@@ -846,7 +847,7 @@ def copy_theme_files_to_output_directory(
 
     Args:
         theme_name (str): The name of the theme.
-        output_directory (pathlib.Path): Path to the output directory.
+        output_directory_path (pathlib.Path): Path to the output directory.
     """
     if theme_name in dm.available_themes:
         theme_directory_path = importlib.resources.files(

@@ -346,4 +346,4 @@ if __name__ == "__main__":
     generate_entry_figures()
     generate_examples()
     generate_schema()
-    update_index()
+    # update_index() # currently index.md should be updated manually
