@@ -238,7 +238,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
 
         # Special case for end_date because Pydantic returns multiple end_date errors
         # since it has multiple valid formats:
-        if "end_date." in location:
+        if "end_date" in location:
             if end_date_error_is_found:
                 continue
             end_date_error_is_found = True
@@ -813,7 +813,6 @@ def cli_command_create_theme(
             f'The theme "{based_on}" is not in the list of available themes:'
             f' {", ".join(dm.available_themes)}'
         )
-        return
 
     theme_folder = copy_templates(
         based_on, pathlib.Path.cwd(), new_folder_name=theme_name, suppress_warning=True
