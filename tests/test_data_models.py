@@ -1,7 +1,7 @@
 from datetime import date as Date
 import json
-import pathlib
 import os
+import io
 import re
 import shutil
 
@@ -140,10 +140,27 @@ def test_read_input_file(input_file_path):
     assert isinstance(data_model, dm.RenderCVDataModel)
 
 
-def test_read_input_file_not_found():
-    with pytest.raises(FileNotFoundError):
-        invalid_path = pathlib.Path("doesntexist.yaml")
-        dm.read_input_file(invalid_path)
+def test_read_input_file_directly_with_contents(input_file_path):
+    input_dictionary = {
+        "cv": {
+            "name": "John Doe",
+        },
+        "design": {
+            "theme": "classic",
+        },
+    }
+
+    # dump the dictionary to a yaml file
+    yaml_object = ruamel.yaml.YAML()
+    yaml_object.width = 60
+    yaml_object.indent(mapping=2, sequence=4, offset=2)
+    with io.StringIO() as string_stream:
+        yaml_object.dump(input_dictionary, string_stream)
+        yaml_string = string_stream.getvalue()
+
+    data_model = dm.read_input_file(yaml_string)
+
+    assert isinstance(data_model, dm.RenderCVDataModel)
 
 
 def test_read_input_file_invalid_file(tmp_path):
@@ -611,3 +628,31 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
                 "design": {"theme": "dummytheme"},
             }
         )
+
+
+def test_locale_catalog():
+    data_model = dm.get_a_sample_data_model("John Doe")
+    data_model.locale_catalog = dm.LocaleCatalog(
+        month="a",
+        months="b",
+        year="c",
+        years="d",
+        present="e",
+        to="f",
+        abbreviations_for_months=[
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+        ],
+    )
+
+    assert dm.locale_catalog == data_model.locale_catalog.model_dump()

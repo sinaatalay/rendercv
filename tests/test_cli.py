@@ -1,11 +1,13 @@
 import os
 import shutil
+import subprocess
+import sys
+from datetime import date as Date
 
 import pydantic
 import ruamel.yaml
 import pytest
 import typer.testing
-
 
 import rendercv.cli as cli
 import rendercv.data_models as dm
@@ -81,6 +83,12 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
             dm.ExperienceEntry,
             {
                 "position": "Researcher",
+            },
+        ),
+        (
+            dm.ExperienceEntry,
+            {
+                "position": Date(2020, 10, 1),
             },
         ),
         (
@@ -475,3 +483,7 @@ def test_create_theme_command_theme_already_exists(tmp_path):
     result = runner.invoke(cli.app, ["create-theme", "newtheme"])
 
     assert "already exists!" in result.stdout
+
+
+def test_main_file():
+    subprocess.run([sys.executable, "-m", "rendercv", "--help"], check=True)
