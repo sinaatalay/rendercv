@@ -2,7 +2,7 @@ from typing import Literal
 
 import pydantic
 
-from .. import ThemeOptions, LaTeXDimension, Margins, EntryAreaMargins
+from .. import ThemeOptions, LaTeXDimension
 
 
 class Sb2novThemeOptions(ThemeOptions):
