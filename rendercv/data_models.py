@@ -1663,17 +1663,14 @@ def generate_json_schema() -> dict[str, Any]:
                             field["oneOf"] = field["anyOf"]
                             del field["anyOf"]
 
-                # In date field, we both accept normal strings and Date objects. They
-                # are both strings, therefore, if user provides a Date object, then
-                # JSON schema will complain that it matches two different types.
-                # Remember that all of the anyOfs are changed to oneOfs. Only one of
-                # the types can be matched. Therefore, we remove the first type, which
-                # is the string with the YYYY-MM-DD format.
-                if (
-                    "date" in value["properties"]
-                    and "oneOf" in value["properties"]["date"]
-                ):
-                    del value["properties"]["date"]["oneOf"][0]
+                # In date field, we both allow string and RenderCVDate type. Since we
+                # use "oneOf", matching both RenderCVDate and string is a problem
+                # for the JSON schema. So, we remove the RenderCVDate type from the
+                # "oneOf" list.
+                if "date" in value["properties"]:
+                    for i, one_of in enumerate(value["properties"]["date"]["oneOf"]):
+                        if "pattern" in one_of:
+                            del value["properties"]["date"]["oneOf"][i]
 
             return json_schema
 
@@ -1691,5 +1688,5 @@ def generate_json_schema_file(json_schema_path: pathlib.Path):
         json_schema_path (pathlib.Path): The path to save the JSON schema.
     """
     schema = generate_json_schema()
-    schema_json = json.dumps(schema, indent=2)
-    json_schema_path.write_text(schema_json)
+    schema_json = json.dumps(schema, indent=2, ensure_ascii=False)
+    json_schema_path.write_text(schema_json, encoding="utf-8")
