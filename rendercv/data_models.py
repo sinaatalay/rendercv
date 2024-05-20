@@ -183,7 +183,7 @@ class BulletEntry(RenderCVBaseModel):
 
 
 class EntryWithDate(RenderCVBaseModel):
-    date: Optional[int | RenderCVDate | str] = pydantic.Field(
+    date: Optional[int | str] = pydantic.Field(
         default=None,
         title="Date",
         description=(
@@ -1509,7 +1509,7 @@ def get_a_sample_data_model(
                 ),
                 authors=[
                     "Albert Smith",
-                    name,
+                    f"***{name}***",
                     "Jane Derry",
                     "Harry Tom",
                     "Frodo Baggins",
@@ -1662,15 +1662,6 @@ def generate_json_schema() -> dict[str, Any]:
                         else:
                             field["oneOf"] = field["anyOf"]
                             del field["anyOf"]
-
-                # In date field, we both allow string and RenderCVDate type. Since we
-                # use "oneOf", matching both RenderCVDate and string is a problem
-                # for the JSON schema. So, we remove the RenderCVDate type from the
-                # "oneOf" list.
-                if "date" in value["properties"]:
-                    for i, one_of in enumerate(value["properties"]["date"]["oneOf"]):
-                        if "pattern" in one_of:
-                            del value["properties"]["date"]["oneOf"][i]
 
             return json_schema
 
