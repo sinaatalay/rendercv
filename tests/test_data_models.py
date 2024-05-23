@@ -426,6 +426,11 @@ def test_invalid_social_networks(network, username):
         ("Orcid", "myusername", "https://orcid.org/myusername"),
         ("Twitter", "myusername", "https://twitter.com/myusername"),
         ("Mastodon", "@myusername@test.org", "https://test.org/@myusername"),
+        (
+            "StackOverflow",
+            "4567/myusername",
+            "https://stackoverflow.com/users/4567/myusername",
+        ),
     ],
 )
 def test_social_network_url(network, username, expected_url):
