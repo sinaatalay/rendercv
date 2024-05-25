@@ -97,6 +97,7 @@ RenderCV comes with a JSON Schema so that the input YAML file can be filled out 
 Writing the content of a CV and designing a CV are separate issues that should be treated separately. RenderCV attempts to provide this separation. This approach encourages users to concentrate on the content without getting distracted by the appearance of their CV and vice versa.
 
 RenderCV also provides a general set of utilities that will automate most of the manual work involved in the CV updating process. After updating a single sentence or a date in the YAML input file written in pure English, RenderCV will
+
 - re-create your $\LaTeX$ file.
 - render a new PDF file.
 - create a new Markdown file.
