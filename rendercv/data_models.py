@@ -831,7 +831,14 @@ class SocialNetwork(RenderCVBaseModel):
     """This class is the data model of a social network."""
 
     network: Literal[
-        "LinkedIn", "GitHub", "Instagram", "Orcid", "Mastodon", "Twitter"
+        "LinkedIn",
+        "GitHub",
+        "GitLab",
+        "Instagram",
+        "Orcid",
+        "Mastodon",
+        "Twitter",
+        "StackOverflow",
     ] = pydantic.Field(
         title="Social Network",
         description="The social network name.",
@@ -871,10 +878,14 @@ class SocialNetwork(RenderCVBaseModel):
             # split domain and username
             dummy, username, domain = self.username.split("@")
             url = f"https://{domain}/@{username}"
+        elif self.network == "StackOverflow":
+            user_id, username = self.username.split("/")
+            url = f"https://stackoverflow.com/users/{user_id}/{username}"
         else:
             url_dictionary = {
                 "LinkedIn": "https://linkedin.com/in/",
                 "GitHub": "https://github.com/",
+                "GitLab": "https://gitlab.com/",
                 "Instagram": "https://instagram.com/",
                 "Orcid": "https://orcid.org/",
                 "Twitter": "https://twitter.com/",
@@ -980,21 +991,26 @@ class CurriculumVitae(RenderCVBaseModel):
             icon_dictionary = {
                 "LinkedIn": "\\faLinkedinIn",
                 "GitHub": "\\faGithub",
+                "GitLab": "\\faGitlab",
                 "Instagram": "\\faInstagram",
                 "Mastodon": "\\faMastodon",
                 "Orcid": "\\faOrcid",
+                "StackOverflow": "\\faStackOverflow",
                 "Twitter": "\\faTwitter",
             }
             for social_network in self.social_networks:
                 clean_url = social_network.url.replace("https://", "").rstrip("/")
-                connections.append(
-                    {
-                        "latex_icon": icon_dictionary[social_network.network],
-                        "url": social_network.url,
-                        "clean_url": clean_url,
-                        "placeholder": social_network.username,
-                    }
-                )
+                connection = {
+                    "latex_icon": icon_dictionary[social_network.network],
+                    "url": social_network.url,
+                    "clean_url": clean_url,
+                    "placeholder": social_network.username,
+                }
+
+                if social_network.network == "StackOverflow":
+                    username = social_network.username.split("/")[1]
+                    connection["placeholder"] = username
+                connections.append(connection)
 
         return connections
 
