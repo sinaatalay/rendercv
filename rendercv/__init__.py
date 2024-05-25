@@ -5,4 +5,4 @@ file. Its primary motivation is to allow the separation between a CV's content a
 design.
 """
 
-__version__ = "1.9"
+__version__ = "1.10"

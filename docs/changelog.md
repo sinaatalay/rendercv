@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.9...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.10...HEAD)
 
 <!--
 ### Added
@@ -16,7 +16,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 -->
 
+## [1.10] - 2024-05-25
+
+### Added
+- `rendercv --version` command has been added to show the version of RenderCV.
+- `StackOverflow` (#77), `GitLab` (#78), `ResearchGate`, and `YouTube` has been added to the available social network types.
+
+### Fixed
+- Authors in `PublicationEntry` are now displayed correctly in `engineeringresumes` and `sb2nov` themes.
+- `justify-with-no-hyphenation` text alignment has been fixed.
+
+
 ## [1.9] - 2024-05-19
+
+> **Full Changelog**: [v1.8...v1.9]
 
 ### Added
 - RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/sinaatalay/rendercv/issues/26), [#20](https://github.com/sinaatalay/rendercv/pull/20)). See the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#locale_catalog-section-of-the-yaml-input) for more information.
@@ -54,6 +67,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.8] - 2024-04-16
 
+> **Full Changelog**: [v1.7...v1.8]
+
 ### Added
 - Horizontal space has been added between entry titles and dates in the `engineeringresumes` theme.
 - The `date_and_location_width` option has been added to the `engineeringresumes` theme.
@@ -73,6 +88,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.7] - 2024-04-08
 
+> **Full Changelog**: [v1.6...v1.7]
+
 ### Added
 - The new theme, `engineeringresumes`, is ready to be used now.
 - The `education_degree_width` design option has been added for the `classic` theme.
@@ -83,6 +100,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Some JSON Schema bugs have been fixed.
 
 ## [1.6] - 2024-03-31
+
+> **Full Changelog**: [v1.5...v1.6]
 
 ### Added
 - A new theme has been added: `engineeringresumes`. It hasn't been tested fully yet.
@@ -100,6 +119,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.5] - 2024-03-27
 
+> **Full Changelog**: [v1.4...v1.5]
+
 ### Added
 - Users can now make bold or italic texts normal with Markdown syntax.
 
@@ -115,6 +136,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.4] - 2024-03-10
 
+> **Full Changelog**: [v1.3...v1.4]
+
 ### Added
 - A new entry type has been added: `BulletEntry`
 
@@ -127,6 +150,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.3] - 2024-03-09
 
+> **Full Changelog**: [v1.2...v1.3]
 
 ### Added
 - CLI documentation has been added to the user guide.
@@ -143,6 +167,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.2] - 2024-02-27
 
+> **Full Changelog**: [v1.1...v1.2]
+
 ### Fixed
 
 - Markdown `TextEntry`, where all the paragraphs were concatenated into a single paragraph, has been fixed.
@@ -153,6 +179,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 
 ## [1.1] - 2024-02-25
+
+> **Full Changelog**: [v0.10...v1.1]
 
 ### Added
 
@@ -175,10 +203,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.10] - 2023-11-29
 
+> **Full Changelog**: [v0.9...v0.10]
+
 ### Fixed
 - Author highlighting issue has been fixed in `PublicationEntry`.
 
 ## [0.9] - 2023-11-29
+
+> **Full Changelog**: [v0.8...v0.9]
 
 ### Added
 - Page numbering has been added.
@@ -188,10 +220,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.8] - 2023-11-17
 
+> **Full Changelog**: [v0.7...v0.8]
+
 ### Fixed
 - YYYY date issue has been solved ([#5](https://github.com/sinaatalay/rendercv/issues/5)).
 
 ## [0.7] - 2023-11-03
+
+> **Full Changelog**: [v0.6...v0.7]
 
 ### Changed
 - The date type has been improved. It supports `YYYY-MM-DD`, `YYYY-MM`, and `YYYY` formats now.
@@ -201,6 +237,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.6] - 2023-10-28
 
+> **Full Changelog**: [v0.5...v0.6]
+
 ### Added
 - New fields have been added: `experience`, `projects`, `awards`, `interests`, and `programming_skills`.
 
@@ -209,6 +247,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 
 ## [0.5] - 2023-10-27
+
+> **Full Changelog**: [v0.4...v0.5]
 
 ### Added
 
@@ -221,11 +261,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.4] - 2023-10-22
 
+> **Full Changelog**: [v0.3...v0.4]
+
 ### Changed
 
 - CLI has been improved for more intuitive validation error messages.
 
 ## [0.3] - 2023-10-20
+
+> **Full Changelog**: [v0.2...v0.3]
 
 ### Fixed
 
@@ -233,6 +277,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Encoding problems have been fixed.
 
 ## [0.2] - 2023-10-17
+
+> **Full Changelog**: [v0.1...v0.2]
 
 ### Fixed
 
@@ -242,6 +288,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[v1.9...v1.10]: https://github.com/sinaatalay/rendercv/compare/v1.9...v1.10
+[v1.8...v1.9]: https://github.com/sinaatalay/rendercv/compare/v1.8...v1.9
+[v1.7...v1.8]: https://github.com/sinaatalay/rendercv/compare/v1.7...v1.8
+[v1.6...v1.7]: https://github.com/sinaatalay/rendercv/compare/v1.6...v1.7
+[v1.5...v1.6]: https://github.com/sinaatalay/rendercv/compare/v1.5...v1.6
+[v1.4...v1.5]: https://github.com/sinaatalay/rendercv/compare/v1.4...v1.5
+[v1.3...v1.4]: https://github.com/sinaatalay/rendercv/compare/v1.3...v1.4
+[v1.2...v1.3]: https://github.com/sinaatalay/rendercv/compare/v1.2...v1.3
+[v1.1...v1.2]: https://github.com/sinaatalay/rendercv/compare/v1.1...v1.2
+[v0.10...v1.1]: https://github.com/sinaatalay/rendercv/compare/v0.10...v1.1
+[v0.9...v0.10]: https://github.com/sinaatalay/rendercv/compare/v0.9...v0.10
+[v0.8...v0.9]: https://github.com/sinaatalay/rendercv/compare/v0.8...v0.9
+[v0.7...v0.8]: https://github.com/sinaatalay/rendercv/compare/v0.7...v0.8
+[v0.6...v0.7]: https://github.com/sinaatalay/rendercv/compare/v0.6...v0.7
+[v0.5...v0.6]: https://github.com/sinaatalay/rendercv/compare/v0.5...v0.6
+[v0.4...v0.5]: https://github.com/sinaatalay/rendercv/compare/v0.4...v0.5
+[v0.3...v0.4]: https://github.com/sinaatalay/rendercv/compare/v0.3...v0.4
+[v0.2...v0.3]: https://github.com/sinaatalay/rendercv/compare/v0.2...v0.3
+[v0.1...v0.2]: https://github.com/sinaatalay/rendercv/compare/v0.1...v0.2
+
+[1.10]: https://github.com/sinaatalay/rendercv/releases/tag/v1.10
 [1.9]: https://github.com/sinaatalay/rendercv/releases/tag/v1.9
 [1.8]: https://github.com/sinaatalay/rendercv/releases/tag/v1.8
 [1.7]: https://github.com/sinaatalay/rendercv/releases/tag/v1.7
