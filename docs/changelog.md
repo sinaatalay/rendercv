@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - `rendercv --version` command has been added to show the version of RenderCV.
-- `StackOverflow` (#77), `GitLab` (#78), `ResearchGate`, and `YouTube` has been added to the available social network types.
+- `StackOverflow` ([#77](https://github.com/sinaatalay/rendercv/pull/77)), `GitLab` ([#78](https://github.com/sinaatalay/rendercv/pull/78)), `ResearchGate`, and `YouTube` has been added to the available social network types.
 
 ### Fixed
 - Authors in `PublicationEntry` are now displayed correctly in `engineeringresumes` and `sb2nov` themes.
