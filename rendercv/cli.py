@@ -30,11 +30,13 @@ import ruamel.yaml
 
 from . import data_models as dm
 from . import renderer as r
+from . import __version__
 
 
 app = typer.Typer(
     rich_markup_mode="rich",
     add_completion=False,
+    invoke_without_command=True,  # to make rendercv --version work
 )
 
 
@@ -48,7 +50,7 @@ def welcome():
         title_justify="left",
     )
 
-    table.add_column("Title", style="magenta")
+    table.add_column("Title", style="magenta", justify="left")
     table.add_column("Link", style="cyan", justify="right", no_wrap=True)
 
     table.add_row("Documentation", "https://docs.rendercv.com")
@@ -56,6 +58,9 @@ def welcome():
     table.add_row("Bug reports", "https://github.com/sinaatalay/rendercv/issues/")
     table.add_row("Feature requests", "https://github.com/sinaatalay/rendercv/issues/")
     table.add_row("Discussions", "https://github.com/sinaatalay/rendercv/discussions/")
+    table.add_row(
+        "RenderCV Pipeline", "https://github.com/sinaatalay/rendercv-pipeline/"
+    )
 
     print(table)
 
@@ -70,7 +75,9 @@ def warning(text: str):
 
 
 def error(text: Optional[str] = None, exception: Optional[Exception] = None):
-    """Print an error message to the terminal.
+    """Print an error message to the terminal and exit the program. If an exception is
+    given, then print the exception's message as well. If neither text nor exception is
+    given, then print an empty line and exit the program.
 
     Args:
         text (str): The text of the error message.
@@ -79,14 +86,16 @@ def error(text: Optional[str] = None, exception: Optional[Exception] = None):
     if exception is not None:
         exception_messages = [str(arg) for arg in exception.args]
         exception_message = "\n\n".join(exception_messages)
+        if text is None:
+            text = "An error occurred:"
+
         print(
             f"\n[bold red]{text}[/bold red]\n\n[orange4]{exception_message}[/orange4]\n"
         )
+    elif text is not None:
+        print(f"\n[bold red]{text}\n")
     else:
-        if text:
-            print(f"\n[bold red]{text}\n")
-        else:
-            print()
+        print()
 
     raise typer.Exit(code=4)
 
@@ -337,7 +346,7 @@ def handle_exceptions(function: Callable) -> Callable:
         except typer.Exit:
             pass
         except RuntimeError as e:
-            error("An error occurred:", e)
+            error(e)
 
     return wrapper
 
@@ -448,13 +457,13 @@ def copy_templates(
         if not suppress_warning:
             if folder_name != "markdown":
                 warning(
-                    f'The theme folder "{folder_name}" already exists! The theme files'
-                    " are not copied."
+                    f'The theme folder "{folder_name}" already exists! New theme files'
+                    " are not created."
                 )
             else:
                 warning(
-                    'The folder "markdown" already exists! The markdown files are not'
-                    " copied."
+                    'The folder "markdown" already exists! New markdown files are not'
+                    " created."
                 )
 
         return None
@@ -733,36 +742,24 @@ def cli_command_new(
     ] = False,
 ):
     """Generate a YAML input file to get started."""
-    try:
-        data_model = dm.get_a_sample_data_model(full_name, theme)
-    except ValueError as e:
-        error(e)
+    created_files_and_folders = []
 
-    file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
-    file_path = pathlib.Path(file_name)
+    input_file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
+    input_file_path = pathlib.Path(input_file_name)
 
-    # Instead of getting the dictionary with data_model.model_dump() directly, we
-    # convert it to JSON and then to a dictionary. Because the YAML library we are using
-    # sometimes has problems with the dictionary returned by model_dump().
+    if input_file_path.exists():
+        warning(
+            f'The input file "{input_file_name}" already exists! A new input file is'
+            " not created."
+        )
+    else:
+        try:
+            dm.create_a_sample_yaml_input_file(
+                input_file_path, name=full_name, theme=theme
+            )
+        except ValueError as e:
+            error(e)
 
-    # We exclude "cv.sections" because the data model automatically generates them. The
-    # user's "cv.sections" input is actually "cv.sections_input" in the data model. It
-    # is shown as "cv.sections" in the YAML file because an alias is being used. If
-    # "cv.sections" were not excluded, the automatically generated "cv.sections" would
-    # overwrite the "cv.sections_input". "cv.sections" are automatically generated from
-    # "cv.sections_input" to make the templating process easier. "cv.sections_input"
-    # exists for the convenience of the user.
-    data_model_as_json = data_model.model_dump_json(
-        exclude_none=True, by_alias=True, exclude={"cv": {"sections"}}
-    )
-    data_model_as_dictionary = json.loads(data_model_as_json)
-
-    yaml_object = ruamel.yaml.YAML()
-    yaml_object.encoding = "utf-8"
-    yaml_object.indent(mapping=2, sequence=4, offset=2)
-    yaml_object.dump(data_model_as_dictionary, file_path)
-
-    created_files_and_folders = [file_name]
     if not dont_create_theme_source_files:
         # copy the package's theme files to the current directory
         theme_folder = copy_templates(theme, pathlib.Path.cwd())
@@ -775,9 +772,7 @@ def cli_command_new(
         if markdown_folder is not None:
             created_files_and_folders.append(markdown_folder.name)
 
-    if len(created_files_and_folders) == 1:
-        information(f"The RenderCV input file has been created:\n{file_name}")
-    else:
+    if len(created_files_and_folders) > 0:
         created_files_and_folders_string = ",\n".join(created_files_and_folders)
         information(
             "The following RenderCV input file and folders have been"
@@ -844,3 +839,13 @@ def cli_command_create_theme(
     (theme_folder / "__init__.py").write_text(new_init_file_contents)
 
     information(f'The theme folder "{theme_folder.name}" has been created.')
+
+
+@app.callback()
+def main(
+    version_requested: Annotated[
+        Optional[bool], typer.Option("--version", help="Show the version.")
+    ] = None,
+):
+    if version_requested:
+        information(f"RenderCV v{__version__}")
