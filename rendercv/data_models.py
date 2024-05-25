@@ -28,6 +28,7 @@ import ssl
 import pathlib
 import warnings
 import annotated_types as at
+import io
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
@@ -826,22 +827,27 @@ SectionInput = Annotated[
 # Full RenderCV data models: ===========================================================
 # ======================================================================================
 
+SocialNetworkName = Literal[
+    "LinkedIn",
+    "GitHub",
+    "GitLab",
+    "Instagram",
+    "Orcid",
+    "Mastodon",
+    "Twitter",
+    "StackOverflow",
+    "ResearchGate",
+    "YouTube",
+]
+available_social_networks = get_args(SocialNetworkName)
+
 
 class SocialNetwork(RenderCVBaseModel):
     """This class is the data model of a social network."""
 
-    network: Literal[
-        "LinkedIn",
-        "GitHub",
-        "GitLab",
-        "Instagram",
-        "Orcid",
-        "Mastodon",
-        "Twitter",
-        "StackOverflow",
-    ] = pydantic.Field(
+    network: SocialNetworkName = pydantic.Field(
         title="Social Network",
-        description="The social network name.",
+        description="Name of the social network.",
     )
     username: str = pydantic.Field(
         title="Username",
@@ -855,10 +861,23 @@ class SocialNetwork(RenderCVBaseModel):
         network = info.data["network"]
 
         if network == "Mastodon":
-            if not username.startswith("@"):
-                raise ValueError("Mastodon username should start with '@'!")
-            if username.count("@") != 2:
-                raise ValueError("Mastodon username should contain two '@'!")
+            mastodon_username_pattern = r"@[^@]+@[^@]+"
+            if not re.fullmatch(mastodon_username_pattern, username):
+                raise ValueError(
+                    'Mastodon username should be in the format "@username@domain"!'
+                )
+        if network == "StackOverflow":
+            stackoverflow_username_pattern = r"\d+\/[^\/]+"
+            if not re.fullmatch(stackoverflow_username_pattern, username):
+                raise ValueError(
+                    'StackOverflow username should be in the format "user_id/username"!'
+                )
+        if network == "YouTube":
+            youtube_username_pattern = r"@[^@]+"
+            if not re.fullmatch(youtube_username_pattern, username):
+                raise ValueError(
+                    'YouTube username should be in the format "@username"!'
+                )
 
         return username
 
@@ -878,9 +897,6 @@ class SocialNetwork(RenderCVBaseModel):
             # split domain and username
             dummy, username, domain = self.username.split("@")
             url = f"https://{domain}/@{username}"
-        elif self.network == "StackOverflow":
-            user_id, username = self.username.split("/")
-            url = f"https://stackoverflow.com/users/{user_id}/{username}"
         else:
             url_dictionary = {
                 "LinkedIn": "https://linkedin.com/in/",
@@ -889,6 +905,9 @@ class SocialNetwork(RenderCVBaseModel):
                 "Instagram": "https://instagram.com/",
                 "Orcid": "https://orcid.org/",
                 "Twitter": "https://twitter.com/",
+                "StackOverflow": "https://stackoverflow.com/users/",
+                "ResearchGate": "https://researchgate.net/profile/",
+                "YouTube": "https://youtube.com/",
             }
             url = url_dictionary[self.network] + self.username
 
@@ -997,6 +1016,8 @@ class CurriculumVitae(RenderCVBaseModel):
                 "Orcid": "\\faOrcid",
                 "StackOverflow": "\\faStackOverflow",
                 "Twitter": "\\faTwitter",
+                "ResearchGate": "\\faResearchgate",
+                "YouTube": "\\faYoutube",
             }
             for social_network in self.social_networks:
                 clean_url = social_network.url.replace("https://", "").rstrip("/")
@@ -1042,41 +1063,61 @@ class LocaleCatalog(RenderCVBaseModel):
     """
 
     month: Optional[str] = pydantic.Field(
-        default=None,
+        default="month",
         title='Translation of "Month"',
         description='Translation of the word "month" in the locale.',
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
     months: Optional[str] = pydantic.Field(
-        default=None,
+        default="months",
         title='Translation of "Months"',
         description='Translation of the word "months" in the locale.',
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
     year: Optional[str] = pydantic.Field(
-        default=None,
+        default="year",
         title='Translation of "Year"',
         description='Translation of the word "year" in the locale.',
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
     years: Optional[str] = pydantic.Field(
-        default=None,
+        default="years",
         title='Translation of "Years"',
         description='Translation of the word "years" in the locale.',
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
     present: Optional[str] = pydantic.Field(
-        default=None,
+        default="present",
         title='Translation of "Present"',
         description='Translation of the word "present" in the locale.',
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
     to: Optional[str] = pydantic.Field(
-        default=None,
+        default="to",
         title='Translation of "To"',
         description='Translation of the word "to" in the locale.',
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
     abbreviations_for_months: Optional[
         Annotated[list[str], at.Len(min_length=12, max_length=12)]
     ] = pydantic.Field(
-        default=None,
+        default=[
+            "Jan.",
+            "Feb.",
+            "Mar.",
+            "Apr.",
+            "May",
+            "June",
+            "July",
+            "Aug.",
+            "Sept.",
+            "Oct.",
+            "Nov.",
+            "Dec.",
+        ],
         title="Abbreviations of Months",
         description="Abbreviations of the months in the locale.",
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
 
     @pydantic.field_validator(
@@ -1131,6 +1172,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         description=(
             "The locale catalog of the CV to allow the support of multiple languages."
         ),
+        validate_default=True,  # to initialize the locale catalog with the default values
     )
 
     @pydantic.field_validator("design", mode="before")
@@ -1231,6 +1273,16 @@ class RenderCVDataModel(RenderCVBaseModel):
                 theme_data_model = ThemeOptionsAreNotProvided(theme=theme_name)
 
             return theme_data_model
+
+    @pydantic.field_validator("locale_catalog")
+    @classmethod
+    def initialize_locale_catalog(cls, locale_catalog: LocaleCatalog) -> LocaleCatalog:
+        """Even if the locale catalog is not provided, initialize it with the default
+        values."""
+        if locale_catalog is None:
+            LocaleCatalog()
+
+        return locale_catalog
 
 
 def set_or_update_a_value(
@@ -1620,6 +1672,66 @@ def get_a_sample_data_model(
     return RenderCVDataModel(cv=cv, design=design)
 
 
+def dictionary_to_yaml(dictionary: dict[str, Any]):
+    """Converts a dictionary to a YAML string.
+
+    Args:
+        dictionary (dict[str, Any]): The dictionary to be converted to YAML.
+    Returns:
+        str: The YAML string.
+    """
+    yaml_object = ruamel.yaml.YAML()
+    yaml_object.encoding = "utf-8"
+    yaml_object.width = 60
+    yaml_object.indent(mapping=2, sequence=4, offset=2)
+    with io.StringIO() as string_stream:
+        yaml_object.dump(dictionary, string_stream)
+        yaml_string = string_stream.getvalue()
+    return yaml_string
+
+
+def create_a_sample_yaml_input_file(
+    input_file_path: Optional[pathlib.Path] = None,
+    name: str = "John Doe",
+    theme: str = "classic",
+) -> str:
+    """Create a sample YAML input file and return it as a string. If the input file path
+    is provided, then also save the contents to the file.
+
+    Args:
+        input_file_path (pathlib.Path, optional): The path to save the input file.
+            Defaults to None.
+        name (str, optional): The name of the person. Defaults to "John Doe".
+        theme (str, optional): The theme of the CV. Defaults to "classic".
+    Returns:
+        str: The sample YAML input file as a string.
+    """
+    data_model = get_a_sample_data_model(name=name, theme=theme)
+
+    # Instead of getting the dictionary with data_model.model_dump() directly, we
+    # convert it to JSON and then to a dictionary. Because the YAML library we are
+    # using sometimes has problems with the dictionary returned by model_dump().
+
+    # We exclude "cv.sections" because the data model automatically generates them.
+    # The user's "cv.sections" input is actually "cv.sections_input" in the data
+    # model. It is shown as "cv.sections" in the YAML file because an alias is being
+    # used. If"cv.sections" were not excluded, the automatically generated
+    # "cv.sections" would overwrite the "cv.sections_input". "cv.sections" are
+    # automatically generated from "cv.sections_input" to make the templating
+    # process easier. "cv.sections_input" exists for the convenience of the user.
+    data_model_as_json = data_model.model_dump_json(
+        exclude_none=True, by_alias=True, exclude={"cv": {"sections"}}
+    )
+    data_model_as_dictionary = json.loads(data_model_as_json)
+
+    yaml_string = dictionary_to_yaml(data_model_as_dictionary)
+
+    if input_file_path is not None:
+        input_file_path.write_text(yaml_string, encoding="utf-8")
+
+    return yaml_string
+
+
 def generate_json_schema() -> dict[str, Any]:
     """Generate the JSON schema of RenderCV.
 
@@ -1631,8 +1743,6 @@ def generate_json_schema() -> dict[str, Any]:
     Returns:
         dict: The JSON schema of RenderCV.
     """
-
-    # def loop_through_pro
 
     class RenderCVSchemaGenerator(pydantic.json_schema.GenerateJsonSchema):
         def generate(self, schema, mode="validation"):  # type: ignore
