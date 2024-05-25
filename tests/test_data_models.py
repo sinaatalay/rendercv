@@ -410,6 +410,10 @@ def test_invalid_doi(publication_entry, doi):
         ("Mastodon", "invalidmastodon"),
         ("Mastodon", "@inva@l@id"),
         ("Mastodon", "@invalid@ne<>twork.com"),
+        ("StackOverflow", "invalidusername"),
+        ("StackOverflow", "invalidusername//"),
+        ("StackOverflow", "invalidusername/invalid"),
+        ("YouTube", "invalidusername"),
     ],
 )
 def test_invalid_social_networks(network, username):
@@ -430,6 +434,21 @@ def test_invalid_social_networks(network, username):
             "StackOverflow",
             "4567/myusername",
             "https://stackoverflow.com/users/4567/myusername",
+        ),
+        (
+            "GitLab",
+            "myusername",
+            "https://gitlab.com/myusername",
+        ),
+        (
+            "ResearchGate",
+            "myusername",
+            "https://researchgate.net/profile/myusername",
+        ),
+        (
+            "YouTube",
+            "@myusername",
+            "https://youtube.com/@myusername",
         ),
     ],
 )
@@ -662,26 +681,50 @@ def test_locale_catalog():
 
     assert dm.locale_catalog == data_model.locale_catalog.model_dump()
 
-    # reset the locale catalog
-    dm.locale_catalog = {
-        "month": "month",
-        "months": "months",
-        "year": "year",
-        "years": "years",
-        "present": "present",
-        "to": "to",
-        "abbreviations_for_months": [
-            "Jan.",
-            "Feb.",
-            "Mar.",
-            "Apr.",
-            "May",
-            "June",
-            "July",
-            "Aug.",
-            "Sept.",
-            "Oct.",
-            "Nov.",
-            "Dec.",
+
+def test_if_local_catalog_resets():
+    data_model = dm.get_a_sample_data_model("John Doe")
+
+    data_model.locale_catalog = dm.LocaleCatalog(
+        month="a",
+    )
+
+    assert dm.locale_catalog["month"] == "a"
+
+    data_model = dm.get_a_sample_data_model("John Doe")
+
+    assert dm.locale_catalog["month"] == "month"
+
+
+def test_dictionary_to_yaml():
+    input_dictionary = {
+        "test_list": [
+            "a",
+            "b",
+            "c",
         ],
+        "test_dict": {
+            "a": 1,
+            "b": 2,
+        },
     }
+    yaml_string = dm.dictionary_to_yaml(input_dictionary)
+
+    # load the yaml string
+    yaml_object = ruamel.yaml.YAML()
+    output_dictionary = yaml_object.load(yaml_string)
+
+    assert input_dictionary == output_dictionary
+
+
+def test_create_a_sample_yaml_input_file(tmp_path):
+    input_file_path = tmp_path / "input.yaml"
+    yaml_contents = dm.create_a_sample_yaml_input_file(input_file_path)
+
+    assert input_file_path.exists()
+    assert yaml_contents == input_file_path.read_text(encoding="utf-8")
+
+
+def test_default_input_file_doesnt_have_local_catalog():
+    yaml_contents = dm.create_a_sample_yaml_input_file()
+    assert "locale_catalog" not in yaml_contents

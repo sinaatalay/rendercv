@@ -285,6 +285,10 @@ def rendercv_filled_curriculum_vitae_data_model(
             dm.SocialNetwork(network="Orcid", username="0000-0000-0000-0000"),
             dm.SocialNetwork(network="Mastodon", username="@johndoe@example"),
             dm.SocialNetwork(network="Twitter", username="johndoe"),
+            dm.SocialNetwork(network="StackOverflow", username="12323/johndoe"),
+            dm.SocialNetwork(network="GitLab", username="johndoe"),
+            dm.SocialNetwork(network="ResearchGate", username="johndoe"),
+            dm.SocialNetwork(network="YouTube", username="@johndoe"),
         ],
         sections={
             "Text Entries": [text_entry, text_entry, text_entry],

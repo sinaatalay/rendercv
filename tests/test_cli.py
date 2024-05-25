@@ -286,8 +286,8 @@ def test_render_command_with_different_output_path_for_each_file(
 def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
     # create a new input file (for a CV with multiple pages) in the temporary directory:
     os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "John Doe"])
-    input_file_path = tmp_path / "John_Doe_CV.yaml"
+    runner.invoke(cli.app, ["new", "Jahn Doe"])
+    input_file_path = tmp_path / "Jahn_Doe_CV.yaml"
 
     run_render_command(
         input_file_path,
@@ -370,11 +370,11 @@ def test_render_command_with_invalid_arguments(
 def test_new_command(tmp_path):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "John Doe"])
+    runner.invoke(cli.app, ["new", "Jahn Doe"])
 
     markdown_source_files_path = tmp_path / "markdown"
     theme_source_files_path = tmp_path / "classic"
-    input_file_path = tmp_path / "John_Doe_CV.yaml"
+    input_file_path = tmp_path / "Jahn_Doe_CV.yaml"
 
     assert markdown_source_files_path.exists()
     assert theme_source_files_path.exists()
@@ -385,7 +385,7 @@ def test_new_command_with_invalid_theme(tmp_path):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
 
-    result = runner.invoke(cli.app, ["new", "John Doe", "--theme", "invalid_theme"])
+    result = runner.invoke(cli.app, ["new", "Jahn Doe", "--theme", "invalid_theme"])
 
     assert "The theme should be one of the following" in result.stdout
 
@@ -400,7 +400,7 @@ def test_new_command_with_invalid_theme(tmp_path):
 def test_new_command_with_dont_create_files(tmp_path, option, folder_name):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "John Doe", option])
+    runner.invoke(cli.app, ["new", "Jahn Doe", option])
 
     source_files_path = tmp_path / folder_name
 
@@ -414,7 +414,7 @@ def test_new_command_with_only_input_file(tmp_path):
         cli.app,
         [
             "new",
-            "John Doe",
+            "Jahn Doe",
             "--dont-create-markdown-source-files",
             "--dont-create-theme-source-files",
         ],
@@ -422,11 +422,33 @@ def test_new_command_with_only_input_file(tmp_path):
 
     markdown_source_files_path = tmp_path / "markdown"
     theme_source_files_path = tmp_path / "classic"
-    input_file_path = tmp_path / "John_Doe_CV.yaml"
+    input_file_path = tmp_path / "Jahn_Doe_CV.yaml"
 
     assert not markdown_source_files_path.exists()
     assert not theme_source_files_path.exists()
     assert input_file_path.exists()
+
+
+@pytest.mark.parametrize(
+    "file_or_folder_name",
+    [
+        "John_Doe_CV.yaml",
+        "markdown",
+        "classic",
+    ],
+)
+def test_new_command_with_existing_files(tmp_path, file_or_folder_name):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    if file_or_folder_name == "Jahn_Doe_CV.yaml":
+        (tmp_path / file_or_folder_name).touch()
+    else:
+        (tmp_path / file_or_folder_name).mkdir()
+
+    result = runner.invoke(cli.app, ["new", "Jahn Doe"])
+
+    assert "already exists!" in result.stdout
 
 
 @pytest.mark.parametrize(
