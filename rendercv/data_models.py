@@ -833,6 +833,7 @@ class SocialNetwork(RenderCVBaseModel):
     network: Literal[
         "LinkedIn",
         "GitHub",
+        "GitLab",
         "Instagram",
         "Orcid",
         "Mastodon",
@@ -884,6 +885,7 @@ class SocialNetwork(RenderCVBaseModel):
             url_dictionary = {
                 "LinkedIn": "https://linkedin.com/in/",
                 "GitHub": "https://github.com/",
+                "GitLab": "https://gitlab.com/",
                 "Instagram": "https://instagram.com/",
                 "Orcid": "https://orcid.org/",
                 "Twitter": "https://twitter.com/",
@@ -989,6 +991,7 @@ class CurriculumVitae(RenderCVBaseModel):
             icon_dictionary = {
                 "LinkedIn": "\\faLinkedinIn",
                 "GitHub": "\\faGithub",
+                "GitLab": "\\faGitlab",
                 "Instagram": "\\faInstagram",
                 "Mastodon": "\\faMastodon",
                 "Orcid": "\\faOrcid",
