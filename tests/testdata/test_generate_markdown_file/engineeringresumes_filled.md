@@ -10,6 +10,10 @@
 - Orcid: [0000-0000-0000-0000](https://orcid.org/0000-0000-0000-0000)
 - Mastodon: [@johndoe@example](https://example/@johndoe)
 - Twitter: [johndoe](https://twitter.com/johndoe)
+- StackOverflow: [12323/johndoe](https://stackoverflow.com/users/12323/johndoe)
+- GitLab: [johndoe](https://gitlab.com/johndoe)
+- ResearchGate: [johndoe](https://researchgate.net/profile/johndoe)
+- YouTube: [@johndoe](https://youtube.com/@johndoe)
 
 
 # Text Entries
