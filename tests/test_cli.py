@@ -286,8 +286,8 @@ def test_render_command_with_different_output_path_for_each_file(
 def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
     # create a new input file (for a CV with multiple pages) in the temporary directory:
     os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "Jahn Doe"])
-    input_file_path = tmp_path / "Jahn_Doe_CV.yaml"
+    runner.invoke(cli.app, ["new", "John Doe"])
+    input_file_path = tmp_path / "John_Doe_CV.yaml"
 
     run_render_command(
         input_file_path,
@@ -432,7 +432,7 @@ def test_new_command_with_only_input_file(tmp_path):
 @pytest.mark.parametrize(
     "file_or_folder_name",
     [
-        "John_Doe_CV.yaml",
+        "Jahn_Doe_CV.yaml",
         "markdown",
         "classic",
     ],
