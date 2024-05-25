@@ -73,6 +73,8 @@ RenderCV comes with a JSON Schema so that the input YAML file can be filled out 
 
 ## Quick Start Guide
 
+Either use [rendercv-pipeline](https://github.com/sinaatalay/rendercv-pipeline) or follow the steps below.
+
 > RenderCV doesn't require a $\LaTeX$ installation; it comes with it!
 
 1.  Install [Python](https://www.python.org/downloads/) (3.10 or newer).
