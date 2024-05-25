@@ -53,12 +53,14 @@ cv:
   phone: +905419999999
   website: https://example.com/
   social_networks:
-    - network: LinkedIn
+    - network: LinkedIn # (1)!
       username: yourusername
     - network: GitHub 
       username: yourusername
   ...
 ```
+
+1.  The available social networks are: {{available_social_networks}}. You can add more social networks by following the same pattern. The social network icons are automatically added to the header of the CV.
 
 None of the values above are required. You can omit any or all of them, and RenderCV will adapt to your input. These generic fields are used in the header of the CV.
 

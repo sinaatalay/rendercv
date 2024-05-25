@@ -177,6 +177,12 @@ def define_env(env):
     themes = [f"`{theme}`" for theme in dm.available_themes]
     env.variables["available_themes"] = ", ".join(themes)
 
+    # available social networks strings (put available social networks between ``)
+    social_networks = [
+        f"`{social_network}`" for social_network in dm.available_social_networks
+    ]
+    env.variables["available_social_networks"] = ", ".join(social_networks)
+
 
 def generate_entry_figures():
     """Generate an image for each entry type and theme."""
