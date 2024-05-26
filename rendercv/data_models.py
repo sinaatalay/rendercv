@@ -1431,16 +1431,16 @@ def get_a_sample_data_model(
     sections = {
         "welcome_to_rendercv!": [
             (
-                "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX"
-                " CV/resume framework. It allows you to create a high-quality CV as"
-                " a PDF from a YAML file with **full Markdown syntax support** and"
+                "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX-based"
+                " CV/resume framework. It allows you to create a high-quality CV or resume"
+                " as a PDF file from a YAML file, with **full Markdown syntax support** and"
                 " **complete control over the LaTeX code**."
             ),
             (
-                "A substantial"
-                " part of the content is taken from"
-                " [here](https://www.careercup.com/resume), where a *clean and tidy CV*"
-                " pattern is proposed by **Gayle L. McDowell**."
+                "The boilerplate content is taken from"
+                " [here](https://github.com/dnl-blkv/mcdowell-cv), where a"
+                " *clean and tidy CV* pattern is proposed by"
+                " **[Gayle Laakmann McDowell](https://www.gayle.com/)**."
             ),
         ],
         "quick_guide": [
@@ -1452,7 +1452,7 @@ def get_a_sample_data_model(
             ),
             BulletEntry(
                 bullet=(
-                    "There are seven different entry types: *BulletEntry*, *TextEntry*,"
+                    "There are 7 unique entry types: *BulletEntry*, *TextEntry*,"
                     " *EducationEntry*, *ExperienceEntry*, *NormalEntry*,"
                     " *PublicationEntry*, and *OneLineEntry*."
                 ),
@@ -1466,7 +1466,7 @@ def get_a_sample_data_model(
             BulletEntry(
                 bullet=(
                     "[Here](https://docs.rendercv.com/user_guide/), you can find a"
-                    " comprehensive user guide."
+                    " comprehensive user guide for RenderCV."
                 )
             ),
         ],
@@ -1480,51 +1480,51 @@ def get_a_sample_data_model(
                 highlights=[
                     "GPA: 3.9/4.0 ([Transcript](https://example.com))",
                     (
-                        "**Coursework:** Software Foundations, Computer"
-                        " Architecture, Algorithms, Artificial Intelligence, Comparison"
-                        " of Learning Algorithms, Computational Theory."
+                        "**Coursework:** Computer Architecture, Artificial"
+                        " Intelligence, Comparison of Learning Algorithms,"
+                        " Computational Theory"
                     ),
                 ],
             ),
         ],
         "experience": [
             ExperienceEntry(
-                company="Apple Computer",
+                company="Apple",
                 position="Software Engineer, Intern",
                 start_date="2004-06",
                 end_date="2004-08",
-                location="CA, USA",
+                location="Cupertino, CA",
                 highlights=[
                     (
                         "Reduced time to render the user's buddy list by 75% by"
-                        " implementing a prediction algorithm."
+                        " implementing a prediction algorithm"
                     ),
                     (
                         "Implemented iChat integration with OS X Spotlight Search by"
-                        " creating a tool that extracts metadata from saved chat"
-                        " transcripts and provides metadata to a system-wide search"
-                        " database."
+                        " creating a tool to extract metadata from saved chat"
+                        " transcripts and provide metadata to a system-wide search"
+                        " database"
                     ),
                     (
                         "Redesigned chat file format and implemented backward"
-                        " compatibility for search."
+                        " compatibility for search"
                     ),
                 ],
             ),
             ExperienceEntry(
-                company="Microsoft Corporation",
+                company="Microsoft",
                 position="Lead Student Ambassador",
                 start_date="2003-09",
                 end_date="2005-04",
-                location="WA, USA",
+                location="Redmond, WA",
                 highlights=[
                     (
                         "Promoted to Lead Student Ambassador in the Fall of 2004,"
-                        " supervised 10 - 15 Student Ambassadors."
+                        " supervised 10-15 Student Ambassadors"
                     ),
                     (
                         "Created and taught a computer science course, CSE 099:"
-                        " Software Design and Development."
+                        " Software Design and Development"
                     ),
                 ],
             ),
@@ -1533,40 +1533,34 @@ def get_a_sample_data_model(
                 position="Head Teaching Assistant",
                 start_date="2001-10",
                 end_date="2005-05",
-                location="PA, USA",
+                location="Philadelphia, PA",
                 highlights=[
                     (
                         "Implemented a user interface for the VS open file switcher"
-                        " (ctrl-tab) and extended it to tool windows."
+                        " (ctrl-tab) and extended it to tool windows"
                     ),
                     (
                         "Created a service to provide gradient across VS and VS"
-                        " add-ins. Optimized service via caching."
+                        " add-ins, optimized its performance via caching"
                     ),
                     "Programmer Productivity Research Center (Summers 2001, 2002)",
                     (
-                        "Built app to compute the similarity of all methods in a code"
-                        " base, reduced time from $\\mathcal{O}(n^2)$ to"
-                        " $\\mathcal{O}(n \\log n)$. "
+                        "Built an app to compute the similarity of all methods in a code"
+                        " base, reducing the time from $\\mathcal{O}(n^2)$ to"
+                        " $\\mathcal{O}(n \\log n)$"
                     ),
                     (
                         "Created a test case generation tool that creates random XML"
-                        " docs from XML Schema."
+                        " docs from XML Schema"
                     ),
                 ],
             ),
             ExperienceEntry(
-                company="Microsoft Corporation",
+                company="Microsoft",
                 position="Software Design Engineer, Intern",
                 start_date="2003-06",
                 end_date="2003-08",
-                location="WA, USA",
-                highlights=[
-                    (
-                        "Promoted to Lead Student Ambassador in the Fall of 2004,"
-                        " supervised 10 - 15 Student Ambassadors."
-                    ),
-                ],
+                location="Redmond, WA",
             ),
         ],
         "publications": [
@@ -1589,65 +1583,65 @@ def get_a_sample_data_model(
         "projects": [
             NormalEntry(
                 name="Multi-User Drawing Tool",
-                date="2004",
+                date="2004", # would omit start/end dates and replace with a project link as the date is largely irrelevant
+                #project_link = "github.com/username/repo"
                 highlights=[
                     (
                         "Developed an electronic classroom where multiple users can"
-                        ' view and simultaneously draw on a "chalkboard" with each'
-                        " person's edits synchronized."
+                        " view and simultaneously draw on a \"chalkboard\" with each"
+                        " person's edits synchronized"
                     ),
-                    "Used C++ and MFC.",
+                    "Tools Used: C++, MFC",
                 ],
             ),
             NormalEntry(
                 name="Synchronized Calendar",
                 start_date="2003",
-                end_date="2004",
+                end_date="2004", 
+                #project_link = "github.com/username/repo",
                 highlights=[
                     (
                         "Developed a desktop calendar with globally shared and"
                         " synchronized calendars, allowing users to schedule meetings"
-                        " with other users."
+                        " with other users"
                     ),
-                    "Used C#.NET, SQL, and XML.",
+                    "Tools Used: C#, .NET, SQL, XML",
                 ],
             ),
             NormalEntry(
                 name="Operating System",
-                date="2002",
+                date="2002", # would replace project dates with a project link as the date is largely irrelevant
+                #project_link = "github.com/username/repo",
                 highlights=[
                     (
                         "Developed a UNIX-style OS with a scheduler, file system, text"
-                        " editor, and calculator."
+                        " editor, and calculator"
                     ),
-                    "Used C.",
+                    "Tools Used: C",
                 ],
             ),
         ],
         "additional_experience_and_awards": [
             OneLineEntry(
-                label="Instructor (2003 - 2005)",
-                details="Taught two full-credit Computer Science courses.",
+                label="Instructor (2003-2005)",
+                details="Taught two full-credit computer science courses",
             ),
             OneLineEntry(
-                label="Third Prize, Senior Design Projects",
+                label="Third Prize, Senior Design Project",
                 details=(
                     "Awarded 3rd prize for a synchronized calendar project out of 100"
-                    " projects."
+                    " entries"
                 ),
             ),
         ],
         "technologies": [
             OneLineEntry(
                 label="Languages",
-                details="C++, C, Java, Objective-C, C#.NET, SQL, JavaScript",
+                details="C++, C, Java, Objective-C, C#, SQL, JavaScript",
             ),
             OneLineEntry(
                 label="Software",
-                details=(
-                    "Visual Studio, Microsoft SQL Server, Eclipse, XCode, Interface"
-                    " Builder"
-                ),
+                details=".NET, Microsoft SQL Server, XCode, Interface Builder",
             ),
         ],
     }
