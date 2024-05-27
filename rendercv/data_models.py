@@ -189,7 +189,7 @@ class EntryWithDate(RenderCVBaseModel):
         title="Date",
         description=(
             "The date field can be filled in YYYY-MM-DD, YYYY-MM, or YYYY formats or as"
-            " an arbitrary string like \"Fall 2023\"."
+            ' an arbitrary string like "Fall 2023".'
         ),
         examples=["2020-09-24", "Fall 2023"],
     )
@@ -322,7 +322,7 @@ class EntryBase(EntryWithDate):
         title="End Date",
         description=(
             "The end date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format. If the"
-            " event is still ongoing, then type \"present\" or provide only the"
+            ' event is still ongoing, then type "present" or provide only the'
             " start_date."
         ),
         examples=["2020-09-24", "present"],
@@ -786,8 +786,8 @@ def validate_section_input(
 
         if entry_type is None or section_type is None:
             raise ValueError(
-                "RenderCV couldn't match this section with any entry types! Please check"
-                " the entries and make sure they are provided correctly.",
+                "RenderCV couldn't match this section with any entry types! Please"
+                " check the entries and make sure they are provided correctly.",
                 "",  # This is the location of the error
                 "",  # This is value of the error
             )
@@ -1432,9 +1432,9 @@ def get_a_sample_data_model(
         "welcome_to_rendercv!": [
             (
                 "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX-based"
-                " CV/resume framework. It allows you to create a high-quality CV or resume"
-                " as a PDF file from a YAML file, with **full Markdown syntax support** and"
-                " **complete control over the LaTeX code**."
+                " CV/resume framework. It allows you to create a high-quality CV or"
+                " resume as a PDF file from a YAML file, with **full Markdown syntax"
+                " support** and **complete control over the LaTeX code**."
             ),
             (
                 "The boilerplate content is taken from"
@@ -1545,8 +1545,8 @@ def get_a_sample_data_model(
                     ),
                     "Programmer Productivity Research Center (Summers 2001, 2002)",
                     (
-                        "Built an app to compute the similarity of all methods in a code"
-                        " base, reducing the time from $\\mathcal{O}(n^2)$ to"
+                        "Built an app to compute the similarity of all methods in a"
+                        " code base, reducing the time from $\\mathcal{O}(n^2)$ to"
                         " $\\mathcal{O}(n \\log n)$"
                     ),
                     (
@@ -1583,12 +1583,12 @@ def get_a_sample_data_model(
         "projects": [
             NormalEntry(
                 name="Multi-User Drawing Tool",
-                date="2004", # I would omit start/end dates and replace with a project link as the date is largely irrelevant
-                #project_link = "github.com/username/repo"
+                date="2004",  # I would omit start/end dates and replace with a project link as the date is largely irrelevant
+                # project_link = "github.com/username/repo"
                 highlights=[
                     (
                         "Developed an electronic classroom where multiple users can"
-                        " view and simultaneously draw on a \"chalkboard\" with each"
+                        ' view and simultaneously draw on a "chalkboard" with each'
                         " person's edits synchronized"
                     ),
                     "Tools Used: C++, MFC",
@@ -1597,8 +1597,8 @@ def get_a_sample_data_model(
             NormalEntry(
                 name="Synchronized Calendar",
                 start_date="2003",
-                end_date="2004", 
-                #project_link = "github.com/username/repo",
+                end_date="2004",
+                # project_link = "github.com/username/repo",
                 highlights=[
                     (
                         "Developed a desktop calendar with globally shared and"
@@ -1610,8 +1610,8 @@ def get_a_sample_data_model(
             ),
             NormalEntry(
                 name="Operating System",
-                date="2002", # would replace project dates with a project link as the date is largely irrelevant
-                #project_link = "github.com/username/repo",
+                date="2002",  # would replace project dates with a project link as the date is largely irrelevant
+                # project_link = "github.com/username/repo",
                 highlights=[
                     (
                         "Developed a UNIX-style OS with a scheduler, file system, text"
