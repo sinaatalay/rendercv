@@ -37,6 +37,8 @@ app = typer.Typer(
     rich_markup_mode="rich",
     add_completion=False,
     invoke_without_command=True,  # to make rendercv --version work
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 
@@ -106,7 +108,7 @@ def information(text: str):
     Args:
         text (str): The text of the information message.
     """
-    print(f"[bold green]{text}")
+    print(f"[yellow]{text}")
 
 
 def get_error_message_and_location_and_value_from_a_custom_error(
@@ -428,7 +430,7 @@ class LiveProgressReporter(rich.live.Live):
         """End the live progress reporting."""
         self.overall_progress.update(
             self.overall_task_id,
-            description=f"[bold green]{self.end_message}",
+            description=f"[yellow]{self.end_message}",
         )
 
 
@@ -521,8 +523,8 @@ def parse_data_model_override_arguments(
 @app.command(
     name="render",
     help=(
-        "Render a YAML input file. Example: [bold green]rendercv render"
-        " John_Doe_CV.yaml[/bold green]"
+        "Render a YAML input file. Example: [yellow]rendercv render"
+        " John_Doe_CV.yaml[/yellow]. Details: [cyan]rendercv render --help[/cyan]"
     ),
     # allow extra arguments for updating the data model:
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
@@ -530,12 +532,13 @@ def parse_data_model_override_arguments(
 @handle_exceptions
 def cli_command_render(
     input_file_name: Annotated[
-        str,
-        typer.Argument(help="Name of the YAML input file."),
+        str, typer.Argument(help="Name of the YAML input file.")
     ],
     use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
+            "--use-local-latex-command",
+            "-use",
             help=(
                 "Use the local LaTeX installation with the given command instead of the"
                 " RenderCV's TinyTeX."
@@ -545,36 +548,48 @@ def cli_command_render(
     output_folder_name: Annotated[
         str,
         typer.Option(
+            "--output-folder-name",
+            "-o",
             help="Name of the output folder.",
         ),
     ] = "rendercv_output",
     latex_path: Annotated[
         Optional[str],
         typer.Option(
+            "--latex-path",
+            "-latex",
             help="Copy the LaTeX file to the given path.",
         ),
     ] = None,
     pdf_path: Annotated[
         Optional[str],
         typer.Option(
+            "--pdf-path",
+            "-pdf",
             help="Copy the PDF file to the given path.",
         ),
     ] = None,
     markdown_path: Annotated[
         Optional[str],
         typer.Option(
+            "--markdown-path",
+            "-md",
             help="Copy the Markdown file to the given path.",
         ),
     ] = None,
     html_path: Annotated[
         Optional[str],
         typer.Option(
+            "--html-path",
+            "-html",
             help="Copy the HTML file to the given path.",
         ),
     ] = None,
     png_path: Annotated[
         Optional[str],
         typer.Option(
+            "--png-path",
+            "-png",
             help="Copy the PNG file to the given path.",
         ),
     ] = None,
@@ -582,6 +597,7 @@ def cli_command_render(
         bool,
         typer.Option(
             "--dont-generate-markdown",
+            "-nomd",
             help="Don't generate the Markdown and HTML file.",
         ),
     ] = False,
@@ -589,6 +605,7 @@ def cli_command_render(
         bool,
         typer.Option(
             "--dont-generate-html",
+            "-nohtml",
             help="Don't generate the HTML file.",
         ),
     ] = False,
@@ -596,6 +613,7 @@ def cli_command_render(
         bool,
         typer.Option(
             "--dont-generate-png",
+            "-nopng",
             help="Don't generate the PNG file.",
         ),
     ] = False,
@@ -711,8 +729,8 @@ def cli_command_render(
 @app.command(
     name="new",
     help=(
-        "Generate a YAML input file to get started. Example: [bold green]rendercv new"
-        ' "John Doe"[/bold green]'
+        "Generate a YAML input file to get started. Example: [yellow]rendercv new"
+        ' "John Doe"[/yellow]. Details: [cyan]rendercv new --help[/cyan]'
     ),
 )
 def cli_command_new(
@@ -783,8 +801,9 @@ def cli_command_new(
 @app.command(
     name="create-theme",
     help=(
-        "Create a custom theme folder based on an existing theme. Example: [bold"
-        " green]rendercv create-theme --based-on classic customtheme[/bold green]"
+        "Create a custom theme folder based on an existing theme. Example:"
+        " [yellow]rendercv create-theme customtheme[/yellow]. Details: [cyan]rendercv"
+        " create-theme --help[/cyan]"
     ),
 )
 def cli_command_create_theme(
@@ -844,7 +863,7 @@ def cli_command_create_theme(
 @app.callback()
 def main(
     version_requested: Annotated[
-        Optional[bool], typer.Option("--version", help="Show the version.")
+        Optional[bool], typer.Option("--version", "-v", help="Show the version.")
     ] = None,
 ):
     if version_requested:
