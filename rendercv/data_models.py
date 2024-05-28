@@ -641,15 +641,15 @@ Entry = (
     | BulletEntry
     | str
 )
-ListOfEntries = (
-    list[OneLineEntry]
-    | list[NormalEntry]
-    | list[ExperienceEntry]
-    | list[EducationEntry]
-    | list[PublicationEntry]
-    | list[BulletEntry]
-    | list[str]
-)
+ListOfEntries = list[
+    OneLineEntry
+    | NormalEntry
+    | ExperienceEntry
+    | EducationEntry
+    | PublicationEntry
+    | BulletEntry
+    | str
+]
 entry_types = Entry.__args__[:-1]  # a tuple of all the entry types except str
 entry_type_names = [entry_type.__name__ for entry_type in entry_types] + ["TextEntry"]
 
@@ -1767,27 +1767,16 @@ def generate_json_schema() -> dict[str, Any]:
                 # already have the required field. Moreover, we would like to warn
                 # users if they provide null values. They can remove the fields if they
                 # don't want to provide them.
-                null_type_dict = {}
-                null_type_dict["type"] = "null"
+                null_type_dict = {
+                    "type": "null",
+                }
                 for field_name, field in value["properties"].items():
                     if "anyOf" in field:
-                        if (
-                            len(field["anyOf"]) == 2
-                            and null_type_dict in field["anyOf"]
-                        ):
-                            field["oneOf"] = [field["anyOf"][0]]
-                            del field["anyOf"]
+                        if null_type_dict in field["anyOf"]:
+                            field["anyOf"].remove(null_type_dict)
 
-                            # for sections field of CurriculumVitae:
-                            if "additionalProperties" in field["oneOf"][0]:
-                                field["oneOf"][0]["additionalProperties"]["oneOf"] = (
-                                    field["oneOf"][0]["additionalProperties"]["anyOf"]
-                                )
-                                del field["oneOf"][0]["additionalProperties"]["anyOf"]
-
-                        else:
-                            field["oneOf"] = field["anyOf"]
-                            del field["anyOf"]
+                        field["oneOf"] = field["anyOf"]
+                        del field["anyOf"]
 
             return json_schema
 
