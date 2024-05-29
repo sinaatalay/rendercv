@@ -838,6 +838,7 @@ SocialNetworkName = Literal[
     "StackOverflow",
     "ResearchGate",
     "YouTube",
+    "Google Scholar",
 ]
 available_social_networks = get_args(SocialNetworkName)
 
@@ -908,6 +909,7 @@ class SocialNetwork(RenderCVBaseModel):
                 "StackOverflow": "https://stackoverflow.com/users/",
                 "ResearchGate": "https://researchgate.net/profile/",
                 "YouTube": "https://youtube.com/",
+                "Google Scholar": "https://scholar.google.com/citations?user=",
             }
             url = url_dictionary[self.network] + self.username
 
@@ -1018,6 +1020,7 @@ class CurriculumVitae(RenderCVBaseModel):
                 "Twitter": "\\faTwitter",
                 "ResearchGate": "\\faResearchgate",
                 "YouTube": "\\faYoutube",
+                "Google Scholar": "\\faGraduationCap",
             }
             for social_network in self.social_networks:
                 clean_url = social_network.url.replace("https://", "").rstrip("/")
@@ -1031,6 +1034,9 @@ class CurriculumVitae(RenderCVBaseModel):
                 if social_network.network == "StackOverflow":
                     username = social_network.username.split("/")[1]
                     connection["placeholder"] = username
+                if social_network.network == "Google Scholar":
+                    connection["placeholder"] = "Google Scholar"
+
                 connections.append(connection)
 
         return connections
