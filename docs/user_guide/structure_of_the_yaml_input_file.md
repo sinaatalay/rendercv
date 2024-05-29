@@ -166,7 +166,9 @@ Each entry type is a different object (a dictionary). Below, you can find all th
 - `doi`: The DOI of the publication.
 - `journal`: The journal of the publication.
 - `date`: The date as a custom string or in `YYYY-MM-DD`, `YYYY-MM`, or `YYYY` format.
+
 {% elif entry_name == "Normal Entry" %}
+
 
 **Mandatory Fields:**
 
@@ -179,6 +181,7 @@ Each entry type is a different object (a dictionary). Below, you can find all th
 - `end_date`: The end date in `YYYY-MM-DD`, `YYYY-MM`, or `YYYY` format or "present".
 - `date`: The date as a custom string or in `YYYY-MM-DD`, `YYYY-MM`, or `YYYY` format. This will override `start_date` and `end_date`.
 - `highlights`: A list of bullet points.
+
 {% elif entry_name == "OneLineEntry" %}
 
 **Mandatory Fields:**
