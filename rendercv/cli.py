@@ -6,6 +6,7 @@ output.
 """
 
 import json
+import urllib.request
 import pathlib
 from typing import Annotated, Callable, Optional
 import re
@@ -42,8 +43,57 @@ app = typer.Typer(
 )
 
 
+def get_latest_version_number_from_pypi() -> Optional[str]:
+    """Get the latest version number of RenderCV from PyPI.
+
+    Example:
+        ```python
+        get_latest_version_number_from_pypi()
+        ```
+        will return:
+        `#!python "1.1"`
+
+    Returns:
+        Optional[str]: The latest version number of RenderCV from PyPI. Returns None if
+            the version number cannot be fetched.
+    """
+    version = None
+    url = "https://pypi.org/pypi/rendercv/json"
+    try:
+        with urllib.request.urlopen(url) as response:
+            data = response.read()
+            encoding = response.info().get_content_charset("utf-8")
+            json_data = json.loads(data.decode(encoding))
+            version = json_data["info"]["version"]
+    except Exception:
+        pass
+
+    return version
+
+
+def warn_if_new_version_is_available() -> bool:
+    """Check if a new version of RenderCV is available and print a warning message if
+    there is a new version. Also, return True if there is a new version, and False
+    otherwise.
+
+    Returns:
+        bool: True if there is a new version, and False otherwise.
+    """
+    latest_version = get_latest_version_number_from_pypi()
+    if latest_version is not None and __version__ != latest_version:
+        warning(
+            f"A new version of RenderCV is available! You are using v{__version__},"
+            f" and the latest version is v{latest_version}."
+        )
+        return True
+    else:
+        return False
+
+
 def welcome():
     """Print a welcome message to the terminal."""
+    warn_if_new_version_is_available()
+
     table = rich.table.Table(
         title=(
             "\nWelcome to [bold]Render[dodger_blue3]CV[/dodger_blue3][/bold]! Some"
@@ -867,4 +917,6 @@ def main(
     ] = None,
 ):
     if version_requested:
-        information(f"RenderCV v{__version__}")
+        there_is_a_new_version = warn_if_new_version_is_available()
+        if not there_is_a_new_version:
+            print(f"RenderCV v{__version__}")
