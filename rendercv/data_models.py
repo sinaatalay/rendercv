@@ -910,7 +910,6 @@ class SocialNetwork(RenderCVBaseModel):
                 "ResearchGate": "https://researchgate.net/profile/",
                 "YouTube": "https://youtube.com/",
                 "Google Scholar": "https://scholar.google.com/citations?user=",
-                "Google Scholar": "https://scholar.google.com/citations?user=",
             }
             url = url_dictionary[self.network] + self.username
 
@@ -1563,10 +1562,16 @@ def get_a_sample_data_model(
             ),
             ExperienceEntry(
                 company="Microsoft",
-                position="Software Design Engineer, Intern",
+                position="Software Engineer, Intern",
                 start_date="2003-06",
                 end_date="2003-08",
                 location="Redmond, WA",
+                highlights=[
+                    (
+                        "Automated the extraction and processing of large datasets from"
+                        " legacy systems using SQL and Perl scripts"
+                    ),
+                ],
             ),
         ],
         "publications": [
@@ -1589,8 +1594,7 @@ def get_a_sample_data_model(
         "projects": [
             NormalEntry(
                 name="Multi-User Drawing Tool",
-                date="2004",  # I would omit start/end dates and replace with a project link as the date is largely irrelevant
-                # project_link = "github.com/username/repo"
+                date="[github.com/name/repo](https://github.com/sinaatalay/rendercv)",
                 highlights=[
                     (
                         "Developed an electronic classroom where multiple users can"
@@ -1602,9 +1606,7 @@ def get_a_sample_data_model(
             ),
             NormalEntry(
                 name="Synchronized Calendar",
-                start_date="2003",
-                end_date="2004",
-                # project_link = "github.com/username/repo",
+                date="[github.com/name/repo](https://github.com/sinaatalay/rendercv)",
                 highlights=[
                     (
                         "Developed a desktop calendar with globally shared and"
@@ -1616,8 +1618,7 @@ def get_a_sample_data_model(
             ),
             NormalEntry(
                 name="Operating System",
-                date="2002",  # would replace project dates with a project link as the date is largely irrelevant
-                # project_link = "github.com/username/repo",
+                date="2002",
                 highlights=[
                     (
                         "Developed a UNIX-style OS with a scheduler, file system, text"
