@@ -378,7 +378,11 @@ def handle_exceptions(function: Callable) -> Callable:
         except pydantic.ValidationError as e:
             handle_validation_error(e)
         except ruamel.yaml.YAMLError as e:
-            error("There is a YAML error in the input file!", e)
+            error(
+                "There is a YAML error in the input file!\n\nTry to use quotation marks"
+                " to make sure the YAML parser understands the field is a string.",
+                e,
+            )
         except FileNotFoundError as e:
             error(e)
         except UnicodeDecodeError as e:
