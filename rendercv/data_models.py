@@ -1495,9 +1495,9 @@ def get_a_sample_data_model(
         "experience": [
             ExperienceEntry(
                 company="Apple",
-                position="Software Engineer, Intern",
-                start_date="2004-06",
-                end_date="2004-08",
+                position="Software Engineer",
+                start_date="2005-06",
+                end_date="2007-08",
                 location="Cupertino, CA",
                 highlights=[
                     (
@@ -1537,7 +1537,7 @@ def get_a_sample_data_model(
                 company="University of Pennsylvania",
                 position="Head Teaching Assistant",
                 start_date="2001-10",
-                end_date="2005-05",
+                end_date="2003-05",
                 location="Philadelphia, PA",
                 highlights=[
                     (
