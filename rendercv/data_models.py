@@ -143,7 +143,7 @@ class RenderCVBaseModel(pydantic.BaseModel):
 # Entry models: ========================================================================
 # ======================================================================================
 
-# Create an URL validator to validate social network URLs:
+# Create a URL validator to validate social network URLs:
 url_validator = pydantic.TypeAdapter(pydantic.HttpUrl)  # type: ignore
 
 
@@ -210,7 +210,7 @@ class EntryWithDate(RenderCVBaseModel):
                     # Check if it is a valid date:
                     get_date_object(date)
 
-                    # check if it is in YYYY format, and if so, convert it to an
+                    # Check if it is in YYYY format, and if so, convert it to an
                     # integer:
                     if re.fullmatch(r"\d{4}", date):
                         # This is not required for start_date and end_date because they
@@ -281,7 +281,7 @@ class PublicationEntryBase(RenderCVBaseModel):
                 if err.code == 404:
                     raise ValueError("DOI cannot be found in the DOI System!")
             except (InvalidURL, URLError):
-                raise ValueError("This DOI is not valid!")
+                raise ValueError("This DOI is invalid!")
 
         return doi
 
@@ -359,7 +359,7 @@ class EntryBase(EntryWithDate):
     )
     def check_and_adjust_dates(self) -> "EntryBase":
         """
-        Check if the dates are provided correctly and do the necessary adjustments.
+        Check if the dates are provided correctly and make the necessary adjustments.
         """
         date_is_provided = self.date is not None
         start_date_is_provided = self.start_date is not None
@@ -388,8 +388,8 @@ class EntryBase(EntryWithDate):
             if start_date > end_date:
                 raise ValueError(
                     '"start_date" can not be after "end_date"!',
-                    "start_date",  # this is the location of the error
-                    str(start_date),  # this is value of the error
+                    "start_date",  # This is the location of the error
+                    str(start_date),  # This is value of the error
                 )
 
         return self
@@ -435,7 +435,7 @@ class EntryBase(EntryWithDate):
             date_string = f"{start_date} {locale_catalog['to']} {end_date}"
 
         else:
-            # Neither date, start_date, nor end_date is provided, so return an empty
+            # Neither date, start_date, nor end_date are provided, so return an empty
             # string:
             date_string = ""
 
@@ -488,7 +488,7 @@ class EntryBase(EntryWithDate):
             date_string = f"{start_date} {locale_catalog['to']} {end_date}"
 
         else:
-            # Neither date, start_date, nor end_date is provided, so return an empty
+            # Neither date, start_date, nor end_date are provided, so return an empty
             # string:
             date_string = ""
 
@@ -541,10 +541,10 @@ class EntryBase(EntryWithDate):
             end_date = get_date_object(self.end_date)  # type: ignore
             start_date = get_date_object(self.start_date)  # type: ignore
 
-            # calculate the number of days between start_date and end_date:
+            # Calculate the number of days between start_date and end_date:
             timespan_in_days = (end_date - start_date).days  # type: ignore
 
-            # calculate the number of years between start_date and end_date:
+            # Calculate the number of years between start_date and end_date:
             how_many_years = timespan_in_days // 365
             if how_many_years == 0:
                 how_many_years_string = None
@@ -553,14 +553,14 @@ class EntryBase(EntryWithDate):
             else:
                 how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
 
-            # calculate the number of months between start_date and end_date:
+            # Calculate the number of months between start_date and end_date:
             how_many_months = round((timespan_in_days % 365) / 30)
             if how_many_months <= 1:
                 how_many_months_string = f"1 {locale_catalog['month']}"
             else:
                 how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
 
-            # combine howManyYearsString and howManyMonthsString:
+            # Combine howManyYearsString and howManyMonthsString:
             if how_many_years_string is None:
                 time_span_string = how_many_months_string
             else:
@@ -576,7 +576,7 @@ class NormalEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure NormalEntryBase keys comes first,
+# The following class is to make sure NormalEntryBase keys come first,
 # then the keys of the EntryBase class. The only way to achieve this in Pydantic is
 # to do this.
 class NormalEntry(EntryBase, NormalEntryBase):
@@ -596,7 +596,7 @@ class ExperienceEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure ExperienceEntryBase keys comes first,
+# The following class is to make sure ExperienceEntryBase keys come first,
 # then the keys of the EntryBase class. The only way to achieve this in Pydantic is
 # to do this.
 class ExperienceEntry(EntryBase, ExperienceEntryBase):
@@ -622,7 +622,7 @@ class EducationEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure EducationEntryBase keys comes first,
+# The following class is to make sure EducationEntryBase keys come first,
 # then the keys of the EntryBase class. The only way to achieve this in Pydantic is
 # to do this.
 class EducationEntry(EntryBase, EducationEntryBase):
@@ -765,7 +765,7 @@ def validate_section_input(
     entries. Since there are multiple entry types, it is not possible to validate it
     directly. This function looks at the entry list's first element and determines the
     section's entry type based on the first element. Then, it validates the rest of the
-    list based on the determined entry type. If it is a `Section` object, then it
+    list based on the determined entry type. If it is a `Section` object, it then
     validates it directly.
 
     Args:
@@ -774,7 +774,7 @@ def validate_section_input(
         SectionBase | list[Any]: The validated sections input.
     """
     if isinstance(sections_input, list):
-        # find the entry type based on the first identifiable entry:
+        # Find the entry type based on the first identifiable entry:
         entry_type = None
         section_type = None
         for entry in sections_input:
@@ -786,10 +786,10 @@ def validate_section_input(
 
         if entry_type is None or section_type is None:
             raise ValueError(
-                "RenderCV couldn't match this section with any entry type! Please check"
-                " the entries and make sure they are provided correctly.",
-                "",  # this is the location of the error
-                "",  # this is value of the error
+                "RenderCV couldn't match this section with any entry types! Please"
+                " check the entries and make sure they are provided correctly.",
+                "",  # This is the location of the error
+                "",  # This is value of the error
             )
 
         test_section = {
@@ -832,7 +832,7 @@ SocialNetworkName = Literal[
     "GitHub",
     "GitLab",
     "Instagram",
-    "Orcid",
+    "ORCID",
     "Mastodon",
     "Twitter",
     "StackOverflow",
@@ -904,11 +904,12 @@ class SocialNetwork(RenderCVBaseModel):
                 "GitHub": "https://github.com/",
                 "GitLab": "https://gitlab.com/",
                 "Instagram": "https://instagram.com/",
-                "Orcid": "https://orcid.org/",
+                "ORCID": "https://orcid.org/",
                 "Twitter": "https://twitter.com/",
                 "StackOverflow": "https://stackoverflow.com/users/",
                 "ResearchGate": "https://researchgate.net/profile/",
                 "YouTube": "https://youtube.com/",
+                "Google Scholar": "https://scholar.google.com/citations?user=",
                 "Google Scholar": "https://scholar.google.com/citations?user=",
             }
             url = url_dictionary[self.network] + self.username
@@ -1015,7 +1016,7 @@ class CurriculumVitae(RenderCVBaseModel):
                 "GitLab": "\\faGitlab",
                 "Instagram": "\\faInstagram",
                 "Mastodon": "\\faMastodon",
-                "Orcid": "\\faOrcid",
+                "ORCID": "\\faOrcid",
                 "StackOverflow": "\\faStackOverflow",
                 "Twitter": "\\faTwitter",
                 "ResearchGate": "\\faResearchgate",
@@ -1072,37 +1073,37 @@ class LocaleCatalog(RenderCVBaseModel):
         default="month",
         title='Translation of "Month"',
         description='Translation of the word "month" in the locale.',
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
     months: Optional[str] = pydantic.Field(
         default="months",
         title='Translation of "Months"',
         description='Translation of the word "months" in the locale.',
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
     year: Optional[str] = pydantic.Field(
         default="year",
         title='Translation of "Year"',
         description='Translation of the word "year" in the locale.',
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
     years: Optional[str] = pydantic.Field(
         default="years",
         title='Translation of "Years"',
         description='Translation of the word "years" in the locale.',
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
     present: Optional[str] = pydantic.Field(
         default="present",
         title='Translation of "Present"',
         description='Translation of the word "present" in the locale.',
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
     to: Optional[str] = pydantic.Field(
         default="to",
         title='Translation of "To"',
         description='Translation of the word "to" in the locale.',
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
     abbreviations_for_months: Optional[
         Annotated[list[str], at.Len(min_length=12, max_length=12)]
@@ -1144,9 +1145,8 @@ class LocaleCatalog(RenderCVBaseModel):
 
 # Create a custom type called Design:
 # It is a union of all the design options and the correct design option is determined by
-# the theme field, thanks Pydantic's discriminator feature.
+# the theme field, thanks to Pydantic's discriminator feature.
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
-# about discriminators.
 RenderCVDesign = Annotated[
     ClassicThemeOptions
     | ModerncvThemeOptions
@@ -1194,15 +1194,15 @@ class RenderCVDataModel(RenderCVBaseModel):
         theme_data_model_types = get_args(RenderCVDesign)[0]
 
         if isinstance(design, theme_data_model_types):
-            # then it means RenderCVDataModel is already initialized with a design, so
+            # Then it means RenderCVDataModel is already initialized with a design, so
             # return it as is:
             return design
         elif design["theme"] in available_themes:  # type: ignore
-            # then it means it's a built-in theme, but it is not initialized (validated)
+            # Then it means it's a built-in theme, but it is not initialized (validated)
             # yet. So, validate and return it:
             return rendercv_design_validator.validate_python(design)
         else:
-            # then it means it is a custom theme, so initialize and validate it:
+            # Then it means it is a custom theme, so initialize and validate it:
             theme_name: str = str(design["theme"])
 
             # check if the theme name is valid:
@@ -1268,11 +1268,11 @@ class RenderCVDataModel(RenderCVBaseModel):
                     theme_module, f"{theme_name.capitalize()}ThemeOptions"  # type: ignore
                 )
 
-                # initialize and validate the custom theme data model:
+                # Initialize and validate the custom theme data model:
                 theme_data_model = ThemeDataModel(**design)
             else:
                 # Then it means there is no __init__.py file in the custom theme folder.
-                # So, create a dummy data model and use that instead.
+                # Create a dummy data model and use that instead.
                 class ThemeOptionsAreNotProvided(RenderCVBaseModel):
                     theme: str = theme_name
 
@@ -1309,9 +1309,9 @@ def set_or_update_a_value(
             update the value. This is used for recursive calls. When the value is set
             to a sub model, the original data model is validated. Defaults to None.
     """
-    # recursively call this function until the last key is reached:
+    # Recursively call this function until the last key is reached:
 
-    # rename `sections` with `sections_input` since the key is `sections` is an alias:
+    # Rename `sections` with `sections_input` since the key is `sections` is an alias:
     key = key.replace("sections.", "sections_input.")
     keys = key.split(".")
 
@@ -1321,12 +1321,12 @@ def set_or_update_a_value(
         model = data_model
 
     if len(keys) == 1:
-        # set the value:
+        # Set the value:
         if value.startswith("{") and value.endswith("}"):
-            # allow users to assign dictionaries:
+            # Allow users to assign dictionaries:
             value = eval(value)
         elif value.startswith("[") and value.endswith("]"):
-            # allow users to assign lists:
+            # Allow users to assign lists:
             value = eval(value)
 
         if isinstance(model, pydantic.BaseModel):
@@ -1380,14 +1380,14 @@ def read_input_file(
         RenderCVDataModel: The data models with $\\LaTeX$ and markdown strings.
     """
     if isinstance(file_path_or_contents, pathlib.Path):
-        # check if the file exists:
+        # Check if the file exists:
         if not file_path_or_contents.exists():
             raise FileNotFoundError(
                 f"The input file [magenta]{file_path_or_contents}[/magenta] doesn't"
                 " exist!"
             )
 
-        # check the file extension:
+        # Check the file extension:
         accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
         if file_path_or_contents.suffix not in accepted_extensions:
             user_friendly_accepted_extensions = [
@@ -1408,7 +1408,7 @@ def read_input_file(
 
     input_as_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)  # type: ignore
 
-    # validate the parsed dictionary by creating an instance of RenderCVDataModel:
+    # Validate the parsed dictionary by creating an instance of RenderCVDataModel:
     rendercv_data_model = RenderCVDataModel(**input_as_dictionary)
 
     return rendercv_data_model
@@ -1424,7 +1424,7 @@ def get_a_sample_data_model(
     Returns:
         RenderCVDataModel: A sample data model.
     """
-    # check if the theme is valid:
+    # Check if the theme is valid:
     if theme not in available_themes:
         available_themes_string = ", ".join(available_themes)
         raise ValueError(
@@ -1437,16 +1437,16 @@ def get_a_sample_data_model(
     sections = {
         "welcome_to_rendercv!": [
             (
-                "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX"
-                " CV/resume framework. It allows you to create a high-quality CV as"
-                " a PDF from a YAML file with **full Markdown syntax support** and"
-                " **complete control over the LaTeX code**."
+                "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX-based"
+                " CV/resume framework. It allows you to create a high-quality CV or"
+                " resume as a PDF file from a YAML file, with **full Markdown syntax"
+                " support** and **complete control over the LaTeX code**."
             ),
             (
-                "A substantial"
-                " part of the content is taken from"
-                " [here](https://www.careercup.com/resume), where a *clean and tidy CV*"
-                " pattern is proposed by **Gayle L. McDowell**."
+                "The boilerplate content is taken from"
+                " [here](https://github.com/dnl-blkv/mcdowell-cv), where a"
+                " *clean and tidy CV* pattern is proposed by"
+                " **[Gayle Laakmann McDowell](https://www.gayle.com/)**."
             ),
         ],
         "quick_guide": [
@@ -1458,7 +1458,7 @@ def get_a_sample_data_model(
             ),
             BulletEntry(
                 bullet=(
-                    "There are seven different entry types: *BulletEntry*, *TextEntry*,"
+                    "There are 7 unique entry types: *BulletEntry*, *TextEntry*,"
                     " *EducationEntry*, *ExperienceEntry*, *NormalEntry*,"
                     " *PublicationEntry*, and *OneLineEntry*."
                 ),
@@ -1472,7 +1472,7 @@ def get_a_sample_data_model(
             BulletEntry(
                 bullet=(
                     "[Here](https://docs.rendercv.com/user_guide/), you can find a"
-                    " comprehensive user guide."
+                    " comprehensive user guide for RenderCV."
                 )
             ),
         ],
@@ -1486,51 +1486,51 @@ def get_a_sample_data_model(
                 highlights=[
                     "GPA: 3.9/4.0 ([Transcript](https://example.com))",
                     (
-                        "**Coursework:** Software Foundations, Computer"
-                        " Architecture, Algorithms, Artificial Intelligence, Comparison"
-                        " of Learning Algorithms, Computational Theory."
+                        "**Coursework:** Computer Architecture, Artificial"
+                        " Intelligence, Comparison of Learning Algorithms,"
+                        " Computational Theory"
                     ),
                 ],
             ),
         ],
         "experience": [
             ExperienceEntry(
-                company="Apple Computer",
+                company="Apple",
                 position="Software Engineer, Intern",
                 start_date="2004-06",
                 end_date="2004-08",
-                location="CA, USA",
+                location="Cupertino, CA",
                 highlights=[
                     (
                         "Reduced time to render the user's buddy list by 75% by"
-                        " implementing a prediction algorithm."
+                        " implementing a prediction algorithm"
                     ),
                     (
                         "Implemented iChat integration with OS X Spotlight Search by"
-                        " creating a tool that extracts metadata from saved chat"
-                        " transcripts and provides metadata to a system-wide search"
-                        " database."
+                        " creating a tool to extract metadata from saved chat"
+                        " transcripts and provide metadata to a system-wide search"
+                        " database"
                     ),
                     (
                         "Redesigned chat file format and implemented backward"
-                        " compatibility for search."
+                        " compatibility for search"
                     ),
                 ],
             ),
             ExperienceEntry(
-                company="Microsoft Corporation",
+                company="Microsoft",
                 position="Lead Student Ambassador",
                 start_date="2003-09",
                 end_date="2005-04",
-                location="WA, USA",
+                location="Redmond, WA",
                 highlights=[
                     (
                         "Promoted to Lead Student Ambassador in the Fall of 2004,"
-                        " supervised 10 - 15 Student Ambassadors."
+                        " supervised 10-15 Student Ambassadors"
                     ),
                     (
                         "Created and taught a computer science course, CSE 099:"
-                        " Software Design and Development."
+                        " Software Design and Development"
                     ),
                 ],
             ),
@@ -1539,40 +1539,34 @@ def get_a_sample_data_model(
                 position="Head Teaching Assistant",
                 start_date="2001-10",
                 end_date="2005-05",
-                location="PA, USA",
+                location="Philadelphia, PA",
                 highlights=[
                     (
                         "Implemented a user interface for the VS open file switcher"
-                        " (ctrl-tab) and extended it to tool windows."
+                        " (ctrl-tab) and extended it to tool windows"
                     ),
                     (
                         "Created a service to provide gradient across VS and VS"
-                        " add-ins. Optimized service via caching."
+                        " add-ins, optimized its performance via caching"
                     ),
                     "Programmer Productivity Research Center (Summers 2001, 2002)",
                     (
-                        "Built app to compute the similarity of all methods in a code"
-                        " base, reduced time from $\\mathcal{O}(n^2)$ to"
-                        " $\\mathcal{O}(n \\log n)$. "
+                        "Built an app to compute the similarity of all methods in a"
+                        " code base, reducing the time from $\\mathcal{O}(n^2)$ to"
+                        " $\\mathcal{O}(n \\log n)$"
                     ),
                     (
                         "Created a test case generation tool that creates random XML"
-                        " docs from XML Schema."
+                        " docs from XML Schema"
                     ),
                 ],
             ),
             ExperienceEntry(
-                company="Microsoft Corporation",
+                company="Microsoft",
                 position="Software Design Engineer, Intern",
                 start_date="2003-06",
                 end_date="2003-08",
-                location="WA, USA",
-                highlights=[
-                    (
-                        "Promoted to Lead Student Ambassador in the Fall of 2004,"
-                        " supervised 10 - 15 Student Ambassadors."
-                    ),
-                ],
+                location="Redmond, WA",
             ),
         ],
         "publications": [
@@ -1595,65 +1589,65 @@ def get_a_sample_data_model(
         "projects": [
             NormalEntry(
                 name="Multi-User Drawing Tool",
-                date="2004",
+                date="2004",  # I would omit start/end dates and replace with a project link as the date is largely irrelevant
+                # project_link = "github.com/username/repo"
                 highlights=[
                     (
                         "Developed an electronic classroom where multiple users can"
                         ' view and simultaneously draw on a "chalkboard" with each'
-                        " person's edits synchronized."
+                        " person's edits synchronized"
                     ),
-                    "Used C++ and MFC.",
+                    "Tools Used: C++, MFC",
                 ],
             ),
             NormalEntry(
                 name="Synchronized Calendar",
                 start_date="2003",
                 end_date="2004",
+                # project_link = "github.com/username/repo",
                 highlights=[
                     (
                         "Developed a desktop calendar with globally shared and"
                         " synchronized calendars, allowing users to schedule meetings"
-                        " with other users."
+                        " with other users"
                     ),
-                    "Used C#.NET, SQL, and XML.",
+                    "Tools Used: C#, .NET, SQL, XML",
                 ],
             ),
             NormalEntry(
                 name="Operating System",
-                date="2002",
+                date="2002",  # would replace project dates with a project link as the date is largely irrelevant
+                # project_link = "github.com/username/repo",
                 highlights=[
                     (
                         "Developed a UNIX-style OS with a scheduler, file system, text"
-                        " editor, and calculator."
+                        " editor, and calculator"
                     ),
-                    "Used C.",
+                    "Tools Used: C",
                 ],
             ),
         ],
         "additional_experience_and_awards": [
             OneLineEntry(
-                label="Instructor (2003 - 2005)",
-                details="Taught two full-credit Computer Science courses.",
+                label="Instructor (2003-2005)",
+                details="Taught 2 full-credit computer science courses",
             ),
             OneLineEntry(
-                label="Third Prize, Senior Design Projects",
+                label="Third Prize, Senior Design Project",
                 details=(
                     "Awarded 3rd prize for a synchronized calendar project out of 100"
-                    " projects."
+                    " entries"
                 ),
             ),
         ],
         "technologies": [
             OneLineEntry(
                 label="Languages",
-                details="C++, C, Java, Objective-C, C#.NET, SQL, JavaScript",
+                details="C++, C, Java, Objective-C, C#, SQL, JavaScript",
             ),
             OneLineEntry(
                 label="Software",
-                details=(
-                    "Visual Studio, Microsoft SQL Server, Eclipse, XCode, Interface"
-                    " Builder"
-                ),
+                details=".NET, Microsoft SQL Server, XCode, Interface Builder",
             ),
         ],
     }

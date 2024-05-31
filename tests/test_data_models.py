@@ -427,7 +427,7 @@ def test_invalid_social_networks(network, username):
         ("LinkedIn", "myusername", "https://linkedin.com/in/myusername"),
         ("GitHub", "myusername", "https://github.com/myusername"),
         ("Instagram", "myusername", "https://instagram.com/myusername"),
-        ("Orcid", "myusername", "https://orcid.org/myusername"),
+        ("ORCID", "myusername", "https://orcid.org/myusername"),
         ("Twitter", "myusername", "https://twitter.com/myusername"),
         ("Mastodon", "@myusername@test.org", "https://test.org/@myusername"),
         (
