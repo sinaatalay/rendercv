@@ -11,6 +11,7 @@ import typer.testing
 
 import rendercv.cli as cli
 import rendercv.data_models as dm
+from rendercv import __version__
 
 
 def run_render_command(input_file_path, working_path, extra_arguments=[]):
@@ -509,3 +510,46 @@ def test_create_theme_command_theme_already_exists(tmp_path):
 
 def test_main_file():
     subprocess.run([sys.executable, "-m", "rendercv", "--help"], check=True)
+
+
+def test_get_latest_version_number_from_pypi():
+    version = cli.get_latest_version_number_from_pypi()
+    assert isinstance(version, str)
+
+
+def test_if_welcome_prints_new_version_available(monkeypatch):
+    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "99999")
+    import io
+    import contextlib
+
+    with contextlib.redirect_stdout(io.StringIO()) as f:
+        cli.welcome()
+        output = f.getvalue()
+
+    assert "A new version of RenderCV is available!" in output
+
+
+def test_rendercv_version_when_there_is_a_new_version(monkeypatch):
+    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "99999")
+
+    result = runner.invoke(cli.app, ["--version"])
+
+    assert "A new version of RenderCV is available!" in result.stdout
+
+
+def test_rendercv_version_when_there_is_not_a_new_version(monkeypatch):
+    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: __version__)
+
+    result = runner.invoke(cli.app, ["--version"])
+
+    assert __version__ in result.stdout
+
+
+def test_warn_if_new_version_is_available(monkeypatch):
+    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: __version__)
+
+    assert not cli.warn_if_new_version_is_available()
+
+    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "999")
+
+    assert cli.warn_if_new_version_is_available()

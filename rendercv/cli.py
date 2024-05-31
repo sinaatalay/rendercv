@@ -6,6 +6,7 @@ output.
 """
 
 import json
+import urllib.request
 import pathlib
 from typing import Annotated, Callable, Optional
 import re
@@ -37,11 +38,62 @@ app = typer.Typer(
     rich_markup_mode="rich",
     add_completion=False,
     invoke_without_command=True,  # to make rendercv --version work
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
+
+
+def get_latest_version_number_from_pypi() -> Optional[str]:
+    """Get the latest version number of RenderCV from PyPI.
+
+    Example:
+        ```python
+        get_latest_version_number_from_pypi()
+        ```
+        will return:
+        `#!python "1.1"`
+
+    Returns:
+        Optional[str]: The latest version number of RenderCV from PyPI. Returns None if
+            the version number cannot be fetched.
+    """
+    version = None
+    url = "https://pypi.org/pypi/rendercv/json"
+    try:
+        with urllib.request.urlopen(url) as response:
+            data = response.read()
+            encoding = response.info().get_content_charset("utf-8")
+            json_data = json.loads(data.decode(encoding))
+            version = json_data["info"]["version"]
+    except Exception:
+        pass
+
+    return version
+
+
+def warn_if_new_version_is_available() -> bool:
+    """Check if a new version of RenderCV is available and print a warning message if
+    there is a new version. Also, return True if there is a new version, and False
+    otherwise.
+
+    Returns:
+        bool: True if there is a new version, and False otherwise.
+    """
+    latest_version = get_latest_version_number_from_pypi()
+    if latest_version is not None and __version__ != latest_version:
+        warning(
+            f"A new version of RenderCV is available! You are using v{__version__},"
+            f" and the latest version is v{latest_version}."
+        )
+        return True
+    else:
+        return False
 
 
 def welcome():
     """Print a welcome message to the terminal."""
+    warn_if_new_version_is_available()
+
     table = rich.table.Table(
         title=(
             "\nWelcome to [bold]Render[dodger_blue3]CV[/dodger_blue3][/bold]! Some"
@@ -106,7 +158,7 @@ def information(text: str):
     Args:
         text (str): The text of the information message.
     """
-    print(f"[bold green]{text}")
+    print(f"[yellow]{text}")
 
 
 def get_error_message_and_location_and_value_from_a_custom_error(
@@ -326,7 +378,11 @@ def handle_exceptions(function: Callable) -> Callable:
         except pydantic.ValidationError as e:
             handle_validation_error(e)
         except ruamel.yaml.YAMLError as e:
-            error("There is a YAML error in the input file!", e)
+            error(
+                "There is a YAML error in the input file!\n\nTry to use quotation marks"
+                " to make sure the YAML parser understands the field is a string.",
+                e,
+            )
         except FileNotFoundError as e:
             error(e)
         except UnicodeDecodeError as e:
@@ -428,7 +484,7 @@ class LiveProgressReporter(rich.live.Live):
         """End the live progress reporting."""
         self.overall_progress.update(
             self.overall_task_id,
-            description=f"[bold green]{self.end_message}",
+            description=f"[yellow]{self.end_message}",
         )
 
 
@@ -521,8 +577,8 @@ def parse_data_model_override_arguments(
 @app.command(
     name="render",
     help=(
-        "Render a YAML input file. Example: [bold green]rendercv render"
-        " John_Doe_CV.yaml[/bold green]"
+        "Render a YAML input file. Example: [yellow]rendercv render"
+        " John_Doe_CV.yaml[/yellow]. Details: [cyan]rendercv render --help[/cyan]"
     ),
     # allow extra arguments for updating the data model:
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
@@ -530,12 +586,13 @@ def parse_data_model_override_arguments(
 @handle_exceptions
 def cli_command_render(
     input_file_name: Annotated[
-        str,
-        typer.Argument(help="Name of the YAML input file."),
+        str, typer.Argument(help="Name of the YAML input file.")
     ],
     use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
+            "--use-local-latex-command",
+            "-use",
             help=(
                 "Use the local LaTeX installation with the given command instead of the"
                 " RenderCV's TinyTeX."
@@ -545,36 +602,48 @@ def cli_command_render(
     output_folder_name: Annotated[
         str,
         typer.Option(
+            "--output-folder-name",
+            "-o",
             help="Name of the output folder.",
         ),
     ] = "rendercv_output",
     latex_path: Annotated[
         Optional[str],
         typer.Option(
+            "--latex-path",
+            "-latex",
             help="Copy the LaTeX file to the given path.",
         ),
     ] = None,
     pdf_path: Annotated[
         Optional[str],
         typer.Option(
+            "--pdf-path",
+            "-pdf",
             help="Copy the PDF file to the given path.",
         ),
     ] = None,
     markdown_path: Annotated[
         Optional[str],
         typer.Option(
+            "--markdown-path",
+            "-md",
             help="Copy the Markdown file to the given path.",
         ),
     ] = None,
     html_path: Annotated[
         Optional[str],
         typer.Option(
+            "--html-path",
+            "-html",
             help="Copy the HTML file to the given path.",
         ),
     ] = None,
     png_path: Annotated[
         Optional[str],
         typer.Option(
+            "--png-path",
+            "-png",
             help="Copy the PNG file to the given path.",
         ),
     ] = None,
@@ -582,6 +651,7 @@ def cli_command_render(
         bool,
         typer.Option(
             "--dont-generate-markdown",
+            "-nomd",
             help="Don't generate the Markdown and HTML file.",
         ),
     ] = False,
@@ -589,6 +659,7 @@ def cli_command_render(
         bool,
         typer.Option(
             "--dont-generate-html",
+            "-nohtml",
             help="Don't generate the HTML file.",
         ),
     ] = False,
@@ -596,6 +667,7 @@ def cli_command_render(
         bool,
         typer.Option(
             "--dont-generate-png",
+            "-nopng",
             help="Don't generate the PNG file.",
         ),
     ] = False,
@@ -711,8 +783,8 @@ def cli_command_render(
 @app.command(
     name="new",
     help=(
-        "Generate a YAML input file to get started. Example: [bold green]rendercv new"
-        ' "John Doe"[/bold green]'
+        "Generate a YAML input file to get started. Example: [yellow]rendercv new"
+        ' "John Doe"[/yellow]. Details: [cyan]rendercv new --help[/cyan]'
     ),
 )
 def cli_command_new(
@@ -783,8 +855,9 @@ def cli_command_new(
 @app.command(
     name="create-theme",
     help=(
-        "Create a custom theme folder based on an existing theme. Example: [bold"
-        " green]rendercv create-theme --based-on classic customtheme[/bold green]"
+        "Create a custom theme folder based on an existing theme. Example:"
+        " [yellow]rendercv create-theme customtheme[/yellow]. Details: [cyan]rendercv"
+        " create-theme --help[/cyan]"
     ),
 )
 def cli_command_create_theme(
@@ -844,8 +917,10 @@ def cli_command_create_theme(
 @app.callback()
 def main(
     version_requested: Annotated[
-        Optional[bool], typer.Option("--version", help="Show the version.")
+        Optional[bool], typer.Option("--version", "-v", help="Show the version.")
     ] = None,
 ):
     if version_requested:
-        information(f"RenderCV v{__version__}")
+        there_is_a_new_version = warn_if_new_version_is_available()
+        if not there_is_a_new_version:
+            print(f"RenderCV v{__version__}")
