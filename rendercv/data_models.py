@@ -1,16 +1,16 @@
 """
-This module contains all the necessary classes to store CV data. These classes are called
+This module contains the necessary classes to store CV data. These classes are named
 data models. The YAML input file is transformed into instances of these classes (i.e.,
 the input file is read) with the
 [`read_input_file`][rendercv.data_models.read_input_file] function. RenderCV utilizes
 these instances to generate a $\\LaTeX$ file which is then rendered into a PDF file.
 
 The data models are initialized with data validation to prevent unexpected bugs. During
-the initialization, we ensure that everything is in the correct place and that the user
-has provided a valid RenderCV input. This is achieved through the use of
+initialization, we ensure that everything is in the correct place and that the user
+has provided a valid RenderCV input. This is achieved using
 [Pydantic](https://pypi.org/project/pydantic/). Each class method decorated with
 `pydantic.model_validator` or `pydantic.field_validator` is executed automatically
-during the data classes' initialization.
+during data class initialization.
 """
 
 from datetime import date as Date
@@ -39,7 +39,7 @@ from .themes.moderncv import ModerncvThemeOptions
 from .themes.sb2nov import Sb2novThemeOptions
 from .themes.engineeringresumes import EngineeringresumesThemeOptions
 
-# disable Pydantic warnings:
+# Disable Pydantic warnings:
 warnings.filterwarnings("ignore")
 
 locale_catalog = {
@@ -50,31 +50,32 @@ locale_catalog = {
     "present": "present",
     "to": "to",
     "abbreviations_for_months": [
-        "Jan.",
-        "Feb.",
+        "Jan",
+        "Feb",
         "Mar.",
-        "Apr.",
+        "Apr",
         "May",
         "June",
         "July",
-        "Aug.",
-        "Sept.",
-        "Oct.",
-        "Nov.",
-        "Dec.",
+        "Aug",
+        "Sept",
+        "Oct",
+        "Nov",
+        "Dec",
     ],
 }
 
 
 def get_date_object(date: str | int) -> Date:
-    """Parse a date string in YYYY-MM-DD, YYYY-MM, or YYYY format and return a
+    """
+    Parse a date string in YYYY-MM-DD, YYYY-MM, or YYYY format and return a
     `datetime.date` object. This function is used throughout the validation process of
     the data models.
 
     Args:
-        date (str): The date string to parse.
+        date (str | int): The date string to parse.
     Returns:
-        datetime.date: The parsed date.
+        Date (datetime.date): The parsed date.
     """
     if isinstance(date, int):
         date_object = Date.fromisoformat(f"{date}-01-01")
@@ -99,9 +100,10 @@ def get_date_object(date: str | int) -> Date:
 
 
 def format_date(date: Date) -> str:
-    """Formats a `Date` object to a string in the following format: "Jan. 2021".
+    """
+    Format a `Date` object to a string in the following format: "Jan 2021".
 
-    It uses month abbreviations, taken from
+    It uses month abbreviations taken from
     [Yale University Library](https://web.library.yale.edu/cataloging/months).
 
     Example:
@@ -131,7 +133,8 @@ def format_date(date: Date) -> str:
 
 
 class RenderCVBaseModel(pydantic.BaseModel):
-    """This class is the parent class of all the data models in RenderCV. It has only
+    """
+    This class is the parent class for all the data models in RenderCV. It has only
     one difference from the default `pydantic.BaseModel`: It raises an error if an
     unknown key is provided in the input file.
     """
@@ -143,9 +146,8 @@ class RenderCVBaseModel(pydantic.BaseModel):
 # Entry models: ========================================================================
 # ======================================================================================
 
-# Create a URL validator to validate social network URLs:
+# Create a URL validator to validate social network URLs
 url_validator = pydantic.TypeAdapter(pydantic.HttpUrl)  # type: ignore
-
 
 # Create a custom type called RenderCVDate that accepts only strings in YYYY-MM-DD or
 # YYYY-MM format:
@@ -199,7 +201,7 @@ class EntryWithDate(RenderCVBaseModel):
     def check_date(
         cls, date: Optional[int | RenderCVDate | str]
     ) -> Optional[int | RenderCVDate | str]:
-        """Check if the date is provided correctly."""
+        """Check if date is provided correctly."""
         date_is_provided = date is not None
 
         if date_is_provided:
@@ -219,7 +221,7 @@ class EntryWithDate(RenderCVBaseModel):
                         date = int(date)
             elif isinstance(date, Date):
                 # Pydantic parses YYYY-MM-DD dates as datetime.date objects. We need to
-                # convert them to strings because that's how RenderCV uses them.
+                # convert them to strings because that is how RenderCV uses them.
                 date = date.isoformat()
 
         return date
@@ -245,7 +247,7 @@ class EntryWithDate(RenderCVBaseModel):
 
 class PublicationEntryBase(RenderCVBaseModel):
     title: str = pydantic.Field(
-        title="Title of the Publication",
+        title="Publication Title",
         description="The title of the publication.",
     )
     authors: list[str] = pydantic.Field(
@@ -261,21 +263,21 @@ class PublicationEntryBase(RenderCVBaseModel):
     journal: Optional[str] = pydantic.Field(
         default=None,
         title="Journal",
-        description="The journal or the conference name.",
+        description="The journal or conference name.",
     )
 
     @pydantic.field_validator("doi")
     @classmethod
     def check_doi(cls, doi: Optional[str]) -> Optional[str]:
-        """Check if the DOI exists in the DOI System."""
+        """Check if DOI exists in the DOI system."""
         if doi is not None:
-            # see https://stackoverflow.com/a/60671292/18840665 for the explanation of
-            # the next line:
+            # See https://stackoverflow.com/a/60671292/18840665 for explanation of
+            # next line:
             ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
 
             doi_url = f"http://doi.org/{doi}"
 
-            # Validate the URL:
+            # Validate URL:
             url_validator.validate_strings(doi_url)
 
             try:
@@ -284,11 +286,11 @@ class PublicationEntryBase(RenderCVBaseModel):
                 if err.code == 404:
                     raise ValueError("DOI cannot be found in the DOI System!")
             except InvalidURL:
-                # Unfortunately, url_validator doesn't catch all the invalid URLs.
+                # Unfortunately, url_validator does not catch all the invalid URLs
                 raise ValueError("This DOI is invalid!")
             except URLError:
                 # In this case, there is no internet connection, so don't raise an
-                # error.
+                # error
                 pass
 
         return doi
@@ -301,14 +303,13 @@ class PublicationEntryBase(RenderCVBaseModel):
 
 class PublicationEntry(EntryWithDate, PublicationEntryBase):
     """This class is the data model of `PublicationEntry`."""
-
     pass
 
 
 class EntryBase(EntryWithDate):
-    """This class is the parent class of some of the entry types. It is being used
-    because some of the entry types have common fields like dates, highlights, location,
-    etc.
+    """
+    This class is the parent class of some of the entry types. It is used
+    because some entry types have common fields like dates, highlights, location, etc.
     """
 
     location: Optional[str] = pydantic.Field(
@@ -353,11 +354,11 @@ class EntryBase(EntryWithDate):
         if date_is_provided:
             if isinstance(date, Date):
                 # Pydantic parses YYYY-MM-DD dates as datetime.date objects. We need to
-                # convert them to strings because that's how RenderCV uses them.
+                # convert them to strings because that is how RenderCV uses them.
                 date = date.isoformat()
 
             elif date != "present":
-                # Validate the date:
+                # Validate date:
                 get_date_object(date)
 
         return date
@@ -367,7 +368,7 @@ class EntryBase(EntryWithDate):
     )
     def check_and_adjust_dates(self) -> "EntryBase":
         """
-        Check if the dates are provided correctly and make the necessary adjustments.
+        Check if dates are provided correctly and make the necessary adjustments.
         """
         date_is_provided = self.date is not None
         start_date_is_provided = self.start_date is not None
@@ -496,8 +497,7 @@ class EntryBase(EntryWithDate):
             date_string = f"{start_date} {locale_catalog['to']} {end_date}"
 
         else:
-            # Neither date, start_date, nor end_date are provided, so return an empty
-            # string:
+            # Neither date/start_date/end_date are provided, so return an empty string
             date_string = ""
 
         return date_string
@@ -505,8 +505,7 @@ class EntryBase(EntryWithDate):
     @functools.cached_property
     def time_span_string(self) -> str:
         """
-        Return a time span string based on the `date`, `start_date`, and `end_date`
-        fields.
+        Return a time span based on the `date`, `start_date`, and `end_date` fields.
 
         Example:
             ```python
@@ -525,12 +524,12 @@ class EntryBase(EntryWithDate):
             return ""
 
         elif not start_date_is_provided and not end_date_is_provided:
-            # If neither start_date nor end_date is provided, return an empty string.
+            # If neither start_date nor end_date is provided, return an empty string
             return ""
 
         elif isinstance(self.start_date, int) or isinstance(self.end_date, int):
             # Then it means one of the dates is year, so time span cannot be more
-            # specific than years.
+            # specific than years
             start_year = get_date_object(self.start_date).year  # type: ignore
             end_year = get_date_object(self.end_date).year  # type: ignore
 
@@ -545,14 +544,14 @@ class EntryBase(EntryWithDate):
 
         else:
             # Then it means both start_date and end_date are in YYYY-MM-DD or YYYY-MM
-            # format.
+            # format
             end_date = get_date_object(self.end_date)  # type: ignore
             start_date = get_date_object(self.start_date)  # type: ignore
 
-            # Calculate the number of days between start_date and end_date:
+            # Calculate number of days between start_date and end_date
             timespan_in_days = (end_date - start_date).days  # type: ignore
 
-            # Calculate the number of years between start_date and end_date:
+            # Calculate number of years between start_date and end_date
             how_many_years = timespan_in_days // 365
             if how_many_years == 0:
                 how_many_years_string = None
@@ -561,14 +560,14 @@ class EntryBase(EntryWithDate):
             else:
                 how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
 
-            # Calculate the number of months between start_date and end_date:
+            # Calculate number of months between start_date and end_date
             how_many_months = round((timespan_in_days % 365) / 30)
             if how_many_months <= 1:
                 how_many_months_string = f"1 {locale_catalog['month']}"
             else:
                 how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
 
-            # Combine howManyYearsString and howManyMonthsString:
+            # Combine howManyYearsString and howManyMonthsString
             if how_many_years_string is None:
                 time_span_string = how_many_months_string
             else:
@@ -584,12 +583,10 @@ class NormalEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure NormalEntryBase keys come first,
-# then the keys of the EntryBase class. The only way to achieve this in Pydantic is
-# to do this.
+# The following class is to ensure NormalEntryBase keys come first, then the keys
+# of the EntryBase class. The only way to achieve this in Pydantic is to do this.
 class NormalEntry(EntryBase, NormalEntryBase):
     """This class is the data model of `NormalEntry`."""
-
     pass
 
 
@@ -604,12 +601,11 @@ class ExperienceEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure ExperienceEntryBase keys come first,
-# then the keys of the EntryBase class. The only way to achieve this in Pydantic is
-# to do this.
+# The following class is to make sure ExperienceEntryBase keys come first, then the
+# keys of the EntryBase class. The only way to achieve this in Pydantic is to do
+# this.
 class ExperienceEntry(EntryBase, ExperienceEntryBase):
     """This class is the data model of `ExperienceEntry`."""
-
     pass
 
 
@@ -626,20 +622,19 @@ class EducationEntryBase(RenderCVBaseModel):
         default=None,
         title="Degree",
         description="The type of the degree.",
-        examples=["BS", "BA", "PhD", "MS"],
+        examples=["BS", "BTech", "BEng", "BA", "PhD", "MS"],
     )
 
 
-# The following class is to make sure EducationEntryBase keys come first,
+# The following class is to ensure EducationEntryBase keys come first,
 # then the keys of the EntryBase class. The only way to achieve this in Pydantic is
 # to do this.
 class EducationEntry(EntryBase, EducationEntryBase):
     """This class is the data model of `EducationEntry`."""
-
     pass
 
 
-# Create a custom type called Entry and ListOfEntries:
+# Create custom types named Entry and ListOfEntries
 Entry = (
     OneLineEntry
     | NormalEntry
@@ -658,15 +653,17 @@ ListOfEntries = list[
     | BulletEntry
     | str
 ]
-entry_types = Entry.__args__[:-1]  # a tuple of all the entry types except str
+entry_types = Entry.__args__[:-1]  # A tuple of all the entry types except str
 entry_type_names = [entry_type.__name__ for entry_type in entry_types] + ["TextEntry"]
+
 
 # ======================================================================================
 # Section models: ======================================================================
 # ======================================================================================
-# Each section data model has a field called `entry_type` and a field called `entries`.
-# Since the same pydantic.Field object is used in all of the section models, it is
-# defined as a separate variable and used in all of the section models:
+
+# Each section data model has a field named `entry_type` and a field named `entries`.
+# Since the same pydantic.Field object is used in each of the section models, it is
+# defined as a separate variable and used in each of the section models:
 entry_type_field_of_section_model = pydantic.Field(
     title="Entry Type",
     description="The type of the entries in the section.",
@@ -688,7 +685,8 @@ class SectionBase(RenderCVBaseModel):
 
 
 def create_a_section_model(entry_type: Type[Entry]) -> Type[SectionBase]:
-    """Create a section model based on the entry type. See [Pydantic's documentation
+    """
+    Create a section model based on the entry type. See [Pydantic's documentation
     about dynamic model
     creation](https://pydantic-docs.helpmanual.io/usage/models/#dynamic-model-creation)
     for more information.
@@ -721,18 +719,19 @@ def get_entry_and_section_type(
     str,
     Type[SectionBase],
 ]:
-    """Determine the entry and section type based on the entry.
+    """
+    Determine the entry and section type based on the entry.
 
     Args:
         entry: The entry to determine the type.
     Returns:
         tuple[str, Type[Section]]: The entry type and the section type.
     """
-    # Get class attributes of EntryBase class:
+    # Get the class attributes of EntryBase class
     common_attributes = set(EntryBase.model_fields.keys())
 
     if isinstance(entry, dict):
-        entry_type = None  # the entry type is not determined yet
+        entry_type = None  # The entry type is not determined yet
 
         for EntryType in entry_types:
             characteristic_entry_attributes = (
@@ -740,7 +739,7 @@ def get_entry_and_section_type(
             )
 
             # If at least one of the characteristic_entry_attributes is in the entry,
-            # then it means the entry is of this type:
+            # then it means the entry is of this type
             if characteristic_entry_attributes & set(entry.keys()):
                 entry_type = EntryType.__name__
                 section_type = create_a_section_model(EntryType)
@@ -755,7 +754,7 @@ def get_entry_and_section_type(
         section_type = create_a_section_model(str)
 
     else:
-        # Then the entry is already initialized with a data model:
+        # Then the entry is already initialized with a data model
         entry_type = entry.__class__.__name__
         section_type = create_a_section_model(entry.__class__)
 
@@ -765,7 +764,8 @@ def get_entry_and_section_type(
 def validate_section_input(
     sections_input: SectionBase | list[Any],
 ) -> SectionBase | list[Any]:
-    """Validate a `SectionInput` object and raise an error if it is not valid.
+    """
+    Validate a `SectionInput` object and raise an error if it is not valid.
 
     Sections input is very complex. It is either a `Section` object or a list of
     entries. Since there are multiple entry types, it is not possible to validate it
@@ -780,7 +780,7 @@ def validate_section_input(
         SectionBase | list[Any]: The validated sections input.
     """
     if isinstance(sections_input, list):
-        # Find the entry type based on the first identifiable entry:
+        # Find the entry type based on the first identifiable entry
         entry_type = None
         section_type = None
         for entry in sections_input:
@@ -812,15 +812,15 @@ def validate_section_input(
             new_error = ValueError(
                 "There are problems with the entries. RenderCV detected the entry type"
                 f" of this section to be {entry_type}! The problems are shown below.",
-                "",  # this is the location of the error
-                "",  # this is value of the error
+                "",  # This is the location of the error
+                "",  # This is value of the error
             )
             raise new_error from e
 
     return sections_input
 
 
-# Create a custom type called SectionInput so that it can be validated with
+# Create a custom type named SectionInput so that it can be validated with
 # `validate_section_input` function.
 SectionInput = Annotated[
     ListOfEntries,
@@ -840,6 +840,7 @@ SocialNetworkName = Literal[
     "ORCID",
     "Mastodon",
     "Twitter",
+    "X",
     "StackOverflow",
     "ResearchGate",
     "YouTube",
@@ -891,16 +892,14 @@ class SocialNetwork(RenderCVBaseModel):
     def check_url(self) -> "SocialNetwork":
         """Validate the URLs of the social networks."""
         url = self.url
-
         url_validator.validate_strings(url)
-
         return self
 
     @functools.cached_property
     def url(self) -> str:
         """Return the URL of the social network."""
         if self.network == "Mastodon":
-            # split domain and username
+            # Split domain and username
             dummy, username, domain = self.username.split("@")
             url = f"https://{domain}/@{username}"
         else:
@@ -911,6 +910,7 @@ class SocialNetwork(RenderCVBaseModel):
                 "Instagram": "https://instagram.com/",
                 "ORCID": "https://orcid.org/",
                 "Twitter": "https://twitter.com/",
+                "X": "https://x.com/",
                 "StackOverflow": "https://stackoverflow.com/users/",
                 "ResearchGate": "https://researchgate.net/profile/",
                 "YouTube": "https://youtube.com/",
@@ -942,7 +942,7 @@ class CurriculumVitae(RenderCVBaseModel):
     email: Optional[pydantic.EmailStr] = pydantic.Field(
         default=None,
         title="Email",
-        description="The email of the person.",
+        description="The email address of the person.",
     )
     phone: Optional[pydantic_phone_numbers.PhoneNumber] = pydantic.Field(
         default=None,
@@ -975,8 +975,8 @@ class CurriculumVitae(RenderCVBaseModel):
             connections.append(
                 {
                     "latex_icon": "\\faMapMarker*",
-                    "url": None,
-                    "clean_url": None,
+                    "url": "",
+                    "clean_url": "",
                     "placeholder": self.location,
                 }
             )
@@ -1023,6 +1023,7 @@ class CurriculumVitae(RenderCVBaseModel):
                 "ORCID": "\\faOrcid",
                 "StackOverflow": "\\faStackOverflow",
                 "Twitter": "\\faTwitter",
+                "X": "\\faX",
                 "ResearchGate": "\\faResearchgate",
                 "YouTube": "\\faYoutube",
                 "Google Scholar": "\\faGraduationCap",
@@ -1069,7 +1070,8 @@ class CurriculumVitae(RenderCVBaseModel):
 
 
 class LocaleCatalog(RenderCVBaseModel):
-    """This class is the data model of the locale catalog. The values of each field
+    """
+    This class is the data model of the locale catalog. The values of each field
     updates the `locale_catalog` dictionary.
     """
 
@@ -1077,58 +1079,58 @@ class LocaleCatalog(RenderCVBaseModel):
         default="month",
         title='Translation of "Month"',
         description='Translation of the word "month" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize the locale catalog with the default values
     )
     months: Optional[str] = pydantic.Field(
         default="months",
         title='Translation of "Months"',
         description='Translation of the word "months" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize the locale catalog with the default values
     )
     year: Optional[str] = pydantic.Field(
         default="year",
         title='Translation of "Year"',
         description='Translation of the word "year" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize the locale catalog with the default values
     )
     years: Optional[str] = pydantic.Field(
         default="years",
         title='Translation of "Years"',
         description='Translation of the word "years" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize the locale catalog with the default values
     )
     present: Optional[str] = pydantic.Field(
         default="present",
         title='Translation of "Present"',
         description='Translation of the word "present" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize the locale catalog with the default values
     )
     to: Optional[str] = pydantic.Field(
         default="to",
         title='Translation of "To"',
         description='Translation of the word "to" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize the locale catalog with the default values
     )
     abbreviations_for_months: Optional[
         Annotated[list[str], at.Len(min_length=12, max_length=12)]
     ] = pydantic.Field(
         default=[
-            "Jan.",
-            "Feb.",
-            "Mar.",
-            "Apr.",
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
             "May",
             "June",
             "July",
-            "Aug.",
-            "Sept.",
-            "Oct.",
-            "Nov.",
-            "Dec.",
+            "Aug",
+            "Sept",
+            "Oct",
+            "Nov",
+            "Dec",
         ],
         title="Abbreviations of Months",
         description="Abbreviations of the months in the locale.",
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
 
     @pydantic.field_validator(
@@ -1147,7 +1149,7 @@ class LocaleCatalog(RenderCVBaseModel):
 # ======================================================================================
 # ======================================================================================
 
-# Create a custom type called Design:
+# Create a custom type named Design:
 # It is a union of all the design options and the correct design option is determined by
 # the theme field, thanks to Pydantic's discriminator feature.
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
@@ -1182,7 +1184,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         description=(
             "The locale catalog of the CV to allow the support of multiple languages."
         ),
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # To initialize the locale catalog with the default values
     )
 
     @pydantic.field_validator("design", mode="before")
@@ -1199,45 +1201,45 @@ class RenderCVDataModel(RenderCVBaseModel):
 
         if isinstance(design, theme_data_model_types):
             # Then it means RenderCVDataModel is already initialized with a design, so
-            # return it as is:
+            # return it as is
             return design
         elif design["theme"] in available_themes:  # type: ignore
             # Then it means it's a built-in theme, but it is not initialized (validated)
-            # yet. So, validate and return it:
+            # yet. So, validate and return it:=
             return rendercv_design_validator.validate_python(design)
         else:
-            # Then it means it is a custom theme, so initialize and validate it:
+            # Then it means it is a custom theme, so initialize and validate it
             theme_name: str = str(design["theme"])
 
-            # check if the theme name is valid:
+            # Check if the theme name is valid
             if not theme_name.isalpha():
                 raise ValueError(
                     "The custom theme name should contain only letters.",
-                    "theme",  # this is the location of the error
-                    theme_name,  # this is value of the error
+                    "theme",  # This is the location of the error
+                    theme_name,  # This is value of the error
                 )
 
-            # then it is a custom theme
+            # Then it is a custom theme
             custom_theme_folder = pathlib.Path(theme_name)
 
-            # check if the custom theme folder exists:
+            # Check if the custom theme folder exists
             if not custom_theme_folder.exists():
                 raise ValueError(
                     f"The custom theme folder `{custom_theme_folder}` does not exist."
                     " It should be in the working directory as the input file.",
-                    "",  # this is the location of the error
-                    theme_name,  # this is value of the error
+                    "",  # This is the location of the error
+                    theme_name,  # This is value of the error
                 )
 
-            # check if all the necessary files are provided in the custom theme folder:
+            # Check if all the necessary files are provided in the custom theme folder
             required_entry_files = [
                 entry_type_name + ".j2.tex" for entry_type_name in entry_type_names
             ]
             required_files = [
-                "SectionBeginning.j2.tex",  # section beginning template
-                "SectionEnding.j2.tex",  # section ending template
-                "Preamble.j2.tex",  # preamble template
-                "Header.j2.tex",  # header template
+                "SectionBeginning.j2.tex",  # Section beginning template
+                "SectionEnding.j2.tex",  # Section ending template
+                "Preamble.j2.tex",  # Preamble template
+                "Header.j2.tex",  # Header template
             ] + required_entry_files
 
             for file in required_files:
@@ -1246,11 +1248,11 @@ class RenderCVDataModel(RenderCVBaseModel):
                     raise ValueError(
                         f"You provided a custom theme, but the file `{file}` is not"
                         f" found in the folder `{custom_theme_folder}`.",
-                        "",  # this is the location of the error
-                        theme_name,  # this is value of the error
+                        "",  # This is the location of the error
+                        theme_name,  # This is value of the error
                     )
 
-            # import __init__.py file from the custom theme folder if it exists:
+            # Import __init__.py file from the custom theme folder if it exists
             path_to_init_file = pathlib.Path(f"{theme_name}/__init__.py")
 
             if path_to_init_file.exists():
@@ -1279,7 +1281,7 @@ class RenderCVDataModel(RenderCVBaseModel):
                     theme_module, f"{theme_name.capitalize()}ThemeOptions"  # type: ignore
                 )
 
-                # Initialize and validate the custom theme data model:
+                # Initialize and validate the custom theme data model
                 theme_data_model = ThemeDataModel(**design)
             else:
                 # Then it means there is no __init__.py file in the custom theme folder.
@@ -1308,7 +1310,8 @@ def set_or_update_a_value(
     value: str,
     sub_model: pydantic.BaseModel | dict | list = None,
 ):
-    """Set or update a value in a data model for a specific key. For example, a key can
+    """
+    Set or update a value in a data model for a specific key. For example, a key can
     be `cv.sections.education.3.institution` and the value can be "Bogazici University".
 
     Args:
@@ -1332,12 +1335,12 @@ def set_or_update_a_value(
         model = data_model
 
     if len(keys) == 1:
-        # Set the value:
+        # Set the value
         if value.startswith("{") and value.endswith("}"):
-            # Allow users to assign dictionaries:
+            # Allow users to assign dictionaries
             value = eval(value)
         elif value.startswith("[") and value.endswith("]"):
-            # Allow users to assign lists:
+            # Allow users to assign lists
             value = eval(value)
 
         if isinstance(model, pydantic.BaseModel):
@@ -1357,7 +1360,7 @@ def set_or_update_a_value(
         )
         return data_model
     else:
-        # get the first key and call the function with remaining keys:
+        # Get the first key and call the function with remaining keys
         first_key = keys[0]
         key = ".".join(keys[1:])
         if isinstance(model, pydantic.BaseModel):
@@ -1378,7 +1381,8 @@ def set_or_update_a_value(
 def read_input_file(
     file_path_or_contents: pathlib.Path | str,
 ) -> RenderCVDataModel:
-    """Read the input file and return two instances of
+    """
+    Read the input file and return two instances of
     [RenderCVDataModel][rendercv.data_models.RenderCVDataModel]. The first instance is
     the data model with $\\LaTeX$ strings and the second instance is the data model with
     markdown strings.
@@ -1391,14 +1395,14 @@ def read_input_file(
         RenderCVDataModel: The data models with $\\LaTeX$ and markdown strings.
     """
     if isinstance(file_path_or_contents, pathlib.Path):
-        # Check if the file exists:
+        # Check if the file exists
         if not file_path_or_contents.exists():
             raise FileNotFoundError(
                 f"The input file [magenta]{file_path_or_contents}[/magenta] doesn't"
                 " exist!"
             )
 
-        # Check the file extension:
+        # Check file extension
         accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
         if file_path_or_contents.suffix not in accepted_extensions:
             user_friendly_accepted_extensions = [
@@ -1419,7 +1423,7 @@ def read_input_file(
 
     input_as_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)  # type: ignore
 
-    # Validate the parsed dictionary by creating an instance of RenderCVDataModel:
+    # Validate parsed dictionary by creating an instance of RenderCVDataModel
     rendercv_data_model = RenderCVDataModel(**input_as_dictionary)
 
     return rendercv_data_model
@@ -1435,7 +1439,7 @@ def get_a_sample_data_model(
     Returns:
         RenderCVDataModel: A sample data model.
     """
-    # Check if the theme is valid:
+    # Check if theme is valid:
     if theme not in available_themes:
         available_themes_string = ", ".join(available_themes)
         raise ValueError(
@@ -1497,9 +1501,9 @@ def get_a_sample_data_model(
                 highlights=[
                     "GPA: 3.9/4.0 ([Transcript](https://example.com))",
                     (
-                        "**Coursework:** Computer Architecture, Artificial"
-                        " Intelligence, Comparison of Learning Algorithms,"
-                        " Computational Theory"
+                        "**Coursework:** Computer Architecture,"
+                        " Comparison of Learning Algorithms,"
+                        " Deep Learning"
                     ),
                 ],
             ),
@@ -1540,7 +1544,7 @@ def get_a_sample_data_model(
                         " supervised 10-15 Student Ambassadors"
                     ),
                     (
-                        "Created and taught a computer science course, CSE 099:"
+                        "Created and taught the computer science course CSE 099:"
                         " Software Design and Development"
                     ),
                 ],
@@ -1558,7 +1562,7 @@ def get_a_sample_data_model(
                     ),
                     (
                         "Created a service to provide gradient across VS and VS"
-                        " add-ins, optimized its performance via caching"
+                        " add-ins, optimizing its performance via caching"
                     ),
                     "Programmer Productivity Research Center (Summers 2001, 2002)",
                     (
@@ -1574,7 +1578,7 @@ def get_a_sample_data_model(
             ),
             ExperienceEntry(
                 company="Microsoft",
-                position="Software Engineer, Intern",
+                position="Software Engineer Intern",
                 start_date="2003-06",
                 end_date="2003-08",
                 location="Redmond, WA",
@@ -1596,8 +1600,6 @@ def get_a_sample_data_model(
                     "Albert Smith",
                     f"***{name}***",
                     "Jane Derry",
-                    "Harry Tom",
-                    "Frodo Baggins",
                 ],
                 date="2004-01",
                 doi="10.1109/TASC.2023.3340648",
@@ -1606,7 +1608,7 @@ def get_a_sample_data_model(
         "projects": [
             NormalEntry(
                 name="Multi-User Drawing Tool",
-                date="[github.com/name/repo](https://github.com/sinaatalay/rendercv)",
+                date="[github.com/username/repo](https://github.com/sinaatalay/rendercv)",
                 highlights=[
                     (
                         "Developed an electronic classroom where multiple users can"
@@ -1618,7 +1620,7 @@ def get_a_sample_data_model(
             ),
             NormalEntry(
                 name="Synchronized Calendar",
-                date="[github.com/name/repo](https://github.com/sinaatalay/rendercv)",
+                date="[github.com/username/repo](https://github.com/sinaatalay/rendercv)",
                 highlights=[
                     (
                         "Developed a desktop calendar with globally shared and"
@@ -1659,7 +1661,7 @@ def get_a_sample_data_model(
                 details="C++, C, Java, Objective-C, C#, SQL, JavaScript",
             ),
             OneLineEntry(
-                label="Software",
+                label="Technologies",
                 details=".NET, Microsoft SQL Server, XCode, Interface Builder",
             ),
         ],
@@ -1685,8 +1687,9 @@ def get_a_sample_data_model(
     return RenderCVDataModel(cv=cv, design=design)
 
 
-def dictionary_to_yaml(dictionary: dict[str, Any]):
-    """Converts a dictionary to a YAML string.
+def dictionary_to_yaml(dictionary: dict[str, Any]) -> str:
+    """
+    Convert a dictionary to a YAML string.
 
     Args:
         dictionary (dict[str, Any]): The dictionary to be converted to YAML.
@@ -1708,7 +1711,8 @@ def create_a_sample_yaml_input_file(
     name: str = "John Doe",
     theme: str = "classic",
 ) -> str:
-    """Create a sample YAML input file and return it as a string. If the input file path
+    """
+    Create a sample YAML input file and return it as a string. If the input file path
     is provided, then also save the contents to the file.
 
     Args:
@@ -1746,7 +1750,8 @@ def create_a_sample_yaml_input_file(
 
 
 def generate_json_schema() -> dict[str, Any]:
-    """Generate the JSON schema of RenderCV.
+    """
+    Generate the JSON schema of RenderCV.
 
     JSON schema is generated for the users to make it easier for them to write the input
     file. The JSON Schema of RenderCV is saved in the `docs` directory of the repository
@@ -1801,7 +1806,8 @@ def generate_json_schema() -> dict[str, Any]:
 
 
 def generate_json_schema_file(json_schema_path: pathlib.Path):
-    """Generate the JSON schema of RenderCV and save it to a file.
+    """
+    Generate the JSON schema of RenderCV and save it to a file.
 
     Args:
         json_schema_path (pathlib.Path): The path to save the JSON schema.
