@@ -136,7 +136,7 @@ class RenderCVBaseModel(pydantic.BaseModel):
     unknown key is provided in the input file.
     """
 
-    model_config = pydantic.ConfigDict(extra="forbid", validation_error_cause=True)
+    model_config = pydantic.ConfigDict(extra="forbid")
 
 
 # ======================================================================================
@@ -275,13 +275,21 @@ class PublicationEntryBase(RenderCVBaseModel):
 
             doi_url = f"http://doi.org/{doi}"
 
+            # Validate the URL:
+            url_validator.validate_strings(doi_url)
+
             try:
                 urlopen(doi_url)
             except HTTPError as err:
                 if err.code == 404:
                     raise ValueError("DOI cannot be found in the DOI System!")
-            except (InvalidURL, URLError):
+            except InvalidURL:
+                # Unfortunately, url_validator doesn't catch all the invalid URLs.
                 raise ValueError("This DOI is invalid!")
+            except URLError:
+                # In this case, there is no internet connection, so don't raise an
+                # error.
+                pass
 
         return doi
 
@@ -674,9 +682,7 @@ class SectionBase(RenderCVBaseModel):
     because all of the section types have a common field called `title`.
     """
 
-    # Title is excluded from the JSON schema because this will be written by RenderCV
-    # depending on the key in the input file.
-    title: Optional[str] = pydantic.Field(default=None, exclude=True)
+    title: str
     entry_type: str
     entries: list[Entry]
 
@@ -801,7 +807,6 @@ def validate_section_input(
         try:
             section_type.model_validate(
                 test_section,
-                context={"section": "test"},
             )
         except pydantic.ValidationError as e:
             new_error = ValueError(
@@ -1257,10 +1262,17 @@ class RenderCVDataModel(RenderCVBaseModel):
                 theme_module = importlib.util.module_from_spec(spec)
                 try:
                     spec.loader.exec_module(theme_module)  # type: ignore
-                except SyntaxError or ImportError:
+                except SyntaxError:
                     raise ValueError(
-                        f"The custom theme {theme_name}'s __init__.py file is not"
-                        " valid. Please check the file and try again.",
+                        f"The custom theme {theme_name}'s __init__.py file has a syntax"
+                        " error. Please fix it.",
+                    )
+                except ImportError:
+                    raise ValueError(
+                        f"The custom theme {theme_name}'s __init__.py file has an"
+                        " import error. If you have copy-pasted RenderCV's built-in"
+                        " themes, make sure tto update the import statements (e.g.,"
+                        ' "from . import..." to "from rendercv.themes import...").',
                     )
 
                 ThemeDataModel = getattr(
