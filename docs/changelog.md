@@ -7,14 +7,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.10...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.11...HEAD)
 
 <!--
 ### Added
 ### Changed
 ### Fixed
 ### Removed
+Orcid to ORCID
 -->
+
+## [1.11] - 2024-06-01
+
+> **Full Changelog**: [v1.10...v1.11]
+
+### Added
+- CLI options now have short versions. For example, `--output-folder-name` can be used as `-o` ([#91](https://github.com/sinaatalay/rendercv/issues/81)). Run `rendercv --help`, `rendercv render --help`, `rendercv new --help`, or `rendercv create-theme --help` to see the short versions of the options.
+- CLI now notifies the user when a new version is available ([#89](https://github.com/sinaatalay/rendercv/issues/89)).
+- `Google Scholar` has been added as a social network type ([#85](https://github.com/sinaatalay/rendercv/issues/85)).
+
+### Changed
+- The punctuation of "ORCID" has been changed to uppercase, which was previously "Orcid" ([#90](https://github.com/sinaatalay/rendercv/issues/90)).
+
+### Fixed
+- The error related to the `validation_error_cause` flag of Pydantic has been fixed ([#66](https://github.com/sinaatalay/rendercv/issues/66)).
+- `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)).
+
 
 ## [1.10] - 2024-05-25
 
@@ -290,6 +308,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[v1.10...v1.11]: https://github.com/sinaatalay/rendercv/compare/v1.10...v1.11
 [v1.9...v1.10]: https://github.com/sinaatalay/rendercv/compare/v1.9...v1.10
 [v1.8...v1.9]: https://github.com/sinaatalay/rendercv/compare/v1.8...v1.9
 [v1.7...v1.8]: https://github.com/sinaatalay/rendercv/compare/v1.7...v1.8
@@ -310,6 +329,7 @@ The first release of RenderCV.
 [v0.2...v0.3]: https://github.com/sinaatalay/rendercv/compare/v0.2...v0.3
 [v0.1...v0.2]: https://github.com/sinaatalay/rendercv/compare/v0.1...v0.2
 
+[1.11]: https://github.com/sinaatalay/rendercv/releases/tag/v1.11
 [1.10]: https://github.com/sinaatalay/rendercv/releases/tag/v1.10
 [1.9]: https://github.com/sinaatalay/rendercv/releases/tag/v1.9
 [1.8]: https://github.com/sinaatalay/rendercv/releases/tag/v1.8
