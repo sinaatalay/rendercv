@@ -101,11 +101,7 @@ class EngineeringresumesThemeOptions(ThemeOptions):
 
     theme: Literal["engineeringresumes"]
     font: Literal[
-        "Latin Modern Serif",
-        "Latin Modern Sans Serif",
-        "Latin Modern Mono",
-        "Source Sans 3",
-        "Charter",
+        "XCharter",
     ] = pydantic.Field(
         default="Charter",
         title="Font",
