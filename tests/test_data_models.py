@@ -170,6 +170,12 @@ def test_read_input_file_invalid_file(tmp_path):
         dm.read_input_file(invalid_file_path)
 
 
+def test_read_input_file_that_doesnt_exist(tmp_path):
+    non_existent_file_path = tmp_path / "non_existent_file.yaml"
+    with pytest.raises(FileNotFoundError):
+        dm.read_input_file(non_existent_file_path)
+
+
 @pytest.mark.parametrize(
     "theme",
     dm.available_themes,
@@ -645,9 +651,22 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
     custom_theme_path = tmp_path / "dummytheme"
     shutil.copytree(reference_custom_theme_path, custom_theme_path, dirs_exist_ok=True)
 
-    # remove the __init__.py file:
+    # overwrite the __init__.py file (syntax error)
     init_file = custom_theme_path / "__init__.py"
     init_file.write_text("invalid python code", encoding="utf-8")
+
+    os.chdir(tmp_path)
+    with pytest.raises(pydantic.ValidationError):
+        dm.RenderCVDataModel(
+            **{  # type: ignore
+                "cv": {"name": "John Doe"},
+                "design": {"theme": "dummytheme"},
+            }
+        )
+
+    # overwrite the __init__.py file (import error)
+    init_file = custom_theme_path / "__init__.py"
+    init_file.write_text("from ... import test", encoding="utf-8")
 
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):

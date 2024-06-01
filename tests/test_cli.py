@@ -41,6 +41,11 @@ def test_error():
         cli.error("This is an error message.")
 
 
+def test_error_without_text():
+    with pytest.raises(typer.Exit):
+        cli.error()
+
+
 def test_information():
     cli.information("This is an information message.")
 
@@ -103,6 +108,14 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
             },
         ),
         (
+            dm.ExperienceEntry,
+            {
+                "company": "CERN",
+                "position": "Researcher",
+                "highlights": "This is not a list.",
+            },
+        ),
+        (
             dm.PublicationEntry,
             {
                 "doi": "10.1109/TASC.2023.3340648",
@@ -137,6 +150,15 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
                         },
                     ]
                 },
+            },
+        ),
+        (
+            dm.RenderCVDataModel,
+            {
+                "cv": {
+                    "name": "John Doe",
+                },
+                "design": {"theme": "UPPERCASE"},
             },
         ),
     ],
