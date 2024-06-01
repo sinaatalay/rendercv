@@ -46,6 +46,11 @@ def test_error_without_text():
         cli.error()
 
 
+def test_error_without_text_with_exception():
+    with pytest.raises(typer.Exit):
+        cli.error(exception=ValueError("This is an error message."))
+
+
 def test_information():
     cli.information("This is an information message.")
 
