@@ -671,6 +671,14 @@ def cli_command_render(
             help="Don't generate the PNG file.",
         ),
     ] = False,
+    _: Annotated[  # This is a dummy argument for the help message.
+        Optional[str],
+        typer.Option(
+            "--YAMLLOCATION",
+            help="Overrides the value of YAMLLOCATION. For example,"
+            ' [cyan bold]--cv.phone "123-456-7890"[/cyan bold].',
+        ),
+    ] = None,
     extra_data_model_override_argumets: typer.Context = None,
 ):
     """Generate a $\\LaTeX$ CV from a YAML input file."""
@@ -802,6 +810,7 @@ def cli_command_new(
         bool,
         typer.Option(
             "--dont-create-theme-source-files",
+            "-nolatex",
             help="Don't create theme source files.",
         ),
     ] = False,
@@ -809,6 +818,7 @@ def cli_command_new(
         bool,
         typer.Option(
             "--dont-create-markdown-source-files",
+            "-nomd",
             help="Don't create the Markdown source files.",
         ),
     ] = False,
