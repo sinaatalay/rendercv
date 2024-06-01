@@ -271,7 +271,6 @@ def handle_validation_error(exception: pydantic.ValidationError):
 
     # Parse all the errors and create a new list of errors.
     new_errors: list[dict[str, str]] = []
-    end_date_error_is_found = False
     for error_object in errors:
         message = error_object["msg"]
         location = ".".join(error_object["loc"])  # type: ignore
@@ -300,9 +299,6 @@ def handle_validation_error(exception: pydantic.ValidationError):
         # Special case for end_date because Pydantic returns multiple end_date errors
         # since it has multiple valid formats:
         if "end_date" in location:
-            if end_date_error_is_found:
-                continue
-            end_date_error_is_found = True
             message = (
                 "This is not a valid end date! Please use either YYYY-MM-DD, YYYY-MM,"
                 ' or YYYY format or "present"!'

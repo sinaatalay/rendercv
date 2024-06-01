@@ -1010,13 +1010,7 @@ def latex_to_pdf(
                     stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
                 )
 
-    # check if the PDF file is generated:
     pdf_file_path = latex_file_path.with_suffix(".pdf")
-    if not pdf_file_path.is_file():
-        raise RuntimeError(
-            "The PDF file couldn't be generated! If you can't solve the problem,"
-            " please try to re-install RenderCV, or open an issue on GitHub."
-        )
 
     return pdf_file_path
 
