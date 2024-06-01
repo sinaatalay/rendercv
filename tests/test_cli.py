@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 from datetime import date as Date
+import pathlib
 
 import pydantic
 import ruamel.yaml
@@ -222,6 +223,34 @@ def test_render_command(tmp_path, input_file_path):
     result = run_render_command(
         input_file_path,
         tmp_path,
+    )
+
+    output_folder_path = tmp_path / "rendercv_output"
+    pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
+    latex_file_path = output_folder_path / "John_Doe_CV.tex"
+    markdown_file_path = output_folder_path / "John_Doe_CV.md"
+    html_file_path = output_folder_path / "John_Doe_CV_PASTETOGRAMMARLY.html"
+    png_file_path = output_folder_path / "John_Doe_CV_1.png"
+
+    assert output_folder_path.exists()
+    assert pdf_file_path.exists()
+    assert latex_file_path.exists()
+    assert markdown_file_path.exists()
+    assert html_file_path.exists()
+    assert png_file_path.exists()
+    assert "Your CV is rendered!" in result.stdout
+
+
+def test_render_command_with_relative_input_file_path(tmp_path, input_file_path):
+    new_folder = tmp_path / "another_folder"
+    new_folder.mkdir()
+    new_input_file_path = new_folder / input_file_path.name
+
+    shutil.copy(input_file_path, new_input_file_path)
+
+    os.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app, ["render", str(new_input_file_path.relative_to(tmp_path))]
     )
 
     output_folder_path = tmp_path / "rendercv_output"

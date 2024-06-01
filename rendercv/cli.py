@@ -676,7 +676,7 @@ def cli_command_render(
     """Generate a $\\LaTeX$ CV from a YAML input file."""
     welcome()
 
-    input_file_path = pathlib.Path(input_file_name)
+    input_file_path = pathlib.Path(input_file_name).absolute()
     output_directory = pathlib.Path.cwd() / output_folder_name
 
     # change the current working directory to the input file's directory (because
