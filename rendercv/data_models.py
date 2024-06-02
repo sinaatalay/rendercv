@@ -1,5 +1,5 @@
 """
-This module contains all the necessary classes to store CV data. These classes are called
+This module contains the necessary classes to store CV data. These classes are called
 data models. The YAML input file is transformed into instances of these classes (i.e.,
 the input file is read) with the
 [`read_input_file`][rendercv.data_models.read_input_file] function. RenderCV utilizes
@@ -7,7 +7,7 @@ these instances to generate a $\\LaTeX$ file which is then rendered into a PDF f
 
 The data models are initialized with data validation to prevent unexpected bugs. During
 the initialization, we ensure that everything is in the correct place and that the user
-has provided a valid RenderCV input. This is achieved through the use of
+has provided a valid RenderCV input. This is achieved using
 [Pydantic](https://pypi.org/project/pydantic/). Each class method decorated with
 `pydantic.model_validator` or `pydantic.field_validator` is executed automatically
 during the data classes' initialization.
@@ -39,7 +39,7 @@ from .themes.moderncv import ModerncvThemeOptions
 from .themes.sb2nov import Sb2novThemeOptions
 from .themes.engineeringresumes import EngineeringresumesThemeOptions
 
-# disable Pydantic warnings:
+# Disable Pydantic warnings:
 warnings.filterwarnings("ignore")
 
 locale_catalog = {
@@ -49,6 +49,7 @@ locale_catalog = {
     "years": "years",
     "present": "present",
     "to": "to",
+    # Month abbreviations are taken from https://web.library.yale.edu/cataloging/months:
     "abbreviations_for_months": [
         "Jan.",
         "Feb.",
@@ -72,9 +73,9 @@ def get_date_object(date: str | int) -> Date:
     the data models.
 
     Args:
-        date (str): The date string to parse.
+        date (str | int): The date string to parse.
     Returns:
-        datetime.date: The parsed date.
+        Date: The parsed date.
     """
     if isinstance(date, int):
         date_object = Date.fromisoformat(f"{date}-01-01")
@@ -100,9 +101,6 @@ def get_date_object(date: str | int) -> Date:
 
 def format_date(date: Date) -> str:
     """Formats a `Date` object to a string in the following format: "Jan. 2021".
-
-    It uses month abbreviations, taken from
-    [Yale University Library](https://web.library.yale.edu/cataloging/months).
 
     Example:
         ```python
@@ -199,7 +197,7 @@ class EntryWithDate(RenderCVBaseModel):
     def check_date(
         cls, date: Optional[int | RenderCVDate | str]
     ) -> Optional[int | RenderCVDate | str]:
-        """Check if the date is provided correctly."""
+        """Check if `date` is provided correctly."""
         date_is_provided = date is not None
 
         if date_is_provided:
@@ -219,7 +217,7 @@ class EntryWithDate(RenderCVBaseModel):
                         date = int(date)
             elif isinstance(date, Date):
                 # Pydantic parses YYYY-MM-DD dates as datetime.date objects. We need to
-                # convert them to strings because that's how RenderCV uses them.
+                # convert them to strings because that is how RenderCV uses them.
                 date = date.isoformat()
 
         return date
@@ -245,7 +243,7 @@ class EntryWithDate(RenderCVBaseModel):
 
 class PublicationEntryBase(RenderCVBaseModel):
     title: str = pydantic.Field(
-        title="Title of the Publication",
+        title="Publication Title",
         description="The title of the publication.",
     )
     authors: list[str] = pydantic.Field(
@@ -261,15 +259,15 @@ class PublicationEntryBase(RenderCVBaseModel):
     journal: Optional[str] = pydantic.Field(
         default=None,
         title="Journal",
-        description="The journal or the conference name.",
+        description="The journal or conference name.",
     )
 
     @pydantic.field_validator("doi")
     @classmethod
     def check_doi(cls, doi: Optional[str]) -> Optional[str]:
-        """Check if the DOI exists in the DOI System."""
+        """Check if the DOI is valid and exists in the DOI System."""
         if doi is not None:
-            # see https://stackoverflow.com/a/60671292/18840665 for the explanation of
+            # See https://stackoverflow.com/a/60671292/18840665 for the explanation of
             # the next line:
             ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
 
@@ -284,7 +282,7 @@ class PublicationEntryBase(RenderCVBaseModel):
                 if err.code == 404:
                     raise ValueError("DOI cannot be found in the DOI System!")
             except InvalidURL:
-                # Unfortunately, url_validator doesn't catch all the invalid URLs.
+                # Unfortunately, url_validator does not catch all the invalid URLs.
                 raise ValueError("This DOI is invalid!")
             except URLError:
                 # In this case, there is no internet connection, so don't raise an
@@ -353,7 +351,7 @@ class EntryBase(EntryWithDate):
         if date_is_provided:
             if isinstance(date, Date):
                 # Pydantic parses YYYY-MM-DD dates as datetime.date objects. We need to
-                # convert them to strings because that's how RenderCV uses them.
+                # convert them to strings because that is how RenderCV uses them.
                 date = date.isoformat()
 
             elif date != "present":
@@ -584,7 +582,7 @@ class NormalEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure NormalEntryBase keys come first,
+# The following class is to ensure NormalEntryBase keys come first,
 # then the keys of the EntryBase class. The only way to achieve this in Pydantic is
 # to do this.
 class NormalEntry(EntryBase, NormalEntryBase):
@@ -639,7 +637,7 @@ class EducationEntry(EntryBase, EducationEntryBase):
     pass
 
 
-# Create a custom type called Entry and ListOfEntries:
+# Create custom types named Entry and ListOfEntries:
 Entry = (
     OneLineEntry
     | NormalEntry
@@ -728,7 +726,7 @@ def get_entry_and_section_type(
     Returns:
         tuple[str, Type[Section]]: The entry type and the section type.
     """
-    # Get class attributes of EntryBase class:
+    # Get the class attributes of EntryBase class:
     common_attributes = set(EntryBase.model_fields.keys())
 
     if isinstance(entry, dict):
@@ -812,15 +810,15 @@ def validate_section_input(
             new_error = ValueError(
                 "There are problems with the entries. RenderCV detected the entry type"
                 f" of this section to be {entry_type}! The problems are shown below.",
-                "",  # this is the location of the error
-                "",  # this is value of the error
+                "",  # This is the location of the error
+                "",  # This is value of the error
             )
             raise new_error from e
 
     return sections_input
 
 
-# Create a custom type called SectionInput so that it can be validated with
+# Create a custom type named SectionInput so that it can be validated with
 # `validate_section_input` function.
 SectionInput = Annotated[
     ListOfEntries,
@@ -906,7 +904,7 @@ class SocialNetwork(RenderCVBaseModel):
     def url(self) -> str:
         """Return the URL of the social network."""
         if self.network == "Mastodon":
-            # split domain and username
+            # Split domain and username
             dummy, username, domain = self.username.split("@")
             url = f"https://{domain}/@{username}"
         else:
@@ -948,7 +946,7 @@ class CurriculumVitae(RenderCVBaseModel):
     email: Optional[pydantic.EmailStr] = pydantic.Field(
         default=None,
         title="Email",
-        description="The email of the person.",
+        description="The email address of the person.",
     )
     phone: Optional[pydantic_phone_numbers.PhoneNumber] = pydantic.Field(
         default=None,
@@ -1153,7 +1151,7 @@ class LocaleCatalog(RenderCVBaseModel):
 # ======================================================================================
 # ======================================================================================
 
-# Create a custom type called Design:
+# Create a custom type named Design:
 # It is a union of all the design options and the correct design option is determined by
 # the theme field, thanks to Pydantic's discriminator feature.
 # See https://docs.pydantic.dev/2.5/concepts/fields/#discriminator for more information
@@ -1215,7 +1213,7 @@ class RenderCVDataModel(RenderCVBaseModel):
             # Then it means it is a custom theme, so initialize and validate it:
             theme_name: str = str(design["theme"])
 
-            # check if the theme name is valid:
+            # Check if the theme name is valid:
             if not theme_name.isalpha():
                 raise ValueError(
                     "The custom theme name should contain only letters.",
@@ -1223,10 +1221,10 @@ class RenderCVDataModel(RenderCVBaseModel):
                     theme_name,  # this is value of the error
                 )
 
-            # then it is a custom theme
+            # Then it is a custom theme
             custom_theme_folder = pathlib.Path(theme_name)
 
-            # check if the custom theme folder exists:
+            # Check if the custom theme folder exists:
             if not custom_theme_folder.exists():
                 raise ValueError(
                     f"The custom theme folder `{custom_theme_folder}` does not exist."
@@ -1252,11 +1250,11 @@ class RenderCVDataModel(RenderCVBaseModel):
                     raise ValueError(
                         f"You provided a custom theme, but the file `{file}` is not"
                         f" found in the folder `{custom_theme_folder}`.",
-                        "",  # this is the location of the error
-                        theme_name,  # this is value of the error
+                        "",  # This is the location of the error
+                        theme_name,  # This is value of the error
                     )
 
-            # import __init__.py file from the custom theme folder if it exists:
+            # Import __init__.py file from the custom theme folder if it exists:
             path_to_init_file = pathlib.Path(f"{theme_name}/__init__.py")
 
             if path_to_init_file.exists():
