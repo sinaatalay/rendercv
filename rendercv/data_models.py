@@ -389,16 +389,16 @@ class EntryBase(EntryWithDate):
                 # If only start_date is provided, assume it is an ongoing event, i.e.,
                 # the end_date is present:
                 self.end_date = "present"
-                end_date = Date.today()
-            else:
+
+            if self.end_date != "present":
                 end_date = get_date_object(self.end_date)
 
-            if start_date > end_date:
-                raise ValueError(
-                    '"start_date" can not be after "end_date"!',
-                    "start_date",  # This is the location of the error
-                    str(start_date),  # This is value of the error
-                )
+                if start_date > end_date:
+                    raise ValueError(
+                        '"start_date" can not be after "end_date"!',
+                        "start_date",  # This is the location of the error
+                        str(start_date),  # This is value of the error
+                    )
 
         return self
 
@@ -864,6 +864,12 @@ class SocialNetwork(RenderCVBaseModel):
     @classmethod
     def check_username(cls, username: str, info: pydantic.ValidationInfo) -> str:
         """Check if the username is provided correctly."""
+        if "network" not in info.data:
+            # the network is either not provided or not one of the available social
+            # networks. In this case, don't check the username, since Pydantic will
+            # raise an error for the network.
+            return username
+
         network = info.data["network"]
 
         if network == "Mastodon":
