@@ -9,12 +9,12 @@
 - Instagram: [johndoe](https://instagram.com/johndoe)
 - ORCID: [0000-0000-0000-0000](https://orcid.org/0000-0000-0000-0000)
 - Google Scholar: [F8IyYrQAAAAJ](https://scholar.google.com/citations?user=F8IyYrQAAAAJ)
-- Mastodon: [@johndoe@example](https://example/@johndoe)
+- Mastodon: [@johndoe@example.com](https://example.com/@johndoe)
 - Twitter: [johndoe](https://twitter.com/johndoe)
 - StackOverflow: [12323/johndoe](https://stackoverflow.com/users/12323/johndoe)
 - GitLab: [johndoe](https://gitlab.com/johndoe)
 - ResearchGate: [johndoe](https://researchgate.net/profile/johndoe)
-- YouTube: [@johndoe](https://youtube.com/@johndoe)
+- YouTube: [johndoe](https://youtube.com/@johndoe)
 
 
 # Text Entries
@@ -32,35 +32,67 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 # Publication Entries
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([https://example.com](example.com))
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 - IEEE Transactions on Applied Superconductivity
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 
 - Sept. 2021
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 - IEEE Transactions on Applied Superconductivity
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
 - Sept. 2021
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([https://example.com](example.com))
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+- IEEE Transactions on Applied Superconductivity
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([https://example.com](example.com))
+- Sept. 2021
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils 
 - Sept. 2021
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+- IEEE Transactions on Applied Superconductivity
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 - IEEE Transactions on Applied Superconductivity
 
 ## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
 - Sept. 2021
-- J. Doe, **H. Tom**, S. Doe, A. Andsurname
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
+- Sept. 2021
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+- IEEE Transactions on Applied Superconductivity
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([https://example.com](example.com))
+- Sept. 2021
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
+- IEEE Transactions on Applied Superconductivity
+
+## Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of No-Insulation Coils ([10.1109/TASC.2023.3340648](https://doi.org/10.1109/TASC.2023.3340648))
+- Sept. 2021
+- J. Doe, ***H. Tom***, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname, S. Doe, A. Andsurname
 - IEEE Transactions on Applied Superconductivity
 
 # Experience Entries

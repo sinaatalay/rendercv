@@ -193,13 +193,25 @@ def return_a_value_for_a_field_type(
         "name": "My Project",
         "label": "Pro**gram**ming",
         "details": "Python, C++, JavaScript, MATLAB",
-        "authors": ["J. Doe", "**H. Tom**", "S. Doe", "A. Andsurname"],
+        "authors": [
+            "J. Doe",
+            "***H. Tom***",
+            "S. Doe",
+            "A. Andsurname",
+            "S. Doe",
+            "A. Andsurname",
+            "S. Doe",
+            "A. Andsurname",
+            "S. Doe",
+            "A. Andsurname",
+        ],
         "title": (
             "Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of"
             " No-Insulation Coils"
         ),
         "journal": "IEEE Transactions on Applied Superconductivity",
         "doi": "10.1109/TASC.2023.3340648",
+        "url": "https://example.com",
     }
 
     field_type_dictionary = {
@@ -284,12 +296,12 @@ def rendercv_filled_curriculum_vitae_data_model(
             dm.SocialNetwork(network="Instagram", username="johndoe"),
             dm.SocialNetwork(network="ORCID", username="0000-0000-0000-0000"),
             dm.SocialNetwork(network="Google Scholar", username="F8IyYrQAAAAJ"),
-            dm.SocialNetwork(network="Mastodon", username="@johndoe@example"),
+            dm.SocialNetwork(network="Mastodon", username="@johndoe@example.com"),
             dm.SocialNetwork(network="Twitter", username="johndoe"),
             dm.SocialNetwork(network="StackOverflow", username="12323/johndoe"),
             dm.SocialNetwork(network="GitLab", username="johndoe"),
             dm.SocialNetwork(network="ResearchGate", username="johndoe"),
-            dm.SocialNetwork(network="YouTube", username="@johndoe"),
+            dm.SocialNetwork(network="YouTube", username="johndoe"),
         ],
         sections={
             "Text Entries": [text_entry, text_entry, text_entry],

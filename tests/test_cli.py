@@ -3,7 +3,6 @@ import shutil
 import subprocess
 import sys
 from datetime import date as Date
-import pathlib
 
 import pydantic
 import ruamel.yaml
@@ -326,7 +325,7 @@ def test_render_command_with_different_output_path(input_file_path, tmp_path):
 def test_render_command_with_different_output_path_for_each_file(
     option, file_name, tmp_path, input_file_path
 ):
-    result = run_render_command(
+    run_render_command(
         input_file_path,
         tmp_path,
         [
@@ -373,7 +372,7 @@ def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
 def test_render_command_with_dont_generate_files(
     tmp_path, input_file_path, option, file_name
 ):
-    result = run_render_command(
+    run_render_command(
         input_file_path,
         tmp_path,
         [

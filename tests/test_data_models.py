@@ -419,7 +419,7 @@ def test_invalid_doi(publication_entry, doi):
         ("StackOverflow", "invalidusername"),
         ("StackOverflow", "invalidusername//"),
         ("StackOverflow", "invalidusername/invalid"),
-        ("YouTube", "invalidusername"),
+        ("YouTube", "@invalidusername"),
     ],
 )
 def test_invalid_social_networks(network, username):
@@ -453,7 +453,7 @@ def test_invalid_social_networks(network, username):
         ),
         (
             "YouTube",
-            "@myusername",
+            "myusername",
             "https://youtube.com/@myusername",
         ),
         (
