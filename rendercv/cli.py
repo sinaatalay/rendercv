@@ -282,7 +282,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         )
         if custom_message is not None:
             message = custom_message
-            if custom_location != "":
+            if custom_location:
                 # If the custom location is not empty, then add it to the location.
                 location = f"{location}.{custom_location}"
             input = custom_input_value
