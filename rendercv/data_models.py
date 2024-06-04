@@ -256,11 +256,28 @@ class PublicationEntryBase(RenderCVBaseModel):
         description="The DOI of the publication.",
         examples=["10.48550/arXiv.2310.03138"],
     )
+    url: Optional[pydantic.HttpUrl] = pydantic.Field(
+        default=None,
+        title="URL",
+        description=(
+            "The URL of the publication. If DOI is provided, it will be ignored."
+        ),
+    )
     journal: Optional[str] = pydantic.Field(
         default=None,
         title="Journal",
         description="The journal or conference name.",
     )
+
+    @pydantic.model_validator(mode="after")
+    def check_doi_and_url(self) -> "PublicationEntryBase":
+        """Check if both DOI and URL are provided. If so, ignore the URL."""
+        doi_is_provided = self.doi is not None
+        url_is_provided = self.url is not None
+        if doi_is_provided and url_is_provided:
+            self.url = None
+
+        return self
 
     @pydantic.field_validator("doi")
     @classmethod
@@ -295,6 +312,16 @@ class PublicationEntryBase(RenderCVBaseModel):
     def doi_url(self) -> str:
         """Return the URL of the DOI."""
         return f"https://doi.org/{self.doi}"
+
+    @functools.cached_property
+    def clean_url(self) -> str:
+        """Return the clean URL of the publication."""
+        url_is_provided = self.url is not None
+
+        if url_is_provided:
+            return str(self.url).replace("https://", "").rstrip("/")
+        else:
+            return ""
 
 
 class PublicationEntry(EntryWithDate, PublicationEntryBase):
@@ -360,9 +387,7 @@ class EntryBase(EntryWithDate):
 
         return date
 
-    @pydantic.model_validator(
-        mode="after",
-    )
+    @pydantic.model_validator(mode="after")
     def check_and_adjust_dates(self) -> "EntryBase":
         """
         Check if the dates are provided correctly and make the necessary adjustments.
@@ -883,10 +908,10 @@ class SocialNetwork(RenderCVBaseModel):
                     'StackOverflow username should be in the format "user_id/username"!'
                 )
         if network == "YouTube":
-            youtube_username_pattern = r"@[^@]+"
-            if not re.fullmatch(youtube_username_pattern, username):
+            if username.startswith("@"):
                 raise ValueError(
-                    'YouTube username should be in the format "@username"!'
+                    'YouTube username should not start with "@"! Remove "@" from the'
+                    " beginning of the username."
                 )
 
         return username
@@ -917,7 +942,7 @@ class SocialNetwork(RenderCVBaseModel):
                 "Twitter": "https://twitter.com/",
                 "StackOverflow": "https://stackoverflow.com/users/",
                 "ResearchGate": "https://researchgate.net/profile/",
-                "YouTube": "https://youtube.com/",
+                "YouTube": "https://youtube.com/@",
                 "Google Scholar": "https://scholar.google.com/citations?user=",
             }
             url = url_dictionary[self.network] + self.username
