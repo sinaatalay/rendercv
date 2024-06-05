@@ -19,12 +19,8 @@ import importlib
 import importlib.util
 import importlib.machinery
 import functools
-from urllib.request import urlopen, HTTPError
-from urllib.error import URLError
-from http.client import InvalidURL
 import json
 import re
-import ssl
 import pathlib
 import warnings
 import annotated_types as at
@@ -270,43 +266,14 @@ class PublicationEntryBase(RenderCVBaseModel):
     )
 
     @pydantic.model_validator(mode="after")
-    def check_doi_and_url(self) -> "PublicationEntryBase":
-        """Check if both DOI and URL are provided. If so, ignore the URL."""
+    def ignore_url_if_doi_is_given(self) -> "PublicationEntryBase":
+        """Check if DOI is provided and ignore the URL if it is provided."""
         doi_is_provided = self.doi is not None
         url_is_provided = self.url is not None
         if doi_is_provided and url_is_provided:
             self.url = None
 
         return self
-
-    @pydantic.field_validator("doi")
-    @classmethod
-    def check_doi(cls, doi: Optional[str]) -> Optional[str]:
-        """Check if the DOI is valid and exists in the DOI System."""
-        if doi is not None:
-            # See https://stackoverflow.com/a/60671292/18840665 for the explanation of
-            # the next line:
-            ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore
-
-            doi_url = f"http://doi.org/{doi}"
-
-            # Validate the URL:
-            url_validator.validate_strings(doi_url)
-
-            try:
-                urlopen(doi_url)
-            except HTTPError as err:
-                if err.code == 404:
-                    raise ValueError("DOI cannot be found in the DOI System!")
-            except InvalidURL:
-                # Unfortunately, url_validator does not catch all the invalid URLs.
-                raise ValueError("This DOI is invalid!")
-            except URLError:
-                # In this case, there is no internet connection, so don't raise an
-                # error.
-                pass
-
-        return doi
 
     @functools.cached_property
     def doi_url(self) -> str:
@@ -919,9 +886,11 @@ class SocialNetwork(RenderCVBaseModel):
     @pydantic.model_validator(mode="after")  # type: ignore
     def check_url(self) -> "SocialNetwork":
         """Validate the URLs of the social networks."""
-        url = self.url
-
-        url_validator.validate_strings(url)
+        if self.network == "Mastodon":
+            # All the other social networks have valid URLs. Mastodon URLs contain both
+            # the username and the domain. So, we need to validate if the url is valid.
+            url = self.url
+            url_validator.validate_strings(url)
 
         return self
 

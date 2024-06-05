@@ -401,16 +401,6 @@ def test_doi_url(publication_entry, doi, expected_doi_url):
 
 
 @pytest.mark.parametrize(
-    "doi",
-    ["aaa10.1109/TASC.2023.3340648", "aaa", "A string"],
-)
-def test_invalid_doi(publication_entry, doi):
-    with pytest.raises(pydantic.ValidationError):
-        publication_entry["doi"] = doi
-        dm.PublicationEntry(**publication_entry)
-
-
-@pytest.mark.parametrize(
     "network, username",
     [
         ("Mastodon", "invalidmastodon"),
