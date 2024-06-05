@@ -1,7 +1,7 @@
 <div align="center">
 <h1>RenderCV</h1>
 
-*A* $\LaTeX$ *CV/resume framework*.
+*A* $\LaTeX$ *CV/resume framework*
 
 [![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
