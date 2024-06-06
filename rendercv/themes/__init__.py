@@ -280,6 +280,22 @@ class ThemeOptions(pydantic.BaseModel):
         title="Text Alignment",
         description="The alignment of the text. The default value is justified.",
     )
+    seperator_between_connections: str = pydantic.Field(
+        default="",
+        title="Seperator Between Connections",
+        description=(
+            "The separator between the connections in the header. The default value is"
+            " empty string."
+        ),
+    )
+    use_icons_for_connections: bool = pydantic.Field(
+        default=True,
+        title="Use Icons for Connections",
+        description=(
+            "If this option is set to true, then icons will be used for the connections"
+            " in the header. The default value is true."
+        ),
+    )
     margins: Margins = pydantic.Field(
         default=Margins(),
         title="Margins",
