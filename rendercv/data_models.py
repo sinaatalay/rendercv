@@ -38,29 +38,9 @@ from .themes.engineeringresumes import EngineeringresumesThemeOptions
 # Disable Pydantic warnings:
 warnings.filterwarnings("ignore")
 
-locale_catalog = {
-    "month": "month",
-    "months": "months",
-    "year": "year",
-    "years": "years",
-    "present": "present",
-    "to": "to",
-    # Month abbreviations are taken from https://web.library.yale.edu/cataloging/months:
-    "abbreviations_for_months": [
-        "Jan.",
-        "Feb.",
-        "Mar.",
-        "Apr.",
-        "May",
-        "June",
-        "July",
-        "Aug.",
-        "Sept.",
-        "Oct.",
-        "Nov.",
-        "Dec.",
-    ],
-}
+
+# The dictionary below will be overwritten by LocaleCatalog class.
+locale_catalog = {}
 
 
 def get_date_object(date: str | int) -> Date:
@@ -1102,27 +1082,32 @@ class LocaleCatalog(RenderCVBaseModel):
         validate_default=True,  # To initialize the locale catalog with the default values
     )
     to: Optional[str] = pydantic.Field(
-        default="to",
+        default="--",
         title='Translation of "To"',
-        description='Translation of the word "to" in the locale.',
+        description=(
+            "The word or character used to indicate a range in the locale (e.g.,"
+            ' "2020 - 2021").'
+        ),
         validate_default=True,  # To initialize the locale catalog with the default values
     )
     abbreviations_for_months: Optional[
         Annotated[list[str], at.Len(min_length=12, max_length=12)]
     ] = pydantic.Field(
+        # Month abbreviations are taken from
+        # https://web.library.yale.edu/cataloging/months:
         default=[
-            "Jan.",
-            "Feb.",
-            "Mar.",
-            "Apr.",
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
             "May",
             "June",
             "July",
-            "Aug.",
-            "Sept.",
-            "Oct.",
-            "Nov.",
-            "Dec.",
+            "Aug",
+            "Sept",
+            "Oct",
+            "Nov",
+            "Dec",
         ],
         title="Abbreviations of Months",
         description="Abbreviations of the months in the locale.",
@@ -1140,6 +1125,7 @@ class LocaleCatalog(RenderCVBaseModel):
 
         return value
 
+LocaleCatalog() # Initialize the locale catalog with the default values
 
 # ======================================================================================
 # ======================================================================================
