@@ -24,10 +24,8 @@ import rich.progress
 import pydantic
 import ruamel.yaml
 import ruamel.yaml.parser
-
 import typer
-import ruamel.yaml
-
+import jinja2
 
 from . import data_models as dm
 from . import renderer as r
@@ -37,9 +35,12 @@ from . import __version__
 app = typer.Typer(
     rich_markup_mode="rich",
     add_completion=False,
-    invoke_without_command=True,  # to make rendercv --version work
+    # to make `rendercv --version` work:
+    invoke_without_command=True,
     no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
+    # don't show local variables in unhandled exceptions:
+    pretty_exceptions_show_locals=False,
 )
 
 
@@ -397,6 +398,12 @@ def handle_exceptions(function: Callable) -> Callable:
             error(e)
         except typer.Exit:
             pass
+        except jinja2.exceptions.TemplateSyntaxError as e:
+            error(
+                f"There is a problem with the template ({e.filename}) at line"
+                f" {e.lineno}!",
+                e,
+            )
         except RuntimeError as e:
             error(e)
 
