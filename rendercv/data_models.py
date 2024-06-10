@@ -1082,7 +1082,7 @@ class LocaleCatalog(RenderCVBaseModel):
         validate_default=True,  # To initialize the locale catalog with the default values
     )
     to: Optional[str] = pydantic.Field(
-        default="--",
+        default="–",  # en dash
         title='Translation of "To"',
         description=(
             "The word or character used to indicate a range in the locale (e.g.,"

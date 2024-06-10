@@ -745,47 +745,58 @@ def get_an_item_with_a_specific_attribute_value(
     return None
 
 
+# Only one Jinja2 environment is needed for all the templates:
+jinja2_environment: Optional[jinja2.Environment] = None
+
+
 def setup_jinja2_environment() -> jinja2.Environment:
     """Setup and return the Jinja2 environment for templating the $\\LaTeX$ files.
 
     Returns:
         jinja2.Environment: The theme environment.
     """
-    # create a Jinja2 environment:
-    # we need to add the current working directory because custom themes might be used.
-    themes_directory = pathlib.Path(__file__).parent / "themes"
-    environment = jinja2.Environment(
-        loader=jinja2.FileSystemLoader([pathlib.Path.cwd(), themes_directory]),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
+    global jinja2_environment
 
-    # set custom delimiters for LaTeX templating:
-    environment.block_start_string = "((*"
-    environment.block_end_string = "*))"
-    environment.variable_start_string = "<<"
-    environment.variable_end_string = ">>"
-    environment.comment_start_string = "((#"
-    environment.comment_end_string = "#))"
+    if jinja2_environment is None:
+        # create a Jinja2 environment:
+        # we need to add the current working directory because custom themes might be used.
+        themes_directory = pathlib.Path(__file__).parent / "themes"
+        environment = jinja2.Environment(
+            loader=jinja2.FileSystemLoader([pathlib.Path.cwd(), themes_directory]),
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
 
-    # add custom filters to make it easier to template the LaTeX files and add new
-    # themes:
-    environment.filters["make_it_bold"] = make_matched_part_bold
-    environment.filters["make_it_underlined"] = make_matched_part_underlined
-    environment.filters["make_it_italic"] = make_matched_part_italic
-    environment.filters["make_it_nolinebreak"] = make_matched_part_non_line_breakable
-    environment.filters["make_it_something"] = make_matched_part_something
-    environment.filters["divide_length_by"] = divide_length_by
-    environment.filters["abbreviate_name"] = abbreviate_name
-    environment.filters["replace_placeholders_with_actual_values"] = (
-        replace_placeholders_with_actual_values
-    )
-    environment.filters["get_an_item_with_a_specific_attribute_value"] = (
-        get_an_item_with_a_specific_attribute_value
-    )
-    environment.filters["escape_latex_characters"] = escape_latex_characters
+        # set custom delimiters for LaTeX templating:
+        environment.block_start_string = "((*"
+        environment.block_end_string = "*))"
+        environment.variable_start_string = "<<"
+        environment.variable_end_string = ">>"
+        environment.comment_start_string = "((#"
+        environment.comment_end_string = "#))"
 
-    return environment
+        # add custom filters to make it easier to template the LaTeX files and add new
+        # themes:
+        environment.filters["make_it_bold"] = make_matched_part_bold
+        environment.filters["make_it_underlined"] = make_matched_part_underlined
+        environment.filters["make_it_italic"] = make_matched_part_italic
+        environment.filters["make_it_nolinebreak"] = (
+            make_matched_part_non_line_breakable
+        )
+        environment.filters["make_it_something"] = make_matched_part_something
+        environment.filters["divide_length_by"] = divide_length_by
+        environment.filters["abbreviate_name"] = abbreviate_name
+        environment.filters["replace_placeholders_with_actual_values"] = (
+            replace_placeholders_with_actual_values
+        )
+        environment.filters["get_an_item_with_a_specific_attribute_value"] = (
+            get_an_item_with_a_specific_attribute_value
+        )
+        environment.filters["escape_latex_characters"] = escape_latex_characters
+
+        jinja2_environment = environment
+
+    return jinja2_environment
 
 
 def generate_latex_file(
@@ -1042,10 +1053,8 @@ def pdf_to_pngs(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
 
 
 def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
-    """Convert a markdown file to HTML.
-
-    RenderCV doesn't produce an HTML file as the final output, but generates it for
-    users to easily copy and paste the HTML into Grammarly for proofreading purposes.
+    """Convert a markdown file to HTML with the same name and in the same directory.
+    It uses `rendercv/themes/main.j2.html` as the Jinja2 template.
 
     Args:
         markdown_file_path (pathlib.Path): The path to the markdown file to convert.
@@ -1056,14 +1065,25 @@ def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
     if not markdown_file_path.is_file():
         raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
 
-    html_file_path = (
-        markdown_file_path.parent / f"{markdown_file_path.stem}_PASTETOGRAMMARLY.html"
-    )
-
     # Convert the markdown file to HTML:
-    html = markdown.markdown(markdown_file_path.read_text(encoding="utf-8"))
+    markdown_text = markdown_file_path.read_text(encoding="utf-8")
+    html_body = markdown.markdown(markdown_text)
 
-    # write html into a file:
+    # Get the title of the markdown content:
+    title = re.search(r"# (.*)\n", markdown_text)
+    if title is None:
+        title = ""
+    else:
+        title = title.group(1)
+
+    jinja2_environment = setup_jinja2_environment()
+    html_template = jinja2_environment.get_template("main.j2.html")
+    html = html_template.render(html_body=html_body, title=title)
+
+    # Write html into a file:
+    html_file_path = (
+        markdown_file_path.parent / f"{markdown_file_path.stem}_OPENINBROWSER_AND.html"
+    )
     html_file_path.write_text(html, encoding="utf-8")
 
     return html_file_path
