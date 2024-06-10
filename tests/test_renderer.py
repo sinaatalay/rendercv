@@ -644,7 +644,7 @@ def test_markdown_to_html(
     reference_name = (
         f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}"
     )
-    output_file_name = f"{reference_name}_PASTETOGRAMMARLY.html"
+    output_file_name = f"{reference_name}.html"
     reference_file_name = f"{reference_name}.html"
 
     def markdown_to_html(output_directory_path, reference_file_or_directory_path):

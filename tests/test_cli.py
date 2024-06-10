@@ -255,7 +255,7 @@ def test_render_command(tmp_path, input_file_path):
     pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
     latex_file_path = output_folder_path / "John_Doe_CV.tex"
     markdown_file_path = output_folder_path / "John_Doe_CV.md"
-    html_file_path = output_folder_path / "John_Doe_CV_PASTETOGRAMMARLY.html"
+    html_file_path = output_folder_path / "John_Doe_CV.html"
     png_file_path = output_folder_path / "John_Doe_CV_1.png"
 
     assert output_folder_path.exists()
@@ -283,7 +283,7 @@ def test_render_command_with_relative_input_file_path(tmp_path, input_file_path)
     pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
     latex_file_path = output_folder_path / "John_Doe_CV.tex"
     markdown_file_path = output_folder_path / "John_Doe_CV.md"
-    html_file_path = output_folder_path / "John_Doe_CV_PASTETOGRAMMARLY.html"
+    html_file_path = output_folder_path / "John_Doe_CV.html"
     png_file_path = output_folder_path / "John_Doe_CV_1.png"
 
     assert output_folder_path.exists()
@@ -365,7 +365,7 @@ def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
     ("option", "file_name"),
     [
         ("--dont-generate-markdown", "John_Doe_CV.md"),
-        ("--dont-generate-html", "John_Doe_CV_PASTETOGRAMMARLY.html"),
+        ("--dont-generate-html", "John_Doe_CV.html"),
         ("--dont-generate-png", "John_Doe_CV_1.png"),
     ],
 )
@@ -532,7 +532,7 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
     pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
     latex_file_path = output_folder_path / "John_Doe_CV.tex"
     markdown_file_path = output_folder_path / "John_Doe_CV.md"
-    html_file_path = output_folder_path / "John_Doe_CV_PASTETOGRAMMARLY.html"
+    html_file_path = output_folder_path / "John_Doe_CV.html"
     png_file_path = output_folder_path / "John_Doe_CV_1.png"
 
     assert output_folder_path.exists()

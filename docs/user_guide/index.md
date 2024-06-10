@@ -73,7 +73,7 @@ This command will generate a directory called `rendercv_output`, which contains 
 -   $\LaTeX$ source code of the PDF file, `Your_Name_CV.tex`.
 -   PNG files for each page of the PDF file.
 -   The CV in Markdown format, `Your_Name_CV.md`.
--   An HTML file from the Markdown file, `Your_Name_CV_PASTETOGRAMMARLY.html`.
+-   An HTML file from the Markdown file, `Your_Name_CV.html`.
     
     This file is generated so that it can be opened in a browser and pasted into Grammarly or similar tools for spell and grammar checking.
 

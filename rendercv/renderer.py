@@ -1082,7 +1082,7 @@ def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
 
     # Write html into a file:
     html_file_path = (
-        markdown_file_path.parent / f"{markdown_file_path.stem}_OPENINBROWSER_AND.html"
+        markdown_file_path.parent / f"{markdown_file_path.stem}.html"
     )
     html_file_path.write_text(html, encoding="utf-8")
 
