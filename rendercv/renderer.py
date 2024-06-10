@@ -756,11 +756,11 @@ def setup_jinja2_environment() -> jinja2.Environment:
         jinja2.Environment: The theme environment.
     """
     global jinja2_environment
+    themes_directory = pathlib.Path(__file__).parent / "themes"
 
     if jinja2_environment is None:
         # create a Jinja2 environment:
         # we need to add the current working directory because custom themes might be used.
-        themes_directory = pathlib.Path(__file__).parent / "themes"
         environment = jinja2.Environment(
             loader=jinja2.FileSystemLoader([pathlib.Path.cwd(), themes_directory]),
             trim_blocks=True,
@@ -795,6 +795,11 @@ def setup_jinja2_environment() -> jinja2.Environment:
         environment.filters["escape_latex_characters"] = escape_latex_characters
 
         jinja2_environment = environment
+    else:
+        # update the loader in case the current working directory has changed:
+        jinja2_environment.loader = jinja2.FileSystemLoader(
+            [pathlib.Path.cwd(), themes_directory]
+        )
 
     return jinja2_environment
 
@@ -1081,9 +1086,7 @@ def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
     html = html_template.render(html_body=html_body, title=title)
 
     # Write html into a file:
-    html_file_path = (
-        markdown_file_path.parent / f"{markdown_file_path.stem}.html"
-    )
+    html_file_path = markdown_file_path.parent / f"{markdown_file_path.stem}.html"
     html_file_path.write_text(html, encoding="utf-8")
 
     return html_file_path
