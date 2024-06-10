@@ -742,3 +742,17 @@ def test_create_a_sample_yaml_input_file(tmp_path):
 def test_default_input_file_doesnt_have_local_catalog():
     yaml_contents = dm.create_a_sample_yaml_input_file()
     assert "locale_catalog" not in yaml_contents
+
+
+@pytest.mark.parametrize(
+    "key, expected_section_title",
+    [
+        ("this_is_a_test", "This Is A Test"),
+        ("welcome_to_RenderCV!", "Welcome To RenderCV!"),
+        ("\\faGraduationCap_education", "\\faGraduationCap Education"),
+        ("Hello_World", "Hello World"),
+        ("Hello World", "Hello World"),
+    ],
+)
+def test_dictionary_key_to_proper_section_title(key, expected_section_title):
+    assert dm.dictionary_key_to_proper_section_title(key) == expected_section_title

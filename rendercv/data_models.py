@@ -1030,7 +1030,7 @@ class CurriculumVitae(RenderCVBaseModel):
         sections: list[SectionBase] = []
         if self.sections_input is not None:
             for title, section_or_entries in self.sections_input.items():
-                title = title.replace("_", " ").title()
+                title = dictionary_key_to_proper_section_title(title)
 
                 entry_type, section_type = get_entry_and_section_type(
                     section_or_entries[0]
@@ -1125,7 +1125,8 @@ class LocaleCatalog(RenderCVBaseModel):
 
         return value
 
-LocaleCatalog() # Initialize the locale catalog with the default values
+
+LocaleCatalog()  # Initialize the locale catalog with the default values
 
 # ======================================================================================
 # ======================================================================================
@@ -1284,6 +1285,34 @@ class RenderCVDataModel(RenderCVBaseModel):
             LocaleCatalog()
 
         return locale_catalog
+
+
+def dictionary_key_to_proper_section_title(key: str) -> str:
+    """Convert a dictionary key to a proper section title.
+
+    Example:
+        ```python
+        dictionary_key_to_proper_section_title("section_title")
+        ```
+        will return:
+        `#!python "Section Title"`
+
+    Args:
+        key (str): The key to convert to a proper section title.
+    Returns:
+        str: The proper section title.
+    """
+    title = key.replace("_", " ")
+    words = title.split(" ")
+
+    # loop through the words and if the word doesn't contain any uppercase letters,
+    # capitalize the first letter of the word. If the word contains uppercase letters,
+    # don't change the word.
+    proper_title = " ".join(
+        word.capitalize() if word.islower() else word for word in words
+    )
+
+    return proper_title
 
 
 def set_or_update_a_value(
