@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.11...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.10...HEAD)
 
 <!--
 ### Added
@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Orcid to ORCID
 -->
 
-## [1.11] - 2024-06-01
+<!-- ## [1.11] - 2024-06-01
 
 > **Full Changelog**: [v1.10...v1.11]
 
@@ -31,7 +31,7 @@ Orcid to ORCID
 
 ### Fixed
 - The error related to the `validation_error_cause` flag of Pydantic has been fixed ([#66](https://github.com/sinaatalay/rendercv/issues/66)).
-- `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)).
+- `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)). -->
 
 
 ## [1.10] - 2024-05-25
@@ -54,7 +54,7 @@ Orcid to ORCID
 ### Added
 - RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/sinaatalay/rendercv/issues/26), [#20](https://github.com/sinaatalay/rendercv/pull/20)). See the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#locale_catalog-section-of-the-yaml-input) for more information.
 - PNG files for each page can be generated now ([#57](https://github.com/sinaatalay/rendercv/issues/57)).
-- `rendercv new` command now generates Markdown and LaTeX source files in addition to the YAML input file so that the default templates can be modified easily.
+- `rendercv new` command now generates Markdown and $\LaTeX$ source files in addition to the YAML input file so that the default templates can be modified easily.
 - A new CLI command has been added, `rendercv create-theme`, to allow users to create their own themes easily.
     ```bash
     rendercv create-theme "customtheme" --based-on "classic"
@@ -82,7 +82,7 @@ Orcid to ORCID
 
 ### Fixed
 - `ExperienceEntry` and `NormalEntry` without location and dates have been fixed in the `engineeringresumes`, `classic`, and `sb2nov` themes.
-- LaTeX templates have been polished.
+- $\LaTeX$ templates have been polished.
 - Bugs related to the special characters in email addresses have been fixed ([#64](https://github.com/sinaatalay/rendercv/issues/64)).
 
 ## [1.8] - 2024-04-16
@@ -194,7 +194,7 @@ Orcid to ORCID
 - Markdown `TextEntry`, where all the paragraphs were concatenated into a single paragraph, has been fixed.
 - Markdown `OneLineEntry`, where all the one-line entries were concatenated into a single line, has been fixed.
 - The `classic` theme's `PublicationEntry`, where blank parentheses were rendered when the `journal` field was not provided, has been fixed.
-- A bug, where an email with special characters caused a LaTeX error, has been fixed.
+- A bug, where an email with special characters caused a $\LaTeX$ error, has been fixed.
 - Unicode error, when `rendercv new` is called with a name with special characters, has been fixed.
 
 

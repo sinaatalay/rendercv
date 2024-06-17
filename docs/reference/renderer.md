@@ -1,3 +1,3 @@
-# Renderer
+# `renderer.py`
 
 ::: rendercv.renderer

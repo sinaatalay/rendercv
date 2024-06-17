@@ -1,53 +1,20 @@
 import tempfile
 import pathlib
-import importlib
-import importlib.machinery
-import importlib.util
 import io
 import os
-import sys
 import shutil
 from typing import Any
 
 import pdfCropMargins
 import ruamel.yaml
 
-# Import rendercv. I import the data_models and renderer modules like this instead
-# of using `import rendercv` because in order for that to work, the current working
-# directory must be the root of the project. To make it convenient for the user, I
-# import the modules using the full path of the files.
+import rendercv.cli as cli
+import rendercv.data_models as dm
+import rendercv.renderer as r
+
 repository_root = pathlib.Path(__file__).parent.parent
 rendercv_path = repository_root / "rendercv"
 image_assets_directory = pathlib.Path(__file__).parent / "assets" / "images"
-
-
-def import_a_module(module_name: str, file_path: pathlib.Path):
-    """Imports a module from a file.
-
-    Args:
-        module_name (str): The name of the module.
-        file_path (pathlib.Path): The path to the file.
-    Returns:
-        Any: The imported module.
-    """
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-    module = importlib.util.module_from_spec(spec)  # type: ignore
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)  # type: ignore
-    return module
-
-
-# Import rendercv:
-rendercv = import_a_module("rendercv", rendercv_path / "__init__.py")
-
-# Import the rendercv.data_models as dm:
-dm = import_a_module("rendercv.data_models", rendercv_path / "data_models.py")
-
-# Import the rendercv.renderer as r:
-r = import_a_module("rendercv.renderer", rendercv_path / "renderer.py")
-
-# Import the rendercv.cli as cli:
-cli = import_a_module("rendercv.cli", rendercv_path / "cli.py")
 
 # The entries below will be pasted into the documentation as YAML, and their
 # corresponding figures will be generated with this script.

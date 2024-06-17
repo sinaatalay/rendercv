@@ -1,3 +1,3 @@
-# CLI
+# `cli.py`
 
 ::: rendercv.cli

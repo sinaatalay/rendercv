@@ -5,8 +5,8 @@ files, Markdown files, HTML files, and PNG files from the data model.
 The $\\LaTeX$ and Markdown files are generated with
 [Jinja2](https://jinja.palletsprojects.com/en/3.1.x/) templates. Then, the $\\LaTeX$
 file is rendered into a PDF with [TinyTeX](https://yihui.org/tinytex/), a $\\LaTeX$
-distribution. The markdown file is rendered into an HTML file with markdown package. The
-PDF files are rendered into PNG files with PyMuPDF/fitz package.
+distribution. The markdown file is rendered into an HTML file with `markdown` package.
+The PDF files are rendered into PNG files with `PyMuPDF`/`fitz` package.
 """
 
 import subprocess
@@ -113,10 +113,13 @@ class LaTeXFile(TemplatedFile):
         environment: jinja2.Environment,
     ):
         latex_file_data_model = copy.deepcopy(data_model)
-        transformed_sections = transform_markdown_sections_to_latex_sections(
-            latex_file_data_model.cv.sections_input
-        )
-        latex_file_data_model.cv.sections_input = transformed_sections
+
+        if latex_file_data_model.cv.sections_input is not None:
+            transformed_sections = transform_markdown_sections_to_latex_sections(
+                latex_file_data_model.cv.sections_input
+            )
+            latex_file_data_model.cv.sections_input = transformed_sections
+
         super().__init__(latex_file_data_model, environment)
 
     def render_templates(self) -> tuple[str, str, list[tuple[str, list[str], str]]]:
@@ -181,47 +184,9 @@ class LaTeXFile(TemplatedFile):
             **kwargs,
         )
 
-        result = self.revert_nested_latex_style_commands(result)
+        result = revert_nested_latex_style_commands(result)
 
         return result
-
-    @classmethod
-    def revert_nested_latex_style_commands(cls, latex_string: str) -> str:
-        """Revert the nested $\\LaTeX$ style commands to allow users to unbold or
-        unitalicize a bold or italicized text.
-
-        Args:
-            latex_string (str): The string to revert the nested $\\LaTeX$ style
-                commands.
-
-        Returns:
-            str: The string with the reverted nested $\\LaTeX$ style commands.
-        """
-        # If there is nested \textbf, \textit, or \underline commands, replace the inner
-        # ones with \textnormal:
-        nested_commands_to_look_for = [
-            "textbf",
-            "textit",
-            "underline",
-        ]
-
-        for command in nested_commands_to_look_for:
-            nested_commands = True
-            while nested_commands:
-                # replace all the inner commands with \textnormal until there are no
-                # nested commands left:
-
-                # find the first nested command:
-                nested_commands = re.findall(
-                    rf"\\{command}{{[^}}]*?(\\{command}{{.*?}})", latex_string
-                )
-
-                # replace the nested command with \textnormal:
-                for nested_command in nested_commands:
-                    new_command = nested_command.replace(command, "textnormal")
-                    latex_string = latex_string.replace(nested_command, new_command)
-
-        return latex_string
 
     def get_latex_code(self) -> str:
         """Get the $\\LaTeX$ code of the file.
@@ -327,6 +292,44 @@ class MarkdownFile(TemplatedFile):
     def generate_markdown_file(self, file_path: pathlib.Path):
         """Write the Markdown code to a file."""
         file_path.write_text(self.get_markdown_code(), encoding="utf-8")
+
+
+def revert_nested_latex_style_commands(latex_string: str) -> str:
+    """Revert the nested $\\LaTeX$ style commands to allow users to unbold or
+    unitalicize a bold or italicized text.
+
+    Args:
+        latex_string (str): The string to revert the nested $\\LaTeX$ style
+            commands.
+
+    Returns:
+        str: The string with the reverted nested $\\LaTeX$ style commands.
+    """
+    # If there is nested \textbf, \textit, or \underline commands, replace the inner
+    # ones with \textnormal:
+    nested_commands_to_look_for = [
+        "textbf",
+        "textit",
+        "underline",
+    ]
+
+    for command in nested_commands_to_look_for:
+        nested_commands = True
+        while nested_commands:
+            # replace all the inner commands with \textnormal until there are no
+            # nested commands left:
+
+            # find the first nested command:
+            nested_commands = re.findall(
+                rf"\\{command}{{[^}}]*?(\\{command}{{.*?}})", latex_string
+            )
+
+            # replace the nested command with \textnormal:
+            for nested_command in nested_commands:
+                new_command = nested_command.replace(command, "textnormal")
+                latex_string = latex_string.replace(nested_command, new_command)
+
+    return latex_string
 
 
 def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
@@ -452,7 +455,7 @@ def markdown_to_latex(markdown_string: str) -> str:
 
 
 def transform_markdown_sections_to_latex_sections(
-    sections: Optional[dict[str, dm.SectionInput]],
+    sections: dict[str, dm.SectionInput],
 ) -> Optional[dict[str, dm.SectionInput]]:
     """
     Recursively loop through sections and convert all the markdown strings (user input
@@ -464,9 +467,6 @@ def transform_markdown_sections_to_latex_sections(
     Returns:
         Optional[dict[str, dm.SectionInput]]: Sections with $\\LaTeX$ strings.
     """
-    if sections is None:
-        return None
-
     for key, value in sections.items():
         # loop through the list and apply markdown_to_latex and escape_latex_characters
         # to each item:
@@ -541,8 +541,10 @@ def make_matched_part_something(
         str: The string with the matched part something.
     """
     if match_str is None:
+        # If the match_str is None, the whole string will be made something:
         value = f"\\{something}{{{value}}}"
     elif match_str in value and match_str != "":
+        # If the match_str is in the value, then make the matched part something:
         value = value.replace(match_str, f"\\{something}{{{match_str}}}")
 
     return value
@@ -723,6 +725,17 @@ def get_an_item_with_a_specific_attribute_value(
 ) -> Any:
     """Get an item from a list of items with a specific attribute value.
 
+    Example:
+        ```python
+        get_an_item_with_a_specific_attribute_value(
+            [item1, item2], # where item1.name = "John" and item2.name = "Jane"
+            "name",
+            "Jane"
+        )
+        ```
+        will return:
+        `item2`
+
     This function can be used as a Jinja2 filter in templates.
 
     Args:
@@ -741,8 +754,8 @@ def get_an_item_with_a_specific_attribute_value(
             else:
                 if getattr(item, attribute) == value:
                     return item
-
-    return None
+    else:
+        return None
 
 
 # Only one Jinja2 environment is needed for all the templates:
@@ -976,6 +989,15 @@ def latex_to_pdf(
             raise OSError(f"TinyTeX doesn't support the platform {sys.platform}!")
 
         executable = executables[sys.platform]
+
+        # check if the executable exists:
+        if not executable.is_file():
+            raise FileNotFoundError(
+                f"The TinyTeX executable ({executable}) doesn't exist! If you are"
+                " cloning the repository, make sure to clone it recursively to get the"
+                " TinyTeX binaries. See the developer guide for more information."
+            )
+
     # Run TinyTeX:
     command = [
         executable,

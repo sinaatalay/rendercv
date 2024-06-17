@@ -33,7 +33,7 @@ This command will create the following files:
 
 -   A directory called `markdown`.
 
-    This directory contains the Markdown source code of RenderCV's default Markdown template. You can update its contents to tweak the Markdown output of the CV.
+    This directory contains the Markdown source code of RenderCV's default Markdown template. You can update its contents to tweak the Markdown and HTML output of the CV.
 
 ### Options of the `new` command
 
@@ -71,12 +71,9 @@ This command will generate a directory called `rendercv_output`, which contains 
 
 -   The CV in PDF format, `Your_Name_CV.pdf`.
 -   $\LaTeX$ source code of the PDF file, `Your_Name_CV.tex`.
--   PNG files for each page of the PDF file.
+-   Images of each page of the PDF file in PNG format, `Your_Name_CV_1.png`, `Your_Name_CV_page_2.png`, etc.
 -   The CV in Markdown format, `Your_Name_CV.md`.
--   An HTML file from the Markdown file, `Your_Name_CV.html`.
-    
-    This file is generated so that it can be opened in a browser and pasted into Grammarly or similar tools for spell and grammar checking.
-
+-   The CV in HTML format, `Your_Name_CV.html`.
 -   Some log and auxiliary files related to the $\LaTeX$ compilation process.
 
 If the theme and Markdown source files are found in the directory, they will override the default built-in theme and Markdown template. You don't need to provide all the source files; you can just provide the ones you want to override.
@@ -176,10 +173,10 @@ Each of these `*.j2.tex` files is $\LaTeX$ code with some Python in it. These fi
 
 The best way to understand how they work is to look at the source code of built-in themes:
 
-- [`classic` templates](../reference/themes/classic.md)
-- [`engineeringresumes` templates](../reference/themes/engineeringresumes.md)
-- [`sb2nov` templates](../reference/themes/sb2nov.md)
-- [`moderncv` templates](../reference/themes/moderncv.md)
+- [templates of the `classic` theme](../reference/themes/classic.md)
+- [templates of the `engineeringresumes` theme](../reference/themes/engineeringresumes.md)
+- [templates of the `sb2nov` theme](../reference/themes/sb2nov.md)
+- [templates of the `moderncv` theme](../reference/themes/moderncv.md)
 
 For example, the content of `ExperienceEntry.j2.tex` for the `moderncv` theme is shown below:
 
@@ -241,33 +238,3 @@ The `create-theme` command has some options:
 ```bash
 rendercv create-theme "mycustomtheme" --based-on "THEME_NAME"
 ```
-
-## Frequently Asked Questions (FAQ)
-
-### Can I use custom fonts?
-
-To be answered.
-
-### Can I add a background image?
-
-To be answered.
-
-### How good is it in terms of parseability by ATS?
-
-To be answered.
-
-### How to add links?
-
-To be answered.
-
-### How to use Greek letters?
-
-To be answered.
-
-### Can I add a profile picture?
-
-To be answered.
-
-### How can I switch the order of `company` and `position` in ExperienceEntry?
-
-To be answered.
