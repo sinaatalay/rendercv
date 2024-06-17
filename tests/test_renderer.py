@@ -77,7 +77,7 @@ def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     ],
 )
 def test_latex_file_revert_nested_latex_style_commands_method(string, expected_string):
-    assert r.LaTeXFile.revert_nested_latex_style_commands(string) == expected_string
+    assert r.revert_nested_latex_style_commands(string) == expected_string
 
 
 def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
