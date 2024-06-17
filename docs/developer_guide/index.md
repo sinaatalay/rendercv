@@ -36,7 +36,7 @@ python -m venv .venv
 
 6. Install the dependencies.
 ```bash
-pip install --editable .[docs,tests,dev]
+pip install --editable ".[docs,tests,dev]"
 ```
 
 ## How RenderCV works?
