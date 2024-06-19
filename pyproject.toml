@@ -9,14 +9,20 @@
 # called building.
 
 # Python packages need to be built too, even though they are not compiled (mostly). At
-# the end of the building process, a source Distribution Package, `sdist`, is created.
-# This sdist is a compressed archive of the source code, and it is ready to be uploaded
-# to PyPI. See https://packaging.python.org/en/latest/tutorials/packaging-projects/
+# the end of the building process, a source distribution package (sdist) and a built
+# distribution package (in Wheel format) are created.
+# See https://packaging.python.org/en/latest/tutorials/packaging-projects/ for details.
+# Built Distribution:
+# https://packaging.python.org/en/latest/glossary/#term-Built-Distribution
+# Source Distribution:
+# https://packaging.python.org/en/latest/glossary/#term-Source-Distribution-or-sdist
 
 # To build RenderCV, we need to specify which build package we want to use. There are
 # many build packages like `setuptools`, `flit`, `poetry`, `hatchling`, etc. We will use
 # `hatchling`.
-requires = ["hatchling==1.21.1"] # Our dependency to build RenderCV
+requires = [
+    "hatchling==1.21.1",
+] # List of packages that are needed to build RenderCV
 
 # Python has a standard object format called build-backend object. Python standard asks
 # this object to have some specific methods that do a specific job. For example, it
@@ -25,34 +31,42 @@ requires = ["hatchling==1.21.1"] # Our dependency to build RenderCV
 # See https://peps.python.org/pep-0517/
 build-backend = "hatchling.build" # A build-backend object for building RenderCV
 
+[tool.hatch.build.targets.sdist]
+# In the sdist, what do we want to exclude? 
+exclude = [
+    "rendercv/tinytex-release/download_and_minimize_tinytex_for_rendercv.py",
+    "rendercv/tinytex-release/.gitignore",
+    "rendercv/tinytex-release/.git",
+    ".github/",
+    ".devcontainer/",
+    # GIF files are too big:
+    "*.gif",
+]
+
+[tool.hatch.build.targets.wheel]
+# In wheel, what do we want to include and exclude?
+packages = ["rendercv"]
+exclude = [
+    "rendercv/tinytex-release/download_and_minimize_tinytex_for_rendercv.py",
+    "rendercv/tinytex-release/.gitignore",
+    "rendercv/tinytex-release/.git",
+    "rendercv/tinytex-release/README.md",
+]
+
 [tool.hatch.version]
 # We will use hatchling to generate the version number of RenderCV. It will go to the
 # `path` below and get the version number from there.
 # See https://hatch.pypa.io/latest/version/
 path = "rendercv/__init__.py"
 
-[tool.hatch.build]
-# In the sdist package, what do we want to include and exclude? For example, we don't
-# want to include `docs` and `tests` because they are not needed to run RenderCV.
-include = ["/README.md", "/rendercv"]
-
-# We use tinytex-release as a git submodule, so it's a seperate repository. We don't
-# want to ship all the files from that repository with RenderCV.
-exclude = [
-    "/rendercv/tinytex-release/download_and_minimize_tinytex_for_rendercv.py",
-    "/rendercv/tinytex-release/.gitignore",
-]
-
 [project]
 # Under the `project` section, we specify the metadata about RenderCV.
 name = 'rendercv'
 description = 'A LaTeX CV/resume framework'
-dynamic = [
-    "version",
-] # We will use hatchling to generate the version number                                         
 authors = [{ name = 'Sina Atalay', email = 'dev@atalay.biz' }]
-requires-python = '>=3.10'
+license = "MIT"
 readme = "README.md"
+requires-python = '>=3.10'
 # RenderCV depends on these packages. They will be installed automatically when RenderCV
 # is installed:
 dependencies = [
@@ -78,12 +92,16 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ] # go to https://pypi.org/classifiers/ to see all classifiers
+dynamic = [
+    "version",
+] # We will use hatchling to generate the version number      
 
 [project.urls]
 # Here, we can specify the URLs related to RenderCV. They will be listed under the
 # "Project links" section in PyPI. See https://pypi.org/project/rendercv/
-Documentation = 'https://docs.rendercv.com'
 Source = 'https://github.com/sinaatalay/rendercv'
+Documentation = 'https://docs.rendercv.com'
+Changelog = 'https://docs.rendercv.com/changelog'
 
 [project.scripts]
 # Here, we specify the entry points of RenderCV.
@@ -91,34 +109,88 @@ Source = 'https://github.com/sinaatalay/rendercv'
 # See https://hatch.pypa.io/latest/config/metadata/#cli
 
 # The key and value below mean this: If someone installs RenderCV, then running
-# `rendercv` in the terminal will run the function `app` in the module `__main__` in the
+# `rendercv` in the terminal will run the function `app` in the module `cli` in the
 # package `rendercv`.
-rendercv = 'rendercv.__main__:app'
+rendercv = 'rendercv.cli:app'
 
-[project.optional-dependencies]
-# RenderCV depends on other packages. However, some of these packages are not required
-# to run RenderCV, but they are required to develop RenderCV. For example, to build the
-# documentation of RenderCV, we need to install some packages. However, not all the
-# users of RenderCV will build the documentation, so these are optional dependencies.
+# ======================================================================================
+# Virtual Environments Below ===========================================================
+# ======================================================================================
 
-docs = [
+# RenderCV depends on other packages, which are listed under the `project` section as
+# `dependencies`. However, for the development of RenderCV, we need some other packages
+# too (like `black`, `ruff`, `mkdocs`, etc.). We need these packages in our virtual
+# environments and we handle the environments with `hatchling`.
+
+# There will be three virtual environments for RenderCV: `default`, `docs`, and `test`.
+
+# `default` is the default virtual environment needed to develop RenderCV.
+# `docs` is the virtual environment needed to build the documentation of RenderCV.
+# `test` is the virtual environment needed to run the tests of RenderCV.
+
+[tool.hatch.envs.default]
+# Dependencies to be installed in the `default` virtual environment.
+dependencies = [
+    "ruff==0.4.5",   # to lint the code
+    "black==24.4.2", # to format the code
+]
+path = ".venv"
+[tool.hatch.envs.default.scripts]
+# Hatch allows us to define scripts that can be run in the activated virtual environment
+# with `hatch run ENV_NAME:SCRIPT_NAME`.
+# Format all the code in the `rendercv` package with `black`:
+format = "black rendercv" # hatch run format
+# Lint the code in the `rendercv` package with `ruff`:
+lint = "ruff check rendercv" # hatch run lint
+
+
+[tool.hatch.envs.docs]
+# Dependencies to be installed in the `docs` virtual environment.
+dependencies = [
     "mkdocs-material==9.5.24",     # to build docs
     "mkdocstrings-python==1.10.3", # to build reference documentation from docstrings
     "pdfCropMargins==2.1.3",       # to generate entry figures for the documentation
     "pillow==10.3.0",              # lock the dependency of pdfCropMargins
     "mkdocs-macros-plugin==1.0.5", # to be able to have dynamic content in the documentation
 ]
-tests = [
+path = ".venv-docs"
+[tool.hatch.envs.docs.scripts]
+# Build the documentation with `mkdocs`:
+build = "mkdocs build --clean --strict" # hatch run docs:build
+# Start the development server for the documentation with `mkdocs`:
+serve = "mkdocs serve" # hatch run docs:serve
+# Deploy the documentation to docs.rendercv.com with `mkdocs`:
+deploy = "mkdocs gh-deploy --force" # hatch run docs:deploy
+# Update schema.json:
+update-schema = "python docs/update_schema.py" # hatch run docs:update-schema
+# Update `examples` folder:
+update-examples = "python docs/update_examples.py" # hatch run docs:update-examples
+# Update entry figures in "Structure of the YAML File" page:
+update-entry-figures = "python docs/update_entry_figures.py" # hatch run docs:update-entry-figures
+
+[tool.hatch.envs.test]
+# Dependencies to be installed in the `test` virtual environment.
+dependencies = [
     "pytest==8.2.1",        # to run the tests
     "coverage==7.5.1",      # to generate coverage reports
     "time-machine==2.14.1", # to select an arbitrary date and time for testing
     "pypdf==4.2.0",         # to read PDF files
 ]
-dev = [
-    "ruff==0.4.5",   # to lint the code
-    "black==24.4.2", # to format the code
-]
+path = ".venv-test"
+# [[tool.hatch.envs.test.matrix]]
+# # We can specify the Python versions that we want to test RenderCV with. Hatch will
+# # create three different virtual environments for each Python version.
+# # They will be named as test.py3.10, test.py3.11, and test.py3.12.
+# python = ["3.10", "3.11", "3.12"]
+[tool.hatch.envs.test.scripts]
+# Run the tests:
+run = "pytest" # hatch run test:run  
+# Run the tests and generate the coverage report as HTML:
+run-and-report = "coverage run -m pytest && coverage report && coverage html --show-contexts" # hatch run test:coverage
 
+# ======================================================================================
+# Virtual Environments Above ===========================================================
+# ======================================================================================
 
 # RenderCV uses different tools to check the code quality, format the code, build the
 # documentation, build the package, etc. We can specify the settings for these tools in
@@ -126,18 +198,29 @@ dev = [
 # these tools easily. Generally, popular IDEs grab these settings from `pyproject.toml`
 # file automatically.
 
+[tool.ruff]
+exclude = [
+    "rendercv/tinytex-release/download_and_minimize_tinytex_for_rendercv.py",
+]
+output-format = "github"
+
 [tool.black]
 line-length = 88 # maximum line length
 preview = true # to allow enable-unstable-feature
 enable-unstable-feature = [
     "string_processing",
-] # breaking strings into multiple lines
+] # to break strings into multiple lines
 
 [tool.coverage.run]
-source = ['rendercv']
-# use relative paths instead of absolute paths, this is useful for combining coverage
+source = ['rendercv'] # The source to measure during execution
+
+# Use relative paths instead of absolute paths, this is useful for combining coverage
 # reports from different OSes:
 relative_files = true
 
-# don't include jinja templates in the coverage report:
+[tool.coverage.report]
+# Don't include jinja templates in the coverage report:
 omit = ["*.j2.*", "rendercv/__main__.py"]
+
+# Don't include these lines in the coverage report:
+exclude_lines = ["if __name__ == .__main__.:"]
