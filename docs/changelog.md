@@ -7,31 +7,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.10...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.11...HEAD)
 
 <!--
 ### Added
 ### Changed
 ### Fixed
 ### Removed
-Orcid to ORCID
 -->
 
-<!-- ## [1.11] - 2024-06-01
+## [1.11] - 2024-06-19
 
 > **Full Changelog**: [v1.10...v1.11]
 
 ### Added
-- CLI options now have short versions. For example, `--output-folder-name` can be used as `-o` ([#91](https://github.com/sinaatalay/rendercv/issues/81)). Run `rendercv --help`, `rendercv render --help`, `rendercv new --help`, or `rendercv create-theme --help` to see the short versions of the options.
+- CLI options now have short versions. See the [CLI documentation](https://docs.rendercv.com/user_guide/cli/) for more information.
 - CLI now notifies the user when a new version is available ([#89](https://github.com/sinaatalay/rendercv/issues/89)).
 - `Google Scholar` has been added as a social network type ([#85](https://github.com/sinaatalay/rendercv/issues/85)).
+- Two new design options have been added to the `classic`, `sb2nov`, and `engineeringresumes` themes: `seperator_between_connections` and `use_icons_for_connections`.
 
 ### Changed
 - The punctuation of "ORCID" has been changed to uppercase, which was previously "Orcid" ([#90](https://github.com/sinaatalay/rendercv/issues/90)).
+- HTML output has been improved with better CSS ([#96](https://github.com/sinaatalay/rendercv/discussions/96)).
+- More complex section titles are now supported ([#106](https://github.com/sinaatalay/rendercv/issues/106)).
+- Month abbreviations are not using dots anymore.
+- Date ranges are now displayed as "Month Year - Month Year" instead of "Month Year to Month Year."
+- DOI validator in the `PublicationEntry` has been disabled.
+- `url` field has been added to the `PublicationEntry` as an alternative to the `doi` field ([#105](https://github.com/sinaatalay/rendercv/issues/105))
+- `YouTube` username should be given without `@` now.
 
 ### Fixed
 - The error related to the `validation_error_cause` flag of Pydantic has been fixed ([#66](https://github.com/sinaatalay/rendercv/issues/66)).
-- `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)). -->
+- `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)).
+
+### Removed
+- `Twitter` has been removed as a social network type ([#109](https://github.com/sinaatalay/rendercv/issues/109))
 
 
 ## [1.10] - 2024-05-25
