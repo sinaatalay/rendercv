@@ -297,7 +297,6 @@ def rendercv_filled_curriculum_vitae_data_model(
             dm.SocialNetwork(network="ORCID", username="0000-0000-0000-0000"),
             dm.SocialNetwork(network="Google Scholar", username="F8IyYrQAAAAJ"),
             dm.SocialNetwork(network="Mastodon", username="@johndoe@example.com"),
-            dm.SocialNetwork(network="Twitter", username="johndoe"),
             dm.SocialNetwork(network="StackOverflow", username="12323/johndoe"),
             dm.SocialNetwork(network="GitLab", username="johndoe"),
             dm.SocialNetwork(network="ResearchGate", username="johndoe"),

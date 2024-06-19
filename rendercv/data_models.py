@@ -809,7 +809,6 @@ SocialNetworkName = Literal[
     "Instagram",
     "ORCID",
     "Mastodon",
-    "Twitter",
     "StackOverflow",
     "ResearchGate",
     "YouTube",
@@ -888,7 +887,6 @@ class SocialNetwork(RenderCVBaseModel):
                 "GitLab": "https://gitlab.com/",
                 "Instagram": "https://instagram.com/",
                 "ORCID": "https://orcid.org/",
-                "Twitter": "https://twitter.com/",
                 "StackOverflow": "https://stackoverflow.com/users/",
                 "ResearchGate": "https://researchgate.net/profile/",
                 "YouTube": "https://youtube.com/@",
@@ -1000,7 +998,6 @@ class CurriculumVitae(RenderCVBaseModel):
                 "Mastodon": "\\faMastodon",
                 "ORCID": "\\faOrcid",
                 "StackOverflow": "\\faStackOverflow",
-                "Twitter": "\\faTwitter",
                 "ResearchGate": "\\faResearchgate",
                 "YouTube": "\\faYoutube",
                 "Google Scholar": "\\faGraduationCap",
@@ -1459,7 +1456,7 @@ def get_a_sample_data_model(
     name = name.encode().decode("unicode-escape")
 
     sections = {
-        "welcome_to_rendercv!": [
+        "welcome_to_RenderCV!": [
             (
                 "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX-based"
                 " CV/resume framework. It allows you to create a high-quality CV or"
