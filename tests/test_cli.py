@@ -426,11 +426,15 @@ def test_render_command_with_invalid_arguments(
 def test_new_command(tmp_path):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "Jahn Doe"])
+    result = runner.invoke(cli.app, ["new", "Jahn Doe"])
 
     markdown_source_files_path = tmp_path / "markdown"
     theme_source_files_path = tmp_path / "classic"
     input_file_path = tmp_path / "Jahn_Doe_CV.yaml"
+
+    assert "Jahn_Doe_CV.yaml" in result.stdout
+    assert "markdown" in result.stdout
+    assert "classic" in result.stdout
 
     assert markdown_source_files_path.exists()
     assert theme_source_files_path.exists()

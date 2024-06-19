@@ -842,6 +842,7 @@ def cli_command_new(
             dm.create_a_sample_yaml_input_file(
                 input_file_path, name=full_name, theme=theme
             )
+            created_files_and_folders.append(input_file_path.name)
         except ValueError as e:
             error(e)
 
