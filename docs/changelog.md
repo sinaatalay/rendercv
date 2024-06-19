@@ -41,7 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)).
 
 ### Removed
-- `Twitter` has been removed as a social network type ([#109](https://github.com/sinaatalay/rendercv/issues/109))
+- `Twitter` has been removed as a social network type ([#109](https://github.com/sinaatalay/rendercv/issues/109)).
 
 
 ## [1.10] - 2024-05-25
