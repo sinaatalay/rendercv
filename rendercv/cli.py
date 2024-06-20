@@ -844,6 +844,7 @@ def cli_command_new(
             )
             created_files_and_folders.append(input_file_path.name)
         except ValueError as e:
+            # if the theme is not in the available themes, then raise an error
             error(e)
 
     if not dont_create_theme_source_files:
