@@ -242,10 +242,11 @@ class ThemeOptions(pydantic.BaseModel):
         default="NAME - Page PAGE_NUMBER of TOTAL_PAGES",
         title="Page Numbering Style",
         description=(
-            "The style of the page numbering. The following placeholders can be used:"
-            "\n- NAME: The name of the person\n- PAGE_NUMBER: The current page number"
-            "\n- TOTAL_PAGES: The total number of pages\nThe default value is"
-            " NAME - Page PAGE_NUMBER of TOTAL_PAGES."
+            "The style of the page numbering. The following placeholders can be"
+            " used:\n- NAME: The name of the person\n- PAGE_NUMBER: The current page"
+            " number\n- TOTAL_PAGES: The total number of pages\n- TODAY: Today's month"
+            " and year (April 2024)\nThe default value is NAME - Page PAGE_NUMBER of"
+            " TOTAL_PAGES."
         ),
     )
     disable_last_updated_date: bool = pydantic.Field(
