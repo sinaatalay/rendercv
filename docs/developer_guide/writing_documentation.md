@@ -21,7 +21,7 @@ Run the following command to update the `examples` folder.
 hatch run docs:update-examples
 ```
 
-The [`deploy-docs`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/deploy-docs.yaml) workflow also updates [`examples`](https://github.com/sinaatalay/rendercv/tree/main/examples) folder after each push to the `main` branch.
+Once a new release is created on GitHub, the [`publish.yaml`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/publish.yaml) workflow will be automatically triggered, and the `examples` folder will be updated to the most recent version.
 
 ## Updating figures of the entry types in the "[Structure of the YAML Input File](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/)"
 
@@ -35,7 +35,7 @@ Run the following command to update the figures.
 hatch run docs:update-entry-figures
 ```
 
-The [`deploy-docs`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/deploy-docs.yaml) workflow also updates the figures after each push to the `main` branch.
+Once a new release is created on GitHub, the [`publish.yaml`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/publish.yaml) workflow will be automatically triggered, and the figures will be updated to the most recent version.
 
 ## Updating the JSON Schema ([`schema.json`](https://github.com/sinaatalay/rendercv/blob/main/schema.json))
 
@@ -49,4 +49,4 @@ Run the following command to update the JSON Schema.
 hatch run docs:update-schema
 ```
 
-The [`deploy-docs`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/deploy-docs.yaml) workflow also updates [`schema.json`](https://github.com/sinaatalay/rendercv/blob/main/schema.json) after each push to the `main` branch.
+Once a new release is created on GitHub, the [`publish.yaml`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/publish.yaml) workflow will be automatically triggered, and `schema.json` will be updated to the most recent version.
