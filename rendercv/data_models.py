@@ -1460,7 +1460,7 @@ def get_a_sample_data_model(
             (
                 "[RenderCV](https://github.com/sinaatalay/rendercv) is a LaTeX-based"
                 " CV/resume framework. It allows you to create a high-quality CV or"
-                " resume as a PDF file from a YAML file, with **full Markdown syntax"
+                " resume as a PDF file from a YAML file, with **Markdown syntax"
                 " support** and **complete control over the LaTeX code**."
             ),
             (

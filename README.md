@@ -11,7 +11,7 @@
 
 </div>
 
-RenderCV allows you to create a high-quality CV as a PDF from a YAML input file. It supports full Markdown syntax and gives you complete control over the $\LaTeX$ code.
+RenderCV allows you to create a high-quality CV as a PDF from a YAML input file. It supports Markdown syntax and gives you complete control over the $\LaTeX$ code.
 
 The primary motivation behind the RenderCV is to provide people with a concrete framework that allows
 

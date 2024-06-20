@@ -21,6 +21,8 @@ The source code is thoroughly documented and well-commented, making it an enjoya
     -  `docs`: For building the documentation.
     -  `test`: For testing RenderCV.
     
+    Create the virtual environments with the following commands.
+    
     ```bash
     hatch env create default
     hatch env create docs
