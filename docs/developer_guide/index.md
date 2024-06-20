@@ -26,6 +26,7 @@ The source code is thoroughly documented and well-commented, making it an enjoya
     hatch env create docs
     hatch env create test
     ```
+
 6. To use the virtual environments, either
 
     - Activate one of the virtual environments with the following command.
@@ -69,12 +70,12 @@ flowchart TD
 These commands are defined in the [`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml) file.
 
 - Format the code with [Black](https://github.com/psf/black):
-  ```bash
-  hatch run format
-  ```
+    ```bash
+    hatch run default:format
+    ```
 - Lint the code with [Ruff](https://github.com/astral-sh/ruff):
     ```bash
-    hatch run lint
+    hatch run default:lint
     ```
 - Run the tests:
     ```bash
