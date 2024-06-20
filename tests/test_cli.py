@@ -460,9 +460,11 @@ def test_new_command_with_invalid_theme(tmp_path):
 def test_new_command_with_dont_create_files(tmp_path, option, folder_name):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
-    runner.invoke(cli.app, ["new", "Jahn Doe", option])
+    result = runner.invoke(cli.app, ["new", "Jahn Doe", option])
 
     source_files_path = tmp_path / folder_name
+
+    assert folder_name not in result.stdout
 
     assert not source_files_path.exists()
 
