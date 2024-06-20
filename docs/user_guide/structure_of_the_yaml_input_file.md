@@ -289,6 +289,19 @@ locale_catalog:
     - Oct
     - Nov
     - Dec
+  full_names_of_months: # translation of the full month names
+    - January
+    - February
+    - March
+    - April
+    - May
+    - June
+    - July
+    - August
+    - September
+    - October
+    - November
+    - December
   month: month      # translation of the word "month"
   months: months    # translation of the word "months"
   year: year        # translation of the word "year"

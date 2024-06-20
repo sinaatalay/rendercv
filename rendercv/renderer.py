@@ -87,7 +87,7 @@ class TemplatedFile:
             cv=self.cv,
             design=self.design,
             entry=entry,
-            today=Date.today().strftime("%B %Y"),
+            today=dm.format_date(Date.today(), use_full_name=True),
             **kwargs,
         )
 

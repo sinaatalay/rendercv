@@ -690,6 +690,20 @@ def test_locale_catalog():
             "11",
             "12",
         ],
+        full_names_of_months=[
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+        ],
     )
 
     assert dm.locale_catalog == data_model.locale_catalog.model_dump()

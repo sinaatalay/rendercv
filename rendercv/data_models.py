@@ -75,7 +75,7 @@ def get_date_object(date: str | int) -> Date:
     return date_object
 
 
-def format_date(date: Date) -> str:
+def format_date(date: Date, use_full_name: bool = False) -> str:
     """Formats a `Date` object to a string in the following format: "Jan. 2021".
 
     Example:
@@ -88,16 +88,21 @@ def format_date(date: Date) -> str:
 
     Args:
         date (Date): The date to format.
+        use_full_name (bool, optional): If `True`, the full name of the month will be
+            used. Defaults to `False`.
 
     Returns:
         str: The formatted date.
     """
     # Month abbreviations,
     # taken from: https://web.library.yale.edu/cataloging/months
-    abbreviations_of_months = locale_catalog["abbreviations_for_months"]
+    if use_full_name:
+        month_names = locale_catalog["full_names_of_months"]
+    else:
+        month_names = locale_catalog["abbreviations_for_months"]
 
     month = int(date.strftime("%m"))
-    month_abbreviation = abbreviations_of_months[month - 1]
+    month_abbreviation = month_names[month - 1]
     year = date.strftime(format="%Y")
     date_string = f"{month_abbreviation} {year}"
 
@@ -1110,9 +1115,37 @@ class LocaleCatalog(RenderCVBaseModel):
         description="Abbreviations of the months in the locale.",
         validate_default=True,  # to initialize the locale catalog with the default values
     )
+    full_names_of_months: Optional[
+        Annotated[list[str], at.Len(min_length=12, max_length=12)]
+    ] = pydantic.Field(
+        default=[
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ],
+        title="Full Names of Months",
+        description="Full names of the months in the locale.",
+        validate_default=True,  # to initialize the locale catalog with the default values
+    )
 
     @pydantic.field_validator(
-        "month", "months", "year", "years", "present", "abbreviations_for_months", "to"
+        "month",
+        "months",
+        "year",
+        "years",
+        "present",
+        "abbreviations_for_months",
+        "to",
+        "full_names_of_months",
     )
     @classmethod
     def update_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
