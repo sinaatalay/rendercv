@@ -8,6 +8,7 @@ hatch run docs:serve
 
 Once the changes are pushed to the `main` branch, the [`deploy-docs`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/deploy-docs.yaml) workflow will be automatically triggered, and [docs.rendercv.com](https://docs.rendercv.com/) will be updated to the most recent version.
 
+
 ## Updating the [`examples`](https://github.com/sinaatalay/rendercv/tree/main/examples) folder
 
 The `examples` folder includes example YAML files for all the built-in themes, along with their corresponding PDF outputs. Also, there are PNG files of the first pages of each theme in [`docs/assets/images`](https://github.com/sinaatalay/rendercv/tree/main/docs/assets/images). These examples are shown in [`README.md`](https://github.com/sinaatalay/rendercv/blob/main/README.md).
@@ -19,6 +20,8 @@ Run the following command to update the `examples` folder.
 ```bash
 hatch run docs:update-examples
 ```
+
+The [`deploy-docs`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/deploy-docs.yaml) workflow also updates [`examples`](https://github.com/sinaatalay/rendercv/tree/main/examples) folder after each push to the `main` branch.
 
 ## Updating figures of the entry types in the "[Structure of the YAML Input File](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/)"
 
@@ -32,7 +35,9 @@ Run the following command to update the figures.
 hatch run docs:update-entry-figures
 ```
 
-## Updating the [JSON Schema](https://github.com/sinaatalay/rendercv/blob/main/schema.json)
+The [`deploy-docs`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/deploy-docs.yaml) workflow also updates the figures after each push to the `main` branch.
+
+## Updating the JSON Schema ([`schema.json`](https://github.com/sinaatalay/rendercv/blob/main/schema.json))
 
 The schema of RenderCV's input file is defined using [Pydantic](https://docs.pydantic.dev/latest/). Pydantic allows automatic creation and customization of JSON schemas from Pydantic models.
 
@@ -43,3 +48,5 @@ Run the following command to update the JSON Schema.
 ```bash
 hatch run docs:update-schema
 ```
+
+The [`deploy-docs`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/deploy-docs.yaml) workflow also updates [`schema.json`](https://github.com/sinaatalay/rendercv/blob/main/schema.json) after each push to the `main` branch.
