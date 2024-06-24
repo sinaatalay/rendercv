@@ -1,14 +1,14 @@
-from datetime import date as Date
+import io
 import json
 import os
-import io
 import re
 import shutil
+from datetime import date as Date
 
 import pydantic
 import pytest
-import time_machine
 import ruamel.yaml
+import time_machine
 
 from rendercv import data_models as dm
 

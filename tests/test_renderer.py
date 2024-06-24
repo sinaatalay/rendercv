@@ -1,15 +1,15 @@
-import math
-import shutil
 import copy
-import pathlib
+import math
 import os
+import pathlib
+import shutil
 
-import pytest
 import jinja2
+import pytest
 import time_machine
 
-from rendercv import renderer as r
 from rendercv import data_models as dm
+from rendercv import renderer as r
 
 folder_name_dictionary = {
     "rendercv_empty_curriculum_vitae_data_model": "empty",
@@ -97,12 +97,12 @@ def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
         ("##%%&&~~", "\\#\\#\\%\\%\\&\\&\\textasciitilde{}\\textasciitilde{}"),
         (
             (
-                "[link_test](you shouldn't escape whatever is in here & % # ~) [second"
+                "[link_test#](you shouldn't escape whatever is in here & % # ~) [second"
                 " link](https://myurl.com)"
             ),
             (
-                "[link\\_test](you shouldn't escape whatever is in here & % # ~) [second"
-                " link](https://myurl.com)"
+                "[link\\_test\\#](you shouldn't escape whatever is in here & % # ~)"
+                " [second link](https://myurl.com)"
             ),
         ),
         ("$a=5_4^3$", "$a=5_4^3$"),

@@ -1,22 +1,22 @@
 """This module contains fixtures and other helpful functions for the tests."""
 
-import pathlib
 import copy
-import typing
-import itertools
 import filecmp
-from typing import Optional
+import itertools
 import os
+import pathlib
 import shutil
+import typing
+from typing import Optional
 
-import pypdf
 import jinja2
-import pytest
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
+import pypdf
+import pytest
 
-from rendercv import data_models as dm
 import rendercv.renderer as r
+from rendercv import data_models as dm
 
 # RenderCV is being tested by comparing the output to reference files. Therefore,
 # reference files should be updated when RenderCV is updated in a way that changes

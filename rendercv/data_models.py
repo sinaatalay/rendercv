@@ -13,27 +13,27 @@ has provided a valid RenderCV input. This is achieved using
 during the data classes' initialization.
 """
 
-from datetime import date as Date
-from typing import Literal, Any, Type, Annotated, Optional, get_args
-import importlib
-import importlib.util
-import importlib.machinery
 import functools
-import json
-import re
-import pathlib
-import warnings
-import annotated_types as at
+import importlib
+import importlib.machinery
+import importlib.util
 import io
+import json
+import pathlib
+import re
+import warnings
+from datetime import date as Date
+from typing import Annotated, Any, Literal, Optional, Type, get_args
 
+import annotated_types as at
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import ruamel.yaml
 
 from .themes.classic import ClassicThemeOptions
+from .themes.engineeringresumes import EngineeringresumesThemeOptions
 from .themes.moderncv import ModerncvThemeOptions
 from .themes.sb2nov import Sb2novThemeOptions
-from .themes.engineeringresumes import EngineeringresumesThemeOptions
 
 # Disable Pydantic warnings:
 warnings.filterwarnings("ignore")

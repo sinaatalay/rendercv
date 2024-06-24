@@ -2,7 +2,7 @@ from typing import Literal
 
 import pydantic
 
-from .. import ThemeOptions, LaTeXDimension
+from .. import LaTeXDimension, ThemeOptions
 
 
 class Sb2novThemeOptions(ThemeOptions):

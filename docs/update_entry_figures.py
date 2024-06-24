@@ -5,14 +5,14 @@ example entries found in
 are coming from this script.
 """
 
-import tempfile
-import pathlib
 import io
+import pathlib
 import shutil
+import tempfile
 from typing import Any
 
-import ruamel.yaml
 import pdfCropMargins
+import ruamel.yaml
 
 import rendercv.data_models as dm
 import rendercv.renderer as r

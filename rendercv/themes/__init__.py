@@ -3,7 +3,7 @@ are encouraged to inherit from these data models and add their own options, to a
 code duplication.
 """
 
-from typing import Literal, Annotated
+from typing import Annotated, Literal
 
 import pydantic
 import pydantic_extra_types.color as pydantic_color

@@ -2,7 +2,7 @@ from typing import Literal
 
 import pydantic
 
-from .. import ThemeOptions, EntryAreaMargins, Margins, LaTeXDimension
+from .. import EntryAreaMargins, LaTeXDimension, Margins, ThemeOptions
 
 
 class EntryAreaMarginsForClassic(EntryAreaMargins):

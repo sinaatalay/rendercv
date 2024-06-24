@@ -4,12 +4,12 @@ import pydantic
 import pydantic_extra_types.color as pydantic_color
 
 from .. import (
-    ThemeOptions,
     EntryAreaMargins,
-    HighlightsAreaMargins,
     HeaderMargins,
-    Margins,
+    HighlightsAreaMargins,
     LaTeXDimension,
+    Margins,
+    ThemeOptions,
 )
 
 

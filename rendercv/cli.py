@@ -5,32 +5,31 @@ This module contains the functions and classes that handle the command line inte
 output.
 """
 
-import json
-import urllib.request
-import pathlib
-from typing import Annotated, Callable, Optional
-import re
 import functools
-import shutil
+import json
 import os
+import pathlib
+import re
+import shutil
+import urllib.request
+from typing import Annotated, Callable, Optional
 
-from rich import print
+import jinja2
+import pydantic
 import rich.console
-import rich.panel
 import rich.live
+import rich.panel
+import rich.progress
 import rich.table
 import rich.text
-import rich.progress
-import pydantic
 import ruamel.yaml
 import ruamel.yaml.parser
 import typer
-import jinja2
+from rich import print
 
+from . import __version__
 from . import data_models as dm
 from . import renderer as r
-from . import __version__
-
 
 app = typer.Typer(
     rich_markup_mode="rich",

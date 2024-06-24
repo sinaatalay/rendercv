@@ -5,8 +5,8 @@ import sys
 from datetime import date as Date
 
 import pydantic
-import ruamel.yaml
 import pytest
+import ruamel.yaml
 import typer.testing
 
 import rendercv.cli as cli
@@ -580,8 +580,8 @@ def test_get_latest_version_number_from_pypi():
 
 def test_if_welcome_prints_new_version_available(monkeypatch):
     monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "99999")
-    import io
     import contextlib
+    import io
 
     with contextlib.redirect_stdout(io.StringIO()) as f:
         cli.welcome()

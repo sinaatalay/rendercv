@@ -9,20 +9,19 @@ distribution. The markdown file is rendered into an HTML file with `markdown` pa
 The PDF files are rendered into PNG files with `PyMuPDF`/`fitz` package.
 """
 
-import subprocess
-import re
-import pathlib
-import importlib.resources
-import shutil
-import sys
 import copy
+import importlib.resources
+import pathlib
+import re
+import shutil
+import subprocess
+import sys
 from datetime import date as Date
-from typing import Optional, Any
+from typing import Any, Optional
 
+import fitz
 import jinja2
 import markdown
-import fitz
-
 
 from . import data_models as dm
 
@@ -386,6 +385,7 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
     for i, link in enumerate(links):
         placeholder = link[0]
         escaped_placeholder = placeholder.translate(strict_translation_map)
+        escaped_placeholder = escaped_placeholder.translate(translation_map)
         url = link[1]
 
         original_link = f"[{placeholder}]({url})"
