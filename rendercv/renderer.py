@@ -362,28 +362,45 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
         "~": "\\textasciitilde{}",
     }
 
+    strict_escape_characters = {
+        "$": "\\$",
+        "_": "\\_",
+        "^": "\\textasciicircum{}",
+    }
+
     if strict:
         # To allow math input, users can use this function with strict = False
-        escape_characters["$"] = "\\$"
-        escape_characters["_"] = "\\_"
-        escape_characters["^"] = "\\textasciicircum{}"
+        escape_characters.update(strict_escape_characters)
 
-    # Don't escape links as hyperref package will do it automatically:
+    translation_map = str.maketrans(escape_characters)
+    strict_translation_map = str.maketrans(strict_escape_characters)
+
+    # Don't escape urls as hyperref package will do it automatically:
+    # Also always escape link placeholders strictly (as we don't expect any math in
+    # them):
     # Find all the links in the sentence:
-    links = re.findall(r"\[.*?\]\(.*?\)", latex_string)
+    links = re.findall(r"\[(.*?)\]\((.*?)\)", latex_string)
 
-    # Replace the links with a placeholder:
+    # Replace the links with a dummy string and save links with escaped characters:
+    new_links = []
     for i, link in enumerate(links):
-        latex_string = latex_string.replace(link, f"!!-link{i}-!!")
+        placeholder = link[0]
+        escaped_placeholder = placeholder.translate(strict_translation_map)
+        url = link[1]
+
+        original_link = f"[{placeholder}]({url})"
+        latex_string = latex_string.replace(original_link, f"!!-link{i}-!!")
+
+        new_link = f"[{escaped_placeholder}]({url})"
+        new_links.append(new_link)
 
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
-    translation_map = str.maketrans(escape_characters)
     latex_string = latex_string.translate(translation_map)
 
-    # Replace the links with the original links:
-    for i, link in enumerate(links):
-        latex_string = latex_string.replace(f"!!-link{i}-!!", link)
+    # Replace !!-link{i}-!!" with the original urls:
+    for i, new_link in enumerate(new_links):
+        latex_string = latex_string.replace(f"!!-link{i}-!!", new_link)
 
     return latex_string
 
