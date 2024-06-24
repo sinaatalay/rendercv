@@ -79,6 +79,10 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run default:lint
     ```
+- Sort the imports with [isort](https://github.com/timothycrosley/isort/):
+    ```bash
+    hatch run default:sort-imports
+    ```
 - Run the tests:
     ```bash
     hatch run test:run
