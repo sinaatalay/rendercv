@@ -1,10 +1,10 @@
 """
-This module contains functions and classes for generating CVs as $\\LaTeX$ files, PDF
-files, Markdown files, HTML files, and PNG files from the data model.
+This module contains functions and classes for generating CVs as $\\LaTeX$, PDF, 
+Markdown, HTML, and PNG files from the data model.
 
 The $\\LaTeX$ and Markdown files are generated with
 [Jinja2](https://jinja.palletsprojects.com/en/3.1.x/) templates. Then, the $\\LaTeX$
-file is rendered into a PDF with [TinyTeX](https://yihui.org/tinytex/), a $\\LaTeX$
+file is rendered into a PDF file with [TinyTeX](https://yihui.org/tinytex/), a $\\LaTeX$
 distribution. The markdown file is rendered into an HTML file with `markdown` package.
 The PDF files are rendered into PNG files with `PyMuPDF`/`fitz` package.
 """
@@ -315,10 +315,10 @@ def revert_nested_latex_style_commands(latex_string: str) -> str:
     for command in nested_commands_to_look_for:
         nested_commands = True
         while nested_commands:
-            # replace all the inner commands with \textnormal until there are no
+            # Replace all the inner commands with \textnormal until there are no
             # nested commands left:
 
-            # find the first nested command:
+            # Find the first nested command:
             nested_commands = re.findall(
                 rf"\\{command}{{[^}}]*?(\\{command}{{.*?}})", latex_string
             )
@@ -380,7 +380,7 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
     # Find all the links in the sentence:
     links = re.findall(r"\[(.*?)\]\((.*?)\)", latex_string)
 
-    # Replace the links with a dummy string and save links with escaped characters:
+    # Replace links with a dummy string and save links with escaped characters:
     new_links = []
     for i, link in enumerate(links):
         placeholder = link[0]
@@ -394,7 +394,7 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
         new_link = f"[{escaped_placeholder}]({url})"
         new_links.append(new_link)
 
-    # Loop through the letters of the sentence and if you find an escape character,
+    # Loop through letters of sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
     latex_string = latex_string.translate(translation_map)
 
@@ -406,10 +406,10 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
 
 
 def markdown_to_latex(markdown_string: str) -> str:
-    """Convert a markdown string to $\\LaTeX$.
+    """Convert a Markdown string to $\\LaTeX$.
 
     This function is called during the reading of the input file. Before the validation
-    process, each input field is converted from markdown to $\\LaTeX$.
+    process, each input field is converted from Markdown to $\\LaTeX$.
 
     Example:
         ```python
@@ -421,7 +421,7 @@ def markdown_to_latex(markdown_string: str) -> str:
         `#!python "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
 
     Args:
-        markdown_string (str): The markdown string to convert.
+        markdown_string (str): The Markdown string to convert.
 
     Returns:
         str: The $\\LaTeX$ string.
@@ -456,8 +456,8 @@ def markdown_to_latex(markdown_string: str) -> str:
 
             markdown_string = markdown_string.replace(old_italic_text, new_italic_text)
 
-    # convert code
-    # not supported by rendercv currently
+    # Convert code
+    # Not supported by RenderCV currently
     # codes = re.findall(r"`([^`]*)`", markdown_string)
     # if codes is not None:
     #     for code_text in codes:
@@ -475,26 +475,26 @@ def transform_markdown_sections_to_latex_sections(
     sections: dict[str, dm.SectionInput],
 ) -> Optional[dict[str, dm.SectionInput]]:
     """
-    Recursively loop through sections and convert all the markdown strings (user input
-    is in markdown format) to $\\LaTeX$ strings. Also, escape special $\\LaTeX$
+    Recursively loop through sections and convert all the Markdown strings (user input
+    is in Markdown format) to $\\LaTeX$ strings. Also, escape special $\\LaTeX$
     characters.
 
     Args:
-        sections (Optional[dict[str, dm.SectionInput]]): Sections with markdown strings.
+        sections (Optional[dict[str, dm.SectionInput]]): Sections with Markdown strings.
     Returns:
         Optional[dict[str, dm.SectionInput]]: Sections with $\\LaTeX$ strings.
     """
     for key, value in sections.items():
-        # loop through the list and apply markdown_to_latex and escape_latex_characters
-        # to each item:
+        # Loop through list and apply markdown_to_latex and escape_latex_characters to
+        # each item:
         transformed_list = []
         for entry in value:
             if isinstance(entry, str):
-                # Then it means it's a TextEntry.
+                # Then it means it's a TextEntry
                 result = markdown_to_latex(escape_latex_characters(entry, strict=False))
                 transformed_list.append(result)
             else:
-                # Then it means it's one of the other entries.
+                # Then it means it's one of the other entries
                 entry_as_dict = entry.model_dump()
                 for entry_key, value in entry_as_dict.items():
                     if isinstance(value, str):
@@ -558,10 +558,10 @@ def make_matched_part_something(
         str: The string with the matched part something.
     """
     if match_str is None:
-        # If the match_str is None, the whole string will be made something:
+        # If the match_str is None, the whole string will be made something
         value = f"\\{something}{{{value}}}"
     elif match_str in value and match_str != "":
-        # If the match_str is in the value, then make the matched part something:
+        # If the match_str is in the value, then make the matched part something
         value = value.replace(match_str, f"\\{something}{{{match_str}}}")
 
     return value
@@ -789,15 +789,15 @@ def setup_jinja2_environment() -> jinja2.Environment:
     themes_directory = pathlib.Path(__file__).parent / "themes"
 
     if jinja2_environment is None:
-        # create a Jinja2 environment:
-        # we need to add the current working directory because custom themes might be used.
+        # Create Jinja2 environment
+        # We need to add the current working directory because custom themes might be used
         environment = jinja2.Environment(
             loader=jinja2.FileSystemLoader([pathlib.Path.cwd(), themes_directory]),
             trim_blocks=True,
             lstrip_blocks=True,
         )
 
-        # set custom delimiters for LaTeX templating:
+        # Set custom delimiters for LaTeX templating
         environment.block_start_string = "((*"
         environment.block_end_string = "*))"
         environment.variable_start_string = "<<"
@@ -805,8 +805,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
         environment.comment_start_string = "((#"
         environment.comment_end_string = "#))"
 
-        # add custom filters to make it easier to template the LaTeX files and add new
-        # themes:
+        # Add custom filters to make it easier to template LaTeX files and add new themes
         environment.filters["make_it_bold"] = make_matched_part_bold
         environment.filters["make_it_underlined"] = make_matched_part_underlined
         environment.filters["make_it_italic"] = make_matched_part_italic
@@ -826,7 +825,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
 
         jinja2_environment = environment
     else:
-        # update the loader in case the current working directory has changed:
+        # Update loader in case current working directory has changed
         jinja2_environment.loader = jinja2.FileSystemLoader(
             [pathlib.Path.cwd(), themes_directory]
         )
@@ -846,7 +845,7 @@ def generate_latex_file(
     Returns:
         pathlib.Path: The path to the generated $\\LaTeX$ file.
     """
-    # create output directory if it doesn't exist:
+    # Create output directory if it doesn't exist
     if not output_directory.is_dir():
         output_directory.mkdir(parents=True)
 
@@ -875,7 +874,7 @@ def generate_markdown_file(
     Returns:
         pathlib.Path: The path to the generated Markdown file.
     """
-    # create output directory if it doesn't exist:
+    # Create output directory if it doesn't exist
     if not output_directory.is_dir():
         output_directory.mkdir(parents=True)
 
@@ -922,8 +921,8 @@ def copy_theme_files_to_output_directory(
 
     for theme_file in theme_directory_path.iterdir():
         dont_copy_files_with_these_extensions = [".j2.tex", ".py"]
-        # theme_file.suffix returns the latest part of the file name after the last dot.
-        # But we need the latest part of the file name after the first dot:
+        # theme_file.suffix returns the latest part of the file name after the last dot
+        # But we need the latest part of the file name after the first dot
         try:
             suffix = re.search(r"\..*", theme_file.name)[0]
         except TypeError:
@@ -971,19 +970,19 @@ def latex_to_pdf(
     Returns:
         pathlib.Path: The path to the generated PDF file.
     """
-    # check if the file exists:
+    # Check if file exists
     if not latex_file_path.is_file():
         raise FileNotFoundError(f"The file {latex_file_path} doesn't exist!")
 
     if local_latex_command:
         executable = local_latex_command
 
-        # check if the command is working:
+        # Check if command is working
         try:
             subprocess.run(
                 [executable, "--version"],
-                stdout=subprocess.DEVNULL,  # don't capture the output
-                stderr=subprocess.DEVNULL,  # don't capture the error
+                stdout=subprocess.DEVNULL,  # Don't capture output
+                stderr=subprocess.DEVNULL,  # Don't capture error
             )
         except FileNotFoundError:
             raise FileNotFoundError(
@@ -1007,7 +1006,7 @@ def latex_to_pdf(
 
         executable = executables[sys.platform]
 
-        # check if the executable exists:
+        # Check if executable exists
         if not executable.is_file():
             raise FileNotFoundError(
                 f"The TinyTeX executable ({executable}) doesn't exist! If you are"
@@ -1015,7 +1014,7 @@ def latex_to_pdf(
                 " TinyTeX binaries. See the developer guide for more information."
             )
 
-    # Run TinyTeX:
+    # Run TinyTeX
     command = [
         executable,
         str(latex_file_path.absolute()),
@@ -1023,9 +1022,9 @@ def latex_to_pdf(
     with subprocess.Popen(
         command,
         cwd=latex_file_path.parent,
-        stdout=subprocess.PIPE,  # capture the output
-        stderr=subprocess.DEVNULL,  # don't capture the error
-        stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+        stdout=subprocess.PIPE,  # Capture output
+        stderr=subprocess.DEVNULL,  # Don't capture error
+        stdin=subprocess.DEVNULL,  # Don't allow TinyTeX to ask for user input
     ) as latex_process:
         output = latex_process.communicate()  # wait for the process to finish
         if latex_process.returncode != 0:
@@ -1056,13 +1055,13 @@ def latex_to_pdf(
                 output = output[0].decode("latin-1")
 
             if "Rerun to get" in output:
-                # Run TinyTeX again to get the references right:
+                # Run TinyTeX again to get the references right
                 subprocess.run(
                     command,
                     cwd=latex_file_path.parent,
-                    stdout=subprocess.DEVNULL,  # don't capture the output
-                    stderr=subprocess.DEVNULL,  # don't capture the error
-                    stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+                    stdout=subprocess.DEVNULL,  # Don't capture output
+                    stderr=subprocess.DEVNULL,  # Don't capture error
+                    stdin=subprocess.DEVNULL,  # Don't allow TinyTeX to ask for user input
                 )
 
     pdf_file_path = latex_file_path.with_suffix(".pdf")
@@ -1078,16 +1077,16 @@ def pdf_to_pngs(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
     Returns:
         list[pathlib.Path]: The paths to the generated PNG files.
     """
-    # check if the file exists:
+    # Check if file exists
     if not pdf_file_path.is_file():
         raise FileNotFoundError(f"The file {pdf_file_path} doesn't exist!")
 
-    # convert the PDF to PNG:
+    # Convert PDF to PNG
     png_directory = pdf_file_path.parent
     png_file_name = pdf_file_path.stem
     png_files = []
-    pdf = fitz.open(pdf_file_path)  # open the PDF file
-    for page in pdf:  # iterate the pages
+    pdf = fitz.open(pdf_file_path)  # Open PDF file
+    for page in pdf:  # Iterate the pages
         image = page.get_pixmap(dpi=300)
         png_file_path = png_directory / f"{png_file_name}_{page.number+1}.png"
         image.save(png_file_path)
@@ -1097,23 +1096,23 @@ def pdf_to_pngs(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
 
 
 def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
-    """Convert a markdown file to HTML with the same name and in the same directory.
+    """Convert a Markdown file to HTML with the same name and in the same directory.
     It uses `rendercv/themes/main.j2.html` as the Jinja2 template.
 
     Args:
-        markdown_file_path (pathlib.Path): The path to the markdown file to convert.
+        markdown_file_path (pathlib.Path): The path to the Markdown file to convert.
     Returns:
         pathlib.Path: The path to the generated HTML file.
     """
-    # check if the file exists:
+    # Check if file exists
     if not markdown_file_path.is_file():
         raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
 
-    # Convert the markdown file to HTML:
+    # Convert Markdown file to HTML
     markdown_text = markdown_file_path.read_text(encoding="utf-8")
     html_body = markdown.markdown(markdown_text)
 
-    # Get the title of the markdown content:
+    # Get title of Markdown content
     title = re.search(r"# (.*)\n", markdown_text)
     if title is None:
         title = ""
@@ -1124,7 +1123,7 @@ def markdown_to_html(markdown_file_path: pathlib.Path) -> pathlib.Path:
     html_template = jinja2_environment.get_template("main.j2.html")
     html = html_template.render(html_body=html_body, title=title)
 
-    # Write html into a file:
+    # Write html into a file
     html_file_path = markdown_file_path.parent / f"{markdown_file_path.stem}.html"
     html_file_path.write_text(html, encoding="utf-8")
 

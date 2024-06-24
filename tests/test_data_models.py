@@ -75,7 +75,7 @@ def test_format_date(date, expected_date_string):
 def test_set_or_update_a_value(rendercv_data_model, key, value):
     dm.set_or_update_a_value(rendercv_data_model, key, value)
 
-    # replace with regex pattern:
+    # Replace with regex pattern
     key = re.sub(r"sections\.([^\.]*)", 'sections_input["\\1"]', key)
     key = re.sub(r"\.(\d+)", "[\\1]", key)
 
@@ -116,9 +116,9 @@ def test_set_or_update_a_value_invalid_values(rendercv_data_model, key, value):
 
 
 def test_read_input_file(input_file_path):
-    # Update the auxiliary files if update_testdata is True
+    # Update auxiliary files if update_testdata is True
     if update_testdata:
-        # create testdata directory if it doesn't exist
+        # Create testdata directory if it doesn't exist
         if not input_file_path.parent.exists():
             input_file_path.parent.mkdir()
 
@@ -131,7 +131,7 @@ def test_read_input_file(input_file_path):
             },
         }
 
-        # dump the dictionary to a yaml file
+        # Dump dictionary to yaml file
         yaml_object = ruamel.yaml.YAML()
         yaml_object.dump(input_dictionary, input_file_path)
 
@@ -150,7 +150,7 @@ def test_read_input_file_directly_with_contents(input_file_path):
         },
     }
 
-    # dump the dictionary to a yaml file
+    # Dump dictionary to yaml file
     yaml_object = ruamel.yaml.YAML()
     yaml_object.width = 60
     yaml_object.indent(mapping=2, sequence=4, offset=2)
@@ -493,7 +493,7 @@ def test_get_entry_and_section_type(
     assert entry_type == expected_entry_type
     assert section_type.__name__ == expected_section_type
 
-    # initialize the entry with the entry type
+    # Initialize entry with entry type
     if entry_type != "TextEntry":
         entry = eval(f"dm.{entry_type}(**entry)")
         entry_type, section_type = dm.get_entry_and_section_type(entry)
@@ -610,11 +610,11 @@ def test_custom_theme_without_init_file(tmp_path, testdata_directory_path):
         / "dummytheme"
     )
 
-    # copy the directory to tmp_path:
+    # Copy directory to tmp_path
     custom_theme_path = tmp_path / "dummytheme"
     shutil.copytree(reference_custom_theme_path, custom_theme_path, dirs_exist_ok=True)
 
-    # remove the __init__.py file:
+    # Remove __init__.py file
     init_file = custom_theme_path / "__init__.py"
     init_file.unlink()
 
@@ -636,11 +636,11 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
         / "dummytheme"
     )
 
-    # copy the directory to tmp_path:
+    # Copy directory to tmp_path
     custom_theme_path = tmp_path / "dummytheme"
     shutil.copytree(reference_custom_theme_path, custom_theme_path, dirs_exist_ok=True)
 
-    # overwrite the __init__.py file (syntax error)
+    # Overwrite __init__.py file (syntax error)
     init_file = custom_theme_path / "__init__.py"
     init_file.write_text("invalid python code", encoding="utf-8")
 
@@ -653,7 +653,7 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
             }
         )
 
-    # overwrite the __init__.py file (import error)
+    # Overwrite __init__.py file (import error)
     init_file = custom_theme_path / "__init__.py"
     init_file.write_text("from ... import test", encoding="utf-8")
 

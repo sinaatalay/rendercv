@@ -25,7 +25,7 @@ from rendercv import data_models as dm
 # reference files with the latest output.
 update_testdata = False
 
-# copy sample entries from docs/update_rendercv_files.py:
+# Copy sample entries from docs/update_rendercv_files.py
 education_entry_dictionary = {
     "institution": "Boğaziçi University",
     "location": "Istanbul, Turkey",
@@ -76,7 +76,7 @@ publication_entry_dictionary = {
 }
 
 one_line_entry_dictionary = {
-    "label": "Programming",
+    "label": "Languages",
     "details": "Python, C++, JavaScript, MATLAB",
 }
 
@@ -87,43 +87,43 @@ bullet_entry_dictionary = {
 
 @pytest.fixture
 def publication_entry() -> dict[str, str | list[str]]:
-    """Return a sample publication entry."""
+    """Return sample publication entry."""
     return copy.deepcopy(publication_entry_dictionary)
 
 
 @pytest.fixture
 def experience_entry() -> dict[str, str]:
-    """Return a sample experience entry."""
+    """Return sample experience entry."""
     return copy.deepcopy(experience_entry_dictionary)
 
 
 @pytest.fixture
 def education_entry() -> dict[str, str]:
-    """Return a sample education entry."""
+    """Return sample education entry."""
     return copy.deepcopy(education_entry_dictionary)
 
 
 @pytest.fixture
 def normal_entry() -> dict[str, str]:
-    """Return a sample normal entry."""
+    """Return sample normal entry."""
     return copy.deepcopy(normal_entry_dictionary)
 
 
 @pytest.fixture
 def one_line_entry() -> dict[str, str]:
-    """Return a sample one line entry."""
+    """Return sample one line entry."""
     return copy.deepcopy(one_line_entry_dictionary)
 
 
 @pytest.fixture
 def bullet_entry() -> dict[str, str]:
-    """Return a sample bullet entry."""
+    """Return sample bullet entry."""
     return copy.deepcopy(bullet_entry_dictionary)
 
 
 @pytest.fixture
 def text_entry() -> str:
-    """Return a sample text entry."""
+    """Return sample text entry."""
     return (
         "This is a *TextEntry*. It is only a text and can be useful for sections like"
         " **Summary**. To showcase the TextEntry completely, this sentence is added,"
@@ -133,13 +133,13 @@ def text_entry() -> str:
 
 @pytest.fixture
 def rendercv_data_model() -> dm.RenderCVDataModel:
-    """Return a sample RenderCV data model."""
+    """Return sample RenderCV data model."""
     return dm.get_a_sample_data_model()
 
 
 @pytest.fixture
 def rendercv_empty_curriculum_vitae_data_model() -> dm.CurriculumVitae:
-    """Return an empty CurriculumVitae data model."""
+    """Return empty CurriculumVitae data model."""
     return dm.CurriculumVitae(sections={"test": ["test"]})
 
 
@@ -147,7 +147,7 @@ def return_a_value_for_a_field_type(
     field: str,
     field_type: typing.Any,
 ) -> str:
-    """Return a value for a given field and field type.
+    """Return value for a given field and field type.
 
     Example:
         ```python
@@ -264,7 +264,7 @@ def create_combinations_of_a_model(
 
     model_with_only_required_fields = model(**required_fields)
 
-    # create all possible combinations of optional fields
+    # Create all possible combinations of optional fields
     all_combinations = [model_with_only_required_fields]
     for i in range(1, len(optional_fields) + 1):
         for combination in itertools.combinations(optional_fields, i):
@@ -316,25 +316,25 @@ def rendercv_filled_curriculum_vitae_data_model(
 
 @pytest.fixture
 def jinja2_environment() -> jinja2.Environment:
-    """Return a Jinja2 environment."""
+    """Return Jinja2 environment."""
     return r.setup_jinja2_environment()
 
 
 @pytest.fixture
 def tests_directory_path() -> pathlib.Path:
-    """Return the path to the tests directory."""
+    """Return path to tests directory."""
     return pathlib.Path(__file__).parent
 
 
 @pytest.fixture
 def root_directory_path(tests_directory_path) -> pathlib.Path:
-    """Return the path to the repository's root directory."""
+    """Return path to repository's root directory."""
     return tests_directory_path.parent
 
 
 @pytest.fixture
 def testdata_directory_path(tests_directory_path) -> pathlib.Path:
-    """Return the path to the testdata directory."""
+    """Return path to testdata directory."""
     return tests_directory_path / "testdata"
 
 
@@ -430,9 +430,9 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
             reference_directory_path / reference_file_or_directory_name
         )
 
-        # Update the testdata if update_testdata is True
+        # Update testdata if update_testdata is True
         if update_testdata:
-            # create the reference directory if it does not exist
+            # Create reference directory if it does not exist
             reference_directory_path.mkdir(parents=True, exist_ok=True)
 
             # remove the reference file or directory if it exists
@@ -446,7 +446,7 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
                     reference_file_or_directory_path, **kwargs
                 )
             else:
-                # copy the output file or directory to the reference directory
+                # Copy output file or directory to reference directory
                 function(tmp_path, reference_file_or_directory_path, **kwargs)
                 if output_is_a_single_file:
                     shutil.move(output_file_path, reference_file_or_directory_path)
@@ -470,5 +470,5 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
 
 @pytest.fixture
 def input_file_path(testdata_directory_path) -> pathlib.Path:
-    """Return the path to the input file."""
+    """Return path to the input file."""
     return testdata_directory_path / "John_Doe_CV.yaml"

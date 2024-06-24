@@ -35,11 +35,11 @@ from .themes.engineeringresumes import EngineeringresumesThemeOptions
 from .themes.moderncv import ModerncvThemeOptions
 from .themes.sb2nov import Sb2novThemeOptions
 
-# Disable Pydantic warnings:
+# Disable Pydantic warnings
 warnings.filterwarnings("ignore")
 
 
-# The dictionary below will be overwritten by LocaleCatalog class.
+# The dictionary below will be overwritten by LocaleCatalog class
 locale_catalog = {}
 
 
@@ -119,10 +119,10 @@ class RenderCVBaseModel(pydantic.BaseModel):
 
 
 # ======================================================================================
-# Entry models: ========================================================================
+# Entry models ========================================================================
 # ======================================================================================
 
-# Create a URL validator to validate social network URLs:
+# Create URL validator to validate social network URLs
 url_validator = pydantic.TypeAdapter(pydantic.HttpUrl)  # type: ignore
 
 
@@ -284,8 +284,7 @@ class PublicationEntry(EntryWithDate, PublicationEntryBase):
 
 class EntryBase(EntryWithDate):
     """This class is the parent class of some of the entry types. It is being used
-    because some of the entry types have common fields like dates, highlights, location,
-    etc.
+    since some entry types have common fields like dates, highlights, location, etc.
     """
 
     location: Optional[str] = pydantic.Field(
@@ -334,7 +333,7 @@ class EntryBase(EntryWithDate):
                 date = date.isoformat()
 
             elif date != "present":
-                # Validate the date:
+                # Validate date
                 get_date_object(date)
 
         return date
@@ -349,12 +348,12 @@ class EntryBase(EntryWithDate):
         end_date_is_provided = self.end_date is not None
 
         if date_is_provided:
-            # If only date is provided, ignore start_date and end_date:
+            # If only date is provided, ignore start_date and end_date
             self.start_date = None
             self.end_date = None
         elif not start_date_is_provided and end_date_is_provided:
             # If only end_date is provided, assume it is a one-day event and act like
-            # only the date is provided:
+            # only the date is provided
             self.date = self.end_date
             self.start_date = None
             self.end_date = None
@@ -362,7 +361,7 @@ class EntryBase(EntryWithDate):
             start_date = get_date_object(self.start_date)
             if not end_date_is_provided:
                 # If only start_date is provided, assume it is an ongoing event, i.e.,
-                # the end_date is present:
+                # the end_date is present
                 self.end_date = "present"
 
             if self.end_date != "present":
@@ -505,7 +504,7 @@ class EntryBase(EntryWithDate):
 
         elif isinstance(self.start_date, int) or isinstance(self.end_date, int):
             # Then it means one of the dates is year, so time span cannot be more
-            # specific than years.
+            # specific than years
             start_year = get_date_object(self.start_date).year  # type: ignore
             end_year = get_date_object(self.end_date).year  # type: ignore
 
@@ -520,14 +519,14 @@ class EntryBase(EntryWithDate):
 
         else:
             # Then it means both start_date and end_date are in YYYY-MM-DD or YYYY-MM
-            # format.
+            # format
             end_date = get_date_object(self.end_date)  # type: ignore
             start_date = get_date_object(self.start_date)  # type: ignore
 
-            # Calculate the number of days between start_date and end_date:
+            # Calculate the number of days between start_date and end_date
             timespan_in_days = (end_date - start_date).days  # type: ignore
 
-            # Calculate the number of years between start_date and end_date:
+            # Calculate the number of years between start_date and end_date
             how_many_years = timespan_in_days // 365
             if how_many_years == 0:
                 how_many_years_string = None
@@ -536,14 +535,14 @@ class EntryBase(EntryWithDate):
             else:
                 how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
 
-            # Calculate the number of months between start_date and end_date:
+            # Calculate the number of months between start_date and end_date
             how_many_months = round((timespan_in_days % 365) / 30)
             if how_many_months <= 1:
                 how_many_months_string = f"1 {locale_catalog['month']}"
             else:
                 how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
 
-            # Combine howManyYearsString and howManyMonthsString:
+            # Combine howManyYearsString and howManyMonthsString
             if how_many_years_string is None:
                 time_span_string = how_many_months_string
             else:
@@ -579,9 +578,9 @@ class ExperienceEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure ExperienceEntryBase keys come first,
-# then the keys of the EntryBase class. The only way to achieve this in Pydantic is
-# to do this.
+# The following class is to make sure ExperienceEntryBase keys come first, then
+# the keys of the EntryBase class. The only way to achieve this in Pydantic is to
+# do this.
 class ExperienceEntry(EntryBase, ExperienceEntryBase):
     """This class is the data model of `ExperienceEntry`."""
 
@@ -605,16 +604,15 @@ class EducationEntryBase(RenderCVBaseModel):
     )
 
 
-# The following class is to make sure EducationEntryBase keys come first,
-# then the keys of the EntryBase class. The only way to achieve this in Pydantic is
-# to do this.
+# The following class is to make sure EducationEntryBase keys come first, then the
+# keys of the EntryBase class. The only way to achieve this in Pydantic is to do this
 class EducationEntry(EntryBase, EducationEntryBase):
     """This class is the data model of `EducationEntry`."""
 
     pass
 
 
-# Create custom types named Entry and ListOfEntries:
+# Create custom types named Entry and ListOfEntries
 Entry = (
     OneLineEntry
     | NormalEntry
@@ -637,7 +635,7 @@ entry_types = Entry.__args__[:-1]  # a tuple of all the entry types except str
 entry_type_names = [entry_type.__name__ for entry_type in entry_types] + ["TextEntry"]
 
 # ======================================================================================
-# Section models: ======================================================================
+# Section models ======================================================================
 # ======================================================================================
 # Each section data model has a field called `entry_type` and a field called `entries`.
 # Since the same pydantic.Field object is used in all of the section models, it is
@@ -714,8 +712,8 @@ def get_entry_and_section_type(
                 set(EntryType.model_fields.keys()) - common_attributes
             )
 
-            # If at least one of the characteristic_entry_attributes is in the entry,
-            # then it means the entry is of this type:
+            # If one or more of the characteristic_entry_attributes is in the entry,
+            # then it means the entry is of this type
             if characteristic_entry_attributes & set(entry.keys()):
                 entry_type = EntryType.__name__
                 section_type = create_a_section_model(EntryType)
@@ -755,7 +753,7 @@ def validate_section_input(
         SectionBase | list[Any]: The validated sections input.
     """
     if isinstance(sections_input, list):
-        # Find the entry type based on the first identifiable entry:
+        # Find entry type based on first identifiable entry:
         entry_type = None
         section_type = None
         for entry in sections_input:
@@ -770,7 +768,7 @@ def validate_section_input(
                 "RenderCV couldn't match this section with any entry types! Please"
                 " check the entries and make sure they are provided correctly.",
                 "",  # This is the location of the error
-                "",  # This is value of the error
+                "",  # This is the value of the error
             )
 
         test_section = {
@@ -788,14 +786,14 @@ def validate_section_input(
                 "There are problems with the entries. RenderCV detected the entry type"
                 f" of this section to be {entry_type}! The problems are shown below.",
                 "",  # This is the location of the error
-                "",  # This is value of the error
+                "",  # This is the value of the error
             )
             raise new_error from e
 
     return sections_input
 
 
-# Create a custom type named SectionInput so that it can be validated with
+# Create custom type named SectionInput so that it can be validated with
 # `validate_section_input` function.
 SectionInput = Annotated[
     ListOfEntries,
@@ -804,7 +802,7 @@ SectionInput = Annotated[
 
 
 # ======================================================================================
-# Full RenderCV data models: ===========================================================
+# Full RenderCV data models ===========================================================
 # ======================================================================================
 
 SocialNetworkName = Literal[
@@ -1028,7 +1026,7 @@ class CurriculumVitae(RenderCVBaseModel):
 
     @functools.cached_property
     def sections(self) -> list[SectionBase]:
-        """Return all the sections of the CV with their titles."""
+        """Return each section of the CV with their titles."""
         sections: list[SectionBase] = []
         if self.sections_input is not None:
             for title, section_or_entries in self.sections_input.items():
@@ -1057,31 +1055,31 @@ class LocaleCatalog(RenderCVBaseModel):
         default="month",
         title='Translation of "Month"',
         description='Translation of the word "month" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
     months: Optional[str] = pydantic.Field(
         default="months",
         title='Translation of "Months"',
         description='Translation of the word "months" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
     year: Optional[str] = pydantic.Field(
         default="year",
         title='Translation of "Year"',
         description='Translation of the word "year" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
     years: Optional[str] = pydantic.Field(
         default="years",
         title='Translation of "Years"',
         description='Translation of the word "years" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
     present: Optional[str] = pydantic.Field(
         default="present",
         title='Translation of "Present"',
         description='Translation of the word "present" in the locale.',
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # # Initialize locale catalog with default values
     )
     to: Optional[str] = pydantic.Field(
         default="–",  # en dash
@@ -1090,13 +1088,12 @@ class LocaleCatalog(RenderCVBaseModel):
             "The word or character used to indicate a range in the locale (e.g.,"
             ' "2020 - 2021").'
         ),
-        validate_default=True,  # To initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
     abbreviations_for_months: Optional[
         Annotated[list[str], at.Len(min_length=12, max_length=12)]
     ] = pydantic.Field(
-        # Month abbreviations are taken from
-        # https://web.library.yale.edu/cataloging/months:
+        # Month abbreviations are taken from https://web.library.yale.edu/cataloging/months
         default=[
             "Jan",
             "Feb",
@@ -1113,7 +1110,7 @@ class LocaleCatalog(RenderCVBaseModel):
         ],
         title="Abbreviations of Months",
         description="Abbreviations of the months in the locale.",
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
     full_names_of_months: Optional[
         Annotated[list[str], at.Len(min_length=12, max_length=12)]
@@ -1134,7 +1131,7 @@ class LocaleCatalog(RenderCVBaseModel):
         ],
         title="Full Names of Months",
         description="Full names of the months in the locale.",
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
 
     @pydantic.field_validator(
@@ -1149,14 +1146,14 @@ class LocaleCatalog(RenderCVBaseModel):
     )
     @classmethod
     def update_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
-        """Update the `locale_catalog` dictionary with the provided translations."""
+        """Update `locale_catalog` dictionary with the provided translations."""
         if value:
             locale_catalog[info.field_name] = value
 
         return value
 
 
-LocaleCatalog()  # Initialize the locale catalog with the default values
+LocaleCatalog()  # Initialize locale catalog with the default values
 
 # ======================================================================================
 # ======================================================================================
@@ -1197,7 +1194,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         description=(
             "The locale catalog of the CV to allow the support of multiple languages."
         ),
-        validate_default=True,  # to initialize the locale catalog with the default values
+        validate_default=True,  # Initialize locale catalog with default values
     )
 
     @pydantic.field_validator("design", mode="before")
@@ -1214,28 +1211,28 @@ class RenderCVDataModel(RenderCVBaseModel):
 
         if isinstance(design, theme_data_model_types):
             # Then it means RenderCVDataModel is already initialized with a design, so
-            # return it as is:
+            # return it as is
             return design
         elif design["theme"] in available_themes:  # type: ignore
             # Then it means it's a built-in theme, but it is not initialized (validated)
-            # yet. So, validate and return it:
+            # yet. So, validate and return it
             return rendercv_design_validator.validate_python(design)
         else:
-            # Then it means it is a custom theme, so initialize and validate it:
+            # Then it means it is a custom theme, so initialize and validate it
             theme_name: str = str(design["theme"])
 
             # Check if the theme name is valid:
             if not theme_name.isalpha():
                 raise ValueError(
                     "The custom theme name should contain only letters.",
-                    "theme",  # this is the location of the error
-                    theme_name,  # this is value of the error
+                    "theme",  # This is the location of the error
+                    theme_name,  # This is the value of the error
                 )
 
             # Then it is a custom theme
             custom_theme_folder = pathlib.Path(theme_name)
 
-            # Check if the custom theme folder exists:
+            # Check if custom theme folder exists
             if not custom_theme_folder.exists():
                 raise ValueError(
                     f"The custom theme folder `{custom_theme_folder}` does not exist."
@@ -1244,15 +1241,15 @@ class RenderCVDataModel(RenderCVBaseModel):
                     theme_name,  # this is value of the error
                 )
 
-            # check if all the necessary files are provided in the custom theme folder:
+            # Check if all the necessary files are provided in the custom theme folder
             required_entry_files = [
                 entry_type_name + ".j2.tex" for entry_type_name in entry_type_names
             ]
             required_files = [
-                "SectionBeginning.j2.tex",  # section beginning template
-                "SectionEnding.j2.tex",  # section ending template
-                "Preamble.j2.tex",  # preamble template
-                "Header.j2.tex",  # header template
+                "SectionBeginning.j2.tex",  # Section beginning template
+                "SectionEnding.j2.tex",  # Section ending template
+                "Preamble.j2.tex",  # Preamble template
+                "Header.j2.tex",  # Header template
             ] + required_entry_files
 
             for file in required_files:
@@ -1265,7 +1262,7 @@ class RenderCVDataModel(RenderCVBaseModel):
                         theme_name,  # This is value of the error
                     )
 
-            # Import __init__.py file from the custom theme folder if it exists:
+            # Import __init__.py file from the custom theme folder if it exists
             path_to_init_file = pathlib.Path(f"{theme_name}/__init__.py")
 
             if path_to_init_file.exists():
@@ -1294,11 +1291,11 @@ class RenderCVDataModel(RenderCVBaseModel):
                     theme_module, f"{theme_name.capitalize()}ThemeOptions"  # type: ignore
                 )
 
-                # Initialize and validate the custom theme data model:
+                # Initialize and validate the custom theme data model
                 theme_data_model = ThemeDataModel(**design)
             else:
-                # Then it means there is no __init__.py file in the custom theme folder.
-                # Create a dummy data model and use that instead.
+                # Then it means there is no __init__.py file in the custom theme folder
+                # Create a dummy data model and use that instead
                 class ThemeOptionsAreNotProvided(RenderCVBaseModel):
                     theme: str = theme_name
 
@@ -1309,8 +1306,8 @@ class RenderCVDataModel(RenderCVBaseModel):
     @pydantic.field_validator("locale_catalog")
     @classmethod
     def initialize_locale_catalog(cls, locale_catalog: LocaleCatalog) -> LocaleCatalog:
-        """Even if the locale catalog is not provided, initialize it with the default
-        values."""
+        """If the locale catalog is not provided, initialize it with the default values.
+        """
         if locale_catalog is None:
             LocaleCatalog()
 
@@ -1335,7 +1332,7 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
     title = key.replace("_", " ")
     words = title.split(" ")
 
-    # loop through the words and if the word doesn't contain any uppercase letters,
+    # Loop through the words and if the word doesn't contain any uppercase letters,
     # capitalize the first letter of the word. If the word contains uppercase letters,
     # don't change the word.
     proper_title = " ".join(
@@ -1375,12 +1372,12 @@ def set_or_update_a_value(
         model = data_model
 
     if len(keys) == 1:
-        # Set the value:
+        # Set value
         if value.startswith("{") and value.endswith("}"):
             # Allow users to assign dictionaries:
             value = eval(value)
         elif value.startswith("[") and value.endswith("]"):
-            # Allow users to assign lists:
+            # Allow users to assign lists
             value = eval(value)
 
         if isinstance(model, pydantic.BaseModel):
@@ -1400,7 +1397,7 @@ def set_or_update_a_value(
         )
         return data_model
     else:
-        # get the first key and call the function with remaining keys:
+        # Get first key and call function with remaining keys
         first_key = keys[0]
         key = ".".join(keys[1:])
         if isinstance(model, pydantic.BaseModel):
@@ -1462,7 +1459,7 @@ def read_input_file(
 
     input_as_dictionary: dict[str, Any] = ruamel.yaml.YAML().load(file_content)  # type: ignore
 
-    # Validate the parsed dictionary by creating an instance of RenderCVDataModel:
+    # Validate the parsed dictionary by creating an instance of RenderCVDataModel
     rendercv_data_model = RenderCVDataModel(**input_as_dictionary)
 
     return rendercv_data_model
@@ -1478,7 +1475,7 @@ def get_a_sample_data_model(
     Returns:
         RenderCVDataModel: A sample data model.
     """
-    # Check if the theme is valid:
+    # Check if the theme is valid
     if theme not in available_themes:
         available_themes_string = ", ".join(available_themes)
         raise ValueError(
@@ -1804,7 +1801,7 @@ def generate_json_schema() -> dict[str, Any]:
         def generate(self, schema, mode="validation"):  # type: ignore
             json_schema = super().generate(schema, mode=mode)
 
-            # Basic information about the schema:
+            # Basic information about the schema
             json_schema["title"] = "RenderCV"
             json_schema["description"] = "RenderCV data model."
             json_schema["$id"] = (

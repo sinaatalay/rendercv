@@ -15,11 +15,11 @@ from rendercv import __version__
 
 
 def run_render_command(input_file_path, working_path, extra_arguments=[]):
-    # copy input file to the temporary directory to create the output directory there:
+    # Copy input file to temporary directory to create output directory there
     if not input_file_path == working_path / input_file_path.name:
         shutil.copy(input_file_path, working_path)
 
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(working_path)
 
     result = runner.invoke(cli.app, ["render", "John_Doe_CV.yaml"] + extra_arguments)
@@ -340,7 +340,7 @@ def test_render_command_with_different_output_path_for_each_file(
 
 
 def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
-    # create a new input file (for a CV with multiple pages) in the temporary directory:
+    # Create new input file (for a CV with multiple pages) in temporary directory
     os.chdir(tmp_path)
     runner.invoke(cli.app, ["new", "John Doe"])
     input_file_path = tmp_path / "John_Doe_CV.yaml"
@@ -424,7 +424,7 @@ def test_render_command_with_invalid_arguments(
 
 
 def test_new_command(tmp_path):
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(tmp_path)
     result = runner.invoke(cli.app, ["new", "Jahn Doe"])
 
@@ -442,7 +442,7 @@ def test_new_command(tmp_path):
 
 
 def test_new_command_with_invalid_theme(tmp_path):
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(tmp_path)
 
     result = runner.invoke(cli.app, ["new", "Jahn Doe", "--theme", "invalid_theme"])
@@ -458,7 +458,7 @@ def test_new_command_with_invalid_theme(tmp_path):
     ],
 )
 def test_new_command_with_dont_create_files(tmp_path, option, folder_name):
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(tmp_path)
     result = runner.invoke(cli.app, ["new", "Jahn Doe", option])
 
@@ -470,7 +470,7 @@ def test_new_command_with_dont_create_files(tmp_path, option, folder_name):
 
 
 def test_new_command_with_only_input_file(tmp_path):
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(tmp_path)
     runner.invoke(
         cli.app,
@@ -500,7 +500,7 @@ def test_new_command_with_only_input_file(tmp_path):
     ],
 )
 def test_new_command_with_existing_files(tmp_path, file_or_folder_name):
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(tmp_path)
 
     if file_or_folder_name == "Jahn_Doe_CV.yaml":
@@ -518,7 +518,7 @@ def test_new_command_with_existing_files(tmp_path, file_or_folder_name):
     dm.available_themes,
 )
 def test_create_theme_command(tmp_path, input_file_path, based_on):
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(tmp_path)
 
     runner.invoke(cli.app, ["create-theme", "newtheme", "--based-on", based_on])
@@ -559,7 +559,7 @@ def test_create_theme_command_invalid_based_on_theme(tmp_path):
 
 
 def test_create_theme_command_theme_already_exists(tmp_path):
-    # change the current working directory to the temporary directory:
+    # Change current working directory to temporary directory
     os.chdir(tmp_path)
 
     (tmp_path / "newtheme").mkdir()

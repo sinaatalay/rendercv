@@ -13,4 +13,4 @@ A clear and concise description of what the bug is and what you expected to happ
 Please provide a minimal YAML input as a code block for us to produce the same error.
 
 **Screenshots**
-If applicable, add screenshots to help explain your problem.
+If applicable, add screenshots to help explain the bug.

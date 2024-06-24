@@ -34,11 +34,11 @@ from . import renderer as r
 app = typer.Typer(
     rich_markup_mode="rich",
     add_completion=False,
-    # to make `rendercv --version` work:
+    # To make `rendercv --version` work
     invoke_without_command=True,
     no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
-    # don't show local variables in unhandled exceptions:
+    # Don't show local variables in unhandled exceptions
     pretty_exceptions_show_locals=False,
 )
 
@@ -248,14 +248,14 @@ def handle_validation_error(exception: pydantic.ValidationError):
                     cause_object = error_object.__cause__
                     cause_object_errors = cause_object.errors()
                     for cause_error_object in cause_object_errors:
-                        # we use [1:] to avoid `entries` location. It is a location for
+                        # We use [1:] to avoid `entries` location. It's a location for
                         # RenderCV's own data model, not the user's data model.
                         cause_error_object["loc"] = tuple(
                             list(location) + list(cause_error_object["loc"][1:])
                         )
                     errors.extend(cause_object_errors)
 
-    # some locations are not really the locations in the input file, but some
+    # Some locations are not really the locations in the input file, but some
     # information about the model coming from Pydantic. We need to remove them.
     # (e.g. avoid stuff like .end_date.literal['present'])
     unwanted_locations = ["tagged-union", "list", "literal", "int", "constrained-str"]
@@ -269,7 +269,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
                     new_location.remove(location_element)
         error_object["loc"] = new_location  # type: ignore
 
-    # Parse all the errors and create a new list of errors.
+    # Parse all errors and create new list of errors
     new_errors: list[dict[str, str]] = []
     for error_object in errors:
         message = error_object["msg"]
@@ -277,7 +277,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         input = error_object["input"]
 
         # Check if this is a custom error message:
-        custom_message, custom_location, custom_input_value = (
+        custom_message, custom_location, custom_inut_value = (
             get_error_message_and_location_and_value_from_a_custom_error(message)
         )
         if custom_message is not None:
@@ -287,17 +287,17 @@ def handle_validation_error(exception: pydantic.ValidationError):
                 location = f"{location}.{custom_location}"
             input = custom_input_value
 
-        # Don't show unwanted texts in the error message:
+        # Don't show unwanted texts in the error message
         for unwanted_text in unwanted_texts:
             message = message.replace(unwanted_text, "")
 
         # Convert the error message to a more user-friendly message if it's in the
-        # error_dictionary:
+        # error_dictionary
         if message in error_dictionary:
             message = error_dictionary[message]
 
         # Special case for end_date because Pydantic returns multiple end_date errors
-        # since it has multiple valid formats:
+        # Since it has multiple valid formats
         if "end_date" in location:
             message = (
                 "This is not a valid end date! Please use either YYYY-MM-DD, YYYY-MM,"
@@ -315,11 +315,11 @@ def handle_validation_error(exception: pydantic.ValidationError):
             "input": str(input),
         }
 
-        # if new_error is not in new_errors, then add it to new_errors
+        # If new_error is not in new_errors, then add it to new_errors
         if new_error not in new_errors:
             new_errors.append(new_error)
 
-    # Print the errors in a nice table:
+    # Print errors in a nice table:
     table = rich.table.Table(
         title="[bold red]\nThere are some errors in the data model!\n",
         title_justify="left",
@@ -337,7 +337,7 @@ def handle_validation_error(exception: pydantic.ValidationError):
         )
 
     print(table)
-    error()  # exit the program
+    error()  # Exit program
 
 
 def handle_exceptions(function: Callable) -> Callable:
@@ -504,7 +504,7 @@ def copy_templates(
     Returns:
         Optional[pathlib.Path]: The path to the copied folder.
     """
-    # copy the package's theme files to the current directory
+    # Copy package's theme files to current directory
     template_directory = pathlib.Path(__file__).parent / "themes" / folder_name
     if new_folder_name:
         destination = copy_to / new_folder_name
@@ -526,7 +526,7 @@ def copy_templates(
 
         return None
     else:
-        # copy the folder but don't include __init__.py:
+        # Copy folder but don't include __init__.py
         shutil.copytree(
             template_directory,
             destination,
@@ -673,7 +673,7 @@ def cli_command_render(
             help="Don't generate the PNG file.",
         ),
     ] = False,
-    _: Annotated[  # This is a dummy argument for the help message.
+    _: Annotated[  # Dummy argument for help message
         Optional[str],
         typer.Option(
             "--YAMLLOCATION",
@@ -689,17 +689,17 @@ def cli_command_render(
     input_file_path = pathlib.Path(input_file_name).absolute()
     output_directory = pathlib.Path.cwd() / output_folder_name
 
-    # change the current working directory to the input file's directory (because
-    # the template overrides are looked up in the current working directory):
+    # Change current working directory to input file's directory (because
+    # the template overrides are looked up in current working directory)
     os.chdir(input_file_path.parent)
 
-    # compute the number of steps
-    # 1. read and validate the input file
-    # 2. generate the LaTeX file
-    # 3. render the LaTeX file to a PDF
-    # 4. render PNG files from the PDF
-    # 5. generate the Markdown file
-    # 6. render the Markdown file to a HTML (for Grammarly)
+    # Compute the number of steps
+    # 1. Read and validate input file
+    # 2. Generate LaTeX file
+    # 3. Render LaTeX file to PDF file
+    # 4. Render PNG files from PDF file
+    # 5. Generate Markdown file
+    # 6. Render Markdown file to a HTML (for Grammarly)
     number_of_steps = 6
     if dont_generate_png:
         number_of_steps = number_of_steps - 1
@@ -713,7 +713,7 @@ def cli_command_render(
         progress.start_a_step("Reading and validating the input file")
         data_model = dm.read_input_file(input_file_path)
 
-        # update the data model if there are extra arguments:
+        # Update data model if there are extra arguments
         key_and_values = dict()
 
         if extra_data_model_override_argumets:
@@ -722,8 +722,7 @@ def cli_command_render(
             )
             for key, value in key_and_values.items():
                 try:
-                    # set the key (for example, cv.sections.education.0.institution) to
-                    # the value
+                    # Set key (for example, cv.sections.education.0.institution) to value
                     data_model = dm.set_or_update_a_value(data_model, key, value)
                 except pydantic.ValidationError as e:
                     raise e
@@ -760,7 +759,7 @@ def cli_command_render(
                     shutil.copy2(png_file_paths_in_output_folder[0], png_path)
                 else:
                     for i, png_file_path in enumerate(png_file_paths_in_output_folder):
-                        # append the page number to the file name
+                        # Append page number to file name
                         page_number = i + 1
                         png_path_with_page_number = (
                             pathlib.Path(png_path).parent
@@ -843,17 +842,17 @@ def cli_command_new(
             )
             created_files_and_folders.append(input_file_path.name)
         except ValueError as e:
-            # if the theme is not in the available themes, then raise an error
+            # If theme is not in available themes, raise error
             error(e)
 
     if not dont_create_theme_source_files:
-        # copy the package's theme files to the current directory
+        # Copy package's theme files to current directory
         theme_folder = copy_templates(theme, pathlib.Path.cwd())
         if theme_folder is not None:
             created_files_and_folders.append(theme_folder.name)
 
     if not dont_create_markdown_source_files:
-        # copy the package's markdown files to the current directory
+        # Copy package's Markdown files to current directory
         markdown_folder = copy_templates("markdown", pathlib.Path.cwd())
         if markdown_folder is not None:
             created_files_and_folders.append(markdown_folder.name)
@@ -911,7 +910,7 @@ def cli_command_create_theme(
     based_on_theme_init_file = based_on_theme_directory / "__init__.py"
     based_on_theme_init_file_contents = based_on_theme_init_file.read_text()
 
-    # generate the new init file:
+    # Generate new init file
     class_name = f"{theme_name.capitalize()}ThemeOptions"
     literal_name = f'Literal["{theme_name}"]'
     new_init_file_contents = (
@@ -922,7 +921,7 @@ def cli_command_create_theme(
         .replace("..", "rendercv.themes")
     )
 
-    # create the new __init__.py file:
+    # Create new __init__.py file
     (theme_folder / "__init__.py").write_text(new_init_file_contents)
 
     information(f'The theme folder "{theme_folder.name}" has been created.')

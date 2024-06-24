@@ -326,10 +326,10 @@ def test_get_an_item_with_a_specific_attribute_value():
 def test_setup_jinja2_environment():
     env = r.setup_jinja2_environment()
 
-    # Check if the returned object is a jinja2.Environment instance
+    # Check if returned object is a jinja2.Environment instance
     assert isinstance(env, jinja2.Environment)
 
-    # Check if the custom delimiters are correctly set
+    # Check if custom delimiters are correctly set
     assert env.block_start_string == "((*"
     assert env.block_end_string == "*))"
     assert env.variable_start_string == "<<"
@@ -337,7 +337,7 @@ def test_setup_jinja2_environment():
     assert env.comment_start_string == "((#"
     assert env.comment_end_string == "#))"
 
-    # Check if the custom filters are correctly set
+    # Check if custom filters are correctly set
     assert "make_it_bold" in env.filters
     assert "make_it_underlined" in env.filters
     assert "make_it_italic" in env.filters
@@ -476,11 +476,11 @@ def test_copy_theme_files_to_output_directory_custom_theme(
     def update_reference_files(reference_directory_path):
         dummytheme_path = reference_directory_path.parent / theme_name
 
-        # create dummytheme:
+        # Create dummytheme:
         if not dummytheme_path.exists():
             dummytheme_path.mkdir(parents=True, exist_ok=True)
 
-        # create a txt file called test.txt in the custom theme directory:
+        # Create txt file called test.txt in the custom theme directory:
         for entry_type_name in dm.entry_type_names:
             pathlib.Path(dummytheme_path / f"{entry_type_name}.j2.tex").touch()
 
@@ -502,7 +502,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
             " Literal['dummytheme']\n"
         )
 
-        # create reference_directory_path:
+        # Create reference_directory_path
         os.chdir(dummytheme_path.parent)
         r.copy_theme_files_to_output_directory(
             theme_name=theme_name,
@@ -514,7 +514,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
     ):
         dummytheme_path = reference_directory_path.parent / theme_name
 
-        # copy the auxiliary theme files to tmp_path:
+        # Copy auxiliary theme files to tmp_path
         os.chdir(dummytheme_path.parent)
         r.copy_theme_files_to_output_directory(
             theme_name=theme_name,
@@ -605,10 +605,10 @@ def test_latex_to_pdf(
             / reference_name
         )
 
-        # copy the latex sources to the output path
+        # Copy LaTeX sources to output path
         shutil.copytree(latex_sources_path, output_directory_path, dirs_exist_ok=True)
 
-        # convert the latex code to a pdf
+        # Convert LaTeX code to PDF
         r.latex_to_pdf(output_directory_path / f"{name}_CV.tex")
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
@@ -656,10 +656,10 @@ def test_markdown_to_html(
             / markdown_file_name
         )
 
-        # copy the markdown source to the output path
+        # Copy markdown source to output path
         shutil.copy(markdown_source_path, output_directory_path)
 
-        # convert markdown to html
+        # Convert markdown to html
         r.markdown_to_html(output_directory_path / markdown_file_name)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
@@ -690,10 +690,10 @@ def test_pdf_to_pngs_single_page(
             / pdf_file_name
         )
 
-        # copy the markdown source to the output path
+        # Copy markdown source to output path
         shutil.copy(pdf_path, output_directory_path)
 
-        # convert pdf to pngs
+        # Convert PDF to PNGs
         r.pdf_to_pngs(output_directory_path / pdf_file_name)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
@@ -717,13 +717,13 @@ def test_pdf_to_pngs(
             / pdf_file_name
         )
 
-        # copy the markdown source to the output path
+        # Copy markdown source to output path
         shutil.copy(pdf_path, output_directory_path)
 
-        # convert pdf to pngs
+        # Convert PDF to PNGs
         r.pdf_to_pngs(output_directory_path / pdf_file_name)
 
-        # remove the pdf file
+        # Remove PDF file
         (output_directory_path / pdf_file_name).unlink()
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
