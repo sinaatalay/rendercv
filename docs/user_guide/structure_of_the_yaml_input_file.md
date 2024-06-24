@@ -270,7 +270,7 @@ design:
 
 ## "`locale_catalog`" field
 
-This field is what makes RenderCV a multilingual tool. RenderCV uses some English strings to render PDFs. For example, it takes the dates in ISO format (`2020-01-01`) and converts them into human-friendly strings (`"Jan. 2020"`). However, you can override these strings for your own language or needs with the `locale_catalog` field.
+This field is what makes RenderCV a multilingual tool. RenderCV uses some English strings to render PDFs. For example, it takes the dates in ISO format (`2020-01-01`) and converts them into human-friendly strings (`"Jan 2020"`). However, you can override these strings for your own language or needs with the `locale_catalog` field.
 
 Here is an example:
 
