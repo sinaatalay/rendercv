@@ -47,7 +47,6 @@ The `cv` field of the YAML input starts with generic information, as shown below
 ```yaml
 cv:
   name: John Doe
-  label: Mechanical Engineer
   location: Your Location
   email: youremail@yourdomain.com
   phone: +905419999999
