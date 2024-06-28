@@ -99,10 +99,6 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run docs:build
     ```
-- Deploy the documentation to GitHub Pages:
-    ```bash
-    hatch run docs:deploy
-    ```
 - Update [schema.json](https://github.com/sinaatalay/rendercv/blob/main/schema.json):
     ```bash
     hatch run docs:update-schema
