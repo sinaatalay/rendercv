@@ -13,11 +13,11 @@ The PDF files are rendered into PNG files with `PyMuPDF`/`fitz` package.
 from .renderer import (
     copy_theme_files_to_output_directory,
     render_a_latex_file,
-    render_a_markdown_file,
     render_a_latex_file_and_copy_theme_files,
+    render_a_markdown_file,
+    render_html_from_markdown,
     render_pdf_from_latex,
     render_pngs_from_pdf,
-    render_html_from_markdown,
 )
 
 __all__ = [

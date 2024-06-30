@@ -7,10 +7,10 @@ terminal output.
 
 from .commands import (
     app,
-    cli_command_render,
-    cli_command_new,
     cli_command_create_theme,
+    cli_command_new,
     cli_command_no_args,
+    cli_command_render,
 )
 
 __all__ = [

@@ -12,16 +12,16 @@ The validators and data format of RenderCV are written using
 """
 
 from .models import (
-    OneLineEntry,
     BulletEntry,
+    CurriculumVitae,
     EducationEntry,
     ExperienceEntry,
-    PublicationEntry,
-    NormalEntry,
-    SocialNetwork,
-    CurriculumVitae,
     LocaleCatalog,
+    NormalEntry,
+    OneLineEntry,
+    PublicationEntry,
     RenderCVDataModel,
+    SocialNetwork,
     locale_catalog,
     read_input_file,
 )

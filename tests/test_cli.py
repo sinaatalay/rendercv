@@ -10,9 +10,9 @@ import ruamel.yaml
 import typer.testing
 
 import rendercv.cli as cli
+import rendercv.cli.handlers as handlers
 import rendercv.cli.printer as printer
 import rendercv.cli.utilities as util
-import rendercv.cli.handlers as handlers
 import rendercv.data_models as dm
 from rendercv import __version__
 
