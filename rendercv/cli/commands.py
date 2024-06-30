@@ -1,3 +1,8 @@
+"""
+`rendercv.cli.commands` module contains all the command-line interface (CLI) commands of
+RenderCV.
+"""
+
 import os
 import pathlib
 import shutil
@@ -7,6 +12,22 @@ import pydantic
 import typer
 from rich import print
 
+from .. import __version__
+from .. import data_models as dm
+from .. import renderer as r
+from .printer import (
+    LiveProgressReporter,
+    error,
+    information,
+    warn_if_new_version_is_available,
+    warning,
+    welcome,
+)
+from .utilities import (
+    copy_templates,
+    handle_exceptions,
+    parse_render_command_override_arguments,
+)
 
 app = typer.Typer(
     rich_markup_mode="rich",
@@ -127,7 +148,7 @@ def cli_command_render(
     ] = None,
     extra_data_model_override_argumets: typer.Context = None,
 ):
-    """Generate a $\\LaTeX$ CV from a YAML input file."""
+    """Render a CV from a YAML input file."""
     welcome()
 
     input_file_path = pathlib.Path(input_file_name).absolute()
@@ -161,7 +182,7 @@ def cli_command_render(
         key_and_values = dict()
 
         if extra_data_model_override_argumets:
-            key_and_values = parse_data_model_override_arguments(
+            key_and_values = parse_render_command_override_arguments(
                 extra_data_model_override_argumets
             )
             for key, value in key_and_values.items():
@@ -269,7 +290,7 @@ def cli_command_new(
         ),
     ] = False,
 ):
-    """Generate a YAML input file to get started."""
+    """Generate a YAML input file and the LaTeX and Markdown source files."""
     created_files_and_folders = []
 
     input_file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
@@ -333,7 +354,7 @@ def cli_command_create_theme(
         ),
     ] = "classic",
 ):
-    """Create a custom theme folder based on an existing theme."""
+    """Create a custom theme based on an existing theme."""
     if based_on not in dm.available_themes:
         error(
             f'The theme "{based_on}" is not in the list of available themes:'
@@ -378,6 +399,8 @@ def main(
         Optional[bool], typer.Option("--version", "-v", help="Show the version.")
     ] = None,
 ):
+    """If the `--version` option is used, then show the version. Otherwise, show the
+    help message (see `no_args_is_help` argument of `typer.Typer` object)."""
     if version_requested:
         there_is_a_new_version = warn_if_new_version_is_available()
         if not there_is_a_new_version:
