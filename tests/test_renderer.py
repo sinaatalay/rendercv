@@ -20,7 +20,7 @@ folder_name_dictionary = {
 def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file = r.LaTeXFile(rendercv_data_model, jinja2_environment)
     latex_file.get_latex_code()
-    latex_file.generate_latex_file(tmp_path / "test.tex")
+    latex_file.render_a_latex_file(tmp_path / "test.tex")
 
 
 @pytest.mark.parametrize(
@@ -83,7 +83,7 @@ def test_latex_file_revert_nested_latex_style_commands_method(string, expected_s
 def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file = r.MarkdownFile(rendercv_data_model, jinja2_environment)
     latex_file.get_markdown_code()
-    latex_file.generate_markdown_file(tmp_path / "test.tex")
+    latex_file.render_a_markdown_file(tmp_path / "test.tex")
 
 
 @pytest.mark.parametrize(
@@ -360,7 +360,7 @@ def test_setup_jinja2_environment():
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_generate_latex_file(
+def test_render_a_latex_file(
     run_a_function_and_check_if_output_is_the_same_as_reference,
     request: pytest.FixtureRequest,
     theme_name,
@@ -377,22 +377,22 @@ def test_generate_latex_file(
         f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}.tex"
     )
 
-    def generate_latex_file(output_directory_path, reference_file_or_directory_path):
-        r.generate_latex_file(data_model, output_directory_path)
+    def render_a_latex_file(output_directory_path, reference_file_or_directory_path):
+        r.render_a_latex_file(data_model, output_directory_path)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
-        generate_latex_file,
+        render_a_latex_file,
         reference_file_name,
         output_file_name,
     )
 
 
-def test_if_generate_latex_file_can_create_a_new_directory(
+def test_if_render_a_latex_file_can_create_a_new_directory(
     tmp_path, rendercv_data_model
 ):
     new_directory = tmp_path / "new_directory"
 
-    latex_file_path = r.generate_latex_file(rendercv_data_model, new_directory)
+    latex_file_path = r.render_a_latex_file(rendercv_data_model, new_directory)
 
     assert latex_file_path.exists()
 
@@ -409,7 +409,7 @@ def test_if_generate_latex_file_can_create_a_new_directory(
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_generate_markdown_file(
+def test_render_a_markdown_file(
     run_a_function_and_check_if_output_is_the_same_as_reference,
     request: pytest.FixtureRequest,
     theme_name,
@@ -426,22 +426,22 @@ def test_generate_markdown_file(
         f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}.md"
     )
 
-    def generate_markdown_file(output_directory_path, reference_file_or_directory_path):
-        r.generate_markdown_file(data_model, output_directory_path)
+    def render_a_markdown_file(output_directory_path, reference_file_or_directory_path):
+        r.render_a_markdown_file(data_model, output_directory_path)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
-        generate_markdown_file,
+        render_a_markdown_file,
         reference_file_name,
         output_file_name,
     )
 
 
-def test_if_generate_markdown_file_can_create_a_new_directory(
+def test_if_render_a_markdown_file_can_create_a_new_directory(
     tmp_path, rendercv_data_model
 ):
     new_directory = tmp_path / "new_directory"
 
-    latex_file_path = r.generate_markdown_file(rendercv_data_model, new_directory)
+    latex_file_path = r.render_a_markdown_file(rendercv_data_model, new_directory)
 
     assert latex_file_path.exists()
 
@@ -481,7 +481,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
             dummytheme_path.mkdir(parents=True, exist_ok=True)
 
         # create a txt file called test.txt in the custom theme directory:
-        for entry_type_name in dm.entry_type_names:
+        for entry_type_name in dm.available_entry_types:
             pathlib.Path(dummytheme_path / f"{entry_type_name}.j2.tex").touch()
 
         pathlib.Path(dummytheme_path / "Header.j2.tex").touch()
@@ -545,7 +545,7 @@ def test_copy_theme_files_to_output_directory_nonexistent_theme():
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_generate_latex_file_and_copy_theme_files(
+def test_render_a_latex_file_and_copy_theme_files(
     run_a_function_and_check_if_output_is_the_same_as_reference,
     request: pytest.FixtureRequest,
     theme_name,
@@ -560,13 +560,13 @@ def test_generate_latex_file_and_copy_theme_files(
         design={"theme": theme_name},
     )
 
-    def generate_latex_file_and_copy_theme_files(
+    def render_a_latex_file_and_copy_theme_files(
         output_directory_path, reference_file_or_directory_path
     ):
-        r.generate_latex_file_and_copy_theme_files(data_model, output_directory_path)
+        r.render_a_latex_file_and_copy_theme_files(data_model, output_directory_path)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
-        generate_latex_file_and_copy_theme_files,
+        render_a_latex_file_and_copy_theme_files,
         reference_directory_name,
     )
 
@@ -583,7 +583,7 @@ def test_generate_latex_file_and_copy_theme_files(
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_latex_to_pdf(
+def test_render_pdf_from_latex(
     request: pytest.FixtureRequest,
     run_a_function_and_check_if_output_is_the_same_as_reference,
     theme_name,
@@ -601,7 +601,7 @@ def test_latex_to_pdf(
     def generate_pdf_file(output_directory_path, reference_file_or_directory_path):
         latex_sources_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_generate_latex_file_and_copy_theme_files"
+            / "test_render_a_latex_file_and_copy_theme_files"
             / reference_name
         )
 
@@ -609,7 +609,7 @@ def test_latex_to_pdf(
         shutil.copytree(latex_sources_path, output_directory_path, dirs_exist_ok=True)
 
         # convert the latex code to a pdf
-        r.latex_to_pdf(output_directory_path / f"{name}_CV.tex")
+        r.render_pdf_from_latex(output_directory_path / f"{name}_CV.tex")
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
         function=generate_pdf_file,
@@ -618,10 +618,10 @@ def test_latex_to_pdf(
     )
 
 
-def test_latex_to_pdf_nonexistent_latex_file():
+def test_render_pdf_from_latex_nonexistent_latex_file():
     with pytest.raises(FileNotFoundError):
         file_path = pathlib.Path("file_doesnt_exist.tex")
-        r.latex_to_pdf(file_path)
+        r.render_pdf_from_latex(file_path)
 
 
 @pytest.mark.parametrize(
@@ -636,7 +636,7 @@ def test_latex_to_pdf_nonexistent_latex_file():
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_markdown_to_html(
+def test_render_html_from_markdown(
     run_a_function_and_check_if_output_is_the_same_as_reference,
     theme_name,
     curriculum_vitae_data_model,
@@ -647,12 +647,14 @@ def test_markdown_to_html(
     output_file_name = f"{reference_name}.html"
     reference_file_name = f"{reference_name}.html"
 
-    def markdown_to_html(output_directory_path, reference_file_or_directory_path):
+    def render_html_from_markdown(
+        output_directory_path, reference_file_or_directory_path
+    ):
         markdown_file_name = f"{reference_name}.md"
 
         markdown_source_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_generate_markdown_file"
+            / "test_render_a_markdown_file"
             / markdown_file_name
         )
 
@@ -660,22 +662,22 @@ def test_markdown_to_html(
         shutil.copy(markdown_source_path, output_directory_path)
 
         # convert markdown to html
-        r.markdown_to_html(output_directory_path / markdown_file_name)
+        r.render_html_from_markdown(output_directory_path / markdown_file_name)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
-        function=markdown_to_html,
+        function=render_html_from_markdown,
         reference_file_or_directory_name=reference_file_name,
         output_file_name=output_file_name,
     )
 
 
-def test_markdown_to_html_nonexistent_markdown_file():
+def test_render_html_from_markdown_nonexistent_markdown_file():
     with pytest.raises(FileNotFoundError):
         file_path = pathlib.Path("file_doesnt_exist.md")
-        r.markdown_to_html(file_path)
+        r.render_html_from_markdown(file_path)
 
 
-def test_pdf_to_pngs_single_page(
+def test_render_a_markdown_file_single_page(
     run_a_function_and_check_if_output_is_the_same_as_reference,
 ):
     output_file_name = "classic_empty_1.png"
@@ -686,7 +688,7 @@ def test_pdf_to_pngs_single_page(
 
         pdf_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_latex_to_pdf"
+            / "test_render_pdf_from_latex"
             / pdf_file_name
         )
 
@@ -694,7 +696,7 @@ def test_pdf_to_pngs_single_page(
         shutil.copy(pdf_path, output_directory_path)
 
         # convert pdf to pngs
-        r.pdf_to_pngs(output_directory_path / pdf_file_name)
+        r.render_a_markdown_file(output_directory_path / pdf_file_name)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
         generate_pngs,
@@ -703,7 +705,7 @@ def test_pdf_to_pngs_single_page(
     )
 
 
-def test_pdf_to_pngs(
+def test_render_a_markdown_file(
     run_a_function_and_check_if_output_is_the_same_as_reference,
 ):
     reference_directory_name = "pngs"
@@ -713,7 +715,7 @@ def test_pdf_to_pngs(
 
         pdf_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_latex_to_pdf"
+            / "test_render_pdf_from_latex"
             / pdf_file_name
         )
 
@@ -721,7 +723,7 @@ def test_pdf_to_pngs(
         shutil.copy(pdf_path, output_directory_path)
 
         # convert pdf to pngs
-        r.pdf_to_pngs(output_directory_path / pdf_file_name)
+        r.render_a_markdown_file(output_directory_path / pdf_file_name)
 
         # remove the pdf file
         (output_directory_path / pdf_file_name).unlink()
@@ -735,4 +737,4 @@ def test_pdf_to_pngs(
 def test_pdf_to_png_nonexistent_pdf_file():
     with pytest.raises(FileNotFoundError):
         file_path = pathlib.Path("file_doesnt_exist.pdf")
-        r.pdf_to_pngs(file_path)
+        r.render_a_markdown_file(file_path)

@@ -194,10 +194,10 @@ def generate_entry_figures():
                 )
 
                 # Render:
-                latex_file_path = r.generate_latex_file_and_copy_theme_files(
+                latex_file_path = r.render_a_latex_file_and_copy_theme_files(
                     data_model, temporary_directory_path
                 )
-                pdf_file_path = r.latex_to_pdf(latex_file_path)
+                pdf_file_path = r.render_pdf_from_latex(latex_file_path)
 
                 # Prepare the output directory and file path:
                 output_directory = image_assets_directory / theme
@@ -228,7 +228,7 @@ def generate_entry_figures():
                 )
 
                 # Convert pdf to an image
-                png_file_path = r.pdf_to_pngs(output_pdf_file_path)[0]
+                png_file_path = r.render_a_markdown_file(output_pdf_file_path)[0]
                 desired_png_file_path = output_pdf_file_path.with_suffix(".png")
 
                 # If the image exists, remove it

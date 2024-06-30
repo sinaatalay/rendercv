@@ -558,6 +558,15 @@ def test_sections_with_invalid_entries():
         dm.CurriculumVitae(**input)
 
 
+def test_sections_without_list():
+    input = {"name": "John Doe", "sections": dict()}
+    input["sections"]["section_title"] = {
+        "this section": "does not have a list of entries but a single entry."
+    }
+    with pytest.raises(pydantic.ValidationError):
+        dm.CurriculumVitae(**input)
+
+
 @pytest.mark.parametrize(
     "invalid_custom_theme_name",
     [
@@ -769,3 +778,6 @@ def test_default_input_file_doesnt_have_local_catalog():
 )
 def test_dictionary_key_to_proper_section_title(key, expected_section_title):
     assert dm.dictionary_key_to_proper_section_title(key) == expected_section_title
+
+
+# def test_if_available_themes_and_avaialble_theme_options_has_the_same_length():

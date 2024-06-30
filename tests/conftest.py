@@ -16,6 +16,7 @@ import pypdf
 import pytest
 
 import rendercv.renderer as r
+import rendercv.renderer.templating as rt
 from rendercv import data_models as dm
 
 # RenderCV is being tested by comparing the output to reference files. Therefore,
@@ -153,7 +154,7 @@ def return_a_value_for_a_field_type(
         ```python
         return_a_value_for_a_field_type("institution", str)
         ```
-        will return:
+        returns
         `#!python "Boğaziçi University"`
 
     Args:
@@ -317,7 +318,7 @@ def rendercv_filled_curriculum_vitae_data_model(
 @pytest.fixture
 def jinja2_environment() -> jinja2.Environment:
     """Return a Jinja2 environment."""
-    return r.setup_jinja2_environment()
+    return rt.setup_jinja2_environment()
 
 
 @pytest.fixture

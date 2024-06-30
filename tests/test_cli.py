@@ -10,6 +10,9 @@ import ruamel.yaml
 import typer.testing
 
 import rendercv.cli as cli
+import rendercv.cli.printer as printer
+import rendercv.cli.utilities as util
+import rendercv.cli.handlers as handlers
 import rendercv.data_models as dm
 from rendercv import __version__
 
@@ -28,47 +31,47 @@ def run_render_command(input_file_path, working_path, extra_arguments=[]):
 
 
 def test_welcome():
-    cli.welcome()
+    printer.welcome()
 
 
 def test_warning():
-    cli.warning("This is a warning message.")
+    printer.warning("This is a warning message.")
 
 
 def test_error():
     with pytest.raises(typer.Exit):
-        cli.error("This is an error message.")
+        printer.error("This is an error message.")
 
 
 def test_error_without_text():
     with pytest.raises(typer.Exit):
-        cli.error()
+        printer.error()
 
 
 def test_error_without_text_with_exception():
     with pytest.raises(typer.Exit):
-        cli.error(exception=ValueError("This is an error message."))
+        printer.error(exception=ValueError("This is an error message."))
 
 
 def test_information():
-    cli.information("This is an information message.")
+    printer.information("This is an information message.")
 
 
 def test_get_error_message_and_location_and_value_from_a_custom_error():
     error_string = "('error message', 'location', 'value')"
-    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
+    result = util.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result == ("error message", "location", "value")
 
     error_string = """("er'ror message", 'location', 'value')"""
-    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
+    result = util.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result == ("er'ror message", "location", "value")
 
     error_string = "error message"
-    result = cli.get_error_message_and_location_and_value_from_a_custom_error(
+    result = util.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result == (None, None, None)
@@ -167,12 +170,12 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
         ),
     ],
 )
-def test_handle_validation_error(data_model_class, invalid_model):
+def test_print_validation_errors(data_model_class, invalid_model):
     try:
         data_model_class(**invalid_model)
     except pydantic.ValidationError as e:
         with pytest.raises(typer.Exit):
-            cli.handle_validation_error(e)
+            printer.print_validation_errors(e)
 
 
 @pytest.mark.parametrize(
@@ -186,7 +189,7 @@ def test_handle_validation_error(data_model_class, invalid_model):
     ],
 )
 def test_handle_exceptions(exception):
-    @cli.handle_exceptions
+    @handlers.handle_exceptions
     def function_that_raises_exception():
         raise exception
 
@@ -195,7 +198,7 @@ def test_handle_exceptions(exception):
 
 
 def test_live_progress_reporter_class():
-    with cli.LiveProgressReporter(number_of_steps=3) as progress:
+    with printer.LiveProgressReporter(number_of_steps=3) as progress:
         progress.start_a_step("Test step 1")
         progress.finish_the_current_step()
 
@@ -211,7 +214,7 @@ def test_live_progress_reporter_class():
     ["markdown"] + dm.available_themes,
 )
 def test_copy_templates(tmp_path, folder_name):
-    copied_path = cli.copy_templates(
+    copied_path = util.copy_templates(
         folder_name=folder_name,
         copy_to=tmp_path,
     )
@@ -574,7 +577,7 @@ def test_main_file():
 
 
 def test_get_latest_version_number_from_pypi():
-    version = cli.get_latest_version_number_from_pypi()
+    version = util.get_latest_version_number_from_pypi()
     assert isinstance(version, str)
 
 
@@ -584,7 +587,7 @@ def test_if_welcome_prints_new_version_available(monkeypatch):
     import io
 
     with contextlib.redirect_stdout(io.StringIO()) as f:
-        cli.welcome()
+        printer.welcome()
         output = f.getvalue()
 
     assert "A new version of RenderCV is available!" in output
@@ -609,8 +612,8 @@ def test_rendercv_version_when_there_is_not_a_new_version(monkeypatch):
 def test_warn_if_new_version_is_available(monkeypatch):
     monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: __version__)
 
-    assert not cli.warn_if_new_version_is_available()
+    assert not printer.warn_if_new_version_is_available()
 
     monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "999")
 
-    assert cli.warn_if_new_version_is_available()
+    assert printer.warn_if_new_version_is_available()

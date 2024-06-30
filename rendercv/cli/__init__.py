@@ -5,4 +5,18 @@ CLI and [Rich](https://rich.readthedocs.io/en/latest/) to provide a nice-looking
 terminal output.
 """
 
-__all__ = ["commands", "printer", "utilities"]
+from .commands import (
+    app,
+    cli_command_render,
+    cli_command_new,
+    cli_command_create_theme,
+    cli_command_no_args,
+)
+
+__all__ = [
+    "app",
+    "cli_command_render",
+    "cli_command_new",
+    "cli_command_create_theme",
+    "cli_command_no_args",
+]

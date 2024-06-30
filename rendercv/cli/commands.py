@@ -1,6 +1,6 @@
 """
-`rendercv.cli.commands` module contains all the command-line interface (CLI) commands of
-RenderCV.
+The `rendercv.cli.commands` module contains all the command-line interface (CLI
+commands of RenderCV.
 """
 
 import os
@@ -200,7 +200,7 @@ def cli_command_render(
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
-        latex_file_path_in_output_folder = r.generate_latex_file_and_copy_theme_files(
+        latex_file_path_in_output_folder = r.render_a_latex_file_and_copy_theme_files(
             data_model, output_directory
         )
         if latex_path:
@@ -208,7 +208,7 @@ def cli_command_render(
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
-        pdf_file_path_in_output_folder = r.latex_to_pdf(
+        pdf_file_path_in_output_folder = r.render_pdf_from_latex(
             latex_file_path_in_output_folder, use_local_latex_command
         )
         if pdf_path:
@@ -217,7 +217,7 @@ def cli_command_render(
 
         if not dont_generate_png:
             progress.start_a_step("Rendering PNG files from the PDF")
-            png_file_paths_in_output_folder = r.pdf_to_pngs(
+            png_file_paths_in_output_folder = r.render_a_markdown_file(
                 pdf_file_path_in_output_folder
             )
             if png_path:
@@ -236,7 +236,7 @@ def cli_command_render(
 
         if not dont_generate_markdown:
             progress.start_a_step("Generating the Markdown file")
-            markdown_file_path_in_output_folder = r.generate_markdown_file(
+            markdown_file_path_in_output_folder = r.render_a_markdown_file(
                 data_model, output_directory
             )
             if markdown_path:
@@ -247,7 +247,7 @@ def cli_command_render(
                 progress.start_a_step(
                     "Rendering the Markdown file to a HTML (for Grammarly)"
                 )
-                html_file_path_in_output_folder = r.markdown_to_html(
+                html_file_path_in_output_folder = r.render_html_from_markdown(
                     markdown_file_path_in_output_folder
                 )
                 if html_path:
@@ -394,7 +394,7 @@ def cli_command_create_theme(
 
 
 @app.callback()
-def main(
+def cli_command_no_args(
     version_requested: Annotated[
         Optional[bool], typer.Option("--version", "-v", help="Show the version.")
     ] = None,
