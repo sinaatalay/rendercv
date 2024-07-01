@@ -14,9 +14,9 @@ import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 
 from ..themes.classic import ClassicThemeOptions
 from . import computed_fields as cf
-from . import types
+from . import field_types
 from . import utilities as util
-from . import validators as val
+from . import field_validators
 
 # Disable Pydantic warnings:
 # warnings.filterwarnings("ignore")
@@ -63,7 +63,7 @@ class EntryWithDate(RenderCVBaseModel):
     fields.
     """
 
-    date: types.ArbitraryDate = pydantic.Field(
+    date: field_types.ArbitraryDate = pydantic.Field(
         default=None,
         title="Date",
         description=(
@@ -165,7 +165,7 @@ class EntryBase(EntryWithDate):
         description="The location of the event.",
         examples=["Istanbul, Türkiye"],
     )
-    start_date: types.StartDate = pydantic.Field(
+    start_date: field_types.StartDate = pydantic.Field(
         default=None,
         title="Start Date",
         description=(
@@ -173,7 +173,7 @@ class EntryBase(EntryWithDate):
         ),
         examples=["2020-09-24"],
     )
-    end_date: types.EndDate = pydantic.Field(
+    end_date: field_types.EndDate = pydantic.Field(
         default=None,
         title="End Date",
         description=(
@@ -195,7 +195,12 @@ class EntryBase(EntryWithDate):
         """Call the `validate_adjust_dates_of_an_entry` function to validate the
         dates.
         """
-        return val.validate_and_adjust_dates_of_an_entry(self)
+        self.start_date, self.end_date, self.date = (
+            model_validators.validate_and_adjust_dates(
+                start_date=self.start_date, end_date=self.end_date, date=self.date
+            )
+        )
+        return self
 
     @functools.cached_property
     def date_string(self) -> str:
@@ -301,27 +306,17 @@ class EducationEntry(EntryBase, EducationEntryBase):
 # ======================================================================================
 
 
-class SectionBase(RenderCVBaseModel):
-    """This class is the parent class of all the section types. It is being used
-    in RenderCV internally, and it is not meant to be used directly by the users.
-    It is used by `rendercv.data_models.utilities.create_a_section_model` function to
-    create a section model based on any entry type.
-    """
-
-    title: str
-    entry_type: str
-    entries: types.ListOfEntries
-
-
 # ======================================================================================
 # Full RenderCV data models: ===========================================================
 # ======================================================================================
+from . import model_types
+from . import model_validators
 
 
 class SocialNetwork(RenderCVBaseModel):
     """This class is the data model of a social network."""
 
-    network: types.SocialNetworkName = pydantic.Field(
+    network: field_types.SocialNetworkName = pydantic.Field(
         title="Social Network",
         description="Name of the social network.",
     )
@@ -342,7 +337,9 @@ class SocialNetwork(RenderCVBaseModel):
 
         network = info.data["network"]
 
-        username = val.validate_a_social_network_username(username, network)
+        username = field_validators.validate_a_social_network_username(
+            username, network
+        )
 
         return username
 
@@ -352,7 +349,7 @@ class SocialNetwork(RenderCVBaseModel):
         if self.network == "Mastodon":
             # All the other social networks have valid URLs. Mastodon URLs contain both
             # the username and the domain. So, we need to validate if the url is valid.
-            val.validate_url(self.url)
+            field_validators.validate_url(self.url)
 
         return self
 
@@ -402,7 +399,7 @@ class CurriculumVitae(RenderCVBaseModel):
         title="Social Networks",
         description="The social networks of the person.",
     )
-    sections_input: Optional[dict[str, types.SectionInput]] = pydantic.Field(
+    sections_input: Optional[dict[str, model_types.SectionInput]] = pydantic.Field(
         default=None,
         title="Sections",
         description="The sections of the CV.",
@@ -421,7 +418,7 @@ class CurriculumVitae(RenderCVBaseModel):
         return connections
 
     @functools.cached_property
-    def sections(self) -> list[SectionBase]:
+    def sections(self) -> list[model_validators.SectionBase]:
         """Return all the sections of the CV with their titles as a list of
         `SectionBase` instances and cache `sections` as an attribute of the instance.
         """
@@ -551,7 +548,7 @@ class RenderCVDataModel(RenderCVBaseModel):
         title="Curriculum Vitae",
         description="The data of the CV.",
     )
-    design: types.RenderCVDesign = pydantic.Field(
+    design: model_types.RenderCVDesign = pydantic.Field(
         default=ClassicThemeOptions(theme="classic"),
         title="Design",
         description=(

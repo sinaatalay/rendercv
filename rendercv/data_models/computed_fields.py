@@ -5,11 +5,48 @@ calculate the time span between two dates, the date string, the URL of a social 
 etc.
 """
 
+from datetime import date as Date
 from typing import Optional
 
-from . import models
+# from .models import locale_catalog, CurriculumVitae
+
 from . import utilities as util
-from . import validators as val
+
+# from . import validators as val
+
+
+def format_date(date: Date, use_full_name: bool = False) -> str:
+    """Formats a `Date` object to a string in the following format: "Jan 2021". The
+    month names are taken from the `locale_catalog` dictionary from the
+    `rendercv.data_models.models` module.
+
+    Example:
+        ```python
+        format_date(Date(2024, 5, 1))
+        ```
+        will return
+
+        `#!python "May 2024"`
+
+    Args:
+        date (Date): The date to format.
+        use_full_name (bool, optional): If `True`, the full name of the month will be
+            used. Defaults to `False`.
+
+    Returns:
+        str: The formatted date.
+    """
+    if use_full_name:
+        month_names = locale_catalog["full_names_of_months"]
+    else:
+        month_names = locale_catalog["abbreviations_for_months"]
+
+    month = int(date.strftime("%m"))
+    month_abbreviation = month_names[month - 1]
+    year = date.strftime(format="%Y")
+    date_string = f"{month_abbreviation} {year}"
+
+    return date_string
 
 
 def compute_time_span_string(
@@ -80,18 +117,16 @@ def compute_time_span_string(
         if how_many_years == 0:
             how_many_years_string = None
         elif how_many_years == 1:
-            how_many_years_string = f"1 {models.locale_catalog['year']}"
+            how_many_years_string = f"1 {locale_catalog['year']}"
         else:
-            how_many_years_string = f"{how_many_years} {models.locale_catalog['years']}"
+            how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
 
         # Calculate the number of months between start_date and end_date:
         how_many_months = round((timespan_in_days % 365) / 30)
         if how_many_months <= 1:
-            how_many_months_string = f"1 {models.locale_catalog['month']}"
+            how_many_months_string = f"1 {locale_catalog['month']}"
         else:
-            how_many_months_string = (
-                f"{how_many_months} {models.locale_catalog['months']}"
-            )
+            how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
 
         # Combine howManyYearsString and howManyMonthsString:
         if how_many_years_string is None:
@@ -145,7 +180,7 @@ def compute_date_string(
                 if show_only_years:
                     date_string = str(date_object.year)
                 else:
-                    date_string = util.format_date(date_object)
+                    date_string = format_date(date_object)
             except ValueError:
                 # Then it is a custom date string (e.g., "My Custom Date")
                 date_string = str(date)
@@ -159,10 +194,10 @@ def compute_date_string(
             if show_only_years:
                 start_date = date_object.year
             else:
-                start_date = util.format_date(date_object)
+                start_date = format_date(date_object)
 
         if end_date == "present":
-            end_date = models.locale_catalog["present"]
+            end_date = locale_catalog["present"]
         elif isinstance(end_date, int):
             # Then it means only the year is provided
             end_date = str(end_date)
@@ -172,9 +207,9 @@ def compute_date_string(
             if show_only_years:
                 end_date = date_object.year
             else:
-                end_date = util.format_date(date_object)
+                end_date = format_date(date_object)
 
-        date_string = f"{start_date} {models.locale_catalog['to']} {end_date}"
+        date_string = f"{start_date} {locale_catalog['to']} {end_date}"
 
     else:
         # Neither date, start_date, nor end_date are provided, so return an empty
@@ -214,7 +249,7 @@ def compute_social_network_url(network: str, username: str):
     return url
 
 
-def compute_connections(cv: models.CurriculumVitae) -> list[dict[str, str]]:
+def compute_connections(cv) -> list[dict[str, str]]:
     """Bring together all the connections in the CV, such as social networks, phone
     number, email, etc and return them as a list of dictionaries. Each dictionary
     contains the following keys: "latex_icon", "url", "clean_url", and "placeholder."
@@ -304,36 +339,36 @@ def compute_connections(cv: models.CurriculumVitae) -> list[dict[str, str]]:
     return connections
 
 
-def compute_sections(
-    sections_input: Optional[dict[str, models.SectionInput]],
-) -> list[models.SectionBase]:
-    """Compute the sections of the CV based on the input sections.
+# def compute_sections(
+#     sections_input: Optional[dict[str, models.SectionInput]],
+# ) -> list[models.SectionBase]:
+#     """Compute the sections of the CV based on the input sections.
 
-    The original `sections` input is a dictionary where the keys are the section titles
-    and the values are the list of entries in that section. This function converts the
-    input sections to a list of `SectionBase` objects. This makes it easier to work with
-    the sections in the rest of the code.
+#     The original `sections` input is a dictionary where the keys are the section titles
+#     and the values are the list of entries in that section. This function converts the
+#     input sections to a list of `SectionBase` objects. This makes it easier to work with
+#     the sections in the rest of the code.
 
-    Args:
-        sections_input (Optional[dict[str, SectionInput]]): The input sections.
-    Returns:
-        list[SectionBase]: The computed sections.
-    """
-    sections: list[models.SectionBase] = []
+#     Args:
+#         sections_input (Optional[dict[str, SectionInput]]): The input sections.
+#     Returns:
+#         list[SectionBase]: The computed sections.
+#     """
+#     sections: list[models.SectionBase] = []
 
-    if sections_input is not None:
-        for title, section_or_entries in sections_input.items():
-            title = util.dictionary_key_to_proper_section_title(title)
+#     if sections_input is not None:
+#         for title, section_or_entries in sections_input.items():
+#             title = util.dictionary_key_to_proper_section_title(title)
 
-            entry_type_name = val.validate_an_entry_type_and_get_entry_type_name(
-                section_or_entries[0]
-            )
+#             entry_type_name = val.validate_an_entry_type_and_get_entry_type_name(
+#                 section_or_entries[0]
+#             )
 
-            section = models.SectionBase(
-                title=title,
-                entry_type=entry_type_name,
-                entries=section_or_entries,
-            )
-            sections.append(section)
+#             section = models.SectionBase(
+#                 title=title,
+#                 entry_type=entry_type_name,
+#                 entries=section_or_entries,
+#             )
+#             sections.append(section)
 
-    return sections
+#     return sections

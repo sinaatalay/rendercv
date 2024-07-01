@@ -22,10 +22,10 @@ from .printer import (
     warn_if_new_version_is_available,
     warning,
     welcome,
+    handle_and_print_raised_exceptions,
 )
 from .utilities import (
     copy_templates,
-    handle_exceptions,
     parse_render_command_override_arguments,
 )
 
@@ -50,7 +50,7 @@ app = typer.Typer(
     # allow extra arguments for updating the data model:
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
-@handle_exceptions
+@handle_and_print_raised_exceptions
 def cli_command_render(
     input_file_name: Annotated[
         str, typer.Argument(help="Name of the YAML input file.")
@@ -316,12 +316,22 @@ def cli_command_new(
         theme_folder = copy_templates(theme, pathlib.Path.cwd())
         if theme_folder is not None:
             created_files_and_folders.append(theme_folder.name)
+        else:
+            warning(
+                f'The theme folder "{theme}" already exists! The theme files are not'
+                " created."
+            )
 
     if not dont_create_markdown_source_files:
         # copy the package's markdown files to the current directory
         markdown_folder = copy_templates("markdown", pathlib.Path.cwd())
         if markdown_folder is not None:
             created_files_and_folders.append(markdown_folder.name)
+        else:
+            warning(
+                'The "markdown" folder already exists! The Markdown files are not'
+                " created."
+            )
 
     if len(created_files_and_folders) > 0:
         created_files_and_folders_string = ",\n".join(created_files_and_folders)

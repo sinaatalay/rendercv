@@ -11,8 +11,6 @@ from typing import Optional
 
 import typer
 
-from .printer import error, warning
-
 
 def get_latest_version_number_from_pypi() -> Optional[str]:
     """Get the latest version number of RenderCV from PyPI.
@@ -74,7 +72,6 @@ def copy_templates(
     folder_name: str,
     copy_to: pathlib.Path,
     new_folder_name: Optional[str] = None,
-    suppress_warning: bool = False,
 ) -> Optional[pathlib.Path]:
     """Copy one of the folders found in `rendercv.templates` to `copy_to`.
 
@@ -92,18 +89,6 @@ def copy_templates(
         destination = copy_to / folder_name
 
     if destination.exists():
-        if not suppress_warning:
-            if folder_name != "markdown":
-                warning(
-                    f'The theme folder "{folder_name}" already exists! New theme files'
-                    " are not created."
-                )
-            else:
-                warning(
-                    'The folder "markdown" already exists! New Markdown files are not'
-                    " created."
-                )
-
         return None
     else:
         # copy the folder but don't include __init__.py:
@@ -138,7 +123,7 @@ def parse_render_command_override_arguments(
     # below parses `ctx.args` accordingly.
 
     if len(extra_arguments.args) % 2 != 0:
-        error(
+        raise ValueError(
             "There is a problem with the extra arguments! Each key should have"
             " a corresponding value."
         )
@@ -147,7 +132,7 @@ def parse_render_command_override_arguments(
         key = extra_arguments.args[i]
         value = extra_arguments.args[i + 1]
         if not key.startswith("--"):
-            error(f"The key ({key}) should start with double dashes!")
+            raise ValueError(f"The key ({key}) should start with double dashes!")
 
         key = key.replace("--", "")
 

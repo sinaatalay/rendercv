@@ -11,9 +11,12 @@ from typing import Any, Optional
 import pydantic
 
 from ..themes.classic import ClassicThemeOptions
+from ..themes.sb2nov import Sb2novThemeOptions
+from ..themes.moderncv import ModerncvThemeOptions
+from ..themes.engineeringresumes import EngineeringresumesThemeOptions
 from . import models
 from . import utilities as utils
-from . import validators as val
+from . import field_validators as field_val
 
 
 def get_a_sample_data_model(
@@ -269,10 +272,14 @@ def get_a_sample_data_model(
         sections=sections,  # type: ignore
     )
 
-    if theme == "classic":
-        design = ClassicThemeOptions(theme="classic", show_timespan_in=["Experience"])
-    else:
-        design = val.rendercv_design_validator.validate_python({"theme": theme})
+    themes = {
+        "classic": ClassicThemeOptions,
+        "moderncv": ModerncvThemeOptions,
+        "sb2nov": Sb2novThemeOptions,
+        "engineeringresumes": EngineeringresumesThemeOptions,
+    }
+
+    design = themes[theme](theme=theme)
 
     return models.RenderCVDataModel(cv=cv, design=design)
 

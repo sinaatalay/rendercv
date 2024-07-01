@@ -33,10 +33,20 @@ from .generators import (
     get_a_sample_data_model,
 )
 
-from .types import (
+from .field_types import (
+    available_social_networks,
+)
+
+from .model_types import (
     available_entry_type_names,
     available_themes,
-    available_social_networks,
+    Entry,
+    SectionInput,
+)
+
+
+from .computed_fields import (
+    format_date,
 )
 
 from .utilities import set_or_update_a_value, dictionary_to_yaml

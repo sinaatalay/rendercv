@@ -62,46 +62,6 @@ def get_date_object(date: str | int) -> Date:
     return date_object
 
 
-def format_date(
-    date: Date, locale_catalog: dict[str, str | list[str]], use_full_name: bool = False
-) -> str:
-    """Formats a `Date` object to a string in the following format: "Jan 2021". The
-    month abbreviation is taken from the locale catalog's `abbreviations_for_months` or
-    `full_names_of_months` field.
-
-    Example:
-        ```python
-        format_date(Date(2024, 5, 1))
-        ```
-        will return
-
-        `#!python "May 2024"`
-
-    Args:
-        date (Date): The date to format.
-        locale_catalog (dict[str, str | list[str]]): The locale catalog to use for
-            formatting the date.
-        use_full_name (bool, optional): If `True`, the full name of the month will be
-            used. Defaults to `False`.
-
-    Returns:
-        str: The formatted date.
-    """
-    # Month abbreviations,
-    # taken from: https://web.library.yale.edu/cataloging/months
-    if use_full_name:
-        month_names = locale_catalog["full_names_of_months"]
-    else:
-        month_names = locale_catalog["abbreviations_for_months"]
-
-    month = int(date.strftime("%m"))
-    month_abbreviation = month_names[month - 1]
-    year = date.strftime(format="%Y")
-    date_string = f"{month_abbreviation} {year}"
-
-    return date_string
-
-
 def dictionary_key_to_proper_section_title(key: str) -> str:
     """Convert a dictionary key to a proper section title.
 
