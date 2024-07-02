@@ -1,11 +1,12 @@
-from typing import Annotated, Literal, Optional
-import pydantic
 import functools
 import re
 from datetime import date as Date
-from .. import utilities as util
-from . import computers as cf
+from typing import Annotated, Literal, Optional
 
+import pydantic
+
+from . import computers
+from .base import RenderCVBaseModel
 
 # ======================================================================================
 # Create validator functions: ==========================================================
@@ -27,7 +28,7 @@ def validate_date_field(date: Optional[int | str]) -> Optional[int | str]:
             if re.fullmatch(r"\d{4}-\d{2}(-\d{2})?", date):
                 # Then it is in YYYY-MM-DD or YYYY-MMY format
                 # Check if it is a valid date:
-                util.get_date_object(date)
+                computers.get_date_object(date)
             elif re.fullmatch(r"\d{4}", date):
                 # Then it is in YYYY format, so, convert it to an integer:
 
@@ -64,7 +65,7 @@ def validate_start_and_end_date_fields(
 
         elif date != "present":
             # Validate the date:
-            util.get_date_object(date)
+            computers.get_date_object(date)
 
     return date
 
@@ -98,14 +99,14 @@ def validate_and_adjust_dates_for_an_entry(
         start_date = None
         end_date = None
     elif start_date_is_provided:
-        start_date = util.get_date_object(start_date)
+        start_date = computers.get_date_object(start_date)
         if not end_date_is_provided:
             # If only start_date is provided, assume it is an ongoing event, i.e.,
             # the end_date is present:
             end_date = "present"
 
         if end_date != "present":
-            end_date = util.get_date_object(end_date)
+            end_date = computers.get_date_object(end_date)
 
             if start_date > end_date:
                 raise ValueError(
@@ -159,16 +160,6 @@ EndDate = Annotated[
 # Create the entry models: =============================================================
 # ======================================================================================
 
-
-class RenderCVBaseModel(pydantic.BaseModel):
-    """This class is the parent class of all the data models in RenderCV. It has only
-    one difference from the default `pydantic.BaseModel`: It raises an error if an
-    unknown key is provided in the input file.
-    """
-
-    model_config = pydantic.ConfigDict(extra="forbid")
-
-
 class OneLineEntry(RenderCVBaseModel):
     """This class is the data model of `OneLineEntry`."""
 
@@ -211,7 +202,9 @@ class EntryWithDate(RenderCVBaseModel):
         """Return a date string based on the `date` field and cache `date_string` as
         an attribute of the instance.
         """
-        return cf.compute_date_string(start_date=None, end_date=None, date=self.date)
+        return computers.compute_date_string(
+            start_date=None, end_date=None, date=self.date
+        )
 
 
 class PublicationEntryBase(RenderCVBaseModel):
@@ -272,7 +265,7 @@ class PublicationEntryBase(RenderCVBaseModel):
         url_is_provided = self.url is not None
 
         if url_is_provided:
-            return util.make_a_url_clean(self.url)
+            return computers.make_a_url_clean(self.url)
         else:
             return ""
 
@@ -347,7 +340,7 @@ class EntryBase(EntryWithDate):
             returns
             `#!python "Nov 2020 to Apr 2021"`
         """
-        return cf.compute_date_string(
+        return computers.compute_date_string(
             start_date=self.start_date, end_date=self.end_date, date=self.date
         )
 
@@ -364,7 +357,7 @@ class EntryBase(EntryWithDate):
             returns
             `#!python "2020 to 2021"`
         """
-        return cf.compute_date_string(
+        return computers.compute_date_string(
             start_date=self.start_date,
             end_date=self.end_date,
             date=self.date,
@@ -376,7 +369,7 @@ class EntryBase(EntryWithDate):
         """Return a time span string based on the `date`, `start_date`, and `end_date`
         fields and cache `time_span_string` as an attribute of the instance.
         """
-        return cf.compute_time_span_string(
+        return computers.compute_time_span_string(
             start_date=self.start_date, end_date=self.end_date, date=self.date
         )
 

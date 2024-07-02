@@ -8,18 +8,17 @@ from typing import Optional
 
 import pydantic
 
-from . import entry_types
 from ...themes.classic import ClassicThemeOptions
-
-from .design import RenderCVDesign
-from .curriculum_vitae import CurriculumVitae
-from .locale_catalog import LocaleCatalog
 
 # Disable Pydantic warnings:
 # warnings.filterwarnings("ignore")
+from .base import RenderCVBaseModel
+from .curriculum_vitae import CurriculumVitae
+from .design import RenderCVDesign
+from .locale_catalog import LocaleCatalog
 
 
-class RenderCVDataModel(entry_types.RenderCVBaseModel):
+class RenderCVDataModel(RenderCVBaseModel):
     """This class binds both the CV and the design information together."""
 
     cv: CurriculumVitae = pydantic.Field(

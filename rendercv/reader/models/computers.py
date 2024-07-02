@@ -5,9 +5,9 @@ calculate the time span between two dates, the date string, the URL of a social 
 etc.
 """
 
+import re
 from datetime import date as Date
 from typing import Optional
-import re
 
 from .locale_catalog import locale_catalog
 

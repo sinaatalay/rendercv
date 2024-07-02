@@ -1,25 +1,20 @@
-from typing import Annotated, Any, Optional, get_args
+import functools
+import re
+from typing import Annotated, Any, Literal, Optional, Type, get_args
 
 import pydantic
-import functools
-
-from . import entry_types
-from . import computers as cf
-
-from typing import Type, Literal
-import re
-
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 
-from . import utilities as util
-from . import entry_validators
+from . import computers as computers
+from . import entry_types
+from .base import RenderCVBaseModel
 
 # ======================================================================================
 # Create validator functions: ==========================================================
 # ======================================================================================
 
 
-class SectionBase(entry_types.RenderCVBaseModel):
+class SectionBase(RenderCVBaseModel):
     """This class is the parent class of all the section types. It is being used
     in RenderCV internally, and it is not meant to be used directly by the users.
     It is used by `rendercv.data_models.utilities.create_a_section_model` function to
@@ -296,7 +291,7 @@ available_social_networks = get_args(SocialNetworkName)
 # ======================================================================================
 
 
-class SocialNetwork(entry_types.RenderCVBaseModel):
+class SocialNetwork(RenderCVBaseModel):
     """This class is the data model of a social network."""
 
     network: SocialNetworkName = pydantic.Field(
@@ -339,10 +334,10 @@ class SocialNetwork(entry_types.RenderCVBaseModel):
         """Return the URL of the social network and cache `url` as an attribute of the
         instance.
         """
-        return cf.compute_social_network_url(self.network, self.username)
+        return computers.compute_social_network_url(self.network, self.username)
 
 
-class CurriculumVitae(entry_validators.RenderCVBaseModel):
+class CurriculumVitae(RenderCVBaseModel):
     """This class is the data model of the `cv` field."""
 
     name: Optional[str] = pydantic.Field(
@@ -394,7 +389,7 @@ class CurriculumVitae(entry_validators.RenderCVBaseModel):
         """Return all the connections of the person as a list of dictionaries and cache
         `connections` as an attribute of the instance.
         """
-        connections = cf.compute_connections(self)
+        connections = computers.compute_connections(self)
 
         return connections
 

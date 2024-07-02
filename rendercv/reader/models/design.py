@@ -1,3 +1,6 @@
+import importlib
+import importlib.util
+import pathlib
 from typing import Annotated, Any, Type
 
 import pydantic
@@ -6,14 +9,8 @@ from ...themes.classic import ClassicThemeOptions
 from ...themes.engineeringresumes import EngineeringresumesThemeOptions
 from ...themes.moderncv import ModerncvThemeOptions
 from ...themes.sb2nov import Sb2novThemeOptions
-
-
-import pathlib
-import importlib
-import importlib.util
-
 from . import entry_types
-
+from .base import RenderCVBaseModel
 
 # ======================================================================================
 # Create validator functions: ==========================================================
@@ -127,7 +124,7 @@ def validate_design_options(
         else:
             # Then it means there is no __init__.py file in the custom theme folder.
             # Create a dummy data model and use that instead.
-            class ThemeOptionsAreNotProvided(entry_types.RenderCVBaseModel):
+            class ThemeOptionsAreNotProvided(RenderCVBaseModel):
                 theme: str = theme_name
 
             theme_data_model = ThemeOptionsAreNotProvided(theme=theme_name)

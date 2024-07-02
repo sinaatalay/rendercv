@@ -4,12 +4,12 @@ generate a sample YAML input file and the JSON schema of RenderCV based on the d
 models defined in `rendercv.data_models.models`.
 """
 
+import io
 import json
 import pathlib
 from typing import Any, Optional
-import io
-import pydantic
 
+import pydantic
 import ruamel.yaml
 
 from . import models

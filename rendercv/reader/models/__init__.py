@@ -1,8 +1,10 @@
+from .computers import format_date
 from .curriculum_vitae import CurriculumVitae, SocialNetwork
 from .design import available_theme_options
 from .entry_types import (
     BulletEntry,
     EducationEntry,
+    Entry,
     ExperienceEntry,
     NormalEntry,
     OneLineEntry,
@@ -10,8 +12,6 @@ from .entry_types import (
 )
 from .locale_catalog import LocaleCatalog
 from .rendercv_data_model import RenderCVDataModel
-from .computers import format_date
-
 
 __all__ = [
     "OneLineEntry",
@@ -26,4 +26,5 @@ __all__ = [
     "RenderCVDataModel",
     "available_theme_options",
     "format_date",
+    "Entry"
 ]
