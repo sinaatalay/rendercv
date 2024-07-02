@@ -5,7 +5,7 @@ import pathlib
 import shutil
 
 import rendercv.cli as cli
-import rendercv.data_models as dm
+import rendercv.reader as dm
 import rendercv.renderer as r
 
 repository_root = pathlib.Path(__file__).parent.parent

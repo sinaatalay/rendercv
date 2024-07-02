@@ -12,7 +12,7 @@ import typer.testing
 import rendercv.cli as cli
 import rendercv.cli.printer as printer
 import rendercv.cli.utilities as util
-import rendercv.data_models as dm
+import rendercv.reader as dm
 from rendercv import __version__
 
 

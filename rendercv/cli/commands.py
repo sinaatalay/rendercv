@@ -13,7 +13,7 @@ import typer
 from rich import print
 
 from .. import __version__
-from .. import data_models as dm
+from .. import reader as dm
 from .. import renderer as r
 from .printer import (
     LiveProgressReporter,

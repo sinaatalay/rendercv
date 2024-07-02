@@ -14,7 +14,7 @@ from typing import Optional
 import fitz
 import markdown
 
-from .. import data_models as dm
+from .. import reader as dm
 from . import templating as tp
 
 

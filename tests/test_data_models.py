@@ -10,7 +10,7 @@ import pytest
 import ruamel.yaml
 import time_machine
 
-from rendercv import data_models as dm
+from rendercv import reader as dm
 
 from .conftest import update_testdata
 

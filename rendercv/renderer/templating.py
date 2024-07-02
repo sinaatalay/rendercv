@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 import jinja2
 
-from .. import data_models as dm
+from .. import reader as dm
 
 
 class TemplatedFile:

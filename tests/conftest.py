@@ -17,7 +17,7 @@ import pytest
 
 import rendercv.renderer as r
 import rendercv.renderer.templating as rt
-from rendercv import data_models as dm
+from rendercv import reader as dm
 
 # RenderCV is being tested by comparing the output to reference files. Therefore,
 # reference files should be updated when RenderCV is updated in a way that changes

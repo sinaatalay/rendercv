@@ -2,7 +2,7 @@
 
 import pathlib
 
-import rendercv.data_models as dm
+import rendercv.reader as dm
 
 repository_root = pathlib.Path(__file__).parent.parent
 
