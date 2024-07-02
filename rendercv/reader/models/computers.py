@@ -7,12 +7,9 @@ etc.
 
 from datetime import date as Date
 from typing import Optional
+import re
 
-# from .models import locale_catalog, CurriculumVitae
-
-from . import utilities as util
-
-# from . import validators as val
+from .locale_catalog import locale_catalog
 
 
 def format_date(date: Date, use_full_name: bool = False) -> str:
@@ -91,8 +88,8 @@ def compute_time_span_string(
     elif isinstance(start_date, int) or isinstance(end_date, int):
         # Then it means one of the dates is year, so time span cannot be more
         # specific than years.
-        start_year = util.get_date_object(start_date).year  # type: ignore
-        end_year = util.get_date_object(end_date).year  # type: ignore
+        start_year = get_date_object(start_date).year  # type: ignore
+        end_year = get_date_object(end_date).year  # type: ignore
 
         time_span_in_years = end_year - start_year
 
@@ -106,8 +103,8 @@ def compute_time_span_string(
     else:
         # Then it means both start_date and end_date are in YYYY-MM-DD or YYYY-MM
         # format.
-        end_date = util.get_date_object(end_date)  # type: ignore
-        start_date = util.get_date_object(start_date)  # type: ignore
+        end_date = get_date_object(end_date)  # type: ignore
+        start_date = get_date_object(start_date)  # type: ignore
 
         # Calculate the number of days between start_date and end_date:
         timespan_in_days = (end_date - start_date).days  # type: ignore
@@ -176,7 +173,7 @@ def compute_date_string(
             date_string = str(date)
         else:
             try:
-                date_object = util.get_date_object(date)
+                date_object = get_date_object(date)
                 if show_only_years:
                     date_string = str(date_object.year)
                 else:
@@ -190,7 +187,7 @@ def compute_date_string(
             start_date = str(start_date)
         else:
             # Then it means start_date is either in YYYY-MM-DD or YYYY-MM format
-            date_object = util.get_date_object(start_date)
+            date_object = get_date_object(start_date)
             if show_only_years:
                 start_date = date_object.year
             else:
@@ -203,7 +200,7 @@ def compute_date_string(
             end_date = str(end_date)
         else:
             # Then it means end_date is either in YYYY-MM-DD or YYYY-MM format
-            date_object = util.get_date_object(end_date)
+            date_object = get_date_object(end_date)
             if show_only_years:
                 end_date = date_object.year
             else:
@@ -296,7 +293,7 @@ def compute_connections(cv) -> list[dict[str, str]]:
         )
 
     if cv.website is not None:
-        website_placeholder = util.make_a_url_clean(cv.website)
+        website_placeholder = make_a_url_clean(cv.website)
         connections.append(
             {
                 "latex_icon": "\\faLink",
@@ -320,7 +317,7 @@ def compute_connections(cv) -> list[dict[str, str]]:
             "Google Scholar": "\\faGraduationCap",
         }
         for social_network in cv.social_networks:
-            clean_url = util.make_a_url_clean(social_network.url)
+            clean_url = make_a_url_clean(social_network.url)
             connection = {
                 "latex_icon": icon_dictionary[social_network.network],
                 "url": social_network.url,
@@ -339,36 +336,83 @@ def compute_connections(cv) -> list[dict[str, str]]:
     return connections
 
 
-# def compute_sections(
-#     sections_input: Optional[dict[str, models.SectionInput]],
-# ) -> list[models.SectionBase]:
-#     """Compute the sections of the CV based on the input sections.
+def make_a_url_clean(url: str) -> str:
+    """Make a URL clean by removing the protocol, www, and trailing slashes.
 
-#     The original `sections` input is a dictionary where the keys are the section titles
-#     and the values are the list of entries in that section. This function converts the
-#     input sections to a list of `SectionBase` objects. This makes it easier to work with
-#     the sections in the rest of the code.
+    Example:
+        ```python
+        make_a_url_clean("https://www.example.com/")
+        ```
+        returns
+        `#!python "example.com"`
 
-#     Args:
-#         sections_input (Optional[dict[str, SectionInput]]): The input sections.
-#     Returns:
-#         list[SectionBase]: The computed sections.
-#     """
-#     sections: list[models.SectionBase] = []
+    Args:
+        url (str): The URL to make clean.
+    Returns:
+        str: The clean URL.
+    """
+    url = url.replace("https://", "").replace("http://", "").replace("www.", "")
+    if url.endswith("/"):
+        url = url[:-1]
 
-#     if sections_input is not None:
-#         for title, section_or_entries in sections_input.items():
-#             title = util.dictionary_key_to_proper_section_title(title)
+    return url
 
-#             entry_type_name = val.validate_an_entry_type_and_get_entry_type_name(
-#                 section_or_entries[0]
-#             )
 
-#             section = models.SectionBase(
-#                 title=title,
-#                 entry_type=entry_type_name,
-#                 entries=section_or_entries,
-#             )
-#             sections.append(section)
+def get_date_object(date: str | int) -> Date:
+    """Parse a date string in YYYY-MM-DD, YYYY-MM, or YYYY format and return a
+    `datetime.date` object. This function is used throughout the validation process of
+    the data models.
 
-#     return sections
+    Args:
+        date (str | int): The date string to parse.
+    Returns:
+        Date: The parsed date.
+    """
+    if isinstance(date, int):
+        date_object = Date.fromisoformat(f"{date}-01-01")
+    elif re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
+        # Then it is in YYYY-MM-DD format
+        date_object = Date.fromisoformat(date)
+    elif re.fullmatch(r"\d{4}-\d{2}", date):
+        # Then it is in YYYY-MM format
+        date_object = Date.fromisoformat(f"{date}-01")
+    elif re.fullmatch(r"\d{4}", date):
+        # Then it is in YYYY format
+        date_object = Date.fromisoformat(f"{date}-01-01")
+    elif date == "present":
+        date_object = Date.today()
+    else:
+        raise ValueError(
+            "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or"
+            " YYYY format."
+        )
+
+    return date_object
+
+
+def dictionary_key_to_proper_section_title(key: str) -> str:
+    """Convert a dictionary key to a proper section title.
+
+    Example:
+        ```python
+        dictionary_key_to_proper_section_title("section_title")
+        ```
+        returns
+        `#!python "Section Title"`
+
+    Args:
+        key (str): The key to convert to a proper section title.
+    Returns:
+        str: The proper section title.
+    """
+    title = key.replace("_", " ")
+    words = title.split(" ")
+
+    # loop through the words and if the word doesn't contain any uppercase letters,
+    # capitalize the first letter of the word. If the word contains uppercase letters,
+    # don't change the word.
+    proper_title = " ".join(
+        word.capitalize() if word.islower() else word for word in words
+    )
+
+    return proper_title

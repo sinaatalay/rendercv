@@ -4,7 +4,7 @@ import pydantic
 import functools
 
 from . import entry_types
-from . import computed_fields as cf
+from . import computers as cf
 
 from typing import Type, Literal
 import re

@@ -135,7 +135,7 @@ def text_entry() -> str:
 @pytest.fixture
 def rendercv_data_model() -> dm.RenderCVDataModel:
     """Return a sample RenderCV data model."""
-    return dm.get_a_sample_data_model()
+    return dm.create_a_sample_data_model()
 
 
 @pytest.fixture

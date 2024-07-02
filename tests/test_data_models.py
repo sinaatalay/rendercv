@@ -181,13 +181,13 @@ def test_read_input_file_that_doesnt_exist(tmp_path):
     dm.available_themes,
 )
 def test_get_a_sample_data_model(theme):
-    data_model = dm.get_a_sample_data_model("John Doe", theme)
+    data_model = dm.create_a_sample_data_model("John Doe", theme)
     assert isinstance(data_model, dm.RenderCVDataModel)
 
 
 def test_get_a_sample_data_model_invalid_theme():
     with pytest.raises(ValueError):
-        dm.get_a_sample_data_model("John Doe", "invalid")
+        dm.create_a_sample_data_model("John Doe", "invalid")
 
 
 def test_generate_json_schema():
@@ -677,7 +677,7 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
 
 
 def test_locale_catalog():
-    data_model = dm.get_a_sample_data_model("John Doe")
+    data_model = dm.create_a_sample_data_model("John Doe")
     data_model.locale_catalog = dm.LocaleCatalog(
         month="a",
         months="b",
@@ -719,7 +719,7 @@ def test_locale_catalog():
 
 
 def test_if_local_catalog_resets():
-    data_model = dm.get_a_sample_data_model("John Doe")
+    data_model = dm.create_a_sample_data_model("John Doe")
 
     data_model.locale_catalog = dm.LocaleCatalog(
         month="a",
@@ -727,7 +727,7 @@ def test_if_local_catalog_resets():
 
     assert dm.locale_catalog["month"] == "a"
 
-    data_model = dm.get_a_sample_data_model("John Doe")
+    data_model = dm.create_a_sample_data_model("John Doe")
 
     assert dm.locale_catalog["month"] == "month"
 
