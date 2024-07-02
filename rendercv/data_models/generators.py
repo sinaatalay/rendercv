@@ -16,7 +16,7 @@ from ..themes.moderncv import ModerncvThemeOptions
 from ..themes.engineeringresumes import EngineeringresumesThemeOptions
 from . import models
 from . import utilities as utils
-from . import field_validators as field_val
+from . import entry_validators as field_val
 
 
 def get_a_sample_data_model(
