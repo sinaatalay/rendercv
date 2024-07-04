@@ -10,6 +10,80 @@ import urllib.request
 from typing import Optional
 
 import typer
+import pydantic
+
+
+def set_or_update_a_value(
+    data_model: pydantic.BaseModel | dict | list,
+    key: str,
+    value: str,
+    sub_model: pydantic.BaseModel | dict | list = None,
+):
+    """Set or update a value in a data model for a specific key. For example, a key can
+    be `cv.sections.education.3.institution` and the value can be "Bogazici University".
+
+    Args:
+        data_model (pydantic.BaseModel | dict | list): The data model to set or update
+            the value.
+        key (str): The key to set or update the value.
+        value (Any): The value to set or update.
+        sub_model (pydantic.BaseModel | dict | list, optional): The sub model to set or
+            update the value. This is used for recursive calls. When the value is set
+            to a sub model, the original data model is validated. Defaults to None.
+    """
+    # Recursively call this function until the last key is reached:
+
+    # Rename `sections` with `sections_input` since the key is `sections` is an alias:
+    key = key.replace("sections.", "sections_input.")
+    keys = key.split(".")
+
+    if sub_model is not None:
+        model = sub_model
+    else:
+        model = data_model
+
+    if len(keys) == 1:
+        # Set the value:
+        if value.startswith("{") and value.endswith("}"):
+            # Allow users to assign dictionaries:
+            value = eval(value)
+        elif value.startswith("[") and value.endswith("]"):
+            # Allow users to assign lists:
+            value = eval(value)
+
+        if isinstance(model, pydantic.BaseModel):
+            setattr(model, key, value)
+        elif isinstance(model, dict):
+            model[key] = value
+        elif isinstance(model, list):
+            model[int(key)] = value
+        else:
+            raise ValueError(
+                "The data model should be either a Pydantic data model, dictionary, or"
+                " list.",
+            )
+
+        data_model = type(data_model).model_validate(
+            (data_model.model_dump(by_alias=True))
+        )
+        return data_model
+    else:
+        # get the first key and call the function with remaining keys:
+        first_key = keys[0]
+        key = ".".join(keys[1:])
+        if isinstance(model, pydantic.BaseModel):
+            sub_model = getattr(model, first_key)
+        elif isinstance(model, dict):
+            sub_model = model[first_key]
+        elif isinstance(model, list):
+            sub_model = model[int(first_key)]
+        else:
+            raise ValueError(
+                "The data model should be either a Pydantic data model, dictionary, or"
+                " list.",
+            )
+
+        set_or_update_a_value(data_model, key, value, sub_model)
 
 
 def get_latest_version_number_from_pypi() -> Optional[str]:
@@ -95,7 +169,7 @@ def copy_templates(
         shutil.copytree(
             template_directory,
             destination,
-            ignore=shutil.ignore_patterns("__init__.py"),
+            ignore=shutil.ignore_patterns("__init__.py", "__pycache__"),
         )
 
         return destination

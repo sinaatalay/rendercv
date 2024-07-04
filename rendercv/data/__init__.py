@@ -25,6 +25,7 @@ from .models import (
     SocialNetwork,
     available_theme_options,
     format_date,
+    available_social_networks,
 )
 from .reader import (
     create_a_sample_data_model,
@@ -56,4 +57,5 @@ __all__ = [
     "read_input_file",
     "format_date",
     "Entry",
+    "available_social_networks",
 ]

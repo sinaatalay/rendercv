@@ -14,8 +14,8 @@ from typing import Optional
 import fitz
 import markdown
 
-from .. import reader as dm
-from . import templating as tp
+from .. import data as dm
+from . import templater as tp
 
 
 def copy_theme_files_to_output_directory(

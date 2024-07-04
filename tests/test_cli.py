@@ -12,7 +12,7 @@ import typer.testing
 import rendercv.cli as cli
 import rendercv.cli.printer as printer
 import rendercv.cli.utilities as util
-import rendercv.reader as dm
+import rendercv.data as dm
 from rendercv import __version__
 
 
@@ -218,6 +218,10 @@ def test_copy_templates(tmp_path, folder_name):
         copy_to=tmp_path,
     )
     assert copied_path.exists()
+
+    # make sure only j2.tex or j2.md files are copied:
+    for file in copied_path.iterdir():
+        assert file.suffix in [".tex", ".md"]
 
 
 def test_copy_templates_with_new_folder_name(tmp_path):

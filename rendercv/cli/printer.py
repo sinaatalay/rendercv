@@ -3,28 +3,23 @@ The `rendercv.cli.printer` module contains all the functions and classes that ar
 to print nice-looking messages to the terminal.
 """
 
-from typing import Optional
+import functools
+from typing import Callable, Optional
 
+import jinja2
 import pydantic
 import rich
+import rich.live
+import ruamel.yaml
+import ruamel.yaml.parser
 import typer
 from rich import print
-import rich.live
 
 from .. import __version__
 from .utilities import (
     get_error_message_and_location_and_value_from_a_custom_error,
     get_latest_version_number_from_pypi,
 )
-
-import functools
-from typing import Callable
-
-import jinja2
-import pydantic
-import ruamel.yaml
-import ruamel.yaml.parser
-import typer
 
 
 class LiveProgressReporter(rich.live.Live):

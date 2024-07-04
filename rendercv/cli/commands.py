@@ -13,20 +13,21 @@ import typer
 from rich import print
 
 from .. import __version__
-from .. import reader as dm
+from .. import data as dm
 from .. import renderer as r
 from .printer import (
     LiveProgressReporter,
     error,
+    handle_and_print_raised_exceptions,
     information,
     warn_if_new_version_is_available,
     warning,
     welcome,
-    handle_and_print_raised_exceptions,
 )
 from .utilities import (
     copy_templates,
     parse_render_command_override_arguments,
+    set_or_update_a_value,
 )
 
 app = typer.Typer(
@@ -189,7 +190,7 @@ def cli_command_render(
                 try:
                     # set the key (for example, cv.sections.education.0.institution) to
                     # the value
-                    data_model = dm.set_or_update_a_value(data_model, key, value)
+                    data_model = set_or_update_a_value(data_model, key, value)
                 except pydantic.ValidationError as e:
                     raise e
                 except (ValueError, KeyError, IndexError, AttributeError):

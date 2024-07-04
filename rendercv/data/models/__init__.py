@@ -1,5 +1,5 @@
 from .computers import format_date
-from .curriculum_vitae import CurriculumVitae, SocialNetwork
+from .curriculum_vitae import CurriculumVitae, SocialNetwork, available_social_networks
 from .design import available_theme_options
 from .entry_types import (
     BulletEntry,
@@ -26,5 +26,6 @@ __all__ = [
     "RenderCVDataModel",
     "available_theme_options",
     "format_date",
-    "Entry"
+    "Entry",
+    "available_social_networks",
 ]

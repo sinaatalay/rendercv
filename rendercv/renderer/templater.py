@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 import jinja2
 
-from .. import reader as dm
+from .. import data as dm
 
 
 class TemplatedFile:

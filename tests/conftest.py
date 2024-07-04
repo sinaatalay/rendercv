@@ -16,8 +16,8 @@ import pypdf
 import pytest
 
 import rendercv.renderer as r
-import rendercv.renderer.templating as rt
-from rendercv import reader as dm
+import rendercv.renderer.templater as rt
+from rendercv import data as dm
 
 # RenderCV is being tested by comparing the output to reference files. Therefore,
 # reference files should be updated when RenderCV is updated in a way that changes
