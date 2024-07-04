@@ -25,6 +25,8 @@ class LiveProgressReporter(rich.live.Live):
 
     Args:
         number_of_steps (int): The number of steps to be finished.
+        end_message (str, optional): The message to be printed when the progress is
+            finished. Defaults to "Your CV is rendered!".
     """
 
     def __init__(self, number_of_steps: int, end_message: str = "Your CV is rendered!"):
@@ -68,7 +70,11 @@ class LiveProgressReporter(rich.live.Live):
         return self
 
     def start_a_step(self, step_name: str):
-        """Start a step and update the progress bars."""
+        """Start a step and update the progress bars.
+
+        Args:
+            step_name (str): The name of the step.
+        """
         self.current_step_name = step_name
         self.current_step_id = self.step_progress.add_task(
             f"{self.current_step_name} has started."

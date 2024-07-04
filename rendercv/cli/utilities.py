@@ -13,6 +13,17 @@ import typer
 import pydantic
 
 
+def string_to_file_path(string: str) -> pathlib.Path:
+    """Convert a string to a pathlib.Path object.
+
+    Args:
+        string (str): The string to be converted to a pathlib.Path object.
+    Returns:
+        pathlib.Path: The pathlib.Path object.
+    """
+    return pathlib.Path(string).absolute()
+
+
 def set_or_update_a_value(
     data_model: pydantic.BaseModel | dict | list,
     key: str,
@@ -84,6 +95,49 @@ def set_or_update_a_value(
             )
 
         set_or_update_a_value(data_model, key, value, sub_model)
+
+
+def set_or_update_values(
+    data_model: pydantic.BaseModel,
+    key_and_values: dict[str, str],
+) -> pydantic.BaseModel:
+    """Set or update values in a data model for specific keys. It uses the
+    `set_or_update_a_value` function to set or update the values.
+
+    Args:
+        data_model (pydantic.BaseModel): The data model to set or update the values.
+        key_and_values (dict[str, str]): The key and value pairs to set or update.
+    """
+    for key, value in key_and_values.items():
+        try:
+            data_model = set_or_update_a_value(data_model, key_and_values)
+        except pydantic.ValidationError as e:
+            raise e
+        except (ValueError, KeyError, IndexError, AttributeError):
+            raise ValueError(f'The key "{key}" does not exist in the data model!')
+
+    return data_model
+
+
+def copy_files(paths: list[pathlib.Path], new_path: pathlib.Path):
+    """Copy files to the given path. If there are multiple files, then rename the new
+    path by adding a number to the end of the path.
+
+    Args:
+        paths (list[pathlib.Path]): The paths of the files to be copied.
+        new_path (pathlib.Path): The path to copy the files to.
+    """
+    if len(paths) == 1:
+        shutil.copy2(paths[0], new_path)
+    else:
+        for i, file_path in enumerate(paths):
+            # append a number to the end of the path:
+            number = i + 1
+            png_path_with_page_number = (
+                pathlib.Path(new_path).parent
+                / f"{pathlib.Path(new_path).stem}_{number}.png"
+            )
+            shutil.copy2(file_path, png_path_with_page_number)
 
 
 def get_latest_version_number_from_pypi() -> Optional[str]:

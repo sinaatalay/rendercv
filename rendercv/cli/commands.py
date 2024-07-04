@@ -6,7 +6,7 @@ commands of RenderCV.
 import os
 import pathlib
 import shutil
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Literal
 
 import pydantic
 import typer
@@ -140,8 +140,22 @@ def cli_command_render(
     """Render a CV from a YAML input file."""
     printer.welcome()
 
-    input_file_path = pathlib.Path(input_file_name).absolute()
+    # Get paths:
+    input_file_path = utilities.string_to_file_path(input_file_name)
     output_directory = pathlib.Path.cwd() / output_folder_name
+
+    paths: dict[
+        Literal["latex", "pdf", "markdown", "html", "png"], Optional[pathlib.Path]
+    ] = {
+        "latex": latex_path,
+        "pdf": pdf_path,
+        "markdown": markdown_path,
+        "html": html_path,
+        "png": png_path,
+    }
+    for file_type, path in paths.items():
+        if path:
+            paths[file_type] = utilities.string_to_file_path(path)
 
     # change the current working directory to the input file's directory (because
     # the template overrides are looked up in the current working directory):
@@ -158,6 +172,7 @@ def cli_command_render(
     if dont_generate_png:
         number_of_steps = number_of_steps - 1
     if dont_generate_markdown:
+        # if the Markdown file is not generated, then the HTML file is not generated
         number_of_steps = number_of_steps - 2
     else:
         if dont_generate_html:
@@ -168,23 +183,12 @@ def cli_command_render(
         data_model = data.read_input_file(input_file_path)
 
         # update the data model if there are extra arguments:
-        key_and_values = dict()
-
         if extra_data_model_override_argumets:
-            key_and_values = printer.parse_render_command_override_arguments(
+            key_and_values = dict()
+            key_and_values = utilities.parse_render_command_override_arguments(
                 extra_data_model_override_argumets
             )
-            for key, value in key_and_values.items():
-                try:
-                    # set the key (for example, cv.sections.education.0.institution) to
-                    # the value
-                    data_model = utilities.set_or_update_a_value(data_model, key, value)
-                except pydantic.ValidationError as e:
-                    raise e
-                except (ValueError, KeyError, IndexError, AttributeError):
-                    raise ValueError(
-                        f'The key "{key}" does not exist in the data model!'
-                    )
+            data_model = utilities.set_or_update_values(data_model, key_and_values)
 
         progress.finish_the_current_step()
 
@@ -194,35 +198,25 @@ def cli_command_render(
                 data_model, output_directory
             )
         )
-        if latex_path:
-            shutil.copy2(latex_file_path_in_output_folder, latex_path)
+        if paths["latex"]:
+            utilities.copy_files(latex_file_path_in_output_folder, paths["latex"])
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
         pdf_file_path_in_output_folder = renderer.render_pdf_from_latex(
             latex_file_path_in_output_folder, use_local_latex_command
         )
-        if pdf_path:
-            shutil.copy2(pdf_file_path_in_output_folder, pdf_path)
+        if paths["pdf"]:
+            utilities.copy_files(pdf_file_path_in_output_folder, paths["pdf"])
         progress.finish_the_current_step()
 
         if not dont_generate_png:
             progress.start_a_step("Rendering PNG files from the PDF")
-            png_file_paths_in_output_folder = renderer.render_a_markdown_file(
+            png_file_paths_in_output_folder = renderer.render_pngs_from_pdf(
                 pdf_file_path_in_output_folder
             )
-            if png_path:
-                if len(png_file_paths_in_output_folder) == 1:
-                    shutil.copy2(png_file_paths_in_output_folder[0], png_path)
-                else:
-                    for i, png_file_path in enumerate(png_file_paths_in_output_folder):
-                        # append the page number to the file name
-                        page_number = i + 1
-                        png_path_with_page_number = (
-                            pathlib.Path(png_path).parent
-                            / f"{pathlib.Path(png_path).stem}_{page_number}.png"
-                        )
-                        shutil.copy2(png_file_path, png_path_with_page_number)
+            if paths["png"]:
+                utilities.copy_files(png_file_paths_in_output_folder, paths["png"])
             progress.finish_the_current_step()
 
         if not dont_generate_markdown:
@@ -231,7 +225,7 @@ def cli_command_render(
                 data_model, output_directory
             )
             if markdown_path:
-                shutil.copy2(markdown_file_path_in_output_folder, markdown_path)
+                utilities.copy_files(markdown_file_path_in_output_folder, markdown_path)
             progress.finish_the_current_step()
 
             if not dont_generate_html:
@@ -242,7 +236,7 @@ def cli_command_render(
                     markdown_file_path_in_output_folder
                 )
                 if html_path:
-                    shutil.copy2(html_file_path_in_output_folder, html_path)
+                    utilities.copy_files(html_file_path_in_output_folder, html_path)
                 progress.finish_the_current_step()
 
 
