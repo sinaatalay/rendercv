@@ -56,15 +56,18 @@ The flowchart below illustrates the general operations of RenderCV. A detailed d
 
 ```mermaid
 flowchart TD
+    subgraph rendercv.data
     A[YAML Input File] --parsing with ruamel.yaml package--> B(Python Dictionary)
     B --validation with pydantic package--> C((Pydantic Object))
-    C --> D[LaTeX File]
-    C --> E[Markdown File]
-    E --markdown package--> K[HTML FIle]
-    D --TinyTeX--> L[PDF File]
+    end
+    subgraph rendercv.renderer
+    C --> AA
+    E[Markdown File] --markdown package--> K[HTML FIle]
+    D[LaTeX File] --TinyTeX--> L[PDF File]
     L --PyMuPDF package--> Z[PNG Files]
     AA[(Jinja2 Templates)] --> D
     AA[(Jinja2 Templates)] --> E
+    end
 ```
 
 ## Available Commands

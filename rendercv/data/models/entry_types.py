@@ -1,5 +1,5 @@
 """
-`rendercv.models.data.entry_types` module contains the data models of all the available
+The `rendercv.models.data.entry_types` module contains the data models of all the available
 entry types in RenderCV.
 """
 
@@ -85,7 +85,9 @@ def validate_and_adjust_dates_for_an_entry(
     """Check if the dates are provided correctly and make the necessary adjustments.
 
     Args:
-        entry (EntryBase): The entry to validate its dates.
+        start_date (StartDate): The start date of the event.
+        end_date (EndDate): The end date of the event.
+        date (ArbitraryDate): The date of the event.
     Returns:
         EntryBase: The validated
     """

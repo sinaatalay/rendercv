@@ -14,8 +14,8 @@ from typing import Optional
 import fitz
 import markdown
 
-from .. import data as dm
-from . import templater as tp
+from .. import data
+from . import templater
 
 
 def copy_theme_files_to_output_directory(
@@ -31,7 +31,7 @@ def copy_theme_files_to_output_directory(
         theme_name (str): The name of the theme.
         output_directory_path (pathlib.Path): Path to the output directory.
     """
-    if theme_name in dm.available_themes:
+    if theme_name in data.available_themes:
         theme_directory_path = importlib.resources.files(
             f"rendercv.themes.{theme_name}"
         )
@@ -69,7 +69,7 @@ def copy_theme_files_to_output_directory(
 
 
 def render_a_latex_file(
-    rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
+    rendercv_data_model: data.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
     """Render the $\\LaTeX$ file with the given data model and write it to the output
     directory.
@@ -84,8 +84,8 @@ def render_a_latex_file(
     if not output_directory.is_dir():
         output_directory.mkdir(parents=True)
 
-    jinja2_environment = tp.setup_jinja2_environment()
-    latex_file_object = tp.LaTeXFile(
+    jinja2_environment = templater.setup_jinja2_environment()
+    latex_file_object = templater.LaTeXFile(
         rendercv_data_model,
         jinja2_environment,
     )
@@ -98,7 +98,7 @@ def render_a_latex_file(
 
 
 def render_a_markdown_file(
-    rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
+    rendercv_data_model: data.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
     """Render the Markdown file with the given data model and write it to the output
     directory.
@@ -113,8 +113,8 @@ def render_a_markdown_file(
     if not output_directory.is_dir():
         output_directory.mkdir(parents=True)
 
-    jinja2_environment = tp.setup_jinja2_environment()
-    markdown_file_object = tp.MarkdownFile(
+    jinja2_environment = templater.setup_jinja2_environment()
+    markdown_file_object = templater.MarkdownFile(
         rendercv_data_model,
         jinja2_environment,
     )
@@ -127,7 +127,7 @@ def render_a_markdown_file(
 
 
 def render_a_latex_file_and_copy_theme_files(
-    rendercv_data_model: dm.RenderCVDataModel, output_directory: pathlib.Path
+    rendercv_data_model: data.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
     """Render the $\\LaTeX$ file with the given data model in the output directory and
     copy the auxiliary theme files to the output directory.
@@ -304,7 +304,7 @@ def render_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Path:
     else:
         title = title.group(1)
 
-    jinja2_environment = tp.setup_jinja2_environment()
+    jinja2_environment = templater.setup_jinja2_environment()
     html_template = jinja2_environment.get_template("main.j2.html")
     html = html_template.render(html_body=html_body, title=title)
 

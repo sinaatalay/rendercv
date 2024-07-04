@@ -12,7 +12,7 @@ from typing import Any, Optional
 
 import jinja2
 
-from .. import data as dm
+from .. import data
 
 
 class TemplatedFile:
@@ -28,7 +28,7 @@ class TemplatedFile:
 
     def __init__(
         self,
-        data_model: dm.RenderCVDataModel,
+        data_model: data.RenderCVDataModel,
         environment: jinja2.Environment,
     ):
         self.cv = data_model.cv
@@ -40,7 +40,7 @@ class TemplatedFile:
         theme_name: str,
         template_name: str,
         extension: str,
-        entry: Optional[dm.Entry] = None,
+        entry: Optional[data.Entry] = None,
         **kwargs,
     ) -> str:
         """Template one of the files in the `themes` directory.
@@ -75,7 +75,7 @@ class TemplatedFile:
             cv=self.cv,
             design=self.design,
             entry=entry,
-            today=dm.format_date(Date.today(), use_full_name=True),
+            today=data.format_date(Date.today(), use_full_name=True),
             **kwargs,
         )
 
@@ -97,7 +97,7 @@ class LaTeXFile(TemplatedFile):
 
     def __init__(
         self,
-        data_model: dm.RenderCVDataModel,
+        data_model: data.RenderCVDataModel,
         environment: jinja2.Environment,
     ):
         latex_file_data_model = copy.deepcopy(data_model)
@@ -152,7 +152,7 @@ class LaTeXFile(TemplatedFile):
     def template(
         self,
         template_name: str,
-        entry: Optional[dm.Entry] = None,
+        entry: Optional[data.Entry] = None,
         **kwargs,
     ) -> str:
         """Template one of the files in the `themes` directory.
@@ -242,7 +242,7 @@ class MarkdownFile(TemplatedFile):
     def template(
         self,
         template_name: str,
-        entry: Optional[dm.Entry] = None,
+        entry: Optional[data.Entry] = None,
         **kwargs,
     ) -> str:
         """Template one of the files in the `themes` directory.
@@ -461,8 +461,8 @@ def markdown_to_latex(markdown_string: str) -> str:
 
 
 def transform_markdown_sections_to_latex_sections(
-    sections: dict[str, dm.SectionInput],
-) -> Optional[dict[str, dm.SectionInput]]:
+    sections: dict[str, data.SectionContents],
+) -> Optional[dict[str, data.SectionContents]]:
     """
     Recursively loop through sections and convert all the Markdown strings (user input
     is in Markdown format) to $\\LaTeX$ strings. Also, escape special $\\LaTeX$
@@ -531,14 +531,9 @@ def make_matched_part_something(
     whole string will be made something.
 
     Warning:
-        This function shouldn't be used directly. Use
-        [make_matched_part_bold][rendercv.renderer.make_matched_part_bold],
-        [make_matched_part_underlined][rendercv.renderer.make_matched_part_underlined],
-        [make_matched_part_italic][rendercv.renderer.make_matched_part_italic],
-        or
-        [make_matched_part_non_line_breakable][rendercv.renderer.make_matched_part_non_line_breakable]
-        instead.
-
+        This function shouldn't be used directly. Use `make_matched_part_bold`,
+        `make_matched_part_underlined`, `make_matched_part_italic`, or
+        `make_matched_part_non_line_breakable instead.
     Args:
         value (str): The string to make something.
         something (str): The $\\LaTeX$ command to use.

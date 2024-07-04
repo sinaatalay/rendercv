@@ -7,7 +7,7 @@ from typing import Optional
 
 import pydantic
 
-from ...renderer.themes.classic import ClassicThemeOptions
+from ...themes.classic import ClassicThemeOptions
 
 # Disable Pydantic warnings:
 # warnings.filterwarnings("ignore")

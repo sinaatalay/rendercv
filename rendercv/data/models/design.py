@@ -10,10 +10,10 @@ from typing import Annotated, Any, Type
 
 import pydantic
 
-from ...renderer.themes.classic import ClassicThemeOptions
-from ...renderer.themes.engineeringresumes import EngineeringresumesThemeOptions
-from ...renderer.themes.moderncv import ModerncvThemeOptions
-from ...renderer.themes.sb2nov import Sb2novThemeOptions
+from ...themes.classic import ClassicThemeOptions
+from ...themes.engineeringresumes import EngineeringresumesThemeOptions
+from ...themes.moderncv import ModerncvThemeOptions
+from ...themes.sb2nov import Sb2novThemeOptions
 from . import entry_types
 from .base import RenderCVBaseModel
 
@@ -175,3 +175,5 @@ available_theme_options = {
     "sb2nov": Sb2novThemeOptions,
     "engineeringresumes": EngineeringresumesThemeOptions,
 }
+
+available_themes = list(available_theme_options.keys())

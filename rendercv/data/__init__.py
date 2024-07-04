@@ -31,7 +31,9 @@ from .models import (
     SocialNetwork,
     available_social_networks,
     available_theme_options,
+    available_themes,
     format_date,
+    SectionContents,
 )
 from .reader import read_input_file
 
@@ -56,4 +58,5 @@ __all__ = [
     "format_date",
     "Entry",
     "available_social_networks",
+    "SectionContents",
 ]

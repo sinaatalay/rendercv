@@ -1,6 +1,6 @@
 """
-`rendercv.models.locale_catalog` module contains the data model of the `locale_catalog`
-field of the input file.
+The `rendercv.models.locale_catalog` module contains the data model of the
+`locale_catalog` field of the input file.
 """
 
 from typing import Annotated, Optional

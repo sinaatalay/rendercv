@@ -5,8 +5,8 @@ import pathlib
 import shutil
 
 import rendercv.cli as cli
-import rendercv.data as dm
-import rendercv.renderer as r
+import rendercv.data as data
+import rendercv.renderer as renderer
 
 repository_root = pathlib.Path(__file__).parent.parent
 rendercv_path = repository_root / "rendercv"
@@ -22,7 +22,7 @@ def generate_examples():
         examples_directory_path.mkdir()
 
     os.chdir(examples_directory_path)
-    themes = dm.available_themes
+    themes = data.available_themes
     for theme in themes:
         cli.cli_command_new(
             "John Doe",
@@ -61,7 +61,7 @@ def generate_examples():
         shutil.rmtree(rendercv_output_directory)
 
         # convert first page of the pdf to an image:
-        png_file_paths = r.render_a_markdown_file(new_pdf_file_path)
+        png_file_paths = renderer.render_a_markdown_file(new_pdf_file_path)
         firt_page_png_file_path = png_file_paths[0]
         if len(png_file_paths) > 1:
             # remove the other pages

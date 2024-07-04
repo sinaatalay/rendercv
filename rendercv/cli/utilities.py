@@ -172,7 +172,7 @@ def get_error_message_and_location_and_value_from_a_custom_error(
     error_string: str,
 ) -> tuple[Optional[str], Optional[str], Optional[str]]:
     """Look at a string and figure out if it's a custom error message that has been
-    sent from [`data_models.py`](data_models.md). If it is, then return the custom
+    sent from `rendercv.data.reader.read_input_file`. If it is, then return the custom
     message, location, and the input value.
 
     This is done because sometimes we raise an error about a specific field in the model

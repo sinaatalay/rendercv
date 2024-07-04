@@ -14,8 +14,8 @@ from typing import Any
 import pdfCropMargins
 import ruamel.yaml
 
-import rendercv.data as dm
-import rendercv.renderer as r
+import rendercv.data as data
+import rendercv.renderer as renderer
 
 repository_root = pathlib.Path(__file__).parent.parent
 rendercv_path = repository_root / "rendercv"
@@ -127,7 +127,7 @@ def define_env(env):
                     "alt_text": f"{proper_entry_name} in {theme}",
                     "theme": theme,
                 }
-                for theme in dm.available_themes
+                for theme in data.available_themes
             ],
         }
 
@@ -136,7 +136,7 @@ def define_env(env):
     # for theme templates reference docs:
     themes_path = rendercv_path / "themes"
     theme_templates = dict()
-    for theme in dm.available_themes:
+    for theme in data.available_themes:
         theme_templates[theme] = dict()
         for theme_file in themes_path.glob(f"{theme}/*.tex"):
             theme_templates[theme][
@@ -146,12 +146,12 @@ def define_env(env):
     env.variables["theme_templates"] = theme_templates
 
     # available themes strings (put available themes between ``)
-    themes = [f"`{theme}`" for theme in dm.available_themes]
+    themes = [f"`{theme}`" for theme in data.available_themes]
     env.variables["available_themes"] = ", ".join(themes)
 
     # available social networks strings (put available social networks between ``)
     social_networks = [
-        f"`{social_network}`" for social_network in dm.available_social_networks
+        f"`{social_network}`" for social_network in data.available_social_networks
     ]
     env.variables["available_social_networks"] = ", ".join(social_networks)
 
@@ -160,15 +160,15 @@ def generate_entry_figures():
     """Generate an image for each entry type and theme."""
     # Generate PDF figures for each entry type and theme
     entries = {
-        "education_entry": dm.EducationEntry(**education_entry),
-        "experience_entry": dm.ExperienceEntry(**experience_entry),
-        "normal_entry": dm.NormalEntry(**normal_entry),
-        "publication_entry": dm.PublicationEntry(**publication_entry),
-        "one_line_entry": dm.OneLineEntry(**one_line_entry),
+        "education_entry": data.EducationEntry(**education_entry),
+        "experience_entry": data.ExperienceEntry(**experience_entry),
+        "normal_entry": data.NormalEntry(**normal_entry),
+        "publication_entry": data.PublicationEntry(**publication_entry),
+        "one_line_entry": data.OneLineEntry(**one_line_entry),
         "text_entry": f"{text_entry}",
-        "bullet_entry": dm.BulletEntry(**bullet_entry),
+        "bullet_entry": data.BulletEntry(**bullet_entry),
     }
-    themes = dm.available_themes
+    themes = data.available_themes
 
     with tempfile.TemporaryDirectory() as temporary_directory:
         # create a temporary directory:
@@ -186,18 +186,18 @@ def generate_entry_figures():
 
             for entry_type, entry in entries.items():
                 # Create the data model with only one section and one entry
-                data_model = dm.RenderCVDataModel(
+                data_model = data.RenderCVDataModel(
                     **{
-                        "cv": dm.CurriculumVitae(sections={entry_type: [entry]}),
+                        "cv": data.CurriculumVitae(sections={entry_type: [entry]}),
                         "design": design_dictionary,
                     }
                 )
 
                 # Render:
-                latex_file_path = r.render_a_latex_file_and_copy_theme_files(
+                latex_file_path = renderer.render_a_latex_file_and_copy_theme_files(
                     data_model, temporary_directory_path
                 )
-                pdf_file_path = r.render_pdf_from_latex(latex_file_path)
+                pdf_file_path = renderer.render_pdf_from_latex(latex_file_path)
 
                 # Prepare the output directory and file path:
                 output_directory = image_assets_directory / theme
@@ -228,7 +228,7 @@ def generate_entry_figures():
                 )
 
                 # Convert pdf to an image
-                png_file_path = r.render_a_markdown_file(output_pdf_file_path)[0]
+                png_file_path = renderer.render_a_markdown_file(output_pdf_file_path)[0]
                 desired_png_file_path = output_pdf_file_path.with_suffix(".png")
 
                 # If the image exists, remove it
