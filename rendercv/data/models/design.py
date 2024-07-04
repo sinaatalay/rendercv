@@ -1,3 +1,8 @@
+"""
+The `rendercv.data.models.design` module contains the data model of the `design` field
+of the input file.
+"""
+
 import importlib
 import importlib.util
 import pathlib
@@ -5,10 +10,10 @@ from typing import Annotated, Any, Type
 
 import pydantic
 
-from ...themes.classic import ClassicThemeOptions
-from ...themes.engineeringresumes import EngineeringresumesThemeOptions
-from ...themes.moderncv import ModerncvThemeOptions
-from ...themes.sb2nov import Sb2novThemeOptions
+from ...renderer.themes.classic import ClassicThemeOptions
+from ...renderer.themes.engineeringresumes import EngineeringresumesThemeOptions
+from ...renderer.themes.moderncv import ModerncvThemeOptions
+from ...renderer.themes.sb2nov import Sb2novThemeOptions
 from . import entry_types
 from .base import RenderCVBaseModel
 

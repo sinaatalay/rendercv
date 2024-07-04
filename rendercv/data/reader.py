@@ -1,15 +1,12 @@
 """
-The `rendercv.data_models.generators` module contains the functions that are used to
-generate a sample YAML input file and the JSON schema of RenderCV based on the data
-models defined in `rendercv.data_models.models`.
+The `rendercv.data.reader` module contains the functions that are used to read the input
+file (YAML or JSON) and return them as an instance of `RenderCVDataModel`, which is a
+Pydantic data model of RenderCV's data format.
 """
 
-import io
-import json
 import pathlib
-from typing import Any, Optional
+from typing import Any
 
-import pydantic
 import ruamel.yaml
 
 from . import models

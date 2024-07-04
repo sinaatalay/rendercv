@@ -1,3 +1,8 @@
+"""
+The `rendercv.data.models.base` module contains the `RenderCVBaseModel` class, which is
+the parent class of all the data models in RenderCV.
+"""
+
 import pydantic
 
 

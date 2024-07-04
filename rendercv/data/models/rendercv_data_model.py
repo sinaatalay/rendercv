@@ -1,14 +1,13 @@
 """
-The `rendercv.data_models.models` module contains all the Pydantic data models used in
-RenderCV. These data models define the data format and the usage of computed fields and
-the validators.
+The `rendercv.data.models.rendercv_data_model` module contains the `RenderCVDataModel`
+data model, which is the main data model that defines the whole input file structure.
 """
 
 from typing import Optional
 
 import pydantic
 
-from ...themes.classic import ClassicThemeOptions
+from ...renderer.themes.classic import ClassicThemeOptions
 
 # Disable Pydantic warnings:
 # warnings.filterwarnings("ignore")

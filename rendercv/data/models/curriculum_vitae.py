@@ -1,3 +1,8 @@
+"""
+The `rendercv.data.models.curriculum_vitae` module contains the data model of the `cv`
+field of the input file.
+"""
+
 import functools
 import re
 from typing import Annotated, Any, Literal, Optional, Type, get_args
@@ -5,8 +10,7 @@ from typing import Annotated, Any, Literal, Optional, Type, get_args
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 
-from . import computers as computers
-from . import entry_types
+from . import computers, entry_types
 from .base import RenderCVBaseModel
 
 # ======================================================================================
@@ -411,7 +415,7 @@ class CurriculumVitae(RenderCVBaseModel):
 
         if self.sections_input is not None:
             for title, entries in self.sections_input.items():
-                title = util.dictionary_key_to_proper_section_title(title)
+                title = computers.dictionary_key_to_proper_section_title(title)
 
                 # The first entry can be used because all the entries in the section are
                 # already validated with the `validate_a_section` function:

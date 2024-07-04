@@ -1,3 +1,8 @@
+"""
+The `rendercv.data.generators` module contains all the functions for generating the JSON
+Schema of the input data format and a sample YAML input file.
+"""
+
 import io
 import json
 import pathlib
@@ -6,7 +11,7 @@ from typing import Any, Optional
 import pydantic
 import ruamel.yaml
 
-from . import models
+from . import models, reader
 
 
 def dictionary_to_yaml(dictionary: dict[str, Any]):
@@ -47,7 +52,7 @@ def create_a_sample_data_model(
 
     # read the sample_content.yaml file
     sample_content = pathlib.Path(__file__).parent / "sample_content.yaml"
-    sample_content_dictionary = read_a_yaml_file(sample_content)
+    sample_content_dictionary = reader.read_a_yaml_file(sample_content)
     cv = models.CurriculumVitae(**sample_content_dictionary)
 
     # Update the name:

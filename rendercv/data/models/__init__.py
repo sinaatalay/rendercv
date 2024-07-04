@@ -1,3 +1,25 @@
+"""
+The `rendercv.data.models` package contains all the Pydantic data models, validators,
+and computed fields that are used in RenderCV. The package is divided into several
+modules, each containing a different group of data models.
+
+- `base.py`: Contains `RenderCVBaseModel`, which is the parent class of all the data
+    models in RenderCV.
+- `computers.py`: Contains all the functions that are used to compute some values of
+    the fields in the data models. For example, converting ISO dates to human-readable
+    dates.
+- `entry_types.py`: Contains all the data models that are used to represent the entries
+    in the CV.
+- `curriculum_vitae.py`: Contains the `CurriculumVitae` data model, which is the main
+    data model that contains all the content of the CV.
+- `design.py`: Contains the data model that is used to represent the design options of
+    the CV.
+- `locale_catalog.py`: Contains the data model that is used to represent the locale
+    catalog of the CV.
+- `rendercv_data_model.py`: Contains the `RenderCVDataModel` data model, which is the
+    main data model that defines the whole input file structure.
+"""
+
 from .computers import format_date
 from .curriculum_vitae import CurriculumVitae, SocialNetwork, available_social_networks
 from .design import available_theme_options

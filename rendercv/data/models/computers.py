@@ -1,14 +1,14 @@
 """
-The `rendercv.data_models.computed_fields` module contains functions that compute
-some properties based on the input data. For example, it includes functions that
-calculate the time span between two dates, the date string, the URL of a social network,
-etc.
+The `rendercv.data.models.computers` module contains functions that compute some
+properties based on the input data. For example, it includes functions that calculate
+the time span between two dates, the date string, the URL of a social network, etc.
 """
 
 import re
 from datetime import date as Date
 from typing import Optional
 
+from .curriculum_vitae import CurriculumVitae
 from .locale_catalog import locale_catalog
 
 
@@ -246,7 +246,7 @@ def compute_social_network_url(network: str, username: str):
     return url
 
 
-def compute_connections(cv) -> list[dict[str, str]]:
+def compute_connections(cv: "CurriculumVitae") -> list[dict[str, str]]:
     """Bring together all the connections in the CV, such as social networks, phone
     number, email, etc and return them as a list of dictionaries. Each dictionary
     contains the following keys: "latex_icon", "url", "clean_url", and "placeholder."

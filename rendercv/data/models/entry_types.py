@@ -1,3 +1,8 @@
+"""
+`rendercv.models.data.entry_types` module contains the data models of all the available
+entry types in RenderCV.
+"""
+
 import functools
 import re
 from datetime import date as Date
@@ -159,6 +164,7 @@ EndDate = Annotated[
 # ======================================================================================
 # Create the entry models: =============================================================
 # ======================================================================================
+
 
 class OneLineEntry(RenderCVBaseModel):
     """This class is the data model of `OneLineEntry`."""
