@@ -5,18 +5,13 @@ commands of RenderCV.
 
 import os
 import pathlib
-import shutil
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Literal, Optional
 
-import pydantic
 import typer
 from rich import print
 
-from .. import __version__
-from .. import data
-from .. import renderer
-from . import printer
-from . import utilities
+from .. import __version__, data, renderer
+from . import printer, utilities
 
 app = typer.Typer(
     rich_markup_mode="rich",

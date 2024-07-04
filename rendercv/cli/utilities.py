@@ -9,8 +9,8 @@ import shutil
 import urllib.request
 from typing import Optional
 
-import typer
 import pydantic
+import typer
 
 
 def string_to_file_path(string: str) -> pathlib.Path:
