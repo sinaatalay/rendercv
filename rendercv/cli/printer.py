@@ -16,10 +16,7 @@ import typer
 from rich import print
 
 from .. import __version__
-from .utilities import (
-    get_error_message_and_location_and_value_from_a_custom_error,
-    get_latest_version_number_from_pypi,
-)
+from . import utilities
 
 
 class LiveProgressReporter(rich.live.Live):
@@ -111,7 +108,7 @@ def warn_if_new_version_is_available() -> bool:
     Returns:
         bool: True if there is a new version, and False otherwise.
     """
-    latest_version = get_latest_version_number_from_pypi()
+    latest_version = utilities.get_latest_version_number_from_pypi()
     if latest_version is not None and __version__ != latest_version:
         warning(
             f"A new version of RenderCV is available! You are using v{__version__},"
@@ -282,7 +279,9 @@ def print_validation_errors(exception: pydantic.ValidationError):
 
         # Check if this is a custom error message:
         custom_message, custom_location, custom_input_value = (
-            get_error_message_and_location_and_value_from_a_custom_error(message)
+            utilities.get_error_message_and_location_and_value_from_a_custom_error(
+                message
+            )
         )
         if custom_message is not None:
             message = custom_message

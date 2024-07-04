@@ -1,5 +1,5 @@
 """
-The `rendercv.cli.commands` module contains all the command-line interface (CLI
+The `rendercv.cli.commands` module contains all the command-line interface (CLI)
 commands of RenderCV.
 """
 
@@ -13,22 +13,10 @@ import typer
 from rich import print
 
 from .. import __version__
-from .. import data as dm
-from .. import renderer as r
-from .printer import (
-    LiveProgressReporter,
-    error,
-    handle_and_print_raised_exceptions,
-    information,
-    warn_if_new_version_is_available,
-    warning,
-    welcome,
-)
-from .utilities import (
-    copy_templates,
-    parse_render_command_override_arguments,
-    set_or_update_a_value,
-)
+from .. import data
+from .. import renderer
+from . import printer
+from . import utilities
 
 app = typer.Typer(
     rich_markup_mode="rich",
@@ -51,7 +39,7 @@ app = typer.Typer(
     # allow extra arguments for updating the data model:
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )
-@handle_and_print_raised_exceptions
+@printer.handle_and_print_raised_exceptions
 def cli_command_render(
     input_file_name: Annotated[
         str, typer.Argument(help="Name of the YAML input file.")
@@ -150,7 +138,7 @@ def cli_command_render(
     extra_data_model_override_argumets: typer.Context = None,
 ):
     """Render a CV from a YAML input file."""
-    welcome()
+    printer.welcome()
 
     input_file_path = pathlib.Path(input_file_name).absolute()
     output_directory = pathlib.Path.cwd() / output_folder_name
@@ -175,22 +163,22 @@ def cli_command_render(
         if dont_generate_html:
             number_of_steps = number_of_steps - 1
 
-    with LiveProgressReporter(number_of_steps) as progress:
+    with printer.LiveProgressReporter(number_of_steps) as progress:
         progress.start_a_step("Reading and validating the input file")
-        data_model = dm.read_input_file(input_file_path)
+        data_model = data.read_input_file(input_file_path)
 
         # update the data model if there are extra arguments:
         key_and_values = dict()
 
         if extra_data_model_override_argumets:
-            key_and_values = parse_render_command_override_arguments(
+            key_and_values = printer.parse_render_command_override_arguments(
                 extra_data_model_override_argumets
             )
             for key, value in key_and_values.items():
                 try:
                     # set the key (for example, cv.sections.education.0.institution) to
                     # the value
-                    data_model = set_or_update_a_value(data_model, key, value)
+                    data_model = utilities.set_or_update_a_value(data_model, key, value)
                 except pydantic.ValidationError as e:
                     raise e
                 except (ValueError, KeyError, IndexError, AttributeError):
@@ -201,15 +189,17 @@ def cli_command_render(
         progress.finish_the_current_step()
 
         progress.start_a_step("Generating the LaTeX file")
-        latex_file_path_in_output_folder = r.render_a_latex_file_and_copy_theme_files(
-            data_model, output_directory
+        latex_file_path_in_output_folder = (
+            renderer.render_a_latex_file_and_copy_theme_files(
+                data_model, output_directory
+            )
         )
         if latex_path:
             shutil.copy2(latex_file_path_in_output_folder, latex_path)
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
-        pdf_file_path_in_output_folder = r.render_pdf_from_latex(
+        pdf_file_path_in_output_folder = renderer.render_pdf_from_latex(
             latex_file_path_in_output_folder, use_local_latex_command
         )
         if pdf_path:
@@ -218,7 +208,7 @@ def cli_command_render(
 
         if not dont_generate_png:
             progress.start_a_step("Rendering PNG files from the PDF")
-            png_file_paths_in_output_folder = r.render_a_markdown_file(
+            png_file_paths_in_output_folder = renderer.render_a_markdown_file(
                 pdf_file_path_in_output_folder
             )
             if png_path:
@@ -237,7 +227,7 @@ def cli_command_render(
 
         if not dont_generate_markdown:
             progress.start_a_step("Generating the Markdown file")
-            markdown_file_path_in_output_folder = r.render_a_markdown_file(
+            markdown_file_path_in_output_folder = renderer.render_a_markdown_file(
                 data_model, output_directory
             )
             if markdown_path:
@@ -248,7 +238,7 @@ def cli_command_render(
                 progress.start_a_step(
                     "Rendering the Markdown file to a HTML (for Grammarly)"
                 )
-                html_file_path_in_output_folder = r.render_html_from_markdown(
+                html_file_path_in_output_folder = renderer.render_html_from_markdown(
                     markdown_file_path_in_output_folder
                 )
                 if html_path:
@@ -270,7 +260,7 @@ def cli_command_new(
         typer.Option(
             help=(
                 "The name of the theme. Available themes are:"
-                f" {', '.join(dm.available_themes)}."
+                f" {', '.join(data.available_themes)}."
             )
         ),
     ] = "classic",
@@ -298,45 +288,45 @@ def cli_command_new(
     input_file_path = pathlib.Path(input_file_name)
 
     if input_file_path.exists():
-        warning(
+        printer.warning(
             f'The input file "{input_file_name}" already exists! A new input file is'
             " not created."
         )
     else:
         try:
-            dm.create_a_sample_yaml_input_file(
+            data.create_a_sample_yaml_input_file(
                 input_file_path, name=full_name, theme=theme
             )
             created_files_and_folders.append(input_file_path.name)
         except ValueError as e:
             # if the theme is not in the available themes, then raise an error
-            error(e)
+            printer.error(e)
 
     if not dont_create_theme_source_files:
         # copy the package's theme files to the current directory
-        theme_folder = copy_templates(theme, pathlib.Path.cwd())
+        theme_folder = utilities.copy_templates(theme, pathlib.Path.cwd())
         if theme_folder is not None:
             created_files_and_folders.append(theme_folder.name)
         else:
-            warning(
+            printer.warning(
                 f'The theme folder "{theme}" already exists! The theme files are not'
                 " created."
             )
 
     if not dont_create_markdown_source_files:
         # copy the package's markdown files to the current directory
-        markdown_folder = copy_templates("markdown", pathlib.Path.cwd())
+        markdown_folder = utilities.copy_templates("markdown", pathlib.Path.cwd())
         if markdown_folder is not None:
             created_files_and_folders.append(markdown_folder.name)
         else:
-            warning(
+            printer.warning(
                 'The "markdown" folder already exists! The Markdown files are not'
                 " created."
             )
 
     if len(created_files_and_folders) > 0:
         created_files_and_folders_string = ",\n".join(created_files_and_folders)
-        information(
+        printer.information(
             "The following RenderCV input file and folders have been"
             f" created:\n{created_files_and_folders_string}"
         )
@@ -360,24 +350,24 @@ def cli_command_create_theme(
         typer.Option(
             help=(
                 "The name of the existing theme to base the new theme on. Available"
-                f" themes are: {', '.join(dm.available_themes)}."
+                f" themes are: {', '.join(data.available_themes)}."
             )
         ),
     ] = "classic",
 ):
     """Create a custom theme based on an existing theme."""
-    if based_on not in dm.available_themes:
-        error(
+    if based_on not in data.available_themes:
+        printer.error(
             f'The theme "{based_on}" is not in the list of available themes:'
-            f' {", ".join(dm.available_themes)}'
+            f' {", ".join(data.available_themes)}'
         )
 
-    theme_folder = copy_templates(
+    theme_folder = utilities.copy_templates(
         based_on, pathlib.Path.cwd(), new_folder_name=theme_name, suppress_warning=True
     )
 
     if theme_folder is None:
-        warning(
+        printer.warning(
             f'The theme folder "{theme_name}" already exists! The theme files are not'
             " created."
         )
@@ -401,7 +391,7 @@ def cli_command_create_theme(
     # create the new __init__.py file:
     (theme_folder / "__init__.py").write_text(new_init_file_contents)
 
-    information(f'The theme folder "{theme_folder.name}" has been created.')
+    printer.information(f'The theme folder "{theme_folder.name}" has been created.')
 
 
 @app.callback()
@@ -413,6 +403,6 @@ def cli_command_no_args(
     """If the `--version` option is used, then show the version. Otherwise, show the
     help message (see `no_args_is_help` argument of `typer.Typer` object)."""
     if version_requested:
-        there_is_a_new_version = warn_if_new_version_is_available()
+        there_is_a_new_version = printer.warn_if_new_version_is_available()
         if not there_is_a_new_version:
             print(f"RenderCV v{__version__}")
