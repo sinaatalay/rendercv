@@ -1,6 +1,7 @@
-"""This module containts some general-purpose data models for the themes. The themes
-are encouraged to inherit from these data models and add their own options, to avoid
-code duplication.
+"""
+The rendercv.renderer.themes module contains the design data models for the themes. The
+themes are encouraged to inherit from these data models and add their own options, to
+avoid code duplication.
 """
 
 from typing import Annotated, Literal
