@@ -2,7 +2,8 @@
 
 All contributions to RenderCV are welcome!
 
-The source code is thoroughly documented and well-commented, making it an enjoyable read and easy to understand. Also, a flowchart is provided below to help you understand how RenderCV works.
+The source code is thoroughly documented and well-commented, making it an enjoyable read and easy to understand. A detailed documentation of the source code is available in the [reference](../reference/index.md).
+
 
 ## Getting Started
 
@@ -47,28 +48,6 @@ The source code is thoroughly documented and well-commented, making it an enjoya
         === "Other"
 
             To be added.
-
-
-
-## How RenderCV works?
-
-The flowchart below illustrates the general operations of RenderCV. A detailed documentation of the source code is available in the [reference](../reference/index.md).
-
-```mermaid
-flowchart TD
-    subgraph rendercv.data
-    A[YAML Input File] --parsing with ruamel.yaml package--> B(Python Dictionary)
-    B --validation with pydantic package--> C((Pydantic Object))
-    end
-    subgraph rendercv.renderer
-    C --> AA
-    E[Markdown File] --markdown package--> K[HTML FIle]
-    D[LaTeX File] --TinyTeX--> L[PDF File]
-    L --PyMuPDF package--> Z[PNG Files]
-    AA[(Jinja2 Templates)] --> D
-    AA[(Jinja2 Templates)] --> E
-    end
-```
 
 ## Available Commands
 

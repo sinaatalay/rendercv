@@ -1,6 +1,6 @@
 """
 The `rendercv.renderer.templater` module contains all the necessary classes and
-functions for templating the $\\LaTeX$ and Markdown files for the `RenderCVDataModel`
+functions for templating the $\\LaTeX$ and Markdown files from the `RenderCVDataModel`
 object.
 """
 
