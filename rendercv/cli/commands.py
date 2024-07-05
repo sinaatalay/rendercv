@@ -39,7 +39,6 @@ def cli_command_render(
     input_file_name: Annotated[
         str, typer.Argument(help="Name of the YAML input file.")
     ],
-    extra_data_model_override_argumets: typer.Context,
     use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
@@ -133,6 +132,7 @@ def cli_command_render(
             ' [cyan bold]--cv.phone "123-456-7890"[/cyan bold].',
         ),
     ] = None,
+    extra_data_model_override_argumets: typer.Context = None,  # type: ignore
 ):
     """Render a CV from a YAML input file."""
     printer.welcome()

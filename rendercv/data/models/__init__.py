@@ -23,9 +23,9 @@ modules, each containing a different group of data models.
 from .computers import format_date
 from .curriculum_vitae import (
     CurriculumVitae,
+    SectionContents,
     SocialNetwork,
     available_social_networks,
-    SectionContents,
 )
 from .design import available_theme_options, available_themes
 from .entry_types import (

@@ -28,13 +28,13 @@ from .models import (
     OneLineEntry,
     PublicationEntry,
     RenderCVDataModel,
+    SectionContents,
     SocialNetwork,
+    available_entry_type_names,
     available_social_networks,
     available_theme_options,
     available_themes,
     format_date,
-    SectionContents,
-    available_entry_type_names,
 )
 from .reader import read_input_file
 

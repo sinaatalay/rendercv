@@ -8,7 +8,6 @@ from typing import Optional
 import pydantic
 
 from ...themes.classic import ClassicThemeOptions
-
 from .base import RenderCVBaseModel
 from .curriculum_vitae import CurriculumVitae
 from .design import RenderCVDesign

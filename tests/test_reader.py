@@ -11,10 +11,12 @@ import time_machine
 
 from rendercv import data as data
 from rendercv.data import generator
-from rendercv.data.models import computers
-from rendercv.data.models import locale_catalog
-from rendercv.data.models import curriculum_vitae
-from rendercv.data.models import entry_types
+from rendercv.data.models import (
+    computers,
+    curriculum_vitae,
+    entry_types,
+    locale_catalog,
+)
 
 from .conftest import update_testdata
 

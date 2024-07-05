@@ -10,14 +10,14 @@ import jinja2
 import pydantic
 import rich
 import rich.live
+import rich.panel
+import rich.progress
+import rich.table
+import rich.text
 import ruamel.yaml
 import ruamel.yaml.parser
 import typer
 from rich import print
-import rich.table
-import rich.progress
-import rich.text
-import rich.panel
 
 from .. import __version__
 from . import utilities

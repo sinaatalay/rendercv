@@ -15,8 +15,8 @@ import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import pypdf
 import pytest
 
-from rendercv.renderer import templater
 from rendercv import data
+from rendercv.renderer import templater
 
 # RenderCV is being tested by comparing the output to reference files. Therefore,
 # reference files should be updated when RenderCV is updated in a way that changes

@@ -70,7 +70,7 @@ def validate_start_and_end_date_fields(
 
         elif date != "present":
             # Validate the date:
-              computers.get_date_object(date)
+            computers.get_date_object(date)
 
     return date
 
@@ -243,7 +243,7 @@ class PublicationEntryBase(RenderCVBaseModel):
         description="The journal or conference name.",
     )
 
-    @pydantic.model_validator(mode="after") # type: ignore
+    @pydantic.model_validator(mode="after")  # type: ignore
     def ignore_url_if_doi_is_given(self) -> "PublicationEntryBase":
         """Check if DOI is provided and ignore the URL if it is provided."""
         doi_is_provided = self.doi is not None
@@ -273,7 +273,7 @@ class PublicationEntryBase(RenderCVBaseModel):
         url_is_provided = self.url is not None
 
         if url_is_provided:
-            return computers.make_a_url_clean(self.url) # type: ignore
+            return computers.make_a_url_clean(self.url)  # type: ignore
         else:
             return ""
 

@@ -15,8 +15,8 @@ from .renderer import (
     render_a_latex_file,
     render_a_latex_file_and_copy_theme_files,
     render_a_markdown_file,
-    render_an_html_from_markdown,
     render_a_pdf_from_latex,
+    render_an_html_from_markdown,
     render_pngs_from_pdf,
 )
 

@@ -157,7 +157,7 @@ def get_entry_type_name_and_section_validator(
         entry_type_name = entry.__class__.__name__
         section_type = create_a_section_validator(entry.__class__)
 
-    return entry_type_name, section_type # type: ignore
+    return entry_type_name, section_type  # type: ignore
 
 
 def validate_a_section(

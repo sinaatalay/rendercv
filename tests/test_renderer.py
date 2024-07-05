@@ -8,8 +8,7 @@ import jinja2
 import pytest
 import time_machine
 
-from rendercv import data
-from rendercv import renderer
+from rendercv import data, renderer
 from rendercv.renderer import templater
 
 folder_name_dictionary = {

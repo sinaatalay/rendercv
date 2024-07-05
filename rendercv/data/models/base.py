@@ -5,6 +5,7 @@ the parent class of all the data models in RenderCV.
 
 import pydantic
 
+
 class RenderCVBaseModel(pydantic.BaseModel):
     """This class is the parent class of all the data models in RenderCV. It has only
     one difference from the default `pydantic.BaseModel`: It raises an error if an

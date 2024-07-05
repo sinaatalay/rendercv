@@ -228,7 +228,7 @@ def generate_entry_figures():
                 )
 
                 # Convert pdf to an image
-                png_file_path = renderer.render_a_markdown_file(output_pdf_file_path)[0]
+                png_file_path = renderer.render_pngs_from_pdf(output_pdf_file_path)[0]
                 desired_png_file_path = output_pdf_file_path.with_suffix(".png")
 
                 # If the image exists, remove it
