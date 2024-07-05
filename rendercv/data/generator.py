@@ -110,7 +110,7 @@ def generate_json_schema() -> dict[str, Any]:
     """Generate the JSON schema of RenderCV.
 
     JSON schema is generated for the users to make it easier for them to write the input
-    file. The JSON Schema of RenderCV is saved in the `docs` directory of the repository
+    file. The JSON Schema of RenderCV is saved in the root directory of the repository
     and distributed to the users with the
     [JSON Schema Store](https://www.schemastore.org/).
 
