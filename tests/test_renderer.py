@@ -8,7 +8,7 @@ import jinja2
 import pytest
 import time_machine
 
-from rendercv import data as data
+from rendercv import data
 from rendercv import renderer
 from rendercv.renderer import templater
 
@@ -486,7 +486,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
             dummytheme_path.mkdir(parents=True, exist_ok=True)
 
         # create a txt file called test.txt in the custom theme directory:
-        for entry_type_name in data.available_entry_types:
+        for entry_type_name in data.available_entry_type_names:
             pathlib.Path(dummytheme_path / f"{entry_type_name}.j2.tex").touch()
 
         pathlib.Path(dummytheme_path / "Header.j2.tex").touch()
@@ -671,7 +671,9 @@ def test_render_an_html_from_markdown(
         shutil.copy(markdown_source_path, output_directory_path)
 
         # convert markdown to html
-        renderer.render_an_html_from_markdown(output_directory_path / markdown_file_name)
+        renderer.render_an_html_from_markdown(
+            output_directory_path / markdown_file_name
+        )
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
         function=render_html_from_markdown,
@@ -697,7 +699,7 @@ def test_render_pngs_from_pdf_single_page(
 
         pdf_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_render_pdf_from_latex"
+            / "test_render_a_pdf_from_latex"
             / pdf_file_name
         )
 
@@ -724,7 +726,7 @@ def test_render_pngs_from_pdf(
 
         pdf_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_render_pdf_from_latex"
+            / "test_render_a_pdf_from_latex"
             / pdf_file_name
         )
 

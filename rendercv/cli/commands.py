@@ -39,6 +39,7 @@ def cli_command_render(
     input_file_name: Annotated[
         str, typer.Argument(help="Name of the YAML input file.")
     ],
+    extra_data_model_override_argumets: typer.Context,
     use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
@@ -122,7 +123,9 @@ def cli_command_render(
             help="Don't generate the PNG file.",
         ),
     ] = False,
-    _: Annotated[  # This is a dummy argument for the help message.
+    # This is a dummy argument for the help message for
+    # extra_data_model_override_argumets:
+    _: Annotated[
         Optional[str],
         typer.Option(
             "--YAMLLOCATION",
@@ -130,7 +133,6 @@ def cli_command_render(
             ' [cyan bold]--cv.phone "123-456-7890"[/cyan bold].',
         ),
     ] = None,
-    extra_data_model_override_argumets: Optional[typer.Context] = None,
 ):
     """Render a CV from a YAML input file."""
     printer.welcome()
@@ -363,7 +365,9 @@ def cli_command_create_theme(
         )
         return
 
-    based_on_theme_directory = pathlib.Path(__file__).parent / "themes" / based_on
+    based_on_theme_directory = (
+        pathlib.Path(__file__).parent.parent / "themes" / based_on
+    )
     based_on_theme_init_file = based_on_theme_directory / "__init__.py"
     based_on_theme_init_file_contents = based_on_theme_init_file.read_text()
 

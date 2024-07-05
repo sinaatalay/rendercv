@@ -528,11 +528,12 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
 
-    runner.invoke(cli.app, ["create-theme", "newtheme", "--based-on", based_on])
+    result = runner.invoke(cli.app, ["create-theme", "newtheme", "--based-on", based_on])
 
     new_theme_source_files_path = tmp_path / "newtheme"
 
     assert new_theme_source_files_path.exists()
+    assert (new_theme_source_files_path / "__init__.py").exists()
 
     # test if the new theme is actually working:
     input_file_path = shutil.copy(input_file_path, tmp_path)
@@ -586,7 +587,9 @@ def test_get_latest_version_number_from_pypi():
 
 
 def test_if_welcome_prints_new_version_available(monkeypatch):
-    monkeypatch.setattr(utilities, "get_latest_version_number_from_pypi", lambda: "99999")
+    monkeypatch.setattr(
+        utilities, "get_latest_version_number_from_pypi", lambda: "99999"
+    )
     import contextlib
     import io
 
@@ -598,7 +601,9 @@ def test_if_welcome_prints_new_version_available(monkeypatch):
 
 
 def test_rendercv_version_when_there_is_a_new_version(monkeypatch):
-    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "99999")
+    monkeypatch.setattr(
+        utilities, "get_latest_version_number_from_pypi", lambda: "99999"
+    )
 
     result = runner.invoke(cli.app, ["--version"])
 
@@ -606,7 +611,9 @@ def test_rendercv_version_when_there_is_a_new_version(monkeypatch):
 
 
 def test_rendercv_version_when_there_is_not_a_new_version(monkeypatch):
-    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: __version__)
+    monkeypatch.setattr(
+        utilities, "get_latest_version_number_from_pypi", lambda: __version__
+    )
 
     result = runner.invoke(cli.app, ["--version"])
 
@@ -614,14 +621,15 @@ def test_rendercv_version_when_there_is_not_a_new_version(monkeypatch):
 
 
 def test_warn_if_new_version_is_available(monkeypatch):
-    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: __version__)
+    monkeypatch.setattr(
+        utilities, "get_latest_version_number_from_pypi", lambda: __version__
+    )
 
     assert not printer.warn_if_new_version_is_available()
 
-    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "999")
+    monkeypatch.setattr(utilities, "get_latest_version_number_from_pypi", lambda: "999")
 
     assert printer.warn_if_new_version_is_available()
-
 
 
 @pytest.mark.parametrize(

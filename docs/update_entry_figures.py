@@ -197,7 +197,7 @@ def generate_entry_figures():
                 latex_file_path = renderer.render_a_latex_file_and_copy_theme_files(
                     data_model, temporary_directory_path
                 )
-                pdf_file_path = renderer.render_pdf_from_latex(latex_file_path)
+                pdf_file_path = renderer.render_a_pdf_from_latex(latex_file_path)
 
                 # Prepare the output directory and file path:
                 output_directory = image_assets_directory / theme

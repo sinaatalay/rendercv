@@ -7,7 +7,7 @@ import os
 import pathlib
 import shutil
 import typing
-from typing import Optional
+from typing import Optional, Type
 
 import jinja2
 import pydantic
@@ -15,9 +15,8 @@ import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import pypdf
 import pytest
 
-import rendercv.renderer as renderer
-import rendercv.renderer.templater as rt
-from rendercv import data as data
+from rendercv.renderer import templater
+from rendercv import data
 
 # RenderCV is being tested by comparing the output to reference files. Therefore,
 # reference files should be updated when RenderCV is updated in a way that changes
@@ -240,7 +239,7 @@ def return_a_value_for_a_field_type(
 
 
 def create_combinations_of_a_model(
-    model: pydantic.BaseModel,
+    model: Type[data.Entry],
 ) -> list[pydantic.BaseModel]:
     """Look at the required fields and optional fields of a model and create all
     possible combinations of them.
@@ -306,7 +305,9 @@ def rendercv_filled_curriculum_vitae_data_model(
         sections={
             "Text Entries": [text_entry, text_entry, text_entry],
             "Bullet Entries": [bullet_entry, bullet_entry],
-            "Publication Entries": create_combinations_of_a_model(data.PublicationEntry),
+            "Publication Entries": create_combinations_of_a_model(
+                data.PublicationEntry
+            ),
             "Experience Entries": create_combinations_of_a_model(data.ExperienceEntry),
             "Education Entries": create_combinations_of_a_model(data.EducationEntry),
             "Normal Entries": create_combinations_of_a_model(data.NormalEntry),
@@ -318,7 +319,7 @@ def rendercv_filled_curriculum_vitae_data_model(
 @pytest.fixture
 def jinja2_environment() -> jinja2.Environment:
     """Return a Jinja2 environment."""
-    return rt.setup_jinja2_environment()
+    return templater.setup_jinja2_environment()
 
 
 @pytest.fixture
@@ -351,7 +352,7 @@ def specific_testdata_directory_path(testdata_directory_path, request) -> pathli
 
 def are_these_two_directories_the_same(
     directory1: pathlib.Path, directory2: pathlib.Path
-) -> None:
+) -> bool:
     """Check if two directories are the same.
 
     Args:
