@@ -86,6 +86,10 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run default:sort-imports
     ```
+- Check the types with [Pyright](https://github.com/RobertCraigie/pyright-python)
+    ```bash
+    hatch run default:check-types
+    ```
 - Run the tests:
     ```bash
     hatch run test:run
