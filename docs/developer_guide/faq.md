@@ -3,7 +3,7 @@
 
 ## How can I add a new social network to RenderCV?
 
-To add a new social network to RenderCV, go to the `rendercv/data_models.py` file and follow these steps:
+To add a new social network to RenderCV, go to the `rendercv/data/models/curriculum_vitae.py` file and follow these steps:
 
 1. Append the social network name (for example, "Facebook") to the `SocialNetworkName` type.
 2. If necessary, implement its username validation in the `SocialNetwork.check_username` method.
@@ -12,7 +12,7 @@ To add a new social network to RenderCV, go to the `rendercv/data_models.py` fil
 
 Then, the tests should be implemented for the new social network with the following steps:
 
-1. Go to `tests/test_data_models.py` and update `test_social_network_url` accordingly, i.e., add a new `(network, username, expected_url)` tuple to the `pytest.mark.parametrize` decorator.
+1. Go to `tests/test_data.py` and update `test_social_network_url` accordingly, i.e., add a new `(network, username, expected_url)` tuple to the `pytest.mark.parametrize` decorator.
 2. Go to `tests/conftest.py` and add the new social network to `rendercv_filled_curriculum_vitae_data_model`.
 3. Set `update_testdata` to `True` in `conftest.py` and run the tests to update the `testdata` folder.
 4. Review the updated `testdata` folder manually to ensure everything works as expected. Then, set `update_testdata` to `False` and push the changes.

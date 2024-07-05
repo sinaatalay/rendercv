@@ -215,36 +215,6 @@ def compute_date_string(
     return date_string
 
 
-def compute_social_network_url(network: str, username: str):
-    """Return the URL of a social network based on the network name and the username.
-
-    Args:
-        network (str): The name of the social network.
-        username (str): The username of the user in the social network.
-    Returns:
-        str: The URL of the social network.
-    """
-    if network == "Mastodon":
-        # Split domain and username
-        dummy, username, domain = username.split("@")
-        url = f"https://{domain}/@{username}"
-    else:
-        url_dictionary = {
-            "LinkedIn": "https://linkedin.com/in/",
-            "GitHub": "https://github.com/",
-            "GitLab": "https://gitlab.com/",
-            "Instagram": "https://instagram.com/",
-            "ORCID": "https://orcid.org/",
-            "StackOverflow": "https://stackoverflow.com/users/",
-            "ResearchGate": "https://researchgate.net/profile/",
-            "YouTube": "https://youtube.com/@",
-            "Google Scholar": "https://scholar.google.com/citations?user=",
-        }
-        url = url_dictionary[network] + username
-
-    return url
-
-
 def make_a_url_clean(url: str) -> str:
     """Make a URL clean by removing the protocol, www, and trailing slashes.
 

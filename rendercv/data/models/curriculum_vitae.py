@@ -348,7 +348,25 @@ class SocialNetwork(RenderCVBaseModel):
         """Return the URL of the social network and cache `url` as an attribute of the
         instance.
         """
-        return computers.compute_social_network_url(self.network, self.username)
+        if self.network == "Mastodon":
+            # Split domain and username
+            _, username, domain = self.username.split("@")
+            url = f"https://{domain}/@{username}"
+        else:
+            url_dictionary = {
+                "LinkedIn": "https://linkedin.com/in/",
+                "GitHub": "https://github.com/",
+                "GitLab": "https://gitlab.com/",
+                "Instagram": "https://instagram.com/",
+                "ORCID": "https://orcid.org/",
+                "StackOverflow": "https://stackoverflow.com/users/",
+                "ResearchGate": "https://researchgate.net/profile/",
+                "YouTube": "https://youtube.com/@",
+                "Google Scholar": "https://scholar.google.com/citations?user=",
+            }
+            url = url_dictionary[self.network] + self.username
+
+        return url
 
 
 class CurriculumVitae(RenderCVBaseModel):
