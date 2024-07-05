@@ -2,7 +2,7 @@ from typing import Literal
 
 import pydantic
 
-from .. import LaTeXDimension
+from rendercv.themes.base_models import LaTeXDimension
 
 
 class ModerncvThemeOptions(pydantic.BaseModel):

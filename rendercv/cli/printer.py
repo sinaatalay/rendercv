@@ -197,7 +197,7 @@ def information(text: str):
     Args:
         text (str): The text of the information message.
     """
-    print(f"[yellow]{text}")
+    print(f"[green]{text}")
 
 
 def print_validation_errors(exception: pydantic.ValidationError):

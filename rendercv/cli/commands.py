@@ -374,13 +374,9 @@ def cli_command_create_theme(
     # generate the new init file:
     class_name = f"{theme_name.capitalize()}ThemeOptions"
     literal_name = f'Literal["{theme_name}"]'
-    new_init_file_contents = (
-        based_on_theme_init_file_contents.replace(
-            f'Literal["{based_on}"]', literal_name
-        )
-        .replace(f"{based_on.capitalize()}ThemeOptions", class_name)
-        .replace("..", "rendercv.themes")
-    )
+    new_init_file_contents = based_on_theme_init_file_contents.replace(
+        f'Literal["{based_on}"]', literal_name
+    ).replace(f"{based_on.capitalize()}ThemeOptions", class_name)
 
     # create the new __init__.py file:
     (theme_folder / "__init__.py").write_text(new_init_file_contents)

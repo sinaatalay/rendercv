@@ -2,7 +2,12 @@ from typing import Literal
 
 import pydantic
 
-from .. import EntryAreaMargins, LaTeXDimension, Margins, ThemeOptions
+from rendercv.themes.base_models import (
+    EntryAreaMargins,
+    LaTeXDimension,
+    Margins,
+    ThemeOptions,
+)
 
 
 class EntryAreaMarginsForClassic(EntryAreaMargins):
