@@ -240,15 +240,15 @@ def return_a_value_for_a_field_type(
 
 def create_combinations_of_a_model(
     model: Type[data.Entry],
-) -> list[pydantic.BaseModel]:
+) -> list[data.Entry]:
     """Look at the required fields and optional fields of a model and create all
     possible combinations of them.
 
     Args:
-        model (pydantic.BaseModel): The data model class to create combinations of.
+        model (Type[data.Entry]): The data model class to create combinations of.
 
     Returns:
-        list[pydantic.BaseModel]: All possible instances of the model.
+        list[data.Entry]: All possible instances of the model.
     """
     fields = typing.get_type_hints(model)
 
@@ -269,9 +269,9 @@ def create_combinations_of_a_model(
     for i in range(1, len(optional_fields) + 1):
         for combination in itertools.combinations(optional_fields, i):
             kwargs = {k: optional_fields[k] for k in combination}
-            model = copy.deepcopy(model_with_only_required_fields)
-            model.__dict__.update(kwargs)
-            all_combinations.append(model)
+            model_instance = copy.deepcopy(model_with_only_required_fields)
+            model_instance.__dict__.update(kwargs)
+            all_combinations.append(model_instance)
 
     return all_combinations
 
@@ -378,7 +378,7 @@ def are_these_two_directories_the_same(
     return True
 
 
-def are_these_two_files_the_same(file1: pathlib.Path, file2: pathlib.Path) -> None:
+def are_these_two_files_the_same(file1: pathlib.Path, file2: pathlib.Path) -> bool:
     """Check if two files are the same.
 
     Args:

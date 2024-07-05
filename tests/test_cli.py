@@ -218,6 +218,7 @@ def test_copy_templates(tmp_path, folder_name):
         folder_name=folder_name,
         copy_to=tmp_path,
     )
+    assert copied_path is not None
     assert copied_path.exists()
 
     # make sure only j2.tex or j2.md files are copied:
@@ -231,6 +232,7 @@ def test_copy_templates_with_new_folder_name(tmp_path):
         copy_to=tmp_path,
         new_folder_name="new_folder",
     )
+    assert copied_path is not None
     assert copied_path.exists()
 
 
@@ -528,7 +530,9 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
 
-    result = runner.invoke(cli.app, ["create-theme", "newtheme", "--based-on", based_on])
+    result = runner.invoke(
+        cli.app, ["create-theme", "newtheme", "--based-on", based_on]
+    )
 
     new_theme_source_files_path = tmp_path / "newtheme"
 
