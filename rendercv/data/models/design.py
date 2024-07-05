@@ -42,7 +42,7 @@ def validate_design_options(
     Returns:
         Any: The validated design as a Pydantic data model.
     """
-    if isinstance(design, available_theme_options):
+    if isinstance(design, tuple(available_theme_options.values())):
         # Then it means it is an already validated built-in theme. Return it as it is:
         return design
     elif design["theme"] in available_theme_options:
@@ -104,7 +104,7 @@ def validate_design_options(
                 path_to_init_file,
             )
 
-            theme_module = importlib.util.module_from_spec(spec)
+            theme_module = importlib.util.module_from_spec(spec)  # type: ignore
             try:
                 spec.loader.exec_module(theme_module)  # type: ignore
             except SyntaxError:
@@ -158,8 +158,8 @@ RenderCVBuiltinDesign = Annotated[
 # themes. However, the JSON Schema generation is skipped, otherwise, the JSON Schema
 # would accept any `design` field in the YAML input file.
 RenderCVDesign = Annotated[
-    RenderCVBuiltinDesign | pydantic.json_schema.SkipJsonSchema[Any],
-    pydantic.PlainValidator(
+    pydantic.json_schema.SkipJsonSchema[Any] | RenderCVBuiltinDesign,
+    pydantic.BeforeValidator(
         lambda design: validate_design_options(
             design,
             available_theme_options=available_theme_options,

@@ -14,6 +14,10 @@ import ruamel.yaml
 import ruamel.yaml.parser
 import typer
 from rich import print
+import rich.table
+import rich.progress
+import rich.text
+import rich.panel
 
 from .. import __version__
 from . import utilities
@@ -392,7 +396,7 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
                 e,
             )
         except FileNotFoundError as e:
-            error(e)
+            error(exception=e)
         except UnicodeDecodeError as e:
             # find the problematic character that cannot be decoded with utf-8
             bad_character = str(e.object[e.start : e.end])
@@ -406,7 +410,7 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
                 f" UTF-8 ({bad_character}):\n {bad_character_context}",
             )
         except ValueError as e:
-            error(e)
+            error(exception=e)
         except typer.Exit:
             pass
         except jinja2.exceptions.TemplateSyntaxError as e:
@@ -416,6 +420,6 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
                 e,
             )
         except RuntimeError as e:
-            error(e)
+            error(exception=e)
 
     return wrapper

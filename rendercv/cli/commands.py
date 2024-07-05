@@ -130,27 +130,26 @@ def cli_command_render(
             ' [cyan bold]--cv.phone "123-456-7890"[/cyan bold].',
         ),
     ] = None,
-    extra_data_model_override_argumets: typer.Context = None,
+    extra_data_model_override_argumets: Optional[typer.Context] = None,
 ):
     """Render a CV from a YAML input file."""
     printer.welcome()
 
     # Get paths:
-    input_file_path = utilities.string_to_file_path(input_file_name)
+    input_file_path: pathlib.Path = utilities.string_to_file_path(
+        input_file_name
+    )  # type: ignore
     output_directory = pathlib.Path.cwd() / output_folder_name
 
     paths: dict[
         Literal["latex", "pdf", "markdown", "html", "png"], Optional[pathlib.Path]
     ] = {
-        "latex": latex_path,
-        "pdf": pdf_path,
-        "markdown": markdown_path,
-        "html": html_path,
-        "png": png_path,
+        "latex": utilities.string_to_file_path(latex_path),
+        "pdf": utilities.string_to_file_path(pdf_path),
+        "markdown": utilities.string_to_file_path(markdown_path),
+        "html": utilities.string_to_file_path(html_path),
+        "png": utilities.string_to_file_path(png_path),
     }
-    for file_type, path in paths.items():
-        if path:
-            paths[file_type] = utilities.string_to_file_path(path)
 
     # change the current working directory to the input file's directory (because
     # the template overrides are looked up in the current working directory):
@@ -198,7 +197,7 @@ def cli_command_render(
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
-        pdf_file_path_in_output_folder = renderer.render_pdf_from_latex(
+        pdf_file_path_in_output_folder = renderer.render_a_pdf_from_latex(
             latex_file_path_in_output_folder, use_local_latex_command
         )
         if paths["pdf"]:
@@ -219,19 +218,21 @@ def cli_command_render(
             markdown_file_path_in_output_folder = renderer.render_a_markdown_file(
                 data_model, output_directory
             )
-            if markdown_path:
-                utilities.copy_files(markdown_file_path_in_output_folder, markdown_path)
+            if paths["markdown"]:
+                utilities.copy_files(
+                    markdown_file_path_in_output_folder, paths["markdown"]
+                )
             progress.finish_the_current_step()
 
             if not dont_generate_html:
                 progress.start_a_step(
                     "Rendering the Markdown file to a HTML (for Grammarly)"
                 )
-                html_file_path_in_output_folder = renderer.render_html_from_markdown(
+                html_file_path_in_output_folder = renderer.render_an_html_from_markdown(
                     markdown_file_path_in_output_folder
                 )
-                if html_path:
-                    utilities.copy_files(html_file_path_in_output_folder, html_path)
+                if paths["html"]:
+                    utilities.copy_files(html_file_path_in_output_folder, paths["html"])
                 progress.finish_the_current_step()
 
 
@@ -289,7 +290,7 @@ def cli_command_new(
             created_files_and_folders.append(input_file_path.name)
         except ValueError as e:
             # if the theme is not in the available themes, then raise an error
-            printer.error(e)
+            printer.error(exception=e)
 
     if not dont_create_theme_source_files:
         # copy the package's theme files to the current directory
@@ -352,7 +353,7 @@ def cli_command_create_theme(
         )
 
     theme_folder = utilities.copy_templates(
-        based_on, pathlib.Path.cwd(), new_folder_name=theme_name, suppress_warning=True
+        based_on, pathlib.Path.cwd(), new_folder_name=theme_name
     )
 
     if theme_folder is None:

@@ -36,6 +36,7 @@ from .entry_types import (
     NormalEntry,
     OneLineEntry,
     PublicationEntry,
+    available_entry_type_names,
 )
 from .locale_catalog import LocaleCatalog
 from .rendercv_data_model import RenderCVDataModel
@@ -57,4 +58,5 @@ __all__ = [
     "available_social_networks",
     "SectionContents",
     "available_themes",
+    "available_entry_type_names",
 ]

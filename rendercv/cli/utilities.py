@@ -12,24 +12,30 @@ from typing import Optional
 import pydantic
 import typer
 
+from .. import data
 
-def string_to_file_path(string: str) -> pathlib.Path:
-    """Convert a string to a pathlib.Path object.
+
+def string_to_file_path(string: Optional[str]) -> Optional[pathlib.Path]:
+    """Convert a string to a pathlib.Path object. If the string is None, then return
+    None.
 
     Args:
         string (str): The string to be converted to a pathlib.Path object.
     Returns:
         pathlib.Path: The pathlib.Path object.
     """
-    return pathlib.Path(string).absolute()
+    if string is not None:
+        return pathlib.Path(string).absolute()
+    else:
+        return None
 
 
 def set_or_update_a_value(
-    data_model: pydantic.BaseModel | dict | list,
+    data_model: pydantic.BaseModel,
     key: str,
     value: str,
-    sub_model: pydantic.BaseModel | dict | list = None,
-):
+    sub_model: Optional[pydantic.BaseModel | dict | list] = None,
+) -> pydantic.BaseModel:  # type: ignore
     """Set or update a value in a data model for a specific key. For example, a key can
     be `cv.sections.education.3.institution` and the value can be "Bogazici University".
 
@@ -98,19 +104,19 @@ def set_or_update_a_value(
 
 
 def set_or_update_values(
-    data_model: pydantic.BaseModel,
+    data_model: data.RenderCVDataModel,
     key_and_values: dict[str, str],
-) -> pydantic.BaseModel:
-    """Set or update values in a data model for specific keys. It uses the
+) -> data.RenderCVDataModel:
+    """Set or update values in `RenderCVDataModel` for specific keys. It uses the
     `set_or_update_a_value` function to set or update the values.
 
     Args:
-        data_model (pydantic.BaseModel): The data model to set or update the values.
+        data_model (data.RenderCVDataModel): The data model to set or update the values.
         key_and_values (dict[str, str]): The key and value pairs to set or update.
     """
     for key, value in key_and_values.items():
         try:
-            data_model = set_or_update_a_value(data_model, key_and_values)
+            data_model = set_or_update_a_value(data_model, key, value)  # type: ignore
         except pydantic.ValidationError as e:
             raise e
         except (ValueError, KeyError, IndexError, AttributeError):
@@ -119,7 +125,7 @@ def set_or_update_values(
     return data_model
 
 
-def copy_files(paths: list[pathlib.Path], new_path: pathlib.Path):
+def copy_files(paths: list[pathlib.Path] | pathlib.Path, new_path: pathlib.Path):
     """Copy files to the given path. If there are multiple files, then rename the new
     path by adding a number to the end of the path.
 
@@ -127,6 +133,9 @@ def copy_files(paths: list[pathlib.Path], new_path: pathlib.Path):
         paths (list[pathlib.Path]): The paths of the files to be copied.
         new_path (pathlib.Path): The path to copy the files to.
     """
+    if isinstance(paths, pathlib.Path):
+        paths = [paths]
+
     if len(paths) == 1:
         shutil.copy2(paths[0], new_path)
     else:
@@ -210,7 +219,7 @@ def copy_templates(
         Optional[pathlib.Path]: The path to the copied folder.
     """
     # copy the package's theme files to the current directory
-    template_directory = pathlib.Path(__file__).parent / "themes" / folder_name
+    template_directory = pathlib.Path(__file__).parent.parent / "themes" / folder_name
     if new_folder_name:
         destination = copy_to / new_folder_name
     else:

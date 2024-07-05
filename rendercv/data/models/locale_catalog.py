@@ -114,7 +114,7 @@ class LocaleCatalog(RenderCVBaseModel):
     def update_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
         """Update the `locale_catalog` dictionary with the provided translations."""
         if value:
-            locale_catalog[info.field_name] = value
+            locale_catalog[info.field_name] = value  # type: ignore
 
         return value
 

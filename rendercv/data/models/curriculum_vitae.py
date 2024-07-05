@@ -110,7 +110,7 @@ def get_characteristic_entry_attributes(
 
 
 def get_entry_type_name_and_section_validator(
-    entry: dict[str, Any] | str, entry_types: list[Type]
+    entry: dict[str, Any] | str | Type, entry_types: list[Type]
 ) -> tuple[str, Type[SectionBase]]:
     """Get the entry type name and the section validator based on the entry.
 
@@ -126,10 +126,12 @@ def get_entry_type_name_and_section_validator(
     Returns:
         tuple[str, Type[SectionBase]]: The entry type name and the section validator.
     """
-    characteristic_entry_attributes = get_characteristic_entry_attributes(entry_types)
 
     if isinstance(entry, dict):
         entry_type_name = None  # the entry type is not determined yet
+        characteristic_entry_attributes = get_characteristic_entry_attributes(
+            entry_types
+        )
 
         for (
             EntryType,
@@ -155,10 +157,12 @@ def get_entry_type_name_and_section_validator(
         entry_type_name = entry.__class__.__name__
         section_type = create_a_section_validator(entry.__class__)
 
-    return entry_type_name, section_type
+    return entry_type_name, section_type # type: ignore
 
 
-def validate_a_section(sections_input: list[Any], entry_types: list[Type]) -> list[Any]:
+def validate_a_section(
+    sections_input: list[Any], entry_types: list[Type]
+) -> list[entry_types.Entry]:
     """Validate a list of entries (a section) based on the entry types.
 
     Sections input is a list of entries. Since there are multiple entry types, it is not
@@ -204,9 +208,10 @@ def validate_a_section(sections_input: list[Any], entry_types: list[Type]) -> li
         }
 
         try:
-            section_type.model_validate(
+            section_object = section_type.model_validate(
                 section,
             )
+            sections_input = section_object.entries
         except pydantic.ValidationError as e:
             new_error = ValueError(
                 "There are problems with the entries. RenderCV detected the entry type"
@@ -217,6 +222,11 @@ def validate_a_section(sections_input: list[Any], entry_types: list[Type]) -> li
             )
             raise new_error from e
 
+    else:
+        raise ValueError(
+            "Each section should be a list of entries! Please see the documentation for"
+            " more information about the sections.",
+        )
     return sections_input
 
 
@@ -261,8 +271,8 @@ ListOfEntries = list[entry_types.Entry]
 # can be any of the available entry types. The section is validated with the
 # `validate_a_section` function.
 SectionContents = Annotated[
-    ListOfEntries,
-    pydantic.PlainValidator(
+    pydantic.json_schema.SkipJsonSchema[Any] | ListOfEntries,
+    pydantic.BeforeValidator(
         lambda entries: validate_a_section(
             entries, entry_types=entry_types.available_entry_models
         )
@@ -389,11 +399,88 @@ class CurriculumVitae(RenderCVBaseModel):
     )
 
     @functools.cached_property
-    def connections(self) -> list[dict[str, str]]:
+    def connections(self) -> list[dict[str, Optional[str]]]:
         """Return all the connections of the person as a list of dictionaries and cache
-        `connections` as an attribute of the instance.
+        `connections` as an attribute of the instance. The connections are used in the
+        header of the CV.
+
+        Returns:
+            list[dict[str, Optional[str]]]: The connections of the person.
         """
-        connections = computers.compute_connections(self)
+
+        connections: list[dict[str, Optional[str]]] = []
+
+        if self.location is not None:
+            connections.append(
+                {
+                    "latex_icon": "\\faMapMarker*",
+                    "url": None,
+                    "clean_url": None,
+                    "placeholder": self.location,
+                }
+            )
+
+        if self.email is not None:
+            connections.append(
+                {
+                    "latex_icon": "\\faEnvelope[regular]",
+                    "url": f"mailto:{self.email}",
+                    "clean_url": self.email,
+                    "placeholder": self.email,
+                }
+            )
+
+        if self.phone is not None:
+            phone_placeholder = self.phone.replace("tel:", "").replace("-", " ")
+            connections.append(
+                {
+                    "latex_icon": "\\faPhone*",
+                    "url": f"{self.phone}",
+                    "clean_url": phone_placeholder,
+                    "placeholder": phone_placeholder,
+                }
+            )
+
+        if self.website is not None:
+            website_placeholder = computers.make_a_url_clean(str(self.website))
+            connections.append(
+                {
+                    "latex_icon": "\\faLink",
+                    "url": str(self.website),
+                    "clean_url": website_placeholder,
+                    "placeholder": website_placeholder,
+                }
+            )
+
+        if self.social_networks is not None:
+            icon_dictionary = {
+                "LinkedIn": "\\faLinkedinIn",
+                "GitHub": "\\faGithub",
+                "GitLab": "\\faGitlab",
+                "Instagram": "\\faInstagram",
+                "Mastodon": "\\faMastodon",
+                "ORCID": "\\faOrcid",
+                "StackOverflow": "\\faStackOverflow",
+                "ResearchGate": "\\faResearchgate",
+                "YouTube": "\\faYoutube",
+                "Google Scholar": "\\faGraduationCap",
+            }
+            for social_network in self.social_networks:
+                clean_url = computers.make_a_url_clean(social_network.url)
+                connection = {
+                    "latex_icon": icon_dictionary[social_network.network],
+                    "url": social_network.url,
+                    "clean_url": clean_url,
+                    "placeholder": social_network.username,
+                }
+
+                if social_network.network == "StackOverflow":
+                    username = social_network.username.split("/")[1]
+                    connection["placeholder"] = username
+                if social_network.network == "Google Scholar":
+                    connection["placeholder"] = "Google Scholar"
+
+                connections.append(connection)  # type: ignore
 
         return connections
 
@@ -406,8 +493,6 @@ class CurriculumVitae(RenderCVBaseModel):
         input sections to a list of `SectionBase` objects. This makes it easier to work with
         the sections in the rest of the code.
 
-        Args:
-            sections_input (Optional[dict[str, SectionInput]]): The input sections.
         Returns:
             list[SectionBase]: The computed sections.
         """
@@ -420,7 +505,8 @@ class CurriculumVitae(RenderCVBaseModel):
                 # The first entry can be used because all the entries in the section are
                 # already validated with the `validate_a_section` function:
                 entry_type_name, _ = get_entry_type_name_and_section_validator(
-                    entries[0]
+                    entries[0],  # type: ignore
+                    entry_types=entry_types.available_entry_models,
                 )
 
                 # SectionBase is used so that entries are not validated again:

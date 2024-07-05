@@ -770,7 +770,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
         jinja2.Environment: The theme environment.
     """
     global jinja2_environment
-    themes_directory = pathlib.Path(__file__).parent / "themes"
+    themes_directory = pathlib.Path(__file__).parent.parent / "themes"
 
     if jinja2_environment is None:
         # create a Jinja2 environment:

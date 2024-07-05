@@ -38,7 +38,7 @@ def copy_theme_files_to_output_directory(
     else:
         # Then it means the theme is a custom theme. If theme_directory is not given
         # as an argument, then look for the theme in the current working directory.
-        theme_directory_path = pathlib.Path(pathlib.Path.cwd()) / theme_name
+        theme_directory_path = pathlib.Path.cwd() / theme_name
 
         if not theme_directory_path.is_dir():
             raise FileNotFoundError(
@@ -51,7 +51,7 @@ def copy_theme_files_to_output_directory(
         # theme_file.suffix returns the latest part of the file name after the last dot.
         # But we need the latest part of the file name after the first dot:
         try:
-            suffix = re.search(r"\..*", theme_file.name)[0]
+            suffix = re.search(r"\..*", theme_file.name)[0]  # type: ignore
         except TypeError:
             suffix = ""
 
@@ -145,7 +145,7 @@ def render_a_latex_file_and_copy_theme_files(
     return latex_file_path
 
 
-def render_pdf_from_latex(
+def render_a_pdf_from_latex(
     latex_file_path: pathlib.Path, local_latex_command: Optional[str] = None
 ) -> pathlib.Path:
     """Run TinyTeX with the given $\\LaTeX$ file to render the PDF.
@@ -272,15 +272,15 @@ def render_pngs_from_pdf(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
     png_files = []
     pdf = fitz.open(pdf_file_path)  # open the PDF file
     for page in pdf:  # iterate the pages
-        image = page.get_pixmap(dpi=300)
-        png_file_path = png_directory / f"{png_file_name}_{page.number+1}.png"
+        image = page.get_pixmap(dpi=300)  # type: ignore
+        png_file_path = png_directory / f"{png_file_name}_{page.number+1}.png"  # type: ignore
         image.save(png_file_path)
         png_files.append(png_file_path)
 
     return png_files
 
 
-def render_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Path:
+def render_an_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Path:
     """Render an HTML file from a Markdown file with the same name and in the same
     directory. It uses `rendercv/themes/main.j2.html` as the Jinja2 template.
 

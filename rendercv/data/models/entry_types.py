@@ -70,7 +70,7 @@ def validate_start_and_end_date_fields(
 
         elif date != "present":
             # Validate the date:
-            computers.get_date_object(date)
+              computers.get_date_object(date)
 
     return date
 
@@ -106,16 +106,16 @@ def validate_and_adjust_dates_for_an_entry(
         start_date = None
         end_date = None
     elif start_date_is_provided:
-        start_date = computers.get_date_object(start_date)
+        start_date_object = computers.get_date_object(start_date)
         if not end_date_is_provided:
             # If only start_date is provided, assume it is an ongoing event, i.e.,
             # the end_date is present:
             end_date = "present"
 
         if end_date != "present":
-            end_date = computers.get_date_object(end_date)
+            end_date_object = computers.get_date_object(end_date)
 
-            if start_date > end_date:
+            if start_date_object > end_date_object:
                 raise ValueError(
                     '"start_date" can not be after "end_date"!',
                     "start_date",  # This is the location of the error
@@ -243,7 +243,7 @@ class PublicationEntryBase(RenderCVBaseModel):
         description="The journal or conference name.",
     )
 
-    @pydantic.model_validator(mode="after")
+    @pydantic.model_validator(mode="after") # type: ignore
     def ignore_url_if_doi_is_given(self) -> "PublicationEntryBase":
         """Check if DOI is provided and ignore the URL if it is provided."""
         doi_is_provided = self.doi is not None
@@ -273,7 +273,7 @@ class PublicationEntryBase(RenderCVBaseModel):
         url_is_provided = self.url is not None
 
         if url_is_provided:
-            return computers.make_a_url_clean(self.url)
+            return computers.make_a_url_clean(self.url) # type: ignore
         else:
             return ""
 
@@ -324,7 +324,7 @@ class EntryBase(EntryWithDate):
         examples=["Did this.", "Did that."],
     )
 
-    @pydantic.model_validator(mode="after")
+    @pydantic.model_validator(mode="after")  # type: ignore
     def check_and_adjust_dates(self) -> "EntryBase":
         """Call the `validate_adjust_dates_of_an_entry` function to validate the
         dates.
@@ -456,7 +456,7 @@ Entry = (
 # Entry.__args__[:-1] is a tuple of all the entry types except `str``:
 # `str` (TextEntry) is not included because it's validation handled differently. It is
 # not a Pydantic model, but a string.
-available_entry_models = Entry.__args__[:-1]
+available_entry_models = list(Entry.__args__[:-1])
 
 available_entry_type_names = [
     entry_type.__name__ for entry_type in available_entry_models

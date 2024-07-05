@@ -9,8 +9,6 @@ import pydantic
 
 from ...themes.classic import ClassicThemeOptions
 
-# Disable Pydantic warnings:
-# warnings.filterwarnings("ignore")
 from .base import RenderCVBaseModel
 from .curriculum_vitae import CurriculumVitae
 from .design import RenderCVDesign
@@ -37,4 +35,15 @@ class RenderCVDataModel(RenderCVBaseModel):
         description=(
             "The locale catalog of the CV to allow the support of multiple languages."
         ),
+        validate_default=True,
     )
+
+    @pydantic.field_validator("locale_catalog")
+    @classmethod
+    def initialize_locale_catalog(cls, locale_catalog: LocaleCatalog) -> LocaleCatalog:
+        """Even if the locale catalog is not provided, initialize it with the default
+        values."""
+        if locale_catalog is None:
+            LocaleCatalog()
+
+        return locale_catalog

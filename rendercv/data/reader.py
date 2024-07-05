@@ -12,13 +12,13 @@ import ruamel.yaml
 from . import models
 
 
-def read_a_yaml_file(file_path_or_contents: pathlib.Path) -> dict[str, Any]:
+def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict[str, Any]:
     """Read a YAML file and return its content as a dictionary. The YAML file can be
     given as a path to the file or as the contents of the file as a string.
 
     Args:
-        file_path_or_contents (pathlib.Path): The path to the YAML file or the contents
-            of the YAML file as a string.
+        file_path_or_contents (pathlib.Path | str): The path to the YAML file or the
+            contents of the YAML file as a string.
     Returns:
         dict: The content of the YAML file as a dictionary.
     """

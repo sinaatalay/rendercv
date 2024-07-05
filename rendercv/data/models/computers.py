@@ -8,7 +8,6 @@ import re
 from datetime import date as Date
 from typing import Optional
 
-from .curriculum_vitae import CurriculumVitae
 from .locale_catalog import locale_catalog
 
 
@@ -47,9 +46,9 @@ def format_date(date: Date, use_full_name: bool = False) -> str:
 
 
 def compute_time_span_string(
-    start_date: Optional[str],
-    end_date: Optional[str],
-    date: Optional[str],
+    start_date: Optional[str | int],
+    end_date: Optional[str | int],
+    date: Optional[str | int],
 ) -> str:
     """
     Return a time span string based on the provided dates.
@@ -135,9 +134,9 @@ def compute_time_span_string(
 
 
 def compute_date_string(
-    start_date: Optional[str],
-    end_date: Optional[str],
-    date: Optional[str],
+    start_date: Optional[str | int],
+    end_date: Optional[str | int],
+    date: Optional[str | int],
     show_only_years: bool = False,
 ) -> str:
     """Return a date string based on the provided dates.
@@ -194,7 +193,7 @@ def compute_date_string(
                 start_date = format_date(date_object)
 
         if end_date == "present":
-            end_date = locale_catalog["present"]
+            end_date = locale_catalog["present"]  #  type: ignore
         elif isinstance(end_date, int):
             # Then it means only the year is provided
             end_date = str(end_date)
@@ -244,96 +243,6 @@ def compute_social_network_url(network: str, username: str):
         url = url_dictionary[network] + username
 
     return url
-
-
-def compute_connections(cv: "CurriculumVitae") -> list[dict[str, str]]:
-    """Bring together all the connections in the CV, such as social networks, phone
-    number, email, etc and return them as a list of dictionaries. Each dictionary
-    contains the following keys: "latex_icon", "url", "clean_url", and "placeholder."
-
-    The connections are used in the header of the CV.
-
-    Args:
-        cv (CurriculumVitae): The CV to compute the connections.
-
-    Returns:
-        list[dict[str, str]]: The computed connections.
-    """
-    connections: list[dict[str, str]] = []
-
-    if cv.location is not None:
-        connections.append(
-            {
-                "latex_icon": "\\faMapMarker*",
-                "url": None,
-                "clean_url": None,
-                "placeholder": cv.location,
-            }
-        )
-
-    if cv.email is not None:
-        connections.append(
-            {
-                "latex_icon": "\\faEnvelope[regular]",
-                "url": f"mailto:{cv.email}",
-                "clean_url": cv.email,
-                "placeholder": cv.email,
-            }
-        )
-
-    if cv.phone is not None:
-        phone_placeholder = cv.phone.replace("tel:", "").replace("-", " ")
-        connections.append(
-            {
-                "latex_icon": "\\faPhone*",
-                "url": f"{cv.phone}",
-                "clean_url": phone_placeholder,
-                "placeholder": phone_placeholder,
-            }
-        )
-
-    if cv.website is not None:
-        website_placeholder = make_a_url_clean(cv.website)
-        connections.append(
-            {
-                "latex_icon": "\\faLink",
-                "url": cv.website,
-                "clean_url": website_placeholder,
-                "placeholder": website_placeholder,
-            }
-        )
-
-    if cv.social_networks is not None:
-        icon_dictionary = {
-            "LinkedIn": "\\faLinkedinIn",
-            "GitHub": "\\faGithub",
-            "GitLab": "\\faGitlab",
-            "Instagram": "\\faInstagram",
-            "Mastodon": "\\faMastodon",
-            "ORCID": "\\faOrcid",
-            "StackOverflow": "\\faStackOverflow",
-            "ResearchGate": "\\faResearchgate",
-            "YouTube": "\\faYoutube",
-            "Google Scholar": "\\faGraduationCap",
-        }
-        for social_network in cv.social_networks:
-            clean_url = make_a_url_clean(social_network.url)
-            connection = {
-                "latex_icon": icon_dictionary[social_network.network],
-                "url": social_network.url,
-                "clean_url": clean_url,
-                "placeholder": social_network.username,
-            }
-
-            if social_network.network == "StackOverflow":
-                username = social_network.username.split("/")[1]
-                connection["placeholder"] = username
-            if social_network.network == "Google Scholar":
-                connection["placeholder"] = "Google Scholar"
-
-            connections.append(connection)
-
-    return connections
 
 
 def make_a_url_clean(url: str) -> str:
