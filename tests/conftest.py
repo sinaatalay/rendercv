@@ -15,9 +15,9 @@ import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import pypdf
 import pytest
 
-import rendercv.renderer as r
+import rendercv.renderer as renderer
 import rendercv.renderer.templater as rt
-from rendercv import data as dm
+from rendercv import data as data
 
 # RenderCV is being tested by comparing the output to reference files. Therefore,
 # reference files should be updated when RenderCV is updated in a way that changes
@@ -133,15 +133,15 @@ def text_entry() -> str:
 
 
 @pytest.fixture
-def rendercv_data_model() -> dm.RenderCVDataModel:
+def rendercv_data_model() -> data.RenderCVDataModel:
     """Return a sample RenderCV data model."""
-    return dm.create_a_sample_data_model()
+    return data.create_a_sample_data_model()
 
 
 @pytest.fixture
-def rendercv_empty_curriculum_vitae_data_model() -> dm.CurriculumVitae:
+def rendercv_empty_curriculum_vitae_data_model() -> data.CurriculumVitae:
     """Return an empty CurriculumVitae data model."""
-    return dm.CurriculumVitae(sections={"test": ["test"]})
+    return data.CurriculumVitae(sections={"test": ["test"]})
 
 
 def return_a_value_for_a_field_type(
@@ -280,11 +280,11 @@ def create_combinations_of_a_model(
 @pytest.fixture
 def rendercv_filled_curriculum_vitae_data_model(
     text_entry, bullet_entry
-) -> dm.CurriculumVitae:
+) -> data.CurriculumVitae:
     """Return a filled CurriculumVitae data model, where each section has all possible
     combinations of entry types.
     """
-    return dm.CurriculumVitae(
+    return data.CurriculumVitae(
         name="John Doe",
         label="Mechanical Engineer",
         location="Istanbul, Turkey",
@@ -292,25 +292,25 @@ def rendercv_filled_curriculum_vitae_data_model(
         phone="+905419999999",  # type: ignore
         website="https://example.com",  # type: ignore
         social_networks=[
-            dm.SocialNetwork(network="LinkedIn", username="johndoe"),
-            dm.SocialNetwork(network="GitHub", username="johndoe"),
-            dm.SocialNetwork(network="Instagram", username="johndoe"),
-            dm.SocialNetwork(network="ORCID", username="0000-0000-0000-0000"),
-            dm.SocialNetwork(network="Google Scholar", username="F8IyYrQAAAAJ"),
-            dm.SocialNetwork(network="Mastodon", username="@johndoe@example.com"),
-            dm.SocialNetwork(network="StackOverflow", username="12323/johndoe"),
-            dm.SocialNetwork(network="GitLab", username="johndoe"),
-            dm.SocialNetwork(network="ResearchGate", username="johndoe"),
-            dm.SocialNetwork(network="YouTube", username="johndoe"),
+            data.SocialNetwork(network="LinkedIn", username="johndoe"),
+            data.SocialNetwork(network="GitHub", username="johndoe"),
+            data.SocialNetwork(network="Instagram", username="johndoe"),
+            data.SocialNetwork(network="ORCID", username="0000-0000-0000-0000"),
+            data.SocialNetwork(network="Google Scholar", username="F8IyYrQAAAAJ"),
+            data.SocialNetwork(network="Mastodon", username="@johndoe@example.com"),
+            data.SocialNetwork(network="StackOverflow", username="12323/johndoe"),
+            data.SocialNetwork(network="GitLab", username="johndoe"),
+            data.SocialNetwork(network="ResearchGate", username="johndoe"),
+            data.SocialNetwork(network="YouTube", username="johndoe"),
         ],
         sections={
             "Text Entries": [text_entry, text_entry, text_entry],
             "Bullet Entries": [bullet_entry, bullet_entry],
-            "Publication Entries": create_combinations_of_a_model(dm.PublicationEntry),
-            "Experience Entries": create_combinations_of_a_model(dm.ExperienceEntry),
-            "Education Entries": create_combinations_of_a_model(dm.EducationEntry),
-            "Normal Entries": create_combinations_of_a_model(dm.NormalEntry),
-            "One Line Entries": create_combinations_of_a_model(dm.OneLineEntry),
+            "Publication Entries": create_combinations_of_a_model(data.PublicationEntry),
+            "Experience Entries": create_combinations_of_a_model(data.ExperienceEntry),
+            "Education Entries": create_combinations_of_a_model(data.EducationEntry),
+            "Normal Entries": create_combinations_of_a_model(data.NormalEntry),
+            "One Line Entries": create_combinations_of_a_model(data.OneLineEntry),
         },
     )
 

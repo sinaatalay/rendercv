@@ -1,7 +1,6 @@
 import io
 import json
 import os
-import re
 import shutil
 from datetime import date as Date
 
@@ -10,7 +9,12 @@ import pytest
 import ruamel.yaml
 import time_machine
 
-from rendercv import data as dm
+from rendercv import data as data
+from rendercv.data import generator
+from rendercv.data.models import computers
+from rendercv.data.models import locale_catalog
+from rendercv.data.models import curriculum_vitae
+from rendercv.data.models import entry_types
 
 from .conftest import update_testdata
 
@@ -34,9 +38,9 @@ from .conftest import update_testdata
 def test_get_date_object(date, expected_date_object, expected_error):
     if expected_error:
         with pytest.raises(expected_error):
-            dm.get_date_object(date)
+            computers.get_date_object(date)
     else:
-        assert dm.get_date_object(date) == expected_date_object
+        assert computers.get_date_object(date) == expected_date_object
 
 
 @pytest.mark.parametrize(
@@ -57,62 +61,7 @@ def test_get_date_object(date, expected_date_object, expected_error):
     ],
 )
 def test_format_date(date, expected_date_string):
-    assert dm.format_date(date) == expected_date_string
-
-
-@pytest.mark.parametrize(
-    "key, value",
-    [
-        ("cv.phone", "+905555555555"),
-        ("cv.email", "test@example.com"),
-        ("cv.sections.education.0.degree", "PhD"),
-        ("cv.sections.education.0.highlights.0", "Did this."),
-        ("cv.sections.this_is_a_new_section", '["This is a text entry."]'),
-        ("design.page_size", "a4paper"),
-        ("design", '{"theme": "engineeringresumes"}'),
-    ],
-)
-def test_set_or_update_a_value(rendercv_data_model, key, value):
-    dm.set_or_update_a_value(rendercv_data_model, key, value)
-
-    # replace with regex pattern:
-    key = re.sub(r"sections\.([^\.]*)", 'sections_input["\\1"]', key)
-    key = re.sub(r"\.(\d+)", "[\\1]", key)
-
-    if value.startswith("{") and value.endswith("}"):
-        value = eval(value)
-    elif value.startswith("[") and value.endswith("]"):
-        value = eval(value)
-
-    assert eval(f"rendercv_data_model.{key}") == value
-
-
-@pytest.mark.parametrize(
-    "key, value",
-    [
-        ("cv.phones", "+905555555555"),
-        ("cv.emssdsail", ""),
-        ("cv.sections.education.99.degree", "PhD"),
-        ("dessssign.page_size", "a4paper"),
-    ],
-)
-def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
-    with pytest.raises((ValueError, KeyError, IndexError, AttributeError)):
-        dm.set_or_update_a_value(rendercv_data_model, key, value)
-
-
-@pytest.mark.parametrize(
-    "key, value",
-    [
-        ("cv.phone", "+9999995555555555"),
-        ("cv.email", "notanemail***"),
-        ("cv.sections.education.0.highlights", "this is not a list"),
-        ("design.page_size", "invalid_page_size"),
-    ],
-)
-def test_set_or_update_a_value_invalid_values(rendercv_data_model, key, value):
-    with pytest.raises(pydantic.ValidationError):
-        dm.set_or_update_a_value(rendercv_data_model, key, value)
+    assert data.format_date(date) == expected_date_string
 
 
 def test_read_input_file(input_file_path):
@@ -135,9 +84,9 @@ def test_read_input_file(input_file_path):
         yaml_object = ruamel.yaml.YAML()
         yaml_object.dump(input_dictionary, input_file_path)
 
-    data_model = dm.read_input_file(input_file_path)
+    data_model = data.read_input_file(input_file_path)
 
-    assert isinstance(data_model, dm.RenderCVDataModel)
+    assert isinstance(data_model, data.RenderCVDataModel)
 
 
 def test_read_input_file_directly_with_contents(input_file_path):
@@ -158,46 +107,46 @@ def test_read_input_file_directly_with_contents(input_file_path):
         yaml_object.dump(input_dictionary, string_stream)
         yaml_string = string_stream.getvalue()
 
-    data_model = dm.read_input_file(yaml_string)
+    data_model = data.read_input_file(yaml_string)
 
-    assert isinstance(data_model, dm.RenderCVDataModel)
+    assert isinstance(data_model, data.RenderCVDataModel)
 
 
 def test_read_input_file_invalid_file(tmp_path):
     invalid_file_path = tmp_path / "invalid.extension"
     invalid_file_path.write_text("dummy content", encoding="utf-8")
     with pytest.raises(ValueError):
-        dm.read_input_file(invalid_file_path)
+        data.read_input_file(invalid_file_path)
 
 
 def test_read_input_file_that_doesnt_exist(tmp_path):
     non_existent_file_path = tmp_path / "non_existent_file.yaml"
     with pytest.raises(FileNotFoundError):
-        dm.read_input_file(non_existent_file_path)
+        data.read_input_file(non_existent_file_path)
 
 
 @pytest.mark.parametrize(
     "theme",
-    dm.available_themes,
+    data.available_themes,
 )
 def test_get_a_sample_data_model(theme):
-    data_model = dm.create_a_sample_data_model("John Doe", theme)
-    assert isinstance(data_model, dm.RenderCVDataModel)
+    data_model = data.create_a_sample_data_model("John Doe", theme)
+    assert isinstance(data_model, data.RenderCVDataModel)
 
 
 def test_get_a_sample_data_model_invalid_theme():
     with pytest.raises(ValueError):
-        dm.create_a_sample_data_model("John Doe", "invalid")
+        data.create_a_sample_data_model("John Doe", "invalid")
 
 
 def test_generate_json_schema():
-    schema = dm.generate_json_schema()
+    schema = data.generate_json_schema()
     assert isinstance(schema, dict)
 
 
 def test_generate_json_schema_file(tmp_path):
     schema_file_path = tmp_path / "schema.json"
-    dm.generate_json_schema_file(schema_file_path)
+    data.generate_json_schema_file(schema_file_path)
 
     assert schema_file_path.exists()
 
@@ -340,7 +289,9 @@ def test_dates(
     expected_date_string_only_years,
     expected_time_span,
 ):
-    entry_base = dm.EntryBase(start_date=start_date, end_date=end_date, date=date)
+    entry_base = entry_types.EntryBase(
+        start_date=start_date, end_date=end_date, date=date
+    )
 
     assert entry_base.date_string == expected_date_string
     assert entry_base.date_string_only_years == expected_date_string_only_years
@@ -357,7 +308,7 @@ def test_dates(
 )
 def test_publication_dates(publication_entry, date, expected_date_string):
     publication_entry["date"] = date
-    publication_entry = dm.PublicationEntry(**publication_entry)
+    publication_entry = data.PublicationEntry(**publication_entry)
     assert publication_entry.date_string == expected_date_string
 
 
@@ -365,7 +316,7 @@ def test_publication_dates(publication_entry, date, expected_date_string):
 def test_invalid_publication_dates(publication_entry, date):
     with pytest.raises(pydantic.ValidationError):
         publication_entry["date"] = date
-        dm.PublicationEntry(**publication_entry)
+        data.PublicationEntry(**publication_entry)
 
 
 @pytest.mark.parametrize(
@@ -385,7 +336,7 @@ def test_invalid_publication_dates(publication_entry, date):
 )
 def test_invalid_dates(start_date, end_date, date):
     with pytest.raises(pydantic.ValidationError):
-        dm.EntryBase(start_date=start_date, end_date=end_date, date=date)
+        entry_types.EntryBase(start_date=start_date, end_date=end_date, date=date)
 
 
 @pytest.mark.parametrize(
@@ -396,7 +347,7 @@ def test_invalid_dates(start_date, end_date, date):
 )
 def test_doi_url(publication_entry, doi, expected_doi_url):
     publication_entry["doi"] = doi
-    publication_entry = dm.PublicationEntry(**publication_entry)
+    publication_entry = data.PublicationEntry(**publication_entry)
     assert publication_entry.doi_url == expected_doi_url
 
 
@@ -414,7 +365,7 @@ def test_doi_url(publication_entry, doi, expected_doi_url):
 )
 def test_invalid_social_networks(network, username):
     with pytest.raises(pydantic.ValidationError):
-        dm.SocialNetwork(network=network, username=username)
+        data.SocialNetwork(network=network, username=username)
 
 
 @pytest.mark.parametrize(
@@ -453,7 +404,7 @@ def test_invalid_social_networks(network, username):
     ],
 )
 def test_social_network_url(network, username, expected_url):
-    social_network = dm.SocialNetwork(network=network, username=username)
+    social_network = data.SocialNetwork(network=network, username=username)
     assert str(social_network.url) == expected_url
 
 
@@ -485,18 +436,26 @@ def test_social_network_url(network, username, expected_url):
         ("bullet_entry", "BulletEntry", "SectionWithBulletEntries"),
     ],
 )
-def test_get_entry_and_section_type(
+def test_get_entry_type_name_and_section_validator(
     entry, expected_entry_type, expected_section_type, request: pytest.FixtureRequest
 ):
     entry = request.getfixturevalue(entry)
-    entry_type, section_type = dm.get_entry_and_section_type(entry)
+    entry_type, section_type = (
+        curriculum_vitae.get_entry_type_name_and_section_validator(
+            entry, entry_types.available_entry_models
+        )
+    )
     assert entry_type == expected_entry_type
     assert section_type.__name__ == expected_section_type
 
     # initialize the entry with the entry type
     if entry_type != "TextEntry":
-        entry = eval(f"dm.{entry_type}(**entry)")
-        entry_type, section_type = dm.get_entry_and_section_type(entry)
+        entry = eval(f"data.{entry_type}(**entry)")
+        entry_type, section_type = (
+            curriculum_vitae.get_entry_type_name_and_section_validator(
+                entry, entry_types.available_entry_models
+            )
+        )
         assert entry_type == expected_entry_type
         assert section_type.__name__ == expected_section_type
 
@@ -539,7 +498,7 @@ def test_sections(
         },
     }
 
-    cv = dm.CurriculumVitae(**input)
+    cv = data.CurriculumVitae(**input)
     assert len(cv.sections) == 6
     for section in cv.sections:
         assert len(section.entries) == 2
@@ -555,7 +514,7 @@ def test_sections_with_invalid_entries():
         }
     ]
     with pytest.raises(pydantic.ValidationError):
-        dm.CurriculumVitae(**input)
+        data.CurriculumVitae(**input)
 
 
 def test_sections_without_list():
@@ -564,7 +523,7 @@ def test_sections_without_list():
         "this section": "does not have a list of entries but a single entry."
     }
     with pytest.raises(pydantic.ValidationError):
-        dm.CurriculumVitae(**input)
+        data.CurriculumVitae(**input)
 
 
 @pytest.mark.parametrize(
@@ -576,7 +535,7 @@ def test_sections_without_list():
 )
 def test_invalid_custom_theme(invalid_custom_theme_name):
     with pytest.raises(pydantic.ValidationError):
-        dm.RenderCVDataModel(
+        data.RenderCVDataModel(
             **{
                 "cv": {"name": "John Doe"},
                 "design": {"theme": invalid_custom_theme_name},
@@ -589,7 +548,7 @@ def test_custom_theme_with_missing_files(tmp_path):
     custom_theme_path.mkdir()
     with pytest.raises(pydantic.ValidationError):
         os.chdir(tmp_path)
-        dm.RenderCVDataModel(
+        data.RenderCVDataModel(
             **{  # type: ignore
                 "cv": {"name": "John Doe"},
                 "design": {"theme": "customtheme"},
@@ -602,7 +561,7 @@ def test_custom_theme(testdata_directory_path):
         testdata_directory_path
         / "test_copy_theme_files_to_output_directory_custom_theme"
     )
-    data_model = dm.RenderCVDataModel(
+    data_model = data.RenderCVDataModel(
         **{  # type: ignore
             "cv": {"name": "John Doe"},
             "design": {"theme": "dummytheme"},
@@ -628,7 +587,7 @@ def test_custom_theme_without_init_file(tmp_path, testdata_directory_path):
     init_file.unlink()
 
     os.chdir(tmp_path)
-    data_model = dm.RenderCVDataModel(
+    data_model = data.RenderCVDataModel(
         **{  # type: ignore
             "cv": {"name": "John Doe"},
             "design": {"theme": "dummytheme"},
@@ -655,7 +614,7 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
 
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
-        dm.RenderCVDataModel(
+        data.RenderCVDataModel(
             **{  # type: ignore
                 "cv": {"name": "John Doe"},
                 "design": {"theme": "dummytheme"},
@@ -668,7 +627,7 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
 
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
-        dm.RenderCVDataModel(
+        data.RenderCVDataModel(
             **{  # type: ignore
                 "cv": {"name": "John Doe"},
                 "design": {"theme": "dummytheme"},
@@ -677,8 +636,8 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
 
 
 def test_locale_catalog():
-    data_model = dm.create_a_sample_data_model("John Doe")
-    data_model.locale_catalog = dm.LocaleCatalog(
+    data_model = data.create_a_sample_data_model("John Doe")
+    data_model.locale_catalog = data.LocaleCatalog(
         month="a",
         months="b",
         year="c",
@@ -715,21 +674,21 @@ def test_locale_catalog():
         ],
     )
 
-    assert dm.locale_catalog == data_model.locale_catalog.model_dump()
+    assert locale_catalog.locale_catalog == data_model.locale_catalog.model_dump()
 
 
 def test_if_local_catalog_resets():
-    data_model = dm.create_a_sample_data_model("John Doe")
+    data_model = data.create_a_sample_data_model("John Doe")
 
-    data_model.locale_catalog = dm.LocaleCatalog(
+    data_model.locale_catalog = data.LocaleCatalog(
         month="a",
     )
 
-    assert dm.locale_catalog["month"] == "a"
+    assert locale_catalog.locale_catalog["month"] == "a"
 
-    data_model = dm.create_a_sample_data_model("John Doe")
+    data_model = data.create_a_sample_data_model("John Doe")
 
-    assert dm.locale_catalog["month"] == "month"
+    assert locale_catalog.locale_catalog["month"] == "month"
 
 
 def test_dictionary_to_yaml():
@@ -744,7 +703,7 @@ def test_dictionary_to_yaml():
             "b": 2,
         },
     }
-    yaml_string = dm.dictionary_to_yaml(input_dictionary)
+    yaml_string = generator.dictionary_to_yaml(input_dictionary)
 
     # load the yaml string
     yaml_object = ruamel.yaml.YAML()
@@ -755,14 +714,14 @@ def test_dictionary_to_yaml():
 
 def test_create_a_sample_yaml_input_file(tmp_path):
     input_file_path = tmp_path / "input.yaml"
-    yaml_contents = dm.create_a_sample_yaml_input_file(input_file_path)
+    yaml_contents = data.create_a_sample_yaml_input_file(input_file_path)
 
     assert input_file_path.exists()
     assert yaml_contents == input_file_path.read_text(encoding="utf-8")
 
 
 def test_default_input_file_doesnt_have_local_catalog():
-    yaml_contents = dm.create_a_sample_yaml_input_file()
+    yaml_contents = data.create_a_sample_yaml_input_file()
     assert "locale_catalog" not in yaml_contents
 
 
@@ -777,7 +736,9 @@ def test_default_input_file_doesnt_have_local_catalog():
     ],
 )
 def test_dictionary_key_to_proper_section_title(key, expected_section_title):
-    assert dm.dictionary_key_to_proper_section_title(key) == expected_section_title
+    assert (
+        computers.dictionary_key_to_proper_section_title(key) == expected_section_title
+    )
 
 
 # def test_if_available_themes_and_avaialble_theme_options_has_the_same_length():

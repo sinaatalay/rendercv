@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
+import re
 from datetime import date as Date
 
 import pydantic
@@ -11,8 +12,8 @@ import typer.testing
 
 import rendercv.cli as cli
 import rendercv.cli.printer as printer
-import rendercv.cli.utilities as util
-import rendercv.data as dm
+import rendercv.cli.utilities as utilities
+import rendercv.data as data
 from rendercv import __version__
 
 
@@ -58,19 +59,19 @@ def test_information():
 
 def test_get_error_message_and_location_and_value_from_a_custom_error():
     error_string = "('error message', 'location', 'value')"
-    result = util.get_error_message_and_location_and_value_from_a_custom_error(
+    result = utilities.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result == ("error message", "location", "value")
 
     error_string = """("er'ror message", 'location', 'value')"""
-    result = util.get_error_message_and_location_and_value_from_a_custom_error(
+    result = utilities.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result == ("er'ror message", "location", "value")
 
     error_string = "error message"
-    result = util.get_error_message_and_location_and_value_from_a_custom_error(
+    result = utilities.get_error_message_and_location_and_value_from_a_custom_error(
         error_string
     )
     assert result == (None, None, None)
@@ -80,32 +81,32 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
     "data_model_class, invalid_model",
     [
         (
-            dm.EducationEntry,
+            data.EducationEntry,
             {
                 "area": "Mechanical Engineering",
                 "extra": "Extra",
             },
         ),
         (
-            dm.ExperienceEntry,
+            data.ExperienceEntry,
             {
                 "company": "CERN",
             },
         ),
         (
-            dm.ExperienceEntry,
+            data.ExperienceEntry,
             {
                 "position": "Researcher",
             },
         ),
         (
-            dm.ExperienceEntry,
+            data.ExperienceEntry,
             {
                 "position": Date(2020, 10, 1),
             },
         ),
         (
-            dm.ExperienceEntry,
+            data.ExperienceEntry,
             {
                 "company": "CERN",
                 "position": "Researcher",
@@ -114,7 +115,7 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
             },
         ),
         (
-            dm.ExperienceEntry,
+            data.ExperienceEntry,
             {
                 "company": "CERN",
                 "position": "Researcher",
@@ -122,25 +123,25 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
             },
         ),
         (
-            dm.PublicationEntry,
+            data.PublicationEntry,
             {
                 "doi": "10.1109/TASC.2023.3340648",
             },
         ),
         (
-            dm.ExperienceEntry,
+            data.ExperienceEntry,
             {
                 "authors": ["John Doe", "Jane Doe"],
             },
         ),
         (
-            dm.OneLineEntry,
+            data.OneLineEntry,
             {
                 "name": "My One Line Entry",
             },
         ),
         (
-            dm.CurriculumVitae,
+            data.CurriculumVitae,
             {
                 "name": "John Doe",
                 "sections": {
@@ -159,7 +160,7 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
             },
         ),
         (
-            dm.RenderCVDataModel,
+            data.RenderCVDataModel,
             {
                 "cv": {
                     "name": "John Doe",
@@ -188,7 +189,7 @@ def test_print_validation_errors(data_model_class, invalid_model):
     ],
 )
 def test_handle_exceptions(exception):
-    @handlers.handle_exceptions
+    @printer.handle_and_print_raised_exceptions
     def function_that_raises_exception():
         raise exception
 
@@ -210,10 +211,10 @@ def test_live_progress_reporter_class():
 
 @pytest.mark.parametrize(
     "folder_name",
-    ["markdown"] + dm.available_themes,
+    ["markdown"] + data.available_themes,
 )
 def test_copy_templates(tmp_path, folder_name):
-    copied_path = util.copy_templates(
+    copied_path = utilities.copy_templates(
         folder_name=folder_name,
         copy_to=tmp_path,
     )
@@ -225,7 +226,7 @@ def test_copy_templates(tmp_path, folder_name):
 
 
 def test_copy_templates_with_new_folder_name(tmp_path):
-    copied_path = cli.copy_templates(
+    copied_path = utilities.copy_templates(
         folder_name="markdown",
         copy_to=tmp_path,
         new_folder_name="new_folder",
@@ -235,12 +236,12 @@ def test_copy_templates_with_new_folder_name(tmp_path):
 
 @pytest.mark.parametrize(
     "folder_name",
-    ["markdown"] + dm.available_themes,
+    ["markdown"] + data.available_themes,
 )
 def test_copy_templates_destinations_exist(tmp_path, folder_name):
     (tmp_path / folder_name).mkdir()
 
-    copied_path = cli.copy_templates(
+    copied_path = utilities.copy_templates(
         folder_name=folder_name,
         copy_to=tmp_path,
     )
@@ -521,7 +522,7 @@ def test_new_command_with_existing_files(tmp_path, file_or_folder_name):
 
 @pytest.mark.parametrize(
     "based_on",
-    dm.available_themes,
+    data.available_themes,
 )
 def test_create_theme_command(tmp_path, input_file_path, based_on):
     # change the current working directory to the temporary directory:
@@ -580,12 +581,12 @@ def test_main_file():
 
 
 def test_get_latest_version_number_from_pypi():
-    version = util.get_latest_version_number_from_pypi()
+    version = utilities.get_latest_version_number_from_pypi()
     assert isinstance(version, str)
 
 
 def test_if_welcome_prints_new_version_available(monkeypatch):
-    monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "99999")
+    monkeypatch.setattr(utilities, "get_latest_version_number_from_pypi", lambda: "99999")
     import contextlib
     import io
 
@@ -620,3 +621,59 @@ def test_warn_if_new_version_is_available(monkeypatch):
     monkeypatch.setattr(cli, "get_latest_version_number_from_pypi", lambda: "999")
 
     assert printer.warn_if_new_version_is_available()
+
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        ("cv.phone", "+905555555555"),
+        ("cv.email", "test@example.com"),
+        ("cv.sections.education.0.degree", "PhD"),
+        ("cv.sections.education.0.highlights.0", "Did this."),
+        ("cv.sections.this_is_a_new_section", '["This is a text entry."]'),
+        ("design.page_size", "a4paper"),
+        ("design", '{"theme": "engineeringresumes"}'),
+    ],
+)
+def test_set_or_update_a_value(rendercv_data_model, key, value):
+    utilities.set_or_update_a_value(rendercv_data_model, key, value)
+
+    # replace with regex pattern:
+    key = re.sub(r"sections\.([^\.]*)", 'sections_input["\\1"]', key)
+    key = re.sub(r"\.(\d+)", "[\\1]", key)
+
+    if value.startswith("{") and value.endswith("}"):
+        value = eval(value)
+    elif value.startswith("[") and value.endswith("]"):
+        value = eval(value)
+
+    assert eval(f"rendercv_data_model.{key}") == value
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        ("cv.phones", "+905555555555"),
+        ("cv.emssdsail", ""),
+        ("cv.sections.education.99.degree", "PhD"),
+        ("dessssign.page_size", "a4paper"),
+    ],
+)
+def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
+    with pytest.raises((ValueError, KeyError, IndexError, AttributeError)):
+        utilities.set_or_update_a_value(rendercv_data_model, key, value)
+
+
+@pytest.mark.parametrize(
+    "key, value",
+    [
+        ("cv.phone", "+9999995555555555"),
+        ("cv.email", "notanemail***"),
+        ("cv.sections.education.0.highlights", "this is not a list"),
+        ("design.page_size", "invalid_page_size"),
+    ],
+)
+def test_set_or_update_a_value_invalid_values(rendercv_data_model, key, value):
+    with pytest.raises(pydantic.ValidationError):
+        utilities.set_or_update_a_value(rendercv_data_model, key, value)
