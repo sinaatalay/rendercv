@@ -62,7 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v1.8...v1.9]
 
 ### Added
-- RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/sinaatalay/rendercv/issues/26), [#20](https://github.com/sinaatalay/rendercv/pull/20)). See the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#locale_catalog-section-of-the-yaml-input) for more information.
+- RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/sinaatalay/rendercv/issues/26), [#20](https://github.com/sinaatalay/rendercv/pull/20)). See the [documentation](user_guide/structure_of_the_yaml_input_file.md#locale_catalog-field) for more information.
 - PNG files for each page can be generated now ([#57](https://github.com/sinaatalay/rendercv/issues/57)).
 - `rendercv new` command now generates Markdown and $\LaTeX$ source files in addition to the YAML input file so that the default templates can be modified easily.
 - A new CLI command has been added, `rendercv create-theme`, to allow users to create their own themes easily.
