@@ -4,7 +4,7 @@ import pydantic
 
 from rendercv.themes.common_models import LaTeXDimension
 
-from ...data.models.base import RenderCVBaseModel
+from rendercv.data.models.base import RenderCVBaseModel
 
 
 class ModerncvThemeOptions(RenderCVBaseModel):
