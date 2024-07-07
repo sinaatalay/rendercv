@@ -13,7 +13,7 @@ Once the changes are pushed to the `main` branch, the [`deploy-docs`](https://gi
 
 The `examples` folder includes example YAML files for all the built-in themes, along with their corresponding PDF outputs. Also, there are PNG files of the first pages of each theme in [`docs/assets/images`](https://github.com/sinaatalay/rendercv/tree/main/docs/assets/images). These examples are shown in [`README.md`](https://github.com/sinaatalay/rendercv/blob/main/README.md).
 
-These files are generated using [`docs/update_examples.py`](https://github.com/sinaatalay/rendercv/blob/main/docs/update_examples.py). The contents of the examples are taken from the [`get_a_sample_data_model`](https://docs.rendercv.com/reference/data_models/#rendercv.data_models.get_a_sample_data_model) function from [`data_models.py`](https://docs.rendercv.com/reference/data_models/).
+These files are generated using [`docs/update_examples.py`](https://github.com/sinaatalay/rendercv/blob/main/docs/update_examples.py). The contents of the examples are taken from the [`create_a_sample_data_model`](https://docs.rendercv.com/reference/data/#rendercv.data.create_a_sample_data_model) function from [`rendercv.data`](https://docs.rendercv.com/reference/data/).
 
 Run the following command to update the `examples` folder.
 
@@ -41,7 +41,7 @@ Once a new release is created on GitHub, the [`publish.yaml`](https://github.com
 
 The schema of RenderCV's input file is defined using [Pydantic](https://docs.pydantic.dev/latest/). Pydantic allows automatic creation and customization of JSON schemas from Pydantic models.
 
-The JSON Schema is also generated using [`docs/update_schema.py`](https://github.com/sinaatalay/rendercv/blob/main/docs/update_schema.py). It uses [`generate_json_schema`](https://docs.rendercv.com/reference/data_models/#rendercv.data_models.generate_json_schema) function from [`data_models.py`](https://docs.rendercv.com/reference/data_models/).
+The JSON Schema is also generated using [`docs/update_schema.py`](https://github.com/sinaatalay/rendercv/blob/main/docs/update_schema.py). It uses [`generate_json_schema`](https://docs.rendercv.com/reference/data/#rendercv.data.generate_json_schema) function from [`rendercv.data`](https://docs.rendercv.com/reference/data/).
 
 Run the following command to update the JSON Schema.
 

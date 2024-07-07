@@ -131,12 +131,12 @@ def test_read_input_file_that_doesnt_exist(tmp_path):
     "theme",
     data.available_themes,
 )
-def test_get_a_sample_data_model(theme):
+def test_create_a_sample_data_model(theme):
     data_model = data.create_a_sample_data_model("John Doe", theme)
     assert isinstance(data_model, data.RenderCVDataModel)
 
 
-def test_get_a_sample_data_model_invalid_theme():
+def test_create_a_sample_data_model_invalid_theme():
     with pytest.raises(ValueError):
         data.create_a_sample_data_model("John Doe", "invalid")
 
