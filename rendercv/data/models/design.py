@@ -10,10 +10,12 @@ from typing import Annotated, Any, Type
 
 import pydantic
 
-from ...themes.classic import ClassicThemeOptions
-from ...themes.engineeringresumes import EngineeringresumesThemeOptions
-from ...themes.moderncv import ModerncvThemeOptions
-from ...themes.sb2nov import Sb2novThemeOptions
+from ...themes import (
+    ClassicThemeOptions,
+    EngineeringresumesThemeOptions,
+    ModerncvThemeOptions,
+    Sb2novThemeOptions,
+)
 from . import entry_types
 from .base import RenderCVBaseModel
 

@@ -1,7 +1,7 @@
 """
 The `rendercv.renderer` package contains the necessary classes and functions for
-for generating $\\LaTeX$, PDF, Markdown, HTML, and PNG files from the
-`RenderCVDataModel` object.
+generating $\\LaTeX$, PDF, Markdown, HTML, and PNG files from the `RenderCVDataModel`
+object.
 
 The $\\LaTeX$ and Markdown files are generated with
 [Jinja2](https://jinja.palletsprojects.com/en/3.1.x/) templates. Then, the $\\LaTeX$

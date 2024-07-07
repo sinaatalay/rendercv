@@ -139,9 +139,32 @@ def define_env(env):
     for theme in data.available_themes:
         theme_templates[theme] = dict()
         for theme_file in themes_path.glob(f"{theme}/*.tex"):
-            theme_templates[theme][
-                theme_file.stem.replace(".j2", "")
-            ] = theme_file.read_text()
+            theme_templates[theme][theme_file.stem] = theme_file.read_text()
+
+        # Update the ordering of the theme templates:
+        order = [
+            "Preamble.j2",
+            "Header.j2",
+            "SectionBeginning.j2",
+            "SectionEnding.j2",
+            "TextEntry.j2",
+            "BulletEntry.j2",
+            "OneLineEntry.j2",
+            "EducationEntry.j2",
+            "ExperienceEntry.j2",
+            "NormalEntry.j2",
+            "PublicationEntry.j2",
+        ]
+        theme_templates[theme] = {key: theme_templates[theme][key] for key in order}
+
+        if theme != "markdown":
+            theme_templates[theme] = {
+                f"{key}.tex": value for key, value in theme_templates[theme].items()
+            }
+        else:
+            theme_templates[theme] = {
+                f"{key}.md": value for key, value in theme_templates[theme].items()
+            }
 
     env.variables["theme_templates"] = theme_templates
 

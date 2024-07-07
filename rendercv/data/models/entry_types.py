@@ -216,6 +216,8 @@ class EntryWithDate(RenderCVBaseModel):
 
 
 class PublicationEntryBase(RenderCVBaseModel):
+    """This class is the parent class of the `PublicationEntry` class."""
+
     title: str = pydantic.Field(
         title="Publication Title",
         description="The title of the publication.",
@@ -282,7 +284,10 @@ class PublicationEntryBase(RenderCVBaseModel):
 # then the keys of the EntryWithDate class. The only way to achieve this in Pydantic is
 # to do this. The same thing is done for the other classes as well.
 class PublicationEntry(EntryWithDate, PublicationEntryBase):
-    """This class is the data model of `PublicationEntry`."""
+    """This class is the data model of `PublicationEntry`. `PublicationEntry` class is
+    created by combining the `EntryWithDate` and `PublicationEntryBase` classes to have
+    the fields in the correct order.
+    """
 
     pass
 
@@ -383,6 +388,8 @@ class EntryBase(EntryWithDate):
 
 
 class NormalEntryBase(RenderCVBaseModel):
+    """This class is the parent class of the `NormalEntry` class."""
+
     name: str = pydantic.Field(
         title="Name",
         description="The name of the NormalEntry.",
@@ -390,12 +397,17 @@ class NormalEntryBase(RenderCVBaseModel):
 
 
 class NormalEntry(EntryBase, NormalEntryBase):
-    """This class is the data model of `NormalEntry`."""
+    """This class is the data model of `NormalEntry`. `NormalEntry` class is created by
+    combining the `EntryBase` and `NormalEntryBase` classes to have the fields in the
+    correct order.
+    """
 
     pass
 
 
 class ExperienceEntryBase(RenderCVBaseModel):
+    """This class is the parent class of the `ExperienceEntry` class."""
+
     company: str = pydantic.Field(
         title="Company",
         description="The company name.",
@@ -407,12 +419,17 @@ class ExperienceEntryBase(RenderCVBaseModel):
 
 
 class ExperienceEntry(EntryBase, ExperienceEntryBase):
-    """This class is the data model of `ExperienceEntry`."""
+    """This class is the data model of `ExperienceEntry`. `ExperienceEntry` class is
+    created by combining the `EntryBase` and `ExperienceEntryBase` classes to have the
+    fields in the correct order.
+    """
 
     pass
 
 
 class EducationEntryBase(RenderCVBaseModel):
+    """This class is the parent class of the `EducationEntry` class."""
+
     institution: str = pydantic.Field(
         title="Institution",
         description="The institution name.",
@@ -430,7 +447,10 @@ class EducationEntryBase(RenderCVBaseModel):
 
 
 class EducationEntry(EntryBase, EducationEntryBase):
-    """This class is the data model of `EducationEntry`."""
+    """This class is the data model of `EducationEntry`. `EducationEntry` class is
+    created by combining the `EntryBase` and `EducationEntryBase` classes to have the
+    fields in the correct order.
+    """
 
     pass
 

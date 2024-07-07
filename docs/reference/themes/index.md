@@ -1,3 +1,3 @@
-# Themes
+#  `rendercv.themes`
 
 ::: rendercv.themes

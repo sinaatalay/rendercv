@@ -1,12 +1,15 @@
 """
-The `rendercv.themes.base_models` module contains the base data models for the themes.
-To avoid code duplication, the themes are encouraged to inherit from these data models.
+The `rendercv.themes.common_models` module contains the standard data models for the
+design options. To avoid code duplication, the themes are encouraged to inherit from
+these data models.
 """
 
 from typing import Annotated, Literal
 
 import pydantic
 import pydantic_extra_types.color as pydantic_color
+
+from ..data.models.base import RenderCVBaseModel
 
 # Create a custom type called LaTeXDimension that accepts only strings in a specified
 # format.
@@ -21,8 +24,13 @@ LaTeXDimension = Annotated[
 ]
 
 
-class PageMargins(pydantic.BaseModel):
-    """This class is a data model for the page margins."""
+class PageMargins(RenderCVBaseModel):
+    """This class is a data model for the page margins.
+
+    Attributes:
+        top: The top margin of the page with units. The default value is 2 cm.
+
+    """
 
     top: LaTeXDimension = pydantic.Field(
         default="2 cm",
@@ -52,7 +60,7 @@ class PageMargins(pydantic.BaseModel):
     )
 
 
-class SectionTitleMargins(pydantic.BaseModel):
+class SectionTitleMargins(RenderCVBaseModel):
     """This class is a data model for the section title margins."""
 
     top: LaTeXDimension = pydantic.Field(
@@ -67,7 +75,7 @@ class SectionTitleMargins(pydantic.BaseModel):
     )
 
 
-class EntryAreaMargins(pydantic.BaseModel):
+class EntryAreaMargins(RenderCVBaseModel):
     """This class is a data model for the entry area margins."""
 
     left_and_right: LaTeXDimension = pydantic.Field(
@@ -93,7 +101,7 @@ class EntryAreaMargins(pydantic.BaseModel):
     )
 
 
-class HighlightsAreaMargins(pydantic.BaseModel):
+class HighlightsAreaMargins(RenderCVBaseModel):
     """This class is a data model for the highlights area margins."""
 
     top: LaTeXDimension = pydantic.Field(
@@ -115,7 +123,7 @@ class HighlightsAreaMargins(pydantic.BaseModel):
     )
 
 
-class HeaderMargins(pydantic.BaseModel):
+class HeaderMargins(RenderCVBaseModel):
     """This class is a data model for the header margins."""
 
     vertical_between_name_and_connections: LaTeXDimension = pydantic.Field(
@@ -144,7 +152,7 @@ class HeaderMargins(pydantic.BaseModel):
     )
 
 
-class Margins(pydantic.BaseModel):
+class Margins(RenderCVBaseModel):
     """This class is a data model for the margins."""
 
     page: PageMargins = pydantic.Field(
@@ -174,7 +182,7 @@ class Margins(pydantic.BaseModel):
     )
 
 
-class ThemeOptions(pydantic.BaseModel):
+class ThemeOptions(RenderCVBaseModel):
     """This class is a generic data model for the theme options. The themes are
     encouraged to inherit from this data model and add their own options, to avoid code
     duplication.

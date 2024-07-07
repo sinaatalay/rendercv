@@ -15,13 +15,15 @@ flowchart TD
     A[YAML Input File] --parsing with ruamel.yaml package--> B(Python Dictionary)
     B --validation with pydantic package--> C((Pydantic Object))
     end
+    subgraph rendercv.themes
+    C --> AA[(Jinja2 Templates)]
+    end
+    AA --> D
+    AA --> E
     subgraph rendercv.renderer
-    C --> AA
     E[Markdown File] --markdown package--> K[HTML FIle]
     D[LaTeX File] --TinyTeX--> L[PDF File]
     L --PyMuPDF package--> Z[PNG Files]
-    AA[(Jinja2 Templates)] --> D
-    AA[(Jinja2 Templates)] --> E
     end
 ```
 
@@ -40,12 +42,13 @@ flowchart TD
         - [`rendercv_data_model.py`](data/models/rendercv_data_model.md) module contains the `RenderCVDataModel` data model, which is the main data model that defines the whole input file structure.
     - [`generator.py`](data/generator.md) module contains all the functions for generating the JSON Schema of the input data format and a sample YAML input file.
     - [`reader.py`](data/reader.md) module contains the functions that are used to read the input files. 
-- [`renderer`](renderer/index.md) package contains utilities for generating the output files.
+- [`renderer`](renderer/index.md) package contains the necessary classes and functions for generating the output files from the `RenderCVDataModel` object.
     - [`renderer.py`](renderer/renderer.md) module contains the necessary functions for rendering $\\LaTeX$, PDF, Markdown, HTML, and PNG files from the data model.
     - [`templater.py`](renderer/templater.md) module contains all the necessary classes and functions for templating the $\\LaTeX$ and Markdown files from the data model.
 object.
 - [`themes`](themes/index.md) package contains all the built-in themes of RenderCV.
-    - [`classic`](themes/classic.md)
-    - [`engineeringresumes`](themes/engineeringresumes.md)
-    - [`sb2nov`](themes/sb2nov.md)
-    - [`moderncv`](themes/moderncv.md)
+    - [`common_models.py`](themes/common_models.md) module contains some standard data models for design options.
+    - [`classic`](themes/classic.md) package contains the `classic` theme templates and data models for its design options.
+    - [`engineeringresumes`](themes/engineeringresumes.md) package contains the `engineeringresumes` theme templates and data models for its design options.
+    - [`sb2nov`](themes/sb2nov.md) package contains the `sb2nov` theme templates and data models for its design options.
+    - [`moderncv`](themes/moderncv.md) package contains the `moderncv` theme templates and data models for its design options.

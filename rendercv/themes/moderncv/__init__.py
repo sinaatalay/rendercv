@@ -2,10 +2,12 @@ from typing import Literal
 
 import pydantic
 
-from rendercv.themes.base_models import LaTeXDimension
+from rendercv.themes.common_models import LaTeXDimension
+
+from ...data.models.base import RenderCVBaseModel
 
 
-class ModerncvThemeOptions(pydantic.BaseModel):
+class ModerncvThemeOptions(RenderCVBaseModel):
     """This class is the data model of the theme options for the `moderncv` theme."""
 
     model_config = pydantic.ConfigDict(extra="forbid")
