@@ -129,7 +129,7 @@ The detailed user guide can be found [here](https://docs.rendercv.com/user_guid
 
 The developer guide can be found [here](https://docs.rendercv.com/developer_guide).
 
-Reference to the code can be found [here](https://docs.rendercv.com/reference).
+An overview of the source code can be found [here](https://docs.rendercv.com/reference).
 
 The changelog can be found [here](https://docs.rendercv.com/changelog).
 
