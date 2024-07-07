@@ -689,3 +689,24 @@ def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
 def test_set_or_update_a_value_invalid_values(rendercv_data_model, key, value):
     with pytest.raises(pydantic.ValidationError):
         utilities.set_or_update_a_value(rendercv_data_model, key, value)
+
+
+def test_relative_input_file_path_with_custom_output_paths(tmp_path, input_file_path):
+    new_folder = tmp_path / "another_folder"
+    new_folder.mkdir()
+    new_input_file_path = new_folder / input_file_path.name
+
+    shutil.copy(input_file_path, new_input_file_path)
+
+    os.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        [
+            "render",
+            str(new_input_file_path.relative_to(tmp_path)),
+            "--pdf-path",
+            "test.pdf",
+        ],
+    )
+
+    assert (tmp_path / "test.pdf").exists()
