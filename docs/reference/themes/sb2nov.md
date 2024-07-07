@@ -5,7 +5,7 @@
 ## Jinja Templates
 
 {% for template_name, template in theme_templates["sb2nov"].items() %}
-## {{ template_name }}
+### {{ template_name }}
 
 ```latex
 {{ template }}
