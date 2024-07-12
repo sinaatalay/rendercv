@@ -36,8 +36,8 @@ from .entry_types import (
     NormalEntry,
     OneLineEntry,
     PublicationEntry,
-    available_entry_type_names,
     available_entry_models,
+    available_entry_type_names,
 )
 from .locale_catalog import LocaleCatalog
 from .rendercv_data_model import RenderCVDataModel

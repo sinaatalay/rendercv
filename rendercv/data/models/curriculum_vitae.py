@@ -39,6 +39,7 @@ def validate_url(url: str) -> str:
 
     Args:
         url (str): The URL to validate.
+
     Returns:
         str: The validated URL.
     """
@@ -57,6 +58,7 @@ def create_a_section_validator(entry_type: Type) -> Type[SectionBase]:
     Args:
         entry_type (Type): The entry type to create the section model. It's not an
             instance of the entry type, but the entry type itself.
+
     Returns:
         Type[SectionBase]: The section validator (a Pydantic model).
     """
@@ -86,6 +88,7 @@ def get_characteristic_entry_attributes(
         entry_types (list[Type]): The entry types to get their characteristic
             attributes. These are not instances of the entry types, but the entry
             types themselves. `str` type should not be included in this list.
+
     Returns:
         dict[Type, list[str]]: The characteristic attributes of the entry types.
     """
@@ -123,6 +126,7 @@ def get_entry_type_name_and_section_validator(
         entry_types (list[Type]): The entry types to determine the entry type. These
             are not instances of the entry types, but the entry types themselves. `str`
             type should not be included in this list.
+
     Returns:
         tuple[str, Type[SectionBase]]: The entry type name and the section validator.
     """
@@ -176,6 +180,7 @@ def validate_a_section(
         entry_types (list[Type]): The entry types to determine the entry type. These
             are not instances of the entry types, but the entry types themselves. `str`
             type should not be included in this list.
+
     Returns:
         list[Any]: The validated sections input.
     """
@@ -235,6 +240,7 @@ def validate_a_social_network_username(username: str, network: str) -> str:
 
     Args:
         username (str): The username to validate.
+
     Returns:
         str: The validated username.
     """

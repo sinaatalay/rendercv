@@ -379,6 +379,7 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
 
     Args:
         function (Callable): The function to be wrapped.
+
     Returns:
         Callable: The wrapped function.
     """

@@ -23,6 +23,7 @@ def validate_date_field(date: Optional[int | str]) -> Optional[int | str]:
 
     Args:
         date (Optional[int | str]): The date to validate.
+
     Returns:
         Optional[int | str]: The validated date.
     """
@@ -57,6 +58,7 @@ def validate_start_and_end_date_fields(
 
     Args:
         date (Optional[Literal["present"] | int | RenderCVDate]): The date to validate.
+
     Returns:
         Optional[Literal["present"] | int | RenderCVDate]: The validated date.
     """
@@ -88,6 +90,7 @@ def validate_and_adjust_dates_for_an_entry(
         start_date (StartDate): The start date of the event.
         end_date (EndDate): The end date of the event.
         date (ArbitraryDate): The date of the event.
+
     Returns:
         EntryBase: The validated
     """

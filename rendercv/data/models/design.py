@@ -41,6 +41,7 @@ def validate_design_options(
         available_entry_type_names (list[str]): The available entry type names. These
             are used to validate if all the templates are provided in the custom theme
             folder.
+
     Returns:
         Any: The validated design as a Pydantic data model.
     """
