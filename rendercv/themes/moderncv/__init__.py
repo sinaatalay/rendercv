@@ -4,10 +4,10 @@ import pydantic
 
 from rendercv.themes.common_models import LaTeXDimension
 
-from rendercv.data.models.base import RenderCVBaseModel
+from rendercv.data.models.base import RenderCVBaseModelWithoutExtraKeys
 
 
-class ModerncvThemeOptions(RenderCVBaseModel):
+class ModerncvThemeOptions(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the theme options for the `moderncv` theme."""
 
     model_config = pydantic.ConfigDict(extra="forbid")

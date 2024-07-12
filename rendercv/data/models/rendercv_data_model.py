@@ -8,13 +8,13 @@ from typing import Optional
 import pydantic
 
 from ...themes import ClassicThemeOptions
-from .base import RenderCVBaseModel
+from .base import RenderCVBaseModelWithoutExtraKeys
 from .curriculum_vitae import CurriculumVitae
 from .design import RenderCVDesign
 from .locale_catalog import LocaleCatalog
 
 
-class RenderCVDataModel(RenderCVBaseModel):
+class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
     """This class binds both the CV and the design information together."""
 
     cv: CurriculumVitae = pydantic.Field(

@@ -462,6 +462,29 @@ def test_get_entry_type_name_and_section_validator(
         assert section_type.__name__ == expected_section_type
 
 
+@pytest.mark.parametrize(
+    "EntryType",
+    data.available_entry_models,
+)
+def test_entries_with_extra_attributes(EntryType, request: pytest.FixtureRequest):
+    # Get the name of the class:
+    entry_type_name: str = EntryType.__name__
+
+    # Convert from camel case to snake case
+    entry_type_name = "".join(
+        ["_" + c.lower() if c.isupper() else c for c in entry_type_name]
+    ).lstrip("_")
+
+    # Get entry contents from fixture:
+    entry_contents = request.getfixturevalue(entry_type_name)
+
+    entry_contents["extra_attribute"] = "extra value"
+
+    entry = EntryType(**entry_contents)
+
+    assert entry.extra_attribute == "extra value"
+
+
 def test_sections(
     education_entry,
     experience_entry,

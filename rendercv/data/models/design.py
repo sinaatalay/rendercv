@@ -17,7 +17,7 @@ from ...themes import (
     Sb2novThemeOptions,
 )
 from . import entry_types
-from .base import RenderCVBaseModel
+from .base import RenderCVBaseModelWithoutExtraKeys
 
 # ======================================================================================
 # Create validator functions: ==========================================================
@@ -131,7 +131,7 @@ def validate_design_options(
         else:
             # Then it means there is no __init__.py file in the custom theme folder.
             # Create a dummy data model and use that instead.
-            class ThemeOptionsAreNotProvided(RenderCVBaseModel):
+            class ThemeOptionsAreNotProvided(RenderCVBaseModelWithoutExtraKeys):
                 theme: str = theme_name
 
             theme_data_model = ThemeOptionsAreNotProvided(theme=theme_name)

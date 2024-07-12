@@ -31,6 +31,7 @@ from .models import (
     SectionContents,
     SocialNetwork,
     available_entry_type_names,
+    available_entry_models,
     available_social_networks,
     available_theme_options,
     available_themes,
@@ -61,4 +62,5 @@ __all__ = [
     "available_social_networks",
     "SectionContents",
     "available_entry_type_names",
+    "available_entry_models",
 ]

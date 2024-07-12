@@ -11,14 +11,14 @@ import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 
 from . import computers, entry_types
-from .base import RenderCVBaseModel
+from .base import RenderCVBaseModelWithoutExtraKeys
 
 # ======================================================================================
 # Create validator functions: ==========================================================
 # ======================================================================================
 
 
-class SectionBase(RenderCVBaseModel):
+class SectionBase(RenderCVBaseModelWithoutExtraKeys):
     """This class is the parent class of all the section types. It is being used
     in RenderCV internally, and it is not meant to be used directly by the users.
     It is used by `rendercv.data_models.utilities.create_a_section_model` function to
@@ -305,7 +305,7 @@ available_social_networks = get_args(SocialNetworkName)
 # ======================================================================================
 
 
-class SocialNetwork(RenderCVBaseModel):
+class SocialNetwork(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of a social network."""
 
     network: SocialNetworkName = pydantic.Field(
@@ -369,7 +369,7 @@ class SocialNetwork(RenderCVBaseModel):
         return url
 
 
-class CurriculumVitae(RenderCVBaseModel):
+class CurriculumVitae(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the `cv` field."""
 
     name: Optional[str] = pydantic.Field(
