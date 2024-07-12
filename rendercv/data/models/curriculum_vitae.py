@@ -62,7 +62,7 @@ def create_a_section_validator(entry_type: Type) -> Type[SectionBase]:
     Returns:
         Type[SectionBase]: The section validator (a Pydantic model).
     """
-    if entry_type == str:
+    if entry_type is str:
         model_name = "SectionWithTextEntries"
         entry_type_name = "TextEntry"
     else:

@@ -14,7 +14,7 @@ import ruamel.yaml
 from . import models, reader
 
 
-def dictionary_to_yaml(dictionary: dict[str, Any]):
+def dictionary_to_yaml(dictionary: dict[str, Any]) -> str:
     """Converts a dictionary to a YAML string.
 
     Args:
@@ -30,6 +30,7 @@ def dictionary_to_yaml(dictionary: dict[str, Any]):
     with io.StringIO() as string_stream:
         yaml_object.dump(dictionary, string_stream)
         yaml_string = string_stream.getvalue()
+
     return yaml_string
 
 
