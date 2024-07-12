@@ -47,7 +47,7 @@ flowchart TD
     - [`templater.py`](renderer/templater.md) module contains all the necessary classes and functions for templating the $\\LaTeX$ and Markdown files from the data model.
 object.
 - [`themes`](themes/index.md) package contains all the built-in themes of RenderCV.
-    - [`common_models.py`](themes/common_models.md) module contains some standard data models for design options.
+    - [`common_options.py`](themes/common_options.md) module contains some standard data models for design options.
     - [`classic`](themes/classic.md) package contains the `classic` theme templates and data models for its design options.
     - [`engineeringresumes`](themes/engineeringresumes.md) package contains the `engineeringresumes` theme templates and data models for its design options.
     - [`sb2nov`](themes/sb2nov.md) package contains the `sb2nov` theme templates and data models for its design options.
