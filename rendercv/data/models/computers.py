@@ -68,6 +68,7 @@ def compute_time_span_string(
             "present".
         date (Optional[str]): A date in YYYY-MM-DD, YYYY-MM, or YYYY format or a custom
             string. If provided, start_date and end_date will be ignored.
+
     Returns:
         str: The computed time span string.
     """
@@ -159,6 +160,7 @@ def compute_date_string(
             a custom string. If provided, start_date and end_date will be ignored.
         show_only_years (bool): If True, only the years will be shown in the date
             string.
+
     Returns:
         str: The computed date string.
     """
@@ -227,6 +229,7 @@ def make_a_url_clean(url: str) -> str:
 
     Args:
         url (str): The URL to make clean.
+
     Returns:
         str: The clean URL.
     """
@@ -244,6 +247,7 @@ def get_date_object(date: str | int) -> Date:
 
     Args:
         date (str | int): The date string to parse.
+
     Returns:
         Date: The parsed date.
     """
@@ -281,6 +285,7 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
 
     Args:
         key (str): The key to convert to a proper section title.
+
     Returns:
         str: The proper section title.
     """

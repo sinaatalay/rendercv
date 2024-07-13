@@ -77,6 +77,7 @@ def render_a_latex_file(
     Args:
         rendercv_data_model (dm.RenderCVDataModel): The data model.
         output_directory (pathlib.Path): Path to the output directory.
+
     Returns:
         pathlib.Path: The path to the generated $\\LaTeX$ file.
     """
@@ -106,6 +107,7 @@ def render_a_markdown_file(
     Args:
         rendercv_data_model (dm.RenderCVDataModel): The data model.
         output_directory (pathlib.Path): Path to the output directory.
+
     Returns:
         pathlib.Path: The path to the rendered Markdown file.
     """
@@ -135,6 +137,7 @@ def render_a_latex_file_and_copy_theme_files(
     Args:
         rendercv_data_model (dm.RenderCVDataModel): The data model.
         output_directory (pathlib.Path): Path to the output directory.
+
     Returns:
         pathlib.Path: The path to the rendered $\\LaTeX$ file.
     """
@@ -152,6 +155,7 @@ def render_a_pdf_from_latex(
 
     Args:
         latex_file_path (str): The path to the $\\LaTeX$ file.
+
     Returns:
         pathlib.Path: The path to the rendered PDF file.
     """
@@ -259,6 +263,7 @@ def render_pngs_from_pdf(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
 
     Args:
         pdf_file_path (pathlib.Path): The path to the PDF file.
+
     Returns:
         list[pathlib.Path]: The paths to the rendered PNG files.
     """
@@ -286,6 +291,7 @@ def render_an_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Pa
 
     Args:
         markdown_file_path (pathlib.Path): The path to the Markdown file.
+
     Returns:
         pathlib.Path: The path to the rendered HTML file.
     """

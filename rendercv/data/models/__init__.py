@@ -36,6 +36,7 @@ from .entry_types import (
     NormalEntry,
     OneLineEntry,
     PublicationEntry,
+    available_entry_models,
     available_entry_type_names,
 )
 from .locale_catalog import LocaleCatalog
@@ -59,4 +60,5 @@ __all__ = [
     "SectionContents",
     "available_themes",
     "available_entry_type_names",
+    "available_entry_models",
 ]

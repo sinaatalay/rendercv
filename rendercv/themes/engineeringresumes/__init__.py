@@ -3,7 +3,7 @@ from typing import Literal
 import pydantic
 import pydantic_extra_types.color as pydantic_color
 
-from rendercv.themes.common_models import (
+from rendercv.themes.common_options import (
     EntryAreaMargins,
     HeaderMargins,
     HighlightsAreaMargins,

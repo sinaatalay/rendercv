@@ -8,10 +8,10 @@ from typing import Annotated, Optional
 import annotated_types as at
 import pydantic
 
-from .base import RenderCVBaseModel
+from .base import RenderCVBaseModelWithoutExtraKeys
 
 
-class LocaleCatalog(RenderCVBaseModel):
+class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the locale catalog. The values of each field
     updates the `locale_catalog` dictionary.
     """

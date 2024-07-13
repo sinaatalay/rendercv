@@ -103,7 +103,7 @@ cv:
         end_date: 2020-01
         location: TX, USA
         highlights: 
-          - This is a highlight (bullet point).
+          - This is a highlight (bullet point.)
           - This is another highlight.
       - company: Another ExperienceEntry.
         position: Your position
@@ -111,7 +111,7 @@ cv:
         end_date: 2020-01-10
         location: TX, USA
         highlights: 
-          - This is a highlight (bullet point).
+          - This is a highlight (bullet point.)
           - This is another highlight.
 ```
 
@@ -119,7 +119,7 @@ There are seven different entry types in RenderCV. Different types of entries ca
 
 The available entry types are: [`EducationEntry`](#education-entry), [`ExperienceEntry`](#experience-entry), [`PublicationEntry`](#publication-entry), [`NormalEntry`](#normal-entry), [`OneLineEntry`](#one-line-entry), [`BulletEntry`](#bullet-entry), and [`TextEntry`](#text-entry).
 
-Each entry type is a different object (a dictionary). Below, you can find all the entry types along with their optional/mandatory fields and how they appear in each built-in theme.
+Each entry type is a different object (a dictionary.) Below, you can find all the entry types along with their optional/mandatory fields and how they appear in each built-in theme.
 
 {% for entry_name, entry in showcase_entries.items() %}
 #### {{ entry_name }}
@@ -213,6 +213,24 @@ Each entry type is a different object (a dictionary). Below, you can find all th
     {% endfor %}
 {% endfor %}
 
+#### Using additional custom keys in the entries
+
+RenderCV allows the usage of extra keys in the entries. For instance, the following is an `ExperienceEntry` containing an additional key, `summary`.
+
+```yaml
+company: Some Company
+location: TX, USA
+position: Software Engineer
+start_date: 2020-07
+end_date: '2021-08-12'
+  summary: Developed an [IOS application](https://example.com).
+  highlights:
+  - Received more than **100,000 downloads**.
+  - Managed a team of **5** engineers.
+```
+
+By default, the `summary` key will not affect the output as the built-in templates do not use it. However, you can use the `summary` key in your custom templates. Further information on overriding the built-in templates with custom ones can be found [here](index.md#rendering-the-cv-with-the-render-command).
+
 ## "`design`" field
 
 The `cv` field of the input contains your content, and the `design` field contains your design options. The `design` field starts with a theme name. Currently, the available themes are: {{available_themes}}. However, custom themes can also be used (see [here](index.md#creating-custom-themes-with-the-create-theme-command).)
@@ -223,7 +241,7 @@ design:
   ...
 ```
 
-Each theme may have different options for design. `classic`, `sb2nov`, and `engineeringresumes` almost use identical options, but `moderncv` is slightly different. Please use an IDE that supports JSON schema to avoid missing any available options for the theme (see [above](#structure-of-the-yaml-input-file)).
+Each theme may have different options for design. `classic`, `sb2nov`, and `engineeringresumes` almost use identical options, but `moderncv` is slightly different. Please use an IDE that supports JSON schema to avoid missing any available options for the theme (see [above](#structure-of-the-yaml-input-file).)
 
 An example `design` field for a `classic` theme is shown below:
 
@@ -269,7 +287,7 @@ design:
 
 ## "`locale_catalog`" field
 
-This field is what makes RenderCV a multilingual tool. RenderCV uses some English strings to render PDFs. For example, it takes the dates in ISO format (`2020-01-01`) and converts them into human-friendly strings (`"Jan 2020"`). However, you can override these strings for your own language or needs with the `locale_catalog` field.
+This field is what makes RenderCV a multilingual tool. RenderCV uses some English strings to render PDFs. For example, it takes the dates in ISO format (`2020-01-01`) and converts them into human-friendly strings (`"Jan 2020"`.) However, you can override these strings for your own language or needs with the `locale_catalog` field.
 
 Here is an example:
 

@@ -11,14 +11,14 @@ import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 
 from . import computers, entry_types
-from .base import RenderCVBaseModel
+from .base import RenderCVBaseModelWithoutExtraKeys
 
 # ======================================================================================
 # Create validator functions: ==========================================================
 # ======================================================================================
 
 
-class SectionBase(RenderCVBaseModel):
+class SectionBase(RenderCVBaseModelWithoutExtraKeys):
     """This class is the parent class of all the section types. It is being used
     in RenderCV internally, and it is not meant to be used directly by the users.
     It is used by `rendercv.data_models.utilities.create_a_section_model` function to
@@ -39,6 +39,7 @@ def validate_url(url: str) -> str:
 
     Args:
         url (str): The URL to validate.
+
     Returns:
         str: The validated URL.
     """
@@ -57,10 +58,11 @@ def create_a_section_validator(entry_type: Type) -> Type[SectionBase]:
     Args:
         entry_type (Type): The entry type to create the section model. It's not an
             instance of the entry type, but the entry type itself.
+
     Returns:
         Type[SectionBase]: The section validator (a Pydantic model).
     """
-    if entry_type == str:
+    if entry_type is str:
         model_name = "SectionWithTextEntries"
         entry_type_name = "TextEntry"
     else:
@@ -86,6 +88,7 @@ def get_characteristic_entry_attributes(
         entry_types (list[Type]): The entry types to get their characteristic
             attributes. These are not instances of the entry types, but the entry
             types themselves. `str` type should not be included in this list.
+
     Returns:
         dict[Type, list[str]]: The characteristic attributes of the entry types.
     """
@@ -123,6 +126,7 @@ def get_entry_type_name_and_section_validator(
         entry_types (list[Type]): The entry types to determine the entry type. These
             are not instances of the entry types, but the entry types themselves. `str`
             type should not be included in this list.
+
     Returns:
         tuple[str, Type[SectionBase]]: The entry type name and the section validator.
     """
@@ -176,6 +180,7 @@ def validate_a_section(
         entry_types (list[Type]): The entry types to determine the entry type. These
             are not instances of the entry types, but the entry types themselves. `str`
             type should not be included in this list.
+
     Returns:
         list[Any]: The validated sections input.
     """
@@ -235,6 +240,7 @@ def validate_a_social_network_username(username: str, network: str) -> str:
 
     Args:
         username (str): The username to validate.
+
     Returns:
         str: The validated username.
     """
@@ -305,7 +311,7 @@ available_social_networks = get_args(SocialNetworkName)
 # ======================================================================================
 
 
-class SocialNetwork(RenderCVBaseModel):
+class SocialNetwork(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of a social network."""
 
     network: SocialNetworkName = pydantic.Field(
@@ -369,7 +375,7 @@ class SocialNetwork(RenderCVBaseModel):
         return url
 
 
-class CurriculumVitae(RenderCVBaseModel):
+class CurriculumVitae(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the `cv` field."""
 
     name: Optional[str] = pydantic.Field(

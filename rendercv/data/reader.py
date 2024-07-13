@@ -19,6 +19,7 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict[str, Any
     Args:
         file_path_or_contents (pathlib.Path | str): The path to the YAML file or the
             contents of the YAML file as a string.
+
     Returns:
         dict: The content of the YAML file as a dictionary.
     """

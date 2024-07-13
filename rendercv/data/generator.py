@@ -14,11 +14,12 @@ import ruamel.yaml
 from . import models, reader
 
 
-def dictionary_to_yaml(dictionary: dict[str, Any]):
+def dictionary_to_yaml(dictionary: dict[str, Any]) -> str:
     """Converts a dictionary to a YAML string.
 
     Args:
         dictionary (dict[str, Any]): The dictionary to be converted to YAML.
+
     Returns:
         str: The YAML string.
     """
@@ -29,6 +30,7 @@ def dictionary_to_yaml(dictionary: dict[str, Any]):
     with io.StringIO() as string_stream:
         yaml_object.dump(dictionary, string_stream)
         yaml_string = string_stream.getvalue()
+
     return yaml_string
 
 
@@ -39,6 +41,7 @@ def create_a_sample_data_model(
 
     Args:
         name (str, optional): The name of the person. Defaults to "John Doe".
+
     Returns:
         RenderCVDataModel: A sample data model.
     """
@@ -77,6 +80,7 @@ def create_a_sample_yaml_input_file(
             Defaults to None.
         name (str, optional): The name of the person. Defaults to "John Doe".
         theme (str, optional): The theme of the CV. Defaults to "classic".
+
     Returns:
         str: The sample YAML input file as a string.
     """

@@ -21,6 +21,7 @@ def string_to_file_path(string: Optional[str]) -> Optional[pathlib.Path]:
 
     Args:
         string (str): The string to be converted to a pathlib.Path object.
+
     Returns:
         pathlib.Path: The pathlib.Path object.
     """
@@ -193,6 +194,7 @@ def get_error_message_and_location_and_value_from_a_custom_error(
 
     Args:
         error_string (str): The error message.
+
     Returns:
         tuple[Optional[str], Optional[str], Optional[str]]: The custom message,
             location, and the input value.
@@ -215,6 +217,7 @@ def copy_templates(
     Args:
         folder_name (str): The name of the folder to be copied.
         copy_to (pathlib.Path): The path to copy the folder to.
+
     Returns:
         Optional[pathlib.Path]: The path to the copied folder.
     """
@@ -246,6 +249,7 @@ def parse_render_command_override_arguments(
 
     Args:
         extra_arguments (typer.Context): The extra arguments context.
+
     Returns:
         dict["str", "str"]: The key and value pairs.
     """

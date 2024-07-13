@@ -338,6 +338,7 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
         latex_string (str): The string to escape.
         strict (bool): Whether to escape all the special $\\LaTeX$ characters or not. If
             you want to allow math input, set it to False.
+
     Returns:
         str: The escaped string.
     """
@@ -470,6 +471,7 @@ def transform_markdown_sections_to_latex_sections(
 
     Args:
         sections (Optional[dict[str, dm.SectionInput]]): Sections with Markdown strings.
+
     Returns:
         Optional[dict[str, dm.SectionInput]]: Sections with $\\LaTeX$ strings.
     """
@@ -515,6 +517,7 @@ def replace_placeholders_with_actual_values(
     Args:
         text (str): The text with placeholders.
         placeholders (dict[str, str]): The placeholders and their values.
+
     Returns:
         str: The string with actual values.
     """
@@ -538,6 +541,7 @@ def make_matched_part_something(
         value (str): The string to make something.
         something (str): The $\\LaTeX$ command to use.
         match_str (str): The string to match.
+
     Returns:
         str: The string with the matched part something.
     """
@@ -569,6 +573,7 @@ def make_matched_part_bold(value: str, match_str: Optional[str] = None) -> str:
     Args:
         value (str): The string to make bold.
         match_str (str): The string to match.
+
     Returns:
         str: The string with the matched part bold.
     """
@@ -593,6 +598,7 @@ def make_matched_part_underlined(value: str, match_str: Optional[str] = None) ->
     Args:
         value (str): The string to make underlined.
         match_str (str): The string to match.
+
     Returns:
         str: The string with the matched part underlined.
     """
@@ -617,6 +623,7 @@ def make_matched_part_italic(value: str, match_str: Optional[str] = None) -> str
     Args:
         value (str): The string to make italic.
         match_str (str): The string to match.
+
     Returns:
         str: The string with the matched part italic.
     """
@@ -643,6 +650,7 @@ def make_matched_part_non_line_breakable(
     Args:
         value (str): The string to disable line breaks.
         match_str (str): The string to match.
+
     Returns:
         str: The string with the matched part non line breakable.
     """
@@ -665,6 +673,7 @@ def abbreviate_name(name: Optional[str]) -> str:
 
     Args:
         name (str): The name to abbreviate.
+
     Returns:
         str: The abbreviated name.
     """
@@ -702,6 +711,7 @@ def divide_length_by(length: str, divider: float) -> str:
     Args:
         length (str): The length to divide.
         divider (float): The number to divide the length by.
+
     Returns:
         str: The divided length.
     """
@@ -743,6 +753,7 @@ def get_an_item_with_a_specific_attribute_value(
         items (list[Any]): The list of items.
         attribute (str): The attribute to check.
         value (Any): The value of the attribute.
+
     Returns:
         Any: The item with the specific attribute value.
     """

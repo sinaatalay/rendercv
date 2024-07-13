@@ -29,11 +29,11 @@ This command will create the following files:
 
 -   A directory called `classic`.
 
-    This directory contains the $\LaTeX$ source code of RenderCV's default built-in theme, `classic`. You can update its contents to tweak the appearance of the output PDF file.
+    This directory contains the $\LaTeX$ templates of RenderCV's default built-in theme, `classic`. You can update its contents to tweak the appearance of the output PDF file.
 
 -   A directory called `markdown`.
 
-    This directory contains the Markdown source code of RenderCV's default Markdown template. You can update its contents to tweak the Markdown and HTML output of the CV.
+    This directory contains the Markdown templates of RenderCV's default Markdown template. You can update its contents to tweak the Markdown and HTML output of the CV.
 
 Please refer to the [here](cli.md#options-of-the-rendercv-new-command) for the complete list of CLI options available for the `new` command.
 
@@ -59,7 +59,7 @@ This command will generate a directory called `rendercv_output`, which contains 
 -   The CV in HTML format, `Your_Name_CV.html`.
 -   Some log and auxiliary files related to the $\LaTeX$ compilation process.
 
-If the theme and Markdown source files are found in the directory, they will override the default built-in theme and Markdown template. You don't need to provide all the source files; you can just provide the ones you want to override.
+If the theme and Markdown templates are found in the directory, they will override the default built-in theme and Markdown templates. You don't need to provide all the files; you can just provide the ones you want to override.
 
 Please refer to the [here](cli.md#options-of-the-rendercv-render-command) for the complete list of CLI options available for the `render` command.
 
@@ -93,7 +93,7 @@ The files are copied from the `classic` theme. You can update the contents of th
 
 Each of these `*.j2.tex` files is $\LaTeX$ code with some Python in it. These files allow RenderCV to create your CV out of the YAML input.
 
-The best way to understand how they work is to look at the source code of built-in themes:
+The best way to understand how they work is to look at the templates of the built-in themes:
 
 - [templates of the `classic` theme](../reference/themes/classic.md)
 - [templates of the `engineeringresumes` theme](../reference/themes/engineeringresumes.md)

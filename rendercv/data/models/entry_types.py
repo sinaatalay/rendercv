@@ -11,7 +11,7 @@ from typing import Annotated, Literal, Optional
 import pydantic
 
 from . import computers
-from .base import RenderCVBaseModel
+from .base import RenderCVBaseModelWithExtraKeys
 
 # ======================================================================================
 # Create validator functions: ==========================================================
@@ -23,6 +23,7 @@ def validate_date_field(date: Optional[int | str]) -> Optional[int | str]:
 
     Args:
         date (Optional[int | str]): The date to validate.
+
     Returns:
         Optional[int | str]: The validated date.
     """
@@ -57,6 +58,7 @@ def validate_start_and_end_date_fields(
 
     Args:
         date (Optional[Literal["present"] | int | RenderCVDate]): The date to validate.
+
     Returns:
         Optional[Literal["present"] | int | RenderCVDate]: The validated date.
     """
@@ -88,6 +90,7 @@ def validate_and_adjust_dates_for_an_entry(
         start_date (StartDate): The start date of the event.
         end_date (EndDate): The end date of the event.
         date (ArbitraryDate): The date of the event.
+
     Returns:
         EntryBase: The validated
     """
@@ -168,7 +171,7 @@ EndDate = Annotated[
 # ======================================================================================
 
 
-class OneLineEntry(RenderCVBaseModel):
+class OneLineEntry(RenderCVBaseModelWithExtraKeys):
     """This class is the data model of `OneLineEntry`."""
 
     label: str = pydantic.Field(
@@ -181,7 +184,7 @@ class OneLineEntry(RenderCVBaseModel):
     )
 
 
-class BulletEntry(RenderCVBaseModel):
+class BulletEntry(RenderCVBaseModelWithExtraKeys):
     """This class is the data model of `BulletEntry`."""
 
     bullet: str = pydantic.Field(
@@ -190,7 +193,7 @@ class BulletEntry(RenderCVBaseModel):
     )
 
 
-class EntryWithDate(RenderCVBaseModel):
+class EntryWithDate(RenderCVBaseModelWithExtraKeys):
     """This class is the parent class of some of the entry types that have date
     fields.
     """
@@ -215,7 +218,7 @@ class EntryWithDate(RenderCVBaseModel):
         )
 
 
-class PublicationEntryBase(RenderCVBaseModel):
+class PublicationEntryBase(RenderCVBaseModelWithExtraKeys):
     """This class is the parent class of the `PublicationEntry` class."""
 
     title: str = pydantic.Field(
@@ -387,7 +390,7 @@ class EntryBase(EntryWithDate):
         )
 
 
-class NormalEntryBase(RenderCVBaseModel):
+class NormalEntryBase(RenderCVBaseModelWithExtraKeys):
     """This class is the parent class of the `NormalEntry` class."""
 
     name: str = pydantic.Field(
@@ -405,7 +408,7 @@ class NormalEntry(EntryBase, NormalEntryBase):
     pass
 
 
-class ExperienceEntryBase(RenderCVBaseModel):
+class ExperienceEntryBase(RenderCVBaseModelWithExtraKeys):
     """This class is the parent class of the `ExperienceEntry` class."""
 
     company: str = pydantic.Field(
@@ -427,7 +430,7 @@ class ExperienceEntry(EntryBase, ExperienceEntryBase):
     pass
 
 
-class EducationEntryBase(RenderCVBaseModel):
+class EducationEntryBase(RenderCVBaseModelWithExtraKeys):
     """This class is the parent class of the `EducationEntry` class."""
 
     institution: str = pydantic.Field(
