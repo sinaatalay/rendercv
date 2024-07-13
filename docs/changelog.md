@@ -112,9 +112,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Mastodon links now use the original hostnames instead of `https://mastodon.social/`.
 
 ### Fixed
-- The location is now shown in the header (#54).
+- The location is now shown in the header ([#54](https://github.com/sinaatalay/rendercv/issues/54)).
 - The `education_degree_width` option of the `classic` theme has been fixed.
-- Lualatex and xelatex rendering problems have been fixed (#52).
+- Lualatex and xelatex rendering problems have been fixed ([#52](https://github.com/sinaatalay/rendercv/issues/52)).
 
 ## [1.7] - 2024-04-08
 
@@ -126,7 +126,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `last_updated_date_style` design option has been added for all the themes except `moderncv`.
 
 ### Fixed
-- Highlights can now be broken into multiple pages in the `classic` theme (#47).
+- Highlights can now be broken into multiple pages in the `classic` theme ([#47](https://github.com/sinaatalay/rendercv/issues/47)).
 - Some JSON Schema bugs have been fixed.
 
 ## [1.6] - 2024-03-31
