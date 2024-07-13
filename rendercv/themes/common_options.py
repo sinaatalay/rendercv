@@ -1,5 +1,5 @@
 """
-The `rendercv.themes.common_models` module contains the standard data models for the
+The `rendercv.themes.common_options` module contains the standard data models for the
 design options. To avoid code duplication, the themes are encouraged to inherit from
 these data models.
 """
