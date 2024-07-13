@@ -753,8 +753,8 @@ def test_default_input_file_doesnt_have_local_catalog():
 @pytest.mark.parametrize(
     "key, expected_section_title",
     [
-        ("this_is_a_test", "This Is A Test"),
-        ("welcome_to_RenderCV!", "Welcome To RenderCV!"),
+        ("this_is_a_test", "This Is a Test"),
+        ("welcome_to_RenderCV!", "Welcome to RenderCV!"),
         ("\\faGraduationCap_education", "\\faGraduationCap Education"),
         ("Hello_World", "Hello World"),
         ("Hello World", "Hello World"),
