@@ -292,11 +292,47 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
     title = key.replace("_", " ")
     words = title.split(" ")
 
+    words_not_capitalized_in_a_title = [
+        "a",
+        "and",
+        "as",
+        "at",
+        "but",
+        "by",
+        "for",
+        "from",
+        "if",
+        "in",
+        "into",
+        "like",
+        "near",
+        "nor",
+        "of",
+        "off",
+        "on",
+        "onto",
+        "or",
+        "over",
+        "so",
+        "than",
+        "that",
+        "to",
+        "upon",
+        "when",
+        "with",
+        "yet",
+    ]
+
     # loop through the words and if the word doesn't contain any uppercase letters,
     # capitalize the first letter of the word. If the word contains uppercase letters,
     # don't change the word.
     proper_title = " ".join(
-        word.capitalize() if word.islower() else word for word in words
+        (
+            word.capitalize()
+            if (word.islower() and word not in words_not_capitalized_in_a_title)
+            else word
+        )
+        for word in words
     )
 
     return proper_title
