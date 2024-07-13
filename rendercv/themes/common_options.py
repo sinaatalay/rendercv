@@ -25,12 +25,7 @@ LaTeXDimension = Annotated[
 
 
 class PageMargins(RenderCVBaseModelWithoutExtraKeys):
-    """This class is a data model for the page margins.
-
-    Attributes:
-        top: The top margin of the page with units. The default value is 2 cm.
-
-    """
+    """This class is a data model for the page margins."""
 
     top: LaTeXDimension = pydantic.Field(
         default="2 cm",
