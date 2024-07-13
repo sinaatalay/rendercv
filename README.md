@@ -41,8 +41,8 @@ cv:
       - institution: Boğaziçi University
         area: Mechanical Engineering
         degree: BS
-        start_date: 2029-09
-        end_date: 2024-05
+        start_date: 2024-09
+        end_date: 2029-05
         highlights:
           - 'GPA: 3.9/4.0 ([Transcript](https://example.com))'
           - '**Coursework:** Structural Analysis, Thermodynamics,
