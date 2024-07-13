@@ -1,5 +1,5 @@
 """
-The `rendercv.data.generators` module contains all the functions for generating the JSON
+The `rendercv.data.generator` module contains all the functions for generating the JSON
 Schema of the input data format and a sample YAML input file.
 """
 
