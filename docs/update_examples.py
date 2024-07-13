@@ -61,7 +61,7 @@ def generate_examples():
         shutil.rmtree(rendercv_output_directory)
 
         # convert first page of the pdf to an image:
-        png_file_paths = renderer.render_a_markdown_file(new_pdf_file_path)
+        png_file_paths = renderer.render_pngs_from_pdf(new_pdf_file_path)
         firt_page_png_file_path = png_file_paths[0]
         if len(png_file_paths) > 1:
             # remove the other pages
