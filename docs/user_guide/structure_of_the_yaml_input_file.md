@@ -217,19 +217,19 @@ Each entry type is a different object (a dictionary.) Below, you can find all th
 
 RenderCV allows the usage of extra keys in the entries. For instance, the following is an `ExperienceEntry` containing an additional key, `summary`.
 
-```yaml
+```yaml hl_lines="6"
 company: Some Company
 location: TX, USA
 position: Software Engineer
 start_date: 2020-07
 end_date: '2021-08-12'
-  summary: Developed an [IOS application](https://example.com).
-  highlights:
-  - Received more than **100,000 downloads**.
-  - Managed a team of **5** engineers.
+summary: Developed an [IOS application](https://example.com).
+highlights:
+- Received more than **100,000 downloads**.
+- Managed a team of **5** engineers.
 ```
 
-By default, the `summary` key will not affect the output as the built-in templates do not use it. However, you can use the `summary` key in your custom templates. Further information on overriding the built-in templates with custom ones can be found [here](index.md#rendering-the-cv-with-the-render-command).
+By default, the `summary` key will not affect the output as the built-in templates do not use it. However, you can use the `summary` key in your custom templates. Further information on overriding the built-in templates with custom ones can be found [here](index.md#overriding-built-in-themes).
 
 ## "`design`" field
 

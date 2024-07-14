@@ -59,9 +59,22 @@ This command will generate a directory called `rendercv_output`, which contains 
 -   The CV in HTML format, `Your_Name_CV.html`.
 -   Some log and auxiliary files related to the $\LaTeX$ compilation process.
 
+Please refer to the [here](cli.md#options-of-the-rendercv-render-command) for the complete list of CLI options available for the `render` command.
+
+### Overriding built-in themes
+
 If the theme and Markdown templates are found in the directory, they will override the default built-in theme and Markdown templates. You don't need to provide all the files; you can just provide the ones you want to override.
 
-Please refer to the [here](cli.md#options-of-the-rendercv-render-command) for the complete list of CLI options available for the `render` command.
+For example, `ExperienceEntry` of the `classic` theme can be modified as shown below.
+
+``` { .sh .no-copy }
+├── classic
+│   └── ExperienceEntry.j2.tex # (1)!
+└── Your_Full_Name_CV.yaml
+```
+
+1.  This file will override the built-in `ExperienceEntry.j2.tex` template of the `classic` theme.
+
 
 ## Creating custom themes with the `create-theme` command
 
