@@ -29,6 +29,3 @@ When the `testdata` folder needs to be updated, it can be manually regenerated b
 !!! warning
     - Whenever the `testdata` folder is generated, the files should be reviewed manually to ensure everything works as expected.
     - `update_testdata` should be set to `False` before committing the changes.
-
-
-
