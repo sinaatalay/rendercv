@@ -108,10 +108,10 @@ Each of these `*.j2.tex` files is $\LaTeX$ code with some Python in it. These fi
 
 The best way to understand how they work is to look at the templates of the built-in themes:
 
-- [templates of the `classic` theme](../reference/themes/classic.md)
-- [templates of the `engineeringresumes` theme](../reference/themes/engineeringresumes.md)
-- [templates of the `sb2nov` theme](../reference/themes/sb2nov.md)
-- [templates of the `moderncv` theme](../reference/themes/moderncv.md)
+- [templates of the `classic` theme](../reference/themes/classic.md#jinja-templates)
+- [templates of the `engineeringresumes` theme](../reference/themes/engineeringresumes.md#jinja-templates)
+- [templates of the `sb2nov` theme](../reference/themes/sb2nov.md#jinja-templates)
+- [templates of the `moderncv` theme](../reference/themes/moderncv.md#jinja-templates)
 
 For example, the content of `ExperienceEntry.j2.tex` for the `moderncv` theme is shown below:
 

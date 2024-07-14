@@ -225,8 +225,8 @@ start_date: 2020-07
 end_date: '2021-08-12'
 summary: Developed an [IOS application](https://example.com).
 highlights:
-- Received more than **100,000 downloads**.
-- Managed a team of **5** engineers.
+  - Received more than **100,000 downloads**.
+  - Managed a team of **5** engineers.
 ```
 
 By default, the `summary` key will not affect the output as the built-in templates do not use it. However, you can use the `summary` key in your custom templates. Further information on overriding the built-in templates with custom ones can be found [here](index.md#overriding-built-in-themes).
