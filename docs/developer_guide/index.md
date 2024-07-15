@@ -53,15 +53,15 @@ The source code is thoroughly documented and well-commented, making it an enjoya
 
 These commands are defined in the [`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml) file.
 
-- Format the code with [Black](https://github.com/psf/black):
+- Format the code with [Black](https://github.com/psf/black)
     ```bash
     hatch run default:format
     ```
-- Lint the code with [Ruff](https://github.com/astral-sh/ruff):
+- Lint the code with [Ruff](https://github.com/astral-sh/ruff)
     ```bash
     hatch run default:lint
     ```
-- Sort the imports with [isort](https://github.com/timothycrosley/isort/):
+- Sort the imports with [isort](https://github.com/timothycrosley/isort/)
     ```bash
     hatch run default:sort-imports
     ```
@@ -69,19 +69,19 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run default:check-types
     ```
-- Run the tests:
+- Run the tests
     ```bash
     hatch run test:run
     ```
-- Run the tests and generate a coverage report:
+- Run the tests and generate a coverage report
     ```bash
     hatch run test:run-and-report
     ```
-- Start the development server for the documentation:
+- Start the development server for the documentation
     ```bash
     hatch run docs:serve
     ```
-- Build the documentation:
+- Build the documentation
     ```bash
     hatch run docs:build
     ```
@@ -89,15 +89,15 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run docs:update-schema
     ```
-- Update [`examples`](https://github.com/sinaatalay/rendercv/tree/main/examples) folder:
+- Update [`examples`](https://github.com/sinaatalay/rendercv/tree/main/examples) folder
     ```bash
     hatch run docs:update-examples
     ```
-- Update figures of the entry types in the "[Structure of the YAML Input File](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/)":
+- Update figures of the entry types in the "[Structure of the YAML Input File](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/)"
     ```bash
     hatch run docs:update-entry-figures
     ```
 
 ## About [`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml)
 
-[`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml) contains all the metadata, dependencies, and tools required for the project. Please read through the file to understand the project's technical details.
+[`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml) contains the metadata, dependencies, and tools required for the project. Please read through the file to understand the project's technical details.

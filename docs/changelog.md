@@ -121,11 +121,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v1.6...v1.7]
 
 ### Added
+
 - The new theme, `engineeringresumes`, is ready to be used now.
 - The `education_degree_width` design option has been added for the `classic` theme.
 - `last_updated_date_style` design option has been added for all the themes except `moderncv`.
 
 ### Fixed
+
 - Highlights can now be broken into multiple pages in the `classic` theme ([#47](https://github.com/sinaatalay/rendercv/issues/47)).
 - Some JSON Schema bugs have been fixed.
 
@@ -134,12 +136,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v1.5...v1.6]
 
 ### Added
+
 - A new theme has been added: `engineeringresumes`. It hasn't been tested fully yet.
 - A new text alignment option has been added to `classic` and `sb2nov`: `justified-with-no-hyphenation` ([#34](https://github.com/sinaatalay/rendercv/issues/34))
 - Users are now allowed to run local `lualatex`, `xelatex`, `latexmk` commands in addition to `pdflatex` ([#48](https://github.com/sinaatalay/rendercv/issues/48)).
 
 ### Changed
-- Orcid is now displayed in the header like other social media links.
+
+- ORCID is now displayed in the header like other social media links.
 
 
 ### Fixed
@@ -236,6 +240,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v0.9...v0.10]
 
 ### Fixed
+
 - Author highlighting issue has been fixed in `PublicationEntry`.
 
 ## [0.9] - 2023-11-29
@@ -243,6 +248,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v0.8...v0.9]
 
 ### Added
+
 - Page numbering has been added.
 - Text alignment options have been added (left-aligned or justified).
 - Header options have been added (margins and header font size).
@@ -253,6 +259,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v0.7...v0.8]
 
 ### Fixed
+
 - YYYY date issue has been solved ([#5](https://github.com/sinaatalay/rendercv/issues/5)).
 
 ## [0.7] - 2023-11-03
@@ -260,9 +267,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v0.6...v0.7]
 
 ### Changed
+
 - The date type has been improved. It supports `YYYY-MM-DD`, `YYYY-MM`, and `YYYY` formats now.
 
 ### Fixed
+
 - Custom sections' error messages have been fixed.
 
 ## [0.6] - 2023-10-28
@@ -270,9 +279,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v0.5...v0.6]
 
 ### Added
+
 - New fields have been added: `experience`, `projects`, `awards`, `interests`, and `programming_skills`.
 
 ### Fixed
+
 - DOI validation bug has been fixed by [@LabAsim](https://github.com/LabAsim) in [#3](https://github.com/sinaatalay/rendercv/pull/3)/
 
 
@@ -282,7 +293,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Orcid support has been added.
+- ORCID support has been added.
 
 ### Fixed
 
