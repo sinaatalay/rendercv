@@ -1,6 +1,6 @@
 # Command Line Interface (CLI)
 
-This page lists all the available commands and options of the RenderCV CLI.
+This page lists the available commands and options of the RenderCV CLI.
 
 ## Options of the `rendercv` command
 

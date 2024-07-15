@@ -25,7 +25,7 @@ This command will create the following files:
 
 -   A YAML input file called `Your_Name_CV.yaml`.
 
-    This file will contain all the content and design options of your CV.
+    This file contains the content and design options of your CV.
 
 -   A directory called `classic`.
 
@@ -33,13 +33,13 @@ This command will create the following files:
 
 -   A directory called `markdown`.
 
-    This directory contains the Markdown templates of RenderCV's default Markdown template. You can update its contents to tweak the Markdown and HTML output of the CV.
+    This directory contains the templates of RenderCV's default Markdown template. You can update its contents to tweak the Markdown and HTML output of the CV.
 
 Please refer to the [here](cli.md#options-of-the-rendercv-new-command) for the complete list of CLI options available for the `new` command.
 
 ## Structure of the YAML input file
 
-The YAML input file contains all the content and design options of your CV. A detailed explanation of the structure of the YAML input file is provided [here](structure_of_the_yaml_input_file.md).
+The YAML input file contains the content and design options of your CV. A detailed explanation of the structure of the YAML input file is provided [here](structure_of_the_yaml_input_file.md).
 
 
 ## Rendering the CV with the `render` command
@@ -134,11 +134,11 @@ For example, the content of `ExperienceEntry.j2.tex` for the `moderncv` theme is
 ((* endfor *))
 ```
 
-The values between `<<` and `>>` are the names of Python variables, allowing you to write a $\\LaTeX$ CV without writing any content. They will be replaced with the values found in the YAML input. Also, the values between `((*` and `*))` are Python blocks, allowing you to use loops and conditional statements.
+The values between `<<` and `>>` are the names of Python variables, allowing you to write a $\\LaTeX$ CV without writing any content. They will be replaced with the values found in the YAML input. The values between `((*` and `*))` are Python blocks, allowing you to use loops and conditional statements.
 
-The process of generating $\\LaTeX$ files like this is called "templating," and it's achieved with a Python package called [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
+The process of generating $\\LaTeX$ files like this is called "templating," and it is achieved with a Python package called [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
 
-Also, the `__init__.py` file found in the theme directory is used to define the design options of the custom theme. You can define your custom design options in this file.
+The `__init__.py` file found in the theme directory defines the design options of the custom theme. You can define your custom design options in this file.
 
 For example, an `__init__.py` file is shown below:
 
@@ -155,7 +155,7 @@ class YourcustomthemeThemeOptions(pydantic.BaseModel):
     option4: bool
 ```
 
-Then, RenderCV will parse your custom design options from the YAML input, and you can use these variables inside your `*.j2.tex` files as shown below:
+RenderCV will then parse your custom design options from the YAML input. You can use these variables inside your `*.j2.tex` files as shown below:
 
 ```latex
 <<design.option1>>
@@ -165,4 +165,4 @@ Then, RenderCV will parse your custom design options from the YAML input, and yo
 ((* endif *))
 ```
 
-Please refer to the [here](cli.md#options-of-the-rendercv-create-theme-command) for the complete list of CLI options available for the `create-theme` command.
+Please refer [here](cli.md#options-of-the-rendercv-create-theme-command) for the complete list of CLI options available for the `create-theme` command.

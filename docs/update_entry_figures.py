@@ -105,7 +105,7 @@ def dictionary_to_yaml(dictionary: dict[str, Any]):
 
 
 def define_env(env):
-    # see https://mkdocs-macros-plugin.readthedocs.io/en/latest/macros/
+    # See https://mkdocs-macros-plugin.readthedocs.io/en/latest/macros/
     entries = [
         "education_entry",
         "experience_entry",
@@ -133,7 +133,7 @@ def define_env(env):
 
     env.variables["showcase_entries"] = entries_showcase
 
-    # for theme templates reference docs:
+    # For theme templates reference docs
     themes_path = rendercv_path / "themes"
     theme_templates = dict()
     for theme in data.available_themes:
@@ -141,7 +141,7 @@ def define_env(env):
         for theme_file in themes_path.glob(f"{theme}/*.tex"):
             theme_templates[theme][theme_file.stem] = theme_file.read_text()
 
-        # Update the ordering of the theme templates:
+        # Update ordering of theme templates
         order = [
             "Preamble.j2",
             "Header.j2",
@@ -168,11 +168,11 @@ def define_env(env):
 
     env.variables["theme_templates"] = theme_templates
 
-    # available themes strings (put available themes between ``)
+    # Available themes strings (put available themes between ``)
     themes = [f"`{theme}`" for theme in data.available_themes]
     env.variables["available_themes"] = ", ".join(themes)
 
-    # available social networks strings (put available social networks between ``)
+    # Available social networks strings (put available social networks between ``)
     social_networks = [
         f"`{social_network}`" for social_network in data.available_social_networks
     ]
@@ -194,7 +194,7 @@ def generate_entry_figures():
     themes = data.available_themes
 
     with tempfile.TemporaryDirectory() as temporary_directory:
-        # create a temporary directory:
+        # Create temporary directory
         temporary_directory_path = pathlib.Path(temporary_directory)
         for theme in themes:
             design_dictionary = {
@@ -203,12 +203,12 @@ def generate_entry_figures():
                 "disable_last_updated_date": True,
             }
             if theme == "moderncv":
-                # moderncv theme does not support these options:
+                # moderncv theme does not support these options
                 del design_dictionary["disable_page_numbering"]
                 del design_dictionary["disable_last_updated_date"]
 
             for entry_type, entry in entries.items():
-                # Create the data model with only one section and one entry
+                # Create data model with only one section and one entry
                 data_model = data.RenderCVDataModel(
                     **{
                         "cv": data.CurriculumVitae(sections={entry_type: [entry]}),
@@ -216,22 +216,22 @@ def generate_entry_figures():
                     }
                 )
 
-                # Render:
+                # Render
                 latex_file_path = renderer.render_a_latex_file_and_copy_theme_files(
                     data_model, temporary_directory_path
                 )
                 pdf_file_path = renderer.render_a_pdf_from_latex(latex_file_path)
 
-                # Prepare the output directory and file path:
+                # Prepare output directory and file path
                 output_directory = image_assets_directory / theme
                 output_directory.mkdir(parents=True, exist_ok=True)
                 output_pdf_file_path = output_directory / f"{entry_type}.pdf"
 
-                # Remove the file if it exists:
+                # Remove file if it exists
                 if output_pdf_file_path.exists():
                     output_pdf_file_path.unlink()
 
-                # Crop the margins
+                # Crop margins
                 pdfCropMargins.crop(
                     argv_list=[
                         "-p4",
@@ -250,23 +250,23 @@ def generate_entry_figures():
                     ]
                 )
 
-                # Convert pdf to an image
+                # Convert PDF to image
                 png_file_path = renderer.render_pngs_from_pdf(output_pdf_file_path)[0]
                 desired_png_file_path = output_pdf_file_path.with_suffix(".png")
 
-                # If the image exists, remove it
+                # If image exists, remove it
                 if desired_png_file_path.exists():
                     desired_png_file_path.unlink()
 
-                # Move the image to the desired location
+                # Move image to desired location
                 png_file_path.rename(desired_png_file_path)
 
-                # Remove the pdf file
+                # Remove PDF file
                 output_pdf_file_path.unlink()
 
 
 def update_index():
-    """Update the index.md file by copying the README.md file."""
+    """Update index.md file by copying README.md file."""
     index_file_path = repository_root / "docs" / "index.md"
     readme_file_path = repository_root / "README.md"
     shutil.copy(readme_file_path, index_file_path)
