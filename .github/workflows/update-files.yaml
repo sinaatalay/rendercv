@@ -1,0 +1,54 @@
+name: Update files
+
+# GitHub events that triggers the workflow:
+on:
+  workflow_call: # to make the workflow triggerable from other workflows (publish.yaml)
+  workflow_dispatch: # to make the workflow triggerable manually
+
+jobs:
+  update_files:
+    name: Update schema.json, examples, and entry figures
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Hatch
+        uses: pypa/hatch@install
+
+      - name: Set Git credentials
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Update schema.json
+        run: |
+          hatch run docs:update-schema
+          git add schema.json
+          git commit -m "docs: update schema.json"
+
+      - name: Update `examples` folder
+        run: |
+          hatch run docs:update-examples
+          git add examples/*
+          git commit -m "docs: update examples"
+
+      - name: Update entry figures
+        run: |
+          hatch run docs:update-entry-figures
+          git add docs/assets/**/*.png
+          git commit -m "docs: update entry figures"
+
+      - name: Push changes
+        run: |
+          git push origin HEAD:main
