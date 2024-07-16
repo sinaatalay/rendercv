@@ -29,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Some articles and prepositions (like "and," "of," "the," etc.) are now capitalized in the section titles.
+- Some articles and prepositions (like "and," "of," "the," etc.) are now not capitalized in the section titles.
 
 ### Fixed
 
@@ -242,8 +242,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Markdown `TextEntry`, where all the paragraphs were concatenated into a single paragraph, has been fixed.
 - Markdown `OneLineEntry`, where all the one-line entries were concatenated into a single line, has been fixed.
 - The `classic` theme's `PublicationEntry`, where blank parentheses were rendered when the `journal` field was not provided, has been fixed.
-- A bug, where an email with special characters caused a $\LaTeX$ error, has been fixed.
-- Unicode error, when `rendercv new` is called with a name with special characters, has been fixed.
+- A bug where an email with special characters caused a $\LaTeX$ error has been fixed.
+- The Unicode error when `rendercv new` is called with a name containing special characters has been fixed.
 
 ## [1.1] - 2024-02-25
 
@@ -284,8 +284,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Page numbering has been added.
 - Text alignment options have been added (left-aligned or justified).
-- Header options have been added (margins and header font size).
-- `university_projects` field has been added.
+- Header options (margins and header font size) have been added.
+- The `university_projects` field has been added.
 
 ## [0.8] - 2023-11-17
 
@@ -301,11 +301,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- The date type has been improved. It supports `YYYY-MM-DD`, `YYYY-MM`, and `YYYY` formats now.
+- The date type has been improved. It now supports `YYYY-MM-DD`, `YYYY-MM`, and `YYYY` formats.
 
 ### Fixed
 
-- Custom sections' error messages have been fixed.
+- The error messages for custom sections have been fixed.
 
 ## [0.6] - 2023-10-28
 
@@ -345,7 +345,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- The colors of CLI output have been fixed.
+- The colors of the CLI output have been fixed.
 - Encoding problems have been fixed.
 
 ## [0.2] - 2023-10-17
