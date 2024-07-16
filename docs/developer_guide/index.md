@@ -85,7 +85,7 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run docs:build
     ```
-- Update [schema.json](https://github.com/sinaatalay/rendercv/blob/main/schema.json):
+- Update [schema.json](https://github.com/sinaatalay/rendercv/blob/main/schema.json)
     ```bash
     hatch run docs:update-schema
     ```

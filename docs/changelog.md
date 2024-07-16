@@ -1,13 +1,14 @@
 ---
 toc_depth: 1
 ---
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.11...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.12...HEAD)
 
 <!--
 ### Added
@@ -16,17 +17,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 -->
 
+## [1.12] - 2024-07-16
+
+> **Full Changelog**: [v1.11...v1.12]
+
+### Added
+
+- Arbitrary keys are now allowed in entry types. Users can use these keys in their templates. For details, see the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-additional-custom-keys-in-the-entries).
+- The `locale_catalog.full_names_of_months` field has been added to the data model ([#111](https://github.com/sinaatalay/rendercv/issues/111)).
+- The `TODAY` placeholder can be used in the `design.page_numbering_style` field now.
+
+### Changed
+
+- Some articles and prepositions (like "and," "of," "the," etc.) are now capitalized in the section titles.
+
+### Fixed
+
+- The `TODAY` placeholder in `design.last_updated_style` field is localized with the new `locale_catalog.full_names_of_months` field ([#111](https://github.com/sinaatalay/rendercv/issues/111))
+- Rendering Markdown links with special characters has been fixed ([#112](https://github.com/sinaatalay/rendercv/issues/112)).
+
 ## [1.11] - 2024-06-19
 
 > **Full Changelog**: [v1.10...v1.11]
 
 ### Added
+
 - CLI options now have short versions. See the [CLI documentation](https://docs.rendercv.com/user_guide/cli/) for more information.
 - CLI now notifies the user when a new version is available ([#89](https://github.com/sinaatalay/rendercv/issues/89)).
 - `Google Scholar` has been added as a social network type ([#85](https://github.com/sinaatalay/rendercv/issues/85)).
 - Two new design options have been added to the `classic`, `sb2nov`, and `engineeringresumes` themes: `seperator_between_connections` and `use_icons_for_connections`.
 
 ### Changed
+
 - The punctuation of "ORCID" has been changed to uppercase, which was previously "Orcid" ([#90](https://github.com/sinaatalay/rendercv/issues/90)).
 - HTML output has been improved with better CSS ([#96](https://github.com/sinaatalay/rendercv/discussions/96)).
 - More complex section titles are now supported ([#106](https://github.com/sinaatalay/rendercv/issues/106)).
@@ -37,60 +59,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `YouTube` username should be given without `@` now.
 
 ### Fixed
+
 - The error related to the `validation_error_cause` flag of Pydantic has been fixed ([#66](https://github.com/sinaatalay/rendercv/issues/66)).
 - `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)).
 
 ### Removed
-- `Twitter` has been removed as a social network type ([#109](https://github.com/sinaatalay/rendercv/issues/109)).
 
+- `Twitter` has been removed as a social network type ([#109](https://github.com/sinaatalay/rendercv/issues/109)).
 
 ## [1.10] - 2024-05-25
 
 > **Full Changelog**: [v1.9...v1.10]
 
 ### Added
+
 - `rendercv --version` command has been added to show the version of RenderCV.
 - `StackOverflow` ([#77](https://github.com/sinaatalay/rendercv/pull/77)), `GitLab` ([#78](https://github.com/sinaatalay/rendercv/pull/78)), `ResearchGate`, and `YouTube` has been added to the available social network types.
 
 ### Fixed
+
 - Authors in `PublicationEntry` are now displayed correctly in `engineeringresumes` and `sb2nov` themes.
 - `justify-with-no-hyphenation` text alignment has been fixed.
-
 
 ## [1.9] - 2024-05-19
 
 > **Full Changelog**: [v1.8...v1.9]
 
 ### Added
+
 - RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/sinaatalay/rendercv/issues/26), [#20](https://github.com/sinaatalay/rendercv/pull/20)). See the [documentation](user_guide/structure_of_the_yaml_input_file.md#locale_catalog-field) for more information.
 - PNG files for each page can be generated now ([#57](https://github.com/sinaatalay/rendercv/issues/57)).
 - `rendercv new` command now generates Markdown and $\LaTeX$ source files in addition to the YAML input file so that the default templates can be modified easily.
 - A new CLI command has been added, `rendercv create-theme`, to allow users to create their own themes easily.
-    ```bash
-    rendercv create-theme "customtheme" --based-on "classic"
-    ```
+  ```bash
+  rendercv create-theme "customtheme" --based-on "classic"
+  ```
 - [A developer guide](https://docs.rendercv.com/developer_guide/) has been written.
-- New options have been added to the `rendercv render` command: 
-    - `--output-folder-name "OUTPUT_FOLDER_NAME"`: Generates the output files in a folder with the given name. By default, the output folder name is `rendercv_output`. The output folder will be created in the current working directory. ([#58](https://github.com/sinaatalay/rendercv/issues/58))
-    - `--latex-path LATEX_PATH`: Copies the generated $\LaTeX$ source code from the output folder and pastes it to the specified path.
-    - `--pdf-path PDF_PATH`: Copies the generated PDF file from the output folder and pastes it to the specified path.
-    - `--markdown-path MARKDOWN_PATH`: Copies the generated Markdown file from the output folder and pastes it to the specified path.
-    - `--html-path HTML_PATH`: Copies the generated HTML file from the output folder and pastes it to the specified path.
-    - `--png-path PNG_PATH`: Copies the generated PNG files from the output folder and pastes them to the specified path.
-    - `--dont-generate-markdown`: Prevents the generation of the Markdown file.
-    - `--dont-generate-html`: Prevents the generation of the HTML file.
-    - `--dont-generate-png`: Prevents the generation of the PNG files.
-    - `--ANY.LOCATION.IN.THE.YAML.FILE "VALUE"`: Overrides the value of `ANY.LOCATION.IN.THE.YAML.FILE` with `VALUE`. This option can be used to avoid storing sensitive information in the YAML file. Sensitive information, like phone numbers, can be passed as a command-line argument with environment variables. This method is also beneficial for creating multiple CVs using the same YAML file by changing only a few values.
-- New options have been added to the `rendercv new` command: 
-    - `--dont-create-theme-source-files`: Prevents the creation of the theme source files. By default, the theme source files are created.
-    - `--dont-create-markdown-source-files`: Prevents the creation of the Markdown source files. By default, the Markdown source files are created.
+- New options have been added to the `rendercv render` command:
+  - `--output-folder-name "OUTPUT_FOLDER_NAME"`: Generates the output files in a folder with the given name. By default, the output folder name is `rendercv_output`. The output folder will be created in the current working directory. ([#58](https://github.com/sinaatalay/rendercv/issues/58))
+  - `--latex-path LATEX_PATH`: Copies the generated $\LaTeX$ source code from the output folder and pastes it to the specified path.
+  - `--pdf-path PDF_PATH`: Copies the generated PDF file from the output folder and pastes it to the specified path.
+  - `--markdown-path MARKDOWN_PATH`: Copies the generated Markdown file from the output folder and pastes it to the specified path.
+  - `--html-path HTML_PATH`: Copies the generated HTML file from the output folder and pastes it to the specified path.
+  - `--png-path PNG_PATH`: Copies the generated PNG files from the output folder and pastes them to the specified path.
+  - `--dont-generate-markdown`: Prevents the generation of the Markdown file.
+  - `--dont-generate-html`: Prevents the generation of the HTML file.
+  - `--dont-generate-png`: Prevents the generation of the PNG files.
+  - `--ANY.LOCATION.IN.THE.YAML.FILE "VALUE"`: Overrides the value of `ANY.LOCATION.IN.THE.YAML.FILE` with `VALUE`. This option can be used to avoid storing sensitive information in the YAML file. Sensitive information, like phone numbers, can be passed as a command-line argument with environment variables. This method is also beneficial for creating multiple CVs using the same YAML file by changing only a few values.
+- New options have been added to the `rendercv new` command:
+  - `--dont-create-theme-source-files`: Prevents the creation of the theme source files. By default, the theme source files are created.
+  - `--dont-create-markdown-source-files`: Prevents the creation of the Markdown source files. By default, the Markdown source files are created.
 
 ### Changed
+
 - Package size has been reduced by removing unnecessary TinyTeX files.
 - `date` field is now optional in `PublicationEntry`.
 - [README.md](https://github.com/sinaatalay/rendercv) and the [documentation](https://docs.rendercv.com/) have been rewritten.
 
 ### Fixed
+
 - `ExperienceEntry` and `NormalEntry` without location and dates have been fixed in the `engineeringresumes`, `classic`, and `sb2nov` themes.
 - $\LaTeX$ templates have been polished.
 - Bugs related to the special characters in email addresses have been fixed ([#64](https://github.com/sinaatalay/rendercv/issues/64)).
@@ -100,18 +127,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v1.7...v1.8]
 
 ### Added
+
 - Horizontal space has been added between entry titles and dates in the `engineeringresumes` theme.
 - The `date_and_location_width` option has been added to the `engineeringresumes` theme.
 - A new design option, `disable_external_link_icons`, has been added.
 
-    
 ### Changed
+
 - `sb2nov` theme's $\LaTeX$ code has been changed completly. There are slight changes in the looks.
 - `classic`, `sb2nov`, and `engineeringresumes` use the same $\LaTeX$ code base now.
 - The design option `show_last_updated_date` has been renamed to `disable_last_updated_date` for consistency.
 - Mastodon links now use the original hostnames instead of `https://mastodon.social/`.
 
 ### Fixed
+
 - The location is now shown in the header ([#54](https://github.com/sinaatalay/rendercv/issues/54)).
 - The `education_degree_width` option of the `classic` theme has been fixed.
 - Lualatex and xelatex rendering problems have been fixed ([#52](https://github.com/sinaatalay/rendercv/issues/52)).
@@ -145,23 +174,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - ORCID is now displayed in the header like other social media links.
 
-
 ### Fixed
+
 - Decoding issues have been fixed ([#29](https://github.com/sinaatalay/rendercv/issues/29)).
 - Classic theme's `ExperienceEntry` has been fixed ([#49](https://github.com/sinaatalay/rendercv/issues/49)).
-
 
 ## [1.5] - 2024-03-27
 
 > **Full Changelog**: [v1.4...v1.5]
 
 ### Added
+
 - Users can now make bold or italic texts normal with Markdown syntax.
 
 ### Changed
+
 - The `moderncv` theme doesn't italicize any text by default now.
 
 ### Fixed
+
 - The `moderncv` theme's PDF title issue has been fixed.
 - The ordering of the data models' keys in JSON Schema has been fixed.
 - The unhandled exception when a custom theme's `__init__.py` file is invalid has been fixed.
@@ -173,31 +204,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 > **Full Changelog**: [v1.3...v1.4]
 
 ### Added
+
 - A new entry type has been added: `BulletEntry`
 
 ### Changed
+
 - `OneLineEntry`'s `name` field has been changed to `label`. This was required to generalize the entry validations.
 - `moderncv`'s highlights are now bullet points.
 - `moderncv`'s `TextEntries` don't have bullet points anymore.
 - `sb2nov`'s `TextEntries` don't have bullet points anymore.
-
 
 ## [1.3] - 2024-03-09
 
 > **Full Changelog**: [v1.2...v1.3]
 
 ### Added
+
 - CLI documentation has been added to the user guide.
 
 ### Changed
+
 - Future dates are now allowed.
 - Authors' first names are no longer abbreviated in `PublicationEntry`.
 - Markdown is now supported in the `authors` field of `PublicationEntry`.
 - `doi` field is now optional for `PublicationEntry`.
 
 ### Fixed
-- The `journal` is now displayed in the `PublicationEntry` of the `sb2nov` theme.
 
+- The `journal` is now displayed in the `PublicationEntry` of the `sb2nov` theme.
 
 ## [1.2] - 2024-02-27
 
@@ -210,7 +244,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `classic` theme's `PublicationEntry`, where blank parentheses were rendered when the `journal` field was not provided, has been fixed.
 - A bug, where an email with special characters caused a $\LaTeX$ error, has been fixed.
 - Unicode error, when `rendercv new` is called with a name with special characters, has been fixed.
-
 
 ## [1.1] - 2024-02-25
 
@@ -286,7 +319,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - DOI validation bug has been fixed by [@LabAsim](https://github.com/LabAsim) in [#3](https://github.com/sinaatalay/rendercv/pull/3)/
 
-
 ## [0.5] - 2023-10-27
 
 > **Full Changelog**: [v0.4...v0.5]
@@ -298,7 +330,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Special $\LaTeX$ characters' escaping has been fixed.
-
 
 ## [0.4] - 2023-10-22
 
@@ -329,6 +360,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[v1.11...v1.12]: https://github.com/sinaatalay/rendercv/compare/v1.11...v1.12
 [v1.10...v1.11]: https://github.com/sinaatalay/rendercv/compare/v1.10...v1.11
 [v1.9...v1.10]: https://github.com/sinaatalay/rendercv/compare/v1.9...v1.10
 [v1.8...v1.9]: https://github.com/sinaatalay/rendercv/compare/v1.8...v1.9
@@ -349,7 +381,7 @@ The first release of RenderCV.
 [v0.3...v0.4]: https://github.com/sinaatalay/rendercv/compare/v0.3...v0.4
 [v0.2...v0.3]: https://github.com/sinaatalay/rendercv/compare/v0.2...v0.3
 [v0.1...v0.2]: https://github.com/sinaatalay/rendercv/compare/v0.1...v0.2
-
+[1.12]: https://github.com/sinaatalay/rendercv/releases/tag/v1.12
 [1.11]: https://github.com/sinaatalay/rendercv/releases/tag/v1.11
 [1.10]: https://github.com/sinaatalay/rendercv/releases/tag/v1.10
 [1.9]: https://github.com/sinaatalay/rendercv/releases/tag/v1.9
