@@ -64,7 +64,7 @@ def validate_input_dictionary_and_return_the_data_model(
         input_dictionary (dict): The input dictionary.
 
     Returns:
-        RenderCVDataModel: The data models with $\\LaTeX$ and Markdown strings.
+        RenderCVDataModel: The data model.
     """
 
     # Validate the parsed dictionary by creating an instance of RenderCVDataModel:
@@ -84,7 +84,7 @@ def read_input_file(
             input file as a string.
 
     Returns:
-        RenderCVDataModel: The data models with $\\LaTeX$ and Markdown strings.
+        RenderCVDataModel: The data model.
     """
     input_as_dictionary = read_a_yaml_file(file_path_or_contents)
 
