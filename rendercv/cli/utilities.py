@@ -63,7 +63,8 @@ def set_or_update_a_value(
     if len(keys) == 1:
         # Set the value:
         if value.startswith("{") and value.endswith("}"):
-            raise ValueError("Dictionary assignment is not allowed!")
+            # Allow users to assign dictionaries:
+            value = eval(value)
         elif value.startswith("[") and value.endswith("]"):
             # Allow users to assign lists:
             value = eval(value)
