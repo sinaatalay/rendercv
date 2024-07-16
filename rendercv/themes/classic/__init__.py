@@ -49,12 +49,13 @@ class ClassicThemeOptions(ThemeOptions):
         description="The font family of the CV. The default value is Source Sans 3.",
     )
     show_timespan_in: list[str] = pydantic.Field(
-        default=["Experience"],
+        default=[],
         title="Show Time Span in These Sections",
         description=(
             "The time span will be shown in the date and location column in these"
             " sections. The input should be a list of section titles as strings"
-            " (case-sensitive). The default value is ['Experience']."
+            " (case-sensitive). The default value is [] (no section will show the time"
+            " span)."
         ),
     )
     margins: MarginsForClassic = pydantic.Field(
