@@ -176,15 +176,21 @@ def cli_command_render(
 
     with printer.LiveProgressReporter(number_of_steps) as progress:
         progress.start_a_step("Reading and validating the input file")
-        data_model = data.read_input_file(input_file_path)
+        data_as_a_dict = data.read_a_yaml_file(input_file_path)
 
-        # update the data model if there are extra arguments:
+        # update the data if there are extra override arguments:
         if extra_data_model_override_argumets:
             key_and_values = dict()
             key_and_values = utilities.parse_render_command_override_arguments(
                 extra_data_model_override_argumets
             )
-            data_model = utilities.set_or_update_values(data_model, key_and_values)
+            data_as_a_dict = utilities.set_or_update_values(
+                data_as_a_dict, key_and_values
+            )
+
+        data_model = data.validate_input_dictionary_and_return_the_data_model(
+            data_as_a_dict
+        )
 
         progress.finish_the_current_step()
 

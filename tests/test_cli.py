@@ -439,6 +439,8 @@ def test_render_command_with_invalid_arguments(
         ("--cv.email", "test@example.com"),
         ("--cv.location", "Test City"),
         ("--cv.sections.test_section.0", "Testing overriding TextEntry."),
+        ("--design.theme", "sb2nov"),
+        ("--cv.sections", '{"test_title": ["testentry"]}'),
     ],
 )
 def test_render_command_with_overriding_values(
@@ -454,12 +456,18 @@ def test_render_command_with_overriding_values(
         ],
     )
 
-    if yaml_location == "--cv.name":
-        markdown_output = tmp_path / "rendercv_output" / "This_is_a_Test_CV.md"
-    else:
-        markdown_output = tmp_path / "rendercv_output" / "John_Doe_CV.md"
+    assert "Your CV is rendered!" in result.stdout
 
-    assert new_value in markdown_output.read_text()
+    if yaml_location != "--design.theme":
+        if yaml_location == "--cv.name":
+            markdown_output = tmp_path / "rendercv_output" / "This_is_a_Test_CV.md"
+        else:
+            markdown_output = tmp_path / "rendercv_output" / "John_Doe_CV.md"
+
+        if yaml_location == "--cv.sections":
+            new_value = "Test Title"
+
+        assert new_value in markdown_output.read_text()
 
 
 def test_new_command(tmp_path):
@@ -674,10 +682,17 @@ def test_warn_if_new_version_is_available(monkeypatch):
         ("cv.sections.education.0.highlights.0", "Did this."),
         ("cv.sections.this_is_a_new_section", '["This is a text entry."]'),
         ("design.page_size", "a4paper"),
+        ("cv.sections", '{"test_title": ["test_entry"]}'),
     ],
 )
 def test_set_or_update_a_value(rendercv_data_model, key, value):
-    updated_model = utilities.set_or_update_a_value(rendercv_data_model, key, value)
+    updated_model_as_a_dict = utilities.set_or_update_a_value(
+        rendercv_data_model.model_dump(by_alias=True), key, value
+    )
+
+    updated_model = data.validate_input_dictionary_and_return_the_data_model(
+        updated_model_as_a_dict
+    )
 
     # replace with regex pattern:
     key = re.sub(r"sections\.([^\.]*)", 'sections_input["\\1"]', key)
@@ -688,7 +703,10 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
     elif value.startswith("[") and value.endswith("]"):
         value = eval(value)
 
-    assert eval(f"updated_model.{key}") == value
+    if key == "cv.sections":
+        assert "test_title" in updated_model.cv.sections_input
+    else:
+        assert eval(f"updated_model.{key}") == value
 
 
 @pytest.mark.parametrize(
@@ -716,7 +734,10 @@ def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
 )
 def test_set_or_update_a_value_invalid_values(rendercv_data_model, key, value):
     with pytest.raises(pydantic.ValidationError):
-        utilities.set_or_update_a_value(rendercv_data_model, key, value)
+        new_dict = utilities.set_or_update_a_value(
+            rendercv_data_model.model_dump(by_alias=True), key, value
+        )
+        data.validate_input_dictionary_and_return_the_data_model(new_dict)
 
 
 def test_relative_input_file_path_with_custom_output_paths(tmp_path, input_file_path):

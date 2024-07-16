@@ -37,7 +37,7 @@ from .models import (
     available_themes,
     format_date,
 )
-from .reader import read_input_file
+from .reader import read_input_file, validate_input_dictionary_and_return_the_data_model, read_a_yaml_file
 
 __all__ = [
     "OneLineEntry",
@@ -63,4 +63,6 @@ __all__ = [
     "SectionContents",
     "available_entry_type_names",
     "available_entry_models",
+    "read_a_yaml_file",
+    "validate_input_dictionary_and_return_the_data_model",
 ]
