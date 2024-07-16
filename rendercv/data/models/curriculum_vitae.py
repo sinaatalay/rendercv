@@ -113,7 +113,7 @@ def get_characteristic_entry_attributes(
 
 
 def get_entry_type_name_and_section_validator(
-    entry: dict[str, Any] | str | Type, entry_types: list[Type]
+    entry: dict[str, str | list[str]] | str | Type, entry_types: list[Type]
 ) -> tuple[str, Type[SectionBase]]:
     """Get the entry type name and the section validator based on the entry.
 
@@ -122,7 +122,7 @@ def get_entry_type_name_and_section_validator(
     type.
 
     Args:
-        entry (dict[str, Any] | str): The entry to determine its type.
+        entry (dict[str, str | list[str]] | str): The entry to determine its type.
         entry_types (list[Type]): The entry types to determine the entry type. These
             are not instances of the entry types, but the entry types themselves. `str`
             type should not be included in this list.

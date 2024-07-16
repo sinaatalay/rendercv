@@ -14,11 +14,11 @@ import ruamel.yaml
 from . import models, reader
 
 
-def dictionary_to_yaml(dictionary: dict[str, Any]) -> str:
+def dictionary_to_yaml(dictionary: dict) -> str:
     """Converts a dictionary to a YAML string.
 
     Args:
-        dictionary (dict[str, Any]): The dictionary to be converted to YAML.
+        dictionary (dict): The dictionary to be converted to YAML.
 
     Returns:
         str: The YAML string.
@@ -110,7 +110,7 @@ def create_a_sample_yaml_input_file(
     return yaml_string
 
 
-def generate_json_schema() -> dict[str, Any]:
+def generate_json_schema() -> dict:
     """Generate the JSON schema of RenderCV.
 
     JSON schema is generated for the users to make it easier for them to write the input
