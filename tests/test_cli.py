@@ -712,15 +712,17 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
 @pytest.mark.parametrize(
     "key, value",
     [
-        ("cv.phones", "+905555555555"),
-        ("cv.emssdsail", ""),
-        ("cv.sections.education.99.degree", "PhD"),
+        ("na.na", "+905555555555"),
+        ("cv.emssdsail.10", ""),
+        ("cv.sections.99.education.degree", "PhD"),
         ("dessssign.page_size", "a4paper"),
     ],
 )
 def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
     with pytest.raises((ValueError, KeyError, IndexError, AttributeError)):
-        utilities.set_or_update_a_value(rendercv_data_model, key, value)
+        utilities.set_or_update_a_value(
+            rendercv_data_model.model_dump(by_alias=True), key, value
+        )
 
 
 @pytest.mark.parametrize(
