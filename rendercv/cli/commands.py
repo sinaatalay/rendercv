@@ -390,8 +390,6 @@ def cli_command_no_args(
         Optional[bool], typer.Option("--version", "-v", help="Show the version.")
     ] = None,
 ):
-    """If the `--version` option is used, then show the version. Otherwise, show the
-    help message (see `no_args_is_help` argument of `typer.Typer` object)."""
     if version_requested:
         there_is_a_new_version = printer.warn_if_new_version_is_available()
         if not there_is_a_new_version:
