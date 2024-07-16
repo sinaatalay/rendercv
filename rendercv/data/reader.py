@@ -5,7 +5,6 @@ Pydantic data model of RenderCV's data format.
 """
 
 import pathlib
-from typing import Any
 
 import ruamel.yaml
 

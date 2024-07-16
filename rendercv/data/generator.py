@@ -6,7 +6,7 @@ Schema of the input data format and a sample YAML input file.
 import io
 import json
 import pathlib
-from typing import Any, Optional
+from typing import Optional
 
 import pydantic
 import ruamel.yaml

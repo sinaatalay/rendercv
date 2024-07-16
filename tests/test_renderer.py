@@ -9,8 +9,8 @@ import pytest
 import time_machine
 
 from rendercv import data, renderer
-from rendercv.renderer import templater
 from rendercv.renderer import renderer as renderer_module
+from rendercv.renderer import templater
 
 folder_name_dictionary = {
     "rendercv_empty_curriculum_vitae_data_model": "empty",
