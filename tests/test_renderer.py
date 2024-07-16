@@ -10,6 +10,7 @@ import time_machine
 
 from rendercv import data, renderer
 from rendercv.renderer import templater
+from rendercv.renderer import renderer as renderer_module
 
 folder_name_dictionary = {
     "rendercv_empty_curriculum_vitae_data_model": "empty",
@@ -19,8 +20,8 @@ folder_name_dictionary = {
 
 def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file = templater.LaTeXFile(rendercv_data_model, jinja2_environment)
-    latex_file.get_latex_code()
-    latex_file.render_a_latex_file(tmp_path / "test.tex")
+    latex_file.get_full_code()
+    latex_file.create_file(tmp_path / "test.tex")
 
 
 @pytest.mark.parametrize(
@@ -82,8 +83,8 @@ def test_latex_file_revert_nested_latex_style_commands_method(string, expected_s
 
 def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
     latex_file = templater.MarkdownFile(rendercv_data_model, jinja2_environment)
-    latex_file.get_markdown_code()
-    latex_file.render_a_markdown_file(tmp_path / "test.tex")
+    latex_file.get_full_code()
+    latex_file.create_file(tmp_path / "test.tex")
 
 
 @pytest.mark.parametrize(
@@ -362,7 +363,7 @@ def test_setup_jinja2_environment():
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_render_a_latex_file(
+def test_create_a_latex_file(
     run_a_function_and_check_if_output_is_the_same_as_reference,
     request: pytest.FixtureRequest,
     theme_name,
@@ -379,22 +380,22 @@ def test_render_a_latex_file(
         f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}.tex"
     )
 
-    def render_a_latex_file(output_directory_path, reference_file_or_directory_path):
-        renderer.render_a_latex_file(data_model, output_directory_path)
+    def create_a_latex_file(output_directory_path, reference_file_or_directory_path):
+        renderer.create_a_latex_file(data_model, output_directory_path)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
-        render_a_latex_file,
+        create_a_latex_file,
         reference_file_name,
         output_file_name,
     )
 
 
-def test_if_render_a_latex_file_can_create_a_new_directory(
+def test_if_create_a_latex_file_can_create_a_new_directory(
     tmp_path, rendercv_data_model
 ):
     new_directory = tmp_path / "new_directory"
 
-    latex_file_path = renderer.render_a_latex_file(rendercv_data_model, new_directory)
+    latex_file_path = renderer.create_a_latex_file(rendercv_data_model, new_directory)
 
     assert latex_file_path.exists()
 
@@ -411,7 +412,7 @@ def test_if_render_a_latex_file_can_create_a_new_directory(
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_render_a_markdown_file(
+def test_create_a_markdown_file(
     run_a_function_and_check_if_output_is_the_same_as_reference,
     request: pytest.FixtureRequest,
     theme_name,
@@ -428,22 +429,22 @@ def test_render_a_markdown_file(
         f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}.md"
     )
 
-    def render_a_markdown_file(output_directory_path, reference_file_or_directory_path):
-        renderer.render_a_markdown_file(data_model, output_directory_path)
+    def create_a_markdown_file(output_directory_path, reference_file_or_directory_path):
+        renderer.create_a_markdown_file(data_model, output_directory_path)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
-        render_a_markdown_file,
+        create_a_markdown_file,
         reference_file_name,
         output_file_name,
     )
 
 
-def test_if_render_a_markdown_file_can_create_a_new_directory(
+def test_if_create_a_markdown_file_can_create_a_new_directory(
     tmp_path, rendercv_data_model
 ):
     new_directory = tmp_path / "new_directory"
 
-    latex_file_path = renderer.render_a_markdown_file(
+    latex_file_path = renderer.create_a_markdown_file(
         rendercv_data_model, new_directory
     )
 
@@ -462,7 +463,9 @@ def test_copy_theme_files_to_output_directory(
     def copy_theme_files_to_output_directory(
         output_directory_path, reference_file_or_directory_path
     ):
-        renderer.copy_theme_files_to_output_directory(theme_name, output_directory_path)
+        renderer_module.copy_theme_files_to_output_directory(
+            theme_name, output_directory_path
+        )
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
         copy_theme_files_to_output_directory,
@@ -508,7 +511,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 
         # create reference_directory_path:
         os.chdir(dummytheme_path.parent)
-        renderer.copy_theme_files_to_output_directory(
+        renderer_module.copy_theme_files_to_output_directory(
             theme_name=theme_name,
             output_directory_path=reference_directory_path,
         )
@@ -520,7 +523,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 
         # copy the auxiliary theme files to tmp_path:
         os.chdir(dummytheme_path.parent)
-        renderer.copy_theme_files_to_output_directory(
+        renderer_module.copy_theme_files_to_output_directory(
             theme_name=theme_name,
             output_directory_path=output_directory_path,
         )
@@ -534,7 +537,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 
 def test_copy_theme_files_to_output_directory_nonexistent_theme():
     with pytest.raises(FileNotFoundError):
-        renderer.copy_theme_files_to_output_directory(
+        renderer_module.copy_theme_files_to_output_directory(
             "nonexistent_theme", pathlib.Path(".")
         )
 
@@ -551,7 +554,7 @@ def test_copy_theme_files_to_output_directory_nonexistent_theme():
     ],
 )
 @time_machine.travel("2024-01-01")
-def test_render_a_latex_file_and_copy_theme_files(
+def test_create_a_latex_file_and_copy_theme_files(
     run_a_function_and_check_if_output_is_the_same_as_reference,
     request: pytest.FixtureRequest,
     theme_name,
@@ -566,15 +569,15 @@ def test_render_a_latex_file_and_copy_theme_files(
         design={"theme": theme_name},
     )
 
-    def render_a_latex_file_and_copy_theme_files(
+    def create_a_latex_file_and_copy_theme_files(
         output_directory_path, reference_file_or_directory_path
     ):
-        renderer.render_a_latex_file_and_copy_theme_files(
+        renderer.create_a_latex_file_and_copy_theme_files(
             data_model, output_directory_path
         )
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
-        render_a_latex_file_and_copy_theme_files,
+        create_a_latex_file_and_copy_theme_files,
         reference_directory_name,
     )
 
@@ -609,7 +612,7 @@ def test_render_a_pdf_from_latex(
     def generate_pdf_file(output_directory_path, reference_file_or_directory_path):
         latex_sources_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_render_a_latex_file_and_copy_theme_files"
+            / "test_create_a_latex_file_and_copy_theme_files"
             / reference_name
         )
 
@@ -662,7 +665,7 @@ def test_render_an_html_from_markdown(
 
         markdown_source_path = (
             reference_file_or_directory_path.parent.parent
-            / "test_render_a_markdown_file"
+            / "test_create_a_markdown_file"
             / markdown_file_name
         )
 

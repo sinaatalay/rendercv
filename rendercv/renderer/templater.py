@@ -176,14 +176,14 @@ class LaTeXFile(TemplatedFile):
 
         return result
 
-    def get_latex_code(self) -> str:
+    def get_full_code(self) -> str:
         """Get the $\\LaTeX$ code of the file.
 
         Returns:
             str: The $\\LaTeX$ code.
         """
         preamble, header, sections = self.render_templates()
-        latex_code: str = self.get_full_code(
+        latex_code: str = super().get_full_code(
             "main.j2.tex",
             preamble=preamble,
             header=header,
@@ -191,9 +191,9 @@ class LaTeXFile(TemplatedFile):
         )
         return latex_code
 
-    def render_a_latex_file(self, file_path: pathlib.Path):
+    def create_file(self, file_path: pathlib.Path):
         """Write the $\\LaTeX$ code to a file."""
-        file_path.write_text(self.get_latex_code(), encoding="utf-8")
+        file_path.write_text(self.get_full_code(), encoding="utf-8")
 
 
 class MarkdownFile(TemplatedFile):
@@ -263,23 +263,23 @@ class MarkdownFile(TemplatedFile):
         )
         return result
 
-    def get_markdown_code(self) -> str:
+    def get_full_code(self) -> str:
         """Get the Markdown code of the file.
 
         Returns:
             str: The Markdown code.
         """
         header, sections = self.render_templates()
-        markdown_code: str = self.get_full_code(
+        markdown_code: str = super().get_full_code(
             "main.j2.md",
             header=header,
             sections=sections,
         )
         return markdown_code
 
-    def render_a_markdown_file(self, file_path: pathlib.Path):
+    def create_file(self, file_path: pathlib.Path):
         """Write the Markdown code to a file."""
-        file_path.write_text(self.get_markdown_code(), encoding="utf-8")
+        file_path.write_text(self.get_full_code(), encoding="utf-8")
 
 
 def revert_nested_latex_style_commands(latex_string: str) -> str:

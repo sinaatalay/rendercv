@@ -68,7 +68,7 @@ def copy_theme_files_to_output_directory(
                 )
 
 
-def render_a_latex_file(
+def create_a_latex_file(
     rendercv_data_model: data.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
     """Render the $\\LaTeX$ file with the given data model and write it to the output
@@ -93,12 +93,12 @@ def render_a_latex_file(
 
     latex_file_name = f"{str(rendercv_data_model.cv.name).replace(' ', '_')}_CV.tex"
     latex_file_path = output_directory / latex_file_name
-    latex_file_object.render_a_latex_file(latex_file_path)
+    latex_file_object.create_file(latex_file_path)
 
     return latex_file_path
 
 
-def render_a_markdown_file(
+def create_a_markdown_file(
     rendercv_data_model: data.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
     """Render the Markdown file with the given data model and write it to the output
@@ -123,12 +123,12 @@ def render_a_markdown_file(
 
     markdown_file_name = f"{str(rendercv_data_model.cv.name).replace(' ', '_')}_CV.md"
     markdown_file_path = output_directory / markdown_file_name
-    markdown_file_object.render_a_markdown_file(markdown_file_path)
+    markdown_file_object.create_file(markdown_file_path)
 
     return markdown_file_path
 
 
-def render_a_latex_file_and_copy_theme_files(
+def create_a_latex_file_and_copy_theme_files(
     rendercv_data_model: data.RenderCVDataModel, output_directory: pathlib.Path
 ) -> pathlib.Path:
     """Render the $\\LaTeX$ file with the given data model in the output directory and
@@ -141,7 +141,7 @@ def render_a_latex_file_and_copy_theme_files(
     Returns:
         pathlib.Path: The path to the rendered $\\LaTeX$ file.
     """
-    latex_file_path = render_a_latex_file(rendercv_data_model, output_directory)
+    latex_file_path = create_a_latex_file(rendercv_data_model, output_directory)
     copy_theme_files_to_output_directory(
         rendercv_data_model.design.theme, output_directory
     )
@@ -218,24 +218,23 @@ def render_a_pdf_from_latex(
         output = latex_process.communicate()  # wait for the process to finish
         if latex_process.returncode != 0:
             raise RuntimeError(
-                "Unfortunately, RenderCV's built-in TinyTeX binaries couldn't render"
-                " this LaTeX file into a PDF. This could be caused by one of two"
-                " reasons:\n\n1- The theme templates might have been updated in a way"
-                " RenderCV's TinyTeX cannot render. RenderCV's TinyTeX is minified to"
-                " keep the package size small. As a result, it doesn't function like a"
-                " general-purpose LaTeX distribution.\n2- Special characters, like"
-                " Greek or Chinese letters, that are not compatible with the fonts used"
-                " or RenderCV's TinyTeX might have been used.\n\nHowever, this issue"
-                " can be resolved quickly. RenderCV allows you to run your own LaTeX"
-                " distribution instead of the built-in TinyTeX. This can be done with"
-                " the '--use-local-latex-command' option, as shown below:\n\nrendercv"
-                " render --use-local-latex-command lualatex John_Doe_CV.yaml\n\nIf you"
-                " ensure that the generated LaTeX file can be compiled by your local"
-                " LaTeX distribution, RenderCV will work successfully. You can debug"
-                " the generated LaTeX file in your LaTeX editor to resolve any bugs."
-                " Then, you can start using RenderCV with your local LaTeX"
-                " distribution.\n\nIf you can't solve the problem, please open an issue"
-                " on GitHub."
+                "RenderCV's built-in TinyTeX binaries couldn't render this LaTeX file"
+                " into a PDF. This could be caused by one of two reasons:\n\n1- The"
+                " theme templates might have been updated in a way RenderCV's TinyTeX"
+                " cannot render. RenderCV's TinyTeX is minified to keep the package"
+                " size small. As a result, it doesn't function like a general-purpose"
+                " LaTeX distribution.\n2- Special characters, like Greek or Chinese"
+                " letters, that are not compatible with the fonts used or RenderCV's"
+                " TinyTeX might have been used.\n\nHowever, this issue can be resolved"
+                " by using your own LaTeX distribution instead of the built-in TinyTeX."
+                " This can be done with the '--use-local-latex-command' option, as"
+                " shown below:\n\nrendercv render --use-local-latex-command lualatex"
+                " John_Doe_CV.yaml\n\nIf you ensure that the generated LaTeX file can"
+                " be compiled by your local LaTeX distribution, RenderCV will work"
+                " successfully. You can debug the generated LaTeX file in your LaTeX"
+                " editor to resolve any bugs. Then, you can start using RenderCV with"
+                " your local LaTeX distribution.\n\nIf you can't solve the problem,"
+                " please open an issue on GitHub."
             )
         else:
             try:

@@ -190,7 +190,7 @@ def cli_command_render(
 
         progress.start_a_step("Generating the LaTeX file")
         latex_file_path_in_output_folder = (
-            renderer.render_a_latex_file_and_copy_theme_files(
+            renderer.create_a_latex_file_and_copy_theme_files(
                 data_model, output_directory
             )
         )
@@ -217,7 +217,7 @@ def cli_command_render(
 
         if not dont_generate_markdown:
             progress.start_a_step("Generating the Markdown file")
-            markdown_file_path_in_output_folder = renderer.render_a_markdown_file(
+            markdown_file_path_in_output_folder = renderer.create_a_markdown_file(
                 data_model, output_directory
             )
             if paths["markdown"]:
