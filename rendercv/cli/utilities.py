@@ -52,7 +52,7 @@ def set_or_update_a_value(
     # Recursively call this function until the last key is reached:
 
     # Rename `sections` with `sections_input` since the key is `sections` is an alias:
-    key = key.replace("sections.", "sections_input.")
+    key = key.replace(".sections", ".sections_input")
     keys = key.split(".")
 
     if sub_model is not None:
@@ -63,8 +63,7 @@ def set_or_update_a_value(
     if len(keys) == 1:
         # Set the value:
         if value.startswith("{") and value.endswith("}"):
-            # Allow users to assign dictionaries:
-            value = eval(value)
+            raise ValueError("Dictionary assignment is not allowed!")
         elif value.startswith("[") and value.endswith("]"):
             # Allow users to assign lists:
             value = eval(value)
@@ -81,10 +80,9 @@ def set_or_update_a_value(
                 " list.",
             )
 
-        data_model = type(data_model).model_validate(
+        updated_data_model = type(data_model).model_validate(
             (data_model.model_dump(by_alias=True))
         )
-        return data_model
     else:
         # get the first key and call the function with remaining keys:
         first_key = keys[0]
@@ -101,7 +99,9 @@ def set_or_update_a_value(
                 " list.",
             )
 
-        set_or_update_a_value(data_model, key, value, sub_model)
+        updated_data_model = set_or_update_a_value(data_model, key, value, sub_model)
+
+    return updated_data_model
 
 
 def set_or_update_values(

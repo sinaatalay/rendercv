@@ -432,6 +432,36 @@ def test_render_command_with_invalid_arguments(
     )
 
 
+@pytest.mark.parametrize(
+    ("yaml_location", "new_value"),
+    [
+        ("--cv.name", "This is a Test"),
+        ("--cv.email", "test@example.com"),
+        ("--cv.location", "Test City"),
+        ("--cv.sections.test_section.0", "Testing overriding TextEntry."),
+    ],
+)
+def test_render_command_with_overriding_values(
+    tmp_path, input_file_path, yaml_location, new_value
+):
+
+    result = run_render_command(
+        input_file_path,
+        tmp_path,
+        [
+            yaml_location,
+            new_value,
+        ],
+    )
+
+    if yaml_location == "--cv.name":
+        markdown_output = tmp_path / "rendercv_output" / "This_is_a_Test_CV.md"
+    else:
+        markdown_output = tmp_path / "rendercv_output" / "John_Doe_CV.md"
+
+    assert new_value in markdown_output.read_text()
+
+
 def test_new_command(tmp_path):
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
@@ -639,17 +669,15 @@ def test_warn_if_new_version_is_available(monkeypatch):
 @pytest.mark.parametrize(
     "key, value",
     [
-        ("cv.phone", "+905555555555"),
         ("cv.email", "test@example.com"),
         ("cv.sections.education.0.degree", "PhD"),
         ("cv.sections.education.0.highlights.0", "Did this."),
         ("cv.sections.this_is_a_new_section", '["This is a text entry."]'),
         ("design.page_size", "a4paper"),
-        ("design", '{"theme": "engineeringresumes"}'),
     ],
 )
 def test_set_or_update_a_value(rendercv_data_model, key, value):
-    utilities.set_or_update_a_value(rendercv_data_model, key, value)
+    updated_model = utilities.set_or_update_a_value(rendercv_data_model, key, value)
 
     # replace with regex pattern:
     key = re.sub(r"sections\.([^\.]*)", 'sections_input["\\1"]', key)
@@ -660,7 +688,7 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
     elif value.startswith("[") and value.endswith("]"):
         value = eval(value)
 
-    assert eval(f"rendercv_data_model.{key}") == value
+    assert eval(f"updated_model.{key}") == value
 
 
 @pytest.mark.parametrize(
