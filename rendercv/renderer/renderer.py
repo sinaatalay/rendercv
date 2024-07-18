@@ -12,6 +12,7 @@ import sys
 from typing import Optional
 
 import fitz
+
 import markdown
 
 from .. import data

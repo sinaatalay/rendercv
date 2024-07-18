@@ -11,7 +11,7 @@ import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 
 from . import computers, entry_types
-from .base import RenderCVBaseModelWithoutExtraKeys
+from .base import RenderCVBaseModelWithExtraKeys, RenderCVBaseModelWithoutExtraKeys
 
 # ======================================================================================
 # Create validator functions: ==========================================================
@@ -375,7 +375,7 @@ class SocialNetwork(RenderCVBaseModelWithoutExtraKeys):
         return url
 
 
-class CurriculumVitae(RenderCVBaseModelWithoutExtraKeys):
+class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
     """This class is the data model of the `cv` field."""
 
     name: Optional[str] = pydantic.Field(
