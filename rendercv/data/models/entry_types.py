@@ -229,7 +229,7 @@ class PublicationEntryBase(RenderCVBaseModelWithExtraKeys):
         title="Authors",
         description="The authors of the publication in order as a list of strings.",
     )
-    doi: Optional[str] = pydantic.Field(
+    doi: Optional[Annotated[str, pydantic.Field(pattern=r"\b10\..*")]] = pydantic.Field(
         default=None,
         title="DOI",
         description="The DOI of the publication.",
@@ -252,8 +252,8 @@ class PublicationEntryBase(RenderCVBaseModelWithExtraKeys):
     def ignore_url_if_doi_is_given(self) -> "PublicationEntryBase":
         """Check if DOI is provided and ignore the URL if it is provided."""
         doi_is_provided = self.doi is not None
-        url_is_provided = self.url is not None
-        if doi_is_provided and url_is_provided:
+
+        if doi_is_provided:
             self.url = None
 
         return self
@@ -278,7 +278,7 @@ class PublicationEntryBase(RenderCVBaseModelWithExtraKeys):
         url_is_provided = self.url is not None
 
         if url_is_provided:
-            return computers.make_a_url_clean(self.url)  # type: ignore
+            return computers.make_a_url_clean(str(self.url))  # type: ignore
         else:
             return ""
 

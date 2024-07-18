@@ -767,3 +767,21 @@ def test_dictionary_key_to_proper_section_title(key, expected_section_title):
 
 
 # def test_if_available_themes_and_avaialble_theme_options_has_the_same_length():
+
+
+@pytest.mark.parametrize(
+    "url, expected_clean_url",
+    [
+        ("https://example.com", "example.com"),
+        ("https://example.com/", "example.com"),
+        ("https://example.com/test", "example.com/test"),
+        ("https://example.com/test/", "example.com/test"),
+        ("https://www.example.com/test/", "www.example.com/test"),
+    ],
+)
+def test_make_a_url_clean(url, expected_clean_url):
+    assert computers.make_a_url_clean(url) == expected_clean_url
+    assert (
+        data.PublicationEntry(title="Test", authors=["test"], url=url).clean_url
+        == expected_clean_url
+    )

@@ -233,7 +233,7 @@ def make_a_url_clean(url: str) -> str:
     Returns:
         str: The clean URL.
     """
-    url = url.replace("https://", "").replace("http://", "").replace("www.", "")
+    url = url.replace("https://", "").replace("http://", "")
     if url.endswith("/"):
         url = url[:-1]
 

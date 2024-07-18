@@ -226,6 +226,10 @@ def print_validation_errors(exception: pydantic.ValidationError):
             "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or YYYY"
             " format!"
         ),
+        "String should match pattern '\\b10\\..*'": (
+            'A DOI prefix should always start with "10.". For example,'
+            ' "10.1109/TASC.2023.3340648".'
+        ),
         "URL scheme should be 'http' or 'https'": "This is not a valid URL!",
         "Field required": "This field is required!",
         "value is not a valid phone number": "This is not a valid phone number!",
