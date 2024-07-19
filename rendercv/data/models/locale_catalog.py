@@ -16,7 +16,7 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
     updates the `locale_catalog` dictionary.
     """
 
-    phone_format: Optional[Literal["national", "international", "E164"]] = (
+    phone_number_format: Optional[Literal["national", "international", "E164"]] = (
         pydantic.Field(
             default="national",
             title="Phone Number Format",
