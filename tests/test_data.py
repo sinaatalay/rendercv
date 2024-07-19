@@ -76,6 +76,7 @@ def test_read_input_file(input_file_path):
         input_dictionary = {
             "cv": {
                 "name": "John Doe",
+                "sections": {"test_section": ["this is a text entry."]},
             },
             "design": {
                 "theme": "classic",

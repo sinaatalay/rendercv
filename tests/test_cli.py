@@ -439,6 +439,7 @@ def test_render_command_with_invalid_arguments(
         ("--cv.email", "test@example.com"),
         ("--cv.location", "Test City"),
         ("--cv.sections.test_section.0", "Testing overriding TextEntry."),
+        ("--cv.sections.nonexistent", '["this is a textentry for test"]'),
         ("--design.theme", "sb2nov"),
         ("--cv.sections", '{"test_title": ["testentry"]}'),
     ],
@@ -466,6 +467,8 @@ def test_render_command_with_overriding_values(
 
         if yaml_location == "--cv.sections":
             new_value = "Test Title"
+        elif yaml_location == "--cv.sections.nonexistent":
+            new_value = "this is a textentry for test"
 
         assert new_value in markdown_output.read_text()
 
@@ -707,22 +710,6 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
         assert "test_title" in updated_model.cv.sections_input
     else:
         assert eval(f"updated_model.{key}") == value
-
-
-@pytest.mark.parametrize(
-    "key, value",
-    [
-        ("na.na", "+905555555555"),
-        ("cv.emssdsail.10", ""),
-        ("cv.sections.99.education.degree", "PhD"),
-        ("dessssign.page_size", "a4paper"),
-    ],
-)
-def test_set_or_update_a_value_invalid_keys(rendercv_data_model, key, value):
-    with pytest.raises((ValueError, KeyError, IndexError, AttributeError)):
-        utilities.set_or_update_a_value(
-            rendercv_data_model.model_dump(by_alias=True), key, value
-        )
 
 
 @pytest.mark.parametrize(
