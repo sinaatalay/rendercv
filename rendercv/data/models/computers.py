@@ -32,7 +32,7 @@ def format_phone_number(phone_number: str) -> str:
         str: The formatted phone number.
     """
 
-    format = locale_catalog["phone_format"].upper()  # type: ignore
+    format = locale_catalog["phone_number_format"].upper()  # type: ignore
 
     phonenumbers.PhoneNumberFormat.E164
 
