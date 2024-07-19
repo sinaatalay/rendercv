@@ -121,7 +121,7 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
         "abbreviations_for_months",
         "to",
         "full_names_of_months",
-        "phone_format",
+        "phone_number_format",
     )
     @classmethod
     def update_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
