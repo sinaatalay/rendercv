@@ -76,7 +76,13 @@ def set_or_update_a_value(
         if isinstance(updated_dict, list):
             first_key = int(first_key)
 
-        sub_dictionary = updated_dict[first_key]  # type: ignore
+        if first_key in updated_dict:
+            # Key exists, get the sub dictionary:
+            sub_dictionary = updated_dict[first_key]  # type: ignore
+        else:
+            # Key does not exist, create a new sub dictionary:
+            sub_dictionary = dict()
+
         updated_sub_dict = set_or_update_a_value(dictionary, key, value, sub_dictionary)
         updated_dict[first_key] = updated_sub_dict  # type: ignore
 
