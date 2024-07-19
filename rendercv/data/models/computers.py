@@ -8,7 +8,39 @@ import re
 from datetime import date as Date
 from typing import Optional
 
+import phonenumbers
+
 from .locale_catalog import locale_catalog
+
+
+def format_phone_number(phone_number: str) -> str:
+    """Format a phone number to the format specified in the `locale_catalog` dictionary.
+
+    Example:
+        ```python
+        format_phone_number("+17034800500")
+        ```
+        returns
+        ```python
+        "(703) 480-0500"
+        ```
+
+    Args:
+        phone_number (str): The phone number to format.
+
+    Returns:
+        str: The formatted phone number.
+    """
+
+    format = locale_catalog["phone_format"].upper()  # type: ignore
+
+    phonenumbers.PhoneNumberFormat.E164
+
+    parsed_number = phonenumbers.parse(phone_number, None)
+    formatted_number = phonenumbers.format_number(
+        parsed_number, getattr(phonenumbers.PhoneNumberFormat, format)
+    )
+    return formatted_number
 
 
 def format_date(date: Date, use_full_name: bool = False) -> str:

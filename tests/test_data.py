@@ -697,6 +697,7 @@ def test_locale_catalog():
             "11",
             "12",
         ],
+        phone_format="international",
     )
 
     assert locale_catalog.locale_catalog == data_model.locale_catalog.model_dump()

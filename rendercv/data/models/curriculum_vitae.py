@@ -401,7 +401,7 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
     phone: Optional[pydantic_phone_numbers.PhoneNumber] = pydantic.Field(
         default=None,
         title="Phone",
-        description="The phone number of the person.",
+        description="The phone number of the person, including the country code.",
     )
     website: Optional[pydantic.HttpUrl] = pydantic.Field(
         default=None,
@@ -455,11 +455,11 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
             )
 
         if self.phone is not None:
-            phone_placeholder = self.phone.replace("tel:", "").replace("-", " ")
+            phone_placeholder = computers.format_phone_number(self.phone)
             connections.append(
                 {
                     "latex_icon": "\\faPhone*",
-                    "url": f"{self.phone}",
+                    "url": self.phone,
                     "clean_url": phone_placeholder,
                     "placeholder": phone_placeholder,
                 }

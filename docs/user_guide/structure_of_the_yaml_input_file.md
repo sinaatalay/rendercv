@@ -49,17 +49,18 @@ cv:
   name: John Doe
   location: Your Location
   email: youremail@yourdomain.com
-  phone: +905419999999
+  phone: +905419999999 # (1)!
   website: https://example.com/
   social_networks:
-    - network: LinkedIn # (1)!
+    - network: LinkedIn # (2)!
       username: yourusername
     - network: GitHub 
       username: yourusername
   ...
 ```
 
-1.  The available social networks are: {{available_social_networks}}.
+1.  If you want to change the phone number formatting in the output, see the `locale_catalog` field's `phone_number_format` key.
+2.  The available social networks are: {{available_social_networks}}.
 
 None of the values above are required. You can omit any or all of them, and RenderCV will adapt to your input. These generic fields are used in the header of the CV.
 
@@ -287,12 +288,13 @@ design:
 
 ## "`locale_catalog`" field
 
-This field is what makes RenderCV a multilingual tool. RenderCV uses some English strings to render PDFs. For example, it takes the dates in ISO format (`2020-01-01`) and converts them into human-friendly strings (`"Jan 2020"`). However, you can override these strings for your own language or needs with the `locale_catalog` field.
+This field is what makes RenderCV a multilingual tool. RenderCV uses some English strings to render PDFs. For example, it takes the dates in ISO format (`2020-01-01`) and converts them into human-friendly strings (`"Jan 2020"`). However, you can override these strings for your own language or needs with the `locale_catalog` field. Also, you can change the phone number formatting with the `phone_number_format` key.
 
 Here is an example:
 
 ```yaml
 locale_catalog:
+  phone_number_format: national # (1)!
   abbreviations_for_months: # translation of the month abbreviations
     - Jan
     - Feb
@@ -326,3 +328,5 @@ locale_catalog:
   present: present  # translation of the word "present"
   to: to            # translation of the word "to"
 ```
+
+1. The available phone number formats are: `national`, `international`, and `E164`.

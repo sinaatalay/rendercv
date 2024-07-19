@@ -3,7 +3,7 @@ The `rendercv.models.locale_catalog` module contains the data model of the
 `locale_catalog` field of the input file.
 """
 
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 import annotated_types as at
 import pydantic
@@ -16,6 +16,18 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
     updates the `locale_catalog` dictionary.
     """
 
+    phone_format: Optional[Literal["national", "international", "E164"]] = (
+        pydantic.Field(
+            default="national",
+            title="Phone Number Format",
+            description=(
+                "If 'national', phone numbers are formatted without the country code."
+                " If 'international', phone numbers are formatted with the country"
+                " code. The default value is 'national'."
+            ),
+            validate_default=True,  # To initialize the locale catalog with the default
+        )
+    )
     month: Optional[str] = pydantic.Field(
         default="month",
         title='Translation of "Month"',
@@ -109,6 +121,7 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
         "abbreviations_for_months",
         "to",
         "full_names_of_months",
+        "phone_format",
     )
     @classmethod
     def update_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
