@@ -76,7 +76,7 @@ def set_or_update_a_value(
         if isinstance(updated_dict, list):
             first_key = int(first_key)
 
-        if first_key in updated_dict:
+        if isinstance(first_key, int) or first_key in updated_dict:
             # Key exists, get the sub dictionary:
             sub_dictionary = updated_dict[first_key]  # type: ignore
         else:
@@ -101,10 +101,7 @@ def set_or_update_values(
         key_and_values (dict[str, str]): The key and value pairs to set or update.
     """
     for key, value in key_and_values.items():
-        try:
-            dictionary = set_or_update_a_value(dictionary, key, value)  # type: ignore
-        except (ValueError, KeyError, IndexError):
-            raise ValueError(f'The key "{key}" does not exist in the data model!')
+        dictionary = set_or_update_a_value(dictionary, key, value)  # type: ignore
 
     return dictionary
 
