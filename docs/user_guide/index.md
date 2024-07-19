@@ -104,6 +104,21 @@ This command will create a directory called `mycustomtheme`, which contains the 
 
 The files are copied from the `classic` theme. You can update the contents of these files to create your custom theme.
 
+To use your custom theme, update the `design.theme` field in the YAML input file as shown below.
+
+```yaml
+cv:
+  ...
+
+design:
+  theme: mycustomtheme
+```
+
+Then, run the `render` command to render your CV with `mycustomtheme`.
+
+!!! note
+    Since JSON Schema will not recognize the name of the custom theme, it may show a warning in your IDE. This warning can be ignored.
+
 Each of these `*.j2.tex` files is $\LaTeX$ code with some Python in it. These files allow RenderCV to create your CV out of the YAML input.
 
 The best way to understand how they work is to look at the templates of the built-in themes:
