@@ -57,10 +57,10 @@ def validate_design_options(
         # It is a custom theme. Validate it:
         theme_name: str = str(design["theme"])
 
-        # Check if the theme name is valid:
-        if not theme_name.isalpha():
+        # Custom theme should only contain letters and digits:
+        if not theme_name.isalnum():
             raise ValueError(
-                "The custom theme name should contain only letters.",
+                "The custom theme name should only contain letters and digits.",
                 "theme",  # this is the location of the error
                 theme_name,  # this is value of the error
             )

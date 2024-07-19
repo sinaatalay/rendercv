@@ -564,6 +564,49 @@ def test_new_command_with_existing_files(tmp_path, file_or_folder_name):
 
 
 @pytest.mark.parametrize(
+    "custom_theme_name",
+    [
+        "CustomTheme",
+        "CustomTheme123",
+        "MYCUSTOMTHEME",
+        "mycustomtheme",
+    ],
+)
+def test_custom_theme_names(tmp_path, input_file_path, custom_theme_name):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    result = runner.invoke(cli.app, ["create-theme", custom_theme_name])
+
+    new_theme_source_files_path = tmp_path / custom_theme_name
+
+    assert new_theme_source_files_path.exists()
+    assert (new_theme_source_files_path / "__init__.py").exists()
+
+    # test if the new theme is actually working:
+    input_file_path = shutil.copy(input_file_path, tmp_path)
+
+    result = runner.invoke(
+        cli.app, ["render", str(input_file_path), "--design.theme", custom_theme_name]
+    )
+
+    output_folder_path = tmp_path / "rendercv_output"
+    pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
+    latex_file_path = output_folder_path / "John_Doe_CV.tex"
+    markdown_file_path = output_folder_path / "John_Doe_CV.md"
+    html_file_path = output_folder_path / "John_Doe_CV.html"
+    png_file_path = output_folder_path / "John_Doe_CV_1.png"
+
+    assert output_folder_path.exists()
+    assert pdf_file_path.exists()
+    assert latex_file_path.exists()
+    assert markdown_file_path.exists()
+    assert html_file_path.exists()
+    assert png_file_path.exists()
+    assert "Your CV is rendered!" in result.stdout
+
+
+@pytest.mark.parametrize(
     "based_on",
     data.available_themes,
 )
