@@ -34,8 +34,6 @@ def format_phone_number(phone_number: str) -> str:
 
     format = locale_catalog["phone_number_format"].upper()  # type: ignore
 
-    phonenumbers.PhoneNumberFormat.E164
-
     parsed_number = phonenumbers.parse(phone_number, None)
     formatted_number = phonenumbers.format_number(
         parsed_number, getattr(phonenumbers.PhoneNumberFormat, format)
