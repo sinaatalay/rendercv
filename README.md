@@ -120,7 +120,7 @@ Advantages of RenderCV over using pure $\LaTeX$:
 
 ## Documentation
 
-- [Detailed User Guide](https://docs.rendercv.com/user_guide)
+- [User Guide](https://docs.rendercv.com/user_guide)
 - [Developer Guide](https://docs.rendercv.com/developer_guide)
 - [Overview of Source Code](https://docs.rendercv.com/reference)
 - [Changelog](https://docs.rendercv.com/changelog)
