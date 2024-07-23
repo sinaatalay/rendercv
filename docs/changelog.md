@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.12...HEAD)
+[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.13...HEAD)
 
 <!--
 ### Added
@@ -17,13 +17,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 -->
 
+## [1.13] - 2024-08-23
+
+### Added
+
+- Arbitrary keys are now allowed in the `cv` field. For details, see [here](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-arbitrary-keys).
+- Two new fields have been added to the `locale_catalog` field: `phone_number_format` and `date_style`. For details, see [here](http://127.0.0.1:8000/user_guide/structure_of_the_yaml_input_file/#locale_catalog-field).
+
+### Changed
+
+- The default value of the `design.show_timespan_in` field for the `classic` theme has been changed to `[]` ([[#135](https://github.com/sinaatalay/rendercv/issues/135)]).
+- Custom theme names with digits are now allowed.
+
+### Fixed
+
+- Data model overriding in CLI has been fixed.
+- The `url` field is now shown in the `PublicationEntry` ([#128](https://github.com/sinaatalay/rendercv/issues/128)).
+
 ## [1.12] - 2024-07-16
 
 > **Full Changelog**: [v1.11...v1.12]
 
 ### Added
 
-- Arbitrary keys are now allowed in entry types. Users can use these keys in their templates. For details, see the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-additional-custom-keys-in-the-entries).
+- Arbitrary keys are now allowed in entry types. Users can use these keys in their templates. For details, see the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-arbitrary-keys).
 - The `locale_catalog.full_names_of_months` field has been added to the data model ([#111](https://github.com/sinaatalay/rendercv/issues/111)).
 - The `TODAY` placeholder can be used in the `design.page_numbering_style` field now.
 
@@ -360,6 +377,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[v1.12...v1.13]: https://github.com/sinaatalay/rendercv/compare/v1.12...v1.13
 [v1.11...v1.12]: https://github.com/sinaatalay/rendercv/compare/v1.11...v1.12
 [v1.10...v1.11]: https://github.com/sinaatalay/rendercv/compare/v1.10...v1.11
 [v1.9...v1.10]: https://github.com/sinaatalay/rendercv/compare/v1.9...v1.10
@@ -381,6 +399,7 @@ The first release of RenderCV.
 [v0.3...v0.4]: https://github.com/sinaatalay/rendercv/compare/v0.3...v0.4
 [v0.2...v0.3]: https://github.com/sinaatalay/rendercv/compare/v0.2...v0.3
 [v0.1...v0.2]: https://github.com/sinaatalay/rendercv/compare/v0.1...v0.2
+[1.13]: https://github.com/sinaatalay/rendercv/releases/tag/v1.13
 [1.12]: https://github.com/sinaatalay/rendercv/releases/tag/v1.12
 [1.11]: https://github.com/sinaatalay/rendercv/releases/tag/v1.11
 [1.10]: https://github.com/sinaatalay/rendercv/releases/tag/v1.10
