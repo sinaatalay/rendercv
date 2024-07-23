@@ -34,7 +34,7 @@ class LocaleCatalog(pydantic.BaseModel):
         default="MONTH_ABBREVIATION YEAR",
         title="Date Style",
         description=(
-            "The style of the date. The following placeholder can be used:\n-"
+            "The style of the date. The following placeholders can be used:\n-"
             " FULL_MONTH_NAME: Full name of the month\n- MONTH_ABBREVIATION:"
             " Abbreviation of the month\n- MONTH: Month as a number\n-"
             " MONTH_IN_TWO_DIGITS: Month as a number in two digits\n- YEAR: Year as a"

@@ -264,7 +264,7 @@ class ThemeOptions(RenderCVBaseModelWithoutExtraKeys):
         default="Last updated in TODAY",
         title="Last Updated Date Style",
         description=(
-            "The style of the last updated date. The following placeholder can be"
+            "The style of the last updated date. The following placeholders can be"
             " used:\n- TODAY: Today's month and year (April 2024)\nThe default value is"
             " Last updated in TODAY."
         ),
