@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Arbitrary keys are now allowed in the `cv` field. For details, see [here](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-arbitrary-keys).
-- Two new fields have been added to the `locale_catalog` field: `phone_number_format` and `date_style`. For details, see [here](http://127.0.0.1:8000/user_guide/structure_of_the_yaml_input_file/#locale_catalog-field).
+- Two new fields have been added to the `locale_catalog` field: `phone_number_format` and `date_style` ([#130](https://github.com/sinaatalay/rendercv/issues/130)). For details, see [here](http://127.0.0.1:8000/user_guide/structure_of_the_yaml_input_file/#locale_catalog-field).
 
 ### Changed
 
