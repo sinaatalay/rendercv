@@ -124,7 +124,7 @@ def generate_entry_figures():
     """Generate an image for each entry type and theme."""
     # Generate PDF figures for each entry type and theme
     entries = data.read_a_yaml_file(
-        rendercv_path / "docs" / "user_guide" / "sample_entries.yaml"
+        repository_root / "docs" / "user_guide" / "sample_entries.yaml"
     )
     entries = SampleEntries(**entries)
     themes = data.available_themes
