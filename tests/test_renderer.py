@@ -506,7 +506,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
         init_file.write_text(
             "from typing import Literal\n\nimport pydantic\n\n\nclass"
             " DummythemeThemeOptions(pydantic.BaseModel):\n    theme:"
-            " Literal['dummytheme']\n"
+            ' Literal["dummytheme"]\n'
         )
 
         # create reference_directory_path:

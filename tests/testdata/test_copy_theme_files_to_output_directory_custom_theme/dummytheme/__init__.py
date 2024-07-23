@@ -4,4 +4,4 @@ import pydantic
 
 
 class DummythemeThemeOptions(pydantic.BaseModel):
-    theme: Literal['dummytheme']
+    theme: Literal["dummytheme"]
