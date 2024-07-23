@@ -73,17 +73,18 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
         "MONTH_ABBREVIATION": short_month_names[month - 1],
         "MONTH": str(month),
         "MONTH_IN_TWO_DIGITS": f"{month:02d}",
-        "YEAR": year,
-        "YEAR_IN_TWO_DIGITS": year[-2:],
+        "YEAR": str(year),
+        "YEAR_IN_TWO_DIGITS": str(year[-2:]),
     }
-    translator = str.maketrans(placeholders)
-
     if date_style is None:
         date_style = locale_catalog["date_style"]  # type: ignore
 
-    date_string = date_style.translate(translator)  # type: ignore
+    for placeholder, value in placeholders.items():
+        date_style = date_style.replace(placeholder, value)  # type: ignore
 
-    return date_string
+    date_string = date_style
+
+    return date_string  # type: ignore
 
 
 def compute_time_span_string(

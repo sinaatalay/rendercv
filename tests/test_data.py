@@ -301,6 +301,10 @@ def test_dates(
     assert entry_base.time_span_string == expected_time_span
 
 
+def test_dates_style():
+    assert "TEST" == data.format_date(Date(2020, 1, 1), "TEST")
+
+
 @pytest.mark.parametrize(
     "date, expected_date_string",
     [
