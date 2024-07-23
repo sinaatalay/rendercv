@@ -41,7 +41,7 @@ def format_phone_number(phone_number: str) -> str:
     return formatted_number
 
 
-def format_date(date: Date, use_full_name: bool = False) -> str:
+def format_date(date: Date, date_style: Optional[str] = None) -> str:
     """Formats a `Date` object to a string in the following format: "Jan 2021". The
     month names are taken from the `locale_catalog` dictionary from the
     `rendercv.data_models.models` module.
@@ -56,21 +56,32 @@ def format_date(date: Date, use_full_name: bool = False) -> str:
 
     Args:
         date (Date): The date to format.
-        use_full_name (bool, optional): If `True`, the full name of the month will be
-            used. Defaults to `False`.
+        date_style (Optional[str]): The style of the date string. If not provided, the
+            default date style from the `locale_catalog` dictionary will be used.
 
     Returns:
         str: The formatted date.
     """
-    if use_full_name:
-        month_names = locale_catalog["full_names_of_months"]
-    else:
-        month_names = locale_catalog["abbreviations_for_months"]
+    full_month_names = locale_catalog["full_names_of_months"]
+    short_month_names = locale_catalog["abbreviations_for_months"]
 
     month = int(date.strftime("%m"))
-    month_abbreviation = month_names[month - 1]
     year = date.strftime(format="%Y")
-    date_string = f"{month_abbreviation} {year}"
+
+    placeholders = {
+        "FULL_MONTH_NAME": full_month_names[month - 1],
+        "MONTH_ABBREVIATION": short_month_names[month - 1],
+        "MONTH": str(month),
+        "MONTH_IN_TWO_DIGITS": f"{month:02d}",
+        "YEAR": year,
+        "YEAR_IN_TWO_DIGITS": year[-2:],
+    }
+    translator = str.maketrans(placeholders)
+
+    if date_style is None:
+        date_style = locale_catalog["date_style"]  # type: ignore
+
+    date_string = date_style.translate(translator)  # type: ignore
 
     return date_string
 
