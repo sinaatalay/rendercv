@@ -156,6 +156,21 @@ def generate_json_schema() -> dict:
                         field["oneOf"] = field["anyOf"]
                         del field["anyOf"]
 
+            # Currently, YAML extension in VS Code doesn't work properly with the
+            # `ListOfEntries` objects. For the best user experience, we will update
+            # the JSON Schema. If YAML extension in VS Code starts to work properly,
+            # then we should remove the following code for the correct JSON Schema.
+            ListOfEntriesForJsonSchema = list[models.Entry]
+            list_of_entries_json_schema = pydantic.TypeAdapter(
+                ListOfEntriesForJsonSchema
+            ).json_schema()
+            del list_of_entries_json_schema["$defs"]
+
+            # Update the JSON Schema:
+            json_schema["$defs"]["CurriculumVitae"]["properties"]["sections"]["oneOf"][
+                0
+            ]["additionalProperties"] = list_of_entries_json_schema
+
             return json_schema
 
     schema = models.RenderCVDataModel.model_json_schema(

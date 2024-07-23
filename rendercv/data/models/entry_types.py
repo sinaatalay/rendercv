@@ -472,6 +472,16 @@ Entry = (
     | str
 )
 
+# Create a custom type named ListOfEntries:
+ListOfEntries = (
+    list[OneLineEntry]
+    | list[NormalEntry]
+    | list[ExperienceEntry]
+    | list[EducationEntry]
+    | list[PublicationEntry]
+    | list[BulletEntry]
+    | list[str]
+)
 
 # ======================================================================================
 # Store the available entry types: =====================================================

@@ -270,14 +270,11 @@ def validate_a_social_network_username(username: str, network: str) -> str:
 # Create custom types: =================================================================
 # ======================================================================================
 
-# Create a custom type named ListOfEntries:
-ListOfEntries = list[entry_types.Entry]
-
 # Create a custom type named SectionContents, which is a list of entries. The entries
 # can be any of the available entry types. The section is validated with the
 # `validate_a_section` function.
 SectionContents = Annotated[
-    pydantic.json_schema.SkipJsonSchema[Any] | ListOfEntries,
+    pydantic.json_schema.SkipJsonSchema[Any] | entry_types.ListOfEntries,
     pydantic.BeforeValidator(
         lambda entries: validate_a_section(
             entries, entry_types=entry_types.available_entry_models
