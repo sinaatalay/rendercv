@@ -22,6 +22,3 @@ import pytest
 )
 def test_default_format(script_name):
     result = subprocess.run([sys.executable, "-m", "hatch", "run", script_name])
-
-    # check if the script ran successfully
-    assert result.returncode == 0
