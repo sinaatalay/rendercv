@@ -8,6 +8,7 @@ from typing import Annotated, Literal, Optional
 import annotated_types as at
 import pydantic
 
+
 class LocaleCatalog(pydantic.BaseModel):
     """This class is the data model of the locale catalog. The values of each field
     updates the `locale_catalog` dictionary.

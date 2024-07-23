@@ -11,11 +11,11 @@ import shutil
 import tempfile
 
 import pdfCropMargins
+import pydantic
 import ruamel.yaml
 
 import rendercv.data as data
 import rendercv.renderer as renderer
-import pydantic
 
 repository_root = pathlib.Path(__file__).parent.parent
 rendercv_path = repository_root / "rendercv"
