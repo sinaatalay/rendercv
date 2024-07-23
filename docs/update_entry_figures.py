@@ -9,82 +9,27 @@ import io
 import pathlib
 import shutil
 import tempfile
-from typing import Any
 
 import pdfCropMargins
 import ruamel.yaml
 
 import rendercv.data as data
 import rendercv.renderer as renderer
+import pydantic
 
 repository_root = pathlib.Path(__file__).parent.parent
 rendercv_path = repository_root / "rendercv"
 image_assets_directory = pathlib.Path(__file__).parent / "assets" / "images"
 
-# The entries below will be pasted into the documentation as YAML, and their
-# corresponding figures will be generated with this script.
-education_entry = {
-    "institution": "Boğaziçi University",
-    "location": "Istanbul, Turkey",
-    "degree": "BS",
-    "area": "Mechanical Engineering",
-    "start_date": "2015-09",
-    "end_date": "2020-06",
-    "highlights": [
-        "GPA: 3.24/4.00 ([Transcript](https://example.com))",
-        "Awards: Dean's Honor List, Sportsperson of the Year",
-    ],
-}
 
-experience_entry = {
-    "company": "Some Company",
-    "location": "TX, USA",
-    "position": "Software Engineer",
-    "start_date": "2020-07",
-    "end_date": "2021-08-12",
-    "highlights": [
-        (
-            "Developed an [IOS application](https://example.com) that has received"
-            " more than **100,000 downloads**."
-        ),
-        "Managed a team of **5** engineers.",
-    ],
-}
-
-normal_entry = {
-    "name": "Some Project",
-    "date": "2021-09",
-    "highlights": [
-        "Developed a web application with **React** and **Django**.",
-        "Implemented a **RESTful API**",
-    ],
-}
-
-publication_entry = {
-    "title": (
-        "Magneto-Thermal Thin Shell Approximation for 3D Finite Element Analysis of"
-        " No-Insulation Coils"
-    ),
-    "authors": ["J. Doe", "***H. Tom***", "S. Doe", "A. Andsurname"],
-    "date": "2021-12-08",
-    "journal": "IEEE Transactions on Applied Superconductivity",
-    "doi": "10.1109/TASC.2023.3340648",
-}
-
-one_line_entry = {
-    "label": "Programming",
-    "details": "Python, C++, JavaScript, MATLAB",
-}
-
-bullet_entry = {
-    "bullet": "This is a bullet entry.",
-}
-
-text_entry = (
-    "This is a *TextEntry*. It is only a text and can be useful for sections like"
-    " **Summary**. To showcase the TextEntry completely, this sentence is added, but it"
-    " doesn't contain any information."
-)
+class SampleEntries(pydantic.BaseModel):
+    education_entry: data.EducationEntry
+    experience_entry: data.ExperienceEntry
+    normal_entry: data.NormalEntry
+    publication_entry: data.PublicationEntry
+    one_line_entry: data.OneLineEntry
+    bullet_entry: data.BulletEntry
+    text_entry: str
 
 
 def dictionary_to_yaml(dictionary: dict):
@@ -106,24 +51,20 @@ def dictionary_to_yaml(dictionary: dict):
 
 def define_env(env):
     # See https://mkdocs-macros-plugin.readthedocs.io/en/latest/macros/
-    entries = [
-        "education_entry",
-        "experience_entry",
-        "normal_entry",
-        "publication_entry",
-        "one_line_entry",
-        "bullet_entry",
-        "text_entry",
-    ]
+    sample_entries = data.read_a_yaml_file(
+        repository_root / "docs" / "user_guide" / "sample_entries.yaml"
+    )
+    # validate the parsed dictionary by creating an instance of SampleEntries:
+    SampleEntries(**sample_entries)
 
     entries_showcase = dict()
-    for entry in entries:
-        proper_entry_name = entry.replace("_", " ").title()
+    for entry_name, entry in sample_entries.items():
+        proper_entry_name = entry_name.replace("_", " ").title().replace(" ", "")
         entries_showcase[proper_entry_name] = {
-            "yaml": dictionary_to_yaml(eval(entry)),
+            "yaml": dictionary_to_yaml(entry),
             "figures": [
                 {
-                    "path": f"../assets/images/{theme}/{entry}.png",
+                    "path": f"../assets/images/{theme}/{entry_name}.png",
                     "alt_text": f"{proper_entry_name} in {theme}",
                     "theme": theme,
                 }
@@ -182,15 +123,10 @@ def define_env(env):
 def generate_entry_figures():
     """Generate an image for each entry type and theme."""
     # Generate PDF figures for each entry type and theme
-    entries = {
-        "education_entry": data.EducationEntry(**education_entry),
-        "experience_entry": data.ExperienceEntry(**experience_entry),
-        "normal_entry": data.NormalEntry(**normal_entry),
-        "publication_entry": data.PublicationEntry(**publication_entry),
-        "one_line_entry": data.OneLineEntry(**one_line_entry),
-        "text_entry": f"{text_entry}",
-        "bullet_entry": data.BulletEntry(**bullet_entry),
-    }
+    entries = data.read_a_yaml_file(
+        rendercv_path / "docs" / "user_guide" / "sample_entries.yaml"
+    )
+    entries = SampleEntries(**entries)
     themes = data.available_themes
 
     with tempfile.TemporaryDirectory() as temporary_directory:
@@ -207,11 +143,22 @@ def generate_entry_figures():
                 del design_dictionary["disable_page_numbering"]
                 del design_dictionary["disable_last_updated_date"]
 
-            for entry_type, entry in entries.items():
+            entry_types = [
+                "education_entry",
+                "experience_entry",
+                "normal_entry",
+                "publication_entry",
+                "one_line_entry",
+                "bullet_entry",
+                "text_entry",
+            ]
+            for entry_type in entry_types:
                 # Create data model with only one section and one entry
                 data_model = data.RenderCVDataModel(
                     **{
-                        "cv": data.CurriculumVitae(sections={entry_type: [entry]}),
+                        "cv": data.CurriculumVitae(
+                            sections={entry_type: [getattr(entries, entry_type)]}
+                        ),
                         "design": design_dictionary,
                     }
                 )

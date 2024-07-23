@@ -125,7 +125,7 @@ Each entry type is a different object (a dictionary). Below, you can find all th
 {% for entry_name, entry in showcase_entries.items() %}
 #### {{ entry_name }}
 
-{% if entry_name == "Education Entry" %}
+{% if entry_name == "EducationEntry" %}
 
 **Mandatory Fields:**
 
@@ -141,7 +141,7 @@ Each entry type is a different object (a dictionary). Below, you can find all th
 - `date`: The date as a custom string or in `YYYY-MM-DD`, `YYYY-MM`, or `YYYY` format. This will override `start_date` and `end_date`.
 - `highlights`: A list of bullet points.
 
-{% elif entry_name == "Experience Entry" %}
+{% elif entry_name == "ExperienceEntry" %}
 
 **Mandatory Fields:**
 
@@ -156,7 +156,7 @@ Each entry type is a different object (a dictionary). Below, you can find all th
 - `date`: The date as a custom string or in `YYYY-MM-DD`, `YYYY-MM`, or `YYYY` format. This will override `start_date` and `end_date`.
 - `highlights`: A list of bullet points.
 
-{% elif entry_name == "Publication Entry" %}
+{% elif entry_name == "PublicationEntry" %}
 
 **Mandatory Fields:**
 
@@ -169,7 +169,7 @@ Each entry type is a different object (a dictionary). Below, you can find all th
 - `journal`: The journal of the publication.
 - `date`: The date as a custom string or in `YYYY-MM-DD`, `YYYY-MM`, or `YYYY` format.
 
-{% elif entry_name == "Normal Entry" %}
+{% elif entry_name == "NormalEntry" %}
 
 
 **Mandatory Fields:**
@@ -189,15 +189,15 @@ Each entry type is a different object (a dictionary). Below, you can find all th
 **Mandatory Fields:**
 
 - `label`: The label of the entry.
-- `details`: The value of the entry.
+- `details`: The details of the entry.
 
-{% elif entry_name == "Bullet Entry" %}
+{% elif entry_name == "BulletEntry" %}
 
 **Mandatory Fields:**
 
 - `bullet`: The bullet point.
 
-{% elif entry_name == "Text Entry" %}
+{% elif entry_name == "TextEntry" %}
 
 **Mandatory Fields:**
 
@@ -214,9 +214,21 @@ Each entry type is a different object (a dictionary). Below, you can find all th
     {% endfor %}
 {% endfor %}
 
-#### Using additional custom keys in the entries
+#### Markdown Syntax
 
-RenderCV allows the usage of extra keys in the entries. For instance, the following is an `ExperienceEntry` containing an additional key, `summary`.
+All the fields in the entries support Markdown syntax.
+
+You can make anything bold by surrounding it with `**`, italic with `*`, and links with `[]()`, as shown below.
+
+```yaml
+company: "**This will be bold**, *this will be italic*, 
+  and [this will be a link](https://example.com)."
+...
+```
+
+### Using arbitrary keys
+
+RenderCV allows the usage of any number of extra keys in the entries. For instance, the following is an `ExperienceEntry` containing an additional key, `an_arbitrary_key`.
 
 ```yaml hl_lines="6"
 company: Some Company
@@ -224,13 +236,21 @@ location: TX, USA
 position: Software Engineer
 start_date: 2020-07
 end_date: '2021-08-12'
-summary: Developed an [IOS application](https://example.com).
+an_arbitrary_key: Developed an [IOS application](https://example.com).
 highlights:
   - Received more than **100,000 downloads**.
   - Managed a team of **5** engineers.
 ```
 
-By default, the `summary` key will not affect the output as the built-in templates do not use it. However, you can use the `summary` key in your custom templates. Further information on overriding the built-in templates with custom ones can be found [here](index.md#overriding-built-in-themes).
+By default, the `an_arbitrary_key` key will not affect the output as the built-in templates do not use it. However, you can use the `an_arbitrary_key` key in your custom templates. Further information on overriding the built-in templates with custom ones can be found [here](index.md#overriding-built-in-themes).
+
+Also, you can use arbitrary keys in the `cv` field. You can use them anywhere in the templates, but generally, they are used in the header of the CV (`Header.j2.tex`).
+
+```yaml hl_lines="3"
+cv:
+  name: John Doe
+  label_as_an_arbitrary_key: Software Engineer
+```
 
 ## "`design`" field
 
@@ -295,6 +315,7 @@ Here is an example:
 ```yaml
 locale_catalog:
   phone_number_format: national # (1)!
+  date_style: "MONTH_ABBREVIATION YEAR" # (2)!
   abbreviations_for_months: # translation of the month abbreviations
     - Jan
     - Feb
@@ -330,3 +351,4 @@ locale_catalog:
 ```
 
 1. The available phone number formats are: `national`, `international`, and `E164`.
+2. The `MONTH_ABBREVIATION` and `YEAR` are placeholders. The available placeholders are: `FULL_MONTH_NAME`, `MONTH_ABBREVIATION`, `MONTH`, `MONTH_IN_TWO_DIGITS`, `YEAR`, and `YEAR_IN_TWO_DIGITS`.
