@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.13] - 2024-08-23
 
+> **Full Changelog**: [v1.12...v1.13]
+
 ### Added
 
 - Arbitrary keys are now allowed in the `cv` field. For details, see [here](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-arbitrary-keys).
@@ -26,12 +28,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- The default value of the `design.show_timespan_in` field for the `classic` theme has been changed to `[]` ([[#135](https://github.com/sinaatalay/rendercv/issues/135)]).
+- The default value of the `design.show_timespan_in` field for the `classic` theme has been changed to `[]` ([#135](https://github.com/sinaatalay/rendercv/issues/135)).
 - Custom theme names with digits are now allowed.
 
 ### Fixed
 
-- Data model overriding in CLI has been fixed.
+- The data model overriding in CLI has been fixed.
 - The `url` field is now shown in the `PublicationEntry` ([#128](https://github.com/sinaatalay/rendercv/issues/128)).
 
 ## [1.12] - 2024-07-16
