@@ -380,11 +380,6 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
         title="Name",
         description="The name of the person.",
     )
-    label: Optional[str] = pydantic.Field(
-        default=None,
-        title="Label",
-        description="The label of the person.",
-    )
     location: Optional[str] = pydantic.Field(
         default=None,
         title="Location",
