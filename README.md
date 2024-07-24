@@ -3,6 +3,8 @@
 
 *A* $\LaTeX$ *CV/Resume Framework*
 
+<a href="https://trendshift.io/repositories/11243" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11243" alt="sinaatalay%2Frendercv | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 [![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
 [![docs](https://img.shields.io/badge/docs-mkdocs-rgb(0%2C79%2C144))](https://docs.rendercv.com)
