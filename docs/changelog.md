@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 -->
 
-## [1.13] - 2024-08-23
+## [1.13] - 2024-07-23
 
 > **Full Changelog**: [v1.12...v1.13]
 
