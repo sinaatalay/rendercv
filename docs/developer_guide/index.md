@@ -7,6 +7,10 @@ The source code is thoroughly documented and well-commented, making it an enjoya
 
 ## Getting Started
 
+There are two ways of developing RenderCV: locally or with GitHub Codespaces.
+
+### Develop Locally
+
 1. Ensure that you have Python version 3.10 or higher.
 2. Install [Hatch](https://hatch.pypa.io/latest/), as it is the project manager for RenderCV. The installation guide for Hatch can be found [here](https://hatch.pypa.io/latest/install/#installation).
 3. Clone the repository recursively (because TinyTeX is being used as a submodule) with the following command.
@@ -48,6 +52,16 @@ The source code is thoroughly documented and well-commented, making it an enjoya
         === "Other"
 
             To be added.
+
+### Develop with GitHub Codespaces
+
+1.  [Fork](https://github.com/sinaatalay/rendercv/fork) the repository.
+2.  Navigate to the forked repository.
+3.  Click the <> **Code** button, then click the **Codespaces** tab, and then click **Create codespace on main**.
+
+Then, [Visual Studio Code for the Web](https://code.visualstudio.com/docs/editor/vscode-web) will be opened with a ready-to-use development environment.
+
+This is done with [Development containers](https://containers.dev/), and the environment is defined in the [`.devcontainer/devcontainer.json`](https://github.com/sinaatalay/rendercv/blob/main/.devcontainer/devcontainer.json) file. Dev containers can also be run locally using various [supporting tools and editors](https://containers.dev/supporting).
 
 ## Available Commands
 
