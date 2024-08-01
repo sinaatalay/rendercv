@@ -71,7 +71,7 @@ cv:
   name: John Doe
   location: Your Location
   email: youremail@yourdomain.com
-  phone: tel:+90-541-999-99-99
+  phone: +905419999999
   website: https://yourwebsite.com/
   social_networks:
     - network: LinkedIn
@@ -90,15 +90,15 @@ The `cv.sections` field is a dictionary where the keys are the section titles, a
 
 Here is an example:
 
-```yaml
+```yaml hl_lines="3 7"
 cv:
   sections:
-    this_is_a_section_title:
-      - This is a TextEntry.
+    this_is_a_section_title: # (1)!
+      - This is a TextEntry. # (2)!
       - This is another TextEntry under the same section.
       - This is another another TextEntry under the same section.
     this_is_another_section_title:
-      - company: This time it's an ExperienceEntry.
+      - company: This time it's an ExperienceEntry. # (3)!
         position: Your position
         start_date: 2019-01-01
         end_date: 2020-01
@@ -116,9 +116,13 @@ cv:
           - This is another highlight.
 ```
 
+1. The section titles can be anything you want. They are the keys of the `sections` dictionary.
+2. Each section is a list of entries. This section has three `TextEntry`s.
+3. There are seven different entry types in RenderCV. Any of them can be used in the sections. This section has two `ExperienceEntry`s.
+
 There are seven different entry types in RenderCV. Different types of entries cannot be mixed under the same section, so for each section, you can only use one type of entry.
 
-The available entry types are: [`EducationEntry`](#educationentry), [`ExperienceEntry`](#experienceentry), [`PublicationEntry`](#publicationentry), [`NormalEntry`](#normalentry), [`OneLineEntry`](#one-lineentry), [`BulletEntry`](#bulletentry), and [`TextEntry`](#textentry).
+The available entry types are: [`EducationEntry`](#educationentry), [`ExperienceEntry`](#experienceentry), [`PublicationEntry`](#publicationentry), [`NormalEntry`](#normalentry), [`OneLineEntry`](#onelineentry), [`BulletEntry`](#bulletentry), and [`TextEntry`](#textentry).
 
 Each entry type is a different object (a dictionary). Below, you can find all the entry types along with their optional/mandatory fields and how they appear in each built-in theme.
 
