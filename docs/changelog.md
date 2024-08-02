@@ -115,19 +115,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   ```
 - [A developer guide](https://docs.rendercv.com/developer_guide/) has been written.
 - New options have been added to the `rendercv render` command:
-  - `--output-folder-name "OUTPUT_FOLDER_NAME"`: Generates the output files in a folder with the given name. By default, the output folder name is `rendercv_output`. The output folder will be created in the current working directory. ([#58](https://github.com/sinaatalay/rendercv/issues/58))
-  - `--latex-path LATEX_PATH`: Copies the generated $\LaTeX$ source code from the output folder and pastes it to the specified path.
-  - `--pdf-path PDF_PATH`: Copies the generated PDF file from the output folder and pastes it to the specified path.
-  - `--markdown-path MARKDOWN_PATH`: Copies the generated Markdown file from the output folder and pastes it to the specified path.
-  - `--html-path HTML_PATH`: Copies the generated HTML file from the output folder and pastes it to the specified path.
-  - `--png-path PNG_PATH`: Copies the generated PNG files from the output folder and pastes them to the specified path.
-  - `--dont-generate-markdown`: Prevents the generation of the Markdown file.
-  - `--dont-generate-html`: Prevents the generation of the HTML file.
-  - `--dont-generate-png`: Prevents the generation of the PNG files.
-  - `--ANY.LOCATION.IN.THE.YAML.FILE "VALUE"`: Overrides the value of `ANY.LOCATION.IN.THE.YAML.FILE` with `VALUE`. This option can be used to avoid storing sensitive information in the YAML file. Sensitive information, like phone numbers, can be passed as a command-line argument with environment variables. This method is also beneficial for creating multiple CVs using the same YAML file by changing only a few values.
+    - `--output-folder-name "OUTPUT_FOLDER_NAME"`: Generates the output files in a folder with the given name. By default, the output folder name is `rendercv_output`. The output folder will be created in the current working directory. ([#58](https://github.com/sinaatalay/rendercv/issues/58))
+    - `--latex-path LATEX_PATH`: Copies the generated $\LaTeX$ source code from the output folder and pastes it to the specified path.
+    - `--pdf-path PDF_PATH`: Copies the generated PDF file from the output folder and pastes it to the specified path.
+    - `--markdown-path MARKDOWN_PATH`: Copies the generated Markdown file from the output folder and pastes it to the specified path.
+    - `--html-path HTML_PATH`: Copies the generated HTML file from the output folder and pastes it to the specified path.
+    - `--png-path PNG_PATH`: Copies the generated PNG files from the output folder and pastes them to the specified path.
+    - `--dont-generate-markdown`: Prevents the generation of the Markdown file.
+    - `--dont-generate-html`: Prevents the generation of the HTML file.
+    - `--dont-generate-png`: Prevents the generation of the PNG files.
+    - `--ANY.LOCATION.IN.THE.YAML.FILE "VALUE"`: Overrides the value of `ANY.LOCATION.IN.THE.YAML.FILE` with `VALUE`. This option can be used to avoid storing sensitive information in the YAML file. Sensitive information, like phone numbers, can be passed as a command-line argument with environment variables. This method is also beneficial for creating multiple CVs using the same YAML file by changing only a few values.
 - New options have been added to the `rendercv new` command:
-  - `--dont-create-theme-source-files`: Prevents the creation of the theme source files. By default, the theme source files are created.
-  - `--dont-create-markdown-source-files`: Prevents the creation of the Markdown source files. By default, the Markdown source files are created.
+    - `--dont-create-theme-source-files`: Prevents the creation of the theme source files. By default, the theme source files are created.
+    - `--dont-create-markdown-source-files`: Prevents the creation of the Markdown source files. By default, the Markdown source files are created.
 
 ### Changed
 
