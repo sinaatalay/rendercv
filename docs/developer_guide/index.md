@@ -36,9 +36,17 @@ There are two ways of developing RenderCV: locally or with GitHub Codespaces.
 
 6. To use the virtual environments, either
 
-    - Activate one of the virtual environments with the following command.
+    - Activate one of the virtual environments with one of the following commands.
         ```bash
         hatch shell default
+        ```
+    
+        ```bash
+        hatch shell docs
+        ```
+    
+        ```bash
+        hatch shell test
         ```
     
     - Select one of the virtual environments in your Integrated Development Environment (IDE).
