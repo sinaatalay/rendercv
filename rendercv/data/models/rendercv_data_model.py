@@ -12,6 +12,7 @@ from .base import RenderCVBaseModelWithoutExtraKeys
 from .curriculum_vitae import CurriculumVitae
 from .design import RenderCVDesign
 from .locale_catalog import LocaleCatalog
+from .rendercv_settings import RenderCVSettings
 
 
 class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
@@ -35,6 +36,11 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
             "The locale catalog of the CV to allow the support of multiple languages."
         ),
         validate_default=True,
+    )
+    rendercv_settings: RenderCVSettings = pydantic.Field(
+        default=RenderCVSettings(),
+        title="RenderCV Settings",
+        description="The settings of the RenderCV.",
     )
 
     @pydantic.field_validator("locale_catalog")
