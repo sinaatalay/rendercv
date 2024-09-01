@@ -283,7 +283,7 @@ def build_rendercv_settings(
         if key in command_line_arguments_default_values:
             default_value = command_line_arguments_default_values[key]
             if value != default_value:
-                dictionary = set_or_update_a_value(dictionary, key, value)
+                dictionary = set_or_update_a_value(dictionary, key, str(value))
         else:
             # The key is not present in the default values, set the value:
             # throw an error reporting this
