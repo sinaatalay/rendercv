@@ -141,7 +141,6 @@ def cli_command_render(
     input_file_path: pathlib.Path = utilities.string_to_file_path(
         input_file_name
     )  # type: ignore
-    output_directory = pathlib.Path.cwd() / output_folder_name
 
     paths: dict[
         Literal["latex", "pdf", "markdown", "html", "png"], Optional[pathlib.Path]
@@ -220,9 +219,6 @@ def cli_command_render(
             data_model.rendercv_settings.output_folder_name = output_folder_name
         
         output_directory = pathlib.Path.cwd() / data_model.rendercv_settings.output_folder_name
-        print(output_directory)
-             
-        
 
         progress.finish_the_current_step()
 
