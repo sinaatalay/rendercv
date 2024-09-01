@@ -52,3 +52,15 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
             LocaleCatalog()
 
         return locale_catalog
+    
+    @pydantic.field_validator("rendercv_settings")
+    @classmethod
+    def initialize_rendercv_settings(
+        cls, rendercv_settings: RenderCVSettings
+    ) -> RenderCVSettings:
+        """Even if the rendercv settings are not provided, initialize them with the default
+        values."""
+        if rendercv_settings is None:
+            RenderCVSettings()
+
+        return rendercv_settings

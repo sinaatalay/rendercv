@@ -63,12 +63,53 @@ class RenderCVSettings(pydantic.BaseModel):
         ),
     )
     
+    markdown_path: Optional[str] = pydantic.Field(
+        default=None,
+        title="Markdown Path",
+        description=(
+            "The path of the Markdown file. If it is not provided, the Markdown file will"
+            " not be generated. The default value is an empty string."
+        ),
+    )
+    
+    no_html: Optional[bool] = pydantic.Field(
+        default=False,
+        title="Generate HTML Flag",
+        description=(
+            "A boolean value to determine whether the HTML file will be generated. The"
+            " default value is False."
+        ),
+    )
+    
+    no_markdown: Optional[bool] = pydantic.Field(
+        default=False,
+        title="Generate Markdown Flag",
+        description=(
+            "A boolean value to determine whether the Markdown file will be generated."
+            " The default value is False."
+        ),
+    )
+    
+    no_png: Optional[bool] = pydantic.Field(
+        default=False,
+        title="Generate PNG Flag",
+        description=(
+            "A boolean value to determine whether the PNG file will be generated. The"
+            " default value is False."
+        ),
+    )
+    
+    
+    
     @pydantic.field_validator(
         "output_folder_name",
         "pdf_path",
         "latex_path",
         "html_path",
         "png_path",
+        "no_html",
+        "no_markdown",
+        "no_png",
     )
     @classmethod
     def update_settings(cls, value: Optional[str], info: pydantic.ValidationInfo) -> Optional[str]:

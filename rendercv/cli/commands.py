@@ -105,7 +105,7 @@ def cli_command_render(
             "-nomd",
             help="Don't generate the Markdown and HTML file.",
         ),
-    ] = False,
+    ] = None,
     dont_generate_html: Annotated[
         bool,
         typer.Option(
@@ -113,7 +113,7 @@ def cli_command_render(
             "-nohtml",
             help="Don't generate the HTML file.",
         ),
-    ] = False,
+    ] = None,
     dont_generate_png: Annotated[
         bool,
         typer.Option(
@@ -121,7 +121,7 @@ def cli_command_render(
             "-nopng",
             help="Don't generate the PNG file.",
         ),
-    ] = False,
+    ] = None,
     # This is a dummy argument for the help message for
     # extra_data_model_override_argumets:
     _: Annotated[
@@ -187,10 +187,27 @@ def cli_command_render(
             data_as_a_dict = utilities.set_or_update_values(
                 data_as_a_dict, key_and_values
             )
+        # update the data of the rendercv settings:
+        render_cv_settings = data_as_a_dict.get("rendercv_settings", dict())
 
         data_model = data.validate_input_dictionary_and_return_the_data_model(
             data_as_a_dict
         )
+        # update the data model values with cli arguments:
+        if dont_generate_html is not None:
+            data_model.rendercv_settings.no_html = dont_generate_html
+        if dont_generate_markdown is not None:
+            data_model.rendercv_settings.no_markdown = dont_generate_markdown
+        if dont_generate_png is not None:
+            data_model.rendercv_settings.no_png = dont_generate_png
+            
+        
+        # get the values from the rendercv_settings field of the input file:
+        if data_model.rendercv_settings:
+            printer.information("The following rendercv settings are used:")
+            for key, value in data_model.rendercv_settings.dict().items():
+                if value is not None:
+                    printer.information(f"{key}: {value}")
 
         progress.finish_the_current_step()
 

@@ -105,7 +105,6 @@ def set_or_update_values(
 
     return dictionary
 
-
 def copy_files(paths: list[pathlib.Path] | pathlib.Path, new_path: pathlib.Path):
     """Copy files to the given path. If there are multiple files, then rename the new
     path by adding a number to the end of the path.
@@ -260,3 +259,24 @@ def parse_render_command_override_arguments(
         key_and_values[key] = value
 
     return key_and_values
+
+def get_rendercv_settings_dictionary(
+    dictionary: dict,
+    key: str,
+    value: list[str],
+    default_value: str,
+) -> dict:
+    """Set or update values in a dictionary for the given keys.
+
+    Args:
+        dictionary (dict):      The dictionary to set or update the values.
+        key (str):              The key to set or update the value.
+        value (list[str]):      The value to set or update. This must contain exactly two elements
+                                value[0]: the value provided by cli.
+                                value[1]: the value provided by rendercv_settings
+        default_value (str): The default value to be chacked against.
+    """
+    if not isinstance(value, list) or len(value) != 2:
+        raise ValueError("The value must be a list with exactly two elements")
+    
+    return dictionary
