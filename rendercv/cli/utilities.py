@@ -105,6 +105,7 @@ def set_or_update_values(
 
     return dictionary
 
+
 def copy_files(paths: list[pathlib.Path] | pathlib.Path, new_path: pathlib.Path):
     """Copy files to the given path. If there are multiple files, then rename the new
     path by adding a number to the end of the path.
@@ -259,3 +260,24 @@ def parse_render_command_override_arguments(
         key_and_values[key] = value
 
     return key_and_values
+
+
+def build_rendercv_settings(
+    dictionary: dict,
+    command_line_arguments: dict[str, str],
+) -> dict[str, str]:
+    """Build the RenderCV settings dictionary by combining the dictionary and the command line arguments.
+
+    Args:
+        dictionary (dict): The dictionary to be combined with the command line
+            arguments.
+        command_line_arguments (dict[str, str]): The command line arguments.
+
+    Returns:
+        dict[str, str]: The combined dictionary.
+    """
+    # Combine the dictionary and the command line arguments if the values are not None:
+    for key, value in command_line_arguments.items():
+        if value is not None:
+            dictionary = set_or_update_a_value(dictionary, key, value)  # type: ignore
+    return dictionary

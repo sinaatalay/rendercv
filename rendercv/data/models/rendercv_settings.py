@@ -3,21 +3,21 @@ The `rendercv.models.rendercv_settings` module contains the data model of the
 `rendercv_settings` field of the input file.
 """
 
-from typing import Annotated, Literal, Optional
+from typing import Optional
 
-import annotated_types as at
 import pydantic
+
 
 class RenderCVSettings(pydantic.BaseModel):
     """This class is the data model of the rendercv settings. The values of each field
     updates the `rendercv_settings` dictionary.
     """
-    
+
     model_config = pydantic.ConfigDict(
         extra="forbid",
         validate_default=True,  # To initialize the rendercv settings with the default values
     )
-    
+
     output_folder_name: Optional[str] = pydantic.Field(
         default="rendercv_output",
         title="Output Folder Name",
@@ -26,7 +26,7 @@ class RenderCVSettings(pydantic.BaseModel):
             ' value is "rendercv_output".'
         ),
     )
-    
+
     pdf_path: Optional[str] = pydantic.Field(
         default=None,
         title="PDF Path",
@@ -35,7 +35,7 @@ class RenderCVSettings(pydantic.BaseModel):
             " generated. The default value is an empty string."
         ),
     )
-    
+
     latex_path: Optional[str] = pydantic.Field(
         default=None,
         title="LaTeX Path",
@@ -44,16 +44,16 @@ class RenderCVSettings(pydantic.BaseModel):
             " be generated. The default value is an empty string."
         ),
     )
-    
+
     html_path: Optional[str] = pydantic.Field(
         default=None,
         title="HTML Path",
         description=(
-            "The path of the HTML file. If it is not provided, the HTML file will not be"
-            " generated. The default value is an empty string."
+            "The path of the HTML file. If it is not provided, the HTML file will not"
+            " be generated. The default value is an empty string."
         ),
     )
-    
+
     png_path: Optional[str] = pydantic.Field(
         default=None,
         title="PNG Path",
@@ -62,16 +62,16 @@ class RenderCVSettings(pydantic.BaseModel):
             " generated. The default value is an empty string."
         ),
     )
-    
+
     markdown_path: Optional[str] = pydantic.Field(
         default=None,
         title="Markdown Path",
         description=(
-            "The path of the Markdown file. If it is not provided, the Markdown file will"
-            " not be generated. The default value is an empty string."
+            "The path of the Markdown file. If it is not provided, the Markdown file"
+            " will not be generated. The default value is an empty string."
         ),
     )
-    
+
     no_html: Optional[bool] = pydantic.Field(
         default=False,
         title="Generate HTML Flag",
@@ -80,7 +80,7 @@ class RenderCVSettings(pydantic.BaseModel):
             " default value is False."
         ),
     )
-    
+
     no_markdown: Optional[bool] = pydantic.Field(
         default=False,
         title="Generate Markdown Flag",
@@ -89,7 +89,7 @@ class RenderCVSettings(pydantic.BaseModel):
             " The default value is False."
         ),
     )
-    
+
     no_png: Optional[bool] = pydantic.Field(
         default=False,
         title="Generate PNG Flag",
@@ -98,9 +98,7 @@ class RenderCVSettings(pydantic.BaseModel):
             " default value is False."
         ),
     )
-    
-    
-    
+
     @pydantic.field_validator(
         "output_folder_name",
         "pdf_path",
@@ -112,13 +110,16 @@ class RenderCVSettings(pydantic.BaseModel):
         "no_png",
     )
     @classmethod
-    def update_settings(cls, value: Optional[str], info: pydantic.ValidationInfo) -> Optional[str]:
+    def update_settings(
+        cls, value: Optional[str], info: pydantic.ValidationInfo
+    ) -> Optional[str]:
         """Update the `rendercv_settings` dictionary with the provided values."""
         if value:
-            rendercv_settings[info.field_name] = value # type: ignore
-            
+            rendercv_settings[info.field_name] = value  # type: ignore
+
         return value
-    
+
+
 # Initialize the rendercv settings with the default values
 rendercv_settings: dict[str, str] = {}
 RenderCVSettings()  # Initialize the rendercv settings with the default values

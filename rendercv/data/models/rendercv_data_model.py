@@ -52,7 +52,7 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
             LocaleCatalog()
 
         return locale_catalog
-    
+
     @pydantic.field_validator("rendercv_settings")
     @classmethod
     def initialize_rendercv_settings(
