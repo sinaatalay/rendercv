@@ -265,6 +265,7 @@ def parse_render_command_override_arguments(
 def build_rendercv_settings(
     dictionary: dict,
     command_line_arguments: dict[str, str],
+    command_line_arguments_default_values: dict[str, str],
 ) -> dict[str, str]:
     """Build the RenderCV settings dictionary by combining the dictionary and the command line arguments.
 
@@ -278,6 +279,16 @@ def build_rendercv_settings(
     """
     # Combine the dictionary and the command line arguments if the values are not None:
     for key, value in command_line_arguments.items():
-        if value is not None:
-            dictionary = set_or_update_a_value(dictionary, key, value)  # type: ignore
+        # check if the key is present in the both command line arguments and the default values:
+        if key in command_line_arguments_default_values:
+            default_value = command_line_arguments_default_values[key]
+            if value != default_value:
+                dictionary = set_or_update_a_value(dictionary, key, value)
+        else:
+            # The key is not present in the default values, set the value:
+            # throw an error reporting this
+            raise ValueError(
+                f"The key ({key}) is not present in the default values of the command"
+                " line arguments!"
+            )
     return dictionary

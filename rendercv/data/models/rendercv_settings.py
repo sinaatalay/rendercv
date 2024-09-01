@@ -26,6 +26,16 @@ class RenderCVSettings(pydantic.BaseModel):
             ' value is "rendercv_output".'
         ),
     )
+    
+    
+    use_local_latex_command: Optional[str] = pydantic.Field(
+        default=None,
+        title="Local LaTeX Command",
+        description=(
+            "The command to compile the LaTeX file to a PDF file. The default value is"
+            ' "pdflatex".'
+        ),
+    )
 
     pdf_path: Optional[str] = pydantic.Field(
         default=None,

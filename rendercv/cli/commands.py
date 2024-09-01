@@ -57,7 +57,7 @@ def cli_command_render(
             "-o",
             help="Name of the output folder.",
         ),
-    ] = None,
+    ] = "rendercv_output",
     latex_path: Annotated[
         Optional[str],
         typer.Option(
@@ -105,7 +105,7 @@ def cli_command_render(
             "-nomd",
             help="Don't generate the Markdown and HTML file.",
         ),
-    ] = None,
+    ] = False,
     dont_generate_html: Annotated[
         bool,
         typer.Option(
@@ -113,7 +113,7 @@ def cli_command_render(
             "-nohtml",
             help="Don't generate the HTML file.",
         ),
-    ] = None,
+    ] = False,
     dont_generate_png: Annotated[
         bool,
         typer.Option(
@@ -121,7 +121,7 @@ def cli_command_render(
             "-nopng",
             help="Don't generate the PNG file.",
         ),
-    ] = None,
+    ] = False,
     # This is a dummy argument for the help message for
     # extra_data_model_override_argumets:
     _: Annotated[
@@ -144,6 +144,7 @@ def cli_command_render(
 
     # dictionary for command line arguments:
     cli_args = {
+        "use_local_latex_command": use_local_latex_command,
         "output_folder_name": output_folder_name,
         "latex_path": latex_path,
         "pdf_path": pdf_path,
@@ -153,6 +154,20 @@ def cli_command_render(
         "no_markdown": dont_generate_markdown,
         "no_html": dont_generate_html,
         "no_png": dont_generate_png,
+    }
+    
+    # Create the default values for the cli_args:
+    cli_args_default = {
+        "use_local_latex_command": None,
+        "output_folder_name": "rendercv_output",
+        "latex_path": None,
+        "pdf_path": None,
+        "markdown_path": None,
+        "html_path": None,
+        "png_path": None,
+        "no_markdown": False,
+        "no_html": False,
+        "no_png": False,
     }
 
     # change the current working directory to the input file's directory (because
@@ -182,9 +197,7 @@ def cli_command_render(
             )
         # update the data of the rendercv settings:
         render_cv_settings = data_as_a_dict.get("rendercv_settings", dict())
-        render_cv_settings = utilities.build_rendercv_settings(
-            render_cv_settings, cli_args
-        )
+        render_cv_settings = utilities.build_rendercv_settings(render_cv_settings, cli_args, cli_args_default)
 
         # update the data model with the rendercv settings:
         data_as_a_dict["rendercv_settings"] = render_cv_settings
@@ -193,9 +206,7 @@ def cli_command_render(
             data_as_a_dict
         )
 
-        output_directory = (
-            pathlib.Path.cwd() / data_model.rendercv_settings.output_folder_name
-        )
+        output_directory = pathlib.Path(data_model.rendercv_settings.output_folder_name)
 
         progress.finish_the_current_step()
 
