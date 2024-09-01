@@ -200,14 +200,29 @@ def cli_command_render(
             data_model.rendercv_settings.no_markdown = dont_generate_markdown
         if dont_generate_png is not None:
             data_model.rendercv_settings.no_png = dont_generate_png
-            
+        if paths["html"]:
+            data_model.rendercv_settings.html_path = paths["html"]
+        if paths["latex"]:
+            data_model.rendercv_settings.latex_path = paths["latex"]
+        if paths["markdown"]:
+            data_model.rendercv_settings.markdown_path = paths["markdown"]
+        if paths["pdf"]:
+            data_model.rendercv_settings.pdf_path = paths["pdf"]
+        if paths["png"]:
+            data_model.rendercv_settings.png_path = paths["png"]
+        if output_folder_name == "rendercv_output":
+            # check if the output folder name is specified in the input file:
+            if data_model.rendercv_settings.output_folder_name is None:
+                data_model.rendercv_settings.output_folder_name = output_folder_name
+            # don't update the output folder name if it is specified in the input file:
+                
+        else:
+            data_model.rendercv_settings.output_folder_name = output_folder_name
         
-        # get the values from the rendercv_settings field of the input file:
-        if data_model.rendercv_settings:
-            printer.information("The following rendercv settings are used:")
-            for key, value in data_model.rendercv_settings.dict().items():
-                if value is not None:
-                    printer.information(f"{key}: {value}")
+        output_directory = pathlib.Path.cwd() / data_model.rendercv_settings.output_folder_name
+        print(output_directory)
+             
+        
 
         progress.finish_the_current_step()
 
@@ -217,47 +232,47 @@ def cli_command_render(
                 data_model, output_directory
             )
         )
-        if paths["latex"]:
-            utilities.copy_files(latex_file_path_in_output_folder, paths["latex"])
+        if data_model.rendercv_settings.latex_path:
+            utilities.copy_files(latex_file_path_in_output_folder, data_model.rendercv_settings.latex_path)
         progress.finish_the_current_step()
 
         progress.start_a_step("Rendering the LaTeX file to a PDF")
         pdf_file_path_in_output_folder = renderer.render_a_pdf_from_latex(
             latex_file_path_in_output_folder, use_local_latex_command
         )
-        if paths["pdf"]:
-            utilities.copy_files(pdf_file_path_in_output_folder, paths["pdf"])
+        if data_model.rendercv_settings.pdf_path:
+            utilities.copy_files(pdf_file_path_in_output_folder, data_model.rendercv_settings.pdf_path)
         progress.finish_the_current_step()
 
-        if not dont_generate_png:
+        if not data_model.rendercv_settings.no_png:
             progress.start_a_step("Rendering PNG files from the PDF")
             png_file_paths_in_output_folder = renderer.render_pngs_from_pdf(
                 pdf_file_path_in_output_folder
             )
-            if paths["png"]:
-                utilities.copy_files(png_file_paths_in_output_folder, paths["png"])
+            if data_model.rendercv_settings.png_path:
+                utilities.copy_files(png_file_paths_in_output_folder, data_model.rendercv_settings.png_path)
             progress.finish_the_current_step()
 
-        if not dont_generate_markdown:
+        if not data_model.rendercv_settings.no_markdown:
             progress.start_a_step("Generating the Markdown file")
             markdown_file_path_in_output_folder = renderer.create_a_markdown_file(
                 data_model, output_directory
             )
-            if paths["markdown"]:
+            if data_model.rendercv_settings.markdown_path:
                 utilities.copy_files(
-                    markdown_file_path_in_output_folder, paths["markdown"]
+                    markdown_file_path_in_output_folder, data_model.rendercv_settings.markdown_path
                 )
             progress.finish_the_current_step()
 
-            if not dont_generate_html:
+            if not data_model.rendercv_settings.no_html:
                 progress.start_a_step(
                     "Rendering the Markdown file to a HTML (for Grammarly)"
                 )
                 html_file_path_in_output_folder = renderer.render_an_html_from_markdown(
                     markdown_file_path_in_output_folder
                 )
-                if paths["html"]:
-                    utilities.copy_files(html_file_path_in_output_folder, paths["html"])
+                if data_model.rendercv_settings.html_path:
+                    utilities.copy_files(html_file_path_in_output_folder, data_model.rendercv_settings.html_path)
                 progress.finish_the_current_step()
 
 
