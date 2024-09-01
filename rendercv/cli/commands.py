@@ -155,9 +155,9 @@ def cli_command_render(
         "no_html": dont_generate_html,
         "no_png": dont_generate_png,
     }
-    
+
     print(cli_args)
-    
+
     # Create the default values for the cli_args:
     cli_args_default = {
         "use_local_latex_command": None,
@@ -171,7 +171,7 @@ def cli_command_render(
         "no_html": False,
         "no_png": False,
     }
-    
+
     # keep the current working directory:
     working_directory = pathlib.Path.cwd()
 
@@ -202,7 +202,9 @@ def cli_command_render(
             )
         # update the data of the rendercv settings:
         render_cv_settings = data_as_a_dict.get("rendercv_settings", dict())
-        render_cv_settings = utilities.build_rendercv_settings(render_cv_settings, cli_args, cli_args_default)
+        render_cv_settings = utilities.build_rendercv_settings(
+            render_cv_settings, cli_args, cli_args_default
+        )
 
         # update the data model with the rendercv settings:
         data_as_a_dict["rendercv_settings"] = render_cv_settings
@@ -211,8 +213,10 @@ def cli_command_render(
             data_as_a_dict
         )
 
-        output_directory =  working_directory / data_model.rendercv_settings.output_folder_name
-        
+        output_directory = (
+            working_directory / data_model.rendercv_settings.output_folder_name
+        )
+
         print(data_model.rendercv_settings)
 
         progress.finish_the_current_step()

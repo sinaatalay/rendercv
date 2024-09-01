@@ -26,8 +26,7 @@ class RenderCVSettings(pydantic.BaseModel):
             ' value is "rendercv_output".'
         ),
     )
-    
-    
+
     use_local_latex_command: Optional[str] = pydantic.Field(
         default=None,
         title="Local LaTeX Command",
