@@ -206,7 +206,7 @@ def cli_command_render(
             data_as_a_dict
         )
 
-        output_directory = pathlib.Path(data_model.rendercv_settings.output_folder_name)
+        output_directory = pathlib.Path.cwd() / data_model.rendercv_settings.output_folder_name
 
         progress.finish_the_current_step()
 
