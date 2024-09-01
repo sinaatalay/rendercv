@@ -156,8 +156,6 @@ def cli_command_render(
         "no_png": dont_generate_png,
     }
 
-    print(cli_args)
-
     # Create the default values for the cli_args:
     cli_args_default = {
         "use_local_latex_command": None,
@@ -216,8 +214,6 @@ def cli_command_render(
         output_directory = (
             working_directory / data_model.rendercv_settings.output_folder_name
         )
-
-        print(data_model.rendercv_settings)
 
         progress.finish_the_current_step()
 
