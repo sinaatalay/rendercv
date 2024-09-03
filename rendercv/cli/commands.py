@@ -3,6 +3,7 @@ The `rendercv.cli.commands` module contains all the command-line interface (CLI)
 commands of RenderCV.
 """
 
+import inspect
 import os
 import pathlib
 from typing import Annotated, Optional
@@ -98,7 +99,7 @@ def cli_command_render(
             help="Copy the PNG file to the given path.",
         ),
     ] = None,
-    dont_generate_markdown: Annotated[
+    no_markdown: Annotated[
         bool,
         typer.Option(
             "--dont-generate-markdown",
@@ -106,7 +107,7 @@ def cli_command_render(
             help="Don't generate the Markdown and HTML file.",
         ),
     ] = False,
-    dont_generate_html: Annotated[
+    no_html: Annotated[
         bool,
         typer.Option(
             "--dont-generate-html",
@@ -114,7 +115,7 @@ def cli_command_render(
             help="Don't generate the HTML file.",
         ),
     ] = False,
-    dont_generate_png: Annotated[
+    no_png: Annotated[
         bool,
         typer.Option(
             "--dont-generate-png",
@@ -151,23 +152,17 @@ def cli_command_render(
         "markdown_path": utilities.string_to_file_path(markdown_path),
         "html_path": utilities.string_to_file_path(html_path),
         "png_path": utilities.string_to_file_path(png_path),
-        "no_markdown": dont_generate_markdown,
-        "no_html": dont_generate_html,
-        "no_png": dont_generate_png,
+        "no_markdown": no_markdown,
+        "no_html": no_html,
+        "no_png": no_png,
     }
 
-    # Create the default values for the cli_args:
+    # Use inspect to get the default values of the arguments:
+    sig = inspect.signature(cli_command_render)
     cli_args_default = {
-        "use_local_latex_command": None,
-        "output_folder_name": "rendercv_output",
-        "latex_path": None,
-        "pdf_path": None,
-        "markdown_path": None,
-        "html_path": None,
-        "png_path": None,
-        "no_markdown": False,
-        "no_html": False,
-        "no_png": False,
+        k: v.default
+        for k, v in sig.parameters.items()
+        if v.default is not inspect.Parameter.empty
     }
 
     # keep the current working directory:
@@ -178,56 +173,60 @@ def cli_command_render(
     os.chdir(input_file_path.parent)
 
     # compute the number of steps
-    # 1. read and validate the input file
+    # 0. read the input file
+    # 1. validate the input file
     # 2. generate the LaTeX file
     # 3. render the LaTeX file to a PDF
     # 4. render PNG files from the PDF
     # 5. generate the Markdown file
     # 6. render the Markdown file to a HTML (for Grammarly)
-    initial_steps = 1
-    with printer.LiveProgressReporter(number_of_steps=initial_steps) as progress:
-        progress.start_a_step("Reading and validating the input file")
-        data_as_a_dict = data.read_a_yaml_file(input_file_path)
 
-        # update the data if there are extra override arguments:
-        if extra_data_model_override_argumets:
-            key_and_values = dict()
-            key_and_values = utilities.parse_render_command_override_arguments(
-                extra_data_model_override_argumets
-            )
-            data_as_a_dict = utilities.set_or_update_values(
-                data_as_a_dict, key_and_values
-            )
-        # update the data of the rendercv settings:
-        render_cv_settings = data_as_a_dict.get("rendercv_settings", dict())
-        render_cv_settings = utilities.build_rendercv_settings(
-            render_cv_settings, cli_args, cli_args_default
+    data_as_a_dict = data.read_a_yaml_file(input_file_path)
+
+    # update the data if there are extra override arguments:
+    if extra_data_model_override_argumets:
+        key_and_values = dict()
+        key_and_values = utilities.parse_render_command_override_arguments(
+            extra_data_model_override_argumets
         )
+        data_as_a_dict = utilities.set_or_update_values(data_as_a_dict, key_and_values)
 
-        # update the data model with the rendercv settings:
-        data_as_a_dict["rendercv_settings"] = render_cv_settings
+    # update the data of the rendercv settings:
+    render_cv_settings = data_as_a_dict.get("rendercv_settings", dict())
+    if render_cv_settings is None:
+        render_cv_settings = dict()
+
+    # get the render options:
+    render_options = render_cv_settings.get("render", dict())
+    render_options = utilities.update_render_settings(
+        render_options, cli_args, cli_args_default
+    )
+
+    # update the data model with the rendercv settings:
+    render_cv_settings["render"] = render_options
+    data_as_a_dict["rendercv_settings"] = render_cv_settings
+
+    # Calculate the number of steps:
+    number_of_steps = 6
+    if data_as_a_dict["rendercv_settings"]["render"]["no_png"]:
+        number_of_steps -= 1
+    if data_as_a_dict["rendercv_settings"]["render"]["no_markdown"]:
+        number_of_steps -= 2
+    else:
+        if data_as_a_dict["rendercv_settings"]["render"]["no_html"]:
+            number_of_steps -= 1
+
+    with printer.LiveProgressReporter(number_of_steps=number_of_steps) as progress:
+        progress.start_a_step("Validating the input file")
 
         data_model = data.validate_input_dictionary_and_return_the_data_model(
             data_as_a_dict
         )
 
-        output_directory = (
-            working_directory / data_model.rendercv_settings.output_folder_name
-        )
+        render_options = data_model.rendercv_settings.render
+        output_directory = working_directory / render_options.output_folder_name
 
         progress.finish_the_current_step()
-
-        # Calculate the number of steps:
-        number_of_steps = 6
-        if data_model.rendercv_settings.no_png:
-            number_of_steps -= 1
-        if data_model.rendercv_settings.no_markdown:
-            number_of_steps -= 2
-        else:
-            if data_model.rendercv_settings.no_html:
-                number_of_steps -= 1
-
-        progress.update_total_steps(number_of_steps)
 
         progress.start_a_step("Generating the LaTeX file")
         latex_file_path_in_output_folder = (
@@ -235,10 +234,10 @@ def cli_command_render(
                 data_model, output_directory
             )
         )
-        if data_model.rendercv_settings.latex_path:
+        if render_options.latex_path:
             utilities.copy_files(
                 latex_file_path_in_output_folder,
-                data_model.rendercv_settings.latex_path,
+                render_options.latex_path,
             )
         progress.finish_the_current_step()
 
@@ -246,47 +245,48 @@ def cli_command_render(
         pdf_file_path_in_output_folder = renderer.render_a_pdf_from_latex(
             latex_file_path_in_output_folder, use_local_latex_command
         )
-        if data_model.rendercv_settings.pdf_path:
+        if render_options.pdf_path:
             utilities.copy_files(
-                pdf_file_path_in_output_folder, data_model.rendercv_settings.pdf_path
+                pdf_file_path_in_output_folder,
+                render_options.pdf_path,
             )
         progress.finish_the_current_step()
 
-        if not data_model.rendercv_settings.no_png:
+        if not render_options.no_png:
             progress.start_a_step("Rendering PNG files from the PDF")
             png_file_paths_in_output_folder = renderer.render_pngs_from_pdf(
                 pdf_file_path_in_output_folder
             )
-            if data_model.rendercv_settings.png_path:
+            if render_options.png_path:
                 utilities.copy_files(
                     png_file_paths_in_output_folder,
-                    data_model.rendercv_settings.png_path,
+                    render_options.png_path,
                 )
             progress.finish_the_current_step()
 
-        if not data_model.rendercv_settings.no_markdown:
+        if not render_options.no_markdown:
             progress.start_a_step("Generating the Markdown file")
             markdown_file_path_in_output_folder = renderer.create_a_markdown_file(
                 data_model, output_directory
             )
-            if data_model.rendercv_settings.markdown_path:
+            if render_options.markdown_path:
                 utilities.copy_files(
                     markdown_file_path_in_output_folder,
-                    data_model.rendercv_settings.markdown_path,
+                    render_options.markdown_path,
                 )
             progress.finish_the_current_step()
 
-            if not data_model.rendercv_settings.no_html:
+            if not render_options.no_html:
                 progress.start_a_step(
                     "Rendering the Markdown file to a HTML (for Grammarly)"
                 )
                 html_file_path_in_output_folder = renderer.render_an_html_from_markdown(
                     markdown_file_path_in_output_folder
                 )
-                if data_model.rendercv_settings.html_path:
+                if render_options.html_path:
                     utilities.copy_files(
                         html_file_path_in_output_folder,
-                        data_model.rendercv_settings.html_path,
+                        render_options.html_path,
                     )
                 progress.finish_the_current_step()
 

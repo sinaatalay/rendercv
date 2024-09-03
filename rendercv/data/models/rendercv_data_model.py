@@ -37,8 +37,8 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
         ),
         validate_default=True,
     )
-    rendercv_settings: RenderCVSettings = pydantic.Field(
-        default=RenderCVSettings(),
+    rendercv_settings: Optional[RenderCVSettings] = pydantic.Field(
+        default=None,
         title="RenderCV Settings",
         description="The settings of the RenderCV.",
     )
@@ -58,8 +58,8 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
     def initialize_rendercv_settings(
         cls, rendercv_settings: RenderCVSettings
     ) -> RenderCVSettings:
-        """Even if the rendercv settings are not provided, initialize them with the default
-        values."""
+        """Even if the rendercv settings are not provided, initialize them with
+        the default values."""
         if rendercv_settings is None:
             RenderCVSettings()
 
