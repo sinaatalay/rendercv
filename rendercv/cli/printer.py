@@ -84,22 +84,6 @@ class LiveProgressReporter(rich.live.Live):
             f"{self.current_step_name} has started."
         )
 
-    def update_total_steps(self, total_steps: int):
-        """Update the total number of steps.
-
-        Args:
-            total_steps (int): The total number of steps.
-        """
-        self.number_of_steps = total_steps
-        self.overall_progress.update(
-            self.overall_task_id,
-            total=total_steps,
-            description=(
-                f"[bold #AAAAAA]({self.current_step} out of"
-                f" {self.number_of_steps} steps finished)"
-            ),
-        )
-
     def finish_the_current_step(self):
         """Finish the current step and update the progress bars."""
         self.step_progress.stop_task(self.current_step_id)
