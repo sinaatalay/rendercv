@@ -190,8 +190,13 @@ def cli_command_render(
             extra_data_model_override_argumets
         )
         data_as_a_dict = utilities.set_or_update_values(data_as_a_dict, key_and_values)
+
     # update the data of the rendercv settings:
     render_cv_settings = data_as_a_dict.get("rendercv_settings", dict())
+    if render_cv_settings is None:
+        render_cv_settings = dict()
+
+    # get the render options:
     render_options = render_cv_settings.get("render", dict())
     render_options = utilities.update_render_settings(
         render_options, cli_args, cli_args_default
@@ -219,7 +224,6 @@ def cli_command_render(
         )
 
         render_options = data_model.rendercv_settings.render
-
         output_directory = working_directory / render_options.output_folder_name
 
         progress.finish_the_current_step()
@@ -233,7 +237,7 @@ def cli_command_render(
         if render_options.latex_path:
             utilities.copy_files(
                 latex_file_path_in_output_folder,
-                data_model.rendercv_settings.latex_path,
+                render_options.latex_path,
             )
         progress.finish_the_current_step()
 
@@ -243,7 +247,7 @@ def cli_command_render(
         )
         if render_options.pdf_path:
             utilities.copy_files(
-                pdf_file_path_in_output_folder, 
+                pdf_file_path_in_output_folder,
                 render_options.pdf_path,
             )
         progress.finish_the_current_step()

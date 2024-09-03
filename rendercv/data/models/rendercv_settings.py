@@ -17,7 +17,7 @@ class RenderCVSettings(RenderCVBaseModelWithExtraKeys):
     """
 
     render: Optional[RenderOptions] = pydantic.Field(
-        default_factory=RenderOptions,
+        default=None,
         title="Render Options",
         description="The options to render the output files.",
     )
