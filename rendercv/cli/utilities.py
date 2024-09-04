@@ -13,18 +13,26 @@ from typing import Optional
 import typer
 
 
-def string_to_file_path(string: Optional[str]) -> Optional[pathlib.Path]:
+def string_to_file_path(
+    string: Optional[str], parent: Optional[str] = None
+) -> Optional[pathlib.Path]:
     """Convert a string to a pathlib.Path object. If the string is None, then return
     None.
 
     Args:
+        parent (Optional[str]): The parent directory of the file path.
         string (str): The string to be converted to a pathlib.Path object.
 
     Returns:
         pathlib.Path: The pathlib.Path object.
     """
+    # check if the string is not None:
     if string is not None:
-        return pathlib.Path(string).absolute()
+        # check if the parent is not None:
+        if parent is not None:
+            return pathlib.Path(parent).absolute() / string
+        else:
+            return pathlib.Path(string).absolute()
     else:
         return None
 
@@ -331,19 +339,15 @@ def parse_render_settings(
     }
 
     # update the data of the rendercv settings:
-    render_cv_settings = dictionary.get("rendercv_settings", dict())
-    if render_cv_settings is None:
-        print("render_cv_settings is None")
-        render_cv_settings = dict()
+    rendercv_settings = dictionary.get("rendercv_settings", dict())
+    if rendercv_settings is None:
+        rendercv_settings = dict()
 
-    # get the render options:
-    render_options = render_cv_settings.get("render_options", dict())
-    render_options = update_render_settings(
-        render_options, cli_arguments, cli_arguments_default
+    rendercv_settings = update_render_settings(
+        rendercv_settings, cli_arguments, cli_arguments_default
     )
 
     # update the data model with the rendercv settings:
-    render_cv_settings["render_options"] = render_options
-    dictionary["rendercv_settings"] = render_cv_settings
+    dictionary["rendercv_settings"] = rendercv_settings
 
     return dictionary

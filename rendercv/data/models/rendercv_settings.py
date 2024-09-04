@@ -8,7 +8,6 @@ from typing import Optional
 import pydantic
 
 from .base import RenderCVBaseModelWithExtraKeys
-from .render import RenderOptions
 
 
 class RenderCVSettings(RenderCVBaseModelWithExtraKeys):
@@ -16,14 +15,106 @@ class RenderCVSettings(RenderCVBaseModelWithExtraKeys):
     updates the `rendercv_settings` dictionary.
     """
 
-    render_options: Optional[RenderOptions] = pydantic.Field(
+    output_folder_name: Optional[str] = pydantic.Field(
+        default="rendercv_output",
+        title="Output Folder Name",
+        description=(
+            "The name of the folder where the output files will be saved. The default"
+            ' value is "rendercv_output".'
+        ),
+    )
+
+    use_local_latex_command: Optional[str] = pydantic.Field(
         default=None,
-        title="Render Options",
-        description="The options to render the output files.",
+        title="Local LaTeX Command",
+        description=(
+            "The command to compile the LaTeX file to a PDF file. The default value is"
+            ' "pdflatex".'
+        ),
+    )
+
+    pdf_path: Optional[str] = pydantic.Field(
+        default=None,
+        title="PDF Path",
+        description=(
+            "The path of the PDF file. If it is not provided, the PDF file will not be"
+            " generated. The default value is an empty string."
+        ),
+    )
+
+    latex_path: Optional[str] = pydantic.Field(
+        default=None,
+        title="LaTeX Path",
+        description=(
+            "The path of the LaTeX file. If it is not provided, the LaTeX file will not"
+            " be generated. The default value is an empty string."
+        ),
+    )
+
+    html_path: Optional[str] = pydantic.Field(
+        default=None,
+        title="HTML Path",
+        description=(
+            "The path of the HTML file. If it is not provided, the HTML file will not"
+            " be generated. The default value is an empty string."
+        ),
+    )
+
+    png_path: Optional[str] = pydantic.Field(
+        default=None,
+        title="PNG Path",
+        description=(
+            "The path of the PNG file. If it is not provided, the PNG file will not be"
+            " generated. The default value is an empty string."
+        ),
+    )
+
+    markdown_path: Optional[str] = pydantic.Field(
+        default=None,
+        title="Markdown Path",
+        description=(
+            "The path of the Markdown file. If it is not provided, the Markdown file"
+            " will not be generated. The default value is an empty string."
+        ),
+    )
+
+    dont_generate_html: Optional[bool] = pydantic.Field(
+        default=False,
+        title="Generate HTML Flag",
+        description=(
+            "A boolean value to determine whether the HTML file will be generated. The"
+            " default value is False."
+        ),
+    )
+
+    dont_generate_markdown: Optional[bool] = pydantic.Field(
+        default=False,
+        title="Generate Markdown Flag",
+        description=(
+            "A boolean value to determine whether the Markdown file will be generated."
+            " The default value is False."
+        ),
+    )
+
+    dont_generate_png: Optional[bool] = pydantic.Field(
+        default=False,
+        title="Generate PNG Flag",
+        description=(
+            "A boolean value to determine whether the PNG file will be generated. The"
+            " default value is False."
+        ),
     )
 
     @pydantic.field_validator(
-        "render_options",
+        "output_folder_name",
+        "pdf_path",
+        "latex_path",
+        "html_path",
+        "png_path",
+        "markdown_path",
+        "dont_generate_html",
+        "dont_generate_markdown",
+        "dont_generate_png",
     )
     @classmethod
     def update_settings(
