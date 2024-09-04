@@ -16,14 +16,14 @@ class RenderCVSettings(RenderCVBaseModelWithExtraKeys):
     updates the `rendercv_settings` dictionary.
     """
 
-    render: Optional[RenderOptions] = pydantic.Field(
+    render_options: Optional[RenderOptions] = pydantic.Field(
         default=None,
         title="Render Options",
         description="The options to render the output files.",
     )
 
     @pydantic.field_validator(
-        "render",
+        "render_options",
     )
     @classmethod
     def update_settings(

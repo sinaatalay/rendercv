@@ -78,7 +78,7 @@ class RenderOptions(RenderCVBaseModelWithExtraKeys):
         ),
     )
 
-    no_html: Optional[bool] = pydantic.Field(
+    dont_generate_html: Optional[bool] = pydantic.Field(
         default=False,
         title="Generate HTML Flag",
         description=(
@@ -87,7 +87,7 @@ class RenderOptions(RenderCVBaseModelWithExtraKeys):
         ),
     )
 
-    no_markdown: Optional[bool] = pydantic.Field(
+    dont_generate_markdown: Optional[bool] = pydantic.Field(
         default=False,
         title="Generate Markdown Flag",
         description=(
@@ -96,7 +96,7 @@ class RenderOptions(RenderCVBaseModelWithExtraKeys):
         ),
     )
 
-    no_png: Optional[bool] = pydantic.Field(
+    dont_generate_png: Optional[bool] = pydantic.Field(
         default=False,
         title="Generate PNG Flag",
         description=(
@@ -111,9 +111,10 @@ class RenderOptions(RenderCVBaseModelWithExtraKeys):
         "latex_path",
         "html_path",
         "png_path",
-        "no_html",
-        "no_markdown",
-        "no_png",
+        "markdown_path",
+        "dont_generate_html",
+        "dont_generate_markdown",
+        "dont_generate_png",
     )
     @classmethod
     def update_settings(
