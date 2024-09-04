@@ -2,6 +2,7 @@
 The `rendercv.cli.utilities` module contains utility functions that are required by CLI.
 """
 
+import inspect
 import json
 import pathlib
 import re
@@ -264,8 +265,48 @@ def parse_render_command_override_arguments(
 
 def update_render_settings(
     dictionary: dict,
-    command_line_arguments: dict[str, str],
-    command_line_arguments_default_values: dict[str, str],
+    arguments: dict[str, str],
+    arguments_default_values: dict[str, str],
+) -> dict[str, str]:
+    """Build the RenderCV settings dictionary by combining the dictionary and the
+        command line arguments.
+
+    Args:
+        dictionary (dict): The dictionary to be combined with the command line
+            arguments.
+        arguments (dict[str, str]): The command line arguments.
+        arguments_default_values (dict[str, str]): The default values of
+            the command line arguments.
+
+    Returns:
+        dict[str, str]: The combined dictionary.
+    """
+
+    # if the dictionary is empty, initialize it from the default values:
+    if not dictionary:
+        dictionary = arguments_default_values
+
+    # Combine the dictionary and the command line arguments if the values are not None:
+    for key, value in arguments.items():
+        # check if the key is present in the both
+        # command line arguments and the default values:
+        if key in arguments_default_values:
+            default_value = arguments_default_values[key]
+            if value != default_value:
+                dictionary = set_or_update_a_value(dictionary, key, str(value))
+        else:
+            # The key is not present in the default values, set the value:
+            # throw an error reporting this
+            raise ValueError(
+                f"The key ({key}) is not present in the default values of the command"
+                " line arguments!"
+            )
+    return dictionary
+
+
+def parse_render_settings(
+    dictionary: dict,
+    cli_arguments: dict[str, str],
 ) -> dict[str, str]:
     """Build the RenderCV settings dictionary by combining the dictionary and the
         command line arguments.
@@ -278,23 +319,31 @@ def update_render_settings(
     Returns:
         dict[str, str]: The combined dictionary.
     """
-    # if the dictionary is empty, initialize it from the default values:
-    if not dictionary:
-        dictionary = command_line_arguments_default_values
 
-    # Combine the dictionary and the command line arguments if the values are not None:
-    for key, value in command_line_arguments.items():
-        # check if the key is present in the both
-        # command line arguments and the default values:
-        if key in command_line_arguments_default_values:
-            default_value = command_line_arguments_default_values[key]
-            if value != default_value:
-                dictionary = set_or_update_a_value(dictionary, key, str(value))
-        else:
-            # The key is not present in the default values, set the value:
-            # throw an error reporting this
-            raise ValueError(
-                f"The key ({key}) is not present in the default values of the command"
-                " line arguments!"
-            )
+    # Use inspect to get the default values of the arguments:
+    from .commands import cli_command_render
+
+    sig = inspect.signature(cli_command_render)
+    cli_arguments_default = {
+        k: v.default
+        for k, v in sig.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
+
+    # update the data of the rendercv settings:
+    render_cv_settings = dictionary.get("rendercv_settings", dict())
+    if render_cv_settings is None:
+        print("render_cv_settings is None")
+        render_cv_settings = dict()
+
+    # get the render options:
+    render_options = render_cv_settings.get("render_options", dict())
+    render_options = update_render_settings(
+        render_options, cli_arguments, cli_arguments_default
+    )
+
+    # update the data model with the rendercv settings:
+    render_cv_settings["render_options"] = render_options
+    dictionary["rendercv_settings"] = render_cv_settings
+
     return dictionary

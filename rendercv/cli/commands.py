@@ -3,7 +3,6 @@ The `rendercv.cli.commands` module contains all the command-line interface (CLI)
 commands of RenderCV.
 """
 
-import inspect
 import os
 import pathlib
 from typing import Annotated, Optional
@@ -99,7 +98,7 @@ def cli_command_render(
             help="Copy the PNG file to the given path.",
         ),
     ] = None,
-    no_markdown: Annotated[
+    dont_generate_markdown: Annotated[
         bool,
         typer.Option(
             "--dont-generate-markdown",
@@ -107,7 +106,7 @@ def cli_command_render(
             help="Don't generate the Markdown and HTML file.",
         ),
     ] = False,
-    no_html: Annotated[
+    dont_generate_html: Annotated[
         bool,
         typer.Option(
             "--dont-generate-html",
@@ -115,7 +114,7 @@ def cli_command_render(
             help="Don't generate the HTML file.",
         ),
     ] = False,
-    no_png: Annotated[
+    dont_generate_png: Annotated[
         bool,
         typer.Option(
             "--dont-generate-png",
@@ -152,17 +151,9 @@ def cli_command_render(
         "markdown_path": utilities.string_to_file_path(markdown_path),
         "html_path": utilities.string_to_file_path(html_path),
         "png_path": utilities.string_to_file_path(png_path),
-        "no_markdown": no_markdown,
-        "no_html": no_html,
-        "no_png": no_png,
-    }
-
-    # Use inspect to get the default values of the arguments:
-    sig = inspect.signature(cli_command_render)
-    cli_args_default = {
-        k: v.default
-        for k, v in sig.parameters.items()
-        if v.default is not inspect.Parameter.empty
+        "dont_generate_png": dont_generate_png,
+        "dont_generate_markdown": dont_generate_markdown,
+        "dont_generate_html": dont_generate_html,
     }
 
     # keep the current working directory:
@@ -191,29 +182,20 @@ def cli_command_render(
         )
         data_as_a_dict = utilities.set_or_update_values(data_as_a_dict, key_and_values)
 
-    # update the data of the rendercv settings:
-    render_cv_settings = data_as_a_dict.get("rendercv_settings", dict())
-    if render_cv_settings is None:
-        render_cv_settings = dict()
+    data_as_a_dict = utilities.parse_render_settings(data_as_a_dict, cli_args)
 
-    # get the render options:
-    render_options = render_cv_settings.get("render", dict())
-    render_options = utilities.update_render_settings(
-        render_options, cli_args, cli_args_default
+    render_options = data_as_a_dict.get("rendercv_settings", {}).get(
+        "render_options", {}
     )
-
-    # update the data model with the rendercv settings:
-    render_cv_settings["render"] = render_options
-    data_as_a_dict["rendercv_settings"] = render_cv_settings
 
     # Calculate the number of steps:
     number_of_steps = 6
-    if data_as_a_dict["rendercv_settings"]["render"]["no_png"]:
+    if render_options.get("dont_generate_png", False):
         number_of_steps -= 1
-    if data_as_a_dict["rendercv_settings"]["render"]["no_markdown"]:
+    if render_options.get("dont_generate_markdown", False):
         number_of_steps -= 2
     else:
-        if data_as_a_dict["rendercv_settings"]["render"]["no_html"]:
+        if render_options.get("dont_generate_html", False):
             number_of_steps -= 1
 
     with printer.LiveProgressReporter(number_of_steps=number_of_steps) as progress:
@@ -223,7 +205,7 @@ def cli_command_render(
             data_as_a_dict
         )
 
-        render_options = data_model.rendercv_settings.render
+        render_options = data_model.rendercv_settings.render_options
         output_directory = working_directory / render_options.output_folder_name
 
         progress.finish_the_current_step()
@@ -252,7 +234,7 @@ def cli_command_render(
             )
         progress.finish_the_current_step()
 
-        if not render_options.no_png:
+        if not render_options.dont_generate_png:
             progress.start_a_step("Rendering PNG files from the PDF")
             png_file_paths_in_output_folder = renderer.render_pngs_from_pdf(
                 pdf_file_path_in_output_folder
@@ -264,7 +246,7 @@ def cli_command_render(
                 )
             progress.finish_the_current_step()
 
-        if not render_options.no_markdown:
+        if not render_options.dont_generate_markdown:
             progress.start_a_step("Generating the Markdown file")
             markdown_file_path_in_output_folder = renderer.create_a_markdown_file(
                 data_model, output_directory
@@ -276,7 +258,7 @@ def cli_command_render(
                 )
             progress.finish_the_current_step()
 
-            if not render_options.no_html:
+            if not render_options.dont_generate_html:
                 progress.start_a_step(
                     "Rendering the Markdown file to a HTML (for Grammarly)"
                 )
