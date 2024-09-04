@@ -2,6 +2,7 @@
 The `rendercv.cli.utilities` module contains utility functions that are required by CLI.
 """
 
+import inspect
 import json
 import pathlib
 import re
@@ -10,7 +11,6 @@ import urllib.request
 from typing import Optional
 
 import typer
-import inspect
 
 
 def string_to_file_path(string: Optional[str]) -> Optional[pathlib.Path]:
@@ -281,7 +281,7 @@ def update_render_settings(
     Returns:
         dict[str, str]: The combined dictionary.
     """
-    
+
     # if the dictionary is empty, initialize it from the default values:
     if not dictionary:
         dictionary = arguments_default_values
@@ -303,6 +303,7 @@ def update_render_settings(
             )
     return dictionary
 
+
 def parse_render_settings(
     dictionary: dict,
     cli_arguments: dict[str, str],
@@ -318,27 +319,31 @@ def parse_render_settings(
     Returns:
         dict[str, str]: The combined dictionary.
     """
-    
+
     # Use inspect to get the default values of the arguments:
     from .commands import cli_command_render
+
     sig = inspect.signature(cli_command_render)
     cli_arguments_default = {
         k: v.default
         for k, v in sig.parameters.items()
         if v.default is not inspect.Parameter.empty
     }
-    
+
     # update the data of the rendercv settings:
     render_cv_settings = dictionary.get("rendercv_settings", dict())
     if render_cv_settings is None:
+        print("render_cv_settings is None")
         render_cv_settings = dict()
 
     # get the render options:
-    render_options = render_cv_settings.get("render", dict())
-    render_options = update_render_settings(render_options, cli_arguments, cli_arguments_default)
+    render_options = render_cv_settings.get("render_options", dict())
+    render_options = update_render_settings(
+        render_options, cli_arguments, cli_arguments_default
+    )
 
     # update the data model with the rendercv settings:
-    render_cv_settings["render"] = render_options
+    render_cv_settings["render_options"] = render_options
     dictionary["rendercv_settings"] = render_cv_settings
-    
+
     return dictionary

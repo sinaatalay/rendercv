@@ -183,17 +183,19 @@ def cli_command_render(
         data_as_a_dict = utilities.set_or_update_values(data_as_a_dict, key_and_values)
 
     data_as_a_dict = utilities.parse_render_settings(data_as_a_dict, cli_args)
-    
-    render_options = data_as_a_dict.get("rendercv_settings", {}).get("render_options", {})
+
+    render_options = data_as_a_dict.get("rendercv_settings", {}).get(
+        "render_options", {}
+    )
 
     # Calculate the number of steps:
     number_of_steps = 6
-    if render_options.get("dont_generate_markdown", False):
+    if render_options.get("dont_generate_png", False):
         number_of_steps -= 1
-    if render_options.get("dont_generate_html", False):
+    if render_options.get("dont_generate_markdown", False):
         number_of_steps -= 2
     else:
-        if render_options.get("dont_generate_png", False):
+        if render_options.get("dont_generate_html", False):
             number_of_steps -= 1
 
     with printer.LiveProgressReporter(number_of_steps=number_of_steps) as progress:
@@ -203,7 +205,7 @@ def cli_command_render(
             data_as_a_dict
         )
 
-        render_options = data_model.rendercv_settings.render
+        render_options = data_model.rendercv_settings.render_options
         output_directory = working_directory / render_options.output_folder_name
 
         progress.finish_the_current_step()
