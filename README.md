@@ -1,7 +1,7 @@
 <div align="center">
 <h1>RenderCV</h1>
 
-*The engine of the [RenderCV App](https://rendercv.com).*
+*The engine of the [RenderCV App](https://rendercv.com)*
 
 [![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)

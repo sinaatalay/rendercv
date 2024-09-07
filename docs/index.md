@@ -2,7 +2,7 @@
 
 <div align="center" markdown="span">
 
-*The engine of the [RenderCV App](https://rendercv.com).*
+*The engine of the [RenderCV App](https://rendercv.com)*
 
 <br>
 <br>
