@@ -1,6 +1,6 @@
 # Structure of the YAML Input File
 
-RenderCV's input file consists of three parts: `cv`, `design`, and `locale_catalog`.
+RenderCV's input file consists of four parts: `cv`, `design`, `locale_catalog` and `rendercv_settings`.
 
 ```yaml title="Your_Name_CV.yaml"
 cv:
@@ -15,11 +15,16 @@ locale_catalog:
   ...
   TRANSLATIONS TO YOUR LANGUAGE
   ...
+rendercv_settings:
+  ...
+  RENDERCV SETTINGS
+  ...
 ```
 
 - The `cv` field is mandatory. It contains the **content of the CV**.
 - The `design` field is optional. It contains the **design options of the CV**. If you don't provide a `design` field, RenderCV will use the default design options with the `classic` theme.
 - The `locale_catalog` field is optional. You can provide translations for some of the strings used in the CV, for example, month abbreviations. RenderCV will use English strings if you don't provide a `locale_catalog` field.
+- The `rendercv_settings` field is optional. It contains the **settings of RenderCV**. If you don't provide a `rendercv_settings` field, RenderCV will use the default settings.
 
 !!! tip
     To maximize your productivity while editing the input YAML file, set up RenderCV's JSON Schema in your IDE. It will validate your inputs on the fly and give auto-complete suggestions.
@@ -356,3 +361,21 @@ locale_catalog:
 
 1. The available phone number formats are: `national`, `international`, and `E164`.
 2. The `MONTH_ABBREVIATION` and `YEAR` are placeholders. The available placeholders are: `FULL_MONTH_NAME`, `MONTH_ABBREVIATION`, `MONTH`, `MONTH_IN_TWO_DIGITS`, `YEAR`, and `YEAR_IN_TWO_DIGITS`.
+
+## "`rendercv_settings`" field
+
+The `rendercv_settings` field contains the settings of RenderCV. This feature is what makes RenderCV a flexible tool. You can change the output folder name, the paths of the output files, and disable the generation of some output files directly from within the code (You can also use the [cli arguments](cli.md) which ever is convinient for you). Below is an example of the `rendercv_settings` field:
+
+```yaml
+rendercv_settings:
+  output_folder_name: output # default value is 'rendercv_output'
+  pdf_path: cv.pdf # default value is 'None'
+  latex_path: cv.tex # default value is 'None'
+  html_path: cv.html # default value is 'None'
+  markdown_path: cv.md # default value is 'None'
+  dont_generate_html: false # default value is 'false'
+  dont_generate_markdown: false # default value is 'false'
+  dont_generate_png: false # default value is 'false'
+```
+
+All this fields are optional. If you don't provide a `rendercv_settings` field, RenderCV will use the default settings.

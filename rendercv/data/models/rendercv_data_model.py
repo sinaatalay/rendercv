@@ -12,6 +12,7 @@ from .base import RenderCVBaseModelWithoutExtraKeys
 from .curriculum_vitae import CurriculumVitae
 from .design import RenderCVDesign
 from .locale_catalog import LocaleCatalog
+from .rendercv_settings import RenderCVSettings
 
 
 class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
@@ -36,6 +37,12 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
         ),
         validate_default=True,
     )
+    rendercv_settings: Optional[RenderCVSettings] = pydantic.Field(
+        default=None,
+        title="RenderCV Settings",
+        validate_default=True,
+        description="The settings of the RenderCV.",
+    )
 
     @pydantic.field_validator("locale_catalog")
     @classmethod
@@ -46,3 +53,15 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
             LocaleCatalog()
 
         return locale_catalog
+
+    @pydantic.field_validator("rendercv_settings")
+    @classmethod
+    def initialize_rendercv_settings(
+        cls, rendercv_settings: RenderCVSettings
+    ) -> RenderCVSettings:
+        """Even if the rendercv settings are not provided, initialize them with
+        the default values."""
+        if rendercv_settings is None:
+            RenderCVSettings()
+
+        return rendercv_settings
