@@ -17,6 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 -->
 
+## [1.14] - 2024-09-07
+
+> **Full Changelog**: [v1.13...v1.14]
+
+### Added
+
+- `rendercv_settings` field has been added to the YAML input file. For details, see [here](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#rendercv_settings-field). It will be extended in the future.
+
+
 ## [1.13] - 2024-07-23
 
 > **Full Changelog**: [v1.12...v1.13]
@@ -379,6 +388,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
+[v1.13...v1.14]: https://github.com/sinaatalay/rendercv/compare/v1.13...v1.14
 [v1.12...v1.13]: https://github.com/sinaatalay/rendercv/compare/v1.12...v1.13
 [v1.11...v1.12]: https://github.com/sinaatalay/rendercv/compare/v1.11...v1.12
 [v1.10...v1.11]: https://github.com/sinaatalay/rendercv/compare/v1.10...v1.11
@@ -401,6 +411,7 @@ The first release of RenderCV.
 [v0.3...v0.4]: https://github.com/sinaatalay/rendercv/compare/v0.3...v0.4
 [v0.2...v0.3]: https://github.com/sinaatalay/rendercv/compare/v0.2...v0.3
 [v0.1...v0.2]: https://github.com/sinaatalay/rendercv/compare/v0.1...v0.2
+[1.14]: https://github.com/sinaatalay/rendercv/releases/tag/v1.14
 [1.13]: https://github.com/sinaatalay/rendercv/releases/tag/v1.13
 [1.12]: https://github.com/sinaatalay/rendercv/releases/tag/v1.12
 [1.11]: https://github.com/sinaatalay/rendercv/releases/tag/v1.11
