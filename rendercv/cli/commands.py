@@ -11,7 +11,7 @@ import typer
 from rich import print
 
 from .. import __version__, data, renderer
-from . import printer, utilities
+from . import printer, utilities, watcher
 
 app = typer.Typer(
     rich_markup_mode="rich",
@@ -123,6 +123,14 @@ def cli_command_render(
             help="Don't generate the PNG file.",
         ),
     ] = False,
+    watch: Annotated[
+        bool,
+        typer.Option(
+            "--watch",
+            "-w",
+            help="Automatically generate files on change.",
+        ),
+    ] = False,
     # This is a dummy argument for the help message for
     # extra_data_model_override_argumets:
     _: Annotated[
@@ -136,6 +144,32 @@ def cli_command_render(
     extra_data_model_override_argumets: typer.Context = None,  # type: ignore
 ):
     """Render a CV from a YAML input file."""
+
+    if watch:
+
+        def rerun_command():
+            cli_command_render(
+                input_file_name=input_file_name,
+                use_local_latex_command=use_local_latex_command,
+                output_folder_name=output_folder_name,
+                latex_path=latex_path,
+                pdf_path=pdf_path,
+                markdown_path=markdown_path,
+                html_path=html_path,
+                png_path=png_path,
+                dont_generate_markdown=dont_generate_markdown,
+                dont_generate_html=dont_generate_html,
+                dont_generate_png=dont_generate_png,
+                watch=False,
+                extra_data_model_override_argumets=extra_data_model_override_argumets,
+            )
+
+        file_path = utilities.string_to_file_path(input_file_name)
+        if file_path is None:
+            raise FileNotFoundError(f"Unable to find path to {input_file_name}")
+        watcher.watch_file(file_path, rerun_command)
+        return
+
     printer.welcome()
 
     input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
