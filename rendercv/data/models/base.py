@@ -12,7 +12,7 @@ class RenderCVBaseModelWithoutExtraKeys(pydantic.BaseModel):
     if an unknown key is provided in the input file.
     """
 
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(extra="forbid", validate_default=True)
 
 
 class RenderCVBaseModelWithExtraKeys(pydantic.BaseModel):
@@ -21,4 +21,4 @@ class RenderCVBaseModelWithExtraKeys(pydantic.BaseModel):
     the input file.
     """
 
-    model_config = pydantic.ConfigDict(extra="allow")
+    model_config = pydantic.ConfigDict(extra="allow", validate_default=True)

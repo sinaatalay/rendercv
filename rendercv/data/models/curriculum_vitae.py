@@ -414,6 +414,15 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
         alias="sections",
     )
 
+    @pydantic.field_validator("name")
+    @classmethod
+    def update_curriculum_vitae(cls, value: str, info: pydantic.ValidationInfo) -> str:
+        """Update the `curriculum_vitae` dictionary."""
+        if value:
+            curriculum_vitae[info.field_name] = value  # type: ignore
+
+        return value
+
     @functools.cached_property
     def connections(self) -> list[dict[str, Optional[str]]]:
         """Return all the connections of the person as a list of dictionaries and cache
@@ -534,3 +543,8 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
                 sections.append(section)
 
         return sections
+
+
+# The dictionary below will be overwritten by CurriculumVitae class, which will contain
+# some important data for the CV.
+curriculum_vitae: dict[str, str] = dict()

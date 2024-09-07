@@ -35,33 +35,21 @@ class RenderCVDataModel(RenderCVBaseModelWithoutExtraKeys):
         description=(
             "The locale catalog of the CV to allow the support of multiple languages."
         ),
-        validate_default=True,
     )
     rendercv_settings: Optional[RenderCVSettings] = pydantic.Field(
         default=None,
         title="RenderCV Settings",
-        validate_default=True,
         description="The settings of the RenderCV.",
     )
 
     @pydantic.field_validator("locale_catalog")
     @classmethod
-    def initialize_locale_catalog(cls, locale_catalog: LocaleCatalog) -> LocaleCatalog:
+    def initialize_locale_catalog(
+        cls, locale_catalog: Optional[LocaleCatalog]
+    ) -> Optional[LocaleCatalog]:
         """Even if the locale catalog is not provided, initialize it with the default
         values."""
         if locale_catalog is None:
             LocaleCatalog()
 
         return locale_catalog
-
-    @pydantic.field_validator("rendercv_settings")
-    @classmethod
-    def initialize_rendercv_settings(
-        cls, rendercv_settings: RenderCVSettings
-    ) -> RenderCVSettings:
-        """Even if the rendercv settings are not provided, initialize them with
-        the default values."""
-        if rendercv_settings is None:
-            RenderCVSettings()
-
-        return rendercv_settings

@@ -8,16 +8,13 @@ from typing import Annotated, Literal, Optional
 import annotated_types as at
 import pydantic
 
+from .base import RenderCVBaseModelWithoutExtraKeys
 
-class LocaleCatalog(pydantic.BaseModel):
+
+class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the locale catalog. The values of each field
     updates the `locale_catalog` dictionary.
     """
-
-    model_config = pydantic.ConfigDict(
-        extra="forbid",
-        validate_default=True,  # To initialize the locale catalog with the default values
-    )
 
     phone_number_format: Optional[Literal["national", "international", "E164"]] = (
         pydantic.Field(
@@ -131,8 +128,8 @@ class LocaleCatalog(pydantic.BaseModel):
         "date_style",
     )
     @classmethod
-    def update_translations(cls, value: str, info: pydantic.ValidationInfo) -> str:
-        """Update the `locale_catalog` dictionary with the provided translations."""
+    def update_locale_catalog(cls, value: str, info: pydantic.ValidationInfo) -> str:
+        """Update the `locale_catalog` dictionary."""
         if value:
             locale_catalog[info.field_name] = value  # type: ignore
 
@@ -141,5 +138,4 @@ class LocaleCatalog(pydantic.BaseModel):
 
 # The dictionary below will be overwritten by LocaleCatalog class, which will contain
 # month names, month abbreviations, and other locale-specific strings.
-locale_catalog: dict[str, str | list[str]] = {}
-LocaleCatalog()  # Initialize the locale catalog with the default values
+locale_catalog: dict[str, str | list[str]] = dict()
