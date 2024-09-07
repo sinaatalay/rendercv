@@ -2,6 +2,7 @@
 The `rendercv.cli.utilities` module contains utility functions that are required by CLI.
 """
 
+import inspect
 import json
 import pathlib
 import re
@@ -12,18 +13,26 @@ from typing import Optional
 import typer
 
 
-def string_to_file_path(string: Optional[str]) -> Optional[pathlib.Path]:
+def string_to_file_path(
+    string: Optional[str], parent: Optional[str] = None
+) -> Optional[pathlib.Path]:
     """Convert a string to a pathlib.Path object. If the string is None, then return
     None.
 
     Args:
+        parent (Optional[str]): The parent directory of the file path.
         string (str): The string to be converted to a pathlib.Path object.
 
     Returns:
         pathlib.Path: The pathlib.Path object.
     """
+    # check if the string is not None:
     if string is not None:
-        return pathlib.Path(string).absolute()
+        # check if the parent is not None:
+        if parent is not None:
+            return pathlib.Path(parent).absolute() / string
+        else:
+            return pathlib.Path(string).absolute()
     else:
         return None
 
@@ -260,3 +269,85 @@ def parse_render_command_override_arguments(
         key_and_values[key] = value
 
     return key_and_values
+
+
+def update_render_settings(
+    dictionary: dict,
+    arguments: dict[str, str],
+    arguments_default_values: dict[str, str],
+) -> dict[str, str]:
+    """Build the RenderCV settings dictionary by combining the dictionary and the
+        command line arguments.
+
+    Args:
+        dictionary (dict): The dictionary to be combined with the command line
+            arguments.
+        arguments (dict[str, str]): The command line arguments.
+        arguments_default_values (dict[str, str]): The default values of
+            the command line arguments.
+
+    Returns:
+        dict[str, str]: The combined dictionary.
+    """
+
+    # if the dictionary is empty, initialize it from the default values:
+    if not dictionary:
+        dictionary = arguments_default_values
+
+    # Combine the dictionary and the command line arguments if the values are not None:
+    for key, value in arguments.items():
+        # check if the key is present in the both
+        # command line arguments and the default values:
+        if key in arguments_default_values:
+            default_value = arguments_default_values[key]
+            if value != default_value:
+                dictionary = set_or_update_a_value(dictionary, key, str(value))
+        else:
+            # The key is not present in the default values, set the value:
+            # throw an error reporting this
+            raise ValueError(
+                f"The key ({key}) is not present in the default values of the command"
+                " line arguments!"
+            )
+    return dictionary
+
+
+def parse_render_settings(
+    dictionary: dict,
+    cli_arguments: dict[str, str],
+) -> dict[str, str]:
+    """Build the RenderCV settings dictionary by combining the dictionary and the
+        command line arguments.
+
+    Args:
+        dictionary (dict): The dictionary to be combined with the command line
+            arguments.
+        cli_arguments (dict[str, str]): The command line arguments.
+
+    Returns:
+        dict[str, str]: The combined dictionary.
+    """
+
+    # Use inspect to get the default values of the arguments:
+    from .commands import cli_command_render
+
+    sig = inspect.signature(cli_command_render)
+    cli_arguments_default = {
+        k: v.default
+        for k, v in sig.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
+
+    # update the data of the rendercv settings:
+    rendercv_settings = dictionary.get("rendercv_settings", dict())
+    if rendercv_settings is None:
+        rendercv_settings = dict()
+
+    rendercv_settings = update_render_settings(
+        rendercv_settings, cli_arguments, cli_arguments_default
+    )
+
+    # update the data model with the rendercv settings:
+    dictionary["rendercv_settings"] = rendercv_settings
+
+    return dictionary
