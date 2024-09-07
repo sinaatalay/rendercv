@@ -14,6 +14,8 @@ import rendercv.cli as cli
 import rendercv.cli.printer as printer
 import rendercv.cli.utilities as utilities
 import rendercv.data as data
+import rendercv.data.generator as generator
+import rendercv.data.reader as reader
 from rendercv import __version__
 
 
@@ -750,7 +752,7 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
         value = eval(value)
 
     if key == "cv.sections":
-        assert "test_title" in updated_model.cv.sections_input
+        assert "test_title" in updated_model.cv.sections_input  # type: ignore
     else:
         assert eval(f"updated_model.{key}") == value
 
@@ -791,3 +793,132 @@ def test_relative_input_file_path_with_custom_output_paths(tmp_path, input_file_
     )
 
     assert (tmp_path / "test.pdf").exists()
+
+
+def test_render_command_with_input_file_settings(tmp_path, input_file_path):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    # read the input file as a dictionary:
+    input_dictionary = reader.read_a_yaml_file(input_file_path)
+
+    # append rendercv_settings:
+    input_dictionary["rendercv_settings"] = {
+        "render_command": {
+            "pdf_path": "test.pdf",
+            "latex_path": "test.tex",
+            "markdown_path": "test.md",
+            "html_path": "test.html",
+            "png_path": "test.png",
+        }
+    }
+
+    # write the input dictionary to a new input file:
+    new_input_file_path = tmp_path / "new_input_file.yaml"
+    yaml_content = generator.dictionary_to_yaml(input_dictionary)
+    new_input_file_path.write_text(yaml_content, encoding="utf-8")
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "render",
+            str(new_input_file_path.relative_to(tmp_path)),
+        ],
+    )
+
+    print(result.stdout)
+
+    assert (tmp_path / "test.pdf").exists()
+    assert (tmp_path / "test.tex").exists()
+    assert (tmp_path / "test.md").exists()
+    assert (tmp_path / "test.html").exists()
+    assert (tmp_path / "test.png").exists()
+    assert "Your CV is rendered!" in result.stdout
+
+
+def test_render_command_with_input_file_settings_2(tmp_path, input_file_path):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    # read the input file as a dictionary:
+    input_dictionary = reader.read_a_yaml_file(input_file_path)
+
+    # append rendercv_settings:
+    input_dictionary["rendercv_settings"] = {
+        "render_command": {
+            "dont_generate_html": True,
+            "dont_generate_markdown": True,
+            "dont_generate_png": True,
+        }
+    }
+
+    # write the input dictionary to a new input file:
+    new_input_file_path = tmp_path / "new_input_file.yaml"
+    yaml_content = generator.dictionary_to_yaml(input_dictionary)
+    new_input_file_path.write_text(yaml_content, encoding="utf-8")
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "render",
+            str(new_input_file_path.relative_to(tmp_path)),
+        ],
+    )
+
+    print(result.stdout)
+
+    assert (tmp_path / "rendercv_output" / "John_Doe_CV.pdf").exists()
+    assert not (tmp_path / "rendercv_output" / "John_Doe_CV.md").exists()
+    assert not (tmp_path / "rendercv_output" / "John_Doe_CV.html").exists()
+    assert not (tmp_path / "rendercv_output" / "John_Doe_CV_1.png").exists()
+
+
+@pytest.mark.parametrize(
+    ("option", "new_value"),
+    [
+        ("pdf-path", "override.pdf"),
+        ("latex-path", "override.tex"),
+        ("markdown-path", "override.md"),
+        ("html-path", "override.html"),
+        ("png-path", "override.png"),
+    ],
+)
+def test_render_command_overriding_input_file_settings(
+    tmp_path, input_file_path, option, new_value
+):
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    # read the input file as a dictionary:s
+    input_dictionary = reader.read_a_yaml_file(input_file_path)
+
+    # append rendercv_settings:
+    input_dictionary["rendercv_settings"] = {
+        "render_command": {
+            "pdf_path": "test.pdf",
+            "latex_path": "test.tex",
+            "markdown_path": "test.md",
+            "html_path": "test.html",
+            "png_path": "test.png",
+        }
+    }
+
+    # write the input dictionary to a new input file:
+    new_input_file_path = tmp_path / "new_input_file.yaml"
+    yaml_content = generator.dictionary_to_yaml(input_dictionary)
+    new_input_file_path.write_text(yaml_content, encoding="utf-8")
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "render",
+            str(new_input_file_path.relative_to(tmp_path)),
+            f"--{option}",
+            new_value,
+        ],
+    )
+
+    print(result.stdout)
+
+    assert (tmp_path / new_value).exists()
+    assert "Your CV is rendered!" in result.stdout

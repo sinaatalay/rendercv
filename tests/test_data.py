@@ -722,6 +722,22 @@ def test_if_local_catalog_resets():
     assert locale_catalog.locale_catalog["month"] == "month"
 
 
+def test_curriculum_vitae():
+    data.CurriculumVitae(name="Test Doe")
+
+    assert curriculum_vitae.curriculum_vitae == {"name": "Test Doe"}
+
+
+def test_if_curriculum_vitae_resets():
+    data.CurriculumVitae(name="Test Doe")
+
+    assert curriculum_vitae.curriculum_vitae["name"] == "Test Doe"
+
+    data.create_a_sample_data_model("John Doe")
+
+    assert curriculum_vitae.curriculum_vitae["name"] == "John Doe"
+
+
 def test_dictionary_to_yaml():
     input_dictionary = {
         "test_list": [
@@ -791,3 +807,36 @@ def test_make_a_url_clean(url, expected_clean_url):
         data.PublicationEntry(title="Test", authors=["test"], url=url).clean_url
         == expected_clean_url
     )
+
+
+@pytest.mark.parametrize(
+    "path_name, expected_value",
+    [
+        ("NAME_IN_SNAKE_CASE", "John_Doe"),
+        ("NAME_IN_LOWER_SNAKE_CASE", "john_doe"),
+        ("NAME_IN_UPPER_SNAKE_CASE", "JOHN_DOE"),
+        ("NAME_IN_KEBAB_CASE", "John-Doe"),
+        ("NAME_IN_LOWER_KEBAB_CASE", "john-doe"),
+        ("NAME_IN_UPPER_KEBAB_CASE", "JOHN-DOE"),
+        ("NAME", "John Doe"),
+        ("FULL_MONTH_NAME", "January"),
+        ("MONTH_ABBREVIATION", "Jan"),
+        ("MONTH", "1"),
+        ("MONTH_IN_TWO_DIGITS", "01"),
+        ("YEAR", "2024"),
+        ("YEAR_IN_TWO_DIGITS", "24"),
+    ],
+)
+@time_machine.travel("2024-01-01")
+def test_render_command_settings_placeholders(path_name, expected_value):
+    data.CurriculumVitae(name="John Doe")
+
+    render_command_settings = data.RenderCommandSettings(
+        pdf_path=path_name,
+        latex_path=path_name,
+        html_path=path_name,
+        markdown_path=path_name,
+        output_folder_name=path_name,
+    )
+
+    assert render_command_settings.pdf_path.name == expected_value  # type: ignore
