@@ -11,7 +11,7 @@
 
 </div>
 
-RenderCV allows you to create a high-quality CV as a PDF from a YAML input file. It supports Markdown syntax and gives you complete control over the $\LaTeX$ code. `rendercv` Python package is the engine behind the [RenderCV App](https://rendercv.com).
+RenderCV allows you to create a high-quality CV as a PDF from a YAML input file. It supports Markdown syntax and gives you complete control over the $\LaTeX$ code.
 
 The primary motivation behind RenderCV is to provide a concrete framework that allows:
 
