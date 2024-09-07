@@ -144,6 +144,7 @@ def welcome():
     table.add_column("Title", style="magenta", justify="left")
     table.add_column("Link", style="cyan", justify="right", no_wrap=True)
 
+    table.add_row("[bold]RenderCV App", "https://rendercv.com")
     table.add_row("Documentation", "https://docs.rendercv.com")
     table.add_row("Source code", "https://github.com/sinaatalay/rendercv/")
     table.add_row("Bug reports", "https://github.com/sinaatalay/rendercv/issues/")
