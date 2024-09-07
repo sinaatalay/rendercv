@@ -1,7 +1,7 @@
 <div align="center">
 <h1>RenderCV</h1>
 
-*A* $\LaTeX$ *CV/Resume Framework*
+*The engine of the [RenderCV App](https://rendercv.com).*
 
 [![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
@@ -11,7 +11,7 @@
 
 </div>
 
-RenderCV allows you to create a high-quality CV as a PDF from a YAML input file. It supports Markdown syntax and gives you complete control over the $\LaTeX$ code.
+RenderCV allows you to create a high-quality CV as a PDF from a YAML input file. It supports Markdown syntax and gives you complete control over the $\LaTeX$ code. `rendercv` Python package is the engine behind the [RenderCV App](https://rendercv.com).
 
 The primary motivation behind RenderCV is to provide a concrete framework that allows:
 
@@ -53,7 +53,7 @@ cv:
 
 Then, it produces one of these PDFs with its corresponding $\LaTeX$ code, Markdown file, HTML file, and images as PNGs. Each of these is an example of one of 4 built-in themes of RenderCV. Click on the images below to preview PDF files.
 
-| [![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ClassicTheme_CV.pdf) | [![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_Sb2novTheme_CV.pdf) |
+| [![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ClassicTheme_CV.pdf)    | [![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_Sb2novTheme_CV.pdf)                                     |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ModerncvTheme_CV.pdf) | [![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf) |
 
@@ -75,7 +75,7 @@ RenderCV comes with a JSON Schema so that the YAML input file can be filled out 
 
 ## Quick Start Guide
 
-Either use [rendercv-pipeline](https://github.com/sinaatalay/rendercv-pipeline) or follow the steps below.
+Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https://github.com/sinaatalay/rendercv-pipeline), or follow the steps below.
 
 1.  Install [Python](https://www.python.org/downloads/) (3.10 or newer).
 2.  Run the command below in a terminal to install RenderCV.
