@@ -427,5 +427,7 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
             )
         except RuntimeError as e:
             error(exception=e)
+        except Exception as e:
+            raise e
 
     return wrapper

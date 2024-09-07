@@ -139,3 +139,7 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
 # The dictionary below will be overwritten by LocaleCatalog class, which will contain
 # month names, month abbreviations, and other locale-specific strings.
 locale_catalog: dict[str, str | list[str]] = dict()
+
+# Initialize even if the RenderCVDataModel is not called (to make `format_date` function
+# work on its own):
+LocaleCatalog()

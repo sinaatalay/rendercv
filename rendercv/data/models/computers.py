@@ -4,12 +4,14 @@ properties based on the input data. For example, it includes functions that calc
 the time span between two dates, the date string, the URL of a social network, etc.
 """
 
+import pathlib
 import re
 from datetime import date as Date
 from typing import Optional
 
 import phonenumbers
 
+from .curriculum_vitae import curriculum_vitae
 from .locale_catalog import locale_catalog
 
 
@@ -71,10 +73,10 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
     placeholders = {
         "FULL_MONTH_NAME": full_month_names[month - 1],
         "MONTH_ABBREVIATION": short_month_names[month - 1],
-        "MONTH": str(month),
         "MONTH_IN_TWO_DIGITS": f"{month:02d}",
-        "YEAR": str(year),
         "YEAR_IN_TWO_DIGITS": str(year[-2:]),
+        "MONTH": str(month),
+        "YEAR": str(year),
     }
     if date_style is None:
         date_style = locale_catalog["date_style"]  # type: ignore
@@ -85,6 +87,40 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
     date_string = date_style
 
     return date_string  # type: ignore
+
+
+def convert_string_to_path(value: str) -> pathlib.Path:
+    """Converts a string to a `pathlib.Path` object by replacing the placeholders
+    with the corresponding values. If the path is not an absolute path, it is
+    converted to an absolute path by prepending the current working directory.
+    """
+    name = curriculum_vitae["name"]  # Curriculum Vitae owner's name
+    full_month_names = locale_catalog["full_names_of_months"]
+    short_month_names = locale_catalog["abbreviations_for_months"]
+
+    month = Date.today().month
+    year = str(Date.today().year)
+
+    placeholders = {
+        "NAME_IN_SNAKE_CASE": name.replace(" ", "_"),
+        "NAME_IN_LOWER_SNAKE_CASE": name.replace(" ", "_").lower(),
+        "NAME_IN_UPPER_SNAKE_CASE": name.replace(" ", "_").upper(),
+        "NAME_IN_KEBAB_CASE": name.replace(" ", "-"),
+        "NAME_IN_LOWER_KEBAB_CASE": name.replace(" ", "-").lower(),
+        "NAME_IN_UPPER_KEBAB_CASE": name.replace(" ", "-").upper(),
+        "FULL_MONTH_NAME": full_month_names[month - 1],
+        "MONTH_ABBREVIATION": short_month_names[month - 1],
+        "MONTH_IN_TWO_DIGITS": f"{month:02d}",
+        "YEAR_IN_TWO_DIGITS": str(year[-2:]),
+        "NAME": name,
+        "YEAR": str(year),
+        "MONTH": str(month),
+    }
+
+    for placeholder, placeholder_value in placeholders.items():
+        value = value.replace(placeholder, placeholder_value)
+
+    return pathlib.Path(value).absolute()
 
 
 def compute_time_span_string(

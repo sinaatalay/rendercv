@@ -42,8 +42,8 @@ from .entry_types import (
     available_entry_type_names,
 )
 from .locale_catalog import LocaleCatalog
-from .rendercv_settings import RenderCVSettings, RenderCommandSettings
 from .rendercv_data_model import RenderCVDataModel
+from .rendercv_settings import RenderCommandSettings, RenderCVSettings
 
 __all__ = [
     "OneLineEntry",

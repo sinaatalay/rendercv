@@ -295,12 +295,9 @@ def update_render_command_settings_of_the_input_file(
     render_command_field = input_file_as_a_dict["rendercv_settings"]["render_command"]
     for key, value in render_command_cli_arguments.items():
         if value != default_render_command_cli_arguments[key]:
-            render_command_field = value
-        else:
-            if key not in render_command_field:
-                render_command_field[key] = value
-            else:
-                pass
+            render_command_field[key] = value
+        elif key not in render_command_field:
+            render_command_field[key] = value
 
     input_file_as_a_dict["rendercv_settings"]["render_command"] = render_command_field
 

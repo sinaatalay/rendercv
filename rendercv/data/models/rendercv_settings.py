@@ -3,15 +3,13 @@ The `rendercv.models.rendercv_settings` module contains the data model of the
 `rendercv_settings` field of the input file.
 """
 
-from typing import Optional
 import pathlib
-from datetime import date as Date
+from typing import Optional
 
 import pydantic
 
 from .base import RenderCVBaseModelWithoutExtraKeys
-from .curriculum_vitae import curriculum_vitae
-from .locale_catalog import locale_catalog
+from .computers import convert_string_to_path
 
 file_path_placeholder_description = (
     "The following placeholders can be used:\n- FULL_MONTH_NAME: Full name of the"
@@ -31,6 +29,10 @@ file_path_placeholder_description = (
     ' "MONTH_ABBREVIATION YEAR".\nThe default value is null.'
 )
 
+file_path_placeholder_description_without_default = (
+    file_path_placeholder_description.replace("\nThe default value is null.", "")
+)
+
 
 class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the `render` command's settings."""
@@ -39,8 +41,9 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
         default="rendercv_output",
         title="Output Folder Name",
         description=(
-            "The name of the folder where the output files will be saved. The default"
-            ' value is "rendercv_output".'
+            "The name of the folder where the output files will be saved."
+            f" {file_path_placeholder_description_without_default}\nThe default value"
+            ' is "rendercv_output".'
         ),
     )
 
@@ -134,7 +137,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
         mode="before",
     )
     @classmethod
-    def covert_string_to_path(cls, value: Optional[str]) -> Optional[pathlib.Path]:
+    def convert_string_to_path(cls, value: Optional[str]) -> Optional[pathlib.Path]:
         """Converts a string to a `pathlib.Path` object by replacing the placeholders
         with the corresponding values. If the path is not an absolute path, it is
         converted to an absolute path by prepending the current working directory.
@@ -142,33 +145,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
         if value is None:
             return None
 
-        name = curriculum_vitae["name"]  # Curriculum Vitae owner's name
-        full_month_names = locale_catalog["full_names_of_months"]
-        short_month_names = locale_catalog["abbreviations_for_months"]
-
-        month = Date.today().month
-        year = str(Date.today().year)
-
-        placeholders = {
-            "NAME_IN_SNAKE_CASE": name.replace(" ", "_"),
-            "NAME_IN_LOWER_SNAKE_CASE": name.replace(" ", "_").lower(),
-            "NAME_IN_UPPER_SNAKE_CASE": name.replace(" ", "_").upper(),
-            "NAME_IN_KEBAB_CASE": name.replace(" ", "-"),
-            "NAME_IN_LOWER_KEBAB_CASE": name.replace(" ", "-").lower(),
-            "NAME_IN_UPPER_KEBAB_CASE": name.replace(" ", "-").upper(),
-            "FULL_MONTH_NAME": full_month_names[month - 1],
-            "MONTH_ABBREVIATION": short_month_names[month - 1],
-            "MONTH": str(month),
-            "MONTH_IN_TWO_DIGITS": f"{month:02d}",
-            "YEAR": str(year),
-            "YEAR_IN_TWO_DIGITS": str(year[-2:]),
-            "NAME": name,
-        }
-
-        for placeholder, placeholder_value in placeholders.items():
-            value = value.replace(placeholder, placeholder_value)
-
-        return pathlib.Path(value).absolute()
+        return convert_string_to_path(value)
 
 
 class RenderCVSettings(RenderCVBaseModelWithoutExtraKeys):

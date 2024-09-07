@@ -27,7 +27,9 @@ from .models import (
     NormalEntry,
     OneLineEntry,
     PublicationEntry,
+    RenderCommandSettings,
     RenderCVDataModel,
+    RenderCVSettings,
     SectionContents,
     SocialNetwork,
     available_entry_models,
@@ -69,4 +71,6 @@ __all__ = [
     "available_entry_models",
     "read_a_yaml_file",
     "validate_input_dictionary_and_return_the_data_model",
+    "RenderCVSettings",
+    "RenderCommandSettings",
 ]
