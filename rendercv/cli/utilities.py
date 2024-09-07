@@ -322,7 +322,7 @@ def parse_render_settings(
     Args:
         dictionary (dict): The dictionary to be combined with the command line
             arguments.
-        command_line_arguments (dict[str, str]): The command line arguments.
+        cli_arguments (dict[str, str]): The command line arguments.
 
     Returns:
         dict[str, str]: The combined dictionary.
