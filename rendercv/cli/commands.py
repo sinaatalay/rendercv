@@ -145,8 +145,9 @@ def cli_command_render(
 ):
     """Render a CV from a YAML input file."""
     if watch:
-
+        cwd = os.getcwd()
         def rerun_command():
+            os.chdir(cwd) # Undo the chdir present later in the file for new runs.
             cli_command_render(
                 input_file_name=input_file_name,
                 use_local_latex_command=use_local_latex_command,
