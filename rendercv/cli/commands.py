@@ -128,7 +128,7 @@ def cli_command_render(
         typer.Option(
             "--watch",
             "-w",
-            help="Automatically generate files on change.",
+            help="Automatically re-run RenderCV when the input file is updated.",
         ),
     ] = False,
     # This is a dummy argument for the help message for
@@ -144,7 +144,6 @@ def cli_command_render(
     extra_data_model_override_argumets: typer.Context = None,  # type: ignore
 ):
     """Render a CV from a YAML input file."""
-
     if watch:
 
         def rerun_command():
@@ -164,10 +163,8 @@ def cli_command_render(
                 extra_data_model_override_argumets=extra_data_model_override_argumets,
             )
 
-        file_path = utilities.string_to_file_path(input_file_name)
-        if file_path is None:
-            raise FileNotFoundError(f"Unable to find path to {input_file_name}")
-        watcher.watch_file(file_path, rerun_command)
+        input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
+        watcher.run_a_function_if_a_file_changes(input_file_path, rerun_command)
         return
 
     printer.welcome()
@@ -199,6 +196,7 @@ def cli_command_render(
         "dont_generate_png": dont_generate_png,
         "dont_generate_markdown": dont_generate_markdown,
         "dont_generate_html": dont_generate_html,
+        "watch": watch
     }
     input_file_as_a_dict = utilities.update_render_command_settings_of_the_input_file(
         input_file_as_a_dict, cli_render_arguments

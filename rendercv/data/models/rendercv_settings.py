@@ -128,6 +128,15 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
         ),
     )
 
+    watch: bool = pydantic.Field(
+        default=False,
+        title="Execute on save Flag",
+        description=(
+            "A boolean value to determine whether to re-run RenderCV when the input"
+            "file is updated. The default value is False."
+        ),
+    )
+
     @pydantic.field_validator(
         "output_folder_name",
         mode="before",
