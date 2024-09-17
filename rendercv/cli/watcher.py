@@ -1,5 +1,6 @@
 """
-The `rendercv.cli.watcher` module contains all the functions and classes that are used to watch files and emit callbacks.
+The `rendercv.cli.watcher` module contains logic for watching files 
+and emit callback functions.
 """
 
 import os
@@ -14,19 +15,22 @@ from typer import Exit
 
 
 class ModifiedCVEventHandler(FileSystemEventHandler):
-    """This class handles the file changes and triggers a specified `callback` ignoring duplicate changes.
+    """This class handles the file changes and triggers a specified `function` 
+    ignoring duplicate changes.
 
     Args:
         file_path (pathlib.Path): The path of the file to watch for.
-        callback (Callable[..., None]): The function to be called on file modification. *CALLBACK MUST BE NON-BLOCKING*
+        function (Callable[..., None]): The function to be called on file modification.
+
+    *CALLBACK MUST BE NON-BLOCKING*
     """
 
     file_path: pathlib.Path
-    callback: Callable[..., None]
+    function: Callable[..., None]
     previous_hash: str = ""
 
-    def __init__(self, file_path: pathlib.Path, callback: Callable[..., None]):
-        self.callback = callback
+    def __init__(self, file_path: pathlib.Path, function: Callable[..., None]):
+        self.function = function
         self.file_path = file_path
 
         # Handle an initial pass manually
@@ -36,8 +40,8 @@ class ModifiedCVEventHandler(FileSystemEventHandler):
         if event.src_path != str(self.file_path):
             # Ignore any events that aren't our file.
             return
-
-        file_hash = sha256(open(event.src_path).read().encode("utf-8")).hexdigest()
+        with open(event.src_path) as f:
+            file_hash = sha256(f.read().encode("utf-8")).hexdigest()
 
         if file_hash == self.previous_hash:
             # Exit if file hash has not changed.
@@ -46,19 +50,22 @@ class ModifiedCVEventHandler(FileSystemEventHandler):
         self.previous_hash = file_hash
 
         try:
-            self.callback()
+            self.function()
         except Exit:
-            ...  # Suppress typer Exit so we can continue watching even if we see errors.
+            ...  # Suppress Exit so we can continue watching.
 
 
-def watch_file(file_path: pathlib.Path, callback: Callable[..., None]):
+def run_a_function_if_a_file_changes(
+    file_path: pathlib.Path, function: Callable[..., None]
+):
     """Watch file located at `file_path` and trigger callback on file modification.
 
     Args:
         file_path (pathlib.Path): The path of the file to watch for.
-        callback (Callable[..., None]): The function to be called on file modification. *CALLBACK MUST BE NON-BLOCKING*
+        function (Callable[..., None]): The function to be called on file modification.
+        *FUNCTION MUST BE NON-BLOCKING*
     """
-    event_handler = ModifiedCVEventHandler(file_path, callback)
+    event_handler = ModifiedCVEventHandler(file_path, function)
     observer = Observer()
 
     # If on windows we have to poll the parent directory instead of the file.

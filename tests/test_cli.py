@@ -1,9 +1,12 @@
 import os
+import pathlib
 import re
 import shutil
 import subprocess
 import sys
 from datetime import date as Date
+from typing import List
+from unittest.mock import patch, MagicMock
 
 import pydantic
 import pytest
@@ -13,11 +16,36 @@ import typer.testing
 import rendercv.cli as cli
 import rendercv.cli.printer as printer
 import rendercv.cli.utilities as utilities
+from rendercv.cli.watcher import run_a_function_if_a_file_changes
 import rendercv.data as data
 import rendercv.data.generator as generator
 import rendercv.data.reader as reader
 from rendercv import __version__
 
+
+class WriteEventMocker:
+    count: int
+    input_file_path: pathlib.Path
+    writes: List[str]
+
+    def __init__(self, input_file_path, writes):
+        self.input_file_path = input_file_path
+        self.writes = writes
+        self.count = 0
+
+    def side_effect(self, number):
+        if self.count >= len(self.writes):
+            raise KeyboardInterrupt
+
+        with open(self.input_file_path,'a') as f:
+            f.write(self.writes[self.count])
+
+        # Wait for write incase of slow machines.
+        while True:
+            with open(self.input_file_path,'r') as f:
+                if self.writes[self.count] in f.read():
+                    break
+        self.count += 1
 
 def run_render_command(input_file_path, working_path, extra_arguments=[]):
     # copy input file to the temporary directory to create the output directory there:
@@ -922,3 +950,31 @@ def test_render_command_overriding_input_file_settings(
 
     assert (tmp_path / new_value).exists()
     assert "Your CV is rendered!" in result.stdout
+ 
+@pytest.mark.parametrize(
+    ("writes", "expected_count"),
+    [
+        ([], 1),
+        ([""], 1),
+        (["foo"], 2),
+        (["foo","bar"], 3),
+        (["foo","","","","bar",""], 3),
+    ],
+)
+def test_watcher_emits_on_file_change(writes, expected_count, tmp_path, input_file_path):
+    input_dictionary = reader.read_a_yaml_file(input_file_path)
+
+    new_input_file_path = tmp_path / "new_input_file.yaml"
+    yaml_content = generator.dictionary_to_yaml(input_dictionary)
+    new_input_file_path.write_text(yaml_content, encoding="utf-8")
+
+    mock_function = MagicMock()
+    mocker = WriteEventMocker(new_input_file_path, writes)
+
+    with patch('time.sleep', side_effect=mocker.side_effect):
+        try:
+            run_a_function_if_a_file_changes(new_input_file_path, mock_function)
+        except KeyboardInterrupt:
+            pass
+
+    assert mock_function.call_count == expected_count
