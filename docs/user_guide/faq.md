@@ -22,7 +22,9 @@ To be answered.
 
 ## Can I add a profile picture?
 
-To be answered.
+### `moderncv`
+
+There is a optional parameter `profile_picture` under `cv` in the `Your_Name_CV.yaml`. provide the path of the JPG or PNG file (with file extension). Directory where `Your_Name_CV.yaml` is located (by default) is considered as root directory here.
 
 ## How can I switch the order of `company` and `position` in ExperienceEntry?
 
