@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from datetime import date as Date
 from typing import List
 from unittest.mock import patch, MagicMock
@@ -43,7 +44,7 @@ class WriteEventMocker:
         # Wait for write incase of slow machines.
         while True:
             with open(self.input_file_path,'r') as f:
-                if self.writes[self.count] in f.read():
+                if f.read().endswith(self.writes[self.count]):
                     break
         self.count += 1
 
@@ -59,6 +60,14 @@ def run_render_command(input_file_path, working_path, extra_arguments=[]):
 
     return result
 
+
+def assert_condition(condition_func, timeout=1, period=0.1):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if condition_func:
+            return 
+        time.sleep(period)
+    assert False
 
 def test_welcome():
     printer.welcome()
@@ -950,7 +959,49 @@ def test_render_command_overriding_input_file_settings(
 
     assert (tmp_path / new_value).exists()
     assert "Your CV is rendered!" in result.stdout
- 
+
+@patch('rendercv.cli.commands.cli_command_render')
+@pytest.mark.parametrize(
+    ("writes", "expected_count"),
+    [
+        ([], 1),
+        ([""], 1),
+        (["\n  font_size: 10pt"], 2),
+        ( ["\n  font_size: 10pt", "\n  color: '#FF0000'"], 3),
+        ( ["\n  font_size: 10pt", "","","","\n  color: '#FF0000'",""], 3),
+    ],
+)
+def test_render_command_with_watch_enabled(cli_command_render, writes, expected_count, tmp_path, input_file_path):
+    os.chdir(tmp_path)
+    # read the input file as a dictionary:s
+    input_dictionary = reader.read_a_yaml_file(input_file_path)
+
+    # write the input dictionary to a new input file:
+    new_input_file_path = tmp_path / "new_input_file.yaml"
+    yaml_content = generator.dictionary_to_yaml(input_dictionary)
+    new_input_file_path.write_text(yaml_content, encoding="utf-8")
+
+
+    mocker = WriteEventMocker(new_input_file_path, writes)
+    
+    with patch('time.sleep', side_effect=mocker.side_effect):
+        try:
+            result = runner.invoke(
+                    cli.app,
+                    [
+                        "render",
+                        str(new_input_file_path.relative_to(tmp_path)),
+                        f"-w"
+                    ],
+                )
+
+        except KeyboardInterrupt:
+            pass
+
+    def expected_call_count():
+        return cli_command_render.call_count == expected_count
+    assert_condition(expected_call_count)
+
 @pytest.mark.parametrize(
     ("writes", "expected_count"),
     [
@@ -977,4 +1028,6 @@ def test_watcher_emits_on_file_change(writes, expected_count, tmp_path, input_fi
         except KeyboardInterrupt:
             pass
 
-    assert mock_function.call_count == expected_count
+    def expected_call_count():
+        return mock_function.call_count == expected_count
+    assert_condition(expected_call_count)

@@ -3,7 +3,7 @@ The `rendercv.cli.watcher` module contains logic for watching files
 and emit callback functions.
 """
 
-import os
+import sys
 import pathlib
 import time
 from hashlib import sha256
@@ -68,11 +68,12 @@ def run_a_function_if_a_file_changes(
     event_handler = ModifiedCVEventHandler(file_path, function)
     observer = Observer()
 
-    # If on windows we have to poll the parent directory instead of the file.
-    if os.name == "nt":
-        observer.schedule(event_handler, str(file_path.parent), recursive=False)
-    else:
+
+    if sys.platform == "linux":
         observer.schedule(event_handler, str(file_path), recursive=False)
+    # In non linux machines we have to poll the parent directory instead of the file.
+    else:
+        observer.schedule(event_handler, str(file_path.parent), recursive=False)
 
     observer.start()
     try:
