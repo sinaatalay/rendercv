@@ -24,7 +24,7 @@ import rendercv.data.reader as reader
 from rendercv import __version__
 
 
-class WriteEventMocker:
+class WriteEventUtility:
     count: int
     input_file_path: pathlib.Path
     writes: List[str]
@@ -982,7 +982,7 @@ def test_render_command_with_watch_enabled(cli_command_render, writes, expected_
     new_input_file_path.write_text(yaml_content, encoding="utf-8")
 
 
-    mocker = WriteEventMocker(new_input_file_path, writes)
+    mocker = WriteEventUtility(new_input_file_path, writes)
     
     with patch('time.sleep', side_effect=mocker.side_effect):
         try:
@@ -1020,7 +1020,7 @@ def test_watcher_emits_on_file_change(writes, expected_count, tmp_path, input_fi
     new_input_file_path.write_text(yaml_content, encoding="utf-8")
 
     mock_function = MagicMock()
-    mocker = WriteEventMocker(new_input_file_path, writes)
+    mocker = WriteEventUtility(new_input_file_path, writes)
 
     with patch('time.sleep', side_effect=mocker.side_effect):
         try:
