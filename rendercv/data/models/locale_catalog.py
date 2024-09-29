@@ -131,14 +131,14 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
     def update_locale_catalog(cls, value: str, info: pydantic.ValidationInfo) -> str:
         """Update the `locale_catalog` dictionary."""
         if value:
-            locale_catalog[info.field_name] = value  # type: ignore
+            LOCALE_CATALOG[info.field_name] = value  # type: ignore
 
         return value
 
 
 # The dictionary below will be overwritten by LocaleCatalog class, which will contain
 # month names, month abbreviations, and other locale-specific strings.
-locale_catalog: dict[str, str | list[str]] = dict()
+LOCALE_CATALOG: dict[str, str | list[str]] = dict()
 
 # Initialize even if the RenderCVDataModel is not called (to make `format_date` function
 # work on its own):

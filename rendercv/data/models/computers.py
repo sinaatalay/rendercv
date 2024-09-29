@@ -12,7 +12,7 @@ from typing import Optional
 import phonenumbers
 
 from .curriculum_vitae import curriculum_vitae
-from .locale_catalog import locale_catalog
+from .locale_catalog import LOCALE_CATALOG
 
 
 def format_phone_number(phone_number: str) -> str:
@@ -34,7 +34,7 @@ def format_phone_number(phone_number: str) -> str:
         str: The formatted phone number.
     """
 
-    format = locale_catalog["phone_number_format"].upper()  # type: ignore
+    format = LOCALE_CATALOG["phone_number_format"].upper()  # type: ignore
 
     parsed_number = phonenumbers.parse(phone_number, None)
     formatted_number = phonenumbers.format_number(
@@ -64,8 +64,8 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
     Returns:
         str: The formatted date.
     """
-    full_month_names = locale_catalog["full_names_of_months"]
-    short_month_names = locale_catalog["abbreviations_for_months"]
+    full_month_names = LOCALE_CATALOG["full_names_of_months"]
+    short_month_names = LOCALE_CATALOG["abbreviations_for_months"]
 
     month = int(date.strftime("%m"))
     year = date.strftime(format="%Y")
@@ -79,7 +79,7 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
         "YEAR": str(year),
     }
     if date_style is None:
-        date_style = locale_catalog["date_style"]  # type: ignore
+        date_style = LOCALE_CATALOG["date_style"]  # type: ignore
 
     for placeholder, value in placeholders.items():
         date_style = date_style.replace(placeholder, value)  # type: ignore
@@ -95,8 +95,8 @@ def convert_string_to_path(value: str) -> pathlib.Path:
     converted to an absolute path by prepending the current working directory.
     """
     name = curriculum_vitae["name"]  # Curriculum Vitae owner's name
-    full_month_names = locale_catalog["full_names_of_months"]
-    short_month_names = locale_catalog["abbreviations_for_months"]
+    full_month_names = LOCALE_CATALOG["full_names_of_months"]
+    short_month_names = LOCALE_CATALOG["abbreviations_for_months"]
 
     month = Date.today().month
     year = str(Date.today().year)
@@ -192,16 +192,16 @@ def compute_time_span_string(
         if how_many_years == 0:
             how_many_years_string = None
         elif how_many_years == 1:
-            how_many_years_string = f"1 {locale_catalog['year']}"
+            how_many_years_string = f"1 {LOCALE_CATALOG['year']}"
         else:
-            how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
+            how_many_years_string = f"{how_many_years} {LOCALE_CATALOG['years']}"
 
         # Calculate the number of months between start_date and end_date:
         how_many_months = round((timespan_in_days % 365) / 30)
         if how_many_months <= 1:
-            how_many_months_string = f"1 {locale_catalog['month']}"
+            how_many_months_string = f"1 {LOCALE_CATALOG['month']}"
         else:
-            how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
+            how_many_months_string = f"{how_many_months} {LOCALE_CATALOG['months']}"
 
         # Combine howManyYearsString and howManyMonthsString:
         if how_many_years_string is None:
@@ -273,7 +273,7 @@ def compute_date_string(
                 start_date = format_date(date_object)
 
         if end_date == "present":
-            end_date = locale_catalog["present"]  #  type: ignore
+            end_date = LOCALE_CATALOG["present"]  #  type: ignore
         elif isinstance(end_date, int):
             # Then it means only the year is provided
             end_date = str(end_date)
@@ -285,7 +285,7 @@ def compute_date_string(
             else:
                 end_date = format_date(date_object)
 
-        date_string = f"{start_date} {locale_catalog['to']} {end_date}"
+        date_string = f"{start_date} {LOCALE_CATALOG['to']} {end_date}"
 
     else:
         # Neither date, start_date, nor end_date are provided, so return an empty
