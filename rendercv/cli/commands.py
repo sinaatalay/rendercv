@@ -229,7 +229,8 @@ def cli_command_render(
         progress.start_a_step("Rendering the LaTeX file to a PDF")
 
         pdf_file_path_in_output_folder = renderer.render_a_pdf_from_latex(
-            latex_file_path_in_output_folder, use_local_latex_command
+            latex_file_path_in_output_folder,
+            render_command_settings.use_local_latex_command,
         )
         if render_command_settings.pdf_path:
             utilities.copy_files(
