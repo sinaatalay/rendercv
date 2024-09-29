@@ -782,7 +782,7 @@ def test_relative_input_file_path_with_custom_output_paths(tmp_path, input_file_
     shutil.copy(input_file_path, new_input_file_path)
 
     os.chdir(tmp_path)
-    result = runner.invoke(
+    runner.invoke(
         cli.app,
         [
             "render",
