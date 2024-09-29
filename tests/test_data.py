@@ -159,14 +159,17 @@ def test_generate_json_schema_file(tmp_path):
     assert isinstance(schema, dict)
 
 
-# def test_if_the_schema_is_the_latest(root_directory_path):
-#     original_schema_file_path = root_directory_path / "schema.json"
-#     original_schema_text = original_schema_file_path.read_text()
-#     original_schema = json.loads(original_schema_text)
+@pytest.mark.skip(
+    reason="We should start using this when we start to use branches for each version."
+)
+def test_if_the_schema_is_the_latest(root_directory_path):
+    original_schema_file_path = root_directory_path / "schema.json"
+    original_schema_text = original_schema_file_path.read_text()
+    original_schema = json.loads(original_schema_text)
 
-#     new_schema = dm.generate_json_schema()
+    new_schema = data.generate_json_schema()
 
-#     assert original_schema == new_schema
+    assert original_schema == new_schema
 
 
 @pytest.mark.parametrize(
@@ -705,7 +708,7 @@ def test_locale_catalog():
         phone_number_format="international",
     )
 
-    assert locale_catalog.locale_catalog == data_model.locale_catalog.model_dump()
+    assert locale_catalog.LOCALE_CATALOG == data_model.locale_catalog.model_dump()
 
 
 def test_if_local_catalog_resets():
@@ -715,11 +718,11 @@ def test_if_local_catalog_resets():
         month="a",
     )
 
-    assert locale_catalog.locale_catalog["month"] == "a"
+    assert locale_catalog.LOCALE_CATALOG["month"] == "a"
 
     data_model = data.create_a_sample_data_model("John Doe")
 
-    assert locale_catalog.locale_catalog["month"] == "month"
+    assert locale_catalog.LOCALE_CATALOG["month"] == "month"
 
 
 def test_curriculum_vitae():

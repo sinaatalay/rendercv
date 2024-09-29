@@ -57,27 +57,41 @@ def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
             "\\textit{This is a \\underline{nested} italic text.}",
             "\\textit{This is a \\underline{nested} italic text.}",
         ),
-        # The two scenarios below doesn't work. I couldn't find a way to implement it:
-        # (
-        #     "\\textbf{This is a \\textbf{nested} bold \\textbf{text}.}",
-        #     (
-        #         "\\textbf{This is a \\textnormal{nested} bold"
-        #         " \\textnormal{text}.}"
-        #     ),
-        # ),
-        # (
-        #     (
-        #         "\\textit{This \\textit{is} a \\textbf{n\\textit{ested}} underlined"
-        #         " \\textit{text}.}"
-        #     ),
-        #     (
-        #         "\\textit{This \\textnormal{is} a \\textbf{n\\textnormal{ested}}"
-        #         " underlined \\textnormal{text}.}"
-        #     ),
-        # ),
     ],
 )
 def test_latex_file_revert_nested_latex_style_commands_method(string, expected_string):
+    assert templater.revert_nested_latex_style_commands(string) == expected_string
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "The current implementation of revert_nested_latex_style_commands method does"
+        " not handle the challenging cases in the test cases below."
+    ),
+)
+@pytest.mark.parametrize(
+    "string, expected_string",
+    [
+        (
+            "\\textbf{This is a \\textbf{nested} bold \\textbf{text}.}",
+            "\\textbf{This is a \\textnormal{nested} bold \\textnormal{text}.}",
+        ),
+        (
+            (
+                "\\textit{This \\textit{is} a \\textbf{n\\textit{ested}} underlined"
+                " \\textit{text}.}"
+            ),
+            (
+                "\\textit{This \\textnormal{is} a \\textbf{n\\textnormal{ested}}"
+                " underlined \\textnormal{text}.}"
+            ),
+        ),
+    ],
+)
+def test_latex_file_revert_nested_latex_style_commands_method_challenging_ones(
+    string, expected_string
+):
     assert templater.revert_nested_latex_style_commands(string) == expected_string
 
 
