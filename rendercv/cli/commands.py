@@ -144,7 +144,8 @@ def cli_command_render(
     extra_data_model_override_argumets: typer.Context = None,  # type: ignore
 ):
     """Render a CV from a YAML input file."""
-    printer.welcome()
+    if not watch:
+        printer.welcome()
 
     input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
     original_working_directory = pathlib.Path.cwd()
