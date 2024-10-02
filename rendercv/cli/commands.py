@@ -174,7 +174,7 @@ def cli_command_render(
         "dont_generate_png": dont_generate_png,
         "dont_generate_markdown": dont_generate_markdown,
         "dont_generate_html": dont_generate_html,
-        "watch": watch
+        "watch": watch,
     }
     input_file_as_a_dict = utilities.update_render_command_settings_of_the_input_file(
         input_file_as_a_dict, cli_render_arguments
@@ -185,8 +185,9 @@ def cli_command_render(
 
     if render_command_settings_dict["watch"]:
         cwd = os.getcwd()
+
         def rerun_command():
-            os.chdir(cwd) # Undo the chdir present later in the file for new runs.
+            os.chdir(cwd)  # Undo the chdir present later in the file for new runs.
             cli_command_render(
                 input_file_name=input_file_name,
                 use_local_latex_command=use_local_latex_command,

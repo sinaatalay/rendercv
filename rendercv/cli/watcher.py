@@ -1,21 +1,21 @@
 """
-The `rendercv.cli.watcher` module contains logic for watching files 
+The `rendercv.cli.watcher` module contains logic for watching files
 and emit callback functions.
 """
 
-import sys
 import pathlib
+import sys
 import time
 from hashlib import sha256
 from typing import Callable
 
+from typer import Exit
 from watchdog.events import FileModifiedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
-from typer import Exit
 
 
 class ModifiedCVEventHandler(FileSystemEventHandler):
-    """This class handles the file changes and triggers a specified `function` 
+    """This class handles the file changes and triggers a specified `function`
     ignoring duplicate changes.
 
     Args:
@@ -53,9 +53,7 @@ class ModifiedCVEventHandler(FileSystemEventHandler):
             ...  # Suppress Exit so we can continue watching.
 
 
-def run_a_function_if_a_file_changes(
-    file_path: pathlib.Path, function: Callable
-):
+def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable):
     """Watch file located at `file_path` and trigger callback on file modification.
 
     Args:
@@ -64,7 +62,6 @@ def run_a_function_if_a_file_changes(
     """
     event_handler = ModifiedCVEventHandler(file_path, function)
     observer = Observer()
-
 
     if sys.platform == "linux":
         observer.schedule(event_handler, str(file_path), recursive=False)
