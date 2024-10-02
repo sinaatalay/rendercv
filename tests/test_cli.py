@@ -991,7 +991,7 @@ def test_render_command_with_watch_enabled(cli_command_render, writes, expected_
                     [
                         "render",
                         str(new_input_file_path.relative_to(tmp_path)),
-                        f"-w"
+                        "-w"
                     ],
                 )
 

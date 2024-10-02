@@ -20,16 +20,14 @@ class ModifiedCVEventHandler(FileSystemEventHandler):
 
     Args:
         file_path (pathlib.Path): The path of the file to watch for.
-        function (Callable[..., None]): The function to be called on file modification.
-
-    *CALLBACK MUST BE NON-BLOCKING*
+        function (Callable): The function to be called on file modification.
     """
 
     file_path: pathlib.Path
     function: Callable[..., None]
     previous_hash: str = ""
 
-    def __init__(self, file_path: pathlib.Path, function: Callable[..., None]):
+    def __init__(self, file_path: pathlib.Path, function: Callable):
         self.function = function
         self.file_path = file_path
 
@@ -56,14 +54,13 @@ class ModifiedCVEventHandler(FileSystemEventHandler):
 
 
 def run_a_function_if_a_file_changes(
-    file_path: pathlib.Path, function: Callable[..., None]
+    file_path: pathlib.Path, function: Callable
 ):
     """Watch file located at `file_path` and trigger callback on file modification.
 
     Args:
         file_path (pathlib.Path): The path of the file to watch for.
-        function (Callable[..., None]): The function to be called on file modification.
-        *FUNCTION MUST BE NON-BLOCKING*
+        function (Callable): The function to be called on file modification.
     """
     event_handler = ModifiedCVEventHandler(file_path, function)
     observer = Observer()
