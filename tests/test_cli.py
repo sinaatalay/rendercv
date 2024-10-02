@@ -1042,7 +1042,7 @@ def test_watcher_emits_on_file_change(
     mock_function = MagicMock()
     mocker = WriteEventPatcher(new_input_file_path, writes)
 
-    with patch("time.sleep", side_effect=mocker.side_effect):
+    with patch("time.sleep", side_effect=mocker.patch_write_event):
         try:
             run_a_function_if_a_file_changes(new_input_file_path, mock_function)
         except KeyboardInterrupt:
