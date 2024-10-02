@@ -24,7 +24,7 @@ import rendercv.data.reader as reader
 from rendercv import __version__
 
 
-class WriteEventUtility:
+class WriteEventPatcher:
     count: int
     input_file_path: pathlib.Path
     writes: List[str]
@@ -34,7 +34,13 @@ class WriteEventUtility:
         self.writes = writes
         self.count = 0
 
-    def side_effect(self, number):
+    def patch_write_event(self, number: int):
+        """This function is meant to be used when we want to patch certain operations with write events. When called it will append the corresponding string from self.writes
+
+        Args:
+            number (int): The current stage in the write events.
+        """
+
         if self.count >= len(self.writes):
             raise KeyboardInterrupt
 
@@ -61,7 +67,15 @@ def run_render_command(input_file_path, working_path, extra_arguments=[]):
     return result
 
 
-def assert_condition(condition_func, timeout=1, period=0.1):
+def assert_condition(condition_func: Callable[None, bool], timeout: int = 1, period: float = 0.1):
+    """This function polls using condition_func on the specified period and asserts false if the condition is not met within the time. This is useful when testing async functions.
+
+    Args:
+        condition_func (Callable[None, bool]): A function representing a condition that should be met.
+        timeout (int): The maximum time allowed to wait for condition in seconds.
+        period (float): The polling period in seconds.
+    """
+
     start_time = time.time()
     while time.time() - start_time < timeout:
         if condition_func:
@@ -982,9 +996,9 @@ def test_render_command_with_watch_enabled(cli_command_render, writes, expected_
     new_input_file_path.write_text(yaml_content, encoding="utf-8")
 
 
-    mocker = WriteEventUtility(new_input_file_path, writes)
+    mocker = WriteEventPatcher(new_input_file_path, writes)
     
-    with patch('time.sleep', side_effect=mocker.side_effect):
+    with patch('time.sleep', side_effect=mocker.patch_write_event):
         try:
             result = runner.invoke(
                     cli.app,
@@ -1020,7 +1034,7 @@ def test_watcher_emits_on_file_change(writes, expected_count, tmp_path, input_fi
     new_input_file_path.write_text(yaml_content, encoding="utf-8")
 
     mock_function = MagicMock()
-    mocker = WriteEventUtility(new_input_file_path, writes)
+    mocker = WriteEventPatcher(new_input_file_path, writes)
 
     with patch('time.sleep', side_effect=mocker.side_effect):
         try:
