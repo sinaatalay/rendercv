@@ -198,17 +198,17 @@ def compute_time_span_string(
         if how_many_years == 0:
             how_many_years_string = None
         elif how_many_years == 1:
-            how_many_years_string = f"1 {locale_catalog['year']}"
+            how_many_years_string = f"1 {LOCALE_CATALOG['year']}"
         else:
-            how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
+            how_many_years_string = f"{how_many_years} {LOCALE_CATALOG['years']}"
 
         # Format the number of months between start_date and end_date:
         if how_many_months == 1 or (how_many_years_string is None and how_many_months == 0):
-            how_many_months_string = f"1 {locale_catalog['month']}"
+            how_many_months_string = f"1 {LOCALE_CATALOG['month']}"
         elif how_many_months == 0:
             how_many_months_string = None
         else:
-            how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
+            how_many_months_string = f"{how_many_months} {LOCALE_CATALOG['months']}"
 
         # Combine howManyYearsString and howManyMonthsString:
         if how_many_years_string is None:
