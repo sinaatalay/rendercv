@@ -321,11 +321,7 @@ def revert_nested_latex_style_commands(latex_string: str) -> str:
 
 
 def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
-    """Escape $\\LaTeX$ characters in a string.
-
-    This function is called during the reading of the input file. Before the validation
-    process, each input field's special $\\LaTeX$ characters are escaped. It is also can
-    be used as a Jinja2 filter in templates.
+    """Escape $\\LaTeX$ characters in a string by adding a backslash before them.
 
     Example:
         ```python
