@@ -193,29 +193,38 @@ def compute_time_span_string(
         # Calculate the number of days between start_date and end_date:
         timespan_in_days = (end_date - start_date).days  # type: ignore
 
-        # Calculate the number of years between start_date and end_date:
+        # Calculate the number of years and months between start_date and end_date:
         how_many_years = timespan_in_days // 365
+        how_many_months = round((timespan_in_days % 365) / 30)
+        # Deal with overflow (prevent rounding to 1 year 12 months, etc.)
+        how_many_years += how_many_months // 12
+        how_many_months %= 12
+        
+        # Format the number of years and months between start_date and end_date:
         if how_many_years == 0:
             how_many_years_string = None
         elif how_many_years == 1:
-            how_many_years_string = f"1 {LOCALE_CATALOG['year']}"
+            how_many_years_string = f"1 {locale_catalog['year']}"
         else:
-            how_many_years_string = f"{how_many_years} {LOCALE_CATALOG['years']}"
+            how_many_years_string = f"{how_many_years} {locale_catalog['years']}"
 
-        # Calculate the number of months between start_date and end_date:
-        how_many_months = round((timespan_in_days % 365) / 30)
-        if how_many_months <= 1:
-            how_many_months_string = f"1 {LOCALE_CATALOG['month']}"
+        # Format the number of months between start_date and end_date:
+        if how_many_months == 1 or (how_many_years_string is None and how_many_months == 0):
+            how_many_months_string = f"1 {locale_catalog['month']}"
+        elif how_many_months == 0:
+            how_many_months_string = None
         else:
-            how_many_months_string = f"{how_many_months} {LOCALE_CATALOG['months']}"
+            how_many_months_string = f"{how_many_months} {locale_catalog['months']}"
 
         # Combine howManyYearsString and howManyMonthsString:
         if how_many_years_string is None:
             time_span_string = how_many_months_string
+        elif how_many_months_string is None:
+            time_span_string = how_many_years_string
         else:
             time_span_string = f"{how_many_years_string} {how_many_months_string}"
 
-        return time_span_string
+        return time_span_string.strip()
 
 
 def compute_date_string(
