@@ -118,7 +118,7 @@ class LaTeXFile(TemplatedFile):
         """
         # Template the preamble, header, and sections:
         preamble = self.template("Preamble")
-        header = self.template("Header")
+        header = self.template("HeaderWithPhoto") if self.cv.photo else self.template("Header")
         sections: list[tuple[str, list[str], str]] = []
         for section in self.cv.sections:
             section_beginning = self.template(
