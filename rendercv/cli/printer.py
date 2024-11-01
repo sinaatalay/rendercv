@@ -373,14 +373,10 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
     as
 
     ```python
-    handle_exceptions(my_function)()
+    my_function = handle_exceptions(my_function)
     ```
 
-    which is step by step equivalent to
-
-    1.  Execute `#!python handle_exceptions(my_function)` which will return the
-        function called `wrapper`.
-    2.  Execute `#!python wrapper()`.
+    which means that the function `my_function` is modified by the `handle_exceptions`.
 
     Args:
         function (Callable): The function to be wrapped.

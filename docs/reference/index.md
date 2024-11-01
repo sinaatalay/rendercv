@@ -45,7 +45,6 @@ flowchart TD
 - [`renderer`](renderer/index.md) package contains the necessary classes and functions for generating the output files from the `RenderCVDataModel` object.
     - [`renderer.py`](renderer/renderer.md) module contains the necessary functions for rendering $\\LaTeX$, PDF, Markdown, HTML, and PNG files from the data model.
     - [`templater.py`](renderer/templater.md) module contains the necessary classes and functions for templating the $\\LaTeX$ and Markdown files from the data model.
-object.
 - [`themes`](themes/index.md) package contains the built-in themes of RenderCV.
     - [`common_options.py`](themes/common_options.md) module contains some standard data models for design options.
     - [`classic`](themes/classic.md) package contains the `classic` theme templates and data models for its design options.
