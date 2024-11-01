@@ -317,7 +317,7 @@ def revert_nested_latex_style_commands(latex_string: str) -> str:
     return latex_string
 
 
-def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
+def escape_latex_characters(latex_string: str) -> str:
     """Escape $\\LaTeX$ characters in a string by adding a backslash before them.
 
     Example:
@@ -329,8 +329,6 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
 
     Args:
         latex_string: The string to escape.
-        strict: Whether to escape all the special $\\LaTeX$ characters or not. If you
-            want to allow math input, set it to False.
 
     Returns:
         The escaped string.
@@ -342,24 +340,13 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
         "%": "\\%",
         "&": "\\&",
         "~": "\\textasciitilde{}",
-    }
-
-    strict_escape_characters = {
         "$": "\\$",
         "_": "\\_",
         "^": "\\textasciicircum{}",
     }
-
-    if strict:
-        # To allow math input, users can use this function with strict = False
-        escape_characters.update(strict_escape_characters)
-
     translation_map = str.maketrans(escape_characters)
-    strict_translation_map = str.maketrans(strict_escape_characters)
 
     # Don't escape urls as hyperref package will do it automatically:
-    # Also always escape link placeholders strictly (as we don't expect any math in
-    # them):
     # Find all the links in the sentence:
     links = re.findall(r"\[(.*?)\]\((.*?)\)", latex_string)
 
@@ -367,8 +354,7 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
     new_links = []
     for i, link in enumerate(links):
         placeholder = link[0]
-        escaped_placeholder = placeholder.translate(strict_translation_map)
-        escaped_placeholder = escaped_placeholder.translate(translation_map)
+        escaped_placeholder = placeholder.translate(translation_map)
         url = link[1]
 
         original_link = f"[{placeholder}]({url})"
@@ -377,6 +363,12 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
         new_link = f"[{escaped_placeholder}]({url})"
         new_links.append(new_link)
 
+    # If there are equations in the sentence, don't escape the special characters:
+    # Find all the equations in the sentence:
+    equations = re.findall(r"(\$\$.*?\$\$)", latex_string)
+    for i, equation in enumerate(equations):
+        latex_string = latex_string.replace(equation, f"!!-equation{i}-!!")
+
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
     latex_string = latex_string.translate(translation_map)
@@ -384,6 +376,10 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
     # Replace !!-link{i}-!!" with the original urls:
     for i, new_link in enumerate(new_links):
         latex_string = latex_string.replace(f"!!-link{i}-!!", new_link)
+
+    # Replace !!-equation{i}-!!" with the original equations:
+    for i, equation in enumerate(equations):
+        latex_string = latex_string.replace(f"!!-equation{i}-!!", equation)
 
     return latex_string
 
@@ -475,7 +471,7 @@ def transform_markdown_sections_to_latex_sections(
         for entry in value:
             if isinstance(entry, str):
                 # Then it means it's a TextEntry.
-                result = markdown_to_latex(escape_latex_characters(entry, strict=False))
+                result = markdown_to_latex(escape_latex_characters(entry))
                 transformed_list.append(result)
             else:
                 # Then it means it's one of the other entries.
@@ -483,14 +479,14 @@ def transform_markdown_sections_to_latex_sections(
                 for entry_key, value in entry_as_dict.items():
                     if isinstance(value, str):
                         result = markdown_to_latex(
-                            escape_latex_characters(value, strict=False)
+                            escape_latex_characters(value)
                         )
                         setattr(entry, entry_key, result)
                     elif isinstance(value, list):
                         for j, item in enumerate(value):
                             if isinstance(item, str):
                                 value[j] = markdown_to_latex(
-                                    escape_latex_characters(item, strict=False)
+                                    escape_latex_characters(item)
                                 )
                         setattr(entry, entry_key, value)
                 transformed_list.append(entry)
