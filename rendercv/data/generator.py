@@ -21,7 +21,7 @@ def dictionary_to_yaml(dictionary: dict) -> str:
         dictionary: The dictionary to be converted to YAML.
 
     Returns:
-        str: The YAML string.
+        The YAML string.
     """
     yaml_object = ruamel.yaml.YAML()
     yaml_object.encoding = "utf-8"
@@ -43,7 +43,7 @@ def create_a_sample_data_model(
         name: The name of the person. Defaults to "John Doe".
 
     Returns:
-        RenderCVDataModel: A sample data model.
+        A sample data model.
     """
     # Check if the theme is valid:
     if theme not in models.available_theme_options:
@@ -81,7 +81,7 @@ def create_a_sample_yaml_input_file(
         theme: The theme of the CV. Defaults to "classic".
 
     Returns:
-        str: The sample YAML input file as a string.
+        The sample YAML input file as a string.
     """
     data_model = create_a_sample_data_model(name=name, theme=theme)
 
@@ -118,7 +118,7 @@ def generate_json_schema() -> dict:
     [JSON Schema Store](https://www.schemastore.org/).
 
     Returns:
-        dict: The JSON schema of RenderCV.
+        The JSON schema of RenderCV.
     """
 
     class RenderCVSchemaGenerator(pydantic.json_schema.GenerateJsonSchema):

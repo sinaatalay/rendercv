@@ -41,7 +41,7 @@ def validate_url(url: str) -> str:
         url: The URL to validate.
 
     Returns:
-        str: The validated URL.
+        The validated URL.
     """
     url_validator.validate_strings(url)
     return url
@@ -60,7 +60,7 @@ def create_a_section_validator(entry_type: Type) -> Type[SectionBase]:
             the entry type, but the entry type itself.
 
     Returns:
-        Type[SectionBase]: The section validator (a Pydantic model).
+        The section validator (a Pydantic model).
     """
     if entry_type is str:
         model_name = "SectionWithTextEntries"
@@ -90,7 +90,7 @@ def get_characteristic_entry_attributes(
             should not be included in this list.
 
     Returns:
-        dict[Type, list[str]]: The characteristic attributes of the entry types.
+        The characteristic attributes of the entry types.
     """
     # Look at all the entry types, collect their attributes with
     # EntryType.model_fields.keys() and find the common ones.
@@ -128,7 +128,7 @@ def get_entry_type_name_and_section_validator(
             should not be included in this list.
 
     Returns:
-        tuple[str, Type[SectionBase]]: The entry type name and the section validator.
+        The entry type name and the section validator.
     """
 
     if isinstance(entry, dict):
@@ -182,7 +182,7 @@ def validate_a_section(
             should not be included in this list.
 
     Returns:
-        list[Any]: The validated sections input.
+        The validated sections input.
     """
     if isinstance(sections_input, list):
         # Find the entry type based on the first identifiable entry:
@@ -242,7 +242,7 @@ def validate_a_social_network_username(username: str, network: str) -> str:
         username: The username to validate.
 
     Returns:
-        str: The validated username.
+        The validated username.
     """
     if network == "Mastodon":
         mastodon_username_pattern = r"@[^@]+@[^@]+"
@@ -430,7 +430,7 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
         header of the CV.
 
         Returns:
-            list[dict[str, Optional[str]]]: The connections of the person.
+            The connections of the person.
         """
 
         connections: list[dict[str, Optional[str]]] = []
@@ -519,7 +519,7 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
         the sections in the rest of the code.
 
         Returns:
-            list[SectionBase]: The computed sections.
+            The computed sections.
         """
         sections: list[SectionBase] = []
 

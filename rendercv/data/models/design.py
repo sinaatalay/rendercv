@@ -42,7 +42,7 @@ def validate_design_options(
             validate if all the templates are provided in the custom theme folder.
 
     Returns:
-        Any: The validated design as a Pydantic data model.
+        The validated design as a Pydantic data model.
     """
     if isinstance(design, tuple(available_theme_options.values())):
         # Then it means it is an already validated built-in theme. Return it as it is:

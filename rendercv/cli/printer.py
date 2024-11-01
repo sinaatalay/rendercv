@@ -116,7 +116,7 @@ def warn_if_new_version_is_available() -> bool:
     otherwise.
 
     Returns:
-        bool: True if there is a new version, and False otherwise.
+        True if there is a new version, and False otherwise.
     """
     latest_version = utilities.get_latest_version_number_from_pypi()
     if latest_version is not None and __version__ != latest_version:
@@ -382,7 +382,7 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
         function: The function to be wrapped.
 
     Returns:
-        Callable: The wrapped function.
+        The wrapped function.
     """
 
     @functools.wraps(function)

@@ -31,7 +31,7 @@ def format_phone_number(phone_number: str) -> str:
         phone_number: The phone number to format.
 
     Returns:
-        str: The formatted phone number.
+        The formatted phone number.
     """
 
     format = LOCALE_CATALOG["phone_number_format"].upper()  # type: ignore
@@ -62,7 +62,7 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
             style from the `locale_catalog` dictionary will be used.
 
     Returns:
-        str: The formatted date.
+        The formatted date.
     """
     full_month_names = LOCALE_CATALOG["full_names_of_months"]
     short_month_names = LOCALE_CATALOG["abbreviations_for_months"]
@@ -147,7 +147,7 @@ def compute_time_span_string(
             provided, start_date and end_date will be ignored.
 
     Returns:
-        str: The computed time span string.
+        The computed time span string.
     """
     date_is_provided = date is not None
     start_date_is_provided = start_date is not None
@@ -236,7 +236,7 @@ def compute_date_string(
         show_only_years: If True, only the years will be shown in the date string.
 
     Returns:
-        str: The computed date string.
+        The computed date string.
     """
     date_is_provided = date is not None
     start_date_is_provided = start_date is not None
@@ -305,7 +305,7 @@ def make_a_url_clean(url: str) -> str:
         url: The URL to make clean.
 
     Returns:
-        str: The clean URL.
+        The clean URL.
     """
     url = url.replace("https://", "").replace("http://", "")
     if url.endswith("/"):
@@ -323,7 +323,7 @@ def get_date_object(date: str | int) -> Date:
         date: The date string to parse.
 
     Returns:
-        Date: The parsed date.
+        The parsed date.
     """
     if isinstance(date, int):
         date_object = Date.fromisoformat(f"{date}-01-01")
@@ -361,7 +361,7 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
         key: The key to convert to a proper section title.
 
     Returns:
-        str: The proper section title.
+        The proper section title.
     """
     title = key.replace("_", " ")
     words = title.split(" ")

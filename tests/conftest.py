@@ -157,10 +157,10 @@ def return_a_value_for_a_field_type(
         `#!python "Boğaziçi University"`
 
     Args:
-        field_type: _description_
+        field_type: The type of the field.
 
     Returns:
-        str: _description_
+        A value for the field.
     """
     field_dictionary = {
         "institution": "Boğaziçi University",
@@ -248,7 +248,7 @@ def create_combinations_of_a_model(
         model: The data model class to create combinations of.
 
     Returns:
-        list[data.Entry]: All possible instances of the model.
+        All possible instances of the model.
     """
     fields = typing.get_type_hints(model)
 

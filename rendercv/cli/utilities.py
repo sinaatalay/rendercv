@@ -125,8 +125,8 @@ def get_latest_version_number_from_pypi() -> Optional[str]:
         `#!python "1.1"`
 
     Returns:
-        Optional[str]: The latest version number of RenderCV from PyPI. Returns None if
-            the version number cannot be fetched.
+        The latest version number of RenderCV from PyPI. Returns None if the version
+        number cannot be fetched.
     """
     version = None
     url = "https://pypi.org/pypi/rendercv/json"
@@ -160,8 +160,7 @@ def get_error_message_and_location_and_value_from_a_custom_error(
         error_string: The error message.
 
     Returns:
-        tuple[Optional[str], Optional[str], Optional[str]]: The custom message,
-            location, and the input value.
+        The custom message, location, and the input value.
     """
     pattern = r"""\(['"](.*)['"], '(.*)', '(.*)'\)"""
     match = re.search(pattern, error_string)
@@ -183,7 +182,7 @@ def copy_templates(
         copy_to: The path to copy the folder to.
 
     Returns:
-        Optional[pathlib.Path]: The path to the copied folder.
+        The path to the copied folder.
     """
     # copy the package's theme files to the current directory
     template_directory = pathlib.Path(__file__).parent.parent / "themes" / folder_name
@@ -215,7 +214,7 @@ def parse_render_command_override_arguments(
         extra_arguments: The extra arguments context.
 
     Returns:
-        dict["str", "str"]: The key and value pairs.
+        The key and value pairs.
     """
     key_and_values: dict["str", "str"] = dict()
 
@@ -250,7 +249,7 @@ def get_default_render_command_cli_arguments() -> dict:
     """Get the default values of the `render` command's CLI arguments.
 
     Returns:
-        dict: The default values of the `render` command's CLI arguments.
+        The default values of the `render` command's CLI arguments.
     """
     from .commands import cli_command_render
 
@@ -277,7 +276,7 @@ def update_render_command_settings_of_the_input_file(
             command.
 
     Returns:
-        dict: The updated input file as a dictionary.
+        The updated input file as a dictionary.
     """
     default_render_command_cli_arguments = get_default_render_command_cli_arguments()
 

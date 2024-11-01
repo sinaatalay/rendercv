@@ -50,7 +50,7 @@ class TemplatedFile:
             entry: The title of the section.
 
         Returns:
-            str: The templated file.
+            The templated file.
         """
         template = self.environment.get_template(
             f"{theme_name}/{template_name}.j2.{extension}"
@@ -114,8 +114,7 @@ class LaTeXFile(TemplatedFile):
         """Render and return all the templates for the $\\LaTeX$ file.
 
         Returns:
-            Tuple[str, str, List[Tuple[str, List[str], str]]]: The preamble, header, and
-                sections of the $\\LaTeX$ file.
+            The preamble, header, and sections of the $\\LaTeX$ file.
         """
         # Template the preamble, header, and sections:
         preamble = self.template("Preamble")
@@ -162,7 +161,7 @@ class LaTeXFile(TemplatedFile):
             entry: The data model of the entry.
 
         Returns:
-            str: The templated file.
+            The templated file.
         """
         result = super().template(
             self.design.theme,
@@ -180,7 +179,7 @@ class LaTeXFile(TemplatedFile):
         """Get the $\\LaTeX$ code of the file.
 
         Returns:
-            str: The $\\LaTeX$ code.
+            The $\\LaTeX$ code.
         """
         preamble, header, sections = self.render_templates()
         latex_code: str = super().get_full_code(
@@ -207,8 +206,7 @@ class MarkdownFile(TemplatedFile):
         """Render and return all the templates for the Markdown file.
 
         Returns:
-            tuple[str, List[Tuple[str, List[str]]]]: The header and sections of the
-                Markdown file.
+            The header and sections of the Markdown file.
         """
         # Template the header and sections:
         header = self.template("Header")
@@ -252,7 +250,7 @@ class MarkdownFile(TemplatedFile):
             entry: The data model of the entry.
 
         Returns:
-            str: The templated file.
+            The templated file.
         """
         result = super().template(
             "markdown",
@@ -267,7 +265,7 @@ class MarkdownFile(TemplatedFile):
         """Get the Markdown code of the file.
 
         Returns:
-            str: The Markdown code.
+            The Markdown code.
         """
         header, sections = self.render_templates()
         markdown_code: str = super().get_full_code(
@@ -290,7 +288,7 @@ def revert_nested_latex_style_commands(latex_string: str) -> str:
         latex_string: The string to revert the nested $\\LaTeX$ style commands.
 
     Returns:
-        str: The string with the reverted nested $\\LaTeX$ style commands.
+        The string with the reverted nested $\\LaTeX$ style commands.
     """
     # If there is nested \textbf, \textit, or \underline commands, replace the inner
     # ones with \textnormal:
@@ -335,7 +333,7 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
             want to allow math input, set it to False.
 
     Returns:
-        str: The escaped string.
+        The escaped string.
     """
 
     # Dictionary of escape characters:
@@ -409,7 +407,7 @@ def markdown_to_latex(markdown_string: str) -> str:
         markdown_string: The Markdown string to convert.
 
     Returns:
-        str: The $\\LaTeX$ string.
+        The $\\LaTeX$ string.
     """
     # convert links
     links = re.findall(r"\[([^\]\[]*)\]\((.*?)\)", markdown_string)
@@ -468,7 +466,7 @@ def transform_markdown_sections_to_latex_sections(
         sections: Sections with Markdown strings.
 
     Returns:
-        Optional[dict[str, dm.SectionInput]]: Sections with $\\LaTeX$ strings.
+        Sections with $\\LaTeX$ strings.
     """
     for key, value in sections.items():
         # loop through the list and apply markdown_to_latex and escape_latex_characters
@@ -514,7 +512,7 @@ def replace_placeholders_with_actual_values(
         placeholders: The placeholders and their values.
 
     Returns:
-        str: The string with actual values.
+        The string with actual values.
     """
     for placeholder, value in placeholders.items():
         text = text.replace(placeholder, str(value))
@@ -540,7 +538,7 @@ def make_matched_part_something(
         match_str: The string to match.
 
     Returns:
-        str: The string with the matched part something.
+        The string with the matched part something.
     """
     if match_str is None:
         # If the match_str is None, the whole string will be made something:
@@ -572,7 +570,7 @@ def make_matched_part_bold(value: str, match_str: Optional[str] = None) -> str:
         match_str: The string to match.
 
     Returns:
-        str: The string with the matched part bold.
+        The string with the matched part bold.
     """
     return make_matched_part_something(value, "textbf", match_str)
 
@@ -597,7 +595,7 @@ def make_matched_part_underlined(value: str, match_str: Optional[str] = None) ->
         match_str: The string to match.
 
     Returns:
-        str: The string with the matched part underlined.
+        The string with the matched part underlined.
     """
     return make_matched_part_something(value, "underline", match_str)
 
@@ -622,7 +620,7 @@ def make_matched_part_italic(value: str, match_str: Optional[str] = None) -> str
         match_str: The string to match.
 
     Returns:
-        str: The string with the matched part italic.
+        The string with the matched part italic.
     """
     return make_matched_part_something(value, "textit", match_str)
 
@@ -649,7 +647,7 @@ def make_matched_part_non_line_breakable(
         match_str: The string to match.
 
     Returns:
-        str: The string with the matched part non line breakable.
+        The string with the matched part non line breakable.
     """
     return make_matched_part_something(value, "mbox", match_str)
 
@@ -672,7 +670,7 @@ def abbreviate_name(name: Optional[str]) -> str:
         name: The name to abbreviate.
 
     Returns:
-        str: The abbreviated name.
+        The abbreviated name.
     """
     if name is None:
         return ""
@@ -710,7 +708,7 @@ def divide_length_by(length: str, divider: float) -> str:
         divider: The number to divide the length by.
 
     Returns:
-        str: The divided length.
+        The divided length.
     """
     # Get the value as a float and the unit as a string:
     value = re.search(r"\d+\.?\d*", length)
@@ -752,7 +750,7 @@ def get_an_item_with_a_specific_attribute_value(
         value: The value of the attribute.
 
     Returns:
-        Any: The item with the specific attribute value.
+        The item with the specific attribute value.
     """
     if items is not None:
         for item in items:
@@ -775,7 +773,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
     """Setup and return the Jinja2 environment for templating the $\\LaTeX$ files.
 
     Returns:
-        jinja2.Environment: The theme environment.
+        The theme environment.
     """
     global jinja2_environment
     themes_directory = pathlib.Path(__file__).parent.parent / "themes"

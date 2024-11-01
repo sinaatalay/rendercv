@@ -79,7 +79,7 @@ def create_a_latex_file(
         output_directory: Path to the output directory.
 
     Returns:
-        pathlib.Path: The path to the generated $\\LaTeX$ file.
+        The path to the generated $\\LaTeX$ file.
     """
     # create output directory if it doesn't exist:
     if not output_directory.is_dir():
@@ -109,7 +109,7 @@ def create_a_markdown_file(
         output_directory: Path to the output directory.
 
     Returns:
-        pathlib.Path: The path to the rendered Markdown file.
+        The path to the rendered Markdown file.
     """
     # create output directory if it doesn't exist:
     if not output_directory.is_dir():
@@ -139,7 +139,7 @@ def create_a_latex_file_and_copy_theme_files(
         output_directory: Path to the output directory.
 
     Returns:
-        pathlib.Path: The path to the rendered $\\LaTeX$ file.
+        The path to the rendered $\\LaTeX$ file.
     """
     latex_file_path = create_a_latex_file(rendercv_data_model, output_directory)
     copy_theme_files_to_output_directory(
@@ -157,7 +157,7 @@ def render_a_pdf_from_latex(
         latex_file_path: The path to the $\\LaTeX$ file.
 
     Returns:
-        pathlib.Path: The path to the rendered PDF file.
+        The path to the rendered PDF file.
     """
     # check if the file exists:
     if not latex_file_path.is_file():
@@ -286,7 +286,7 @@ def render_pngs_from_pdf(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
         pdf_file_path: The path to the PDF file.
 
     Returns:
-        list[pathlib.Path]: The paths to the rendered PNG files.
+        The paths to the rendered PNG files.
     """
     # check if the file exists:
     if not pdf_file_path.is_file():
@@ -314,7 +314,7 @@ def render_an_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Pa
         markdown_file_path: The path to the Markdown file.
 
     Returns:
-        pathlib.Path: The path to the rendered HTML file.
+        The path to the rendered HTML file.
     """
     # check if the file exists:
     if not markdown_file_path.is_file():

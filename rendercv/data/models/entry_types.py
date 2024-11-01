@@ -25,7 +25,7 @@ def validate_date_field(date: Optional[int | str]) -> Optional[int | str]:
         date: The date to validate.
 
     Returns:
-        Optional[int | str]: The validated date.
+        The validated date.
     """
     date_is_provided = date is not None
 
@@ -60,7 +60,7 @@ def validate_start_and_end_date_fields(
         date: The date to validate.
 
     Returns:
-        Optional[Literal["present"] | int | RenderCVDate]: The validated date.
+        The validated date.
     """
     date_is_provided = date is not None
 
@@ -92,7 +92,7 @@ def validate_and_adjust_dates_for_an_entry(
         date: The date of the event.
 
     Returns:
-        EntryBase: The validated
+        The validated and adjusted `start_date`, `end_date`, and `date`.
     """
     date_is_provided = date is not None
     start_date_is_provided = start_date is not None
