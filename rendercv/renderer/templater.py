@@ -475,8 +475,11 @@ def transform_markdown_sections_to_latex_sections(
                 transformed_list.append(result)
             else:
                 # Then it means it's one of the other entries.
+                fields_to_skip = ["doi"]
                 entry_as_dict = entry.model_dump()
                 for entry_key, value in entry_as_dict.items():
+                    if entry_key in fields_to_skip:
+                        continue
                     if isinstance(value, str):
                         result = markdown_to_latex(escape_latex_characters(value))
                         setattr(entry, entry_key, result)

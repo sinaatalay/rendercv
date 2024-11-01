@@ -210,7 +210,7 @@ def return_a_value_for_a_field_type(
             " No-Insulation Coils"
         ),
         "journal": "IEEE Transactions on Applied Superconductivity",
-        "doi": "10.1109/TASC.2023.3340648",
+        "doi": "10.1007/978-3-319-69626-3_101-1",
         "url": "https://example.com",
     }
 
