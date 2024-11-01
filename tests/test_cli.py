@@ -356,7 +356,7 @@ def test_render_command_with_custom_png_path_multiple_pages(tmp_path):
     runner.invoke(cli.app, ["new", "John Doe"])
     input_file_path = tmp_path / "John_Doe_CV.yaml"
 
-    run_render_command(
+    result = run_render_command(
         input_file_path,
         tmp_path,
         [

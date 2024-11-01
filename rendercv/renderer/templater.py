@@ -8,7 +8,7 @@ import copy
 import pathlib
 import re
 from datetime import date as Date
-from typing import Any, Optional, Literal
+from typing import Any, Literal, Optional
 
 import jinja2
 
@@ -478,9 +478,7 @@ def transform_markdown_sections_to_latex_sections(
                 entry_as_dict = entry.model_dump()
                 for entry_key, value in entry_as_dict.items():
                     if isinstance(value, str):
-                        result = markdown_to_latex(
-                            escape_latex_characters(value)
-                        )
+                        result = markdown_to_latex(escape_latex_characters(value))
                         setattr(entry, entry_key, result)
                     elif isinstance(value, list):
                         for j, item in enumerate(value):

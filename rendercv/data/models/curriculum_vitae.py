@@ -299,6 +299,7 @@ SocialNetworkName = Literal[
     "ResearchGate",
     "YouTube",
     "Google Scholar",
+    "Telegram",
 ]
 
 available_social_networks = get_args(SocialNetworkName)
@@ -366,6 +367,7 @@ class SocialNetwork(RenderCVBaseModelWithoutExtraKeys):
                 "ResearchGate": "https://researchgate.net/profile/",
                 "YouTube": "https://youtube.com/@",
                 "Google Scholar": "https://scholar.google.com/citations?user=",
+                "Telegram": "https://t.me/",
             }
             url = url_dictionary[self.network] + self.username
 
@@ -489,6 +491,7 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
                 "ResearchGate": "\\faResearchgate",
                 "YouTube": "\\faYoutube",
                 "Google Scholar": "\\faGraduationCap",
+                "Telegram": "\\faTelegram",
             }
             for social_network in self.social_networks:
                 clean_url = computers.make_a_url_clean(social_network.url)

@@ -23,7 +23,7 @@ from rendercv.renderer import templater
 # the output. Setting update_testdata to True will update the reference files with
 # the latest RenderCV. This should be done with caution, as it will overwrite the
 # reference files with the latest output.
-update_testdata = False
+update_testdata = True
 
 # copy sample entries from docs/update_rendercv_files.py:
 education_entry_dictionary = {
@@ -300,6 +300,7 @@ def rendercv_filled_curriculum_vitae_data_model(
             data.SocialNetwork(network="GitLab", username="johndoe"),
             data.SocialNetwork(network="ResearchGate", username="johndoe"),
             data.SocialNetwork(network="YouTube", username="johndoe"),
+            data.SocialNetwork(network="Telegram", username="johndoe"),
         ],
         sections={
             "Text Entries": [text_entry, text_entry, text_entry],

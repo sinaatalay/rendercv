@@ -14,6 +14,7 @@
 - GitLab: [johndoe](https://gitlab.com/johndoe)
 - ResearchGate: [johndoe](https://researchgate.net/profile/johndoe)
 - YouTube: [johndoe](https://youtube.com/@johndoe)
+- Telegram: [johndoe](https://t.me/johndoe)
 
 
 # Text Entries
