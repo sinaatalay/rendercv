@@ -285,7 +285,6 @@ def rendercv_filled_curriculum_vitae_data_model(
     """
     return data.CurriculumVitae(
         name="John Doe",
-        label="Mechanical Engineer",
         location="Istanbul, Turkey",
         email="john_doe@example.com",
         phone="+905419999999",  # type: ignore
