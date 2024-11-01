@@ -393,9 +393,7 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
         description="The email address of the person.",
     )
     photo: Optional[str] = pydantic.Field(
-        default=None,
-        title="Photo",
-        description="Path to a photo of the person."
+        default=None, title="Photo", description="Path to a photo of the person."
     )
     phone: Optional[pydantic_phone_numbers.PhoneNumber] = pydantic.Field(
         default=None,
