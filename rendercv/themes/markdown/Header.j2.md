@@ -1,7 +1,7 @@
 # <<cv.name>>'s CV
 
 ((* if cv.photo *))
-![Profile photo](<<cv.photo>>)
+![Profile photo](<<cv.photo|string>>)
 ((* endif *))
 
 ((* if cv.phone *))
