@@ -4,4 +4,4 @@ as a PDF from a YAML file with Markdown syntax support and complete control over
 $\\LaTeX$ code.
 """
 
-__version__ = "1.14"
+__version__ = "1.15"
