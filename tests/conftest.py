@@ -157,7 +157,7 @@ def return_a_value_for_a_field_type(
         `#!python "Boğaziçi University"`
 
     Args:
-        field_type (typing.Any): _description_
+        field_type: _description_
 
     Returns:
         str: _description_
@@ -245,7 +245,7 @@ def create_combinations_of_a_model(
     possible combinations of them.
 
     Args:
-        model (Type[data.Entry]): The data model class to create combinations of.
+        model: The data model class to create combinations of.
 
     Returns:
         list[data.Entry]: All possible instances of the model.
@@ -356,8 +356,8 @@ def are_these_two_directories_the_same(
     """Check if two directories are the same.
 
     Args:
-        directory1 (pathlib.Path): The first directory to compare.
-        directory2 (pathlib.Path): The second directory to compare.
+        directory1: The first directory to compare.
+        directory2: The second directory to compare.
 
     Raises:
         AssertionError: If the two directories are not the same.
@@ -382,8 +382,8 @@ def are_these_two_files_the_same(file1: pathlib.Path, file2: pathlib.Path) -> bo
     """Check if two files are the same.
 
     Args:
-        file1 (pathlib.Path): The first file to compare.
-        file2 (pathlib.Path): The second file to compare.
+        file1: The first file to compare.
+        file2: The second file to compare.
 
     Raises:
         AssertionError: If the two files are not the same.

@@ -18,7 +18,7 @@ def dictionary_to_yaml(dictionary: dict) -> str:
     """Converts a dictionary to a YAML string.
 
     Args:
-        dictionary (dict): The dictionary to be converted to YAML.
+        dictionary: The dictionary to be converted to YAML.
 
     Returns:
         str: The YAML string.
@@ -40,7 +40,7 @@ def create_a_sample_data_model(
     """Return a sample data model for new users to start with.
 
     Args:
-        name (str, optional): The name of the person. Defaults to "John Doe".
+        name: The name of the person. Defaults to "John Doe".
 
     Returns:
         RenderCVDataModel: A sample data model.
@@ -76,10 +76,9 @@ def create_a_sample_yaml_input_file(
     is provided, then also save the contents to the file.
 
     Args:
-        input_file_path (pathlib.Path, optional): The path to save the input file.
-            Defaults to None.
-        name (str, optional): The name of the person. Defaults to "John Doe".
-        theme (str, optional): The theme of the CV. Defaults to "classic".
+        input_file_path: The path to save the input file. Defaults to None.
+        name: The name of the person. Defaults to "John Doe".
+        theme: The theme of the CV. Defaults to "classic".
 
     Returns:
         str: The sample YAML input file as a string.
@@ -184,7 +183,7 @@ def generate_json_schema_file(json_schema_path: pathlib.Path):
     """Generate the JSON schema of RenderCV and save it to a file.
 
     Args:
-        json_schema_path (pathlib.Path): The path to save the JSON schema.
+        json_schema_path: The path to save the JSON schema.
     """
     schema = generate_json_schema()
     schema_json = json.dumps(schema, indent=2, ensure_ascii=False)

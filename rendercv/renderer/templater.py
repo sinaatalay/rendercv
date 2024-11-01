@@ -8,7 +8,7 @@ import copy
 import pathlib
 import re
 from datetime import date as Date
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 
 import jinja2
 
@@ -22,8 +22,8 @@ class TemplatedFile:
     templates.
 
     Args:
-        data_model (dm.RenderCVDataModel): The data model.
-        environment (jinja2.Environment): The Jinja2 environment.
+        data_model: The data model.
+        environment: The Jinja2 environment.
     """
 
     def __init__(
@@ -46,8 +46,8 @@ class TemplatedFile:
         """Template one of the files in the `themes` directory.
 
         Args:
-            template_name (str): The name of the template file.
-            entry (Optional[dm.Entry]): The title of the section.
+            template_name: The name of the template file.
+            entry: The title of the section.
 
         Returns:
             str: The templated file.
@@ -158,8 +158,8 @@ class LaTeXFile(TemplatedFile):
         """Template one of the files in the `themes` directory.
 
         Args:
-            template_name (str): The name of the template file.
-            entry (Optional[dm.Entry]): The data model of the entry.
+            template_name: The name of the template file.
+            entry: The data model of the entry.
 
         Returns:
             str: The templated file.
@@ -248,8 +248,8 @@ class MarkdownFile(TemplatedFile):
         """Template one of the files in the `themes` directory.
 
         Args:
-            template_name (str): The name of the template file.
-            entry (Optional[dm.Entry]): The data model of the entry.
+            template_name: The name of the template file.
+            entry: The data model of the entry.
 
         Returns:
             str: The templated file.
@@ -287,8 +287,7 @@ def revert_nested_latex_style_commands(latex_string: str) -> str:
     unitalicize a bold or italicized text.
 
     Args:
-        latex_string (str): The string to revert the nested $\\LaTeX$ style
-            commands.
+        latex_string: The string to revert the nested $\\LaTeX$ style commands.
 
     Returns:
         str: The string with the reverted nested $\\LaTeX$ style commands.
@@ -331,9 +330,9 @@ def escape_latex_characters(latex_string: str, strict: bool = True) -> str:
         `#!python "This is a \\# string."`
 
     Args:
-        latex_string (str): The string to escape.
-        strict (bool): Whether to escape all the special $\\LaTeX$ characters or not. If
-            you want to allow math input, set it to False.
+        latex_string: The string to escape.
+        strict: Whether to escape all the special $\\LaTeX$ characters or not. If you
+            want to allow math input, set it to False.
 
     Returns:
         str: The escaped string.
@@ -407,7 +406,7 @@ def markdown_to_latex(markdown_string: str) -> str:
         `#!python "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
 
     Args:
-        markdown_string (str): The Markdown string to convert.
+        markdown_string: The Markdown string to convert.
 
     Returns:
         str: The $\\LaTeX$ string.
@@ -466,7 +465,7 @@ def transform_markdown_sections_to_latex_sections(
     characters.
 
     Args:
-        sections (Optional[dict[str, dm.SectionInput]]): Sections with Markdown strings.
+        sections: Sections with Markdown strings.
 
     Returns:
         Optional[dict[str, dm.SectionInput]]: Sections with $\\LaTeX$ strings.
@@ -511,8 +510,8 @@ def replace_placeholders_with_actual_values(
     This function can be used as a Jinja2 filter in templates.
 
     Args:
-        text (str): The text with placeholders.
-        placeholders (dict[str, str]): The placeholders and their values.
+        text: The text with placeholders.
+        placeholders: The placeholders and their values.
 
     Returns:
         str: The string with actual values.
@@ -524,7 +523,9 @@ def replace_placeholders_with_actual_values(
 
 
 def make_matched_part_something(
-    value: str, something: str, match_str: Optional[str] = None
+    value: str,
+    something: Literal["textbf", "underline", "textit", "mbox"],
+    match_str: Optional[str] = None,
 ) -> str:
     """Make the matched parts of the string something. If the match_str is None, the
     whole string will be made something.
@@ -534,9 +535,9 @@ def make_matched_part_something(
         `make_matched_part_underlined`, `make_matched_part_italic`, or
         `make_matched_part_non_line_breakable instead.
     Args:
-        value (str): The string to make something.
-        something (str): The $\\LaTeX$ command to use.
-        match_str (str): The string to match.
+        value: The string to make something.
+        something: The $\\LaTeX$ command to use.
+        match_str: The string to match.
 
     Returns:
         str: The string with the matched part something.
@@ -567,8 +568,8 @@ def make_matched_part_bold(value: str, match_str: Optional[str] = None) -> str:
         `#!python "\\textbf{Hello} World!"`
 
     Args:
-        value (str): The string to make bold.
-        match_str (str): The string to match.
+        value: The string to make bold.
+        match_str: The string to match.
 
     Returns:
         str: The string with the matched part bold.
@@ -592,8 +593,8 @@ def make_matched_part_underlined(value: str, match_str: Optional[str] = None) ->
         `#!python "\\underline{Hello} World!"`
 
     Args:
-        value (str): The string to make underlined.
-        match_str (str): The string to match.
+        value: The string to make underlined.
+        match_str: The string to match.
 
     Returns:
         str: The string with the matched part underlined.
@@ -617,8 +618,8 @@ def make_matched_part_italic(value: str, match_str: Optional[str] = None) -> str
         `#!python "\\textit{Hello} World!"`
 
     Args:
-        value (str): The string to make italic.
-        match_str (str): The string to match.
+        value: The string to make italic.
+        match_str: The string to match.
 
     Returns:
         str: The string with the matched part italic.
@@ -644,8 +645,8 @@ def make_matched_part_non_line_breakable(
         `#!python "\\mbox{Hello} World!"`
 
     Args:
-        value (str): The string to disable line breaks.
-        match_str (str): The string to match.
+        value: The string to disable line breaks.
+        match_str: The string to match.
 
     Returns:
         str: The string with the matched part non line breakable.
@@ -668,7 +669,7 @@ def abbreviate_name(name: Optional[str]) -> str:
         `#!python "J. Doe"`
 
     Args:
-        name (str): The name to abbreviate.
+        name: The name to abbreviate.
 
     Returns:
         str: The abbreviated name.
@@ -705,8 +706,8 @@ def divide_length_by(length: str, divider: float) -> str:
         `#!python "5.2cm"`
 
     Args:
-        length (str): The length to divide.
-        divider (float): The number to divide the length by.
+        length: The length to divide.
+        divider: The number to divide the length by.
 
     Returns:
         str: The divided length.
@@ -746,9 +747,9 @@ def get_an_item_with_a_specific_attribute_value(
     This function can be used as a Jinja2 filter in templates.
 
     Args:
-        items (list[Any]): The list of items.
-        attribute (str): The attribute to check.
-        value (Any): The value of the attribute.
+        items: The list of items.
+        attribute: The attribute to check.
+        value: The value of the attribute.
 
     Returns:
         Any: The item with the specific attribute value.

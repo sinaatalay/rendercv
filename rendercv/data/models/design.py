@@ -35,12 +35,11 @@ def validate_design_options(
     theme data model, found in the `__init__.py` file of the custom theme folder.
 
     Args:
-        design (Any | RenderCVBuiltinDesign): The design options to validate.
-        available_theme_options (dict[str, Type]): The available theme options. The keys
-            are the theme names and the values are the corresponding data models.
-        available_entry_type_names (list[str]): The available entry type names. These
-            are used to validate if all the templates are provided in the custom theme
-            folder.
+        design: The design options to validate.
+        available_theme_options: The available theme options. The keys are the theme
+            names and the values are the corresponding data models.
+        available_entry_type_names: The available entry type names. These are used to
+            validate if all the templates are provided in the custom theme folder.
 
     Returns:
         Any: The validated design as a Pydantic data model.

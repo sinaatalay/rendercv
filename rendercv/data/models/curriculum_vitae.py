@@ -38,7 +38,7 @@ def validate_url(url: str) -> str:
     """Validate a URL.
 
     Args:
-        url (str): The URL to validate.
+        url: The URL to validate.
 
     Returns:
         str: The validated URL.
@@ -56,8 +56,8 @@ def create_a_section_validator(entry_type: Type) -> Type[SectionBase]:
     The section model is used to validate a section.
 
     Args:
-        entry_type (Type): The entry type to create the section model. It's not an
-            instance of the entry type, but the entry type itself.
+        entry_type: The entry type to create the section model. It's not an instance of
+            the entry type, but the entry type itself.
 
     Returns:
         Type[SectionBase]: The section validator (a Pydantic model).
@@ -85,9 +85,9 @@ def get_characteristic_entry_attributes(
     """Get the characteristic attributes of the entry types.
 
     Args:
-        entry_types (list[Type]): The entry types to get their characteristic
-            attributes. These are not instances of the entry types, but the entry
-            types themselves. `str` type should not be included in this list.
+        entry_types: The entry types to get their characteristic attributes. These are
+            not instances of the entry types, but the entry types themselves. `str` type
+            should not be included in this list.
 
     Returns:
         dict[Type, list[str]]: The characteristic attributes of the entry types.
@@ -122,10 +122,10 @@ def get_entry_type_name_and_section_validator(
     type.
 
     Args:
-        entry (dict[str, str | list[str]] | str): The entry to determine its type.
-        entry_types (list[Type]): The entry types to determine the entry type. These
-            are not instances of the entry types, but the entry types themselves. `str`
-            type should not be included in this list.
+        entry: The entry to determine its type.
+        entry_types: The entry types to determine the entry type. These are not
+            instances of the entry types, but the entry types themselves. `str` type
+            should not be included in this list.
 
     Returns:
         tuple[str, Type[SectionBase]]: The entry type name and the section validator.
@@ -176,10 +176,10 @@ def validate_a_section(
     list is validated with the section validator.
 
     Args:
-        sections_input (list[Any]): The sections input to validate.
-        entry_types (list[Type]): The entry types to determine the entry type. These
-            are not instances of the entry types, but the entry types themselves. `str`
-            type should not be included in this list.
+        sections_input: The sections input to validate.
+        entry_types: The entry types to determine the entry type. These are not
+            instances of the entry types, but the entry types themselves. `str` type
+            should not be included in this list.
 
     Returns:
         list[Any]: The validated sections input.
@@ -239,7 +239,7 @@ def validate_a_social_network_username(username: str, network: str) -> str:
     """Check if the `username` field in the `SocialNetwork` model is provided correctly.
 
     Args:
-        username (str): The username to validate.
+        username: The username to validate.
 
     Returns:
         str: The validated username.

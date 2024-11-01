@@ -28,7 +28,7 @@ def format_phone_number(phone_number: str) -> str:
         ```
 
     Args:
-        phone_number (str): The phone number to format.
+        phone_number: The phone number to format.
 
     Returns:
         str: The formatted phone number.
@@ -57,9 +57,9 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
         `#!python "May 2024"`
 
     Args:
-        date (Date): The date to format.
-        date_style (Optional[str]): The style of the date string. If not provided, the
-            default date style from the `locale_catalog` dictionary will be used.
+        date: The date to format.
+        date_style: The style of the date string. If not provided, the default date
+            style from the `locale_catalog` dictionary will be used.
 
     Returns:
         str: The formatted date.
@@ -141,11 +141,10 @@ def compute_time_span_string(
         `#!python "4 months"`
 
     Args:
-        start_date (Optional[str]): A start date in YYYY-MM-DD, YYYY-MM, or YYYY format.
-        end_date (Optional[str]): An end date in YYYY-MM-DD, YYYY-MM, or YYYY format or
-            "present".
-        date (Optional[str]): A date in YYYY-MM-DD, YYYY-MM, or YYYY format or a custom
-            string. If provided, start_date and end_date will be ignored.
+        start_date: A start date in YYYY-MM-DD, YYYY-MM, or YYYY format.
+        end_date: An end date in YYYY-MM-DD, YYYY-MM, or YYYY format or "present".
+        date: A date in YYYY-MM-DD, YYYY-MM, or YYYY format or a custom string. If
+            provided, start_date and end_date will be ignored.
 
     Returns:
         str: The computed time span string.
@@ -230,14 +229,11 @@ def compute_date_string(
         ```
 
     Args:
-        start_date (Optional[str]): A start date in YYYY-MM-DD, YYYY-MM, or YYYY
-            format.
-        end_date (Optional[str]): An end date in YYYY-MM-DD, YYYY-MM, or YYYY format
-            or "present".
-        date (Optional[str]): A date in YYYY-MM-DD, YYYY-MM, or YYYY format or
-            a custom string. If provided, start_date and end_date will be ignored.
-        show_only_years (bool): If True, only the years will be shown in the date
-            string.
+        start_date: A start date in YYYY-MM-DD, YYYY-MM, or YYYY format.
+        end_date: An end date in YYYY-MM-DD, YYYY-MM, or YYYY format or "present".
+        date: A date in YYYY-MM-DD, YYYY-MM, or YYYY format or a custom string. If
+            provided, start_date and end_date will be ignored.
+        show_only_years: If True, only the years will be shown in the date string.
 
     Returns:
         str: The computed date string.
@@ -306,7 +302,7 @@ def make_a_url_clean(url: str) -> str:
         `#!python "example.com"`
 
     Args:
-        url (str): The URL to make clean.
+        url: The URL to make clean.
 
     Returns:
         str: The clean URL.
@@ -324,7 +320,7 @@ def get_date_object(date: str | int) -> Date:
     the data models.
 
     Args:
-        date (str | int): The date string to parse.
+        date: The date string to parse.
 
     Returns:
         Date: The parsed date.
@@ -362,7 +358,7 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
         `#!python "Section Title"`
 
     Args:
-        key (str): The key to convert to a proper section title.
+        key: The key to convert to a proper section title.
 
     Returns:
         str: The proper section title.

@@ -16,8 +16,8 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
     given as a path to the file or as the contents of the file as a string.
 
     Args:
-        file_path_or_contents (pathlib.Path | str): The path to the YAML file or the
-            contents of the YAML file as a string.
+        file_path_or_contents: The path to the YAML file or the contents of the YAML
+            file as a string.
 
     Returns:
         dict: The content of the YAML file as a dictionary.
@@ -61,7 +61,7 @@ def validate_input_dictionary_and_return_the_data_model(
     which is a Pydantic data model of RenderCV's data format.
 
     Args:
-        input_dictionary (dict): The input dictionary.
+        input_dictionary: The input dictionary.
 
     Returns:
         RenderCVDataModel: The data model.
@@ -80,8 +80,8 @@ def read_input_file(
     `RenderCVDataModel`, which is a Pydantic data model of RenderCV's data format.
 
     Args:
-        file_path_or_contents (str): The path to the input file or the contents of the
-            input file as a string.
+        file_path_or_contents: The path to the input file or the contents of the input
+            file as a string.
 
     Returns:
         RenderCVDataModel: The data model.

@@ -23,12 +23,11 @@ def set_or_update_a_value(
     be `cv.sections.education.3.institution` and the value can be "Bogazici University".
 
     Args:
-        dictionary (dict): The dictionary to set or update the value.
-        key (str): The key to set or update the value.
-        value (Any): The value to set or update.
-        sub_dictionary (pydantic.BaseModel | dict | list, optional): The sub dictionary
-            to set or update the value. This is used for recursive calls. Defaults to
-            None.
+        dictionary: The dictionary to set or update the value.
+        key: The key to set or update the value.
+        value: The value to set or update.
+        sub_dictionary: The sub dictionary to set or update the value. This is used for
+            recursive calls. Defaults to None.
     """
     # Recursively call this function until the last key is reached:
 
@@ -82,8 +81,8 @@ def set_or_update_values(
     `set_or_update_a_value` function to set or update the values.
 
     Args:
-        dictionary (dict): The dictionary to set or update the values.
-        key_and_values (dict[str, str]): The key and value pairs to set or update.
+        dictionary: The dictionary to set or update the values.
+        key_and_values: The key and value pairs to set or update.
     """
     for key, value in key_and_values.items():
         dictionary = set_or_update_a_value(dictionary, key, value)  # type: ignore
@@ -96,8 +95,8 @@ def copy_files(paths: list[pathlib.Path] | pathlib.Path, new_path: pathlib.Path)
     path by adding a number to the end of the path.
 
     Args:
-        paths (list[pathlib.Path]): The paths of the files to be copied.
-        new_path (pathlib.Path): The path to copy the files to.
+        paths: The paths of the files to be copied.
+        new_path: The path to copy the files to.
     """
     if isinstance(paths, pathlib.Path):
         paths = [paths]
@@ -158,7 +157,7 @@ def get_error_message_and_location_and_value_from_a_custom_error(
     return the three values.
 
     Args:
-        error_string (str): The error message.
+        error_string: The error message.
 
     Returns:
         tuple[Optional[str], Optional[str], Optional[str]]: The custom message,
@@ -180,8 +179,8 @@ def copy_templates(
     """Copy one of the folders found in `rendercv.templates` to `copy_to`.
 
     Args:
-        folder_name (str): The name of the folder to be copied.
-        copy_to (pathlib.Path): The path to copy the folder to.
+        folder_name: The name of the folder to be copied.
+        copy_to: The path to copy the folder to.
 
     Returns:
         Optional[pathlib.Path]: The path to the copied folder.
@@ -213,7 +212,7 @@ def parse_render_command_override_arguments(
     pairs and return them as a dictionary.
 
     Args:
-        extra_arguments (typer.Context): The extra arguments context.
+        extra_arguments: The extra arguments context.
 
     Returns:
         dict["str", "str"]: The key and value pairs.
@@ -273,8 +272,8 @@ def update_render_command_settings_of_the_input_file(
     (non-default) values of the `render` command's CLI arguments.
 
     Args:
-        input_file_as_a_dict (dict): The input file as a dictionary.
-        render_command_cli_arguments (dict): The command line arguments of the `render`
+        input_file_as_a_dict: The input file as a dictionary.
+        render_command_cli_arguments: The command line arguments of the `render`
             command.
 
     Returns:
