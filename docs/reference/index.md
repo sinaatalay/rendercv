@@ -3,7 +3,7 @@ hide:
   - toc
 ---
 
-# RenderCV
+# API Reference
 
 ::: rendercv
 
