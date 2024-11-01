@@ -791,3 +791,8 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 # One Line Entries
 
 - Pro**gram**ming: Python, C++, JavaScript, MATLAB
+# A Section & with % Special Characters
+
+## A Section & with % Special Characters
+
+

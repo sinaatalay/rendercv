@@ -123,7 +123,7 @@ class LaTeXFile(TemplatedFile):
         for section in self.cv.sections:
             section_beginning = self.template(
                 "SectionBeginning",
-                section_title=section.title,
+                section_title=escape_latex_characters(section.title),
                 entry_type=section.entry_type,
             )
             entries: list[str] = []
