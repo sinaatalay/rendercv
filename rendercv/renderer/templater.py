@@ -336,6 +336,9 @@ def escape_latex_characters(latex_string: str) -> str:
 
     # Dictionary of escape characters:
     escape_characters = {
+        "{": "\\{",
+        "}": "\\}",
+        "\\": "\\textbackslash{}",
         "#": "\\#",
         "%": "\\%",
         "&": "\\&",
