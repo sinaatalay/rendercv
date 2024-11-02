@@ -366,8 +366,13 @@ def escape_latex_characters(latex_string: str) -> str:
     # If there are equations in the sentence, don't escape the special characters:
     # Find all the equations in the sentence:
     equations = re.findall(r"(\$\$.*?\$\$)", latex_string)
+    new_equations = []
     for i, equation in enumerate(equations):
         latex_string = latex_string.replace(equation, f"!!-equation{i}-!!")
+
+        # Keep only one dollar sign for inline equations:
+        new_equation = equation.replace("$$", "$")
+        new_equations.append(new_equation)
 
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
@@ -378,8 +383,8 @@ def escape_latex_characters(latex_string: str) -> str:
         latex_string = latex_string.replace(f"!!-link{i}-!!", new_link)
 
     # Replace !!-equation{i}-!!" with the original equations:
-    for i, equation in enumerate(equations):
-        latex_string = latex_string.replace(f"!!-equation{i}-!!", equation)
+    for i, new_equation in enumerate(new_equations):
+        latex_string = latex_string.replace(f"!!-equation{i}-!!", new_equation)
 
     return latex_string
 
