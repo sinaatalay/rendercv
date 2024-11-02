@@ -422,8 +422,12 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
 
     @pydantic.field_validator("photo")
     @classmethod
-    def photo_path(cls, value: str | Path, info: pydantic.ValidationInfo) -> Path:
+    def photo_path(
+        cls, value: str | Path | None, info: pydantic.ValidationInfo
+    ) -> Optional[Path]:
         """Cast `photo` to Path and make the path absolute"""
+        if not value:
+            return None
         path = Path(value)
         return path.absolute()
 
