@@ -377,6 +377,12 @@ def escape_latex_characters(latex_string: str) -> str:
         new_equation = equation.replace("$$", "$")
         new_equations.append(new_equation)
 
+    # Don't touch latex commands:
+    # Find all the latex commands in the sentence:
+    latex_commands = re.findall(r"\\[a-zA-Z]+\{.*?\}", latex_string)
+    for i, latex_command in enumerate(latex_commands):
+        latex_string = latex_string.replace(latex_command, f"!!-latex{i}-!!")
+
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
     latex_string = latex_string.translate(translation_map)
@@ -388,6 +394,10 @@ def escape_latex_characters(latex_string: str) -> str:
     # Replace !!-equation{i}-!!" with the original equations:
     for i, new_equation in enumerate(new_equations):
         latex_string = latex_string.replace(f"!!-equation{i}-!!", new_equation)
+
+    # Replace !!-latex{i}-!!" with the original latex commands:
+    for i, latex_command in enumerate(latex_commands):
+        latex_string = latex_string.replace(f"!!-latex{i}-!!", latex_command)
 
     return latex_string
 
