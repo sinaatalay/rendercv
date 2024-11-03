@@ -54,7 +54,7 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
         ```
         will return
 
-        `#!python "May 2024"`
+        `"May 2024"`
 
     Args:
         date: The date to format.
@@ -138,7 +138,7 @@ def compute_time_span_string(
 
         returns
 
-        `#!python "4 months"`
+        `"4 months"`
 
     Args:
         start_date: A start date in YYYY-MM-DD, YYYY-MM, or YYYY format.
@@ -299,7 +299,7 @@ def make_a_url_clean(url: str) -> str:
         make_a_url_clean("https://www.example.com/")
         ```
         returns
-        `#!python "example.com"`
+        `"example.com"`
 
     Args:
         url: The URL to make clean.
@@ -355,7 +355,7 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
         dictionary_key_to_proper_section_title("section_title")
         ```
         returns
-        `#!python "Section Title"`
+        `"Section Title"`
 
     Args:
         key: The key to convert to a proper section title.

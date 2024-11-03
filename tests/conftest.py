@@ -154,7 +154,7 @@ def return_a_value_for_a_field_type(
         return_a_value_for_a_field_type("institution", str)
         ```
         returns
-        `#!python "Boğaziçi University"`
+        `"Boğaziçi University"`
 
     Args:
         field_type: The type of the field.
