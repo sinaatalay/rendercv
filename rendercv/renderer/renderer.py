@@ -322,7 +322,7 @@ def render_an_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Pa
 
     # Convert the markdown file to HTML:
     markdown_text = markdown_file_path.read_text(encoding="utf-8")
-    html_body = markdown.markdown(markdown_text)
+    html_body = markdown.markdown(markdown_text, extensions=["toc", "extra"]) # uses the TOC and Markdown Extra extensions
 
     # Get the title of the markdown content:
     title = re.search(r"# (.*)\n", markdown_text)
