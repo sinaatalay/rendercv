@@ -426,9 +426,8 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
         generate_reference_files_function: Optional[typing.Callable] = None,
         **kwargs,
     ):
-        output_is_a_single_file = output_file_name is not None
-        if output_is_a_single_file:
-            output_file_path = tmp_path / output_file_name
+        output_file_path = tmp_path / output_file_name if output_file_name else None
+        output_is_a_single_file = output_file_path is not None
 
         reference_directory_path: pathlib.Path = specific_testdata_directory_path
         reference_file_or_directory_path = (
