@@ -320,9 +320,11 @@ def render_an_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Pa
     if not markdown_file_path.is_file():
         raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
 
-    # Convert the markdown file to HTML:
+    # Convert the markdown file to HTML, supporting Markdown Extra:
     markdown_text = markdown_file_path.read_text(encoding="utf-8")
-    html_body = markdown.markdown(markdown_text, extensions=["toc", "extra"]) # uses the TOC and Markdown Extra extensions
+    html_body = markdown.markdown(
+        markdown_text, extensions=["extra"]
+    )
 
     # Get the title of the markdown content:
     title = re.search(r"# (.*)\n", markdown_text)
