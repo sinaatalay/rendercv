@@ -193,13 +193,8 @@ def cli_command_render(
     with printer.LiveProgressReporter(number_of_steps=number_of_steps) as progress:
         progress.start_a_step("Validating the input file")
 
-        # Change the current working directory to the input file's directory (because
-        # the template overrides are looked up in the current working directory). The
-        # output files will be in the original working directory.
-        os.chdir(input_file_path.parent)
-
         data_model = data.validate_input_dictionary_and_return_the_data_model(
-            input_file_as_a_dict
+            input_file_as_a_dict, input_file_path=input_file_path
         )
 
         render_command_settings: data.models.RenderCommandSettings = (
@@ -210,6 +205,11 @@ def cli_command_render(
         )
 
         progress.finish_the_current_step()
+
+        # Change the current working directory to the input file's directory (because
+        # the template overrides are looked up in the current working directory). The
+        # output files will be in the original working directory.
+        os.chdir(input_file_path.parent)
 
         progress.start_a_step("Generating the LaTeX file")
 

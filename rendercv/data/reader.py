@@ -9,6 +9,7 @@ import pathlib
 import ruamel.yaml
 
 from . import models
+from .models.base import RenderCVContextModel
 
 
 def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
@@ -56,19 +57,24 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
 
 def validate_input_dictionary_and_return_the_data_model(
     input_dictionary: dict,
+    input_file_path: pathlib.Path = None,
 ) -> models.RenderCVDataModel:
     """Validate the input dictionary by creating an instance of `RenderCVDataModel`,
     which is a Pydantic data model of RenderCV's data format.
 
     Args:
         input_dictionary: The input dictionary.
+        input_file_path: Path of the input file.
 
     Returns:
         The data model.
     """
 
     # Validate the parsed dictionary by creating an instance of RenderCVDataModel:
-    rendercv_data_model = models.RenderCVDataModel(**input_dictionary)
+    ctx = RenderCVContextModel(input_file_path=input_file_path)
+    rendercv_data_model = models.RenderCVDataModel.model_validate(
+        input_dictionary, context=ctx
+    )
 
     return rendercv_data_model
 

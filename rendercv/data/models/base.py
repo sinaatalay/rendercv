@@ -3,6 +3,9 @@ The `rendercv.data.models.base` module contains the parent classes of all the da
 models in RenderCV.
 """
 
+from pathlib import Path
+from typing import Optional
+
 import pydantic
 
 
@@ -22,3 +25,9 @@ class RenderCVBaseModelWithExtraKeys(pydantic.BaseModel):
     """
 
     model_config = pydantic.ConfigDict(extra="allow", validate_default=True)
+
+
+class RenderCVContextModel(pydantic.BaseModel):
+    """This class describe the context data structure that will be passed during model validation."""
+
+    input_file_path: Optional[Path]

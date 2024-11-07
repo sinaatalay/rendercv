@@ -429,6 +429,13 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
         if not value:
             return None
         path = Path(value)
+        if path.is_absolute():
+            return path
+
+        if info.context.input_file_path:
+            return info.context.input_file_path.parent.joinpath(path).absolute()
+
+        # if no input file has been provided, then the path must be relative to cwd
         return path.absolute()
 
     @pydantic.field_validator("name")
