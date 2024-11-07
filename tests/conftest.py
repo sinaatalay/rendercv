@@ -278,7 +278,7 @@ def create_combinations_of_a_model(
 
 @pytest.fixture
 def rendercv_filled_curriculum_vitae_data_model(
-    text_entry, bullet_entry
+    text_entry, bullet_entry, testdata_directory_path
 ) -> data.CurriculumVitae:
     """Return a filled CurriculumVitae data model, where each section has all possible
     combinations of entry types.
@@ -287,6 +287,7 @@ def rendercv_filled_curriculum_vitae_data_model(
         name="John Doe",
         location="Istanbul, Turkey",
         email="john_doe@example.com",
+        photo=pathlib.Path("/tmp/propic.jpg").as_posix(),
         phone="+905419999999",  # type: ignore
         website="https://example.com",  # type: ignore
         social_networks=[
