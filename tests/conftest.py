@@ -282,6 +282,9 @@ def rendercv_filled_curriculum_vitae_data_model(
 ) -> data.CurriculumVitae:
     """Return a filled CurriculumVitae data model, where each section has all possible
     combinations of entry types.
+    Photo point to a path that (probably) does not exist on machine. This simply all
+    tests that checks that the .tex files are generated as expected, since the path is always the same,
+    even across different OS
     """
     return data.CurriculumVitae(
         name="John Doe",
