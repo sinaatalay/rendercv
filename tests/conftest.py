@@ -367,12 +367,13 @@ def are_these_two_paths_the_same(path1: pathlib.Path, path2: pathlib.Path) -> bo
         if not path2.is_dir():
             raise ValueError(
                 f"Test error: path1 {path1} is a directory, path2 {path2} is a regular"
-                " file"
+                " file or do not exists"
             )
         return are_these_two_directories_the_same(path1, path2)
     if path2.is_dir():
         raise ValueError(
-            f"Test error: path1 {path1} is a regular file, path2 {path2} is a directory"
+            f"Test error: path1 {path1} is a regular file or do not exists, path2"
+            f" {path2} is a directory"
         )
     return are_these_two_files_the_same(path1, path2)
 
