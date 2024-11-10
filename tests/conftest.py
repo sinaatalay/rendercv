@@ -508,7 +508,7 @@ def copy_path_in_a_tmp_directory_and_patch_photo_paths(
     @contextmanager
     def copy_path_in_a_tmp_directory_and_patch_photo_paths(
         source_path: pathlib.Path,
-    ) -> typing.Generator[pathlib.Path]:
+    ) -> typing.Generator[pathlib.Path, None, None]:
         with tempfile.TemporaryDirectory() as tmp_path:
             tmp_path = pathlib.Path(tmp_path)
             if source_path.is_file():
