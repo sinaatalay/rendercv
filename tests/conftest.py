@@ -516,9 +516,7 @@ def copy_path_in_a_tmp_directory_and_patch_photo_paths(
             else:
                 shutil.copytree(source_path, tmp_path, dirs_exist_ok=True)
 
-            relative_photo_path = str(
-                example_cv_photo_path.relative_to(root_directory_path)
-            )
+            relative_photo_path = example_cv_photo_path.relative_to(root_directory_path).as_posix()
             absolute_photo_path = str(example_cv_photo_path)
             for file_path in itertools.chain(
                 tmp_path.glob("**/*.tex"), tmp_path.glob("**/*.md")
