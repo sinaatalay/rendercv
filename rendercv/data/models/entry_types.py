@@ -458,6 +458,27 @@ class EducationEntry(EntryBase, EducationEntryBase):
     pass
 
 
+class ClientProject(RenderCVBaseModelWithExtraKeys):
+    """Client project within an experience entry."""
+    name: str = pydantic.Field(
+        title="Client Name",
+        description="The name of the client."
+    )
+    highlights: Optional[list[str]] = pydantic.Field(
+        default=None,
+        title="Highlights",
+        description="The highlights of the project as a list of strings."
+    )
+
+
+class ConsultingExperienceEntry(EntryBase, ExperienceEntryBase):
+    """Extended ExperienceEntry that supports multiple client projects."""
+    clients: list[ClientProject] = pydantic.Field(
+        title="Client Projects",
+        description="List of client projects worked on in this role."
+    )
+
+
 # ======================================================================================
 # Create custom types based on the entry models: =======================================
 # ======================================================================================
@@ -466,6 +487,7 @@ Entry = (
     OneLineEntry
     | NormalEntry
     | ExperienceEntry
+    | ConsultingExperienceEntry
     | EducationEntry
     | PublicationEntry
     | BulletEntry
@@ -477,6 +499,7 @@ ListOfEntries = (
     list[OneLineEntry]
     | list[NormalEntry]
     | list[ExperienceEntry]
+    | list[ConsultingExperienceEntry]
     | list[EducationEntry]
     | list[PublicationEntry]
     | list[BulletEntry]
