@@ -50,6 +50,7 @@ __all__ = [
     "BulletEntry",
     "EducationEntry",
     "ExperienceEntry",
+    "ConsultingExperienceEntry",
     "PublicationEntry",
     "NormalEntry",
     "SocialNetwork",
