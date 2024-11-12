@@ -23,6 +23,7 @@ from .models import (
     EducationEntry,
     Entry,
     ExperienceEntry,
+    ConsultingExperienceEntry,
     LocaleCatalog,
     NormalEntry,
     OneLineEntry,
