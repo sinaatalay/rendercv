@@ -9,7 +9,7 @@ from typing import Optional
 import pydantic
 
 from .base import RenderCVBaseModelWithoutExtraKeys
-from .computers import convert_string_to_path
+from .computers import convert_string_to_path, replace_placeholders
 
 file_path_placeholder_description = (
     "The following placeholders can be used:\n- FULL_MONTH_NAME: Full name of the"
@@ -127,6 +127,15 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
             " default value is False."
         ),
     )
+
+    @pydantic.field_validator(
+        "output_folder_name",
+        mode="before",
+    )
+    @classmethod
+    def replace_placeholders(cls, value: str) -> str:
+        """Replaces the placeholders in a string with the corresponding values."""
+        return replace_placeholders(value)
 
     @pydantic.field_validator(
         "pdf_path",
