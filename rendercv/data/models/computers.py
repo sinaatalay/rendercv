@@ -89,11 +89,8 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
     return date_string  # type: ignore
 
 
-def convert_string_to_path(value: str) -> pathlib.Path:
-    """Converts a string to a `pathlib.Path` object by replacing the placeholders
-    with the corresponding values. If the path is not an absolute path, it is
-    converted to an absolute path by prepending the current working directory.
-    """
+def replace_placeholders(value: str) -> str:
+    """Replaces the placeholders in a string with the corresponding values."""
     name = curriculum_vitae["name"]  # Curriculum Vitae owner's name
     full_month_names = LOCALE_CATALOG["full_names_of_months"]
     short_month_names = LOCALE_CATALOG["abbreviations_for_months"]
@@ -119,6 +116,16 @@ def convert_string_to_path(value: str) -> pathlib.Path:
 
     for placeholder, placeholder_value in placeholders.items():
         value = value.replace(placeholder, placeholder_value)
+
+    return value
+
+
+def convert_string_to_path(value: str) -> pathlib.Path:
+    """Converts a string to a `pathlib.Path` object by replacing the placeholders
+    with the corresponding values. If the path is not an absolute path, it is
+    converted to an absolute path by prepending the current working directory.
+    """
+    value = replace_placeholders(value)
 
     return pathlib.Path(value).absolute()
 
