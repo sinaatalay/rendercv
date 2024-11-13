@@ -848,3 +848,7 @@ def test_render_command_settings_placeholders(path_name, expected_value):
     )
 
     assert render_command_settings.pdf_path.name == expected_value  # type: ignore
+    assert render_command_settings.latex_path.name == expected_value  # type: ignore
+    assert render_command_settings.html_path.name == expected_value  # type: ignore
+    assert render_command_settings.markdown_path.name == expected_value  # type: ignore
+    assert render_command_settings.output_folder_name == expected_value
