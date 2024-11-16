@@ -126,7 +126,10 @@ def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
         ),
         (
             "$\\mathcal{O}(n^2)$ to $\\mathcal{O}(n \\log n)$",
-            "\\$\\textbackslash{}mathcal\\{O\\}(n\\textasciicircum{}2)\\$ to \\$\\textbackslash{}mathcal\\{O\\}(n \\textbackslash{}log n)\\$",
+            (
+                "\\$\\textbackslash{}mathcal\\{O\\}(n\\textasciicircum{}2)\\$ to"
+                " \\$\\textbackslash{}mathcal\\{O\\}(n \\textbackslash{}log n)\\$"
+            ),
         ),
     ],
 )
