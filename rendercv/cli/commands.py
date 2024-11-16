@@ -140,7 +140,7 @@ def cli_command_render(
             ' [cyan bold]--cv.phone "123-456-7890"[/cyan bold].',
         ),
     ] = None,
-    extra_data_model_override_argumets: typer.Context = None,  # type: ignore
+    extra_data_model_override_arguments: typer.Context = None,  # type: ignore
 ):
     """Render a CV from a YAML input file."""
     printer.welcome()
@@ -152,9 +152,9 @@ def cli_command_render(
 
     # Update the input file if there are extra override arguments (for example,
     # --cv.phone "123-456-7890"):
-    if extra_data_model_override_argumets:
+    if extra_data_model_override_arguments:
         key_and_values = utilities.parse_render_command_override_arguments(
-            extra_data_model_override_argumets
+            extra_data_model_override_arguments
         )
         input_file_as_a_dict = utilities.set_or_update_values(
             input_file_as_a_dict, key_and_values
