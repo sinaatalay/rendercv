@@ -39,6 +39,22 @@ def cli_command_render(
     input_file_name: Annotated[
         str, typer.Argument(help="Name of the YAML input file.")
     ],
+    design_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--design-path",
+            "-d",
+            help="Use the design settings located at this path.",
+        ),
+    ] = None,
+    default_rendercv_settings_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--settings-path",
+            "-s",
+            help="Use the rendercv settings located at this path.",
+        ),
+    ] = None,
     use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
@@ -163,6 +179,8 @@ def cli_command_render(
     # If non-default CLI arguments are provided, override the
     # `rendercv_settings.render_command`:
     cli_render_arguments = {
+        "design_path": design_path,
+        "default_rendercv_settings_path": default_rendercv_settings_path,
         "use_local_latex_command": use_local_latex_command,
         "output_folder_name": output_folder_name,
         "latex_path": latex_path,
@@ -175,6 +193,18 @@ def cli_command_render(
         "dont_generate_html": dont_generate_html,
         "watch": watch,
     }
+
+    if default_rendercv_settings_path:
+        settings_file_path: pathlib.Path = pathlib.Path(default_rendercv_settings_path).absolute()
+        settings_file_as_a_dict = data.read_a_yaml_file(settings_file_path)
+        input_file_as_a_dict.update(settings_file_as_a_dict)
+
+    if design_path:
+        design_file_path: pathlib.Path = pathlib.Path(design_path).absolute()
+        design_file_as_a_dict = data.read_a_yaml_file(design_file_path)
+        input_file_as_a_dict.update(design_file_as_a_dict)
+
+
     input_file_as_a_dict = utilities.update_render_command_settings_of_the_input_file(
         input_file_as_a_dict, cli_render_arguments
     )
