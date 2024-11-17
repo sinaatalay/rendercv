@@ -47,10 +47,10 @@ def cli_command_render(
             help="Use the design settings located at this path.",
         ),
     ] = None,
-    default_rendercv_settings_path: Annotated[
+    rendercv_settings_path: Annotated[
         Optional[str],
         typer.Option(
-            "--settings-path",
+            "--rendercv-settings-path",
             "-s",
             help="Use the rendercv settings located at this path.",
         ),
@@ -162,6 +162,8 @@ def cli_command_render(
     printer.welcome()
 
     input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
+
+
     original_working_directory = pathlib.Path.cwd()
 
     input_file_as_a_dict = data.read_a_yaml_file(input_file_path)
@@ -180,7 +182,7 @@ def cli_command_render(
     # `rendercv_settings.render_command`:
     cli_render_arguments = {
         "design_path": design_path,
-        "default_rendercv_settings_path": default_rendercv_settings_path,
+        "rendercv_settings_path": rendercv_settings_path,
         "use_local_latex_command": use_local_latex_command,
         "output_folder_name": output_folder_name,
         "latex_path": latex_path,
@@ -194,8 +196,8 @@ def cli_command_render(
         "watch": watch,
     }
 
-    if default_rendercv_settings_path:
-        settings_file_path: pathlib.Path = pathlib.Path(default_rendercv_settings_path).absolute()
+    if rendercv_settings_path:
+        settings_file_path: pathlib.Path = pathlib.Path(rendercv_settings_path).absolute()
         settings_file_as_a_dict = data.read_a_yaml_file(settings_file_path)
         input_file_as_a_dict.update(settings_file_as_a_dict)
 
