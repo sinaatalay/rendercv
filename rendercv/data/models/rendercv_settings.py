@@ -46,7 +46,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
         ),
     )
 
-    default_rendercv_settings_path: Optional[str] = pydantic.Field(
+    rendercv_settings_path: Optional[str] = pydantic.Field(
         default = None,
         title="RenderCV Settings Path",
         description=(
