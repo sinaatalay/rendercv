@@ -14,5 +14,7 @@ Then, the tests should be implemented for the new social network with the follow
 
 1. Go to `tests/test_data.py` and update `test_social_network_url` accordingly, i.e., add a new `(network, username, expected_url)` tuple to the `pytest.mark.parametrize` decorator.
 2. Go to `tests/conftest.py` and add the new social network to `rendercv_filled_curriculum_vitae_data_model`.
-3. Set `update_testdata` to `True` in `conftest.py` and run the tests to update the `testdata` folder.
+3. Set `update_testdata` to `True` in `conftest.py` and [run the tests](./testing.md) to update the `testdata` folder.
 4. Review the updated `testdata` folder manually to ensure everything works as expected. Then, set `update_testdata` to `False` and push the changes.
+
+Finally, add the new social network to `schema.json` to finish the integration of the new social network.
