@@ -89,11 +89,8 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
     return date_string  # type: ignore
 
 
-def convert_string_to_path(value: str) -> pathlib.Path:
-    """Converts a string to a `pathlib.Path` object by replacing the placeholders
-    with the corresponding values. If the path is not an absolute path, it is
-    converted to an absolute path by prepending the current working directory.
-    """
+def replace_placeholders(value: str) -> str:
+    """Replaces the placeholders in a string with the corresponding values."""
     name = curriculum_vitae["name"]  # Curriculum Vitae owner's name
     full_month_names = LOCALE_CATALOG["full_names_of_months"]
     short_month_names = LOCALE_CATALOG["abbreviations_for_months"]
@@ -119,6 +116,16 @@ def convert_string_to_path(value: str) -> pathlib.Path:
 
     for placeholder, placeholder_value in placeholders.items():
         value = value.replace(placeholder, placeholder_value)
+
+    return value
+
+
+def convert_string_to_path(value: str) -> pathlib.Path:
+    """Converts a string to a `pathlib.Path` object by replacing the placeholders
+    with the corresponding values. If the path is not an absolute path, it is
+    converted to an absolute path by prepending the current working directory.
+    """
+    value = replace_placeholders(value)
 
     return pathlib.Path(value).absolute()
 
@@ -186,8 +193,14 @@ def compute_time_span_string(
         # Calculate the number of days between start_date and end_date:
         timespan_in_days = (end_date - start_date).days  # type: ignore
 
-        # Calculate the number of years between start_date and end_date:
+        # Calculate the number of years and months between start_date and end_date:
         how_many_years = timespan_in_days // 365
+        how_many_months = (timespan_in_days % 365) // 30 + 1
+        # Deal with overflow (prevent rounding to 1 year 12 months, etc.)
+        how_many_years += how_many_months // 12
+        how_many_months %= 12
+
+        # Format the number of years and months between start_date and end_date:
         if how_many_years == 0:
             how_many_years_string = None
         elif how_many_years == 1:
@@ -195,20 +208,25 @@ def compute_time_span_string(
         else:
             how_many_years_string = f"{how_many_years} {LOCALE_CATALOG['years']}"
 
-        # Calculate the number of months between start_date and end_date:
-        how_many_months = round((timespan_in_days % 365) / 30)
-        if how_many_months <= 1:
+        # Format the number of months between start_date and end_date:
+        if how_many_months == 1 or (
+            how_many_years_string is None and how_many_months == 0
+        ):
             how_many_months_string = f"1 {LOCALE_CATALOG['month']}"
+        elif how_many_months == 0:
+            how_many_months_string = None
         else:
             how_many_months_string = f"{how_many_months} {LOCALE_CATALOG['months']}"
 
         # Combine howManyYearsString and howManyMonthsString:
         if how_many_years_string is None:
             time_span_string = how_many_months_string
+        elif how_many_months_string is None:
+            time_span_string = how_many_years_string
         else:
             time_span_string = f"{how_many_years_string} {how_many_months_string}"
 
-        return time_span_string
+        return time_span_string.strip()
 
 
 def compute_date_string(
