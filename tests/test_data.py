@@ -416,6 +416,11 @@ def test_invalid_social_networks(network, username):
             "myusername",
             "https://t.me/myusername",
         ),
+        (
+            "Twitter",
+            "myusername",
+            "https://x.com/myusername",
+        ),
     ],
 )
 def test_social_network_url(network, username, expected_url):
