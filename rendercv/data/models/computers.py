@@ -189,11 +189,11 @@ def compute_time_span_string(
 
         # Calculate the number of years and months between start_date and end_date:
         how_many_years = timespan_in_days // 365
-        how_many_months = round((timespan_in_days % 365) / 30)
+        how_many_months = (timespan_in_days % 365) // 30 + 1
         # Deal with overflow (prevent rounding to 1 year 12 months, etc.)
         how_many_years += how_many_months // 12
         how_many_months %= 12
-        
+
         # Format the number of years and months between start_date and end_date:
         if how_many_years == 0:
             how_many_years_string = None
@@ -203,7 +203,9 @@ def compute_time_span_string(
             how_many_years_string = f"{how_many_years} {LOCALE_CATALOG['years']}"
 
         # Format the number of months between start_date and end_date:
-        if how_many_months == 1 or (how_many_years_string is None and how_many_months == 0):
+        if how_many_months == 1 or (
+            how_many_years_string is None and how_many_months == 0
+        ):
             how_many_months_string = f"1 {LOCALE_CATALOG['month']}"
         elif how_many_months == 0:
             how_many_months_string = None
