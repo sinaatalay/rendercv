@@ -354,7 +354,7 @@ class EntryBase(EntryWithDate):
             entry = dm.EntryBase(start_date="2020-10-11", end_date="2021-04-04").date_string
             ```
             returns
-            `#!python "Nov 2020 to Apr 2021"`
+            `"Nov 2020 to Apr 2021"`
         """
         return computers.compute_date_string(
             start_date=self.start_date, end_date=self.end_date, date=self.date
@@ -371,7 +371,7 @@ class EntryBase(EntryWithDate):
             entry = dm.EntryBase(start_date="2020-10-11", end_date="2021-04-04").date_string_only_years
             ```
             returns
-            `#!python "2020 to 2021"`
+            `"2020 to 2021"`
         """
         return computers.compute_date_string(
             start_date=self.start_date,

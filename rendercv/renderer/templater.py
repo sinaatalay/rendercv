@@ -325,7 +325,7 @@ def escape_latex_characters(latex_string: str) -> str:
         escape_latex_characters("This is a # string.")
         ```
         returns
-        `#!python "This is a \\# string."`
+        `"This is a \\# string."`
 
     Args:
         latex_string: The string to escape.
@@ -338,7 +338,7 @@ def escape_latex_characters(latex_string: str) -> str:
     escape_characters = {
         "{": "\\{",
         "}": "\\}",
-        "\\": "\\textbackslash{}",
+        # "\\": "\\textbackslash{}",
         "#": "\\#",
         "%": "\\%",
         "&": "\\&",
@@ -377,6 +377,12 @@ def escape_latex_characters(latex_string: str) -> str:
         new_equation = equation.replace("$$", "$")
         new_equations.append(new_equation)
 
+    # Don't touch latex commands:
+    # Find all the latex commands in the sentence:
+    latex_commands = re.findall(r"\\[a-zA-Z]+\{.*?\}", latex_string)
+    for i, latex_command in enumerate(latex_commands):
+        latex_string = latex_string.replace(latex_command, f"!!-latex{i}-!!")
+
     # Loop through the letters of the sentence and if you find an escape character,
     # replace it with its LaTeX equivalent:
     latex_string = latex_string.translate(translation_map)
@@ -388,6 +394,10 @@ def escape_latex_characters(latex_string: str) -> str:
     # Replace !!-equation{i}-!!" with the original equations:
     for i, new_equation in enumerate(new_equations):
         latex_string = latex_string.replace(f"!!-equation{i}-!!", new_equation)
+
+    # Replace !!-latex{i}-!!" with the original latex commands:
+    for i, latex_command in enumerate(latex_commands):
+        latex_string = latex_string.replace(f"!!-latex{i}-!!", latex_command)
 
     return latex_string
 
@@ -405,7 +415,7 @@ def markdown_to_latex(markdown_string: str) -> str:
 
         returns
 
-        `#!python "This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
+        `"This is a \\textbf{bold} text with a \\href{https://google.com}{\\textit{link}}."`
 
     Args:
         markdown_string: The Markdown string to convert.
@@ -568,7 +578,7 @@ def make_matched_part_bold(value: str, match_str: Optional[str] = None) -> str:
 
         returns
 
-        `#!python "\\textbf{Hello} World!"`
+        `"\\textbf{Hello} World!"`
 
     Args:
         value: The string to make bold.
@@ -593,7 +603,7 @@ def make_matched_part_underlined(value: str, match_str: Optional[str] = None) ->
 
         returns
 
-        `#!python "\\underline{Hello} World!"`
+        `"\\underline{Hello} World!"`
 
     Args:
         value: The string to make underlined.
@@ -618,7 +628,7 @@ def make_matched_part_italic(value: str, match_str: Optional[str] = None) -> str
 
         returns
 
-        `#!python "\\textit{Hello} World!"`
+        `"\\textit{Hello} World!"`
 
     Args:
         value: The string to make italic.
@@ -645,7 +655,7 @@ def make_matched_part_non_line_breakable(
 
         returns
 
-        `#!python "\\mbox{Hello} World!"`
+        `"\\mbox{Hello} World!"`
 
     Args:
         value: The string to disable line breaks.
@@ -669,7 +679,7 @@ def abbreviate_name(name: Optional[str]) -> str:
 
         returns
 
-        `#!python "J. Doe"`
+        `"J. Doe"`
 
     Args:
         name: The name to abbreviate.
@@ -706,7 +716,7 @@ def divide_length_by(length: str, divider: float) -> str:
 
         returns
 
-        `#!python "5.2cm"`
+        `"5.2cm"`
 
     Args:
         length: The length to divide.

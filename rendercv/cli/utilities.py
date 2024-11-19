@@ -122,7 +122,7 @@ def get_latest_version_number_from_pypi() -> Optional[str]:
         get_latest_version_number_from_pypi()
         ```
         returns
-        `#!python "1.1"`
+        `"1.1"`
 
     Returns:
         The latest version number of RenderCV from PyPI. Returns None if the version

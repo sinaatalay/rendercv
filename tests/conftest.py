@@ -154,7 +154,7 @@ def return_a_value_for_a_field_type(
         return_a_value_for_a_field_type("institution", str)
         ```
         returns
-        `#!python "Boğaziçi University"`
+        `"Boğaziçi University"`
 
     Args:
         field_type: The type of the field.
@@ -453,7 +453,7 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
                 # copy the output file or directory to the reference directory
                 function(tmp_path, reference_file_or_directory_path, **kwargs)
                 if output_is_a_single_file:
-                    shutil.move(output_file_path, reference_file_or_directory_path)
+                    shutil.move(output_file_path, reference_file_or_directory_path)  # type: ignore
                 else:
                     shutil.move(tmp_path, reference_file_or_directory_path)
                     os.mkdir(tmp_path)
@@ -462,7 +462,7 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
 
         if output_is_a_single_file:
             return are_these_two_files_the_same(
-                output_file_path, reference_file_or_directory_path
+                output_file_path, reference_file_or_directory_path  # type: ignore
             )
         else:
             return are_these_two_directories_the_same(

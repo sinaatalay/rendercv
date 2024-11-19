@@ -185,6 +185,22 @@ def test_if_the_schema_is_the_latest(root_directory_path):
             "1 year 1 month",
         ),
         (
+            "2020-01-01",
+            "2022-01-01",
+            None,
+            "Jan 2020 – Jan 2022",
+            "2020 – 2022",
+            "2 years 1 month",
+        ),
+        (
+            "2020-01-01",
+            "2021-12-10",
+            None,
+            "Jan 2020 – Dec 2021",
+            "2020 – 2021",
+            "2 years",
+        ),
+        (
             Date(2020, 1, 1),
             Date(2021, 1, 1),
             None,
@@ -230,7 +246,7 @@ def test_if_the_schema_is_the_latest(root_directory_path):
             None,
             "Feb 2020 – present",
             "2020 – present",
-            "3 years 11 months",
+            "4 years",
         ),
         ("2020-01-01", "2021-01-01", "2023-02-01", "Feb 2023", "2023", ""),
         ("2020", "2021", None, "2020 – 2021", "2020 – 2021", "1 year"),
@@ -848,3 +864,7 @@ def test_render_command_settings_placeholders(path_name, expected_value):
     )
 
     assert render_command_settings.pdf_path.name == expected_value  # type: ignore
+    assert render_command_settings.latex_path.name == expected_value  # type: ignore
+    assert render_command_settings.html_path.name == expected_value  # type: ignore
+    assert render_command_settings.markdown_path.name == expected_value  # type: ignore
+    assert render_command_settings.output_folder_name == expected_value
