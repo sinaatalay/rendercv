@@ -158,6 +158,17 @@ def test_escape_latex_characters(string, expected_string):
             "Some other *** tests, which should be tricky* to parse!**",
             "Some other \\textbf{\\textit{ tests, which should be tricky} to parse!}",
         ),
+        (
+            "$$a=5_4^3 % & #$$ # $$aaaa ___ &&$$",
+            "$a=5_4^3 % & #$ \\# $aaaa ___ &&$",
+        ),
+        (
+            "$\\mathcal{O}(n^2)$ to $\\mathcal{O}(n \\log n)$",
+            (
+                "\\$\\textbackslash{}mathcal\\{O\\}(n\\textasciicircum{}2)\\$ to"
+                " \\$\\textbackslash{}mathcal\\{O\\}(n \\textbackslash{}log n)\\$"
+            ),
+        ),
     ],
 )
 def test_markdown_to_latex(markdown_string, expected_latex_string):
