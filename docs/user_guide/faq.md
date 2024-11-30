@@ -37,6 +37,11 @@ You can add the line into the `Preamble.j2.tex` file that is in the `moderncv` f
 
 See more on the [user guide for `moderncv`](https://ctan.math.washington.edu/tex-archive/macros/latex/contrib/moderncv/manual/moderncv_userguide.pdf).
 
+## Can I use JSON Resume schema?
+
+Both RenderCV and JSON Resume follows their own schema so you cannot directly use JSON Resume schema but you can use this [jsonresume-to-rendercv](https://github.com/guruor/jsonresume-to-rendercv) converter to convert JSON Resume to RenderCV format.
+
+
 ### Other themes
 
 To be answered.
