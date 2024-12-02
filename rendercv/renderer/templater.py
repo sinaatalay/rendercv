@@ -65,10 +65,14 @@ class TemplatedFile:
         fields_to_ignore = ["start_date", "end_date", "date"]
 
         if entry is not None and not isinstance(entry, str):
-            entry_dictionary = entry.model_dump()
+            entry_dictionary = entry.model_dump(serialize_as_any=True)
             for key, value in entry_dictionary.items():
                 if value is None and key not in fields_to_ignore:
                     entry.__setattr__(key, "")
+
+            # this is a correction for upstream serialization issues, which need to be resolved
+            if "positions" in entry_dictionary:
+                entry.positions = [data.DetailedPosition.model_validate(p) for p in entry.positions]
 
         # The arguments of the template can be used in the template file:
         return template.render(
@@ -485,7 +489,7 @@ def transform_markdown_sections_to_latex_sections(
             else:
                 # Then it means it's one of the other entries.
                 fields_to_skip = ["doi"]
-                entry_as_dict = entry.model_dump()
+                entry_as_dict = entry.model_dump(serialize_as_any=True)
                 for entry_key, inner_value in entry_as_dict.items():
                     if entry_key in fields_to_skip:
                         continue
