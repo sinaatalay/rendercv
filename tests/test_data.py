@@ -453,6 +453,11 @@ def test_social_network_url(network, username, expected_url):
             "SectionWithExperienceEntries",
         ),
         (
+            "experience_entry_promotion",
+            "ExperienceEntry",
+            "SectionWithExperienceEntries",
+        ),
+        (
             "education_entry",
             "EducationEntry",
             "SectionWithEducationEntries",
@@ -517,6 +522,7 @@ def test_entries_with_extra_attributes(EntryType, request: pytest.FixtureRequest
 def test_sections(
     education_entry,
     experience_entry,
+    experience_entry_promotion,
     publication_entry,
     normal_entry,
     one_line_entry,
@@ -531,7 +537,7 @@ def test_sections(
             ],
             "arbitrary_title_2": [
                 experience_entry,
-                experience_entry,
+                experience_entry_promotion,
             ],
             "arbitrary_title_3": [
                 publication_entry,
