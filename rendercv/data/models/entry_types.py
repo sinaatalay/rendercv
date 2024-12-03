@@ -325,6 +325,12 @@ class EntryBase(EntryWithDate):
         ),
         examples=["2020-09-24", "present"],
     )
+    summary: Optional[list[str]] = pydantic.Field(
+        default=None,
+        title="Summary",
+        description="The summary of the event, one paragraph per list entry",
+        examples=["Spearheaded project resulting in amazing success"],
+    )
     highlights: Optional[list[str]] = pydantic.Field(
         default=None,
         title="Highlights",
