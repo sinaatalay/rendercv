@@ -194,7 +194,7 @@ def cli_command_render(
         progress.start_a_step("Validating the input file")
 
         data_model = data.validate_input_dictionary_and_return_the_data_model(
-            input_file_as_a_dict
+            input_file_as_a_dict, input_file_path=input_file_path
         )
 
         render_command_settings: data.models.RenderCommandSettings = (

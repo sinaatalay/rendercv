@@ -6,7 +6,9 @@ import itertools
 import os
 import pathlib
 import shutil
+import tempfile
 import typing
+from contextlib import contextmanager
 from typing import Optional, Type
 
 import jinja2
@@ -278,7 +280,7 @@ def create_combinations_of_a_model(
 
 @pytest.fixture
 def rendercv_filled_curriculum_vitae_data_model(
-    text_entry, bullet_entry
+    text_entry, bullet_entry, testdata_directory_path, example_cv_photo_path
 ) -> data.CurriculumVitae:
     """Return a filled CurriculumVitae data model, where each section has all possible
     combinations of entry types.
@@ -287,6 +289,7 @@ def rendercv_filled_curriculum_vitae_data_model(
         name="John Doe",
         location="Istanbul, Turkey",
         email="john_doe@example.com",
+        photo=example_cv_photo_path,
         phone="+905419999999",  # type: ignore
         website="https://example.com",  # type: ignore
         social_networks=[
@@ -353,6 +356,28 @@ def specific_testdata_directory_path(testdata_directory_path, request) -> pathli
     return testdata_directory_path / request.node.originalname
 
 
+def are_these_two_paths_the_same(path1: pathlib.Path, path2: pathlib.Path) -> bool:
+    """Check if two paths have the same content.
+
+    Args:
+        path1: The first path to compare.
+        path2: The second path to compare.
+    """
+    if path1.is_dir():
+        if not path2.is_dir():
+            raise ValueError(
+                f"Test error: path1 {path1} is a directory, path2 {path2} is a regular"
+                " file or do not exists"
+            )
+        return are_these_two_directories_the_same(path1, path2)
+    if path2.is_dir():
+        raise ValueError(
+            f"Test error: path1 {path1} is a regular file or do not exists, path2"
+            f" {path2} is a directory"
+        )
+    return are_these_two_files_the_same(path1, path2)
+
+
 def are_these_two_directories_the_same(
     directory1: pathlib.Path, directory2: pathlib.Path
 ) -> bool:
@@ -416,6 +441,9 @@ def are_these_two_files_the_same(file1: pathlib.Path, file2: pathlib.Path) -> bo
 def run_a_function_and_check_if_output_is_the_same_as_reference(
     tmp_path: pathlib.Path,
     specific_testdata_directory_path: pathlib.Path,
+    example_cv_photo_path: pathlib.Path,
+    root_directory_path: pathlib.Path,
+    copy_path_in_a_tmp_directory_and_patch_photo_paths: typing.Callable,
 ) -> typing.Callable:
     """Run a function and check if the output is the same as the reference."""
 
@@ -424,11 +452,14 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
         reference_file_or_directory_name: str,
         output_file_name: Optional[str] = None,
         generate_reference_files_function: Optional[typing.Callable] = None,
+        patch_reference: bool = False,
         **kwargs,
     ):
         output_is_a_single_file = output_file_name is not None
         if output_is_a_single_file:
-            output_file_path = tmp_path / output_file_name
+            output_path = tmp_path / output_file_name
+        else:
+            output_path = tmp_path
 
         reference_directory_path: pathlib.Path = specific_testdata_directory_path
         reference_file_or_directory_path = (
@@ -454,26 +485,81 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
                 # copy the output file or directory to the reference directory
                 function(tmp_path, reference_file_or_directory_path, **kwargs)
                 if output_is_a_single_file:
-                    shutil.move(output_file_path, reference_file_or_directory_path)  # type: ignore
+                    shutil.move(output_path, reference_file_or_directory_path)  # type: ignore
                 else:
                     shutil.move(tmp_path, reference_file_or_directory_path)
                     os.mkdir(tmp_path)
 
-        function(tmp_path, reference_file_or_directory_path, **kwargs)
-
-        if output_is_a_single_file:
-            return are_these_two_files_the_same(
-                output_file_path, reference_file_or_directory_path  # type: ignore
-            )
+        if patch_reference:
+            with copy_path_in_a_tmp_directory_and_patch_photo_paths(
+                reference_file_or_directory_path
+            ) as reference_file_or_directory_path:
+                function(tmp_path, reference_file_or_directory_path, **kwargs)
+                return are_these_two_paths_the_same(
+                    output_path, reference_file_or_directory_path
+                )
         else:
-            return are_these_two_directories_the_same(
-                tmp_path, reference_file_or_directory_path
-            )
+            function(tmp_path, reference_file_or_directory_path, **kwargs)
+
+            if output_is_a_single_file:
+                return are_these_two_files_the_same(
+                    output_path, reference_file_or_directory_path  # type: ignore
+                )
+            else:
+                return are_these_two_directories_the_same(
+                    output_path, reference_file_or_directory_path
+                )
 
     return function
+
+
+@pytest.fixture
+def copy_path_in_a_tmp_directory_and_patch_photo_paths(
+    root_directory_path, example_cv_photo_path
+) -> typing.Callable:
+    """Clone a path in a temporary_directory, then replace all the photo relative paths
+    with the actual absolute path. Since rendercv.data.CurriculumVitae will transform
+    every path for the photo in an absolute path, it is necessary to dynamically write the absolute
+    path of the image at runtime
+    """
+
+    @contextmanager
+    def copy_path_in_a_tmp_directory_and_patch_photo_paths(
+        source_path: pathlib.Path,
+    ) -> typing.Generator[pathlib.Path, None, None]:
+        with tempfile.TemporaryDirectory() as tmp_path:
+            tmp_path = pathlib.Path(tmp_path)
+            if source_path.is_file():
+                shutil.copy(source_path, tmp_path)
+            else:
+                shutil.copytree(source_path, tmp_path, dirs_exist_ok=True)
+
+            relative_photo_path = example_cv_photo_path.relative_to(
+                root_directory_path
+            ).as_posix()
+            absolute_photo_path = example_cv_photo_path.as_posix()
+            for file_path in itertools.chain(
+                tmp_path.glob("**/*.tex"), tmp_path.glob("**/*.md")
+            ):
+                content = file_path.read_text()
+                content = content.replace(relative_photo_path, absolute_photo_path)
+                file_path.write_text(content)
+
+            if source_path.is_file():
+                tmp_path /= source_path.name
+
+            yield tmp_path
+
+    return copy_path_in_a_tmp_directory_and_patch_photo_paths
 
 
 @pytest.fixture
 def input_file_path(testdata_directory_path) -> pathlib.Path:
     """Return the path to the input file."""
     return testdata_directory_path / "John_Doe_CV.yaml"
+
+
+@pytest.fixture
+def example_cv_photo_path(testdata_directory_path) -> pathlib.Path:
+    """Return the path to the example profile picture (cv.photo)"""
+    return testdata_directory_path / "propic.jpg"
