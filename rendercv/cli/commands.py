@@ -40,6 +40,22 @@ def cli_command_render(
     input_file_name: Annotated[
         str, typer.Argument(help="Name of the YAML input file.")
     ],
+    design_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--design-path",
+            "-d",
+            help="Use the design settings located at this path.",
+        ),
+    ] = None,
+    rendercv_settings_path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--rendercv-settings-path",
+            "-s",
+            help="Use the rendercv settings located at this path.",
+        ),
+    ] = None,
     use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
@@ -133,21 +149,23 @@ def cli_command_render(
             ' [cyan bold]--cv.phone "123-456-7890"[/cyan bold].',
         ),
     ] = None,
-    extra_data_model_override_argumets: typer.Context = None,  # type: ignore
+    extra_data_model_override_arguments: typer.Context = None,  # type: ignore
 ):
     """Render a CV from a YAML input file."""
     printer.welcome()
 
     input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
+
+
     original_working_directory = pathlib.Path.cwd()
 
     input_file_as_a_dict = data.read_a_yaml_file(input_file_path)
 
     # Update the input file if there are extra override arguments (for example,
     # --cv.phone "123-456-7890"):
-    if extra_data_model_override_argumets:
+    if extra_data_model_override_arguments:
         key_and_values = utilities.parse_render_command_override_arguments(
-            extra_data_model_override_argumets
+            extra_data_model_override_arguments
         )
         input_file_as_a_dict = utilities.set_or_update_values(
             input_file_as_a_dict, key_and_values
@@ -155,6 +173,8 @@ def cli_command_render(
 
     # If non-default CLI arguments are provided, override the `rendercv_settings.render_command`:
     cli_render_arguments = {
+        "design_path": design_path,
+        "rendercv_settings_path": rendercv_settings_path,
         "use_local_latex_command": use_local_latex_command,
         "output_folder_name": output_folder_name,
         "latex_path": latex_path,
@@ -166,6 +186,18 @@ def cli_command_render(
         "dont_generate_markdown": dont_generate_markdown,
         "dont_generate_html": dont_generate_html,
     }
+
+    if rendercv_settings_path:
+        settings_file_path: pathlib.Path = pathlib.Path(rendercv_settings_path).absolute()
+        settings_file_as_a_dict = data.read_a_yaml_file(settings_file_path)
+        input_file_as_a_dict.update(settings_file_as_a_dict)
+
+    if design_path:
+        design_file_path: pathlib.Path = pathlib.Path(design_path).absolute()
+        design_file_as_a_dict = data.read_a_yaml_file(design_file_path)
+        input_file_as_a_dict.update(design_file_as_a_dict)
+
+
     input_file_as_a_dict = utilities.update_render_command_settings_of_the_input_file(
         input_file_as_a_dict, cli_render_arguments
     )

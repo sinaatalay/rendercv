@@ -922,3 +922,45 @@ def test_render_command_overriding_input_file_settings(
 
     assert (tmp_path / new_value).exists()
     assert "Your CV is rendered!" in result.stdout
+
+def test_seperation_of_settings(
+    tmp_path, input_file_path, design_settings_file_path, rendercv_settings_file_path
+):
+
+    # change the current working directory to the temporary directory:
+    os.chdir(tmp_path)
+
+    # read the input file as a dictionary:s
+    input_dictionary = reader.read_a_yaml_file(input_file_path)
+
+    # write the input dictionary to a new input file:
+    new_input_file_path = tmp_path / "new_input_file.yaml"
+    yaml_content = generator.dictionary_to_yaml(input_dictionary)
+    new_input_file_path.write_text(yaml_content, encoding="utf-8")
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "render",
+            str(new_input_file_path.relative_to(tmp_path)),
+            '--design-path', design_settings_file_path,
+            '--rendercv-settings-path', rendercv_settings_file_path
+        ],
+    )
+
+    assert "Your CV is rendered!" in result.stdout
+    # The rendercv settings file overrides html output. Check to see if the html file was created.
+    assert not (tmp_path / "rendercv_output" / "John_Doe_CV.html").exists()
+    # It does not override the .md file.
+    assert (tmp_path / "rendercv_output" / "John_Doe_CV.md").exists()
+
+    # the design settings file uses the sb2nov theme instead of the classic theme
+    # and addes the words 'theme - sb2nov' to the rendered file header.
+    tex_file = f"{tmp_path}/rendercv_output/John_Doe_CV.tex"
+    assert (tmp_path / "rendercv_output" / "John_Doe_CV.tex").exists()
+
+    with open(tex_file, "r") as f:
+        contents = f.read()
+    assert 'theme - sb2nov' in contents
+
+
