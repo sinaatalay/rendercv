@@ -53,8 +53,12 @@ def create_a_sample_data_model(
             f' The provided theme is "{theme}".'
         )
 
-    # read the sample_content.yaml file
-    sample_content = pathlib.Path(__file__).parent / "sample_content.yaml"
+     # Select the appropriate sample content file based on theme suffix
+    if theme.endswith("_cover_letter"):
+        sample_content = pathlib.Path(__file__).parent / "sample_cover_letter.yaml"
+    else:
+        sample_content = pathlib.Path(__file__).parent / "sample_content.yaml"
+
     sample_content_dictionary = reader.read_a_yaml_file(sample_content)
     cv = models.CurriculumVitae(**sample_content_dictionary)
 

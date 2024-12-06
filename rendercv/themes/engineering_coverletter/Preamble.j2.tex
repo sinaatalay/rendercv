@@ -1,0 +1,188 @@
+\documentclass[<<design.font_size>>, <<design.page_size>>]{article}
+
+% Packages:
+\usepackage[
+    ignoreheadfoot, % set margins without considering header and footer
+    top=<<design.margins.page.top>>, % seperation between body and page edge from the top
+    bottom=<<design.margins.page.bottom>>, % seperation between body and page edge from the bottom
+    left=<<design.margins.page.left>>, % seperation between body and page edge from the left
+    right=<<design.margins.page.right>>, % seperation between body and page edge from the right
+    footskip=<<design.margins.page.bottom|divide_length_by(2)>>, % seperation between body and footer
+    % showframe % for debugging
+]{geometry} % for adjusting page geometry
+\usepackage{titlesec} % for customizing section titles
+\usepackage{tabularx} % for making tables with fixed width columns
+\usepackage{array} % tabularx requires this
+\usepackage[dvipsnames]{xcolor} % for coloring text
+\definecolor{primaryColor}{RGB}{<<design.color.as_rgb_tuple()|join(", ")>>} % define primary color
+\usepackage{enumitem} % for customizing lists
+\usepackage{fontawesome5} % for using icons
+\usepackage{amsmath} % for math
+\usepackage[
+    pdftitle={<<cv.name>>'s CV},
+    pdfauthor={<<cv.name>>},
+    pdfcreator={LaTeX with RenderCV},
+    colorlinks=true,
+    urlcolor=primaryColor
+]{hyperref} % for links, metadata and bookmarks
+\usepackage[pscoord]{eso-pic} % for floating text on the page
+\usepackage{calc} % for calculating lengths
+\usepackage{bookmark} % for bookmarks
+\usepackage{lastpage} % for getting the total number of pages
+\usepackage{changepage} % for one column entries (adjustwidth environment)
+\usepackage{paracol} % for two and three column entries
+\usepackage{ifthen} % for conditional statements
+\usepackage{needspace} % for avoiding page brake right after the section title
+\usepackage{iftex} % check if engine is pdflatex, xetex or luatex
+
+% Ensure that generate pdf is machine readable/ATS parsable:
+\ifPDFTeX
+    \input{glyphtounicode}
+    \pdfgentounicode=1
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+    \usepackage{lmodern}
+\fi
+
+((* if design.font == "Latin Modern Serif" *))
+
+((* elif design.font == "Latin Modern Sans Serif" *))
+\renewcommand{\familydefault}{\sfdefault}
+((* elif design.font == "Latin Modern Mono" *))
+\renewcommand{\familydefault}{\ttdefault}
+((* elif design.font == "Source Sans 3" *))
+\usepackage[default, type1]{sourcesanspro}
+((* elif design.font == "Charter" *))
+\usepackage{charter}
+((* endif *))
+
+% Some settings:
+((* if design.text_alignment == "justified-with-no-hyphenation" *))
+\usepackage[none]{hyphenat}
+\sloppy
+((* elif design.text_alignment == "left-aligned" *))
+\raggedright
+((* endif *))
+\AtBeginEnvironment{adjustwidth}{\partopsep0pt} % remove space before adjustwidth environment
+\pagestyle{empty} % no header or footer
+\setcounter{secnumdepth}{0} % no section numbering
+\setlength{\parindent}{0pt} % no indentation
+\setlength{\topskip}{0pt} % no top skip
+\setlength{\columnsep}{0.15cm} % set column seperation
+((* if design.disable_page_numbering *))
+\pagenumbering{gobble} % no page numbering
+((* else *))
+((* set page_numbering_style_placeholders = {
+    "NAME": cv.name,
+    "PAGE_NUMBER": "\\thepage{}",
+    "TOTAL_PAGES": "\pageref*{LastPage}",
+    "TODAY": today
+} *))
+\makeatletter
+\let\ps@customFooterStyle\ps@plain % Copy the plain style to customFooterStyle
+\patchcmd{\ps@customFooterStyle}{\thepage}{
+    \color{gray}\textit{\small <<design.page_numbering_style|replace_placeholders_with_actual_values(page_numbering_style_placeholders)>>}
+}{}{} % replace number by desired string
+\makeatother
+\pagestyle{customFooterStyle}
+((* endif *))
+
+\titleformat{\section}{\needspace{4\baselineskip}\bfseries\large}{}{0pt}{}[\vspace{1pt}\titlerule]
+
+\titlespacing{\section}{
+    % left space:
+    -1pt
+}{
+    % top space:
+    <<design.margins.section_title.top>>
+}{
+    % bottom space:
+    <<design.margins.section_title.bottom>>
+} % section title spacing
+
+\renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$} % custom bullet points
+\newenvironment{highlights}{
+    \begin{itemize}[
+        topsep=<<design.margins.highlights_area.top>>,
+        parsep=<<design.margins.highlights_area.vertical_between_bullet_points>>,
+        partopsep=0pt,
+        itemsep=0pt,
+        leftmargin=<<design.margins.highlights_area.left>> + 10pt
+    ]
+}{
+    \end{itemize}
+} % new environment for highlights
+
+
+\newenvironment{highlightsforbulletentries}{
+    \begin{itemize}[
+        topsep=<<design.margins.highlights_area.top>>,
+        parsep=<<design.margins.highlights_area.vertical_between_bullet_points>>,
+        partopsep=0pt,
+        itemsep=0pt,
+        leftmargin=0pt
+    ]
+}{
+    \end{itemize}
+} % new environment for highlights for bullet entries
+
+\newenvironment{onecolentry}{
+    \begin{adjustwidth}{
+        <<design.margins.entry_area.left_and_right>> + 0.00001 cm
+    }{
+        <<design.margins.entry_area.left_and_right>> + 0.00001 cm
+    }
+}{
+    \end{adjustwidth}
+} % new environment for one column entries
+
+\newenvironment{twocolentry}[2][]{
+    \onecolentry
+    \def\secondColumn{#2}
+    \setcolumnwidth{\fill, <<design.margins.entry_area.date_and_location_width>>}
+    \begin{paracol}{2}
+}{
+    \switchcolumn \raggedleft \secondColumn
+    \end{paracol}
+    \endonecolentry
+} % new environment for two column entries
+
+\newenvironment{threecolentry}[3][]{
+    \onecolentry
+    \def\thirdColumn{#3}
+    \setcolumnwidth{<<design.margins.entry_area.education_degree_width>>, \fill, <<design.margins.entry_area.date_and_location_width>>}
+    \begin{paracol}{3}
+    {\raggedright #2} \switchcolumn
+}{
+    \switchcolumn \raggedleft \thirdColumn
+    \end{paracol}
+    \endonecolentry
+} % new environment for three column entries
+
+\newenvironment{header}{
+    \setlength{\topsep}{0pt}\par\kern\topsep\centering\linespread{1.5}
+}{
+    \par\kern\topsep
+} % new environment for the header
+
+((* set last_updated_date_style_placeholders = {
+    "TODAY": today,
+} *))
+\newcommand{\placelastupdatedtext}{% \placetextbox{<horizontal pos>}{<vertical pos>}{<stuff>}
+  \AddToShipoutPictureFG*{% Add <stuff> to current page foreground
+    \put(
+        \LenToUnit{\paperwidth-<<design.margins.page.right>>-<<design.margins.entry_area.left_and_right>>+0.05cm},
+        \LenToUnit{\paperheight-<<design.margins.page.top|divide_length_by(2)>>}
+    ){\vtop{{\null}\makebox[0pt][c]{
+        \small\color{gray}\textit{<<design.last_updated_date_style|replace_placeholders_with_actual_values(last_updated_date_style_placeholders)>>}\hspace{\widthof{<<design.last_updated_date_style|replace_placeholders_with_actual_values(last_updated_date_style_placeholders)>>}}
+    }}}%
+  }%
+}%
+
+% save the original href command in a new command:
+\let\hrefWithoutArrow\href
+
+% new command for external links:
+((* if not design.disable_external_link_icons *))
+\renewcommand{\href}[2]{\hrefWithoutArrow{#1}{\ifthenelse{\equal{#2}{}}{ }{#2 }\raisebox{.15ex}{\footnotesize \faExternalLink*}}}
+((* endif *))
