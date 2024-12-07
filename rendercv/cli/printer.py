@@ -189,8 +189,6 @@ def error(text: Optional[str] = None, exception: Optional[Exception] = None):
     else:
         print()
 
-    raise typer.Exit(code=4)
-
 
 def information(text: str):
     """Print an information message to the terminal.
@@ -355,11 +353,12 @@ def print_validation_errors(exception: pydantic.ValidationError):
         )
 
     print(table)
-    error()  # exit the program
 
 
-def handle_and_print_raised_exceptions(function: Callable) -> Callable:
-    """Return a wrapper function that handles exceptions.
+def handle_and_print_raised_exceptions_without_exit(function: Callable) -> Callable:
+    """Return a wrapper function that handles exceptions. It does not exit the program
+    after an exception is raised. It just prints the error message and continues the
+    execution.
 
     A decorator in Python is a syntactic convenience that allows a Python to interpret
     the code below:
@@ -387,6 +386,7 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
 
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
+        code = 4
         try:
             function(*args, **kwargs)
         except pydantic.ValidationError as e:
@@ -425,5 +425,49 @@ def handle_and_print_raised_exceptions(function: Callable) -> Callable:
             error(exception=e)
         except Exception as e:
             raise e
+        else:
+            code = 0
+
+        return code
+
+    return wrapper
+
+
+def handle_and_print_raised_exceptions(function: Callable) -> Callable:
+    """Return a wrapper function that handles exceptions. It exits the program after an
+    exception is raised.
+
+    A decorator in Python is a syntactic convenience that allows a Python to interpret
+    the code below:
+
+    ```python
+    @handle_exceptions
+    def my_function():
+        pass
+    ```
+
+    as
+
+    ```python
+    my_function = handle_exceptions(my_function)
+    ```
+
+    which means that the function `my_function` is modified by the `handle_exceptions`.
+
+    Args:
+        function: The function to be wrapped.
+
+    Returns:
+        The wrapped function.
+    """
+
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+        without_exit_wrapper = handle_and_print_raised_exceptions_without_exit(function)
+
+        code = without_exit_wrapper(*args, **kwargs)
+
+        if code != 0:
+            raise typer.Exit(code)
 
     return wrapper

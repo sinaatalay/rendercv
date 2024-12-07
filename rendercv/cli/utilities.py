@@ -4,13 +4,20 @@ The `rendercv.cli.utilities` module contains utility functions that are required
 
 import inspect
 import json
+import os
 import pathlib
 import re
 import shutil
+import time
 import urllib.request
-from typing import Optional
+from typing import Callable, Optional
 
 import typer
+import watchdog.events
+import watchdog.observers
+
+from .. import data, renderer
+from . import printer, utilities
 
 
 def set_or_update_a_value(
@@ -268,7 +275,7 @@ def update_render_command_settings_of_the_input_file(
     render_command_cli_arguments: dict,
 ) -> dict:
     """Update the input file's `rendercv_settings.render_command` field with the given
-    (non-default) values of the `render` command's CLI arguments.
+    values (only the non-default ones) of the `render` command's CLI arguments.
 
     Args:
         input_file_as_a_dict: The input file as a dictionary.
@@ -300,3 +307,169 @@ def update_render_command_settings_of_the_input_file(
     input_file_as_a_dict["rendercv_settings"]["render_command"] = render_command_field
 
     return input_file_as_a_dict
+
+
+def run_rendercv_with_printer(
+    input_file_as_a_dict: dict,
+    working_directory: pathlib.Path,
+    input_file_path: pathlib.Path,
+):
+    """Run RenderCV with a live progress reporter. Working dictionary is where the
+    output files will be saved. Input file path is required for accessing the template
+    overrides.
+
+    Args:
+        input_file_as_a_dict: The input file as a dictionary.
+        working_directory: The working directory where the output files will be saved.
+        input_file_path: The path of the input file.
+    """
+    render_command_settings_dict = input_file_as_a_dict["rendercv_settings"][
+        "render_command"
+    ]
+
+    # Compute the number of steps
+    # 1. Validate the input file.
+    # 2. Create the LaTeX file.
+    # 3. Render PDF from LaTeX.
+    # 4. Render PNGs from PDF.
+    # 5. Create the Markdown file.
+    # 6. Render HTML from Markdown.
+    number_of_steps = 6
+    if render_command_settings_dict["dont_generate_png"]:
+        number_of_steps -= 1
+
+    if render_command_settings_dict["dont_generate_markdown"]:
+        number_of_steps -= 2
+    else:
+        if render_command_settings_dict["dont_generate_html"]:
+            number_of_steps -= 1
+
+    with printer.LiveProgressReporter(number_of_steps=number_of_steps) as progress:
+        progress.start_a_step("Validating the input file")
+
+        data_model = data.validate_input_dictionary_and_return_the_data_model(
+            input_file_as_a_dict
+        )
+
+        render_command_settings: data.models.RenderCommandSettings = (
+            data_model.rendercv_settings.render_command  # type: ignore
+        )  # type: ignore
+        output_directory = (
+            working_directory / render_command_settings.output_folder_name  # type: ignore
+        )
+
+        progress.finish_the_current_step()
+
+        # Change the current working directory to the input file's directory (because
+        # the template overrides are looked up in the current working directory). The
+        # output files will be in the original working directory.
+        os.chdir(input_file_path.parent)
+
+        progress.start_a_step("Generating the LaTeX file")
+
+        latex_file_path_in_output_folder = (
+            renderer.create_a_latex_file_and_copy_theme_files(
+                data_model, output_directory
+            )
+        )
+        if render_command_settings.latex_path:
+            utilities.copy_files(
+                latex_file_path_in_output_folder,
+                render_command_settings.latex_path,
+            )
+
+        progress.finish_the_current_step()
+
+        progress.start_a_step("Rendering the LaTeX file to a PDF")
+
+        pdf_file_path_in_output_folder = renderer.render_a_pdf_from_latex(
+            latex_file_path_in_output_folder,
+            render_command_settings.use_local_latex_command,
+        )
+        if render_command_settings.pdf_path:
+            utilities.copy_files(
+                pdf_file_path_in_output_folder,
+                render_command_settings.pdf_path,
+            )
+
+        progress.finish_the_current_step()
+
+        if not render_command_settings.dont_generate_png:
+            progress.start_a_step("Rendering PNG files from the PDF")
+
+            png_file_paths_in_output_folder = renderer.render_pngs_from_pdf(
+                pdf_file_path_in_output_folder
+            )
+            if render_command_settings.png_path:
+                utilities.copy_files(
+                    png_file_paths_in_output_folder,
+                    render_command_settings.png_path,
+                )
+
+            progress.finish_the_current_step()
+
+        if not render_command_settings.dont_generate_markdown:
+            progress.start_a_step("Generating the Markdown file")
+
+            markdown_file_path_in_output_folder = renderer.create_a_markdown_file(
+                data_model, output_directory
+            )
+            if render_command_settings.markdown_path:
+                utilities.copy_files(
+                    markdown_file_path_in_output_folder,
+                    render_command_settings.markdown_path,
+                )
+
+            progress.finish_the_current_step()
+
+            if not render_command_settings.dont_generate_html:
+                progress.start_a_step(
+                    "Rendering the Markdown file to a HTML (for Grammarly)"
+                )
+
+                html_file_path_in_output_folder = renderer.render_an_html_from_markdown(
+                    markdown_file_path_in_output_folder
+                )
+                if render_command_settings.html_path:
+                    utilities.copy_files(
+                        html_file_path_in_output_folder,
+                        render_command_settings.html_path,
+                    )
+
+                progress.finish_the_current_step()
+
+
+def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable):
+    """Watch the file located at `file_path` and call the `function` when the file is
+    modified. The function should not take any arguments.
+
+    Args:
+        file_path (pathlib.Path): The path of the file to watch for.
+        function (Callable): The function to be called on file modification.
+    """
+    # Run the function immediately for the first time
+    function()
+
+    observer = watchdog.observers.Observer()
+
+    class EventHandler(watchdog.events.FileSystemEventHandler):
+        def __init__(self, function: Callable):
+            super().__init__()
+            self.function_to_call = function
+
+        def on_modified(self, event: watchdog.events.FileModifiedEvent) -> None:
+            printer.information(
+                "\n\nThe input file has been updated. Re-running RenderCV..."
+            )
+            self.function_to_call()
+
+    event_handler = EventHandler(function)
+
+    observer.schedule(event_handler, str(file_path.absolute()), recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
