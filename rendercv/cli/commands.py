@@ -3,15 +3,14 @@ The `rendercv.cli.commands` module contains all the command-line interface (CLI)
 commands of RenderCV.
 """
 
-import os
 import pathlib
 from typing import Annotated, Optional
 
 import typer
 from rich import print
 
-from .. import __version__, data, renderer
-from . import printer, utilities, watcher
+from .. import __version__, data
+from . import printer, utilities
 
 app = typer.Typer(
     rich_markup_mode="rich",
@@ -144,8 +143,7 @@ def cli_command_render(
     extra_data_model_override_argumets: typer.Context = None,  # type: ignore
 ):
     """Render a CV from a YAML input file."""
-    if not watch:
-        printer.welcome()
+    printer.welcome()
 
     input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
     original_working_directory = pathlib.Path.cwd()
@@ -162,7 +160,8 @@ def cli_command_render(
             input_file_as_a_dict, key_and_values
         )
 
-    # If non-default CLI arguments are provided, override the `rendercv_settings.render_command`:
+    # If non-default CLI arguments are provided, override the
+    # `rendercv_settings.render_command`:
     cli_render_arguments = {
         "use_local_latex_command": use_local_latex_command,
         "output_folder_name": output_folder_name,
@@ -179,144 +178,27 @@ def cli_command_render(
     input_file_as_a_dict = utilities.update_render_command_settings_of_the_input_file(
         input_file_as_a_dict, cli_render_arguments
     )
-    render_command_settings_dict = input_file_as_a_dict["rendercv_settings"][
-        "render_command"
-    ]
 
-    if render_command_settings_dict["watch"]:
-        cwd = os.getcwd()
+    watch = input_file_as_a_dict["rendercv_settings"]["render_command"]["watch"]
 
-        def rerun_command():
-            os.chdir(cwd)  # Undo the chdir present later in the file for new runs.
-            cli_command_render(
-                input_file_name=input_file_name,
-                use_local_latex_command=use_local_latex_command,
-                output_folder_name=output_folder_name,
-                latex_path=latex_path,
-                pdf_path=pdf_path,
-                markdown_path=markdown_path,
-                html_path=html_path,
-                png_path=png_path,
-                dont_generate_markdown=dont_generate_markdown,
-                dont_generate_html=dont_generate_html,
-                dont_generate_png=dont_generate_png,
-                watch=False,
-                extra_data_model_override_argumets=extra_data_model_override_argumets,
+    if watch:
+
+        @printer.handle_and_print_raised_exceptions_without_exit
+        def run_rendercv():
+            input_file_as_a_dict = (
+                utilities.update_render_command_settings_of_the_input_file(
+                    data.read_a_yaml_file(input_file_path), cli_render_arguments
+                )
+            )
+            utilities.run_rendercv_with_printer(
+                input_file_as_a_dict, original_working_directory, input_file_path
             )
 
-        watcher.run_a_function_if_a_file_changes(input_file_path, rerun_command)
-        return
-
-    # Compute the number of steps
-    # 1. Validate the input file.
-    # 2. Create the LaTeX file.
-    # 3. Render PDF from LaTeX.
-    # 4. Render PNGs from PDF.
-    # 5. Create the Markdown file.
-    # 6. Render HTML from Markdown.
-    number_of_steps = 6
-    if render_command_settings_dict["dont_generate_png"]:
-        number_of_steps -= 1
-
-    if render_command_settings_dict["dont_generate_markdown"]:
-        number_of_steps -= 2
+        utilities.run_a_function_if_a_file_changes(input_file_path, run_rendercv)
     else:
-        if render_command_settings_dict["dont_generate_html"]:
-            number_of_steps -= 1
-
-    with printer.LiveProgressReporter(number_of_steps=number_of_steps) as progress:
-        progress.start_a_step("Validating the input file")
-
-        data_model = data.validate_input_dictionary_and_return_the_data_model(
-            input_file_as_a_dict
+        utilities.run_rendercv_with_printer(
+            input_file_as_a_dict, original_working_directory, input_file_path
         )
-
-        render_command_settings: data.models.RenderCommandSettings = (
-            data_model.rendercv_settings.render_command  # type: ignore
-        )  # type: ignore
-        output_directory = (
-            original_working_directory / render_command_settings.output_folder_name  # type: ignore
-        )
-
-        progress.finish_the_current_step()
-
-        # Change the current working directory to the input file's directory (because
-        # the template overrides are looked up in the current working directory). The
-        # output files will be in the original working directory.
-        os.chdir(input_file_path.parent)
-
-        progress.start_a_step("Generating the LaTeX file")
-
-        latex_file_path_in_output_folder = (
-            renderer.create_a_latex_file_and_copy_theme_files(
-                data_model, output_directory
-            )
-        )
-        if render_command_settings.latex_path:
-            utilities.copy_files(
-                latex_file_path_in_output_folder,
-                render_command_settings.latex_path,
-            )
-
-        progress.finish_the_current_step()
-
-        progress.start_a_step("Rendering the LaTeX file to a PDF")
-
-        pdf_file_path_in_output_folder = renderer.render_a_pdf_from_latex(
-            latex_file_path_in_output_folder,
-            render_command_settings.use_local_latex_command,
-        )
-        if render_command_settings.pdf_path:
-            utilities.copy_files(
-                pdf_file_path_in_output_folder,
-                render_command_settings.pdf_path,
-            )
-
-        progress.finish_the_current_step()
-
-        if not render_command_settings.dont_generate_png:
-            progress.start_a_step("Rendering PNG files from the PDF")
-
-            png_file_paths_in_output_folder = renderer.render_pngs_from_pdf(
-                pdf_file_path_in_output_folder
-            )
-            if render_command_settings.png_path:
-                utilities.copy_files(
-                    png_file_paths_in_output_folder,
-                    render_command_settings.png_path,
-                )
-
-            progress.finish_the_current_step()
-
-        if not render_command_settings.dont_generate_markdown:
-            progress.start_a_step("Generating the Markdown file")
-
-            markdown_file_path_in_output_folder = renderer.create_a_markdown_file(
-                data_model, output_directory
-            )
-            if render_command_settings.markdown_path:
-                utilities.copy_files(
-                    markdown_file_path_in_output_folder,
-                    render_command_settings.markdown_path,
-                )
-
-            progress.finish_the_current_step()
-
-            if not render_command_settings.dont_generate_html:
-                progress.start_a_step(
-                    "Rendering the Markdown file to a HTML (for Grammarly)"
-                )
-
-                html_file_path_in_output_folder = renderer.render_an_html_from_markdown(
-                    markdown_file_path_in_output_folder
-                )
-                if render_command_settings.html_path:
-                    utilities.copy_files(
-                        html_file_path_in_output_folder,
-                        render_command_settings.html_path,
-                    )
-
-                progress.finish_the_current_step()
 
 
 @app.command(

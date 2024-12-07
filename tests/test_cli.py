@@ -1,13 +1,9 @@
 import os
-import pathlib
 import re
 import shutil
 import subprocess
 import sys
-import time
 from datetime import date as Date
-from typing import Callable, List
-from unittest.mock import MagicMock, patch
 
 import pydantic
 import pytest
@@ -21,38 +17,6 @@ import rendercv.data as data
 import rendercv.data.generator as generator
 import rendercv.data.reader as reader
 from rendercv import __version__
-from rendercv.cli.watcher import run_a_function_if_a_file_changes
-
-
-class WriteEventPatcher:
-    count: int
-    input_file_path: pathlib.Path
-    writes: List[str]
-
-    def __init__(self, input_file_path, writes):
-        self.input_file_path = input_file_path
-        self.writes = writes
-        self.count = 0
-
-    def patch_write_event(self, number: int):
-        """This function is meant to be used when we want to patch certain operations with write events. When called it will append the corresponding string from self.writes
-
-        Args:
-            number (int): The current stage in the write events.
-        """
-
-        if self.count >= len(self.writes):
-            raise KeyboardInterrupt
-
-        with open(self.input_file_path, "a") as f:
-            f.write(self.writes[self.count])
-
-        # Wait for write incase of slow machines.
-        while True:
-            with open(self.input_file_path, "r") as f:
-                if f.read().endswith(self.writes[self.count]):
-                    break
-        self.count += 1
 
 
 def run_render_command(input_file_path, working_path, extra_arguments=[]):
@@ -68,25 +32,6 @@ def run_render_command(input_file_path, working_path, extra_arguments=[]):
     return result
 
 
-def assert_condition(
-    condition_func: Callable[None, bool], timeout: int = 1, period: float = 0.1
-):
-    """This function polls using condition_func on the specified period and asserts false if the condition is not met within the time. This is useful when testing async functions.
-
-    Args:
-        condition_func (Callable[None, bool]): A function representing a condition that should be met.
-        timeout (int): The maximum time allowed to wait for condition in seconds.
-        period (float): The polling period in seconds.
-    """
-
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        if condition_func:
-            return
-        time.sleep(period)
-    assert False
-
-
 def test_welcome():
     printer.welcome()
 
@@ -96,18 +41,15 @@ def test_warning():
 
 
 def test_error():
-    with pytest.raises(typer.Exit):
-        printer.error("This is an error message.")
+    printer.error("This is an error message.")
 
 
 def test_error_without_text():
-    with pytest.raises(typer.Exit):
-        printer.error()
+    printer.error()
 
 
 def test_error_without_text_with_exception():
-    with pytest.raises(typer.Exit):
-        printer.error(exception=ValueError("This is an error message."))
+    printer.error(exception=ValueError("This is an error message."))
 
 
 def test_information():
@@ -231,8 +173,7 @@ def test_print_validation_errors(data_model_class, invalid_model):
     try:
         data_model_class(**invalid_model)
     except pydantic.ValidationError as e:
-        with pytest.raises(typer.Exit):
-            printer.print_validation_errors(e)
+        printer.print_validation_errors(e)
 
 
 @pytest.mark.parametrize(
@@ -309,28 +250,6 @@ def test_copy_templates_destinations_exist(tmp_path, folder_name):
 
 
 runner = typer.testing.CliRunner()
-
-
-def test_render_command(tmp_path, input_file_path):
-    result = run_render_command(
-        input_file_path,
-        tmp_path,
-    )
-
-    output_folder_path = tmp_path / "rendercv_output"
-    pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
-    latex_file_path = output_folder_path / "John_Doe_CV.tex"
-    markdown_file_path = output_folder_path / "John_Doe_CV.md"
-    html_file_path = output_folder_path / "John_Doe_CV.html"
-    png_file_path = output_folder_path / "John_Doe_CV_1.png"
-
-    assert output_folder_path.exists()
-    assert pdf_file_path.exists()
-    assert latex_file_path.exists()
-    assert markdown_file_path.exists()
-    assert html_file_path.exists()
-    assert png_file_path.exists()
-    assert "Your CV is rendered!" in result.stdout
 
 
 def test_render_command_with_relative_input_file_path(tmp_path, input_file_path):
@@ -641,8 +560,6 @@ def test_custom_theme_names(tmp_path, input_file_path, custom_theme_name):
     assert (new_theme_source_files_path / "__init__.py").exists()
 
     # test if the new theme is actually working:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
     result = runner.invoke(
         cli.app, ["render", str(input_file_path), "--design.theme", custom_theme_name]
     )
@@ -681,8 +598,6 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
     assert (new_theme_source_files_path / "__init__.py").exists()
 
     # test if the new theme is actually working:
-    input_file_path = shutil.copy(input_file_path, tmp_path)
-
     result = runner.invoke(
         cli.app, ["render", str(input_file_path), "--design", "{'theme':'newtheme'}"]
     )
@@ -979,76 +894,40 @@ def test_render_command_overriding_input_file_settings(
     assert "Your CV is rendered!" in result.stdout
 
 
-@patch("rendercv.cli.commands.cli_command_render")
-@pytest.mark.parametrize(
-    ("writes", "expected_count"),
-    [
-        ([], 1),
-        ([""], 1),
-        (["\n  font_size: 10pt"], 2),
-        (["\n  font_size: 10pt", "\n  color: '#FF0000'"], 3),
-        (["\n  font_size: 10pt", "", "", "", "\n  color: '#FF0000'", ""], 3),
-    ],
-)
-def test_render_command_with_watch_enabled(
-    cli_command_render, writes, expected_count, tmp_path, input_file_path
-):
-    os.chdir(tmp_path)
-    # read the input file as a dictionary:s
-    input_dictionary = reader.read_a_yaml_file(input_file_path)
+def test_watcher(tmp_path, input_file_path):
+    import multiprocessing as mp
+    import time
 
-    # write the input dictionary to a new input file:
-    new_input_file_path = tmp_path / "new_input_file.yaml"
-    yaml_content = generator.dictionary_to_yaml(input_dictionary)
-    new_input_file_path.write_text(yaml_content, encoding="utf-8")
-
-    mocker = WriteEventPatcher(new_input_file_path, writes)
-
-    with patch("time.sleep", side_effect=mocker.patch_write_event):
-        try:
-            runner.invoke(
-                cli.app,
-                ["render", str(new_input_file_path.relative_to(tmp_path)), "-w"],
-            )
-
-        except KeyboardInterrupt:
-            pass
-
-    def expected_call_count():
-        return cli_command_render.call_count == expected_count
-
-    assert_condition(expected_call_count)
+    # run this in a separate process:
+    p = mp.Process(target=run_render_command, args=(input_file_path, tmp_path))
+    p.start()
+    # update the input file:
+    input_file_path.write_text(
+        input_file_path.read_text().replace("John Doe", "Jane Doe")
+    )
+    time.sleep(4)
+    p.terminate()
+    # check if Jane Doe is in the output files:
+    assert (tmp_path / "rendercv_output" / "Jane_Doe_CV.pdf").exists()
 
 
-@pytest.mark.parametrize(
-    ("writes", "expected_count"),
-    [
-        ([], 1),
-        ([""], 1),
-        (["foo"], 2),
-        (["foo", "bar"], 3),
-        (["foo", "", "", "", "bar", ""], 3),
-    ],
-)
-def test_watcher_emits_on_file_change(
-    writes, expected_count, tmp_path, input_file_path
-):
-    input_dictionary = reader.read_a_yaml_file(input_file_path)
+def test_watcher_with_errors(tmp_path, input_file_path):
+    import multiprocessing as mp
 
-    new_input_file_path = tmp_path / "new_input_file.yaml"
-    yaml_content = generator.dictionary_to_yaml(input_dictionary)
-    new_input_file_path.write_text(yaml_content, encoding="utf-8")
+    # run this in a separate process:
+    p = mp.Process(target=run_render_command, args=(input_file_path, tmp_path))
+    p.start()
+    # update the input file:
+    input_file_path.write_text("")
+    assert p.is_alive()
+    p.terminate()
 
-    mock_function = MagicMock()
-    mocker = WriteEventPatcher(new_input_file_path, writes)
 
-    with patch("time.sleep", side_effect=mocker.patch_write_event):
-        try:
-            run_a_function_if_a_file_changes(new_input_file_path, mock_function)
-        except KeyboardInterrupt:
-            pass
+def test_empty_input_file_with_render_command(tmp_path, input_file_path):
+    input_file_path.write_text("")
+    result = run_render_command(
+        input_file_path,
+        tmp_path,
+    )
 
-    def expected_call_count():
-        return mock_function.call_count == expected_count
-
-    assert_condition(expected_call_count)
+    assert "The input file is empty!" in result.stdout

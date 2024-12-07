@@ -103,7 +103,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
 
     dont_generate_html: bool = pydantic.Field(
         default=False,
-        title="Generate HTML Flag",
+        title="Don't Generate HTML",
         description=(
             "A boolean value to determine whether the HTML file will be generated. The"
             " default value is False."
@@ -112,7 +112,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
 
     dont_generate_markdown: bool = pydantic.Field(
         default=False,
-        title="Generate Markdown Flag",
+        title="Don't Generate Markdown",
         description=(
             "A boolean value to determine whether the Markdown file will be generated."
             " The default value is False."
@@ -121,7 +121,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
 
     dont_generate_png: bool = pydantic.Field(
         default=False,
-        title="Generate PNG Flag",
+        title="Don't Generate PNG",
         description=(
             "A boolean value to determine whether the PNG file will be generated. The"
             " default value is False."
@@ -130,7 +130,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
 
     watch: bool = pydantic.Field(
         default=False,
-        title="Execute on save Flag",
+        title="Re-run RenderCV When the Input File is Updated",
         description=(
             "A boolean value to determine whether to re-run RenderCV when the input"
             "file is updated. The default value is False."

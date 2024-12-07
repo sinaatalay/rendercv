@@ -474,6 +474,9 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
 
 
 @pytest.fixture
-def input_file_path(testdata_directory_path) -> pathlib.Path:
+def input_file_path(tmp_path, testdata_directory_path) -> pathlib.Path:
     """Return the path to the input file."""
-    return testdata_directory_path / "John_Doe_CV.yaml"
+    # copy the input file to the temporary directory
+    input_file_path = testdata_directory_path / "John_Doe_CV.yaml"
+    shutil.copyfile(input_file_path, tmp_path / "John_Doe_CV.yaml")
+    return tmp_path / "John_Doe_CV.yaml"

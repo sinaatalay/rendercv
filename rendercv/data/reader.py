@@ -51,6 +51,9 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
 
     yaml_as_a_dictionary: dict = ruamel.yaml.YAML().load(file_content)
 
+    if yaml_as_a_dictionary is None:
+        raise ValueError("The input file is empty!")
+
     return yaml_as_a_dictionary
 
 
