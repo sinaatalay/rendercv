@@ -41,11 +41,6 @@ See more on the [user guide for `moderncv`](https://ctan.math.washington.edu/tex
 
 Both RenderCV and JSON Resume follows their own schema so you cannot directly use JSON Resume schema but you can use this [jsonresume-to-rendercv](https://github.com/guruor/jsonresume-to-rendercv) converter to convert JSON Resume to RenderCV format.
 
-
-### Other themes
-
-To be answered.
-
 ## How can I switch the order of `company` and `position` in ExperienceEntry?
 
 To be answered.
