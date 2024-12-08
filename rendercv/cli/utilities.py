@@ -8,6 +8,7 @@ import os
 import pathlib
 import re
 import shutil
+import sys
 import time
 import urllib.request
 from collections.abc import Callable
@@ -447,14 +448,23 @@ def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable
     # Run the function immediately for the first time
     function()
 
-    observer = watchdog.observers.Observer()
+    path_to_watch = str(file_path.absolute())
+    if sys.platform == "win32":
+        # Windows does not support single file watching, so we watch the directory
+        path_to_watch = str(file_path.parent.absolute())
 
     class EventHandler(watchdog.events.FileSystemEventHandler):
         def __init__(self, function: Callable):
             super().__init__()
             self.function_to_call = function
 
-        def on_modified(self, _: watchdog.events.FileModifiedEvent) -> None:
+        def on_modified(self, event: watchdog.events.FileModifiedEvent) -> None:
+            if sys.platform == "win32":
+                # Windows does not support single file watching, so we watch the
+                # directory
+                if event.src_path != path_to_watch:
+                    return
+
             printer.information(
                 "\n\nThe input file has been updated. Re-running RenderCV..."
             )
@@ -462,7 +472,8 @@ def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable
 
     event_handler = EventHandler(function)
 
-    observer.schedule(event_handler, str(file_path.absolute()), recursive=True)
+    observer = watchdog.observers.Observer()
+    observer.schedule(event_handler, path_to_watch, recursive=True)
     observer.start()
     try:
         while True:
