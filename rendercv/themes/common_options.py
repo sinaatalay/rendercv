@@ -214,7 +214,7 @@ class ThemeOptions(RenderCVBaseModelWithoutExtraKeys):
         ),
     )
     color: pydantic_color.Color = pydantic.Field(
-        default="rgb(0,79,144)",
+        default="rgb(0,79,144)", # type: ignore
         validate_default=True,
         title="Primary Color",
         description=(

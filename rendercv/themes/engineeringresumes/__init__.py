@@ -120,7 +120,7 @@ class EngineeringresumesThemeOptions(ThemeOptions):
         ),
     )
     color: pydantic_color.Color = pydantic.Field(
-        default="rgb(0,0,0)",
+        default="rgb(0,0,0)",  # type: ignore
         validate_default=True,
         title="Primary Color",
         description=(
