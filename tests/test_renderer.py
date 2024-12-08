@@ -766,3 +766,10 @@ def test_render_pngs_from_pdf_nonexistent_pdf_file():
     file_path = pathlib.Path("file_doesnt_exist.pdf")
     with pytest.raises(FileNotFoundError):
         renderer.render_pngs_from_pdf(file_path)
+
+def test_render_pdf_invalid_latex_file(tmp_path):
+    latex_file_path = tmp_path / "invalid_latex_file.tex"
+    latex_file_path.write_text("Invalid LaTeX code")
+
+    with pytest.raises(RuntimeError):
+        renderer.render_a_pdf_from_latex(latex_file_path)

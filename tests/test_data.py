@@ -224,11 +224,11 @@ def test_if_the_schema_is_the_latest(root_directory_path):
         ),
         (
             "2020-01",
-            "2021-01-01",
+            "2021-02-01",
             None,
-            "Jan 2020 – Jan 2021",  # NOQA: RUF001
+            "Jan 2020 – Feb 2021",  # NOQA: RUF001
             "2020 – 2021",  # NOQA: RUF001
-            "1 year 1 month",
+            "1 year 2 months",
         ),
         (
             "2020-01-01",
@@ -414,6 +414,7 @@ def test_doi_url(publication_entry, doi, expected_doi_url):
         ("StackOverflow", "invalidusername//"),
         ("StackOverflow", "invalidusername/invalid"),
         ("YouTube", "@invalidusername"),
+        ("NONAME", "@invalidusername"),
     ],
 )
 def test_invalid_social_networks(network, username):

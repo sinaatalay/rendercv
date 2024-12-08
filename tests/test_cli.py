@@ -892,13 +892,18 @@ def test_watcher(tmp_path, input_file_path):
     import time
 
     # run this in a separate process:
-    p = mp.Process(target=run_render_command, args=(input_file_path, tmp_path))
+    p = mp.Process(
+        target=run_render_command, args=(input_file_path, tmp_path, ["--watch"])
+    )
     p.start()
+    time.sleep(4)
+    assert (tmp_path / "rendercv_output" / "John_Doe_CV.pdf").exists()
     # update the input file:
     input_file_path.write_text(
         input_file_path.read_text().replace("John Doe", "Jane Doe")
     )
     time.sleep(4)
+    assert p.is_alive()
     p.terminate()
     # check if Jane Doe is in the output files:
     assert (tmp_path / "rendercv_output" / "Jane_Doe_CV.pdf").exists()
@@ -906,12 +911,17 @@ def test_watcher(tmp_path, input_file_path):
 
 def test_watcher_with_errors(tmp_path, input_file_path):
     import multiprocessing as mp
+    import time
 
     # run this in a separate process:
-    p = mp.Process(target=run_render_command, args=(input_file_path, tmp_path))
+    p = mp.Process(
+        target=run_render_command, args=(input_file_path, tmp_path, ["--watch"])
+    )
     p.start()
+    time.sleep(4)
     # update the input file:
     input_file_path.write_text("")
+    time.sleep(4)
     assert p.is_alive()
     p.terminate()
 
