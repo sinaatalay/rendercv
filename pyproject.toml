@@ -32,7 +32,7 @@ requires = [
 build-backend = "hatchling.build" # A build-backend object for building RenderCV
 
 [tool.hatch.build.targets.sdist]
-# In the sdist, what do we want to exclude? 
+# In the sdist, what do we want to exclude?
 exclude = [
     "rendercv/tinytex-release/download_and_minimize_tinytex_for_rendercv.py",
     "rendercv/tinytex-release/.gitignore",
@@ -95,7 +95,7 @@ classifiers = [
 ] # go to https://pypi.org/classifiers/ to see all classifiers
 dynamic = [
     "version",
-] # We will use hatchling to generate the version number      
+] # We will use hatchling to generate the version number
 
 [project.urls]
 # Here, we can specify the URLs related to RenderCV. They will be listed under the
@@ -132,11 +132,11 @@ rendercv = 'rendercv.cli:app'
 [tool.hatch.envs.default]
 # Dependencies to be installed in the `default` virtual environment.
 dependencies = [
-    "ruff",                 # to lint the code
+    "ruff",                 # to lint and format the code
     "black",                # to format the code
     "ipython",              # for ipython shell
-    "isort",                # to sort the imports  
     "pyright",              # to check the types
+    "pre-commit",           # to run the checks before committing
     "pytest==8.3.2",        # to run the tests
     "coverage==7.6.1",      # to generate coverage reports
     "time-machine==2.15.0", # to select an arbitrary date and time for testing
@@ -147,17 +147,17 @@ path = ".venv"
 # Hatch allows us to define scripts that can be run in the activated virtual environment
 # with `hatch run ENV_NAME:SCRIPT_NAME`.
 # Format all the code in the `rendercv` package with `black`:
-format = "black rendercv && black docs && black tests" # hatch run format
+format = "ruff check --fix && ruff format && black rendercv docs tests" # hatch run format
 # Lint the code in the `rendercv` package with `ruff`:
-lint = "ruff check rendercv && ruff check tests" # hatch run lint
-# Sort the imports in the `rendercv` package with `isort`:
-sort-imports = "isort rendercv && isort docs && isort tests" # hatch run sort-imports
+lint = "ruff check rendercv tests" # hatch run lint
 # Check types in the `rendercv` package with `pyright`:
 check-types = "pyright rendercv && pyright tests" # hatch run check-types
 # Run the tests:
-test = "pytest" # hatch run test  
+test = "pytest" # hatch run test
 # Run the tests and generate the coverage report as HTML:
 test-and-report = "coverage run -m pytest && coverage report && coverage html --show-contexts" # hatch run test-and-report
+# Run pre-commit checks:
+precommit = "pre-commit run" # hatch run pre-commit
 
 
 [tool.hatch.envs.docs]
@@ -192,9 +192,47 @@ update-entry-figures = "python docs/update_entry_figures.py" # hatch run docs:up
 # these tools easily. Generally, popular IDEs grab these settings from `pyproject.toml`
 # file automatically.
 
+
 [tool.ruff]
 exclude = ["tinytex-release"]
 output-format = "github"
+line-length = 88
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = [
+    "B",   # flake8-bugbear
+    "I",   # isort
+    "ARG", # flake8-unused-arguments
+    "C4",  # flake8-comprehensions
+    "EM",  # flake8-errmsg
+    "ICN", # flake8-import-conventions
+    "ISC", # flake8-implicit-str-concat
+    "G",   # flake8-logging-format
+    "PGH", # pygrep-hooks
+    "PIE", # flake8-pie
+    "PL",  # pylint
+    "PT",  # flake8-pytest-style
+    "PTH", # flake8-use-pathlib
+    "RET", # flake8-return
+    "RUF", # Ruff-specific
+    "SIM", # flake8-simplify
+    "T20", # flake8-print
+    "UP",  # pyupgrade
+    "YTT", # flake8-2020
+    "EXE", # flake8-executable
+    "NPY", # NumPy specific rules
+    "PD",  # pandas-vet
+]
+ignore = [
+    "PLR",    # Design related pylint codes
+    "ISC001", # Conflicts with formatter
+    "UP007",  # I like Optional type
+    "PGH003", # It would be nice to not ignore this
+]
+flake8-unused-arguments.ignore-variadic-names = true
 
 [tool.black]
 line-length = 88 # maximum line length
@@ -202,6 +240,7 @@ preview = true # to allow enable-unstable-feature
 enable-unstable-feature = [
     "string_processing",
 ] # to break strings into multiple lines
+exclude = "tinytex-release" # don't format the files in this folder
 
 [tool.isort]
 profile = "black"
