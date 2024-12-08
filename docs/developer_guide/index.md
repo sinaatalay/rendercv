@@ -77,6 +77,10 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run lint
     ```
+- Run [pre-commit](https://pre-commit.com/)
+    ```bash
+    hatch run precommit
+    ```
 - Check the types with [Pyright](https://github.com/RobertCraigie/pyright-python)
     ```bash
     hatch run check-types
