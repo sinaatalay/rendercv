@@ -25,10 +25,8 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
     if isinstance(file_path_or_contents, pathlib.Path):
         # Check if the file exists:
         if not file_path_or_contents.exists():
-            raise FileNotFoundError(
-                f"The input file [magenta]{file_path_or_contents}[/magenta] doesn't"
-                " exist!"
-            )
+            message = f"The input file {file_path_or_contents} doesn't exist!"
+            raise FileNotFoundError(message)
 
         # Check the file extension:
         accepted_extensions = [".yaml", ".yml", ".json", ".json5"]
@@ -39,11 +37,12 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
             user_friendly_accepted_extensions = ", ".join(
                 user_friendly_accepted_extensions
             )
-            raise ValueError(
+            message = (
                 "The input file should have one of the following extensions:"
                 f" {user_friendly_accepted_extensions}. The input file is"
-                f" [magenta]{file_path_or_contents}[/magenta]."
+                f" {file_path_or_contents}."
             )
+            raise ValueError(message)
 
         file_content = file_path_or_contents.read_text(encoding="utf-8")
     else:
@@ -52,7 +51,8 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
     yaml_as_a_dictionary: dict = ruamel.yaml.YAML().load(file_content)
 
     if yaml_as_a_dictionary is None:
-        raise ValueError("The input file is empty!")
+        message = "The input file is empty!"
+        raise ValueError(message)
 
     return yaml_as_a_dictionary
 
@@ -71,9 +71,7 @@ def validate_input_dictionary_and_return_the_data_model(
     """
 
     # Validate the parsed dictionary by creating an instance of RenderCVDataModel:
-    rendercv_data_model = models.RenderCVDataModel(**input_dictionary)
-
-    return rendercv_data_model
+    return models.RenderCVDataModel(**input_dictionary)
 
 
 def read_input_file(
@@ -91,8 +89,4 @@ def read_input_file(
     """
     input_as_dictionary = read_a_yaml_file(file_path_or_contents)
 
-    rendercv_data_model = validate_input_dictionary_and_return_the_data_model(
-        input_as_dictionary
-    )
-
-    return rendercv_data_model
+    return validate_input_dictionary_and_return_the_data_model(input_as_dictionary)

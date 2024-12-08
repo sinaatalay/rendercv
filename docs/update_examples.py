@@ -80,4 +80,4 @@ def generate_examples():
 
 if __name__ == "__main__":
     generate_examples()
-    print("Examples generated successfully.")
+    print("Examples generated successfully.")  # NOQA: T201

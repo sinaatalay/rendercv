@@ -4,7 +4,8 @@ to print nice-looking messages to the terminal.
 """
 
 import functools
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import jinja2
 import pydantic
@@ -125,8 +126,7 @@ def warn_if_new_version_is_available() -> bool:
             f" and the latest version is v{latest_version}."
         )
         return True
-    else:
-        return False
+    return False
 
 
 def welcome():
@@ -257,9 +257,9 @@ def print_validation_errors(exception: pydantic.ValidationError):
             location = error_object["loc"]
             ctx_object = error_object["ctx"]
             if "error" in ctx_object:
-                error_object = ctx_object["error"]
-                if hasattr(error_object, "__cause__"):
-                    cause_object = error_object.__cause__
+                inner_error_object = ctx_object["error"]
+                if hasattr(inner_error_object, "__cause__"):
+                    cause_object = inner_error_object.__cause__
                     cause_object_errors = cause_object.errors()
                     for cause_error_object in cause_object_errors:
                         # we use [1:] to avoid `entries` location. It is a location for
@@ -274,10 +274,9 @@ def print_validation_errors(exception: pydantic.ValidationError):
     # (e.g. avoid stuff like .end_date.literal['present'])
     unwanted_locations = ["tagged-union", "list", "literal", "int", "constrained-str"]
     for error_object in errors:
-        location = error_object["loc"]
+        location = [str(location_element) for location_element in error_object["loc"]]
         new_location = [str(location_element) for location_element in location]
         for location_element in location:
-            location_element = str(location_element)
             for unwanted_location in unwanted_locations:
                 if unwanted_location in location_element:
                     new_location.remove(location_element)
@@ -322,7 +321,7 @@ def print_validation_errors(exception: pydantic.ValidationError):
 
         # If the input is a dictionary or a list (the model itself fails to validate),
         # then don't show the input. It looks confusing and it is not helpful.
-        if isinstance(input, (dict, list)):
+        if isinstance(input, dict | list):
             input = ""
 
         new_error = {

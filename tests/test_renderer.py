@@ -25,7 +25,7 @@ def test_latex_file_class(tmp_path, rendercv_data_model, jinja2_environment):
 
 
 @pytest.mark.parametrize(
-    "string, expected_string",
+    ("string", "expected_string"),
     [
         (
             "\\textit{This is a \\textit{nested} italic text.}",
@@ -71,7 +71,7 @@ def test_latex_file_revert_nested_latex_style_commands_method(string, expected_s
     ),
 )
 @pytest.mark.parametrize(
-    "string, expected_string",
+    ("string", "expected_string"),
     [
         (
             "\\textbf{This is a \\textbf{nested} bold \\textbf{text}.}",
@@ -102,7 +102,7 @@ def test_markdown_file_class(tmp_path, rendercv_data_model, jinja2_environment):
 
 
 @pytest.mark.parametrize(
-    "string, expected_string",
+    ("string", "expected_string"),
     [
         ("My Text", "My Text"),
         ("My # Text", "My \\# Text"),
@@ -139,7 +139,7 @@ def test_escape_latex_characters(string, expected_string):
 
 
 @pytest.mark.parametrize(
-    "markdown_string, expected_latex_string",
+    ("markdown_string", "expected_latex_string"),
     [
         ("My Text", "My Text"),
         ("**My** Text", "\\textbf{My} Text"),
@@ -178,7 +178,7 @@ def test_transform_markdown_sections_to_latex_sections(rendercv_data_model):
 
 
 @pytest.mark.parametrize(
-    "string, placeholders, expected_string",
+    ("string", "placeholders", "expected_string"),
     [
         ("Hello, {name}!", {"{name}": None}, "Hello, None!"),
         (
@@ -201,7 +201,7 @@ def test_replace_placeholders_with_actual_values(string, placeholders, expected_
 
 
 @pytest.mark.parametrize(
-    "value, something, match_str, expected",
+    ("value", "something", "match_str", "expected"),
     [
         ("Hello World", "textbf", None, "\\textbf{Hello World}"),
         ("Hello World", "textbf", "World", "Hello \\textbf{World}"),
@@ -216,7 +216,7 @@ def test_make_matched_part_something(value, something, match_str, expected):
 
 
 @pytest.mark.parametrize(
-    "value, match_str, expected",
+    ("value", "match_str", "expected"),
     [
         ("Hello World", None, "\\textbf{Hello World}"),
         ("Hello World", "World", "Hello \\textbf{World}"),
@@ -231,7 +231,7 @@ def test_make_matched_part_bold(value, match_str, expected):
 
 
 @pytest.mark.parametrize(
-    "value, match_str, expected",
+    ("value", "match_str", "expected"),
     [
         ("Hello World", None, "\\underline{Hello World}"),
         ("Hello World", "World", "Hello \\underline{World}"),
@@ -246,7 +246,7 @@ def test_make_matched_part_underlined(value, match_str, expected):
 
 
 @pytest.mark.parametrize(
-    "value, match_str, expected",
+    ("value", "match_str", "expected"),
     [
         ("Hello World", None, "\\textit{Hello World}"),
         ("Hello World", "World", "Hello \\textit{World}"),
@@ -261,7 +261,7 @@ def test_make_matched_part_italic(value, match_str, expected):
 
 
 @pytest.mark.parametrize(
-    "value, match_str, expected",
+    ("value", "match_str", "expected"),
     [
         ("Hello World", None, "\\mbox{Hello World}"),
         ("Hello World", "World", "Hello \\mbox{World}"),
@@ -276,7 +276,7 @@ def test_make_matched_part_non_line_breakable(value, match_str, expected):
 
 
 @pytest.mark.parametrize(
-    "name, expected",
+    ("name", "expected"),
     [
         ("John Doe", "J. Doe"),
         ("John Jacob Jingleheimer Schmidt", "J. J. J. Schmidt"),
@@ -291,7 +291,7 @@ def test_abbreviate_name(name, expected):
 
 
 @pytest.mark.parametrize(
-    "length, divider, expected",
+    ("length", "divider", "expected"),
     [
         ("10pt", 2, "5.0pt"),
         ("15cm", 3, "5.0cm"),
@@ -311,11 +311,11 @@ def test_divide_length_by(length, divider, expected):
 
 
 @pytest.mark.parametrize(
-    "length, divider",
+    ("length", "divider"),
     [("10pt", 0), ("10pt", -1), ("invalid", 4)],
 )
 def test_invalid_divide_length_by(length, divider):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # NOQA: PT011
         templater.divide_length_by(length, divider)
 
 
@@ -399,7 +399,7 @@ def test_create_a_latex_file(
         f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}.tex"
     )
 
-    def create_a_latex_file(output_directory_path, reference_file_or_directory_path):
+    def create_a_latex_file(output_directory_path, _):
         renderer.create_a_latex_file(data_model, output_directory_path)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
@@ -448,7 +448,7 @@ def test_create_a_markdown_file(
         f"{theme_name}_{folder_name_dictionary[curriculum_vitae_data_model]}.md"
     )
 
-    def create_a_markdown_file(output_directory_path, reference_file_or_directory_path):
+    def create_a_markdown_file(output_directory_path, _):
         renderer.create_a_markdown_file(data_model, output_directory_path)
 
     assert run_a_function_and_check_if_output_is_the_same_as_reference(
@@ -479,9 +479,7 @@ def test_copy_theme_files_to_output_directory(
 ):
     reference_directory_name = theme_name
 
-    def copy_theme_files_to_output_directory(
-        output_directory_path, reference_file_or_directory_path
-    ):
+    def copy_theme_files_to_output_directory(output_directory_path, _):
         renderer_module.copy_theme_files_to_output_directory(
             theme_name, output_directory_path
         )
@@ -557,7 +555,7 @@ def test_copy_theme_files_to_output_directory_custom_theme(
 def test_copy_theme_files_to_output_directory_nonexistent_theme():
     with pytest.raises(FileNotFoundError):
         renderer_module.copy_theme_files_to_output_directory(
-            "nonexistent_theme", pathlib.Path(".")
+            "nonexistent_theme", pathlib.Path()
         )
 
 
@@ -588,9 +586,7 @@ def test_create_a_latex_file_and_copy_theme_files(
         design={"theme": theme_name},
     )
 
-    def create_a_latex_file_and_copy_theme_files(
-        output_directory_path, reference_file_or_directory_path
-    ):
+    def create_a_latex_file_and_copy_theme_files(output_directory_path, _):
         renderer.create_a_latex_file_and_copy_theme_files(
             data_model, output_directory_path
         )
@@ -649,8 +645,8 @@ def test_render_a_pdf_from_latex(
 
 
 def test_render_pdf_from_latex_nonexistent_latex_file():
+    file_path = pathlib.Path("file_doesnt_exist.tex")
     with pytest.raises(FileNotFoundError):
-        file_path = pathlib.Path("file_doesnt_exist.tex")
         renderer.render_a_pdf_from_latex(file_path)
 
 
@@ -704,8 +700,8 @@ def test_render_an_html_from_markdown(
 
 
 def test_render_html_from_markdown_nonexistent_markdown_file():
+    file_path = pathlib.Path("file_doesnt_exist.md")
     with pytest.raises(FileNotFoundError):
-        file_path = pathlib.Path("file_doesnt_exist.md")
         renderer.render_an_html_from_markdown(file_path)
 
 
@@ -767,6 +763,6 @@ def test_render_pngs_from_pdf(
 
 
 def test_render_pngs_from_pdf_nonexistent_pdf_file():
+    file_path = pathlib.Path("file_doesnt_exist.pdf")
     with pytest.raises(FileNotFoundError):
-        file_path = pathlib.Path("file_doesnt_exist.pdf")
         renderer.render_pngs_from_pdf(file_path)

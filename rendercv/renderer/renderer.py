@@ -41,10 +41,11 @@ def copy_theme_files_to_output_directory(
         theme_directory_path = pathlib.Path.cwd() / theme_name
 
         if not theme_directory_path.is_dir():
-            raise FileNotFoundError(
-                f"The theme {theme_name} doesn't exist in the current working"
-                " directory!"
+            message = (
+                f"The theme {theme_name} doesn't exist in the available themes and"
+                " the current working directory!"
             )
+            raise FileNotFoundError(message)
 
     for theme_file in theme_directory_path.iterdir():
         dont_copy_files_with_these_extensions = [".j2.tex", ".py"]
@@ -161,7 +162,8 @@ def render_a_pdf_from_latex(
     """
     # check if the file exists:
     if not latex_file_path.is_file():
-        raise FileNotFoundError(f"The file {latex_file_path} doesn't exist!")
+        message = f"The file {latex_file_path} doesn't exist!"
+        raise FileNotFoundError(message)
 
     if local_latex_command:
         executable = local_latex_command
@@ -172,13 +174,15 @@ def render_a_pdf_from_latex(
                 [executable, "--version"],
                 stdout=subprocess.DEVNULL,  # don't capture the output
                 stderr=subprocess.DEVNULL,  # don't capture the error
+                check=True,
             )
-        except FileNotFoundError:
-            raise FileNotFoundError(
-                f"[blue]{executable}[/blue] isn't installed! Please install LaTeX and"
-                " try again (or don't use the"
-                " [bright_black]--use-local-latex-command[/bright_black] option)."
+        except FileNotFoundError as e:
+            message = (
+                f"{executable} isn't installed! Please install LaTeX and try again (or"
+                " don't use the [bright_black]--use-local-latex-command[/bright_black]"
+                " option)."
             )
+            raise FileNotFoundError(message) from e
     else:
         tinytex_binaries_directory = (
             pathlib.Path(__file__).parent / "tinytex-release" / "TinyTeX" / "bin"
@@ -191,17 +195,19 @@ def render_a_pdf_from_latex(
         }
 
         if sys.platform not in executables:
-            raise OSError(f"TinyTeX doesn't support the platform {sys.platform}!")
+            message = f"TinyTeX doesn't support the platform {sys.platform}!"
+            raise OSError(message)
 
         executable = executables[sys.platform]
 
         # check if the executable exists:
         if not executable.is_file():
-            raise FileNotFoundError(
+            message = (
                 f"The TinyTeX executable ({executable}) doesn't exist! If you are"
                 " cloning the repository, make sure to clone it recursively to get the"
                 " TinyTeX binaries. See the developer guide for more information."
             )
+            raise FileNotFoundError(message)
 
     # Before running LaTeX, make sure the PDF file is not open in another program,
     # that wouldn't allow LaTeX to write to it. Remove the PDF file if it exists,
@@ -210,11 +216,12 @@ def render_a_pdf_from_latex(
     if pdf_file_path.is_file():
         try:
             pdf_file_path.unlink()
-        except PermissionError:
-            raise RuntimeError(
+        except PermissionError as e:
+            message = (
                 f"The PDF file {pdf_file_path} is open in another program and doesn't"
                 " allow RenderCV to rewrite it. Please close the PDF file."
             )
+            raise RuntimeError(message) from e
 
     # Run LaTeX to render the PDF:
     command = [
@@ -230,51 +237,60 @@ def render_a_pdf_from_latex(
     ) as latex_process:
         output = latex_process.communicate()  # wait for the process to finish
         if latex_process.returncode != 0:
+            latex_file_path_log = latex_file_path.with_suffix(".log").read_text()
+
             if local_latex_command:
-                raise RuntimeError(
+                message = (
                     f"The local LaTeX command {local_latex_command} couldn't render"
                     " this LaTeX file into a PDF. Check out the log file"
                     f" {latex_file_path.with_suffix('.log')} in the output directory"
-                    " for more information."
+                    " for more information. It is printed below:\n\n"
                 )
-            else:
-                raise RuntimeError(
-                    "RenderCV's built-in TinyTeX binaries couldn't render this LaTeX"
-                    " file into a PDF. This could be caused by one of two"
-                    " reasons:\n\n1- The theme templates might have been updated in a"
-                    " way RenderCV's TinyTeX cannot render. RenderCV's TinyTeX is"
-                    " minified to keep the package size small. As a result, it doesn't"
-                    " function like a general-purpose LaTeX distribution.\n2- Special"
-                    " characters, like Greek or Chinese letters, that are not"
-                    " compatible with the fonts used or RenderCV's TinyTeX might have"
-                    " been used.\n\nHowever, this issue can be resolved by using your"
-                    " own LaTeX distribution instead of the built-in TinyTeX. This can"
-                    " be done with the '--use-local-latex-command' option, as shown"
-                    " below:\n\nrendercv render --use-local-latex-command lualatex"
-                    " John_Doe_CV.yaml\n\nIf you ensure that the generated LaTeX file"
-                    " can be compiled by your local LaTeX distribution, RenderCV will"
-                    " work successfully. You can debug the generated LaTeX file in"
-                    " your LaTeX editor to resolve any bugs. Then, you can start using"
-                    " RenderCV with your local LaTeX distribution.\n\nIf you can't"
-                    " solve the problem, please open an issue on GitHub. Also, to see"
-                    " the error, check out the log file"
-                    f" {latex_file_path.with_suffix('.log')} in the output directory."
-                )
-        else:
-            try:
-                output = output[0].decode("utf-8")
-            except UnicodeDecodeError:
-                output = output[0].decode("latin-1")
 
-            if "Rerun to get" in output:
-                # Run TinyTeX again to get the references right:
-                subprocess.run(
-                    command,
-                    cwd=latex_file_path.parent,
-                    stdout=subprocess.DEVNULL,  # don't capture the output
-                    stderr=subprocess.DEVNULL,  # don't capture the error
-                    stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
-                )
+                message = message + latex_file_path_log
+                raise RuntimeError(message)
+
+            message = (
+                "RenderCV's built-in TinyTeX binaries couldn't render this LaTeX"
+                " file into a PDF. This could be caused by one of two"
+                " reasons:\n\n1- The theme templates might have been updated in a"
+                " way RenderCV's TinyTeX cannot render. RenderCV's TinyTeX is"
+                " minified to keep the package size small. As a result, it doesn't"
+                " function like a general-purpose LaTeX distribution.\n2- Special"
+                " characters, like Greek or Chinese letters, that are not"
+                " compatible with the fonts used or RenderCV's TinyTeX might have"
+                " been used.\n\nHowever, this issue can be resolved by using your"
+                " own LaTeX distribution instead of the built-in TinyTeX. This can"
+                " be done with the '--use-local-latex-command' option, as shown"
+                " below:\n\nrendercv render --use-local-latex-command lualatex"
+                " John_Doe_CV.yaml\n\nIf you ensure that the generated LaTeX file"
+                " can be compiled by your local LaTeX distribution, RenderCV will"
+                " work successfully. You can debug the generated LaTeX file in"
+                " your LaTeX editor to resolve any bugs. Then, you can start using"
+                " RenderCV with your local LaTeX distribution.\n\nIf you can't"
+                " solve the problem, please open an issue on GitHub. Also, to see"
+                " the error, check out the log file"
+                f" {latex_file_path.with_suffix('.log')} in the output directory."
+                " It is printed below:\n\n"
+            )
+            message = message + latex_file_path_log
+            raise RuntimeError(message)
+
+        try:
+            output = output[0].decode("utf-8")
+        except UnicodeDecodeError:
+            output = output[0].decode("latin-1")
+
+        if "Rerun to get" in output:
+            # Run TinyTeX again to get the references right:
+            subprocess.run(
+                command,
+                cwd=latex_file_path.parent,
+                stdout=subprocess.DEVNULL,  # don't capture the output
+                stderr=subprocess.DEVNULL,  # don't capture the error
+                stdin=subprocess.DEVNULL,  # don't allow TinyTeX to ask for user input
+                check=True,
+            )
 
     return pdf_file_path
 
@@ -290,7 +306,8 @@ def render_pngs_from_pdf(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
     """
     # check if the file exists:
     if not pdf_file_path.is_file():
-        raise FileNotFoundError(f"The file {pdf_file_path} doesn't exist!")
+        message = f"The file {pdf_file_path} doesn't exist!"
+        raise FileNotFoundError(message)
 
     # convert the PDF to PNG:
     png_directory = pdf_file_path.parent
@@ -299,7 +316,7 @@ def render_pngs_from_pdf(pdf_file_path: pathlib.Path) -> list[pathlib.Path]:
     pdf = fitz.open(pdf_file_path)  # open the PDF file
     for page in pdf:  # iterate the pages
         image = page.get_pixmap(dpi=300)  # type: ignore
-        png_file_path = png_directory / f"{png_file_name}_{page.number+1}.png"  # type: ignore
+        png_file_path = png_directory / f"{png_file_name}_{page.number + 1}.png"  # type: ignore
         image.save(png_file_path)
         png_files.append(png_file_path)
 
@@ -318,7 +335,8 @@ def render_an_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Pa
     """
     # check if the file exists:
     if not markdown_file_path.is_file():
-        raise FileNotFoundError(f"The file {markdown_file_path} doesn't exist!")
+        message = f"The file {markdown_file_path} doesn't exist!"
+        raise FileNotFoundError(message)
 
     # Convert the markdown file to HTML:
     markdown_text = markdown_file_path.read_text(encoding="utf-8")
@@ -326,10 +344,7 @@ def render_an_html_from_markdown(markdown_file_path: pathlib.Path) -> pathlib.Pa
 
     # Get the title of the markdown content:
     title = re.search(r"# (.*)\n", markdown_text)
-    if title is None:
-        title = ""
-    else:
-        title = title.group(1)
+    title = title.group(1) if title else None
 
     jinja2_environment = templater.setup_jinja2_environment()
     html_template = jinja2_environment.get_template("main.j2.html")

@@ -15,4 +15,4 @@ def generate_schema():
 
 if __name__ == "__main__":
     generate_schema()
-    print("Schema generated successfully.")
+    print("Schema generated successfully.")  # NOQA: T201

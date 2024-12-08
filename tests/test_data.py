@@ -9,7 +9,7 @@ import pytest
 import ruamel.yaml
 import time_machine
 
-from rendercv import data as data
+from rendercv import data
 from rendercv.data import generator
 from rendercv.data.models import (
     computers,
@@ -22,7 +22,7 @@ from .conftest import update_testdata
 
 
 @pytest.mark.parametrize(
-    "date, expected_date_object, expected_error",
+    ("date", "expected_date_object", "expected_error"),
     [
         ("2020-01-01", Date(2020, 1, 1), None),
         ("2020-01", Date(2020, 1, 1), None),
@@ -46,7 +46,7 @@ def test_get_date_object(date, expected_date_object, expected_error):
 
 
 @pytest.mark.parametrize(
-    "date, expected_date_string",
+    ("date", "expected_date_string"),
     [
         (Date(2020, 1, 1), "Jan 2020"),
         (Date(2020, 2, 1), "Feb 2020"),
@@ -92,7 +92,7 @@ def test_read_input_file(input_file_path):
     assert isinstance(data_model, data.RenderCVDataModel)
 
 
-def test_read_input_file_directly_with_contents(input_file_path):
+def test_read_input_file_directly_with_contents():
     input_dictionary = {
         "cv": {
             "name": "John Doe",
@@ -118,7 +118,7 @@ def test_read_input_file_directly_with_contents(input_file_path):
 def test_read_input_file_invalid_file(tmp_path):
     invalid_file_path = tmp_path / "invalid.extension"
     invalid_file_path.write_text("dummy content", encoding="utf-8")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # NOQA: PT011
         data.read_input_file(invalid_file_path)
 
 
@@ -138,7 +138,7 @@ def test_create_a_sample_data_model(theme):
 
 
 def test_create_a_sample_data_model_invalid_theme():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # NOQA: PT011
         data.create_a_sample_data_model("John Doe", "invalid")
 
 
@@ -173,94 +173,121 @@ def test_if_the_schema_is_the_latest(root_directory_path):
 
 
 @pytest.mark.parametrize(
-    "start_date, end_date, date, expected_date_string, expected_date_string_only_years,"
-    " expected_time_span",
+    (
+        "start_date",
+        "end_date",
+        "date",
+        "expected_date_string",
+        "expected_date_string_only_years",
+        "expected_time_span",
+    ),
     [
         (
             "2020-01-01",
             "2021-01-01",
             None,
-            "Jan 2020 – Jan 2021",
-            "2020 – 2021",
+            "Jan 2020 – Jan 2021",  # NOQA: RUF001
+            "2020 – 2021",  # NOQA: RUF001
             "1 year 1 month",
         ),
         (
             "2020-01-01",
             "2022-01-01",
             None,
-            "Jan 2020 – Jan 2022",
-            "2020 – 2022",
+            "Jan 2020 – Jan 2022",  # NOQA: RUF001
+            "2020 – 2022",  # NOQA: RUF001
             "2 years 1 month",
         ),
         (
             "2020-01-01",
             "2021-12-10",
             None,
-            "Jan 2020 – Dec 2021",
-            "2020 – 2021",
+            "Jan 2020 – Dec 2021",  # NOQA: RUF001
+            "2020 – 2021",  # NOQA: RUF001
             "2 years",
         ),
         (
             Date(2020, 1, 1),
             Date(2021, 1, 1),
             None,
-            "Jan 2020 – Jan 2021",
-            "2020 – 2021",
+            "Jan 2020 – Jan 2021",  # NOQA: RUF001
+            "2020 – 2021",  # NOQA: RUF001
             "1 year 1 month",
         ),
         (
             "2020-01",
             "2021-01",
             None,
-            "Jan 2020 – Jan 2021",
-            "2020 – 2021",
+            "Jan 2020 – Jan 2021",  # NOQA: RUF001
+            "2020 – 2021",  # NOQA: RUF001
             "1 year 1 month",
         ),
         (
             "2020-01",
             "2021-01-01",
             None,
-            "Jan 2020 – Jan 2021",
-            "2020 – 2021",
+            "Jan 2020 – Jan 2021",  # NOQA: RUF001
+            "2020 – 2021",  # NOQA: RUF001
             "1 year 1 month",
         ),
         (
             "2020-01-01",
             "2021-01",
             None,
-            "Jan 2020 – Jan 2021",
-            "2020 – 2021",
+            "Jan 2020 – Jan 2021",  # NOQA: RUF001
+            "2020 – 2021",  # NOQA: RUF001
             "1 year 1 month",
         ),
         (
             "2020-01-01",
             None,
             None,
-            "Jan 2020 – present",
-            "2020 – present",
+            "Jan 2020 – present",  # NOQA: RUF001
+            "2020 – present",  # NOQA: RUF001
             "4 years 1 month",
         ),
         (
             "2020-02-01",
             "present",
             None,
-            "Feb 2020 – present",
-            "2020 – present",
+            "Feb 2020 – present",  # NOQA: RUF001
+            "2020 – present",  # NOQA: RUF001
             "4 years",
         ),
         ("2020-01-01", "2021-01-01", "2023-02-01", "Feb 2023", "2023", ""),
-        ("2020", "2021", None, "2020 – 2021", "2020 – 2021", "1 year"),
-        ("2020", None, None, "2020 – present", "2020 – present", "4 years"),
-        ("2020-10-10", "2022", None, "Oct 2020 – 2022", "2020 – 2022", "2 years"),
+        ("2020", "2021", None, "2020 – 2021", "2020 – 2021", "1 year"),  # NOQA: RUF001
+        (
+            "2020",
+            None,
+            None,
+            "2020 – present",  # NOQA: RUF001
+            "2020 – present",  # NOQA: RUF001
+            "4 years",
+        ),
+        (
+            "2020-10-10",
+            "2022",
+            None,
+            "Oct 2020 – 2022",  # NOQA: RUF001
+            "2020 – 2022",  # NOQA: RUF001
+            "2 years",
+        ),
         (
             "2020-10-10",
             "2020-11-05",
             None,
-            "Oct 2020 – Nov 2020",
-            "2020 – 2020",
+            "Oct 2020 – Nov 2020",  # NOQA: RUF001
+            "2020 – 2020",  # NOQA: RUF001
             "1 month",
         ),
-        ("2022", "2023-10-10", None, "2022 – Oct 2023", "2022 – 2023", "1 year"),
+        (
+            "2022",
+            "2023-10-10",
+            None,
+            "2022 – Oct 2023",  # NOQA: RUF001
+            "2022 – 2023",  # NOQA: RUF001
+            "1 year",
+        ),
         (
             "2020-01-01",
             "present",
@@ -321,11 +348,11 @@ def test_dates(
 
 
 def test_dates_style():
-    assert "TEST" == data.format_date(Date(2020, 1, 1), "TEST")
+    assert data.format_date(Date(2020, 1, 1), "TEST") == "TEST"
 
 
 @pytest.mark.parametrize(
-    "date, expected_date_string",
+    ("date", "expected_date_string"),
     [
         ("2020-01-01", "Jan 2020"),
         ("2020-01", "Jan 2020"),
@@ -340,13 +367,13 @@ def test_publication_dates(publication_entry, date, expected_date_string):
 
 @pytest.mark.parametrize("date", ["2025-23-23"])
 def test_invalid_publication_dates(publication_entry, date):
+    publication_entry["date"] = date
     with pytest.raises(pydantic.ValidationError):
-        publication_entry["date"] = date
         data.PublicationEntry(**publication_entry)
 
 
 @pytest.mark.parametrize(
-    "start_date, end_date, date",
+    ("start_date", "end_date", "date"),
     [
         ("aaa", "2021-01-01", None),
         ("2020-01-01", "aaa", None),
@@ -366,7 +393,7 @@ def test_invalid_dates(start_date, end_date, date):
 
 
 @pytest.mark.parametrize(
-    "doi, expected_doi_url",
+    ("doi", "expected_doi_url"),
     [
         ("10.1109/TASC.2023.3340648", "https://doi.org/10.1109/TASC.2023.3340648"),
     ],
@@ -378,7 +405,7 @@ def test_doi_url(publication_entry, doi, expected_doi_url):
 
 
 @pytest.mark.parametrize(
-    "network, username",
+    ("network", "username"),
     [
         ("Mastodon", "invalidmastodon"),
         ("Mastodon", "@inva@l@id"),
@@ -395,7 +422,7 @@ def test_invalid_social_networks(network, username):
 
 
 @pytest.mark.parametrize(
-    "network, username, expected_url",
+    ("network", "username", "expected_url"),
     [
         ("LinkedIn", "myusername", "https://linkedin.com/in/myusername"),
         ("GitHub", "myusername", "https://github.com/myusername"),
@@ -440,7 +467,7 @@ def test_social_network_url(network, username, expected_url):
 
 
 @pytest.mark.parametrize(
-    "entry, expected_entry_type, expected_section_type",
+    ("entry", "expected_entry_type", "expected_section_type"),
     [
         (
             "publication_entry",
@@ -559,7 +586,7 @@ def test_sections(
 
 
 def test_sections_with_invalid_entries():
-    input = {"name": "John Doe", "sections": dict()}
+    input = {"name": "John Doe", "sections": {}}
     input["sections"]["section_title"] = [
         {
             "this": "is",
@@ -572,7 +599,7 @@ def test_sections_with_invalid_entries():
 
 
 def test_sections_without_list():
-    input = {"name": "John Doe", "sections": dict()}
+    input = {"name": "John Doe", "sections": {}}
     input["sections"]["section_title"] = {
         "this section": "does not have a list of entries but a single entry."
     }
@@ -590,23 +617,19 @@ def test_sections_without_list():
 def test_invalid_custom_theme(invalid_custom_theme_name):
     with pytest.raises(pydantic.ValidationError):
         data.RenderCVDataModel(
-            **{
-                "cv": {"name": "John Doe"},
-                "design": {"theme": invalid_custom_theme_name},
-            }
+            cv={"name": "John Doe"},  # type: ignore
+            design={"theme": invalid_custom_theme_name},
         )
 
 
 def test_custom_theme_with_missing_files(tmp_path):
     custom_theme_path = tmp_path / "customtheme"
     custom_theme_path.mkdir()
+    os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
-        os.chdir(tmp_path)
         data.RenderCVDataModel(
-            **{  # type: ignore
-                "cv": {"name": "John Doe"},
-                "design": {"theme": "customtheme"},
-            }
+            cv={"name": "John Doe"},
+            design={"theme": "customtheme"},  # type: ignore
         )
 
 
@@ -616,10 +639,8 @@ def test_custom_theme(testdata_directory_path):
         / "test_copy_theme_files_to_output_directory_custom_theme"
     )
     data_model = data.RenderCVDataModel(
-        **{  # type: ignore
-            "cv": {"name": "John Doe"},
-            "design": {"theme": "dummytheme"},
-        }
+        cv={"name": "John Doe"},
+        design={"theme": "dummytheme"},  # type: ignore
     )
 
     assert data_model.design.theme == "dummytheme"
@@ -642,10 +663,8 @@ def test_custom_theme_without_init_file(tmp_path, testdata_directory_path):
 
     os.chdir(tmp_path)
     data_model = data.RenderCVDataModel(
-        **{  # type: ignore
-            "cv": {"name": "John Doe"},
-            "design": {"theme": "dummytheme"},
-        }
+        cv={"name": "John Doe"},
+        design={"theme": "dummytheme"},  # type: ignore
     )
 
     assert data_model.design.theme == "dummytheme"
@@ -669,10 +688,8 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
         data.RenderCVDataModel(
-            **{  # type: ignore
-                "cv": {"name": "John Doe"},
-                "design": {"theme": "dummytheme"},
-            }
+            cv={"name": "John Doe"},
+            design={"theme": "dummytheme"},  # type: ignore
         )
 
     # overwrite the __init__.py file (import error)
@@ -682,10 +699,8 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
         data.RenderCVDataModel(
-            **{  # type: ignore
-                "cv": {"name": "John Doe"},
-                "design": {"theme": "dummytheme"},
-            }
+            cv={"name": "John Doe"},
+            design={"theme": "dummytheme"},  # type: ignore
         )
 
 
@@ -729,7 +744,7 @@ def test_locale_catalog():
         phone_number_format="international",
     )
 
-    assert locale_catalog.LOCALE_CATALOG == data_model.locale_catalog.model_dump()
+    assert data_model.locale_catalog.model_dump() == locale_catalog.LOCALE_CATALOG
 
 
 def test_if_local_catalog_resets():
@@ -797,7 +812,7 @@ def test_default_input_file_doesnt_have_local_catalog():
 
 
 @pytest.mark.parametrize(
-    "key, expected_section_title",
+    ("key", "expected_section_title"),
     [
         ("this_is_a_test", "This Is a Test"),
         ("welcome_to_RenderCV!", "Welcome to RenderCV!"),
@@ -816,7 +831,7 @@ def test_dictionary_key_to_proper_section_title(key, expected_section_title):
 
 
 @pytest.mark.parametrize(
-    "url, expected_clean_url",
+    ("url", "expected_clean_url"),
     [
         ("https://example.com", "example.com"),
         ("https://example.com/", "example.com"),
@@ -834,7 +849,7 @@ def test_make_a_url_clean(url, expected_clean_url):
 
 
 @pytest.mark.parametrize(
-    "path_name, expected_value",
+    ("path_name", "expected_value"),
     [
         ("NAME_IN_SNAKE_CASE", "John_Doe"),
         ("NAME_IN_LOWER_SNAKE_CASE", "john_doe"),

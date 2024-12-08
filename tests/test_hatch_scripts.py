@@ -21,4 +21,4 @@ import pytest
     ],
 )
 def test_default_format(script_name):
-    subprocess.run([sys.executable, "-m", "hatch", "run", script_name])
+    subprocess.run([sys.executable, "-m", "hatch", "run", script_name], check=False)

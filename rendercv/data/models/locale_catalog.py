@@ -65,7 +65,7 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
         description='Translation of the word "present" in the locale.',
     )
     to: Optional[str] = pydantic.Field(
-        default="–",  # en dash
+        default="–",  # NOQA: RUF001
         title='Translation of "To"',
         description=(
             "The word or character used to indicate a range in the locale (e.g.,"
@@ -138,7 +138,7 @@ class LocaleCatalog(RenderCVBaseModelWithoutExtraKeys):
 
 # The dictionary below will be overwritten by LocaleCatalog class, which will contain
 # month names, month abbreviations, and other locale-specific strings.
-LOCALE_CATALOG: dict[str, str | list[str]] = dict()
+LOCALE_CATALOG: dict[str, str | list[str]] = {}
 
 # Initialize even if the RenderCVDataModel is not called (to make `format_date` function
 # work on its own):

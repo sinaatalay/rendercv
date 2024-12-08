@@ -10,14 +10,15 @@ import re
 import shutil
 import time
 import urllib.request
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import typer
 import watchdog.events
 import watchdog.observers
 
 from .. import data, renderer
-from . import printer, utilities
+from . import printer
 
 
 def set_or_update_a_value(
@@ -40,10 +41,7 @@ def set_or_update_a_value(
 
     keys = key.split(".")
 
-    if sub_dictionary is not None:
-        updated_dict = sub_dictionary
-    else:
-        updated_dict = dictionary
+    updated_dict = sub_dictionary if sub_dictionary is not None else dictionary
 
     if len(keys) == 1:
         # Set the value:
@@ -72,7 +70,7 @@ def set_or_update_a_value(
             sub_dictionary = updated_dict[first_key]  # type: ignore
         else:
             # Key does not exist, create a new sub dictionary:
-            sub_dictionary = dict()
+            sub_dictionary = {}
 
         updated_sub_dict = set_or_update_a_value(dictionary, key, value, sub_dictionary)
         updated_dict[first_key] = updated_sub_dict  # type: ignore
@@ -173,8 +171,7 @@ def get_error_message_and_location_and_value_from_a_custom_error(
     match = re.search(pattern, error_string)
     if match:
         return match.group(1), match.group(2), match.group(3)
-    else:
-        return None, None, None
+    return None, None, None
 
 
 def copy_templates(
@@ -200,15 +197,14 @@ def copy_templates(
 
     if destination.exists():
         return None
-    else:
-        # copy the folder but don't include __init__.py:
-        shutil.copytree(
-            template_directory,
-            destination,
-            ignore=shutil.ignore_patterns("__init__.py", "__pycache__"),
-        )
+    # copy the folder but don't include __init__.py:
+    shutil.copytree(
+        template_directory,
+        destination,
+        ignore=shutil.ignore_patterns("__init__.py", "__pycache__"),
+    )
 
-        return destination
+    return destination
 
 
 def parse_render_command_override_arguments(
@@ -223,7 +219,7 @@ def parse_render_command_override_arguments(
     Returns:
         The key and value pairs.
     """
-    key_and_values: dict["str", "str"] = dict()
+    key_and_values: dict[str, str] = {}
 
     # `extra_arguments.args` is a list of arbitrary arguments that haven't been
     # specified in `cli_render_command` function's definition. They are used to allow
@@ -234,16 +230,18 @@ def parse_render_command_override_arguments(
     # below parses `ctx.args` accordingly.
 
     if len(extra_arguments.args) % 2 != 0:
-        raise ValueError(
-            "There is a problem with the extra arguments! Each key should have"
-            " a corresponding value."
+        message = (
+            "There is a problem with the extra arguments! Each key should have a"
+            " corresponding value."
         )
+        raise ValueError(message)
 
     for i in range(0, len(extra_arguments.args), 2):
         key = extra_arguments.args[i]
         value = extra_arguments.args[i + 1]
         if not key.startswith("--"):
-            raise ValueError(f"The key ({key}) should start with double dashes!")
+            message = f"The key ({key}) should start with double dashes!"
+            raise ValueError(message)
 
         key = key.replace("--", "")
 
@@ -261,13 +259,11 @@ def get_default_render_command_cli_arguments() -> dict:
     from .commands import cli_command_render
 
     sig = inspect.signature(cli_command_render)
-    default_render_command_cli_arguments = {
+    return {
         k: v.default
         for k, v in sig.parameters.items()
         if v.default is not inspect.Parameter.empty
     }
-
-    return default_render_command_cli_arguments
 
 
 def update_render_command_settings_of_the_input_file(
@@ -292,16 +288,17 @@ def update_render_command_settings_of_the_input_file(
     # field. If the field is the default value, check if it exists in the input file.
     # If it doesn't exist, add it to the input file. If it exists, don't do anything.
     if "rendercv_settings" not in input_file_as_a_dict:
-        input_file_as_a_dict["rendercv_settings"] = dict()
+        input_file_as_a_dict["rendercv_settings"] = {}
 
     if "render_command" not in input_file_as_a_dict["rendercv_settings"]:
-        input_file_as_a_dict["rendercv_settings"]["render_command"] = dict()
+        input_file_as_a_dict["rendercv_settings"]["render_command"] = {}
 
     render_command_field = input_file_as_a_dict["rendercv_settings"]["render_command"]
     for key, value in render_command_cli_arguments.items():
-        if value != default_render_command_cli_arguments[key]:
-            render_command_field[key] = value
-        elif key not in render_command_field:
+        if (
+            value != default_render_command_cli_arguments[key]
+            or key not in render_command_field
+        ):
             render_command_field[key] = value
 
     input_file_as_a_dict["rendercv_settings"]["render_command"] = render_command_field
@@ -373,7 +370,7 @@ def run_rendercv_with_printer(
             )
         )
         if render_command_settings.latex_path:
-            utilities.copy_files(
+            copy_files(
                 latex_file_path_in_output_folder,
                 render_command_settings.latex_path,
             )
@@ -387,7 +384,7 @@ def run_rendercv_with_printer(
             render_command_settings.use_local_latex_command,
         )
         if render_command_settings.pdf_path:
-            utilities.copy_files(
+            copy_files(
                 pdf_file_path_in_output_folder,
                 render_command_settings.pdf_path,
             )
@@ -401,7 +398,7 @@ def run_rendercv_with_printer(
                 pdf_file_path_in_output_folder
             )
             if render_command_settings.png_path:
-                utilities.copy_files(
+                copy_files(
                     png_file_paths_in_output_folder,
                     render_command_settings.png_path,
                 )
@@ -415,7 +412,7 @@ def run_rendercv_with_printer(
                 data_model, output_directory
             )
             if render_command_settings.markdown_path:
-                utilities.copy_files(
+                copy_files(
                     markdown_file_path_in_output_folder,
                     render_command_settings.markdown_path,
                 )
@@ -431,7 +428,7 @@ def run_rendercv_with_printer(
                     markdown_file_path_in_output_folder
                 )
                 if render_command_settings.html_path:
-                    utilities.copy_files(
+                    copy_files(
                         html_file_path_in_output_folder,
                         render_command_settings.html_path,
                     )
@@ -457,7 +454,7 @@ def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable
             super().__init__()
             self.function_to_call = function
 
-        def on_modified(self, event: watchdog.events.FileModifiedEvent) -> None:
+        def on_modified(self, _: watchdog.events.FileModifiedEvent) -> None:
             printer.information(
                 "\n\nThe input file has been updated. Re-running RenderCV..."
             )

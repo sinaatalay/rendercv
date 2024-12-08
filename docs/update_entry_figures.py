@@ -45,8 +45,7 @@ def dictionary_to_yaml(dictionary: dict):
     yaml_object.indent(mapping=2, sequence=4, offset=2)
     with io.StringIO() as string_stream:
         yaml_object.dump(dictionary, string_stream)
-        yaml_string = string_stream.getvalue()
-    return yaml_string
+        return string_stream.getvalue()
 
 
 def define_env(env):
@@ -57,7 +56,7 @@ def define_env(env):
     # validate the parsed dictionary by creating an instance of SampleEntries:
     SampleEntries(**sample_entries)
 
-    entries_showcase = dict()
+    entries_showcase = {}
     for entry_name, entry in sample_entries.items():
         proper_entry_name = entry_name.replace("_", " ").title().replace(" ", "")
         entries_showcase[proper_entry_name] = {
@@ -76,9 +75,9 @@ def define_env(env):
 
     # For theme templates reference docs
     themes_path = rendercv_path / "themes"
-    theme_templates = dict()
+    theme_templates = {}
     for theme in data.available_themes:
-        theme_templates[theme] = dict()
+        theme_templates[theme] = {}
         for theme_file in themes_path.glob(f"{theme}/*.tex"):
             theme_templates[theme][theme_file.stem] = theme_file.read_text()
 
@@ -155,12 +154,10 @@ def generate_entry_figures():
             for entry_type in entry_types:
                 # Create data model with only one section and one entry
                 data_model = data.RenderCVDataModel(
-                    **{
-                        "cv": data.CurriculumVitae(
-                            sections={entry_type: [getattr(entries, entry_type)]}
-                        ),
-                        "design": design_dictionary,
-                    }
+                    cv=data.CurriculumVitae(
+                        sections={entry_type: [getattr(entries, entry_type)]}
+                    ),
+                    design=design_dictionary,
                 )
 
                 # Render
@@ -221,4 +218,4 @@ def update_index():
 
 if __name__ == "__main__":
     generate_entry_figures()
-    print("Entry figures generated successfully.")
+    print("Entry figures generated successfully.")  # NOQA: T201

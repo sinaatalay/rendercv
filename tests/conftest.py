@@ -3,11 +3,10 @@
 import copy
 import filecmp
 import itertools
-import os
 import pathlib
 import shutil
 import typing
-from typing import Optional, Type
+from typing import Optional
 
 import jinja2
 import pydantic
@@ -226,20 +225,20 @@ def return_a_value_for_a_field_type(
 
     if field in field_dictionary:
         return field_dictionary[field]
-    elif type(None) in typing.get_args(field_type):
+    if type(None) in typing.get_args(field_type):
         return return_a_value_for_a_field_type(field, field_type.__args__[0])
-    elif typing.get_origin(field_type) == typing.Literal:
+    if typing.get_origin(field_type) == typing.Literal:
         return field_type.__args__[0]
-    elif typing.get_origin(field_type) == typing.Union:
+    if typing.get_origin(field_type) == typing.Union:
         return return_a_value_for_a_field_type(field, field_type.__args__[0])
-    elif field_type in field_type_dictionary:
+    if field_type in field_type_dictionary:
         return field_type_dictionary[field_type]
 
     return "A string"
 
 
 def create_combinations_of_a_model(
-    model: Type[data.Entry],
+    model: type[data.Entry],
 ) -> list[data.Entry]:
     """Look at the required fields and optional fields of a model and create all
     possible combinations of them.
@@ -252,8 +251,8 @@ def create_combinations_of_a_model(
     """
     fields = typing.get_type_hints(model)
 
-    required_fields = dict()
-    optional_fields = dict()
+    required_fields = {}
+    optional_fields = {}
 
     for field, field_type in fields.items():
         value = return_a_value_for_a_field_type(field, field_type)
@@ -408,8 +407,7 @@ def are_these_two_files_the_same(file1: pathlib.Path, file2: pathlib.Path) -> bo
                 return False
 
         return True
-    else:
-        return filecmp.cmp(file1, file2)
+    return filecmp.cmp(file1, file2)
 
 
 @pytest.fixture
@@ -457,18 +455,18 @@ def run_a_function_and_check_if_output_is_the_same_as_reference(
                     shutil.move(output_file_path, reference_file_or_directory_path)  # type: ignore
                 else:
                     shutil.move(tmp_path, reference_file_or_directory_path)
-                    os.mkdir(tmp_path)
+                    pathlib.Path.mkdir(tmp_path)
 
         function(tmp_path, reference_file_or_directory_path, **kwargs)
 
         if output_is_a_single_file:
             return are_these_two_files_the_same(
-                output_file_path, reference_file_or_directory_path  # type: ignore
+                output_file_path,  # type: ignore
+                reference_file_or_directory_path,  # type: ignore
             )
-        else:
-            return are_these_two_directories_the_same(
-                tmp_path, reference_file_or_directory_path
-            )
+        return are_these_two_directories_the_same(
+            tmp_path, reference_file_or_directory_path
+        )
 
     return function
 

@@ -5,7 +5,7 @@ field of the input file.
 
 import functools
 import re
-from typing import Annotated, Any, Literal, Optional, Type, get_args
+from typing import Annotated, Any, Literal, Optional, get_args
 
 import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
@@ -47,7 +47,7 @@ def validate_url(url: str) -> str:
     return url
 
 
-def create_a_section_validator(entry_type: Type) -> Type[SectionBase]:
+def create_a_section_validator(entry_type: type) -> type[SectionBase]:
     """Create a section model based on the entry type. See [Pydantic's documentation
     about dynamic model
     creation](https://pydantic-docs.helpmanual.io/usage/models/#dynamic-model-creation)
@@ -69,19 +69,17 @@ def create_a_section_validator(entry_type: Type) -> Type[SectionBase]:
         model_name = "SectionWith" + entry_type.__name__.replace("Entry", "Entries")
         entry_type_name = entry_type.__name__
 
-    SectionModel = pydantic.create_model(
+    return pydantic.create_model(
         model_name,
         entry_type=(Literal[entry_type_name], ...),  # type: ignore
         entries=(list[entry_type], ...),
         __base__=SectionBase,
     )
 
-    return SectionModel
-
 
 def get_characteristic_entry_attributes(
-    entry_types: list[Type],
-) -> dict[Type, set[str]]:
+    entry_types: list[type],
+) -> dict[type, set[str]]:
     """Get the characteristic attributes of the entry types.
 
     Args:
@@ -98,9 +96,9 @@ def get_characteristic_entry_attributes(
     for EntryType in entry_types:
         all_attributes.extend(EntryType.model_fields.keys())
 
-    common_attributes = set(
+    common_attributes = {
         attribute for attribute in all_attributes if all_attributes.count(attribute) > 1
-    )
+    }
 
     # Store each entry type's characteristic attributes in a dictionary:
     characteristic_entry_attributes = {}
@@ -113,8 +111,8 @@ def get_characteristic_entry_attributes(
 
 
 def get_entry_type_name_and_section_validator(
-    entry: dict[str, str | list[str]] | str | Type, entry_types: list[Type]
-) -> tuple[str, Type[SectionBase]]:
+    entry: dict[str, str | list[str]] | str | type, entry_types: list[type]
+) -> tuple[str, type[SectionBase]]:
     """Get the entry type name and the section validator based on the entry.
 
     It takes an entry (as a dictionary or a string) and a list of entry types. Then
@@ -149,7 +147,8 @@ def get_entry_type_name_and_section_validator(
                 break
 
         if entry_type_name is None:
-            raise ValueError("The entry is not provided correctly.")
+            message = "The entry is not provided correctly."
+            raise ValueError(message)
 
     elif isinstance(entry, str):
         # Then it is a TextEntry
@@ -165,7 +164,7 @@ def get_entry_type_name_and_section_validator(
 
 
 def validate_a_section(
-    sections_input: list[Any], entry_types: list[Type]
+    sections_input: list[Any], entry_types: list[type]
 ) -> list[entry_types.Entry]:
     """Validate a list of entries (a section) based on the entry types.
 
@@ -199,9 +198,12 @@ def validate_a_section(
                 pass
 
         if entry_type_name is None or section_type is None:
-            raise ValueError(
+            message = (
                 "RenderCV couldn't match this section with any entry types! Please"
-                " check the entries and make sure they are provided correctly.",
+                " check the entries and make sure they are provided correctly."
+            )
+            raise ValueError(
+                message,
                 "",  # This is the location of the error
                 "",  # This is value of the error
             )
@@ -228,10 +230,11 @@ def validate_a_section(
             raise new_error from e
 
     else:
-        raise ValueError(
+        message = (
             "Each section should be a list of entries! Please see the documentation for"
-            " more information about the sections.",
+            " more information about the sections."
         )
+        raise ValueError(message)
     return sections_input
 
 
@@ -247,21 +250,22 @@ def validate_a_social_network_username(username: str, network: str) -> str:
     if network == "Mastodon":
         mastodon_username_pattern = r"@[^@]+@[^@]+"
         if not re.fullmatch(mastodon_username_pattern, username):
-            raise ValueError(
-                'Mastodon username should be in the format "@username@domain"!'
-            )
-    if network == "StackOverflow":
+            message = 'Mastodon username should be in the format "@username@domain"!'
+            raise ValueError(message)
+    elif network == "StackOverflow":
         stackoverflow_username_pattern = r"\d+\/[^\/]+"
         if not re.fullmatch(stackoverflow_username_pattern, username):
-            raise ValueError(
+            message = (
                 'StackOverflow username should be in the format "user_id/username"!'
             )
-    if network == "YouTube":
+            raise ValueError(message)
+    elif network == "YouTube":
         if username.startswith("@"):
-            raise ValueError(
+            message = (
                 'YouTube username should not start with "@"! Remove "@" from the'
                 " beginning of the username."
             )
+            raise ValueError(message)
 
     return username
 
@@ -333,9 +337,7 @@ class SocialNetwork(RenderCVBaseModelWithoutExtraKeys):
 
         network = info.data["network"]
 
-        username = validate_a_social_network_username(username, network)
-
-        return username
+        return validate_a_social_network_username(username, network)
 
     @pydantic.model_validator(mode="after")  # type: ignore
     def check_url(self) -> "SocialNetwork":
@@ -528,7 +530,9 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
 
         if self.sections_input is not None:
             for title, entries in self.sections_input.items():
-                title = computers.dictionary_key_to_proper_section_title(title)
+                formatted_title = computers.dictionary_key_to_proper_section_title(
+                    title
+                )
 
                 # The first entry can be used because all the entries in the section are
                 # already validated with the `validate_a_section` function:
@@ -539,7 +543,7 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
 
                 # SectionBase is used so that entries are not validated again:
                 section = SectionBase(
-                    title=title,
+                    title=formatted_title,
                     entry_type=entry_type_name,
                     entries=entries,
                 )
@@ -550,4 +554,4 @@ class CurriculumVitae(RenderCVBaseModelWithExtraKeys):
 
 # The dictionary below will be overwritten by CurriculumVitae class, which will contain
 # some important data for the CV.
-curriculum_vitae: dict[str, str] = dict()
+curriculum_vitae: dict[str, str] = {}

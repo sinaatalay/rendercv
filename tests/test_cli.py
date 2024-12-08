@@ -19,17 +19,17 @@ import rendercv.data.reader as reader
 from rendercv import __version__
 
 
-def run_render_command(input_file_path, working_path, extra_arguments=[]):
+def run_render_command(input_file_path, working_path, extra_arguments=None):
+    if extra_arguments is None:
+        extra_arguments = []
     # copy input file to the temporary directory to create the output directory there:
-    if not input_file_path == working_path / input_file_path.name:
+    if input_file_path != working_path / input_file_path.name:
         shutil.copy(input_file_path, working_path)
 
     # change the current working directory to the temporary directory:
     os.chdir(working_path)
 
-    result = runner.invoke(cli.app, ["render", "John_Doe_CV.yaml"] + extra_arguments)
-
-    return result
+    return runner.invoke(cli.app, ["render", "John_Doe_CV.yaml", *extra_arguments])
 
 
 def test_welcome():
@@ -77,7 +77,7 @@ def test_get_error_message_and_location_and_value_from_a_custom_error():
 
 
 @pytest.mark.parametrize(
-    "data_model_class, invalid_model",
+    ("data_model_class", "invalid_model"),
     [
         (
             data.EducationEntry,
@@ -209,7 +209,7 @@ def test_live_progress_reporter_class():
 
 @pytest.mark.parametrize(
     "folder_name",
-    ["markdown"] + data.available_themes,
+    ["markdown", *data.available_themes],
 )
 def test_copy_templates(tmp_path, folder_name):
     copied_path = utilities.copy_templates(
@@ -236,7 +236,7 @@ def test_copy_templates_with_new_folder_name(tmp_path):
 
 @pytest.mark.parametrize(
     "folder_name",
-    ["markdown"] + data.available_themes,
+    ["markdown", *data.available_themes],
 )
 def test_copy_templates_destinations_exist(tmp_path, folder_name):
     (tmp_path / folder_name).mkdir()
@@ -423,7 +423,6 @@ def test_render_command_with_invalid_arguments(
 def test_render_command_with_overriding_values(
     tmp_path, input_file_path, yaml_location, new_value
 ):
-
     result = run_render_command(
         input_file_path,
         tmp_path,
@@ -618,7 +617,7 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
     assert "Your CV is rendered!" in result.stdout
 
 
-def test_create_theme_command_invalid_based_on_theme(tmp_path):
+def test_create_theme_command_invalid_based_on_theme():
     result = runner.invoke(
         cli.app, ["create-theme", "newtheme", "--based-on", "invalid_theme"]
     )
@@ -693,7 +692,7 @@ def test_warn_if_new_version_is_available(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "key, value",
+    ("key", "value"),
     [
         ("cv.email", "test@example.com"),
         ("cv.sections.education.0.degree", "PhD"),
@@ -716,9 +715,9 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
     key = re.sub(r"sections\.([^\.]*)", 'sections_input["\\1"]', key)
     key = re.sub(r"\.(\d+)", "[\\1]", key)
 
-    if value.startswith("{") and value.endswith("}"):
-        value = eval(value)
-    elif value.startswith("[") and value.endswith("]"):
+    if (value.startswith("{") and value.endswith("}")) or (
+        value.startswith("[") and value.endswith("]")
+    ):
         value = eval(value)
 
     if key == "cv.sections":
@@ -728,7 +727,7 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
 
 
 @pytest.mark.parametrize(
-    "key, value",
+    ("key", "value"),
     [
         ("cv.phone", "+9999995555555555"),
         ("cv.email", "notanemail***"),
@@ -737,10 +736,10 @@ def test_set_or_update_a_value(rendercv_data_model, key, value):
     ],
 )
 def test_set_or_update_a_value_invalid_values(rendercv_data_model, key, value):
+    new_dict = utilities.set_or_update_a_value(
+        rendercv_data_model.model_dump(by_alias=True), key, value
+    )
     with pytest.raises(pydantic.ValidationError):
-        new_dict = utilities.set_or_update_a_value(
-            rendercv_data_model.model_dump(by_alias=True), key, value
-        )
         data.validate_input_dictionary_and_return_the_data_model(new_dict)
 
 
@@ -796,8 +795,6 @@ def test_render_command_with_input_file_settings(tmp_path, input_file_path):
         ],
     )
 
-    print(result.stdout)
-
     assert (tmp_path / "test.pdf").exists()
     assert (tmp_path / "test.tex").exists()
     assert (tmp_path / "test.md").exists()
@@ -827,15 +824,13 @@ def test_render_command_with_input_file_settings_2(tmp_path, input_file_path):
     yaml_content = generator.dictionary_to_yaml(input_dictionary)
     new_input_file_path.write_text(yaml_content, encoding="utf-8")
 
-    result = runner.invoke(
+    runner.invoke(
         cli.app,
         [
             "render",
             str(new_input_file_path.relative_to(tmp_path)),
         ],
     )
-
-    print(result.stdout)
 
     assert (tmp_path / "rendercv_output" / "John_Doe_CV.pdf").exists()
     assert not (tmp_path / "rendercv_output" / "John_Doe_CV.md").exists()
@@ -887,8 +882,6 @@ def test_render_command_overriding_input_file_settings(
             new_value,
         ],
     )
-
-    print(result.stdout)
 
     assert (tmp_path / new_value).exists()
     assert "Your CV is rendered!" in result.stdout

@@ -29,9 +29,7 @@ def dictionary_to_yaml(dictionary: dict) -> str:
     yaml_object.indent(mapping=2, sequence=4, offset=2)
     with io.StringIO() as string_stream:
         yaml_object.dump(dictionary, string_stream)
-        yaml_string = string_stream.getvalue()
-
-    return yaml_string
+        return string_stream.getvalue()
 
 
 def create_a_sample_data_model(
@@ -48,10 +46,11 @@ def create_a_sample_data_model(
     # Check if the theme is valid:
     if theme not in models.available_theme_options:
         available_themes_string = ", ".join(models.available_theme_options.keys())
-        raise ValueError(
+        message = (
             f"The theme should be one of the following: {available_themes_string}!"
             f' The provided theme is "{theme}".'
         )
+        raise ValueError(message)
 
     # read the sample_content.yaml file
     sample_content = pathlib.Path(__file__).parent / "sample_content.yaml"
@@ -135,7 +134,7 @@ def generate_json_schema() -> dict:
 
             # Loop through $defs and remove docstring descriptions and fix optional
             # fields
-            for object_name, value in json_schema["$defs"].items():
+            for _, value in json_schema["$defs"].items():
                 # Don't allow additional properties
                 value["additionalProperties"] = False
 
@@ -147,7 +146,7 @@ def generate_json_schema() -> dict:
                 null_type_dict = {
                     "type": "null",
                 }
-                for field_name, field in value["properties"].items():
+                for _, field in value["properties"].items():
                     if "anyOf" in field:
                         if null_type_dict in field["anyOf"]:
                             field["anyOf"].remove(null_type_dict)
@@ -172,11 +171,9 @@ def generate_json_schema() -> dict:
 
             return json_schema
 
-    schema = models.RenderCVDataModel.model_json_schema(
+    return models.RenderCVDataModel.model_json_schema(
         schema_generator=RenderCVSchemaGenerator
     )
-
-    return schema
 
 
 def generate_json_schema_file(json_schema_path: pathlib.Path):

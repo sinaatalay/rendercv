@@ -71,7 +71,7 @@ class TemplatedFile:
                     entry.__setattr__(key, "")
 
         # The arguments of the template can be used in the template file:
-        result = template.render(
+        return template.render(
             cv=self.cv,
             design=self.design,
             entry=entry,
@@ -79,15 +79,12 @@ class TemplatedFile:
             **kwargs,
         )
 
-        return result
-
     def get_full_code(self, main_template_name: str, **kwargs) -> str:
         """Combine all the templates to get the full code of the file."""
         main_template = self.environment.get_template(main_template_name)
-        latex_code = main_template.render(
+        return main_template.render(
             **kwargs,
         )
-        return latex_code
 
 
 class LaTeXFile(TemplatedFile):
@@ -171,9 +168,7 @@ class LaTeXFile(TemplatedFile):
             **kwargs,
         )
 
-        result = revert_nested_latex_style_commands(result)
-
-        return result
+        return revert_nested_latex_style_commands(result)
 
     def get_full_code(self) -> str:
         """Get the $\\LaTeX$ code of the file.
@@ -219,10 +214,7 @@ class MarkdownFile(TemplatedFile):
             )
             entries: list[str] = []
             for i, entry in enumerate(section.entries):
-                if i == 0:
-                    is_first_entry = True
-                else:
-                    is_first_entry = False
+                is_first_entry = bool(i == 0)
                 entries.append(
                     self.template(
                         section.entry_type,
@@ -252,14 +244,13 @@ class MarkdownFile(TemplatedFile):
         Returns:
             The templated file.
         """
-        result = super().template(
+        return super().template(
             "markdown",
             template_name,
             "md",
             entry,
             **kwargs,
         )
-        return result
 
     def get_full_code(self) -> str:
         """Get the Markdown code of the file.
@@ -410,7 +401,9 @@ def markdown_to_latex(markdown_string: str) -> str:
 
     Example:
         ```python
-        markdown_to_latex("This is a **bold** text with an [*italic link*](https://google.com).")
+        markdown_to_latex(
+            "This is a **bold** text with an [*italic link*](https://google.com)."
+        )
         ```
 
         returns
@@ -463,9 +456,7 @@ def markdown_to_latex(markdown_string: str) -> str:
 
     #         markdown_string = markdown_string.replace(old_code_text, new_code_text)
 
-    latex_string = markdown_string
-
-    return latex_string
+    return markdown_string
 
 
 def transform_markdown_sections_to_latex_sections(
@@ -495,19 +486,19 @@ def transform_markdown_sections_to_latex_sections(
                 # Then it means it's one of the other entries.
                 fields_to_skip = ["doi"]
                 entry_as_dict = entry.model_dump()
-                for entry_key, value in entry_as_dict.items():
+                for entry_key, inner_value in entry_as_dict.items():
                     if entry_key in fields_to_skip:
                         continue
-                    if isinstance(value, str):
-                        result = markdown_to_latex(escape_latex_characters(value))
+                    if isinstance(inner_value, str):
+                        result = markdown_to_latex(escape_latex_characters(inner_value))
                         setattr(entry, entry_key, result)
-                    elif isinstance(value, list):
-                        for j, item in enumerate(value):
+                    elif isinstance(inner_value, list):
+                        for j, item in enumerate(inner_value):
                             if isinstance(item, str):
-                                value[j] = markdown_to_latex(
+                                inner_value[j] = markdown_to_latex(
                                     escape_latex_characters(item)
                                 )
-                        setattr(entry, entry_key, value)
+                        setattr(entry, entry_key, inner_value)
                 transformed_list.append(entry)
 
         sections[key] = transformed_list
@@ -698,9 +689,8 @@ def abbreviate_name(name: Optional[str]) -> str:
     first_names = name.split(" ")[:-1]
     first_names_initials = [first_name[0] + "." for first_name in first_names]
     last_name = name.split(" ")[-1]
-    abbreviated_name = " ".join(first_names_initials) + " " + last_name
 
-    return abbreviated_name
+    return " ".join(first_names_initials) + " " + last_name
 
 
 def divide_length_by(length: str, divider: float) -> str:
@@ -729,12 +719,14 @@ def divide_length_by(length: str, divider: float) -> str:
     value = re.search(r"\d+\.?\d*", length)
 
     if value is None:
-        raise ValueError(f"Invalid length {length}!")
-    else:
-        value = value.group()
+        message = f"Invalid length {length}!"
+        raise ValueError(message)
+
+    value = value.group()
 
     if divider <= 0:
-        raise ValueError(f"The divider must be greater than 0, but got {divider}!")
+        message = f"The divider must be greater than 0, but got {divider}!"
+        raise ValueError(message)
 
     unit = re.findall(r"[^\d\.\s]+", length)[0]
 
@@ -749,9 +741,9 @@ def get_an_item_with_a_specific_attribute_value(
     Example:
         ```python
         get_an_item_with_a_specific_attribute_value(
-            [item1, item2], # where item1.name = "John" and item2.name = "Jane"
+            [item1, item2],  # where item1.name = "John" and item2.name = "Jane"
             "name",
-            "Jane"
+            "Jane",
         )
         ```
         returns
@@ -770,14 +762,13 @@ def get_an_item_with_a_specific_attribute_value(
     if items is not None:
         for item in items:
             if not hasattr(item, attribute):
-                raise AttributeError(
-                    f"The attribute {attribute} doesn't exist in the item {item}!"
-                )
-            else:
-                if getattr(item, attribute) == value:
-                    return item
-    else:
-        return None
+                message = f"The attribute {attribute} doesn't exist in the item {item}!"
+                raise AttributeError(message)
+
+            if getattr(item, attribute) == value:
+                return item
+
+    return None
 
 
 # Only one Jinja2 environment is needed for all the templates:
@@ -790,7 +781,7 @@ def setup_jinja2_environment() -> jinja2.Environment:
     Returns:
         The theme environment.
     """
-    global jinja2_environment
+    global jinja2_environment  # noqa: PLW0603
     themes_directory = pathlib.Path(__file__).parent.parent / "themes"
 
     if jinja2_environment is None:
@@ -833,7 +824,10 @@ def setup_jinja2_environment() -> jinja2.Environment:
     else:
         # update the loader in case the current working directory has changed:
         jinja2_environment.loader = jinja2.FileSystemLoader(
-            [pathlib.Path.cwd(), themes_directory]
+            [
+                pathlib.Path.cwd(),
+                themes_directory,
+            ]
         )
 
     return jinja2_environment

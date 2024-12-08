@@ -37,10 +37,9 @@ def format_phone_number(phone_number: str) -> str:
     format = LOCALE_CATALOG["phone_number_format"].upper()  # type: ignore
 
     parsed_number = phonenumbers.parse(phone_number, None)
-    formatted_number = phonenumbers.format_number(
+    return phonenumbers.format_number(
         parsed_number, getattr(phonenumbers.PhoneNumberFormat, format)
     )
-    return formatted_number
 
 
 def format_date(date: Date, date_style: Optional[str] = None) -> str:
@@ -81,12 +80,12 @@ def format_date(date: Date, date_style: Optional[str] = None) -> str:
     if date_style is None:
         date_style = LOCALE_CATALOG["date_style"]  # type: ignore
 
+    assert isinstance(date_style, str)
+
     for placeholder, value in placeholders.items():
         date_style = date_style.replace(placeholder, value)  # type: ignore
 
-    date_string = date_style
-
-    return date_string  # type: ignore
+    return date_style
 
 
 def replace_placeholders(value: str) -> str:
@@ -165,11 +164,11 @@ def compute_time_span_string(
         # empty string.
         return ""
 
-    elif not start_date_is_provided and not end_date_is_provided:
+    if not start_date_is_provided and not end_date_is_provided:
         # If neither start_date nor end_date is provided, return an empty string.
         return ""
 
-    elif isinstance(start_date, int) or isinstance(end_date, int):
+    if isinstance(start_date, int) or isinstance(end_date, int):
         # Then it means one of the dates is year, so time span cannot be more
         # specific than years.
         start_year = get_date_object(start_date).year  # type: ignore
@@ -184,49 +183,49 @@ def compute_time_span_string(
 
         return time_span_string
 
+    # Then it means both start_date and end_date are in YYYY-MM-DD or YYYY-MM
+    # format.
+    end_date = get_date_object(end_date)  # type: ignore
+    start_date = get_date_object(start_date)  # type: ignore
+
+    # Calculate the number of days between start_date and end_date:
+    timespan_in_days = (end_date - start_date).days  # type: ignore
+
+    # Calculate the number of years and months between start_date and end_date:
+    how_many_years = timespan_in_days // 365
+    how_many_months = (timespan_in_days % 365) // 30 + 1
+    # Deal with overflow (prevent rounding to 1 year 12 months, etc.)
+    how_many_years += how_many_months // 12
+    how_many_months %= 12
+
+    # Format the number of years and months between start_date and end_date:
+    if how_many_years == 0:
+        how_many_years_string = None
+    elif how_many_years == 1:
+        how_many_years_string = f"1 {LOCALE_CATALOG['year']}"
     else:
-        # Then it means both start_date and end_date are in YYYY-MM-DD or YYYY-MM
-        # format.
-        end_date = get_date_object(end_date)  # type: ignore
-        start_date = get_date_object(start_date)  # type: ignore
+        how_many_years_string = f"{how_many_years} {LOCALE_CATALOG['years']}"
 
-        # Calculate the number of days between start_date and end_date:
-        timespan_in_days = (end_date - start_date).days  # type: ignore
+    # Format the number of months between start_date and end_date:
+    if how_many_months == 1 or (how_many_years_string is None and how_many_months == 0):
+        how_many_months_string = f"1 {LOCALE_CATALOG['month']}"
+    elif how_many_months == 0:
+        how_many_months_string = None
+    else:
+        how_many_months_string = f"{how_many_months} {LOCALE_CATALOG['months']}"
 
-        # Calculate the number of years and months between start_date and end_date:
-        how_many_years = timespan_in_days // 365
-        how_many_months = (timespan_in_days % 365) // 30 + 1
-        # Deal with overflow (prevent rounding to 1 year 12 months, etc.)
-        how_many_years += how_many_months // 12
-        how_many_months %= 12
+    # Combine howManyYearsString and howManyMonthsString:
+    if how_many_years_string is None and how_many_months_string is not None:
+        time_span_string = how_many_months_string
+    elif how_many_months_string is None and how_many_years_string is not None:
+        time_span_string = how_many_years_string
+    elif how_many_years_string is not None and how_many_months_string is not None:
+        time_span_string = f"{how_many_years_string} {how_many_months_string}"
+    else:
+        message = "The time span is not valid!"
+        raise ValueError(message)
 
-        # Format the number of years and months between start_date and end_date:
-        if how_many_years == 0:
-            how_many_years_string = None
-        elif how_many_years == 1:
-            how_many_years_string = f"1 {LOCALE_CATALOG['year']}"
-        else:
-            how_many_years_string = f"{how_many_years} {LOCALE_CATALOG['years']}"
-
-        # Format the number of months between start_date and end_date:
-        if how_many_months == 1 or (
-            how_many_years_string is None and how_many_months == 0
-        ):
-            how_many_months_string = f"1 {LOCALE_CATALOG['month']}"
-        elif how_many_months == 0:
-            how_many_months_string = None
-        else:
-            how_many_months_string = f"{how_many_months} {LOCALE_CATALOG['months']}"
-
-        # Combine howManyYearsString and howManyMonthsString:
-        if how_many_years_string is None:
-            time_span_string = how_many_months_string
-        elif how_many_months_string is None:
-            time_span_string = how_many_years_string
-        else:
-            time_span_string = f"{how_many_years_string} {how_many_months_string}"
-
-        return time_span_string.strip()
+    return time_span_string.strip()
 
 
 def compute_date_string(
@@ -294,10 +293,7 @@ def compute_date_string(
         else:
             # Then it means end_date is either in YYYY-MM-DD or YYYY-MM format
             date_object = get_date_object(end_date)
-            if show_only_years:
-                end_date = date_object.year
-            else:
-                end_date = format_date(date_object)
+            end_date = date_object.year if show_only_years else format_date(date_object)
 
         date_string = f"{start_date} {LOCALE_CATALOG['to']} {end_date}"
 
@@ -357,10 +353,11 @@ def get_date_object(date: str | int) -> Date:
     elif date == "present":
         date_object = Date.today()
     else:
-        raise ValueError(
+        message = (
             "This is not a valid date! Please use either YYYY-MM-DD, YYYY-MM, or"
             " YYYY format."
         )
+        raise ValueError(message)
 
     return date_object
 
@@ -418,7 +415,7 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
     # loop through the words and if the word doesn't contain any uppercase letters,
     # capitalize the first letter of the word. If the word contains uppercase letters,
     # don't change the word.
-    proper_title = " ".join(
+    return " ".join(
         (
             word.capitalize()
             if (word.islower() and word not in words_not_capitalized_in_a_title)
@@ -426,5 +423,3 @@ def dictionary_key_to_proper_section_title(key: str) -> str:
         )
         for word in words
     )
-
-    return proper_title
