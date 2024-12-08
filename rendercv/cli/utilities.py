@@ -462,7 +462,7 @@ def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable
             if sys.platform == "win32":
                 # Windows does not support single file watching, so we watch the
                 # directory
-                if event.src_path != path_to_watch:
+                if event.src_path != str(file_path.absolute()):
                     return
 
             printer.information(
