@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/sinaatalay/rendercv/compare/v1.13...HEAD)
+[Click here to see the unreleased changes.](https://github.com/rendercv/rendercv/compare/v1.15...HEAD)
 
 <!--
 ### Added
@@ -16,6 +16,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 ### Removed
 -->
+## [1.15] - 2024-12-09
+
+> **Full Changelog**: [v1.14...v1.15]
+
+We have some new and nice features. A big thank you to our eight new contributors!
+
+> Full Changelog: [v1.14...v1.15](https://github.com/rendercv/rendercv/compare/v1.14...v1.15)
+
+### Added
+
+-   Four new options are added to the `rendercv render` command:
+    -   `--watch` ([#170](https://github.com/rendercv/rendercv/pull/170)). It re-runs RenderCV automatically whenever the input file changes.
+    -   `--design`, `--locale_catalog`, and `--rendercv_settings` ([#220](https://github.com/rendercv/rendercv/pull/220)). They take the `design`, `locale_catalog`, and `rendercv_settings` fields as separate YAML files.
+-   The docker image of RenderCV is pushed to [Docker Hub](https://hub.docker.com/r/rendercv/rendercv).
+-   Telegram has been added as a social network type ([#187](https://github.com/rendercv/rendercv/issues/187)).
+-   Math equations are now displayed in HTML with KaTeX ([#200](https://github.com/rendercv/rendercv/pull/200))
+
+### Changed
+
+-   Math equations are now written between `$$` instead of `$`.
+
+### Fixed
+
+-   Path issues related to custom themes outside of root have been solved ([#240](https://github.com/rendercv/rendercv/issues/240)).
+-   URL escaping issues have been solved ([#223](https://github.com/rendercv/rendercv/issues/223), [#236](https://github.com/rendercv/rendercv/issues/236)).
+-   Placeholders can now be used in the `rendercv_settings.render_command.output_folder_name` field.
+-   Special LATEX characters are now escaped in the section titles.
+-   DOI rendering issues have been solved ([#184](https://github.com/rendercv/rendercv/issues/184)).
+-   The `rendercv_settings.render_command.use_local_latex_command` field has been fixed ([#178](https://github.com/rendercv/rendercv/issues/178)).
+-   The issue of rendering when PDF is open on Windows has been handled ([#172](https://github.com/rendercv/rendercv/issues/172)).
+-   $ sign now works without escaping ([#154](https://github.com/rendercv/rendercv/issues/154))
+-   Timespan calculation has been fixed ([#180](https://github.com/rendercv/rendercv/pull/180)).
+
 
 ## [1.14] - 2024-09-07
 
@@ -33,17 +66,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Arbitrary keys are now allowed in the `cv` field. For details, see [here](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-arbitrary-keys).
-- Two new fields have been added to the `locale_catalog` field: `phone_number_format` and `date_style` ([#130](https://github.com/sinaatalay/rendercv/issues/130)). For details, see [here](http://127.0.0.1:8000/user_guide/structure_of_the_yaml_input_file/#locale_catalog-field).
+- Two new fields have been added to the `locale_catalog` field: `phone_number_format` and `date_style` ([#130](https://github.com/rendercv/rendercv/issues/130)). For details, see [here](http://127.0.0.1:8000/user_guide/structure_of_the_yaml_input_file/#locale_catalog-field).
 
 ### Changed
 
-- The default value of the `design.show_timespan_in` field for the `classic` theme has been changed to `[]` ([#135](https://github.com/sinaatalay/rendercv/issues/135)).
+- The default value of the `design.show_timespan_in` field for the `classic` theme has been changed to `[]` ([#135](https://github.com/rendercv/rendercv/issues/135)).
 - Custom theme names with digits are now allowed.
 
 ### Fixed
 
 - The data model overriding in CLI has been fixed.
-- The `url` field is now shown in the `PublicationEntry` ([#128](https://github.com/sinaatalay/rendercv/issues/128)).
+- The `url` field is now shown in the `PublicationEntry` ([#128](https://github.com/rendercv/rendercv/issues/128)).
 
 ## [1.12] - 2024-07-16
 
@@ -52,7 +85,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Arbitrary keys are now allowed in entry types. Users can use these keys in their templates. For details, see the [documentation](https://docs.rendercv.com/user_guide/structure_of_the_yaml_input_file/#using-arbitrary-keys).
-- The `locale_catalog.full_names_of_months` field has been added to the data model ([#111](https://github.com/sinaatalay/rendercv/issues/111)).
+- The `locale_catalog.full_names_of_months` field has been added to the data model ([#111](https://github.com/rendercv/rendercv/issues/111)).
 - The `TODAY` placeholder can be used in the `design.page_numbering_style` field now.
 
 ### Changed
@@ -61,8 +94,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- The `TODAY` placeholder in `design.last_updated_style` field is localized with the new `locale_catalog.full_names_of_months` field ([#111](https://github.com/sinaatalay/rendercv/issues/111))
-- Rendering Markdown links with special characters has been fixed ([#112](https://github.com/sinaatalay/rendercv/issues/112)).
+- The `TODAY` placeholder in `design.last_updated_style` field is localized with the new `locale_catalog.full_names_of_months` field ([#111](https://github.com/rendercv/rendercv/issues/111))
+- Rendering Markdown links with special characters has been fixed ([#112](https://github.com/rendercv/rendercv/issues/112)).
 
 ## [1.11] - 2024-06-19
 
@@ -71,29 +104,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - CLI options now have short versions. See the [CLI documentation](https://docs.rendercv.com/user_guide/cli/) for more information.
-- CLI now notifies the user when a new version is available ([#89](https://github.com/sinaatalay/rendercv/issues/89)).
-- `Google Scholar` has been added as a social network type ([#85](https://github.com/sinaatalay/rendercv/issues/85)).
+- CLI now notifies the user when a new version is available ([#89](https://github.com/rendercv/rendercv/issues/89)).
+- `Google Scholar` has been added as a social network type ([#85](https://github.com/rendercv/rendercv/issues/85)).
 - Two new design options have been added to the `classic`, `sb2nov`, and `engineeringresumes` themes: `seperator_between_connections` and `use_icons_for_connections`.
 
 ### Changed
 
-- The punctuation of "ORCID" has been changed to uppercase, which was previously "Orcid" ([#90](https://github.com/sinaatalay/rendercv/issues/90)).
-- HTML output has been improved with better CSS ([#96](https://github.com/sinaatalay/rendercv/discussions/96)).
-- More complex section titles are now supported ([#106](https://github.com/sinaatalay/rendercv/issues/106)).
+- The punctuation of "ORCID" has been changed to uppercase, which was previously "Orcid" ([#90](https://github.com/rendercv/rendercv/issues/90)).
+- HTML output has been improved with better CSS ([#96](https://github.com/rendercv/rendercv/discussions/96)).
+- More complex section titles are now supported ([#106](https://github.com/rendercv/rendercv/issues/106)).
 - Month abbreviations are not using dots anymore.
 - Date ranges are now displayed as "Month Year - Month Year" instead of "Month Year to Month Year."
 - DOI validator in the `PublicationEntry` has been disabled.
-- `url` field has been added to the `PublicationEntry` as an alternative to the `doi` field ([#105](https://github.com/sinaatalay/rendercv/issues/105))
+- `url` field has been added to the `PublicationEntry` as an alternative to the `doi` field ([#105](https://github.com/rendercv/rendercv/issues/105))
 - `YouTube` username should be given without `@` now.
 
 ### Fixed
 
-- The error related to the `validation_error_cause` flag of Pydantic has been fixed ([#66](https://github.com/sinaatalay/rendercv/issues/66)).
-- `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/sinaatalay/rendercv/issues/95)).
+- The error related to the `validation_error_cause` flag of Pydantic has been fixed ([#66](https://github.com/rendercv/rendercv/issues/66)).
+- `rendercv render` with relative input file paths has been fixed ([#95](https://github.com/rendercv/rendercv/issues/95)).
 
 ### Removed
 
-- `Twitter` has been removed as a social network type ([#109](https://github.com/sinaatalay/rendercv/issues/109)).
+- `Twitter` has been removed as a social network type ([#109](https://github.com/rendercv/rendercv/issues/109)).
 
 ## [1.10] - 2024-05-25
 
@@ -102,7 +135,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - `rendercv --version` command has been added to show the version of RenderCV.
-- `StackOverflow` ([#77](https://github.com/sinaatalay/rendercv/pull/77)), `GitLab` ([#78](https://github.com/sinaatalay/rendercv/pull/78)), `ResearchGate`, and `YouTube` has been added to the available social network types.
+- `StackOverflow` ([#77](https://github.com/rendercv/rendercv/pull/77)), `GitLab` ([#78](https://github.com/rendercv/rendercv/pull/78)), `ResearchGate`, and `YouTube` has been added to the available social network types.
 
 ### Fixed
 
@@ -115,8 +148,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/sinaatalay/rendercv/issues/26), [#20](https://github.com/sinaatalay/rendercv/pull/20)). See the [documentation](user_guide/structure_of_the_yaml_input_file.md#locale_catalog-field) for more information.
-- PNG files for each page can be generated now ([#57](https://github.com/sinaatalay/rendercv/issues/57)).
+- RenderCV is now a multilingual tool. English strings can be overridden with `locale_catalog` section in the YAML input file ([#26](https://github.com/rendercv/rendercv/issues/26), [#20](https://github.com/rendercv/rendercv/pull/20)). See the [documentation](user_guide/structure_of_the_yaml_input_file.md#locale_catalog-field) for more information.
+- PNG files for each page can be generated now ([#57](https://github.com/rendercv/rendercv/issues/57)).
 - `rendercv new` command now generates Markdown and $\LaTeX$ source files in addition to the YAML input file so that the default templates can be modified easily.
 - A new CLI command has been added, `rendercv create-theme`, to allow users to create their own themes easily.
   ```bash
@@ -124,7 +157,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   ```
 - [A developer guide](https://docs.rendercv.com/developer_guide/) has been written.
 - New options have been added to the `rendercv render` command:
-    - `--output-folder-name "OUTPUT_FOLDER_NAME"`: Generates the output files in a folder with the given name. By default, the output folder name is `rendercv_output`. The output folder will be created in the current working directory. ([#58](https://github.com/sinaatalay/rendercv/issues/58))
+    - `--output-folder-name "OUTPUT_FOLDER_NAME"`: Generates the output files in a folder with the given name. By default, the output folder name is `rendercv_output`. The output folder will be created in the current working directory. ([#58](https://github.com/rendercv/rendercv/issues/58))
     - `--latex-path LATEX_PATH`: Copies the generated $\LaTeX$ source code from the output folder and pastes it to the specified path.
     - `--pdf-path PDF_PATH`: Copies the generated PDF file from the output folder and pastes it to the specified path.
     - `--markdown-path MARKDOWN_PATH`: Copies the generated Markdown file from the output folder and pastes it to the specified path.
@@ -142,13 +175,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Package size has been reduced by removing unnecessary TinyTeX files.
 - `date` field is now optional in `PublicationEntry`.
-- [README.md](https://github.com/sinaatalay/rendercv) and the [documentation](https://docs.rendercv.com/) have been rewritten.
+- [README.md](https://github.com/rendercv/rendercv) and the [documentation](https://docs.rendercv.com/) have been rewritten.
 
 ### Fixed
 
 - `ExperienceEntry` and `NormalEntry` without location and dates have been fixed in the `engineeringresumes`, `classic`, and `sb2nov` themes.
 - $\LaTeX$ templates have been polished.
-- Bugs related to the special characters in email addresses have been fixed ([#64](https://github.com/sinaatalay/rendercv/issues/64)).
+- Bugs related to the special characters in email addresses have been fixed ([#64](https://github.com/rendercv/rendercv/issues/64)).
 
 ## [1.8] - 2024-04-16
 
@@ -169,9 +202,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- The location is now shown in the header ([#54](https://github.com/sinaatalay/rendercv/issues/54)).
+- The location is now shown in the header ([#54](https://github.com/rendercv/rendercv/issues/54)).
 - The `education_degree_width` option of the `classic` theme has been fixed.
-- Lualatex and xelatex rendering problems have been fixed ([#52](https://github.com/sinaatalay/rendercv/issues/52)).
+- Lualatex and xelatex rendering problems have been fixed ([#52](https://github.com/rendercv/rendercv/issues/52)).
 
 ## [1.7] - 2024-04-08
 
@@ -185,7 +218,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Highlights can now be broken into multiple pages in the `classic` theme ([#47](https://github.com/sinaatalay/rendercv/issues/47)).
+- Highlights can now be broken into multiple pages in the `classic` theme ([#47](https://github.com/rendercv/rendercv/issues/47)).
 - Some JSON Schema bugs have been fixed.
 
 ## [1.6] - 2024-03-31
@@ -195,8 +228,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - A new theme has been added: `engineeringresumes`. It hasn't been tested fully yet.
-- A new text alignment option has been added to `classic` and `sb2nov`: `justified-with-no-hyphenation` ([#34](https://github.com/sinaatalay/rendercv/issues/34))
-- Users are now allowed to run local `lualatex`, `xelatex`, `latexmk` commands in addition to `pdflatex` ([#48](https://github.com/sinaatalay/rendercv/issues/48)).
+- A new text alignment option has been added to `classic` and `sb2nov`: `justified-with-no-hyphenation` ([#34](https://github.com/rendercv/rendercv/issues/34))
+- Users are now allowed to run local `lualatex`, `xelatex`, `latexmk` commands in addition to `pdflatex` ([#48](https://github.com/rendercv/rendercv/issues/48)).
 
 ### Changed
 
@@ -204,8 +237,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Decoding issues have been fixed ([#29](https://github.com/sinaatalay/rendercv/issues/29)).
-- Classic theme's `ExperienceEntry` has been fixed ([#49](https://github.com/sinaatalay/rendercv/issues/49)).
+- Decoding issues have been fixed ([#29](https://github.com/rendercv/rendercv/issues/29)).
+- Classic theme's `ExperienceEntry` has been fixed ([#49](https://github.com/rendercv/rendercv/issues/49)).
 
 ## [1.5] - 2024-03-27
 
@@ -321,7 +354,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- YYYY date issue has been solved ([#5](https://github.com/sinaatalay/rendercv/issues/5)).
+- YYYY date issue has been solved ([#5](https://github.com/rendercv/rendercv/issues/5)).
 
 ## [0.7] - 2023-11-03
 
@@ -345,7 +378,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- DOI validation bug has been fixed by [@LabAsim](https://github.com/LabAsim) in [#3](https://github.com/sinaatalay/rendercv/pull/3)/
+- DOI validation bug has been fixed by [@LabAsim](https://github.com/LabAsim) in [#3](https://github.com/rendercv/rendercv/pull/3)/
 
 ## [0.5] - 2023-10-27
 
@@ -388,50 +421,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 The first release of RenderCV.
 
-[v1.13...v1.14]: https://github.com/sinaatalay/rendercv/compare/v1.13...v1.14
-[v1.12...v1.13]: https://github.com/sinaatalay/rendercv/compare/v1.12...v1.13
-[v1.11...v1.12]: https://github.com/sinaatalay/rendercv/compare/v1.11...v1.12
-[v1.10...v1.11]: https://github.com/sinaatalay/rendercv/compare/v1.10...v1.11
-[v1.9...v1.10]: https://github.com/sinaatalay/rendercv/compare/v1.9...v1.10
-[v1.8...v1.9]: https://github.com/sinaatalay/rendercv/compare/v1.8...v1.9
-[v1.7...v1.8]: https://github.com/sinaatalay/rendercv/compare/v1.7...v1.8
-[v1.6...v1.7]: https://github.com/sinaatalay/rendercv/compare/v1.6...v1.7
-[v1.5...v1.6]: https://github.com/sinaatalay/rendercv/compare/v1.5...v1.6
-[v1.4...v1.5]: https://github.com/sinaatalay/rendercv/compare/v1.4...v1.5
-[v1.3...v1.4]: https://github.com/sinaatalay/rendercv/compare/v1.3...v1.4
-[v1.2...v1.3]: https://github.com/sinaatalay/rendercv/compare/v1.2...v1.3
-[v1.1...v1.2]: https://github.com/sinaatalay/rendercv/compare/v1.1...v1.2
-[v0.10...v1.1]: https://github.com/sinaatalay/rendercv/compare/v0.10...v1.1
-[v0.9...v0.10]: https://github.com/sinaatalay/rendercv/compare/v0.9...v0.10
-[v0.8...v0.9]: https://github.com/sinaatalay/rendercv/compare/v0.8...v0.9
-[v0.7...v0.8]: https://github.com/sinaatalay/rendercv/compare/v0.7...v0.8
-[v0.6...v0.7]: https://github.com/sinaatalay/rendercv/compare/v0.6...v0.7
-[v0.5...v0.6]: https://github.com/sinaatalay/rendercv/compare/v0.5...v0.6
-[v0.4...v0.5]: https://github.com/sinaatalay/rendercv/compare/v0.4...v0.5
-[v0.3...v0.4]: https://github.com/sinaatalay/rendercv/compare/v0.3...v0.4
-[v0.2...v0.3]: https://github.com/sinaatalay/rendercv/compare/v0.2...v0.3
-[v0.1...v0.2]: https://github.com/sinaatalay/rendercv/compare/v0.1...v0.2
-[1.14]: https://github.com/sinaatalay/rendercv/releases/tag/v1.14
-[1.13]: https://github.com/sinaatalay/rendercv/releases/tag/v1.13
-[1.12]: https://github.com/sinaatalay/rendercv/releases/tag/v1.12
-[1.11]: https://github.com/sinaatalay/rendercv/releases/tag/v1.11
-[1.10]: https://github.com/sinaatalay/rendercv/releases/tag/v1.10
-[1.9]: https://github.com/sinaatalay/rendercv/releases/tag/v1.9
-[1.8]: https://github.com/sinaatalay/rendercv/releases/tag/v1.8
-[1.7]: https://github.com/sinaatalay/rendercv/releases/tag/v1.7
-[1.6]: https://github.com/sinaatalay/rendercv/releases/tag/v1.6
-[1.5]: https://github.com/sinaatalay/rendercv/releases/tag/v1.5
-[1.4]: https://github.com/sinaatalay/rendercv/releases/tag/v1.4
-[1.3]: https://github.com/sinaatalay/rendercv/releases/tag/v1.3
-[1.2]: https://github.com/sinaatalay/rendercv/releases/tag/v1.2
-[1.1]: https://github.com/sinaatalay/rendercv/releases/tag/v1.1
-[0.10]: https://github.com/sinaatalay/rendercv/releases/tag/v0.10
-[0.9]: https://github.com/sinaatalay/rendercv/releases/tag/v0.9
-[0.8]: https://github.com/sinaatalay/rendercv/releases/tag/v0.8
-[0.7]: https://github.com/sinaatalay/rendercv/releases/tag/v0.7
-[0.6]: https://github.com/sinaatalay/rendercv/releases/tag/v0.6
-[0.5]: https://github.com/sinaatalay/rendercv/releases/tag/v0.5
-[0.4]: https://github.com/sinaatalay/rendercv/releases/tag/v0.4
-[0.3]: https://github.com/sinaatalay/rendercv/releases/tag/v0.3
-[0.2]: https://github.com/sinaatalay/rendercv/releases/tag/v0.2
-[0.1]: https://github.com/sinaatalay/rendercv/releases/tag/v0.1
+[v1.14...v1.15]: https://github.com/rendercv/rendercv/compare/v1.14...v1.15
+[v1.13...v1.14]: https://github.com/rendercv/rendercv/compare/v1.13...v1.14
+[v1.12...v1.13]: https://github.com/rendercv/rendercv/compare/v1.12...v1.13
+[v1.11...v1.12]: https://github.com/rendercv/rendercv/compare/v1.11...v1.12
+[v1.10...v1.11]: https://github.com/rendercv/rendercv/compare/v1.10...v1.11
+[v1.9...v1.10]: https://github.com/rendercv/rendercv/compare/v1.9...v1.10
+[v1.8...v1.9]: https://github.com/rendercv/rendercv/compare/v1.8...v1.9
+[v1.7...v1.8]: https://github.com/rendercv/rendercv/compare/v1.7...v1.8
+[v1.6...v1.7]: https://github.com/rendercv/rendercv/compare/v1.6...v1.7
+[v1.5...v1.6]: https://github.com/rendercv/rendercv/compare/v1.5...v1.6
+[v1.4...v1.5]: https://github.com/rendercv/rendercv/compare/v1.4...v1.5
+[v1.3...v1.4]: https://github.com/rendercv/rendercv/compare/v1.3...v1.4
+[v1.2...v1.3]: https://github.com/rendercv/rendercv/compare/v1.2...v1.3
+[v1.1...v1.2]: https://github.com/rendercv/rendercv/compare/v1.1...v1.2
+[v0.10...v1.1]: https://github.com/rendercv/rendercv/compare/v0.10...v1.1
+[v0.9...v0.10]: https://github.com/rendercv/rendercv/compare/v0.9...v0.10
+[v0.8...v0.9]: https://github.com/rendercv/rendercv/compare/v0.8...v0.9
+[v0.7...v0.8]: https://github.com/rendercv/rendercv/compare/v0.7...v0.8
+[v0.6...v0.7]: https://github.com/rendercv/rendercv/compare/v0.6...v0.7
+[v0.5...v0.6]: https://github.com/rendercv/rendercv/compare/v0.5...v0.6
+[v0.4...v0.5]: https://github.com/rendercv/rendercv/compare/v0.4...v0.5
+[v0.3...v0.4]: https://github.com/rendercv/rendercv/compare/v0.3...v0.4
+[v0.2...v0.3]: https://github.com/rendercv/rendercv/compare/v0.2...v0.3
+[v0.1...v0.2]: https://github.com/rendercv/rendercv/compare/v0.1...v0.2
+[1.15]: https://github.com/rendercv/rendercv/releases/tag/v1.15
+[1.14]: https://github.com/rendercv/rendercv/releases/tag/v1.14
+[1.13]: https://github.com/rendercv/rendercv/releases/tag/v1.13
+[1.12]: https://github.com/rendercv/rendercv/releases/tag/v1.12
+[1.11]: https://github.com/rendercv/rendercv/releases/tag/v1.11
+[1.10]: https://github.com/rendercv/rendercv/releases/tag/v1.10
+[1.9]: https://github.com/rendercv/rendercv/releases/tag/v1.9
+[1.8]: https://github.com/rendercv/rendercv/releases/tag/v1.8
+[1.7]: https://github.com/rendercv/rendercv/releases/tag/v1.7
+[1.6]: https://github.com/rendercv/rendercv/releases/tag/v1.6
+[1.5]: https://github.com/rendercv/rendercv/releases/tag/v1.5
+[1.4]: https://github.com/rendercv/rendercv/releases/tag/v1.4
+[1.3]: https://github.com/rendercv/rendercv/releases/tag/v1.3
+[1.2]: https://github.com/rendercv/rendercv/releases/tag/v1.2
+[1.1]: https://github.com/rendercv/rendercv/releases/tag/v1.1
+[0.10]: https://github.com/rendercv/rendercv/releases/tag/v0.10
+[0.9]: https://github.com/rendercv/rendercv/releases/tag/v0.9
+[0.8]: https://github.com/rendercv/rendercv/releases/tag/v0.8
+[0.7]: https://github.com/rendercv/rendercv/releases/tag/v0.7
+[0.6]: https://github.com/rendercv/rendercv/releases/tag/v0.6
+[0.5]: https://github.com/rendercv/rendercv/releases/tag/v0.5
+[0.4]: https://github.com/rendercv/rendercv/releases/tag/v0.4
+[0.3]: https://github.com/rendercv/rendercv/releases/tag/v0.3
+[0.2]: https://github.com/rendercv/rendercv/releases/tag/v0.2
+[0.1]: https://github.com/rendercv/rendercv/releases/tag/v0.1
