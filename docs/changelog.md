@@ -29,7 +29,7 @@ We have some new and nice features. A big thank you to our eight new contributor
 -   Four new options are added to the `rendercv render` command:
     -   `--watch` ([#170](https://github.com/rendercv/rendercv/pull/170)). It re-runs RenderCV automatically whenever the input file changes.
     -   `--design`, `--locale_catalog`, and `--rendercv_settings` ([#220](https://github.com/rendercv/rendercv/pull/220)). They take the `design`, `locale_catalog`, and `rendercv_settings` fields as separate YAML files.
--   The docker image of RenderCV is pushed to [Docker Hub](https://hub.docker.com/r/rendercv/rendercv).
+-   The docker image of RenderCV is pushed to [Docker Hub](https://hub.docker.com/r/rendercv/rendercv) ([#222](https://github.com/rendercv/rendercv/issues/222)).
 -   Telegram has been added as a social network type ([#187](https://github.com/rendercv/rendercv/issues/187)).
 -   Math equations are now displayed in HTML with KaTeX ([#200](https://github.com/rendercv/rendercv/pull/200))
 
