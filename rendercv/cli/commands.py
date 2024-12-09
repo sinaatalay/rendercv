@@ -163,7 +163,6 @@ def cli_command_render(
 
     input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
 
-
     original_working_directory = pathlib.Path.cwd()
 
     input_file_as_a_dict = data.read_a_yaml_file(input_file_path)
@@ -197,7 +196,9 @@ def cli_command_render(
     }
 
     if rendercv_settings_path:
-        settings_file_path: pathlib.Path = pathlib.Path(rendercv_settings_path).absolute()
+        settings_file_path: pathlib.Path = pathlib.Path(
+            rendercv_settings_path
+        ).absolute()
         settings_file_as_a_dict = data.read_a_yaml_file(settings_file_path)
         input_file_as_a_dict.update(settings_file_as_a_dict)
 
@@ -205,7 +206,6 @@ def cli_command_render(
         design_file_path: pathlib.Path = pathlib.Path(design_path).absolute()
         design_file_as_a_dict = data.read_a_yaml_file(design_file_path)
         input_file_as_a_dict.update(design_file_as_a_dict)
-
 
     input_file_as_a_dict = utilities.update_render_command_settings_of_the_input_file(
         input_file_as_a_dict, cli_render_arguments

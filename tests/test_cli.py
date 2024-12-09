@@ -957,10 +957,10 @@ def test_empty_input_file_with_render_command(tmp_path, input_file_path):
 
     assert "The input file is empty!" in result.stdout
 
+
 def test_seperation_of_settings(
     tmp_path, input_file_path, design_settings_file_path, rendercv_settings_file_path
 ):
-
     # change the current working directory to the temporary directory:
     os.chdir(tmp_path)
 
@@ -977,8 +977,10 @@ def test_seperation_of_settings(
         [
             "render",
             str(new_input_file_path.relative_to(tmp_path)),
-            '--design-path', design_settings_file_path,
-            '--rendercv-settings-path', rendercv_settings_file_path
+            "--design-path",
+            design_settings_file_path,
+            "--rendercv-settings-path",
+            rendercv_settings_file_path,
         ],
     )
 
@@ -995,6 +997,4 @@ def test_seperation_of_settings(
 
     with open(tex_file, "r") as f:
         contents = f.read()
-    assert 'theme - sb2nov' in contents
-
-
+    assert "theme - sb2nov" in contents
