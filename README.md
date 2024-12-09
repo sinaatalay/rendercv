@@ -70,7 +70,7 @@ RenderCV comes with a JSON Schema so that the YAML input file can be filled out 
 
 ## Quick Start Guide
 
-Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https://github.com/sinaatalay/rendercv-pipeline), or follow the steps below.
+Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https://github.com/sinaatalay/rendercv-pipeline), [Docker image](https://hub.docker.com/r/rendercv/rendercv) or follow the steps below.
 
 1.  Install [Python](https://www.python.org/downloads/) (3.10 or newer).
 2.  Run the command below in a terminal to install RenderCV.
@@ -88,26 +88,6 @@ Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https
     ```
 
 [Here](https://docs.rendercv.com/user_guide/), you can find a comprehensive user guide that covers the YAML input file structure and command-line interface (CLI) in greater detail.
-
-### Docker
-
-A docker image is available on [Dockerhub](https://hub.docker.com/r/mathiasvda/rendercv)
-
-Example usage:
-
-1.  Run the command below to generate starting input files.
-
-```sh
-$ docker run -it -v <path-to-your-cv-directory>:/data mathiasvda/rendercv rendercv new "Full name"
-```
-
-2.  Edit the contents of `Full_Name_CV.yaml` in your favorite editor (_tip: use an editor that supports JSON Schemas_).
-
-3.  Run the command below to generate your CV.
-
-```sh
-$ docker run -it -v <path-to-your-cv-directory>:/data mathiasvda/rendercv rendercv render Full_name_CV.yaml
-```
 
 ### Gitlab
 
