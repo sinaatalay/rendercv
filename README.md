@@ -89,27 +89,6 @@ Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https
 
 [Here](https://docs.rendercv.com/user_guide/), you can find a comprehensive user guide that covers the YAML input file structure and command-line interface (CLI) in greater detail.
 
-### Gitlab
-
-[GitLab](https://gitlab.com/) also allows to automate actions, similar to GitHub. Below is an example [.gitlab-ci.yml](https://docs.gitlab.com/ee/ci/) file that uses the Docker image to render the CV. The example assumes that you have initialised (rendercv new "Full name") your CV yaml file and the theme folder and pushed them to your repository.
-
-```yml
-stages:
-  - render
-
-render:
-  image:
-    name: mathiasvda/rendercv
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  stage: render
-  script:
-    - rendercv render Full_name_CV.yaml
-  artifacts:
-    paths:
-      - rendercv_output/
-```
-
 ## Motivation
 
 Writing the content of a CV and designing a CV are separate issues that should be treated separately. RenderCV attempts to provide this separation. This approach encourages users to concentrate on the content without getting distracted by the appearance of their CV and vice versa.
