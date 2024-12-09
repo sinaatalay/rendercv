@@ -1,10 +1,13 @@
+import multiprocessing as mp
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 from datetime import date as Date
 
+import coverage
 import pydantic
 import pytest
 import ruamel.yaml
@@ -22,6 +25,16 @@ from rendercv import __version__
 def run_render_command(input_file_path, working_path, extra_arguments=None):
     if extra_arguments is None:
         extra_arguments = []
+
+    cov = None
+    if "--watch" in extra_arguments:
+        cov = coverage.Coverage(
+            data_file=".coverage",
+            source=["rendercv"],
+            concurrency="multiprocessing",
+        )
+        cov.start()
+
     # copy input file to the temporary directory to create the output directory there:
     if input_file_path != working_path / input_file_path.name:
         shutil.copy(input_file_path, working_path)
@@ -29,7 +42,13 @@ def run_render_command(input_file_path, working_path, extra_arguments=None):
     # change the current working directory to the temporary directory:
     os.chdir(working_path)
 
-    return runner.invoke(cli.app, ["render", "John_Doe_CV.yaml", *extra_arguments])
+    result = runner.invoke(cli.app, ["render", "John_Doe_CV.yaml", *extra_arguments])
+
+    if cov:
+        cov.stop()
+        cov.save()
+
+    return result
 
 
 def test_welcome():
@@ -888,12 +907,10 @@ def test_render_command_overriding_input_file_settings(
 
 
 def test_watcher(tmp_path, input_file_path):
-    import multiprocessing as mp
-    import time
-
     # run this in a separate process:
     p = mp.Process(
-        target=run_render_command, args=(input_file_path, tmp_path, ["--watch"])
+        target=run_render_command,
+        args=(input_file_path, tmp_path, ["--watch"]),
     )
     p.start()
     time.sleep(4)
@@ -904,15 +921,15 @@ def test_watcher(tmp_path, input_file_path):
     )
     time.sleep(4)
     assert p.is_alive()
-    p.terminate()
+    import signal
+
+    os.kill(p.pid, signal.SIGINT)  # type: ignore
+    p.join()
     # check if Jane Doe is in the output files:
     assert (tmp_path / "rendercv_output" / "Jane_Doe_CV.pdf").exists()
 
 
 def test_watcher_with_errors(tmp_path, input_file_path):
-    import multiprocessing as mp
-    import time
-
     # run this in a separate process:
     p = mp.Process(
         target=run_render_command, args=(input_file_path, tmp_path, ["--watch"])
@@ -923,7 +940,10 @@ def test_watcher_with_errors(tmp_path, input_file_path):
     input_file_path.write_text("")
     time.sleep(4)
     assert p.is_alive()
-    p.terminate()
+    import signal
+
+    os.kill(p.pid, signal.SIGINT)  # type: ignore
+    p.join()
 
 
 def test_empty_input_file_with_render_command(tmp_path, input_file_path):
