@@ -20,3 +20,21 @@ See more on the [user guide for `moderncv`](https://ctan.math.washington.edu/tex
 ## Can I use JSON Resume schema?
 
 Both RenderCV and JSON Resume follows their own schema so you cannot directly use JSON Resume schema but you can use this [jsonresume-to-rendercv](https://github.com/guruor/jsonresume-to-rendercv) converter to convert JSON Resume to RenderCV format.
+
+## How to use with Docker?
+
+A docker image is available on [Dockerhub](https://hub.docker.com/r/rendercv/rendercv). Here is how to use it:
+
+1.  Run the command below to generate starting input files.
+
+```sh
+docker run -it -v <path-to-your-cv-directory>:/data rendercv/rendercv rendercv new "Full Name"
+```
+
+2.  Edit the contents of `Full_Name_CV.yaml` in your favorite editor (*tip: use an editor that supports JSON Schemas*).
+
+3.  Run the command below to generate your CV.
+
+```sh
+docker run -it -v <path-to-your-cv-directory>:/data mathiasvda/rendercv rendercv render Full_name_CV.yaml
+```
