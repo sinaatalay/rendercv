@@ -346,8 +346,15 @@ def run_rendercv_with_printer(
         progress.start_a_step("Validating the input file")
 
         data_model = data.validate_input_dictionary_and_return_the_data_model(
-            input_file_as_a_dict
+            input_file_as_a_dict,
+            context={"input_file_directory": input_file_path.parent},
         )
+
+        # Change the current working directory to the input file's directory (because
+        # the template overrides are looked up in the current working directory). The
+        # output files will be in the original working directory. It should be done
+        # after the input file is validated (because of the rendercv_settings).
+        os.chdir(input_file_path.parent)
 
         render_command_settings: data.models.RenderCommandSettings = (
             data_model.rendercv_settings.render_command  # type: ignore
@@ -357,11 +364,6 @@ def run_rendercv_with_printer(
         )
 
         progress.finish_the_current_step()
-
-        # Change the current working directory to the input file's directory (because
-        # the template overrides are looked up in the current working directory). The
-        # output files will be in the original working directory.
-        os.chdir(input_file_path.parent)
 
         progress.start_a_step("Generating the LaTeX file")
 

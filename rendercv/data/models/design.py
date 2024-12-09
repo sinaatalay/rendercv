@@ -6,6 +6,7 @@ of the input file.
 import importlib
 import importlib.util
 import pathlib
+import os
 from typing import Annotated, Any
 
 import pydantic
@@ -17,6 +18,7 @@ from ...themes import (
     Sb2novThemeOptions,
 )
 from . import entry_types
+
 from .base import RenderCVBaseModelWithoutExtraKeys
 
 # ======================================================================================
@@ -44,6 +46,13 @@ def validate_design_options(
     Returns:
         The validated design as a Pydantic data model.
     """
+    from .rendercv_data_model import INPUT_FILE_DIRECTORY
+
+    original_working_directory = pathlib.Path.cwd()
+
+    # Change the working directory to the input file directory:
+    os.chdir(INPUT_FILE_DIRECTORY)
+
     if isinstance(design, tuple(available_theme_options.values())):
         # Then it means it is an already validated built-in theme. Return it as it is:
         return design
@@ -51,6 +60,7 @@ def validate_design_options(
         # Then it is a built-in theme, but it is not validated yet. Validate it and
         # return it:
         ThemeDataModel = available_theme_options[design["theme"]]
+        os.chdir(original_working_directory)
         return ThemeDataModel(**design)
     # It is a custom theme. Validate it:
     theme_name: str = str(design["theme"])
@@ -149,6 +159,8 @@ def validate_design_options(
             theme: str = theme_name
 
         theme_data_model = ThemeOptionsAreNotProvided(theme=theme_name)
+
+    os.chdir(original_working_directory)
 
     return theme_data_model
 

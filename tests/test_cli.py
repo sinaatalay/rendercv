@@ -6,6 +6,7 @@ import subprocess
 import sys
 import time
 from datetime import date as Date
+import pathlib
 
 import coverage
 import pydantic
@@ -636,6 +637,45 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
     assert "Your CV is rendered!" in result.stdout
 
 
+def test_custom_theme_in_a_different_path(tmp_path, input_file_path):
+    # change the current working directory to the temporary directory:
+    pathlib.Path(tmp_path / "new_folder").mkdir()
+    os.chdir(tmp_path / "new_folder")
+
+    # copy the input file to the new folder:
+    input_file_path = shutil.copy(input_file_path, tmp_path / "new_folder")
+
+    result = runner.invoke(
+        cli.app, ["create-theme", "newtheme", "--based-on", "classic"]
+    )
+
+    new_theme_source_files_path = tmp_path / "new_folder" / "newtheme"
+
+    assert new_theme_source_files_path.exists()
+    assert (new_theme_source_files_path / "__init__.py").exists()
+
+    # test if the new theme is actually working:
+    os.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app, ["render", str(input_file_path), "--design.theme", "newtheme"]
+    )
+
+    output_folder_path = tmp_path / "rendercv_output"
+    pdf_file_path = output_folder_path / "John_Doe_CV.pdf"
+    latex_file_path = output_folder_path / "John_Doe_CV.tex"
+    markdown_file_path = output_folder_path / "John_Doe_CV.md"
+    html_file_path = output_folder_path / "John_Doe_CV.html"
+    png_file_path = output_folder_path / "John_Doe_CV_1.png"
+
+    assert output_folder_path.exists()
+    assert pdf_file_path.exists()
+    assert latex_file_path.exists()
+    assert markdown_file_path.exists()
+    assert html_file_path.exists()
+    assert png_file_path.exists()
+    assert "Your CV is rendered!" in result.stdout
+
+
 def test_create_theme_command_invalid_based_on_theme():
     result = runner.invoke(
         cli.app, ["create-theme", "newtheme", "--based-on", "invalid_theme"]
@@ -770,7 +810,7 @@ def test_relative_input_file_path_with_custom_output_paths(tmp_path, input_file_
     shutil.copy(input_file_path, new_input_file_path)
 
     os.chdir(tmp_path)
-    runner.invoke(
+    results = runner.invoke(
         cli.app,
         [
             "render",

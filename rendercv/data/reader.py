@@ -10,6 +10,8 @@ import ruamel.yaml
 
 from . import models
 
+from typing import Optional
+
 
 def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
     """Read a YAML file and return its content as a dictionary. The YAML file can be
@@ -59,6 +61,7 @@ def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
 
 def validate_input_dictionary_and_return_the_data_model(
     input_dictionary: dict,
+    context: Optional[dict] = None,
 ) -> models.RenderCVDataModel:
     """Validate the input dictionary by creating an instance of `RenderCVDataModel`,
     which is a Pydantic data model of RenderCV's data format.
@@ -69,9 +72,8 @@ def validate_input_dictionary_and_return_the_data_model(
     Returns:
         The data model.
     """
-
     # Validate the parsed dictionary by creating an instance of RenderCVDataModel:
-    return models.RenderCVDataModel(**input_dictionary)
+    return models.RenderCVDataModel.model_validate(input_dictionary, context=context)
 
 
 def read_input_file(
