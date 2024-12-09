@@ -923,10 +923,7 @@ def test_watcher(tmp_path, input_file_path):
     assert p.is_alive()
     import signal
 
-    if sys.platform == "win32":
-        os.kill(p.pid, signal.CTRL_C_EVENT)  # type: ignore
-    else:
-        os.kill(p.pid, signal.SIGINT)  # type: ignore
+    os.kill(p.pid, signal.SIGINT)  # type: ignore
 
     p.join()
     # check if Jane Doe is in the output files:
@@ -946,10 +943,8 @@ def test_watcher_with_errors(tmp_path, input_file_path):
     assert p.is_alive()
     import signal
 
-    if sys.platform == "win32":
-        os.kill(p.pid, signal.CTRL_C_EVENT)  # type: ignore
-    else:
-        os.kill(p.pid, signal.SIGINT)  # type: ignore
+    os.kill(p.pid, signal.SIGINT)  # type: ignore
+
     p.join()
 
 
