@@ -114,7 +114,7 @@ def validate_design_options(
             )
 
     # Import __init__.py file from the custom theme folder if it exists:
-    path_to_init_file = pathlib.Path(f"{theme_name}/__init__.py")
+    path_to_init_file = custom_theme_folder / "__init__.py"
 
     if path_to_init_file.exists():
         spec = importlib.util.spec_from_file_location(
