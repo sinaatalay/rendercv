@@ -51,7 +51,6 @@ def validate_design_options(
     original_working_directory = pathlib.Path.cwd()
 
     # Change the working directory to the input file directory:
-    os.chdir(INPUT_FILE_DIRECTORY)
 
     if isinstance(design, tuple(available_theme_options.values())):
         # Then it means it is an already validated built-in theme. Return it as it is:
@@ -60,7 +59,6 @@ def validate_design_options(
         # Then it is a built-in theme, but it is not validated yet. Validate it and
         # return it:
         ThemeDataModel = available_theme_options[design["theme"]]
-        os.chdir(original_working_directory)
         return ThemeDataModel(**design)
     # It is a custom theme. Validate it:
     theme_name: str = str(design["theme"])
@@ -74,7 +72,7 @@ def validate_design_options(
             theme_name,  # this is value of the error
         )
 
-    custom_theme_folder = pathlib.Path(theme_name)
+    custom_theme_folder = INPUT_FILE_DIRECTORY / theme_name
 
     # Check if the custom theme folder exists:
     if not custom_theme_folder.exists():
