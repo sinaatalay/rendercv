@@ -1,25 +1,5 @@
 # Frequently Asked Questions (FAQ)
 
-## Can I use custom fonts?
-
-To be answered.
-
-## Can I add a background image?
-
-To be answered.
-
-## How good is it in terms of parseability by ATS?
-
-To be answered.
-
-## How to add links?
-
-To be answered.
-
-## How to use Greek letters?
-
-To be answered.
-
 ## Can I add a profile picture?
 
 ### `moderncv`
@@ -40,7 +20,3 @@ See more on the [user guide for `moderncv`](https://ctan.math.washington.edu/tex
 ## Can I use JSON Resume schema?
 
 Both RenderCV and JSON Resume follows their own schema so you cannot directly use JSON Resume schema but you can use this [jsonresume-to-rendercv](https://github.com/guruor/jsonresume-to-rendercv) converter to convert JSON Resume to RenderCV format.
-
-## How can I switch the order of `company` and `position` in ExperienceEntry?
-
-To be answered.
