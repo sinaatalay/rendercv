@@ -38,7 +38,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the `render` command's settings."""
 
     design_path: Optional[str] = pydantic.Field(
-        default = None,
+        default=None,
         title="Design File Path",
         description=(
             "The file path to the yaml file containing the design."
@@ -47,7 +47,7 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
     )
 
     rendercv_settings_path: Optional[str] = pydantic.Field(
-        default = None,
+        default=None,
         title="RenderCV Settings Path",
         description=(
             "The file path to the yaml file containing the rendercv_settings."
