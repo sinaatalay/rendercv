@@ -4,6 +4,12 @@
 ((* endif *))
 ((* if entry.location *))- <<entry.location>>
 ((* endif *))
+((*- if entry.summary -*))
+((* for item in entry.summary *))
+
+   <<item>>
+((* endfor *))
+((*- endif -*))
 ((* for item in entry.highlights *))
 - <<item>>
 ((* endfor *))
