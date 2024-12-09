@@ -36,26 +36,32 @@ app = typer.Typer(
 )
 @printer.handle_and_print_raised_exceptions
 def cli_command_render(
-    input_file_name: Annotated[
-        str, typer.Argument(help="Name of the YAML input file.")
-    ],
-    design_path: Annotated[
+    input_file_name: Annotated[str, typer.Argument(help="The YAML input file.")],
+    design: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
-            "--design-path",
+            "--design",
             "-d",
-            help="Use the design settings located at this path.",
+            help='The "design" field\'s YAML input file.',
         ),
     ] = None,
-    rendercv_settings_path: Annotated[
+    locale_catalog: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
-            "--rendercv-settings-path",
-            "-s",
-            help="Use the rendercv settings located at this path.",
+            "--locale-catalog",
+            "-lc",
+            help='The "locale_catalog" field\'s YAML input file.',
         ),
     ] = None,
-    use_local_latex_command: Annotated[
+    rendercv_settings: Annotated[  # noqa: ARG001
+        Optional[str],
+        typer.Option(
+            "--rendercv-settings",
+            "-rs",
+            help='The "rendercv_settings" field\'s YAML input file.',
+        ),
+    ] = None,
+    use_local_latex_command: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
             "--use-local-latex-command",
@@ -66,7 +72,7 @@ def cli_command_render(
             ),
         ),
     ] = None,
-    output_folder_name: Annotated[
+    output_folder_name: Annotated[  # noqa: ARG001
         str,
         typer.Option(
             "--output-folder-name",
@@ -74,7 +80,7 @@ def cli_command_render(
             help="Name of the output folder.",
         ),
     ] = "rendercv_output",
-    latex_path: Annotated[
+    latex_path: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
             "--latex-path",
@@ -82,7 +88,7 @@ def cli_command_render(
             help="Copy the LaTeX file to the given path.",
         ),
     ] = None,
-    pdf_path: Annotated[
+    pdf_path: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
             "--pdf-path",
@@ -90,7 +96,7 @@ def cli_command_render(
             help="Copy the PDF file to the given path.",
         ),
     ] = None,
-    markdown_path: Annotated[
+    markdown_path: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
             "--markdown-path",
@@ -98,7 +104,7 @@ def cli_command_render(
             help="Copy the Markdown file to the given path.",
         ),
     ] = None,
-    html_path: Annotated[
+    html_path: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
             "--html-path",
@@ -106,7 +112,7 @@ def cli_command_render(
             help="Copy the HTML file to the given path.",
         ),
     ] = None,
-    png_path: Annotated[
+    png_path: Annotated[  # noqa: ARG001
         Optional[str],
         typer.Option(
             "--png-path",
@@ -114,7 +120,7 @@ def cli_command_render(
             help="Copy the PNG file to the given path.",
         ),
     ] = None,
-    dont_generate_markdown: Annotated[
+    dont_generate_markdown: Annotated[  # noqa: ARG001
         bool,
         typer.Option(
             "--dont-generate-markdown",
@@ -122,7 +128,7 @@ def cli_command_render(
             help="Don't generate the Markdown and HTML file.",
         ),
     ] = False,
-    dont_generate_html: Annotated[
+    dont_generate_html: Annotated[  # noqa: ARG001
         bool,
         typer.Option(
             "--dont-generate-html",
@@ -130,7 +136,7 @@ def cli_command_render(
             help="Don't generate the HTML file.",
         ),
     ] = False,
-    dont_generate_png: Annotated[
+    dont_generate_png: Annotated[  # noqa: ARG001
         bool,
         typer.Option(
             "--dont-generate-png",
@@ -160,55 +166,19 @@ def cli_command_render(
 ):
     """Render a CV from a YAML input file."""
     printer.welcome()
-
-    input_file_path: pathlib.Path = pathlib.Path(input_file_name).absolute()
-
     original_working_directory = pathlib.Path.cwd()
+    input_file_path = pathlib.Path(input_file_name).absolute()
 
-    input_file_as_a_dict = data.read_a_yaml_file(input_file_path)
+    from . import utilities as u
 
-    # Update the input file if there are extra override arguments (for example,
-    # --cv.phone "123-456-7890"):
-    if extra_data_model_override_arguments:
-        key_and_values = utilities.parse_render_command_override_arguments(
-            extra_data_model_override_arguments
-        )
-        input_file_as_a_dict = utilities.set_or_update_values(
-            input_file_as_a_dict, key_and_values
-        )
+    argument_names = list(u.get_default_render_command_cli_arguments().keys())
+    argument_names.remove("_")
+    argument_names.remove("extra_data_model_override_arguments")
+    # This is where the user input is accessed and stored:
+    cli_render_arguments = {name: locals()[name] for name in argument_names}
 
-    # If non-default CLI arguments are provided, override the
-    # `rendercv_settings.render_command`:
-    cli_render_arguments = {
-        "design_path": design_path,
-        "rendercv_settings_path": rendercv_settings_path,
-        "use_local_latex_command": use_local_latex_command,
-        "output_folder_name": output_folder_name,
-        "latex_path": latex_path,
-        "pdf_path": pdf_path,
-        "markdown_path": markdown_path,
-        "html_path": html_path,
-        "png_path": png_path,
-        "dont_generate_png": dont_generate_png,
-        "dont_generate_markdown": dont_generate_markdown,
-        "dont_generate_html": dont_generate_html,
-        "watch": watch,
-    }
-
-    if rendercv_settings_path:
-        settings_file_path: pathlib.Path = pathlib.Path(
-            rendercv_settings_path
-        ).absolute()
-        settings_file_as_a_dict = data.read_a_yaml_file(settings_file_path)
-        input_file_as_a_dict.update(settings_file_as_a_dict)
-
-    if design_path:
-        design_file_path: pathlib.Path = pathlib.Path(design_path).absolute()
-        design_file_as_a_dict = data.read_a_yaml_file(design_file_path)
-        input_file_as_a_dict.update(design_file_as_a_dict)
-
-    input_file_as_a_dict = utilities.update_render_command_settings_of_the_input_file(
-        input_file_as_a_dict, cli_render_arguments
+    input_file_as_a_dict = u.read_and_construct_the_input(
+        input_file_path, cli_render_arguments, extra_data_model_override_arguments
     )
 
     watch = input_file_as_a_dict["rendercv_settings"]["render_command"]["watch"]
@@ -217,18 +187,16 @@ def cli_command_render(
 
         @printer.handle_and_print_raised_exceptions_without_exit
         def run_rendercv():
-            input_file_as_a_dict = (
-                utilities.update_render_command_settings_of_the_input_file(
-                    data.read_a_yaml_file(input_file_path), cli_render_arguments
-                )
+            input_file_as_a_dict = u.update_render_command_settings_of_the_input_file(
+                data.read_a_yaml_file(input_file_path), cli_render_arguments
             )
-            utilities.run_rendercv_with_printer(
+            u.run_rendercv_with_printer(
                 input_file_as_a_dict, original_working_directory, input_file_path
             )
 
-        utilities.run_a_function_if_a_file_changes(input_file_path, run_rendercv)
+        u.run_a_function_if_a_file_changes(input_file_path, run_rendercv)
     else:
-        utilities.run_rendercv_with_printer(
+        u.run_rendercv_with_printer(
             input_file_as_a_dict, original_working_directory, input_file_path
         )
 

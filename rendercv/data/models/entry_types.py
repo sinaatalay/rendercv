@@ -483,8 +483,8 @@ ListOfEntries = (
 # Entry.__args__[:-1] is a tuple of all the entry types except `str``:
 # `str` (TextEntry) is not included because it's validation handled differently. It is
 # not a Pydantic model, but a string.
-available_entry_models = list(Entry.__args__[:-1])
+available_entry_models = tuple(Entry.__args__[:-1])
 
-available_entry_type_names = [
-    entry_type.__name__ for entry_type in available_entry_models
-] + ["TextEntry"]
+available_entry_type_names = tuple(
+    [entry_type.__name__ for entry_type in available_entry_models] + ["TextEntry"]
+)

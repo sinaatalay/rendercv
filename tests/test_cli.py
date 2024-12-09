@@ -617,7 +617,7 @@ def test_create_theme_command(tmp_path, input_file_path, based_on):
 
     # test if the new theme is actually working:
     result = runner.invoke(
-        cli.app, ["render", str(input_file_path), "--design", "{'theme':'newtheme'}"]
+        cli.app, ["render", str(input_file_path), "--design.theme", "newtheme"]
     )
 
     output_folder_path = tmp_path / "rendercv_output"
@@ -958,43 +958,46 @@ def test_empty_input_file_with_render_command(tmp_path, input_file_path):
     assert "The input file is empty!" in result.stdout
 
 
-def test_seperation_of_settings(
-    tmp_path, input_file_path, design_settings_file_path, rendercv_settings_file_path
+@pytest.mark.parametrize(
+    ("design", "locale_catalog", "rendercv_settings"),
+    # All possible combinations of the three:
+    [(x, y, z) for x in [True, False] for y in [True, False] for z in [True, False]],
+)
+def test_read_and_construct_the_input(
+    input_file_path,
+    design_file_path,
+    locale_catalog_file_path,
+    rendercv_settings_file_path,
+    design,
+    locale_catalog,
+    rendercv_settings,
 ):
-    # change the current working directory to the temporary directory:
-    os.chdir(tmp_path)
+    cli_render_arguments = {
+        "design": str(design_file_path) if design else None,
+        "locale_catalog": str(locale_catalog_file_path) if locale_catalog else None,
+        "rendercv_settings": (
+            str(rendercv_settings_file_path) if rendercv_settings else None
+        ),
+    }
+    cli_render_arguments = {
+        k: v for k, v in cli_render_arguments.items() if v is not None
+    }
 
-    # read the input file as a dictionary:s
-    input_dictionary = reader.read_a_yaml_file(input_file_path)
-
-    # write the input dictionary to a new input file:
-    new_input_file_path = tmp_path / "new_input_file.yaml"
-    yaml_content = generator.dictionary_to_yaml(input_dictionary)
-    new_input_file_path.write_text(yaml_content, encoding="utf-8")
-
-    result = runner.invoke(
-        cli.app,
-        [
-            "render",
-            str(new_input_file_path.relative_to(tmp_path)),
-            "--design-path",
-            design_settings_file_path,
-            "--rendercv-settings-path",
-            rendercv_settings_file_path,
-        ],
+    input_dict = utilities.read_and_construct_the_input(
+        input_file_path=input_file_path, cli_render_arguments=cli_render_arguments
     )
 
-    assert "Your CV is rendered!" in result.stdout
-    # The rendercv settings file overrides html output. Check to see if the html file was created.
-    assert not (tmp_path / "rendercv_output" / "John_Doe_CV.html").exists()
-    # It does not override the .md file.
-    assert (tmp_path / "rendercv_output" / "John_Doe_CV.md").exists()
-
-    # the design settings file uses the sb2nov theme instead of the classic theme
-    # and addes the words 'theme - sb2nov' to the rendered file header.
-    tex_file = f"{tmp_path}/rendercv_output/John_Doe_CV.tex"
-    assert (tmp_path / "rendercv_output" / "John_Doe_CV.tex").exists()
-
-    with open(tex_file, "r") as f:
-        contents = f.read()
-    assert "theme - sb2nov" in contents
+    fields = list(data.rendercv_data_model_fields)
+    fields.remove("cv")
+    for field in fields:
+        if field == "rendercv_settings":
+            if locals()[field]:
+                assert input_dict["rendercv_settings"]["render_command"][
+                    "dont_generate_html"
+                ]
+            else:
+                pass
+        else:
+            assert (field in input_dict) == locals()[
+                field
+            ], f"{field} is in dict: {field in input_dict}, expected: {locals()[field]}"

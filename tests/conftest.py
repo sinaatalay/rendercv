@@ -13,6 +13,7 @@ import pydantic
 import pydantic_extra_types.phone_numbers as pydantic_phone_numbers
 import pypdf
 import pytest
+import ruamel.yaml
 
 from rendercv import data
 from rendercv.renderer import templater
@@ -476,17 +477,64 @@ def input_file_path(tmp_path, testdata_directory_path) -> pathlib.Path:
     """Return the path to the input file."""
     # copy the input file to the temporary directory
     input_file_path = testdata_directory_path / "John_Doe_CV.yaml"
+    # Update the auxiliary files if update_testdata is True
+    if update_testdata:
+        # create testdata directory if it doesn't exist
+        if not input_file_path.parent.exists():
+            input_file_path.parent.mkdir()
+
+        input_dictionary = {
+            "cv": {
+                "name": "John Doe",
+                "sections": {"test_section": ["this is a text entry."]},
+            },
+        }
+
+        # dump the dictionary to a yaml file
+        yaml_object = ruamel.yaml.YAML()
+        yaml_object.dump(input_dictionary, input_file_path)
+
     shutil.copyfile(input_file_path, tmp_path / "John_Doe_CV.yaml")
     return tmp_path / "John_Doe_CV.yaml"
 
 
 @pytest.fixture
-def design_settings_file_path(specific_testdata_directory_path) -> pathlib.Path:
+def design_file_path(tmp_path, testdata_directory_path) -> pathlib.Path:
     """Return the path to the input file."""
-    return specific_testdata_directory_path / "design_settings.yaml"
+    design_settings_file_path = testdata_directory_path / "John_Doe_CV_design.yaml"
+    if update_testdata:
+        design_settings_file_path.write_text("design:\n  theme: classic")
+
+    shutil.copyfile(design_settings_file_path, tmp_path / "John_Doe_CV_design.yaml")
+    return tmp_path / "John_Doe_CV_design.yaml"
 
 
 @pytest.fixture
-def rendercv_settings_file_path(specific_testdata_directory_path) -> pathlib.Path:
+def locale_catalog_file_path(tmp_path, testdata_directory_path) -> pathlib.Path:
     """Return the path to the input file."""
-    return specific_testdata_directory_path / "rendercv_settings.yaml"
+    locale_catalog_file_path = (
+        testdata_directory_path / "John_Doe_CV_locale_catalog.yaml"
+    )
+    if update_testdata:
+        locale_catalog_file_path.write_text("locale_catalog:\n  years: yil")
+    shutil.copyfile(
+        locale_catalog_file_path, tmp_path / "John_Doe_CV_locale_catalog.yaml"
+    )
+    return tmp_path / "John_Doe_CV_locale_catalog.yaml"
+
+
+@pytest.fixture
+def rendercv_settings_file_path(tmp_path, testdata_directory_path) -> pathlib.Path:
+    """Return the path to the input file."""
+    rendercv_settings_file_path = (
+        testdata_directory_path / "John_Doe_CV_rendercv_settings.yaml"
+    )
+    if update_testdata:
+        rendercv_settings_file_path.write_text(
+            "rendercv_settings:\n  render_command:\n    dont_generate_html: true"
+        )
+
+    shutil.copyfile(
+        rendercv_settings_file_path, tmp_path / "John_Doe_CV_rendercv_settings.yaml"
+    )
+    return tmp_path / "John_Doe_CV_rendercv_settings.yaml"
