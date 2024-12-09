@@ -15,7 +15,7 @@ There are two ways of developing RenderCV: locally or with GitHub Codespaces.
 2. Install [Hatch](https://hatch.pypa.io/latest/), as it is the project manager for RenderCV. The installation guide for Hatch can be found [here](https://hatch.pypa.io/latest/install/#installation).
 3. Clone the repository recursively (because TinyTeX is being used as a submodule) with the following command.
     ```bash
-    git clone --recursive https://github.com/sinaatalay/rendercv.git
+    git clone --recursive https://github.com/rendercv/rendercv.git
     ```
 4. Go to the `rendercv` directory.
     ```bash
@@ -57,17 +57,17 @@ There are two ways of developing RenderCV: locally or with GitHub Codespaces.
 
 ### Develop with GitHub Codespaces
 
-1.  [Fork](https://github.com/sinaatalay/rendercv/fork) the repository.
+1.  [Fork](https://github.com/rendercv/rendercv/fork) the repository.
 2.  Navigate to the forked repository.
 3.  Click the <> **Code** button, then click the **Codespaces** tab, and then click **Create codespace on main**.
 
 Then, [Visual Studio Code for the Web](https://code.visualstudio.com/docs/editor/vscode-web) will be opened with a ready-to-use development environment.
 
-This is done with [Development containers](https://containers.dev/), and the environment is defined in the [`.devcontainer/devcontainer.json`](https://github.com/sinaatalay/rendercv/blob/main/.devcontainer/devcontainer.json) file. Dev containers can also be run locally using various [supporting tools and editors](https://containers.dev/supporting).
+This is done with [Development containers](https://containers.dev/), and the environment is defined in the [`.devcontainer/devcontainer.json`](https://github.com/rendercv/rendercv/blob/main/.devcontainer/devcontainer.json) file. Dev containers can also be run locally using various [supporting tools and editors](https://containers.dev/supporting).
 
 ## Available Commands
 
-These commands are defined in the [`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml) file.
+These commands are defined in the [`pyproject.toml`](https://github.com/rendercv/rendercv/blob/main/pyproject.toml) file.
 
 - Format the code with [Black](https://github.com/psf/black) and [Ruff](https://github.com/astral-sh/ruff)
     ```bash
@@ -101,11 +101,11 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     ```bash
     hatch run docs:build
     ```
-- Update [schema.json](https://github.com/sinaatalay/rendercv/blob/main/schema.json)
+- Update [schema.json](https://github.com/rendercv/rendercv/blob/main/schema.json)
     ```bash
     hatch run docs:update-schema
     ```
-- Update [`examples`](https://github.com/sinaatalay/rendercv/tree/main/examples) folder
+- Update [`examples`](https://github.com/rendercv/rendercv/tree/main/examples) folder
     ```bash
     hatch run docs:update-examples
     ```
@@ -114,6 +114,6 @@ These commands are defined in the [`pyproject.toml`](https://github.com/sinaatal
     hatch run docs:update-entry-figures
     ```
 
-## About [`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml)
+## About [`pyproject.toml`](https://github.com/rendercv/rendercv/blob/main/pyproject.toml)
 
-[`pyproject.toml`](https://github.com/sinaatalay/rendercv/blob/main/pyproject.toml) contains the metadata, dependencies, and tools required for the project. Please read through the file to understand the project's technical details.
+[`pyproject.toml`](https://github.com/rendercv/rendercv/blob/main/pyproject.toml) contains the metadata, dependencies, and tools required for the project. Please read through the file to understand the project's technical details.

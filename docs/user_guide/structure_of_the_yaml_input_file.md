@@ -41,7 +41,7 @@ rendercv_settings:
         2.  Add the following line at the top of `Your_Name_CV.yaml`:
 
             ``` yaml
-            # yaml-language-server: $schema=https://github.com/sinaatalay/rendercv/blob/main/schema.json?raw=true
+            # yaml-language-server: $schema=https://github.com/rendercv/rendercv/blob/main/schema.json?raw=true
             ```
         3. Press `Ctrl + Space` to see the auto-complete suggestions.
 

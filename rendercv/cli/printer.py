@@ -146,12 +146,12 @@ def welcome():
 
     table.add_row("[bold]RenderCV App", "https://rendercv.com")
     table.add_row("Documentation", "https://docs.rendercv.com")
-    table.add_row("Source code", "https://github.com/sinaatalay/rendercv/")
-    table.add_row("Bug reports", "https://github.com/sinaatalay/rendercv/issues/")
-    table.add_row("Feature requests", "https://github.com/sinaatalay/rendercv/issues/")
-    table.add_row("Discussions", "https://github.com/sinaatalay/rendercv/discussions/")
+    table.add_row("Source code", "https://github.com/rendercv/rendercv/")
+    table.add_row("Bug reports", "https://github.com/rendercv/rendercv/issues/")
+    table.add_row("Feature requests", "https://github.com/rendercv/rendercv/issues/")
+    table.add_row("Discussions", "https://github.com/rendercv/rendercv/discussions/")
     table.add_row(
-        "RenderCV Pipeline", "https://github.com/sinaatalay/rendercv-pipeline/"
+        "RenderCV Pipeline", "https://github.com/rendercv/rendercv-pipeline/"
     )
 
     print(table)

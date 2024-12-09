@@ -128,7 +128,7 @@ def generate_json_schema() -> dict:
             json_schema["title"] = "RenderCV"
             json_schema["description"] = "RenderCV data model."
             json_schema["$id"] = (
-                "https://raw.githubusercontent.com/sinaatalay/rendercv/main/schema.json"
+                "https://raw.githubusercontent.com/rendercv/rendercv/main/schema.json"
             )
             json_schema["$schema"] = "http://json-schema.org/draft-07/schema#"
 

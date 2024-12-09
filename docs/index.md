@@ -7,8 +7,8 @@
 <br>
 <br>
 
-[![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
-[![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
+[![test](https://github.com/rendercv/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/rendercv/rendercv/actions/workflows/test.yaml)
+[![coverage](https://coverage-badge.samuelcolvin.workers.dev/rendercv/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/rendercv/rendercv)
 [![docs](https://img.shields.io/badge/docs-mkdocs-rgb(0%2C79%2C144))](https://docs.rendercv.com)
 [![pypi-version](https://img.shields.io/pypi/v/rendercv?label=PyPI%20version&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
 [![pypi-downloads](https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144))](https://pypistats.org/packages/rendercv)
@@ -57,29 +57,29 @@ cv:
 
 Then, it produces one of these PDFs with its corresponding $\LaTeX$ code, Markdown file, HTML file, and images as PNGs. Each of these is an example of one of 4 built-in themes of RenderCV. Click on the images below to preview PDF files.
 
-| [![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/classic.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ClassicTheme_CV.pdf)    | [![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/sb2nov.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_Sb2novTheme_CV.pdf)                                     |
+| [![Classic Theme Example of RenderCV](https://raw.githubusercontent.com/rendercv/rendercv/main/docs/assets/images/classic.png)](https://github.com/rendercv/rendercv/blob/main/examples/John_Doe_ClassicTheme_CV.pdf)    | [![Sb2nov Theme Example of RenderCV](https://raw.githubusercontent.com/rendercv/rendercv/main/docs/assets/images/sb2nov.png)](https://github.com/rendercv/rendercv/blob/main/examples/John_Doe_Sb2novTheme_CV.pdf)                                     |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ModerncvTheme_CV.pdf) | [![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf) |
+| [![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/rendercv/rendercv/main/docs/assets/images/moderncv.png)](https://github.com/rendercv/rendercv/blob/main/examples/John_Doe_ModerncvTheme_CV.pdf) | [![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/rendercv/rendercv/main/docs/assets/images/engineeringresumes.png)](https://github.com/rendercv/rendercv/blob/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf) |
 
 
 The contents of the HTML file can be pasted into Grammarly or any word processor for spelling and grammar checking.
 
-![Grammarly for RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/grammarly.gif)
+![Grammarly for RenderCV](https://raw.githubusercontent.com/rendercv/rendercv/main/docs/assets/images/grammarly.gif)
 
 
 It also validates the input file. If there are any problems, it tells users where the problems are and how they can fix them.
 
-![CLI of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/cli.gif)
+![CLI of RenderCV](https://raw.githubusercontent.com/rendercv/rendercv/main/docs/assets/images/cli.gif)
 
 
 RenderCV comes with a JSON Schema so that the YAML input file can be filled out interactively.
 
-![JSON Schema of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/schema.gif)
+![JSON Schema of RenderCV](https://raw.githubusercontent.com/rendercv/rendercv/main/docs/assets/images/schema.gif)
 
 
 ## Quick Start Guide
 
-Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https://github.com/sinaatalay/rendercv-pipeline), or follow the steps below.
+Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https://github.com/rendercv/rendercv-pipeline), or follow the steps below.
 
 1.  Install [Python](https://www.python.org/downloads/) (3.10 or newer).
 2.  Run the command below in a terminal to install RenderCV.

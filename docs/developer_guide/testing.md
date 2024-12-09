@@ -14,9 +14,9 @@ To generate a coverage report with the tests, run the following command.
 hatch run test-and-report
 ```
 
-Once new commits are pushed to the `main` branch, the [`test.yaml`](https://github.com/sinaatalay/rendercv/blob/main/.github/workflows/test.yaml) workflow will be automatically triggered, and the tests will run.
+Once new commits are pushed to the `main` branch, the [`test.yaml`](https://github.com/rendercv/rendercv/blob/main/.github/workflows/test.yaml) workflow will be automatically triggered, and the tests will run.
 
-## About [`testdata`](https://github.com/sinaatalay/rendercv/tree/main/tests/testdata) folder
+## About [`testdata`](https://github.com/rendercv/rendercv/tree/main/tests/testdata) folder
 
 In some of the tests:
 
