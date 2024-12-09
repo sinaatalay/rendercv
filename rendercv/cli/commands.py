@@ -68,7 +68,7 @@ def cli_command_render(
             "-use",
             help=(
                 "Use the local LaTeX installation with the given command instead of the"
-                " RenderCV's TinyTeX."
+                " RenderCV's TinyTeX"
             ),
         ),
     ] = None,
@@ -77,7 +77,7 @@ def cli_command_render(
         typer.Option(
             "--output-folder-name",
             "-o",
-            help="Name of the output folder.",
+            help="Name of the output folder",
         ),
     ] = "rendercv_output",
     latex_path: Annotated[  # noqa: ARG001
@@ -85,7 +85,7 @@ def cli_command_render(
         typer.Option(
             "--latex-path",
             "-latex",
-            help="Copy the LaTeX file to the given path.",
+            help="Copy the LaTeX file to the given path",
         ),
     ] = None,
     pdf_path: Annotated[  # noqa: ARG001
@@ -93,7 +93,7 @@ def cli_command_render(
         typer.Option(
             "--pdf-path",
             "-pdf",
-            help="Copy the PDF file to the given path.",
+            help="Copy the PDF file to the given path",
         ),
     ] = None,
     markdown_path: Annotated[  # noqa: ARG001
@@ -101,7 +101,7 @@ def cli_command_render(
         typer.Option(
             "--markdown-path",
             "-md",
-            help="Copy the Markdown file to the given path.",
+            help="Copy the Markdown file to the given path",
         ),
     ] = None,
     html_path: Annotated[  # noqa: ARG001
@@ -109,7 +109,7 @@ def cli_command_render(
         typer.Option(
             "--html-path",
             "-html",
-            help="Copy the HTML file to the given path.",
+            help="Copy the HTML file to the given path",
         ),
     ] = None,
     png_path: Annotated[  # noqa: ARG001
@@ -117,7 +117,7 @@ def cli_command_render(
         typer.Option(
             "--png-path",
             "-png",
-            help="Copy the PNG file to the given path.",
+            help="Copy the PNG file to the given path",
         ),
     ] = None,
     dont_generate_markdown: Annotated[  # noqa: ARG001
@@ -125,7 +125,7 @@ def cli_command_render(
         typer.Option(
             "--dont-generate-markdown",
             "-nomd",
-            help="Don't generate the Markdown and HTML file.",
+            help="Don't generate the Markdown and HTML file",
         ),
     ] = False,
     dont_generate_html: Annotated[  # noqa: ARG001
@@ -133,7 +133,7 @@ def cli_command_render(
         typer.Option(
             "--dont-generate-html",
             "-nohtml",
-            help="Don't generate the HTML file.",
+            help="Don't generate the HTML file",
         ),
     ] = False,
     dont_generate_png: Annotated[  # noqa: ARG001
@@ -141,7 +141,7 @@ def cli_command_render(
         typer.Option(
             "--dont-generate-png",
             "-nopng",
-            help="Don't generate the PNG file.",
+            help="Don't generate the PNG file",
         ),
     ] = False,
     watch: Annotated[
@@ -149,7 +149,7 @@ def cli_command_render(
         typer.Option(
             "--watch",
             "-w",
-            help="Automatically re-run RenderCV when the input file is updated.",
+            help="Automatically re-run RenderCV when the input file is updated",
         ),
     ] = False,
     # This is a dummy argument for the help message for
@@ -209,13 +209,13 @@ def cli_command_render(
     ),
 )
 def cli_command_new(
-    full_name: Annotated[str, typer.Argument(help="Your full name.")],
+    full_name: Annotated[str, typer.Argument(help="Your full name")],
     theme: Annotated[
         str,
         typer.Option(
             help=(
-                "The name of the theme. Available themes are:"
-                f" {', '.join(data.available_themes)}."
+                "The name of the theme (available themes are:"
+                f" {', '.join(data.available_themes)})"
             )
         ),
     ] = "classic",
@@ -224,7 +224,7 @@ def cli_command_new(
         typer.Option(
             "--dont-create-theme-source-files",
             "-nolatex",
-            help="Don't create theme source files.",
+            help="Don't create theme source files",
         ),
     ] = False,
     dont_create_markdown_source_files: Annotated[
@@ -232,11 +232,11 @@ def cli_command_new(
         typer.Option(
             "--dont-create-markdown-source-files",
             "-nomd",
-            help="Don't create the Markdown source files.",
+            help="Don't create the Markdown source files",
         ),
     ] = False,
 ):
-    """Generate a YAML input file and the LaTeX and Markdown source files."""
+    """Generate a YAML input file and the LaTeX and Markdown source files"""
     created_files_and_folders = []
 
     input_file_name = f"{full_name.replace(' ', '_')}_CV.yaml"
@@ -245,7 +245,7 @@ def cli_command_new(
     if input_file_path.exists():
         printer.warning(
             f'The input file "{input_file_name}" already exists! A new input file is'
-            " not created."
+            " not created"
         )
     else:
         try:
@@ -265,7 +265,7 @@ def cli_command_new(
         else:
             printer.warning(
                 f'The theme folder "{theme}" already exists! The theme files are not'
-                " created."
+                " created"
             )
 
     if not dont_create_markdown_source_files:
@@ -276,7 +276,7 @@ def cli_command_new(
         else:
             printer.warning(
                 'The "markdown" folder already exists! The Markdown files are not'
-                " created."
+                " created"
             )
 
     if len(created_files_and_folders) > 0:
@@ -298,19 +298,19 @@ def cli_command_new(
 def cli_command_create_theme(
     theme_name: Annotated[
         str,
-        typer.Argument(help="The name of the new theme."),
+        typer.Argument(help="The name of the new theme"),
     ],
     based_on: Annotated[
         str,
         typer.Option(
             help=(
-                "The name of the existing theme to base the new theme on. Available"
-                f" themes are: {', '.join(data.available_themes)}."
+                "The name of the existing theme to base the new theme on (available"
+                f" themes are: {', '.join(data.available_themes)})"
             )
         ),
     ] = "classic",
 ):
-    """Create a custom theme based on an existing theme."""
+    """Create a custom theme based on an existing theme"""
     if based_on not in data.available_themes:
         printer.error(
             f'The theme "{based_on}" is not in the list of available themes:'
@@ -324,7 +324,7 @@ def cli_command_create_theme(
     if theme_folder is None:
         printer.warning(
             f'The theme folder "{theme_name}" already exists! The theme files are not'
-            " created."
+            " created"
         )
         return
 
@@ -350,7 +350,7 @@ def cli_command_create_theme(
 @app.callback()
 def cli_command_no_args(
     version_requested: Annotated[
-        Optional[bool], typer.Option("--version", "-v", help="Show the version.")
+        Optional[bool], typer.Option("--version", "-v", help="Show the version")
     ] = None,
 ):
     if version_requested:

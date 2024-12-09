@@ -189,7 +189,7 @@ RenderCVDesign = Annotated[
         lambda design: validate_design_options(
             design,
             available_theme_options=available_theme_options,
-            available_entry_type_names=entry_types.available_entry_type_names,
+            available_entry_type_names=entry_types.available_entry_type_names,  # type: ignore
         )
     ),
 ]
