@@ -1,13 +1,13 @@
 <div align="center">
 <h1>RenderCV</h1>
 
-*The engine of the [RenderCV App](https://rendercv.com)*
+_The engine of the [RenderCV App](https://rendercv.com)_
 
 [![test](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/sinaatalay/rendercv/actions/workflows/test.yaml)
 [![coverage](https://coverage-badge.samuelcolvin.workers.dev/sinaatalay/rendercv.svg)](https://coverage-badge.samuelcolvin.workers.dev/redirect/sinaatalay/rendercv)
-[![docs](https://img.shields.io/badge/docs-mkdocs-rgb(0%2C79%2C144))](https://docs.rendercv.com)
-[![pypi-version](https://img.shields.io/pypi/v/rendercv?label=PyPI%20version&color=rgb(0%2C79%2C144))](https://pypi.python.org/pypi/rendercv)
-[![pypi-downloads](https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144))](https://pypistats.org/packages/rendercv)
+[![docs](<https://img.shields.io/badge/docs-mkdocs-rgb(0%2C79%2C144)>)](https://docs.rendercv.com)
+[![pypi-version](<https://img.shields.io/pypi/v/rendercv?label=PyPI%20version&color=rgb(0%2C79%2C144)>)](https://pypi.python.org/pypi/rendercv)
+[![pypi-downloads](<https://img.shields.io/pepy/dt/rendercv?label=PyPI%20downloads&color=rgb(0%2C%2079%2C%20144)>)](https://pypistats.org/packages/rendercv)
 
 </div>
 
@@ -44,11 +44,10 @@ cv:
         start_date: 2024-09
         end_date: 2029-05
         highlights:
-          - 'GPA: 3.9/4.0 ([Transcript](https://example.com))'
-          - '**Coursework:** Structural Analysis, Thermodynamics,
-            Heat Transfer'
-    experience:
-      ...
+          - "GPA: 3.9/4.0 ([Transcript](https://example.com))"
+          - "**Coursework:** Structural Analysis, Thermodynamics,
+            Heat Transfer"
+    experience: ...
 ```
 
 Then, it produces one of these PDFs with its corresponding $\LaTeX$ code, Markdown file, HTML file, and images as PNGs. Each of these is an example of one of 4 built-in themes of RenderCV. Click on the images below to preview PDF files.
@@ -57,21 +56,17 @@ Then, it produces one of these PDFs with its corresponding $\LaTeX$ code, Markdo
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [![Moderncv Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/moderncv.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_ModerncvTheme_CV.pdf) | [![Engineeringresumes Theme Example of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/engineeringresumes.png)](https://github.com/sinaatalay/rendercv/blob/main/examples/John_Doe_EngineeringresumesTheme_CV.pdf) |
 
-
 The contents of the HTML file can be pasted into Grammarly or any word processor for spelling and grammar checking.
 
 ![Grammarly for RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/grammarly.gif)
-
 
 It also validates the input file. If there are any problems, it tells users where the problems are and how they can fix them.
 
 ![CLI of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/cli.gif)
 
-
 RenderCV comes with a JSON Schema so that the YAML input file can be filled out interactively.
 
 ![JSON Schema of RenderCV](https://raw.githubusercontent.com/sinaatalay/rendercv/main/docs/assets/images/schema.gif)
-
 
 ## Quick Start Guide
 
@@ -86,13 +81,54 @@ Either use the [RenderCV App](https://rendercv.com), [`rendercv-pipeline`](https
     ```bash
     rendercv new "Full Name"
     ```
-4.  Edit the contents of `Full_Name_CV.yaml` in your favorite editor (*tip: use an editor that supports JSON Schemas*).
+4.  Edit the contents of `Full_Name_CV.yaml` in your favorite editor (_tip: use an editor that supports JSON Schemas_).
 5.  Run the command below to generate your CV.
     ```bash
     rendercv render Full_Name_CV.yaml
     ```
 
 [Here](https://docs.rendercv.com/user_guide/), you can find a comprehensive user guide that covers the YAML input file structure and command-line interface (CLI) in greater detail.
+
+### Docker
+
+A docker image is available on [Dockerhub](https://hub.docker.com/r/mathiasvda/rendercv)
+
+Example usage:
+
+1.  Run the command below to generate starting input files.
+
+```sh
+$ docker run -it -v <path-to-your-cv-directory>:/data mathiasvda/rendercv rendercv new "Full name"
+```
+
+2.  Edit the contents of `Full_Name_CV.yaml` in your favorite editor (_tip: use an editor that supports JSON Schemas_).
+
+3.  Run the command below to generate your CV.
+
+```sh
+$ docker run -it -v <path-to-your-cv-directory>:/data mathiasvda/rendercv rendercv render Full_name_CV.yaml
+```
+
+### Gitlab
+
+[GitLab](https://gitlab.com/) also allows to automate actions, similar to GitHub. Below is an example [.gitlab-ci.yml](https://docs.gitlab.com/ee/ci/) file that uses the Docker image to render the CV. The example assumes that you have initialised (rendercv new "Full name") your CV yaml file and the theme folder and pushed them to your repository.
+
+```yml
+stages:
+  - render
+
+render:
+  image:
+    name: mathiasvda/rendercv
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  stage: render
+  script:
+    - rendercv render Full_name_CV.yaml
+  artifacts:
+    paths:
+      - rendercv_output/
+```
 
 ## Motivation
 
@@ -127,4 +163,4 @@ Advantages of RenderCV over using pure $\LaTeX$:
 
 ## Contributing
 
-All contributions to RenderCV are welcome! To get started, please read [the developer guide](https://docs.rendercv.com/developer_guide). 
+All contributions to RenderCV are welcome! To get started, please read [the developer guide](https://docs.rendercv.com/developer_guide).
