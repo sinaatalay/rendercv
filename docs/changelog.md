@@ -48,6 +48,7 @@ We have some new and nice features. A big thank you to our eight new contributor
 -   The issue of rendering when PDF is open on Windows has been handled ([#172](https://github.com/rendercv/rendercv/issues/172)).
 -   $ sign now works without escaping ([#154](https://github.com/rendercv/rendercv/issues/154))
 -   Timespan calculation has been fixed ([#180](https://github.com/rendercv/rendercv/pull/180)).
+-   `PublicationEntry`'s `url` field's $\LaTeX$ character escaping issues have been fixed ([#236](https://github.com/rendercv/rendercv/issues/236)).
 
 
 ## [1.14] - 2024-09-07
