@@ -5,8 +5,8 @@ of the input file.
 
 import importlib
 import importlib.util
-import pathlib
 import os
+import pathlib
 from typing import Annotated, Any
 
 import pydantic
@@ -18,7 +18,6 @@ from ...themes import (
     Sb2novThemeOptions,
 )
 from . import entry_types
-
 from .base import RenderCVBaseModelWithoutExtraKeys
 
 # ======================================================================================

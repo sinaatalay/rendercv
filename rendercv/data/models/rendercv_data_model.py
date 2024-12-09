@@ -3,8 +3,8 @@ The `rendercv.data.models.rendercv_data_model` module contains the `RenderCVData
 data model, which is the main data model that defines the whole input file structure.
 """
 
-from typing import Optional
 import pathlib
+from typing import Optional
 
 import pydantic
 

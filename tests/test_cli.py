@@ -1,12 +1,12 @@
 import multiprocessing as mp
 import os
+import pathlib
 import re
 import shutil
 import subprocess
 import sys
 import time
 from datetime import date as Date
-import pathlib
 
 import coverage
 import pydantic
@@ -810,7 +810,7 @@ def test_relative_input_file_path_with_custom_output_paths(tmp_path, input_file_
     shutil.copy(input_file_path, new_input_file_path)
 
     os.chdir(tmp_path)
-    results = runner.invoke(
+    runner.invoke(
         cli.app,
         [
             "render",

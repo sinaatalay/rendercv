@@ -5,12 +5,11 @@ Pydantic data model of RenderCV's data format.
 """
 
 import pathlib
+from typing import Optional
 
 import ruamel.yaml
 
 from . import models
-
-from typing import Optional
 
 
 def read_a_yaml_file(file_path_or_contents: pathlib.Path | str) -> dict:
