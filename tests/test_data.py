@@ -629,8 +629,8 @@ def test_custom_theme_with_missing_files(tmp_path):
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
         data.RenderCVDataModel(
-            cv={"name": "John Doe"},
-            design={"theme": "customtheme"},  # type: ignore
+            cv={"name": "John Doe"},  # type: ignore
+            design={"theme": "customtheme"},
         )
 
 
@@ -640,8 +640,8 @@ def test_custom_theme(testdata_directory_path):
         / "test_copy_theme_files_to_output_directory_custom_theme"
     )
     data_model = data.RenderCVDataModel(
-        cv={"name": "John Doe"},
-        design={"theme": "dummytheme"},  # type: ignore
+        cv={"name": "John Doe"},  # type: ignore
+        design={"theme": "dummytheme"},
     )
 
     assert data_model.design.theme == "dummytheme"
@@ -664,8 +664,8 @@ def test_custom_theme_without_init_file(tmp_path, testdata_directory_path):
 
     os.chdir(tmp_path)
     data_model = data.RenderCVDataModel(
-        cv={"name": "John Doe"},
-        design={"theme": "dummytheme"},  # type: ignore
+        cv={"name": "John Doe"},  # type: ignore
+        design={"theme": "dummytheme"},
     )
 
     assert data_model.design.theme == "dummytheme"
@@ -689,8 +689,8 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
         data.RenderCVDataModel(
-            cv={"name": "John Doe"},
-            design={"theme": "dummytheme"},  # type: ignore
+            cv={"name": "John Doe"},  # type: ignore
+            design={"theme": "dummytheme"},
         )
 
     # overwrite the __init__.py file (import error)
@@ -700,8 +700,8 @@ def test_custom_theme_with_broken_init_file(tmp_path, testdata_directory_path):
     os.chdir(tmp_path)
     with pytest.raises(pydantic.ValidationError):
         data.RenderCVDataModel(
-            cv={"name": "John Doe"},
-            design={"theme": "dummytheme"},  # type: ignore
+            cv={"name": "John Doe"},  # type: ignore
+            design={"theme": "dummytheme"},
         )
 
 
