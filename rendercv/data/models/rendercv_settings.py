@@ -37,21 +37,29 @@ file_path_placeholder_description_without_default = (
 class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
     """This class is the data model of the `render` command's settings."""
 
-    design_path: Optional[str] = pydantic.Field(
+    design: Optional[str] = pydantic.Field(
         default=None,
-        title="Design File Path",
+        title="`design` Field's YAML File",
         description=(
-            "The file path to the yaml file containing the design."
-            "  The default value is null."
+            "The file path to the yaml file containing the `design` field separately."
         ),
     )
 
-    rendercv_settings_path: Optional[str] = pydantic.Field(
+    rendercv_settings: Optional[str] = pydantic.Field(
         default=None,
-        title="RenderCV Settings Path",
+        title="`rendercv_settings` Field's YAML File",
         description=(
-            "The file path to the yaml file containing the rendercv_settings."
-            "  The default value is null."
+            "The file path to the yaml file containing the `rendercv_settings` field"
+            " separately."
+        ),
+    )
+
+    locale_catalog: Optional[str] = pydantic.Field(
+        default=None,
+        title="`locale_catalog` Field's YAML File",
+        description=(
+            "The file path to the yaml file containing the `locale_catalog` field"
+            " separately."
         ),
     )
 
@@ -165,6 +173,9 @@ class RenderCommandSettings(RenderCVBaseModelWithoutExtraKeys):
         return replace_placeholders(value)
 
     @pydantic.field_validator(
+        "design",
+        "locale_catalog",
+        "rendercv_settings",
         "pdf_path",
         "latex_path",
         "html_path",

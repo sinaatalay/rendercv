@@ -12,7 +12,7 @@ import sys
 import time
 import urllib.request
 from collections.abc import Callable
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 import watchdog.events
@@ -481,3 +481,48 @@ def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+
+def read_and_construct_the_input(
+    input_file_path: pathlib.Path,
+    cli_render_arguments: dict[str, Any],
+    extra_data_model_override_arguments: Optional[typer.Context] = None,
+) -> dict:
+    """Read RenderCV YAML files and CLI to construct the user's input as a dictionary.
+    Input file is read, CLI arguments override the input file, and individual design,
+    locale catalog, etc. files are read if they are provided.
+
+    Args:
+        input_file_path: The path of the input file.
+        cli_render_arguments: The command line arguments of the `render` command.
+        extra_data_model_override_arguments: The extra arguments context. Defaults to
+            None.
+
+    Returns:
+        The input of the user as a dictionary.
+    """
+    input_file_as_a_dict = data.read_a_yaml_file(input_file_path)
+
+    # Read individual `design`, `locale_catalog`, etc. files if they are provided in the
+    # input file:
+    for field in data.rendercv_data_model_fields:
+        if field in cli_render_arguments and cli_render_arguments[field] is not None:
+            yaml_path = pathlib.Path(cli_render_arguments[field]).absolute()
+            yaml_file_as_a_dict = data.read_a_yaml_file(yaml_path)
+            input_file_as_a_dict[field] = yaml_file_as_a_dict[field]
+
+    # Update the input file if there are extra override arguments (for example,
+    # --cv.phone "123-456-7890"):
+    if extra_data_model_override_arguments:
+        key_and_values = parse_render_command_override_arguments(
+            extra_data_model_override_arguments
+        )
+        input_file_as_a_dict = set_or_update_values(
+            input_file_as_a_dict, key_and_values
+        )
+
+    # If non-default CLI arguments are provided, override the
+    # `rendercv_settings.render_command`:
+    return update_render_command_settings_of_the_input_file(
+        input_file_as_a_dict, cli_render_arguments
+    )

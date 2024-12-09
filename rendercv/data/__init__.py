@@ -38,6 +38,7 @@ from .models import (
     available_theme_options,
     available_themes,
     format_date,
+    rendercv_data_model_fields,
 )
 from .reader import (
     read_a_yaml_file,
@@ -72,5 +73,6 @@ __all__ = [
     "generate_json_schema_file",
     "read_a_yaml_file",
     "read_input_file",
+    "rendercv_data_model_fields",
     "validate_input_dictionary_and_return_the_data_model",
 ]

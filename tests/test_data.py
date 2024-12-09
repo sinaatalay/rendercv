@@ -18,8 +18,6 @@ from rendercv.data.models import (
     locale_catalog,
 )
 
-from .conftest import update_testdata
-
 
 @pytest.mark.parametrize(
     ("date", "expected_date_object", "expected_error"),
@@ -67,26 +65,6 @@ def test_format_date(date, expected_date_string):
 
 
 def test_read_input_file(input_file_path):
-    # Update the auxiliary files if update_testdata is True
-    if update_testdata:
-        # create testdata directory if it doesn't exist
-        if not input_file_path.parent.exists():
-            input_file_path.parent.mkdir()
-
-        input_dictionary = {
-            "cv": {
-                "name": "John Doe",
-                "sections": {"test_section": ["this is a text entry."]},
-            },
-            "design": {
-                "theme": "classic",
-            },
-        }
-
-        # dump the dictionary to a yaml file
-        yaml_object = ruamel.yaml.YAML()
-        yaml_object.dump(input_dictionary, input_file_path)
-
     data_model = data.read_input_file(input_file_path)
 
     assert isinstance(data_model, data.RenderCVDataModel)

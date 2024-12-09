@@ -42,7 +42,7 @@ from .entry_types import (
     available_entry_type_names,
 )
 from .locale_catalog import LocaleCatalog
-from .rendercv_data_model import RenderCVDataModel
+from .rendercv_data_model import RenderCVDataModel, rendercv_data_model_fields
 from .rendercv_settings import RenderCommandSettings, RenderCVSettings
 
 __all__ = [
@@ -66,4 +66,5 @@ __all__ = [
     "available_theme_options",
     "available_themes",
     "format_date",
+    "rendercv_data_model_fields",
 ]
