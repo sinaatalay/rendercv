@@ -478,3 +478,15 @@ def input_file_path(tmp_path, testdata_directory_path) -> pathlib.Path:
     input_file_path = testdata_directory_path / "John_Doe_CV.yaml"
     shutil.copyfile(input_file_path, tmp_path / "John_Doe_CV.yaml")
     return tmp_path / "John_Doe_CV.yaml"
+
+
+@pytest.fixture
+def design_settings_file_path(specific_testdata_directory_path) -> pathlib.Path:
+    """Return the path to the input file."""
+    return specific_testdata_directory_path / "design_settings.yaml"
+
+
+@pytest.fixture
+def rendercv_settings_file_path(specific_testdata_directory_path) -> pathlib.Path:
+    """Return the path to the input file."""
+    return specific_testdata_directory_path / "rendercv_settings.yaml"
