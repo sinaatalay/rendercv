@@ -27,15 +27,6 @@ def run_render_command(input_file_path, working_path, extra_arguments=None):
     if extra_arguments is None:
         extra_arguments = []
 
-    cov = None
-    if "--watch" in extra_arguments:
-        cov = coverage.Coverage(
-            data_file=".coverage",
-            source=["rendercv"],
-            concurrency="multiprocessing",
-        )
-        cov.start()
-
     # copy input file to the temporary directory to create the output directory there:
     if input_file_path != working_path / input_file_path.name:
         shutil.copy(input_file_path, working_path)
@@ -43,13 +34,7 @@ def run_render_command(input_file_path, working_path, extra_arguments=None):
     # change the current working directory to the temporary directory:
     os.chdir(working_path)
 
-    result = runner.invoke(cli.app, ["render", "John_Doe_CV.yaml", *extra_arguments])
-
-    if cov:
-        cov.stop()
-        cov.save()
-
-    return result
+    return runner.invoke(cli.app, ["render", "John_Doe_CV.yaml", *extra_arguments])
 
 
 def test_welcome():
