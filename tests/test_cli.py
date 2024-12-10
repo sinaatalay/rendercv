@@ -8,7 +8,6 @@ import sys
 import time
 from datetime import date as Date
 
-import coverage
 import pydantic
 import pytest
 import ruamel.yaml
