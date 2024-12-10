@@ -23,12 +23,14 @@ There are two ways of developing RenderCV: locally or with GitHub Codespaces.
     ```
 5. RenderCV uses three virtual environments:
     -  `default`: For the development and testing. It contains packages like [Ruff](https://github.com/astral-sh/ruff), [Black](https://github.com/psf/black), [pytest](https://github.com/pytest-dev/pytest) etc.
+    -  `test`: It's the same as the `default` environment, but it's created with Python 3.10, 3.11, 3.12, and 3.13 for testing.
     -  `docs`: For building the documentation.
 
     Create the virtual environments with the following commands.
 
     ```bash
     hatch env create default
+    hatch env create test
     hatch env create docs
     ```
 
@@ -41,6 +43,10 @@ There are two ways of developing RenderCV: locally or with GitHub Codespaces.
 
         ```bash
         hatch shell docs
+        ```
+
+        ```bash
+        hatch shell test.py3.13
         ```
 
     - Select one of the virtual environments in your Integrated Development Environment (IDE).
@@ -85,11 +91,15 @@ These commands are defined in the [`pyproject.toml`](https://github.com/rendercv
     ```bash
     hatch run check-types
     ```
-- Run the tests
+- Run the tests with Python 3.13
     ```bash
     hatch run test
     ```
-- Run the tests and generate a coverage report
+- Run the tests with Python 3.10, 3.11, 3.12, and 3.13
+    ```bash
+    hatch run test:test
+    ```
+- Run the tests with Python 3.13 and generate a coverage report
     ```bash
     hatch run test-and-report
     ```
