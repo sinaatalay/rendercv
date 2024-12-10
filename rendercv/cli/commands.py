@@ -3,6 +3,7 @@ The `rendercv.cli.commands` module contains all the command-line interface (CLI)
 commands of RenderCV.
 """
 
+import copy
 import pathlib
 from typing import Annotated, Optional
 
@@ -37,7 +38,7 @@ app = typer.Typer(
 @printer.handle_and_print_raised_exceptions
 def cli_command_render(
     input_file_name: Annotated[str, typer.Argument(help="The YAML input file.")],
-    design: Annotated[  # noqa: ARG001
+    design: Annotated[
         Optional[str],
         typer.Option(
             "--design",
@@ -45,7 +46,7 @@ def cli_command_render(
             help='The "design" field\'s YAML input file.',
         ),
     ] = None,
-    locale_catalog: Annotated[  # noqa: ARG001
+    locale_catalog: Annotated[
         Optional[str],
         typer.Option(
             "--locale-catalog",
@@ -53,7 +54,7 @@ def cli_command_render(
             help='The "locale_catalog" field\'s YAML input file.',
         ),
     ] = None,
-    rendercv_settings: Annotated[  # noqa: ARG001
+    rendercv_settings: Annotated[
         Optional[str],
         typer.Option(
             "--rendercv-settings",
@@ -61,7 +62,7 @@ def cli_command_render(
             help='The "rendercv_settings" field\'s YAML input file.',
         ),
     ] = None,
-    use_local_latex_command: Annotated[  # noqa: ARG001
+    use_local_latex_command: Annotated[
         Optional[str],
         typer.Option(
             "--use-local-latex-command",
@@ -72,7 +73,7 @@ def cli_command_render(
             ),
         ),
     ] = None,
-    output_folder_name: Annotated[  # noqa: ARG001
+    output_folder_name: Annotated[
         str,
         typer.Option(
             "--output-folder-name",
@@ -80,7 +81,7 @@ def cli_command_render(
             help="Name of the output folder",
         ),
     ] = "rendercv_output",
-    latex_path: Annotated[  # noqa: ARG001
+    latex_path: Annotated[
         Optional[str],
         typer.Option(
             "--latex-path",
@@ -88,7 +89,7 @@ def cli_command_render(
             help="Copy the LaTeX file to the given path",
         ),
     ] = None,
-    pdf_path: Annotated[  # noqa: ARG001
+    pdf_path: Annotated[
         Optional[str],
         typer.Option(
             "--pdf-path",
@@ -96,7 +97,7 @@ def cli_command_render(
             help="Copy the PDF file to the given path",
         ),
     ] = None,
-    markdown_path: Annotated[  # noqa: ARG001
+    markdown_path: Annotated[
         Optional[str],
         typer.Option(
             "--markdown-path",
@@ -104,7 +105,7 @@ def cli_command_render(
             help="Copy the Markdown file to the given path",
         ),
     ] = None,
-    html_path: Annotated[  # noqa: ARG001
+    html_path: Annotated[
         Optional[str],
         typer.Option(
             "--html-path",
@@ -112,7 +113,7 @@ def cli_command_render(
             help="Copy the HTML file to the given path",
         ),
     ] = None,
-    png_path: Annotated[  # noqa: ARG001
+    png_path: Annotated[
         Optional[str],
         typer.Option(
             "--png-path",
@@ -120,7 +121,7 @@ def cli_command_render(
             help="Copy the PNG file to the given path",
         ),
     ] = None,
-    dont_generate_markdown: Annotated[  # noqa: ARG001
+    dont_generate_markdown: Annotated[
         bool,
         typer.Option(
             "--dont-generate-markdown",
@@ -128,7 +129,7 @@ def cli_command_render(
             help="Don't generate the Markdown and HTML file",
         ),
     ] = False,
-    dont_generate_html: Annotated[  # noqa: ARG001
+    dont_generate_html: Annotated[
         bool,
         typer.Option(
             "--dont-generate-html",
@@ -136,7 +137,7 @@ def cli_command_render(
             help="Don't generate the HTML file",
         ),
     ] = False,
-    dont_generate_png: Annotated[  # noqa: ARG001
+    dont_generate_png: Annotated[
         bool,
         typer.Option(
             "--dont-generate-png",
@@ -175,7 +176,8 @@ def cli_command_render(
     argument_names.remove("_")
     argument_names.remove("extra_data_model_override_arguments")
     # This is where the user input is accessed and stored:
-    cli_render_arguments = {name: locals()[name] for name in argument_names}
+    variables = copy.copy(locals())
+    cli_render_arguments = {name: variables[name] for name in argument_names}
 
     input_file_as_a_dict = u.read_and_construct_the_input(
         input_file_path, cli_render_arguments, extra_data_model_override_arguments
