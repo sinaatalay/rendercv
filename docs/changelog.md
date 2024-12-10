@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-[Click here to see the unreleased changes.](https://github.com/rendercv/rendercv/compare/v1.15...HEAD)
+[Click here to see the unreleased changes.](https://github.com/rendercv/rendercv/compare/v1.16...HEAD)
 
 <!--
 ### Added
@@ -16,13 +16,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 ### Removed
 -->
+## [1.16] - 2024-12-10
+
+> **Full Changelog**: [v1.15...v1.16]
+
+### Fixed
+
+- `rendercv render` command has been fixed for Python 3.10 and 3.11 ([#249](https://github.com/rendercv/rendercv/pull/249), [#250](https://github.com/rendercv/rendercv/issues/250)).
+
+
 ## [1.15] - 2024-12-09
 
 > **Full Changelog**: [v1.14...v1.15]
-
-We have some new and nice features. A big thank you to our eight new contributors!
-
-> Full Changelog: [v1.14...v1.15](https://github.com/rendercv/rendercv/compare/v1.14...v1.15)
 
 ### Added
 
@@ -31,7 +36,7 @@ We have some new and nice features. A big thank you to our eight new contributor
     -   `--design`, `--locale_catalog`, and `--rendercv_settings` ([#220](https://github.com/rendercv/rendercv/pull/220)). They take the `design`, `locale_catalog`, and `rendercv_settings` fields as separate YAML files.
 -   The docker image of RenderCV is pushed to [Docker Hub](https://hub.docker.com/r/rendercv/rendercv) ([#222](https://github.com/rendercv/rendercv/issues/222)).
 -   Telegram has been added as a social network type ([#187](https://github.com/rendercv/rendercv/issues/187)).
--   Math equations are now displayed in HTML with KaTeX ([#200](https://github.com/rendercv/rendercv/pull/200))
+-   Math equations are now displayed in HTML with KaTeX ([#200](https://github.com/rendercv/rendercv/pull/200)).
 
 ### Changed
 
@@ -46,7 +51,7 @@ We have some new and nice features. A big thank you to our eight new contributor
 -   DOI rendering issues have been solved ([#184](https://github.com/rendercv/rendercv/issues/184)).
 -   The `rendercv_settings.render_command.use_local_latex_command` field has been fixed ([#178](https://github.com/rendercv/rendercv/issues/178)).
 -   The issue of rendering when PDF is open on Windows has been handled ([#172](https://github.com/rendercv/rendercv/issues/172)).
--   $ sign now works without escaping ([#154](https://github.com/rendercv/rendercv/issues/154))
+-   $ sign now works without escaping ([#154](https://github.com/rendercv/rendercv/issues/154)).
 -   Timespan calculation has been fixed ([#180](https://github.com/rendercv/rendercv/pull/180)).
 -   `PublicationEntry`'s `url` field's $\LaTeX$ character escaping issues have been fixed ([#236](https://github.com/rendercv/rendercv/issues/236)).
 
@@ -422,6 +427,7 @@ We have some new and nice features. A big thank you to our eight new contributor
 
 The first release of RenderCV.
 
+[v1.15...v1.16]: https://github.com/rendercv/rendercv/compare/v1.15...v1.16
 [v1.14...v1.15]: https://github.com/rendercv/rendercv/compare/v1.14...v1.15
 [v1.13...v1.14]: https://github.com/rendercv/rendercv/compare/v1.13...v1.14
 [v1.12...v1.13]: https://github.com/rendercv/rendercv/compare/v1.12...v1.13
@@ -446,6 +452,7 @@ The first release of RenderCV.
 [v0.3...v0.4]: https://github.com/rendercv/rendercv/compare/v0.3...v0.4
 [v0.2...v0.3]: https://github.com/rendercv/rendercv/compare/v0.2...v0.3
 [v0.1...v0.2]: https://github.com/rendercv/rendercv/compare/v0.1...v0.2
+[1.16]: https://github.com/rendercv/rendercv/releases/tag/v1.16
 [1.15]: https://github.com/rendercv/rendercv/releases/tag/v1.15
 [1.14]: https://github.com/rendercv/rendercv/releases/tag/v1.14
 [1.13]: https://github.com/rendercv/rendercv/releases/tag/v1.13
