@@ -172,21 +172,21 @@ def cli_command_render(
     from . import utilities as u
 
     cli_render_arguments = {
-        'design': design,
-        'locale_catalog': locale_catalog,
-        'rendercv_settings': rendercv_settings,
-        'use_local_latex_command': use_local_latex_command,
-        'output_folder_name': output_folder_name,
-        'latex_path': latex_path,
-        'pdf_path': pdf_path,
-        'markdown_path': markdown_path,
-        'html_path': html_path,
-        'png_path': png_path,
-        'dont_generate_markdown': dont_generate_markdown,
-        'dont_generate_html': dont_generate_html,
-        'dont_generate_png': dont_generate_png,
-        'watch': watch
-	}
+        "design": design,
+        "locale_catalog": locale_catalog,
+        "rendercv_settings": rendercv_settings,
+        "use_local_latex_command": use_local_latex_command,
+        "output_folder_name": output_folder_name,
+        "latex_path": latex_path,
+        "pdf_path": pdf_path,
+        "markdown_path": markdown_path,
+        "html_path": html_path,
+        "png_path": png_path,
+        "dont_generate_markdown": dont_generate_markdown,
+        "dont_generate_html": dont_generate_html,
+        "dont_generate_png": dont_generate_png,
+        "watch": watch,
+    }
 
     input_file_as_a_dict = u.read_and_construct_the_input(
         input_file_path, cli_render_arguments, extra_data_model_override_arguments
