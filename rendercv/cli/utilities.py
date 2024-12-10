@@ -461,11 +461,8 @@ def run_a_function_if_a_file_changes(file_path: pathlib.Path, function: Callable
             self.function_to_call = function
 
         def on_modified(self, event: watchdog.events.FileModifiedEvent) -> None:
-            if sys.platform == "win32":
-                # Windows does not support single file watching, so we watch the
-                # directory
-                if event.src_path != str(file_path.absolute()):
-                    return
+            if event.src_path != str(file_path.absolute()):
+                return
 
             printer.information(
                 "\n\nThe input file has been updated. Re-running RenderCV..."
