@@ -32,10 +32,10 @@ from .curriculum_vitae import (
 from .design import available_theme_options, available_themes
 from .entry_types import (
     BulletEntry,
+    DetailedPosition,
     EducationEntry,
     Entry,
     ExperienceEntry,
-    DetailedPosition,
     NormalEntry,
     OneLineEntry,
     PublicationEntry,
@@ -49,13 +49,13 @@ from .rendercv_settings import RenderCommandSettings, RenderCVSettings
 __all__ = [
     "BulletEntry",
     "CurriculumVitae",
+    "DetailedPosition",
     "EducationEntry",
     "Entry",
     "ExperienceEntry",
     "LocaleCatalog",
     "NormalEntry",
     "OneLineEntry",
-    "DetailedPosition",
     "PublicationEntry",
     "RenderCVDataModel",
     "RenderCVSettings",
