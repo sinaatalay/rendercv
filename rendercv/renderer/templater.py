@@ -72,7 +72,9 @@ class TemplatedFile:
 
             # this is a correction for upstream serialization issues, which need to be resolved
             if "positions" in entry_dictionary:
-                entry.positions = [data.DetailedPosition.model_validate(p) for p in entry.positions]
+                entry.positions = [
+                    data.DetailedPosition.model_validate(p) for p in entry.positions
+                ]
 
         # The arguments of the template can be used in the template file:
         return template.render(

@@ -59,7 +59,11 @@ experience_entry_promotion_dictionary = {
     "location": "TX, USA",
     "positions": [
         {"name": "Software Engineer", "start_date": "2020-07", "end_date": "2020-11"},
-        {"name": "Senior Software Engineer", "start_date": "2020-11", "end_date": "2021-08-12",},
+        {
+            "name": "Senior Software Engineer",
+            "start_date": "2020-11",
+            "end_date": "2021-08-12",
+        },
     ],
     "highlights": [
         (
@@ -248,11 +252,13 @@ def return_a_value_for_a_field_type(
         pydantic_phone_numbers.PhoneNumber: "+905419999999",
         str: "A string",
         list[str]: ["A string", "Another string"],
-        list[data.DetailedPosition]: [{
-            "name": "A String",
-            "start_date": "2015-09",
-            "end_date": "2015-09",
-        }],
+        list[data.DetailedPosition]: [
+            {
+                "name": "A String",
+                "start_date": "2015-09",
+                "end_date": "2015-09",
+            }
+        ],
         int: 1,
         float: 1.0,
         bool: True,
