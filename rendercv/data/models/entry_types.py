@@ -457,6 +457,57 @@ class DetailedPosition(NormalEntryBase):
         )
 
 
+class DetailedPosition(NormalEntryBase):
+    name: str = pydantic.Field(
+        title="Position",
+        description="The position.",
+    )
+    start_date: StartDate = pydantic.Field(
+        default=None,
+        title="Start Date",
+        description=(
+            "The start date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format."
+        ),
+        examples=["2020-09-24"],
+    )
+    end_date: EndDate = pydantic.Field(
+        default=None,
+        title="End Date",
+        description=(
+            "The end date of the event in YYYY-MM-DD, YYYY-MM, or YYYY format. If the"
+            ' event is still ongoing, then type "present" or provide only the'
+            " start_date."
+        ),
+        examples=["2020-09-24", "present"],
+    )
+
+    @pydantic.model_validator(mode="after")  # type: ignore
+    def check_and_adjust_dates(self) -> "DetailedPosition":
+        """Call the `validate_adjust_dates_of_an_entry` function to validate the
+        dates.
+        """
+        self.start_date, self.end_date, _ = validate_and_adjust_dates_for_an_entry(
+            start_date=self.start_date, end_date=self.end_date, date=None
+        )
+        return self
+
+    @functools.cached_property
+    def date_string(self) -> str:
+        """Return a date string based on the `date`, `start_date`, and `end_date` fields
+        and cache `date_string` as an attribute of the instance.
+
+        Example:
+            ```python
+            entry = dm.EntryBase(start_date="2020-10-11", end_date="2021-04-04").date_string
+            ```
+            returns
+            `#!python "Nov 2020 to Apr 2021"`
+        """
+        return computers.compute_date_string(
+            start_date=self.start_date, end_date=self.end_date, date=None
+        )
+
+
 class ExperienceEntryBase(RenderCVBaseModelWithExtraKeys):
     """This class is the parent class of the `ExperienceEntry` class.
     If both `positions` and `position` are specified, templates prefer `positions` and
@@ -467,6 +518,11 @@ class ExperienceEntryBase(RenderCVBaseModelWithExtraKeys):
     company: str = pydantic.Field(
         title="Company",
         description="The company name.",
+    )
+    logo: Optional[str] = pydantic.Field(
+        default=None,
+        title="Logo",
+        description="The company logo.",
     )
     position: Optional[str] = pydantic.Field(
         default=None,

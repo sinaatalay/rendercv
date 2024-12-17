@@ -100,6 +100,9 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 ## Some **Company**, 
 
 
+## Some **Company**, 
+
+
 ## Some **Company**, Software Engineer
 
 
@@ -125,6 +128,136 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 ## Some **Company**, 
 
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+
+## Some **Company**, 
+
+- Sept 2021
+
+## Some **Company**, 
+
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- Sept 2015 – present
+
+## Some **Company**, 
+
+- June 2020
+
+## Some **Company**, 
+
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+
+## Some **Company**, Software Engineer
+
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – present
+
+## Some **Company**, Software Engineer
+
+- June 2020
+
+## Some **Company**, Software Engineer
+
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- Sept 2021
+
+## Some **Company**, 
+
+- Sept 2021
+
+## Some **Company**, 
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2015 – present
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- June 2020
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2015 – June 2020
+
+## Some **Company**, 
+
+- Sept 2015 – present
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- June 2020
 - Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
 - Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
 
@@ -430,6 +563,421 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Intern Sept 2015 – June 2020
 
 - Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – present
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- June 2020
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – June 2020
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – present
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- June 2020
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+
+## Some **Company**, 
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- Sept 2015 – present
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2015 – June 2020
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – present
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – June 2020
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
 - Istanbul, Turkey
 
 ## Some **Company**
@@ -800,6 +1348,150 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 
 - Sept 2021
 - Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – present
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, 
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
 - Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
 - Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
 
@@ -827,6 +1519,66 @@ This is a *TextEntry*. It is only a text and can be useful for sections like **S
 - Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
 
 ## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2021
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
+
+- Sept 2015 – June 2020
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**, Software Engineer
+
+- Sept 2021
+- Istanbul, Turkey
+- Did *this* and this is a **bold** [link](https://example.com). But I must explain to you how all this mistaken idea of denouncing pleasure and praising pain was born and I will give you a complete account of the system, and expound the actual teachings of the great explorer of the truth, the master-builder of human happiness. No one rejects, dislikes, or avoids pleasure itself, because it is pleasure, but because those who do not know how to pursue pleasure rationally encounter consequences that are extremely painful.
+- Did that. Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure.
+
+## Some **Company**
+- Intern Sept 2015 – June 2020
 
 - Sept 2021
 - Istanbul, Turkey

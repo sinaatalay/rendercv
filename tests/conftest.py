@@ -41,6 +41,7 @@ education_entry_dictionary = {
 
 experience_entry_dictionary = {
     "company": "Some Company",
+    "logo": "testlogo",
     "location": "TX, USA",
     "position": "Software Engineer",
     "start_date": "2020-07",
@@ -56,6 +57,7 @@ experience_entry_dictionary = {
 
 experience_entry_promotion_dictionary = {
     "company": "Some Company",
+    "logo": "testlogo",
     "location": "TX, USA",
     "positions": [
         {"name": "Software Engineer", "start_date": "2020-07", "end_date": "2020-11"},
@@ -215,6 +217,7 @@ def return_a_value_for_a_field_type(
             ),
         ],
         "company": "Some **Company**",
+        "logo": "testlogo",
         "position": "Software Engineer",
         "positions": [
             {
