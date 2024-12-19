@@ -54,6 +54,26 @@ experience_entry_dictionary = {
     ],
 }
 
+experience_entry_promotion_dictionary = {
+    "company": "Some Company",
+    "location": "TX, USA",
+    "positions": [
+        {"name": "Software Engineer", "start_date": "2020-07", "end_date": "2020-11"},
+        {
+            "name": "Senior Software Engineer",
+            "start_date": "2020-11",
+            "end_date": "2021-08-12",
+        },
+    ],
+    "highlights": [
+        (
+            "Developed an [IOS application](https://example.com) that has received"
+            " more than **100,000 downloads**."
+        ),
+        "Managed a team of **5** engineers.",
+    ],
+}
+
 normal_entry_dictionary = {
     "name": "Some Project",
     "location": "Remote",
@@ -95,6 +115,12 @@ def publication_entry() -> dict[str, str | list[str]]:
 def experience_entry() -> dict[str, str]:
     """Return a sample experience entry."""
     return copy.deepcopy(experience_entry_dictionary)
+
+
+@pytest.fixture
+def experience_entry_promotion() -> dict[str, str]:
+    """Return a sample experience entry."""
+    return copy.deepcopy(experience_entry_promotion_dictionary)
 
 
 @pytest.fixture
@@ -190,6 +216,13 @@ def return_a_value_for_a_field_type(
         ],
         "company": "Some **Company**",
         "position": "Software Engineer",
+        "positions": [
+            {
+                "name": "Intern",
+                "start_date": "2015-09",
+                "end_date": "2020-06",
+            }
+        ],
         "name": "My Project",
         "label": "Pro**gram**ming",
         "details": "Python, C++, JavaScript, MATLAB",
@@ -219,6 +252,13 @@ def return_a_value_for_a_field_type(
         pydantic_phone_numbers.PhoneNumber: "+905419999999",
         str: "A string",
         list[str]: ["A string", "Another string"],
+        list[data.DetailedPosition]: [
+            {
+                "name": "A String",
+                "start_date": "2015-09",
+                "end_date": "2015-09",
+            }
+        ],
         int: 1,
         float: 1.0,
         bool: True,
